@@ -3,6 +3,7 @@ import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { FindConditions } from 'typeorm'
 
 import {
   inconsistentState,
@@ -153,7 +154,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 */
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
   // load member
-  const member = await db.get(Membership, { where: { id: id.toString() } })
+  const member = await db.get(Membership, { where: { id: id.toString() } as FindConditions<Membership> })
 
   // ensure member exists
   if (!member) {

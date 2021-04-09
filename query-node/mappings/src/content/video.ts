@@ -1,6 +1,7 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import BN from 'bn.js'
+import { FindConditions, In } from 'typeorm'
 
 import {
   Content,
@@ -87,7 +88,7 @@ export async function content_VideoCategoryUpdated(
   } = new Content.VideoCategoryUpdatedEvent(event).data
 
   // load video category
-  const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
+  const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId.toString() } as FindConditions<VideoCategory> })
 
   // ensure video category exists
   if (!videoCategory) {
@@ -128,7 +129,7 @@ export async function content_VideoCategoryDeleted(
   const {videoCategoryId} = new Content.VideoCategoryDeletedEvent(event).data
 
   // load video category
-  const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId } })
+  const videoCategory = await db.get(VideoCategory, { where: { id: videoCategoryId.toString() } as FindConditions<VideoCategory> })
 
   // ensure video category exists
   if (!videoCategory) {
@@ -170,7 +171,7 @@ export async function content_VideoCreated(
   )
 
   // load channel
-  const channel = await db.get(Channel, { where: { id: channelId } })
+  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
 
   // ensure channel exists
   if (!channel) {
@@ -213,7 +214,7 @@ export async function content_VideoUpdated(
   } = new Content.VideoUpdatedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId } })
+  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
 
   // ensure video exists
   if (!video) {
@@ -269,7 +270,7 @@ export async function content_VideoDeleted(
   const {videoId} = new Content.VideoDeletedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId } })
+  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
 
   // ensure video exists
   if (!video) {
@@ -293,7 +294,7 @@ export async function content_VideoCensorshipStatusUpdated(
   const {videoId, bool: isCensored} = new Content.VideoCensorshipStatusUpdatedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId } })
+  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
 
   // ensure video exists
   if (!video) {
@@ -322,7 +323,7 @@ export async function content_FeaturedVideosSet(
   const {videoId: videoIds} = new Content.FeaturedVideosSetEvent(event).data
 
   // load old featured videos
-  const existingFeaturedVideos = await db.getMany(Video, { where: { isFeatured: true } })
+  const existingFeaturedVideos = await db.getMany(Video, { where: { isFeatured: true } as FindConditions<Video> })
 
   // comparsion utility
   const isSame = (videoIdA: string) => (videoIdB: string) => videoIdA == videoIdB
@@ -358,7 +359,9 @@ export async function content_FeaturedVideosSet(
   }
 
   // read videos previously not-featured videos that are meant to be featured
-  const videosToAdd = await db.getMany(Video, { where: { id: [toAdd] } })
+  const videosToAdd = await db.getMany(Video, { where: {
+    id: In(toAdd.map(item => item.toString()))
+  } as FindConditions<Video> })
 
   if (videosToAdd.length != toAdd.length) {
     return inconsistentState('At least one non-existing video featuring requested', toAdd)

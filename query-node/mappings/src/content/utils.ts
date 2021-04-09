@@ -1,4 +1,3 @@
-// TODO: check all `db.get()` and similar calls recieve a proper type argument (aka add `.toString()`, etc. to those calls)
 // TODO: can we rely on db having "foreign keys"? When item is deleted will automaticly be all relations to it unset?
 //       Similarly, will saving item also save all its related items no-yet-saved in db, or do they need to saved individually?
 //       Also, is the assumption that `db.save(MyType, {myProperty: undefined})` unsets value in db correct?
@@ -8,6 +7,7 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
 import BN from 'bn.js'
 import { u64 } from '@polkadot/types/primitive';
+import { FindConditions } from 'typeorm'
 
 // protobuf definitions
 import {
@@ -402,7 +402,7 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
   }
 
   // load language
-  const language = await db.get(Language, { where: { iso: languageIso }})
+  const language = await db.get(Language, { where: { iso: languageIso } as FindConditions<Language> })
 
   // return existing language if any
   if (language) {
@@ -448,7 +448,7 @@ async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, video
 
 async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Promise<VideoCategory> {
   // load video category
-  const category = await db.get(VideoCategory, { where: { id: categoryId }})
+  const category = await db.get(VideoCategory, { where: { id: categoryId.toString() } as FindConditions<VideoCategory> })
 
   // ensure video category exists
   if (!category) {

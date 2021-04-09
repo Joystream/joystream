@@ -1,5 +1,6 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { FindConditions, In } from 'typeorm'
 
 import {
   inconsistentState,
@@ -52,7 +53,9 @@ export async function data_directory_ContentRemoved(db: DatabaseManager, event: 
   const {contentId: contentIds} = new DataDirectory.ContentRemovedEvent(event).data
 
   // load assets
-  const dataObjects = await db.getMany(DataObject, { where: { joystreamContentId: contentIds }})
+  const dataObjects = await db.getMany(DataObject, { where: {
+    joystreamContentId: In(contentIds.map(item => item.toString()))
+  } as FindConditions<DataObject> })
 
   // remove assets from database
   for (let item of dataObjects) {
@@ -68,7 +71,7 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   const {contentId, storageProviderId} = new DataDirectory.ContentAcceptedEvent(event).data
 
   // load asset
-  const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
+  const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId.toString() } as FindConditions<DataObject>})
 
   // ensure object exists
   if (!dataObject) {

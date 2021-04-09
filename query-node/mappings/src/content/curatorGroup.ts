@@ -1,5 +1,6 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { FindConditions } from 'typeorm'
 
 import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
 import { Content } from '../../../generated/types'
@@ -43,7 +44,7 @@ export async function content_CuratorGroupStatusSet(
   const {curatorGroupId, bool: isActive} = new Content.CuratorGroupStatusSetEvent(event).data
 
   // load curator group
-  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
+  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>})
 
   // ensure curator group exists
   if (!curatorGroup) {
@@ -71,7 +72,7 @@ export async function content_CuratorAdded(
   const {curatorGroupId, curatorId} = new Content.CuratorAddedEvent(event).data
 
   // load curator group
-  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
+  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>})
 
   // ensure curator group exists
   if (!curatorGroup) {
@@ -99,7 +100,7 @@ export async function content_CuratorRemoved(
   const {curatorGroupId, curatorId} = new Content.CuratorAddedEvent(event).data
 
   // load curator group
-  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId }})
+  const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>})
 
   // ensure curator group exists
   if (!curatorGroup) {

@@ -1,6 +1,7 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
+import { FindConditions, In } from 'typeorm'
 
 import { AccountId } from "@polkadot/types/interfaces";
 import { Option } from '@polkadot/types/codec';
@@ -76,7 +77,7 @@ export async function content_ChannelUpdated(
   } = new Content.ChannelUpdatedEvent(event).data
 
   // load channel
-  const channel = await db.get(Channel, { where: { id: channelId } })
+  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
 
   // ensure channel exists
   if (!channel) {
@@ -132,7 +133,9 @@ export async function content_ChannelAssetsRemoved(
   const {contentId: contentIds} = new Content.ChannelAssetsRemovedEvent(event).data
 
   // load channel
-  const assets = await db.getMany(DataObject, { where: { id: contentIds } })
+  const assets = await db.getMany(DataObject, { where: {
+    id: In(contentIds.toArray().map(item => item.toString()))
+  } as FindConditions<DataObject>})
 
   // delete assets
   for (const asset of assets) {
@@ -152,7 +155,7 @@ export async function content_ChannelCensorshipStatusUpdated(
   const {channelId, bool: isCensored} = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
 
   // load event
-  const channel = await db.get(Channel, { where: { id: channelId } })
+  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
 
   // ensure channel exists
   if (!channel) {
@@ -228,7 +231,9 @@ export async function content_ChannelCategoryUpdated(
   } = new Content.ChannelCategoryUpdatedEvent(event).data
 
   // load channel category
-  const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
+  const channelCategory = await db.get(ChannelCategory, { where: {
+    id: channelCategoryId.toString()
+  } as FindConditions<ChannelCategory> })
 
   // ensure channel exists
   if (!channelCategory) {
@@ -269,7 +274,9 @@ export async function content_ChannelCategoryDeleted(
   const {channelCategoryId} = new Content.ChannelCategoryDeletedEvent(event).data
 
   // load channel category
-  const channelCategory = await db.get(ChannelCategory, { where: { id: channelCategoryId } })
+  const channelCategory = await db.get(ChannelCategory, { where: {
+    id: channelCategoryId.toString()
+  } as FindConditions<ChannelCategory> })
 
   // ensure channel category exists
   if (!channelCategory) {
