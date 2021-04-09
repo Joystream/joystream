@@ -24,6 +24,16 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
+fn assert_in_events<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+
+    assert!(!events.is_empty(), "There are no events in event queue");
+
+    // compare to the last event record
+    assert!(events.iter().any(|e| e.event == system_event));
+}
+
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
@@ -295,21 +305,31 @@ benchmarks_instance! {
             ).into());
     }
 
-    delete_reply {
+    delete_replies {
+        let i in 0 .. 100;
         let post_id = generate_post::<T, I>();
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
-        let origin = RawOrigin::Signed(account_id);
-    }: _(origin.clone(), participant_id, post_id, reply_id, true)
-    verify {
-        assert!(!<ReplyById<T, I>>::contains_key(post_id, reply_id));
+        let mut replies = Vec::new();
 
-        assert_last_event::<T, I>(RawEvent::ReplyDeleted(
-                participant_id,
-                post_id,
-                reply_id,
-                true,
-            ).into());
+        for _ in 0..=i {
+            let reply_id =
+                generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+            replies.push((post_id, reply_id, false));
+        }
+
+        let origin = RawOrigin::Signed(account_id);
+    }: _(origin.clone(), participant_id, replies.clone())
+    verify {
+        for (post_id, reply_id, hide) in replies {
+            assert!(!<ReplyById<T, I>>::contains_key(post_id, reply_id));
+
+            assert_in_events::<T, I>(RawEvent::ReplyDeleted(
+                    participant_id,
+                    post_id,
+                    reply_id,
+                    hide,
+                ).into());
+        }
     }
 }
 
@@ -369,9 +389,9 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_reply() {
+    fn test_delete_replies() {
         ExtBuilder::default().build().execute_with(|| {
-            assert_ok!(test_benchmark_delete_reply::<Runtime>());
+            assert_ok!(test_benchmark_delete_replies::<Runtime>());
         })
     }
 }

@@ -31,7 +31,7 @@
 //! - [edit_post](./struct.Module.html#method.edit_post)
 //! - [create_reply](./struct.Module.html#method.create_reply)
 //! - [edit_reply](./struct.Module.html#method.edit_reply)
-//! - [delete_reply](./struct.Module.html#method.delete_reply)
+//! - [delete_replies](./struct.Module.html#method.delete_replies)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -647,41 +647,51 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = BlogWeightInfo::<T, I>::delete_reply()]
-        pub fn delete_reply(
+        pub fn delete_replies(
             origin,
             participant_id: ParticipantId<T>,
-            post_id: PostId,
-            reply_id: T::ReplyId,
-            hide: bool,
+            replies: Vec<(PostId, T::ReplyId, bool)>,
         ) -> DispatchResult {
             let account_id = Self::ensure_valid_participant(origin, participant_id)?;
-            // Ensure post with given id exists
-            let post = Self::ensure_post_exists(post_id)?;
 
-            // Ensure post unlocked, so mutations can be performed
-            Self::ensure_post_unlocked(&post)?;
+            let mut erase_replies = Vec::new();
+            for (post_id, reply_id, hide) in replies {
+                // Ensure post with given id exists
+                let post = Self::ensure_post_exists(post_id)?;
 
-            // Ensure reply with given id exists
-            let reply = Self::ensure_reply_exists(post_id, reply_id)?;
+                // Ensure post unlocked, so mutations can be performed
+                Self::ensure_post_unlocked(&post)?;
 
-            // Ensure reply -> owner relation exists if post lifetime hasn't ran out
-            if (frame_system::Module::<T>::block_number() - reply.last_edited) <
-                T::ReplyLifetime::get()
-            {
-                Self::ensure_reply_ownership(&reply, &participant_id)?;
+                // Ensure reply with given id exists
+                let reply = Self::ensure_reply_exists(post_id, reply_id)?;
+
+                // Ensure reply -> owner relation exists if post lifetime hasn't ran out
+                if (frame_system::Module::<T>::block_number() - reply.last_edited) <
+                    T::ReplyLifetime::get()
+                {
+                    Self::ensure_reply_ownership(&reply, &participant_id)?;
+                }
+
+                if !reply.is_owner(&participant_id) {
+                    ensure!(!hide, Error::<T, I>::ReplyOwnershipError);
+                }
+
+                erase_replies.push((post_id, reply_id, reply.cleanup_pay_off, hide));
             }
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::pay_off(post_id, reply.cleanup_pay_off, &account_id)?;
+            for (post_id, reply_id, cleanup_pay_off, hide) in erase_replies {
+                Self::pay_off(post_id, cleanup_pay_off, &account_id)?;
 
-            // Update reply with new text
-            <ReplyById<T, I>>::remove(post_id, reply_id);
+                // Update reply with new text
+                <ReplyById<T, I>>::remove(post_id, reply_id);
 
-            // Trigger event
-            Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id, hide));
+                // Trigger event
+                Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id, hide));
+            }
             Ok(())
         }
 

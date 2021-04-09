@@ -1090,7 +1090,7 @@ fn reply_delete_success() {
             FIRST_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
-            true,
+            false,
         ));
 
         assert_event_success(reply_created_event, number_of_events_before_call + 2)
@@ -1238,7 +1238,7 @@ fn reply_delete_success_with_other_participant() {
             SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
-            true,
+            false,
         ));
 
         assert_event_success(reply_created_event, number_of_events_before_call + 4)

@@ -442,12 +442,10 @@ pub fn delete_reply(
     post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,
 ) -> DispatchResult {
-    TestBlogModule::delete_reply(
+    TestBlogModule::delete_replies(
         Origin::signed(origin_id),
         participant_id,
-        post_id,
-        reply_id,
-        true,
+        vec![(post_id, reply_id, false)],
     )
 }
 
