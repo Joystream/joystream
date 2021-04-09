@@ -26,6 +26,7 @@ import {
 
 import {
   inconsistentState,
+  logger,
   prepareDataObject,
 } from '../common'
 
@@ -107,7 +108,8 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   }
 
   // this should never happen
-  throw `Not implemented type: ${type}`
+  logger.error('Not implemented metadata type', {type})
+  throw `Not implemented metadata type`
 }
 
 /*
@@ -232,7 +234,8 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   }
 
   // this should never happen
-  throw `Not implemented type: ${type}`
+  logger.error('Not implemented metadata type', {type})
+  throw `Not implemented metadata type`
 }
 
 export function convertContentActorToOwner(contentActor: ContentActor, channelId: BN): typeof DataObjectOwner {
@@ -256,6 +259,7 @@ export function convertContentActorToOwner(contentActor: ContentActor, channelId
     return owner
   }
 
+  logger.error('Not implemented ContentActor type', {contentActor: contentActor.toString()})
   throw 'Not-implemented ContentActor type used'
   */
 }

@@ -190,5 +190,6 @@ function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   }
 
   // should never happen
-  throw 'Not-implemented entry method used'
+  logger.error('Not implemented entry method', {entryMethod: entryMethod.toString()})
+  throw 'Not implemented entry method'
 }

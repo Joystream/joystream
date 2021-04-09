@@ -124,5 +124,6 @@ function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof Data
     return owner
   }
 
-  throw 'Not-implemented StorageObjectOwner type used'
+  logger.error('Not implemented StorageObjectOwner type', {objectOwner: objectOwner.toString()})
+  throw 'Not implemented StorageObjectOwner type'
 }
