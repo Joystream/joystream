@@ -1367,10 +1367,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@2.1.0-beta.6":
-  version "2.1.0-beta.6"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.1.0-beta.6.tgz#7692a8921c2288cb92cdc239348edfe320e1fd5a"
-  integrity sha512-rE6bqv19B/+UpA+yUtNxweWbgHHkMpBZC8PQnf1kGlYPAgLOrBdlUq+qMjqYJV504p+to6RZbBwr74PscHcmCw==
+"@dzlzv/hydra-cli@2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.1.0-beta.7.tgz#87942475ab897e1ac9d8637cabe69339c9f6107e"
+  integrity sha512-l8fQQP3w3zY3K73kQUiecz8gpBbrncnG6KMQQjOGACNAGrVRho5Hhzz60nLu6IJugg/wtuqLhQcSIPdvTVkmfw==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
@@ -1402,19 +1402,19 @@
     tslib "1.11.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
 
-"@dzlzv/hydra-common@2.1.0-beta.6", "@dzlzv/hydra-common@^2.1.0-beta.6":
-  version "2.1.0-beta.6"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.1.0-beta.6.tgz#37fe3f5a499d2422018e7acaf3a056d7f6285799"
-  integrity sha512-7xe6yW7an1fi+PX6RpqVli8duB9Zs/jDJbJwum5E7zEGlk0D4ZzSTxPqOjPr9GYhrZaa1SJsDOZCazZmcGMxWA==
+"@dzlzv/hydra-common@2.1.0-beta.7", "@dzlzv/hydra-common@^2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.1.0-beta.7.tgz#7b0159b4d6ab396fe94cffbd0e3527c68fab1c94"
+  integrity sha512-UrudbN6eKl13teVqapMs3nliim7/dJ7xba0hXuhdGLWhMwp9O1F+9YRXRAj6UQgfVf1n9bo99MkvxiJ+tKWggg==
   dependencies:
     bn.js "^5.1.3"
 
-"@dzlzv/hydra-db-utils@2.1.0-beta.6", "@dzlzv/hydra-db-utils@^2.1.0-beta.6":
-  version "2.1.0-beta.6"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.1.0-beta.6.tgz#192957fa7ac461add0c8613456d61352480a1915"
-  integrity sha512-XxBpQdR6OnFAGe95DNKplj/ceCpzFqmBjtbxUmx/z728ToLpncJagjtO3hJRg4AtPOZJP30hel/eNLooghciDQ==
+"@dzlzv/hydra-db-utils@2.1.0-beta.7", "@dzlzv/hydra-db-utils@^2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.1.0-beta.7.tgz#83de3152b9a88158a74c2dc3192e5503bb2b962a"
+  integrity sha512-Qlt/FaHRnyH9h07MBXVQaCGgAa7A+feJglITUwrRJ7bvYHRVo/vyhFpQ4X2E4TazUUPoY4BWQ7IAG4eQXOsogQ==
   dependencies:
-    "@dzlzv/hydra-common" "^2.1.0-beta.6"
+    "@dzlzv/hydra-common" "^2.1.0-beta.7"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.1.3"
     ioredis "^4.17.3"
@@ -1422,13 +1422,13 @@
     shortid "^2.2.16"
     typeorm "^0.2.25"
 
-"@dzlzv/hydra-processor@2.1.0-beta.6":
-  version "2.1.0-beta.6"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.1.0-beta.6.tgz#77e1fa28e5e3db2ff6ff045672e9d21a0d843e38"
-  integrity sha512-kF+FY1ufW2hzlJ69w3FjTd+mKGLUK/siHQgd7Xmif09HkbbR1aPhWFlV9Nz3bA7y7YbWspjvnR+LfQAfUFfi5w==
+"@dzlzv/hydra-processor@2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.1.0-beta.7.tgz#950c0ea3a306dc1dad531efafd21d85160f10f41"
+  integrity sha512-y2+x6BzjqXdJqq9MJrj8asCRLzhUNexHpHz4Ox0Qf6gzu4DPYQV8r9C+LwEyaN4aXDit5ZEMqve9aBPNJZnTFw==
   dependencies:
-    "@dzlzv/hydra-common" "^2.1.0-beta.6"
-    "@dzlzv/hydra-db-utils" "^2.1.0-beta.6"
+    "@dzlzv/hydra-common" "^2.1.0-beta.7"
+    "@dzlzv/hydra-db-utils" "^2.1.0-beta.7"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -1447,15 +1447,15 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@dzlzv/hydra-typegen@2.0.1-beta.16":
-  version "2.0.1-beta.16"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-2.0.1-beta.16.tgz#2f82dba4587b0375a39983ad3eafe4d18e46becd"
-  integrity sha512-8N5cpnUtuKarFTLKUAtUfuL/PTvgGW1k2k07EwthHFdw/JCuCQAQyUWAcwJiOZbXauQnLpIvBJREH/b4hNArQQ==
+"@dzlzv/hydra-typegen@2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-2.1.0-beta.7.tgz#d08fa39b031c564eded7d7d644601468ebbf2f40"
+  integrity sha512-PwxWmLVvmET/58zZh0VnM7S+HH1/5ozXLnE/l7HrvlBYH1sQms5hGYi7bnRGGU/RKCeXBojBNLsX6YIg7b7yGQ==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
-    "@polkadot/api" "^2.10.1"
+    "@polkadot/api" "4.2.1"
     debug "^4.3.1"
     handlebars "^4.7.6"
     lodash "^4.17.20"
@@ -3514,7 +3514,7 @@
     memoizee "^0.4.14"
     rxjs "^6.6.0"
 
-"@polkadot/api@1.26.1", "@polkadot/api@^1.26.1", "@polkadot/api@^2.10.1":
+"@polkadot/api@1.26.1", "@polkadot/api@4.2.1", "@polkadot/api@^1.26.1":
   version "1.26.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-1.26.1.tgz#215268489c10b1a65429c6ce451c8d65bd3ad843"
   integrity sha512-al8nmLgIU1EKo0oROEgw1mqUvrHJu4gKYBwnFONaEOxHSxBgBSSgNy1MWKNntAQYDKA4ETCj4pz7ZpMXTx2SDA==
