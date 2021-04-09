@@ -32,12 +32,6 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       existentialDeposit: AugmentedConst<Balance>;
     };
-    builderWorkingGroup: {
-      /**
-       * Exports const -  max simultaneous active worker number.
-       **/
-      maxWorkerNumberLimit: AugmentedConst<u32>;
-    };
     content: {
       /**
        * Exports const -  max number of curators per group
@@ -68,6 +62,12 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
     };
     members: {
       screenedMemberMaxInitialBalance: AugmentedConst<BalanceOf>;
+    };
+    operationsWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: AugmentedConst<u32>;
     };
     proposalsCodex: {
       /**
