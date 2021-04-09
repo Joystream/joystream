@@ -10,36 +10,12 @@ import {
 } from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node/src/modules/membership/membership.model'
-
-/*
-  Retrive membership from the database
-*/
-async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
-  // load member
-  const member = await db.get(Membership, { where: { id: id.toString() } })
-
-  // ensure member exists
-  if (!member) {
-    return inconsistentState(`Operation on non-existing member requested`, id)
-  }
-  return member
-}
-
-/*
-  Helper for converting Bytes type to string
-*/
-function convertBytesToString(b: Bytes | null): string {
-  if (!b) {
-    return ''
-  }
-
-  return Buffer.from(b.toU8a(true)).toString()
-}
+import { EntryMethod } from '@joystream/types/augment'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberRegistered(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { accountId, memberId } = new Members.MemberRegisteredEvent(event).data
+  const { accountId, memberId, entryMethod } = new Members.MemberRegisteredEvent(event).data
   const { avatarUri, about, handle } = new Members.BuyMembershipCall(event).args
 
   // create new membership
@@ -52,8 +28,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
     about: convertBytesToString(about.unwrapOr(null)),
     avatarUri: convertBytesToString(avatarUri.unwrapOr(null)),
     createdInBlock: event.blockNumber,
-    // TODO: in the runtime there is currently no way to distinguish distinguish `buy_membership`(method `Paid`) and `add_screened_member`(`Screening`)
-    entry: MembershipEntryMethod.PAID,
+    entry: convertEntryMethod(entryMethod),
 
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp.toNumber()),
@@ -169,4 +144,51 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 
   // emit log event
   logger.info("Member's controller has been updated", {ids: memberId})
+}
+
+/////////////////// Helpers ////////////////////////////////////////////////////
+
+/*
+  Retrive membership from the database
+*/
+async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
+  // load member
+  const member = await db.get(Membership, { where: { id: id.toString() } })
+
+  // ensure member exists
+  if (!member) {
+    return inconsistentState(`Operation on non-existing member requested`, id)
+  }
+  return member
+}
+
+/*
+  Helper for converting Bytes type to string
+*/
+function convertBytesToString(b: Bytes | null): string {
+  if (!b) {
+    return ''
+  }
+
+  return Buffer.from(b.toU8a(true)).toString()
+}
+
+function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
+  // paid membership?
+  if (entryMethod.isPaid) {
+    return MembershipEntryMethod.PAID
+  }
+
+  // paid membership?
+  if (entryMethod.isScreening) {
+    return MembershipEntryMethod.SCREENING
+  }
+
+  // paid membership?
+  if (entryMethod.isGenesis) {
+    return MembershipEntryMethod.GENESIS
+  }
+
+  // should never happen
+  throw 'Not-implemented entry method used'
 }
