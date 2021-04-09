@@ -29,13 +29,13 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    BuilderWorkingGroupConfig, ContentConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig,
-    CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
-    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, DAYS, WASM_BINARY,
+    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentConfig,
+    ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
+    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
+    GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, Moment,
+    OperationsWorkingGroupConfig, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
+    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
+    WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
@@ -324,7 +324,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance4: Some(BuilderWorkingGroupConfig {
+        working_group_Instance4: Some(OperationsWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,

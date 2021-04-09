@@ -69,7 +69,7 @@ const DEFAULT_DECIMALS = new BN(12)
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
   [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
-  [WorkingGroups.Builder]: 'builderWorkingGroup',
+  [WorkingGroups.Operations]: 'operationsWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
 }
 

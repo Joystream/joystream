@@ -84,7 +84,7 @@
         "_enum": [
             "Storage",
             "Content",
-            "Builder",
+            "Operations",
             "Gateway"
         ]
     },
