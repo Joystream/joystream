@@ -250,8 +250,6 @@ export async function content_VideoUpdated(
     }
   }
 
-  // TODO: handle situation when only assets changed
-
   // set last update time
   video.updatedAt = new Date(event.blockTimestamp.toNumber())
 
