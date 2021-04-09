@@ -10,7 +10,7 @@ entities:
   - mappings/lib/generated/**/*.model.js
 typegen:
   metadata:
-    source: wss://staging-3.joystream.app/rpc
+    source: wss://rome-rpc-endpoint.joystream.org:9944
   events:
     - contentDirectory.EntityCreated
     - contentDirectory.EntityRemoved
