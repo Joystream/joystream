@@ -1,13 +1,13 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
 export default class SetFeaturedVideosCommand extends ContentDirectoryCommandBase {
-  static description = 'Set featured videos.'
+  static description = 'Set featured videos. Requires lead access.'
 
   static args = [
     {
       name: 'featuredVideoIds',
       required: true,
-      description: 'IDs of the featured videos',
+      description: 'Comma-separated video IDs (ie. 1,2,3)',
     },
   ]
 
@@ -19,6 +19,9 @@ export default class SetFeaturedVideosCommand extends ContentDirectoryCommandBas
 
     const actor = await this.getActor('Lead')
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'setFeaturedVideos', [actor, featuredVideoIds])
+    await this.sendAndFollowNamedTx(currentAccount, 'content', 'setFeaturedVideos', [
+      actor,
+      (featuredVideoIds as string).split(','),
+    ])
   }
 }
