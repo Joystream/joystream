@@ -7,51 +7,81 @@
 // TODO: add module comment
 // TODO: add types comments
 // TODO: add benchmarks
+// TODO: add constants:
+// Max size of blacklist.
+// Max number of storage buckets.
+// Max number of distribution bucket families
+// Max number of distribution buckets per family.
+// Max number of pending invitations per distribution bucket.
+// Max number of data objects per bag.
+
 
 #[cfg(test)]
 mod tests;
 
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
-
-use common::working_group::WorkingGroup;
+use sp_arithmetic::traits::{BaseArithmetic};
+use sp_runtime::traits::{MaybeSerialize, Member};
 
 /// Storage trait.
-pub trait Trait: frame_system::Trait + balances::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait{
     /// Storage event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+
+    //TODO: add comment
+    type DataObjectId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    //TODO: add comment
+    type StorageBucketId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 }
+
+// /// Member identifier in membership::member module
+// pub type MemberId<T> = <T as membership::Trait>::MemberId;
+
+/// Type identifier for worker role, which must be same as membership actor identifier
+pub type WorkerId<T> = <T as membership::Trait>::ActorId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
-
-type StorageBucketId = u64; // TODO: Move to the Trait
-type DistributionBucketId = u64; // TODO: Move to the Trait
-type DataObjectId = u64; // Move to the Trait
-type MemberId = u64; // Move to the Trait
-type ChannelId = u64; // Move to the Trait
-type DaoId = u64; // Move to the Trait
-type WorkerId = u64; // Move to the Trait
+//type DistributionBucketId = u64; // TODO: Move to the Trait
+// type ChannelId = u64; // Move to the Trait
+// type DaoId = u64; // Move to the Trait
+// type WorkerId = u64; // Move to the Trait
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PendingDataObjectStatus {
+pub struct PendingDataObjectStatus<StorageBucketId> {
     pub liaison: StorageBucketId,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum DataObjectStatus {
-    Pending(PendingDataObjectStatus),
+pub enum DataObjectStatus<StorageBucketId> {
+    Pending(PendingDataObjectStatus<StorageBucketId>),
     AcceptedByLiaison,
 }
 
-impl Default for DataObjectStatus {
+impl<StorageBucketId: Default> Default for DataObjectStatus<StorageBucketId> {
     fn default() -> Self {
         Self::Pending(Default::default())
     }
@@ -59,17 +89,17 @@ impl Default for DataObjectStatus {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DataObject<Balance> {
-    pub status: DataObjectStatus,
+pub struct DataObject<StorageBucketId, Balance> {
+    pub status: DataObjectStatus<StorageBucketId>,
     pub deletion_prize: Balance,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StaticBag<Balance> {
-    pub objects: BTreeMap<DataObjectId, DataObject<Balance>>,
+pub struct StaticBag<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
+    pub objects: BTreeMap<DataObjectId, DataObject<StorageBucketId, Balance>>,
     pub stored_by: BTreeSet<StorageBucketId>,
-    pub distributed_by: BTreeSet<DistributionBucketId>,
+//TODO: implement -    pub distributed_by: BTreeSet<DistributionBucketId>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -81,23 +111,23 @@ pub struct DataObjectCreationParameters {
 
 /// Identifier for a bag.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum BagId {
-    DynamicBag(DynamicBagId),
+    //TODO: implement -    DynamicBag(DynamicBagId),
     StaticBag(StaticBagId),
 }
 
 impl Default for BagId {
     fn default() -> Self {
-        Self::DynamicBag(Default::default())
+        Self::StaticBag(Default::default())
     }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum StaticBagId {
     Council,
-    WorkingGroup(WorkingGroup),
+//TODO: implement -    WorkingGroup(WorkingGroup),
 }
 
 impl Default for StaticBagId {
@@ -106,19 +136,20 @@ impl Default for StaticBagId {
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum DynamicBagId {
-    Member(MemberId),
-    Channel(ChannelId),
-    Dao(DaoId),
-}
-
-impl Default for DynamicBagId {
-    fn default() -> Self {
-        Self::Member(Default::default())
-    }
-}
+//TODO: implement:
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+// pub enum DynamicBagId {
+//     Member(MemberId),
+//     Channel(ChannelId),
+//     Dao(DaoId),
+// }
+//
+// impl Default for DynamicBagId {
+//     fn default() -> Self {
+//         Self::Member(Default::default())
+//     }
+// }
 
 pub type UploadParameters<T> = UploadParametersObject<<T as frame_system::Trait>::AccountId>;
 
@@ -143,13 +174,13 @@ pub struct Voucher {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum StorageBucketOperatorStatus {
+pub enum StorageBucketOperatorStatus<WorkerId> {
     Missing,
     InvitedStorageWorker(WorkerId),
     StorageWorker(WorkerId),
 }
 
-impl Default for StorageBucketOperatorStatus {
+impl<WorkerId> Default for StorageBucketOperatorStatus<WorkerId> {
     fn default() -> Self {
         Self::Missing
     }
@@ -157,11 +188,30 @@ impl Default for StorageBucketOperatorStatus {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StorageBucket {
-    pub operator_status: StorageBucketOperatorStatus,
+pub struct StorageBucket<WorkerId> {
+    pub operator_status: StorageBucketOperatorStatus<WorkerId>,
     pub accepting_new_bags: bool,
     pub number_of_pending_data_objects: u32,
     pub voucher: Voucher,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub struct BaggedDataObject<DataObjectId> {
+    pub bag_id: BagId,
+    pub data_object_id: DataObjectId,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct UpdateStorageBucketForStaticBagsParams<StorageBucketId: Ord> {
+    pub bags: BTreeMap<BagId, BTreeSet<StorageBucketId>> //TODO: change to StaticBagId
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct AcceptPendingDataObjectsParams<DataObjectId: Ord> {
+    pub bagged_data_objects: BTreeSet<BaggedDataObject<DataObjectId>>
 }
 
 decl_storage! {
@@ -169,12 +219,12 @@ decl_storage! {
         // === Static bags
 
         /// Council bag.
-        pub CouncilBag get(fn council_bag): StaticBag<BalanceOf<T>>;
+        pub CouncilBag get(fn council_bag): StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
 
         // TODO change the comment
         /// Storage bucket (flat) map
         pub StorageBucketById get (fn storage_bucket_by_id)
-            : BTreeMap<StorageBucketId, StorageBucket>;
+            : BTreeMap<T::StorageBucketId, StorageBucket<WorkerId<T>>>;
     }
 }
 
@@ -211,9 +261,20 @@ decl_module! {
         /// - Must return rich information about bags & data objects created.
         /// - a `can_upload` extrinsic is likely going to be needed
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn upload(origin, params: UploadParameters<T>) {
+        pub fn upload(_origin, params: UploadParameters<T>) {
+            //TODO implement
 
             Self::validate_upload_parameter(&params)?;
+        }
+
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_buckets_for_static_bags(
+            _origin,
+            _update: UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>
+ //           _update: Vec<(BagId, Vec<T::StorageBucketId>)>
+        ) {
+            //TODO implement
         }
 
         // ===== Storage Lead actions =====
@@ -221,19 +282,48 @@ decl_module! {
         /// Create storage bucket.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_storage_bucket(
-            origin,
-            invite_worker: Option<WorkerId>,
-            accepting_new_data_objects: bool,
-            voucher: Voucher
+            _origin,
+            _invite_worker: Option<WorkerId<T>>,
+            _accepting_new_data_objects: bool,
+            _voucher: Voucher
         ) {
+            //TODO implement
+        }
 
+
+        // ===== Storage Operator actions =====
+
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_storage_operator_metadata(
+            _origin,
+            _storage_bucket_id: T::StorageBucketId,
+            _metadata: Vec<u8>
+        ) {
+            //TODO implement
+        }
+
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_pending_data_objects(
+            _origin,
+            _worker_id: WorkerId<T>,
+            _objects: AcceptPendingDataObjectsParams<T::DataObjectId>
+        ) {
+            //TODO implement
+        }
+
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_storage_bucket_invitation(_origin, _storage_bucket_id: T::StorageBucketId) {
+            //TODO implement
         }
     }
 }
 
 impl<T: Trait> Module<T> {
     // TODO: add comment
-    fn validate_upload_parameter(params: &UploadParameters<T>) -> DispatchResult {
+    fn validate_upload_parameter(_params: &UploadParameters<T>) -> DispatchResult {
         //TODO implement
         Ok(())
     }
