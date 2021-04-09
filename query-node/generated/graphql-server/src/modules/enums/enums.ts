@@ -16,5 +16,4 @@ export enum AssetAvailability {
 export enum LiaisonJudgement {
   PENDING = 'PENDING',
   ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED',
 }

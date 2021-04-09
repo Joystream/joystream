@@ -352,7 +352,6 @@ function integrateAsset<T>(propertyName: string, result: Object, asset: AssetSto
   const conversionTable = {
     [LiaisonJudgement.ACCEPTED]: AssetAvailability.ACCEPTED,
     [LiaisonJudgement.PENDING]: AssetAvailability.PENDING,
-    [LiaisonJudgement.REJECTED]: AssetAvailability.INVALID,
   }
 
   // (un)set asset's properties

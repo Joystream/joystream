@@ -283,13 +283,14 @@ export async function content_VideoDeleted(
   logger.info('Video has been deleted', {id: videoId})
 }
 
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoCensored(
+export async function content_VideoCensorshipStatusUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
   // read event data
-  const {videoId} = new Content.VideoCensoredEvent(event).data
+  const {videoId, bool: isCensored} = new Content.VideoCensorshipStatusUpdatedEvent(event).data
 
   // load video
   const video = await db.get(Video, { where: { id: videoId } })
@@ -300,7 +301,7 @@ export async function content_VideoCensored(
   }
 
   // update video
-  video.isCensored = true;
+  video.isCensored = isCensored.isTrue;
 
   // set last update time
   video.updatedAt = new Date(event.blockTimestamp.toNumber())
@@ -309,36 +310,7 @@ export async function content_VideoCensored(
   await db.save<Video>(video)
 
   // emit log event
-  logger.info('Video has been censored', {id: videoId})
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoUncensored(
-  db: DatabaseManager,
-  event: SubstrateEvent
-) {
-  // read event data
-  const {videoId} = new Content.VideoUncensoredEvent(event).data
-
-  // load video
-  const video = await db.get(Video, { where: { id: videoId } })
-
-  // ensure video exists
-  if (!video) {
-    return inconsistentState('Non-existing video uncensoring requested', videoId)
-  }
-
-  // update video
-  video.isCensored = false;
-
-  // set last update time
-  video.updatedAt = new Date(event.blockTimestamp.toNumber())
-
-  // save video
-  await db.save<Video>(video)
-
-  // emit log event
-  logger.info('Video has been uncensored', {id: videoId})
+  logger.info('Video censorship status has been updated', {id: videoId, isCensored: isCensored.isTrue})
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

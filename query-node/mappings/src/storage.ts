@@ -89,32 +89,6 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   logger.info("Storage content has been accepted", {id: contentId})
 }
 
-export async function data_directory_ContentRejected(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
-  // read event data
-  const {contentId, storageProviderId} = new DataDirectory.ContentRejectedEvent(event).data
-
-  // load asset
-  const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId }})
-
-  // ensure object exists
-  if (!dataObject) {
-    return inconsistentState('Non-existing content rejection requested', contentId)
-  }
-
-  // update object
-  dataObject.liaisonId = storageProviderId
-  dataObject.liaisonJudgement = LiaisonJudgement.REJECTED
-
-  // set last update time
-  dataObject.updatedAt = new Date(event.blockTimestamp.toNumber())
-
-  // save object
-  await db.save<DataObject>(dataObject)
-
-  // emit log event
-  logger.info("Storage content has been rejected", {id: contentId})
-}
-
 /////////////////// Helpers ////////////////////////////////////////////////////
 
 function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof DataObjectOwner {

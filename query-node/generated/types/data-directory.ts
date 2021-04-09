@@ -260,7 +260,7 @@ export namespace DataDirectory {
 
   /**
    *  Adds the content to the system. The created DataObject
-   *  awaits liaison to accept or reject it.
+   *  awaits liaison to accept it.
    */
   export class AddContentCall {
     public readonly extrinsic: SubstrateExtrinsic;
@@ -366,7 +366,8 @@ export namespace DataDirectory {
   }
   /**
    *  Storage provider accepts a content. Requires signed storage provider account and its id.
-   *  The LiaisonJudgement can be updated, but only by the liaison.
+   *  The LiaisonJudgement can only be updated once from Pending to Accepted.
+   *  Subsequent calls are a no-op.
    */
   export class AcceptContentCall {
     public readonly extrinsic: SubstrateExtrinsic;
@@ -398,56 +399,6 @@ export namespace DataDirectory {
   }
 
   class AcceptContent_Args {
-    constructor(public readonly extrinsic: SubstrateExtrinsic) {}
-
-    get storageProviderId(): StorageProviderId {
-      return createTypeUnsafe<StorageProviderId & Codec>(
-        typeRegistry,
-        "StorageProviderId",
-        [this.extrinsic.args[0].value]
-      );
-    }
-
-    get contentId(): ContentId {
-      return createTypeUnsafe<ContentId & Codec>(typeRegistry, "ContentId", [
-        this.extrinsic.args[1].value
-      ]);
-    }
-  }
-  /**
-   *  Storage provider rejects a content. Requires signed storage provider account and its id.
-   *  The LiaisonJudgement can be updated, but only by the liaison.
-   */
-  export class RejectContentCall {
-    public readonly extrinsic: SubstrateExtrinsic;
-    public readonly expectedArgTypes = ["StorageProviderId", "ContentId"];
-
-    constructor(public readonly ctx: SubstrateEvent) {
-      if (ctx.extrinsic === undefined) {
-        throw new Error(`No call data has been provided`);
-      }
-      this.extrinsic = ctx.extrinsic;
-    }
-
-    get args(): RejectContent_Args {
-      return new RejectContent_Args(this.extrinsic);
-    }
-
-    validateArgs(): boolean {
-      if (this.expectedArgTypes.length !== this.extrinsic.args.length) {
-        return false;
-      }
-      let valid = true;
-      this.expectedArgTypes.forEach((type, i) => {
-        if (type !== this.extrinsic.args[i].type) {
-          valid = false;
-        }
-      });
-      return valid;
-    }
-  }
-
-  class RejectContent_Args {
     constructor(public readonly extrinsic: SubstrateExtrinsic) {}
 
     get storageProviderId(): StorageProviderId {

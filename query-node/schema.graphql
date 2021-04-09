@@ -73,9 +73,6 @@ enum LiaisonJudgement {
 
   "Content accepted"
   ACCEPTED,
-
-  "Content rejected"
-  REJECTED,
 }
 
 "Manages content ids, type and storage provider decision about it"

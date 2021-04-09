@@ -11,6 +11,7 @@ entities:
 typegen:
   metadata:
     source: wss://sumer.joystream.app
+    #source: ws://localhost:9944 # use this to download types from local node (useful during development)
   events:
     # membership
     - members.MemberRegistered
@@ -28,8 +29,7 @@ typegen:
     - content.ChannelCreated
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
-    - content.ChannelCensored
-    - content.ChannelUncensored
+    - content.ChannelCensorshipStatusUpdated
     - content.ChannelOwnershipTransferRequested
     - content.ChannelOwnershipTransferRequestWithdrawn
     - content.ChannelOwnershipTransferred
@@ -42,8 +42,7 @@ typegen:
     - content.VideoCreated
     - content.VideoUpdated
     - content.VideoDeleted
-    - content.VideoCensored
-    - content.VideoUncensored
+    - content.VideoCensorshipStatusUpdated
     - content.FeaturedVideosSet
 
     # storage
@@ -70,8 +69,7 @@ typegen:
     - content.create_channel
     - content.update_channel
     - content.remove_channel_assets
-    - content.censor_channel
-    - content.uncensor_channel
+    - content.update_channel_censorship_status
     - content.create_channel_category
     - content.update_channel_category
     - content.delete_channel_category
@@ -89,14 +87,12 @@ typegen:
     - content.update_video_category
     - content.delete_video_category
     - content.remove_person_from_video
-    - content.censor_video
-    - content.uncensor_video
+    - content.update_video_censorship_status
 
     # storage
     - data_directory.add_content
     - data_directory.remove_content
     - data_directory.accept_content
-    - data_directory.reject_content
     - data_directory.update_content_uploading_status
 
   outDir: ./generated/types
@@ -168,10 +164,8 @@ mappings:
       handler: content_VideoUpdated(DatabaseManager, SubstrateEvent)
     - event: content.VideoDeleted
       handler: content_VideoDeleted(DatabaseManager, SubstrateEvent)
-    - event: content.VideoCensored
-      handler: content_VideoCensored(DatabaseManager, SubstrateEvent)
-    - event: content.VideoUncensored
-      handler: content_VideoUncensored(DatabaseManager, SubstrateEvent)
+    - event: content.VideoCensorshipStatusUpdated
+      handler: content_VideoCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
     - event: content.FeaturedVideosSet
       handler: content_FeaturedVideosSet(DatabaseManager, SubstrateEvent)
 
@@ -182,8 +176,6 @@ mappings:
       handler: data_directory_ContentRemoved(DatabaseManager, SubstrateEvent)
     - event: data_directory.ContentAccepted
       handler: data_directory_ContentAccepted(DatabaseManager, SubstrateEvent)
-    - event: data_directory.ContentRejected
-      handler: data_directory_ContentRejected(DatabaseManager, SubstrateEvent)
     - event: data_directory.ContentUploadingStatusUpdated
       handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
 

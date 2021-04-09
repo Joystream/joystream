@@ -355,17 +355,18 @@ export namespace Content {
       );
     }
   }
-  export class ChannelCensoredEvent {
+  export class ChannelCensorshipStatusUpdatedEvent {
     public readonly expectedParamTypes = [
       "ContentActor",
       "ChannelId",
+      "bool",
       "Vec<u8>"
     ];
 
     constructor(public readonly ctx: SubstrateEvent) {}
 
-    get data(): ChannelCensored_Params {
-      return new ChannelCensored_Params(this.ctx);
+    get data(): ChannelCensorshipStatusUpdated_Params {
+      return new ChannelCensorshipStatusUpdated_Params(this.ctx);
     }
 
     validateParams(): boolean {
@@ -382,7 +383,7 @@ export namespace Content {
     }
   }
 
-  class ChannelCensored_Params {
+  class ChannelCensorshipStatusUpdated_Params {
     constructor(public readonly ctx: SubstrateEvent) {}
 
     get contentActor(): ContentActor {
@@ -399,59 +400,15 @@ export namespace Content {
       ]);
     }
 
-    get bytes(): Bytes {
-      return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
+    get bool(): bool {
+      return createTypeUnsafe<bool & Codec>(typeRegistry, "bool", [
         this.ctx.params[2].value
-      ]);
-    }
-  }
-  export class ChannelUncensoredEvent {
-    public readonly expectedParamTypes = [
-      "ContentActor",
-      "ChannelId",
-      "Vec<u8>"
-    ];
-
-    constructor(public readonly ctx: SubstrateEvent) {}
-
-    get data(): ChannelUncensored_Params {
-      return new ChannelUncensored_Params(this.ctx);
-    }
-
-    validateParams(): boolean {
-      if (this.expectedParamTypes.length !== this.ctx.params.length) {
-        return false;
-      }
-      let valid = true;
-      this.expectedParamTypes.forEach((type, i) => {
-        if (type !== this.ctx.params[i].type) {
-          valid = false;
-        }
-      });
-      return valid;
-    }
-  }
-
-  class ChannelUncensored_Params {
-    constructor(public readonly ctx: SubstrateEvent) {}
-
-    get contentActor(): ContentActor {
-      return createTypeUnsafe<ContentActor & Codec>(
-        typeRegistry,
-        "ContentActor",
-        [this.ctx.params[0].value]
-      );
-    }
-
-    get channelId(): ChannelId {
-      return createTypeUnsafe<ChannelId & Codec>(typeRegistry, "ChannelId", [
-        this.ctx.params[1].value
       ]);
     }
 
     get bytes(): Bytes {
       return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
-        this.ctx.params[2].value
+        this.ctx.params[3].value
       ]);
     }
   }
@@ -1050,13 +1007,18 @@ export namespace Content {
       ]);
     }
   }
-  export class VideoCensoredEvent {
-    public readonly expectedParamTypes = ["ContentActor", "VideoId", "Vec<u8>"];
+  export class VideoCensorshipStatusUpdatedEvent {
+    public readonly expectedParamTypes = [
+      "ContentActor",
+      "VideoId",
+      "bool",
+      "Vec<u8>"
+    ];
 
     constructor(public readonly ctx: SubstrateEvent) {}
 
-    get data(): VideoCensored_Params {
-      return new VideoCensored_Params(this.ctx);
+    get data(): VideoCensorshipStatusUpdated_Params {
+      return new VideoCensorshipStatusUpdated_Params(this.ctx);
     }
 
     validateParams(): boolean {
@@ -1073,7 +1035,7 @@ export namespace Content {
     }
   }
 
-  class VideoCensored_Params {
+  class VideoCensorshipStatusUpdated_Params {
     constructor(public readonly ctx: SubstrateEvent) {}
 
     get contentActor(): ContentActor {
@@ -1090,55 +1052,15 @@ export namespace Content {
       ]);
     }
 
-    get bytes(): Bytes {
-      return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
+    get bool(): bool {
+      return createTypeUnsafe<bool & Codec>(typeRegistry, "bool", [
         this.ctx.params[2].value
-      ]);
-    }
-  }
-  export class VideoUncensoredEvent {
-    public readonly expectedParamTypes = ["ContentActor", "VideoId", "Vec<u8>"];
-
-    constructor(public readonly ctx: SubstrateEvent) {}
-
-    get data(): VideoUncensored_Params {
-      return new VideoUncensored_Params(this.ctx);
-    }
-
-    validateParams(): boolean {
-      if (this.expectedParamTypes.length !== this.ctx.params.length) {
-        return false;
-      }
-      let valid = true;
-      this.expectedParamTypes.forEach((type, i) => {
-        if (type !== this.ctx.params[i].type) {
-          valid = false;
-        }
-      });
-      return valid;
-    }
-  }
-
-  class VideoUncensored_Params {
-    constructor(public readonly ctx: SubstrateEvent) {}
-
-    get contentActor(): ContentActor {
-      return createTypeUnsafe<ContentActor & Codec>(
-        typeRegistry,
-        "ContentActor",
-        [this.ctx.params[0].value]
-      );
-    }
-
-    get videoId(): VideoId {
-      return createTypeUnsafe<VideoId & Codec>(typeRegistry, "VideoId", [
-        this.ctx.params[1].value
       ]);
     }
 
     get bytes(): Bytes {
       return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
-        this.ctx.params[2].value
+        this.ctx.params[3].value
       ]);
     }
   }
@@ -1537,9 +1459,14 @@ export namespace Content {
       );
     }
   }
-  export class CensorChannelCall {
+  export class UpdateChannelCensorshipStatusCall {
     public readonly extrinsic: SubstrateExtrinsic;
-    public readonly expectedArgTypes = ["ContentActor", "ChannelId", "Bytes"];
+    public readonly expectedArgTypes = [
+      "ContentActor",
+      "ChannelId",
+      "bool",
+      "Bytes"
+    ];
 
     constructor(public readonly ctx: SubstrateEvent) {
       if (ctx.extrinsic === undefined) {
@@ -1548,8 +1475,8 @@ export namespace Content {
       this.extrinsic = ctx.extrinsic;
     }
 
-    get args(): CensorChannel_Args {
-      return new CensorChannel_Args(this.extrinsic);
+    get args(): UpdateChannelCensorshipStatus_Args {
+      return new UpdateChannelCensorshipStatus_Args(this.extrinsic);
     }
 
     validateArgs(): boolean {
@@ -1566,7 +1493,7 @@ export namespace Content {
     }
   }
 
-  class CensorChannel_Args {
+  class UpdateChannelCensorshipStatus_Args {
     constructor(public readonly extrinsic: SubstrateExtrinsic) {}
 
     get actor(): ContentActor {
@@ -1583,61 +1510,15 @@ export namespace Content {
       ]);
     }
 
-    get rationale(): Bytes {
-      return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
+    get isCensored(): bool {
+      return createTypeUnsafe<bool & Codec>(typeRegistry, "bool", [
         this.extrinsic.args[2].value
-      ]);
-    }
-  }
-  export class UncensorChannelCall {
-    public readonly extrinsic: SubstrateExtrinsic;
-    public readonly expectedArgTypes = ["ContentActor", "ChannelId", "Bytes"];
-
-    constructor(public readonly ctx: SubstrateEvent) {
-      if (ctx.extrinsic === undefined) {
-        throw new Error(`No call data has been provided`);
-      }
-      this.extrinsic = ctx.extrinsic;
-    }
-
-    get args(): UncensorChannel_Args {
-      return new UncensorChannel_Args(this.extrinsic);
-    }
-
-    validateArgs(): boolean {
-      if (this.expectedArgTypes.length !== this.extrinsic.args.length) {
-        return false;
-      }
-      let valid = true;
-      this.expectedArgTypes.forEach((type, i) => {
-        if (type !== this.extrinsic.args[i].type) {
-          valid = false;
-        }
-      });
-      return valid;
-    }
-  }
-
-  class UncensorChannel_Args {
-    constructor(public readonly extrinsic: SubstrateExtrinsic) {}
-
-    get actor(): ContentActor {
-      return createTypeUnsafe<ContentActor & Codec>(
-        typeRegistry,
-        "ContentActor",
-        [this.extrinsic.args[0].value]
-      );
-    }
-
-    get channelId(): ChannelId {
-      return createTypeUnsafe<ChannelId & Codec>(typeRegistry, "ChannelId", [
-        this.extrinsic.args[1].value
       ]);
     }
 
     get rationale(): Bytes {
       return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
-        this.extrinsic.args[2].value
+        this.extrinsic.args[3].value
       ]);
     }
   }
@@ -2529,9 +2410,14 @@ export namespace Content {
       ]);
     }
   }
-  export class CensorVideoCall {
+  export class UpdateVideoCensorshipStatusCall {
     public readonly extrinsic: SubstrateExtrinsic;
-    public readonly expectedArgTypes = ["ContentActor", "VideoId", "Bytes"];
+    public readonly expectedArgTypes = [
+      "ContentActor",
+      "VideoId",
+      "bool",
+      "Bytes"
+    ];
 
     constructor(public readonly ctx: SubstrateEvent) {
       if (ctx.extrinsic === undefined) {
@@ -2540,8 +2426,8 @@ export namespace Content {
       this.extrinsic = ctx.extrinsic;
     }
 
-    get args(): CensorVideo_Args {
-      return new CensorVideo_Args(this.extrinsic);
+    get args(): UpdateVideoCensorshipStatus_Args {
+      return new UpdateVideoCensorshipStatus_Args(this.extrinsic);
     }
 
     validateArgs(): boolean {
@@ -2558,7 +2444,7 @@ export namespace Content {
     }
   }
 
-  class CensorVideo_Args {
+  class UpdateVideoCensorshipStatus_Args {
     constructor(public readonly extrinsic: SubstrateExtrinsic) {}
 
     get actor(): ContentActor {
@@ -2575,61 +2461,15 @@ export namespace Content {
       ]);
     }
 
-    get rationale(): Bytes {
-      return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
+    get isCensored(): bool {
+      return createTypeUnsafe<bool & Codec>(typeRegistry, "bool", [
         this.extrinsic.args[2].value
-      ]);
-    }
-  }
-  export class UncensorVideoCall {
-    public readonly extrinsic: SubstrateExtrinsic;
-    public readonly expectedArgTypes = ["ContentActor", "VideoId", "Bytes"];
-
-    constructor(public readonly ctx: SubstrateEvent) {
-      if (ctx.extrinsic === undefined) {
-        throw new Error(`No call data has been provided`);
-      }
-      this.extrinsic = ctx.extrinsic;
-    }
-
-    get args(): UncensorVideo_Args {
-      return new UncensorVideo_Args(this.extrinsic);
-    }
-
-    validateArgs(): boolean {
-      if (this.expectedArgTypes.length !== this.extrinsic.args.length) {
-        return false;
-      }
-      let valid = true;
-      this.expectedArgTypes.forEach((type, i) => {
-        if (type !== this.extrinsic.args[i].type) {
-          valid = false;
-        }
-      });
-      return valid;
-    }
-  }
-
-  class UncensorVideo_Args {
-    constructor(public readonly extrinsic: SubstrateExtrinsic) {}
-
-    get actor(): ContentActor {
-      return createTypeUnsafe<ContentActor & Codec>(
-        typeRegistry,
-        "ContentActor",
-        [this.extrinsic.args[0].value]
-      );
-    }
-
-    get videoId(): VideoId {
-      return createTypeUnsafe<VideoId & Codec>(typeRegistry, "VideoId", [
-        this.extrinsic.args[1].value
       ]);
     }
 
     get rationale(): Bytes {
       return createTypeUnsafe<Bytes & Codec>(typeRegistry, "Bytes", [
-        this.extrinsic.args[2].value
+        this.extrinsic.args[3].value
       ]);
     }
   }

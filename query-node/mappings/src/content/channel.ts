@@ -144,12 +144,12 @@ export async function content_ChannelAssetsRemoved(
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelCensored(
+export async function content_ChannelCensorshipStatusUpdated(
   db: DatabaseManager,
   event: SubstrateEvent
 ) {
   // read event data
-  const {channelId} = new Content.ChannelCensoredEvent(event).data
+  const {channelId, bool: isCensored} = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
 
   // load event
   const channel = await db.get(Channel, { where: { id: channelId } })
@@ -160,7 +160,7 @@ export async function content_ChannelCensored(
   }
 
   // update channel
-  channel.isCensored = true;
+  channel.isCensored = isCensored.isTrue;
 
   // set last update time
   channel.updatedAt = new Date(event.blockTimestamp.toNumber())
@@ -169,36 +169,7 @@ export async function content_ChannelCensored(
   await db.save<Channel>(channel)
 
   // emit log event
-  logger.info('Channel has been censored', {id: channelId})
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelUncensored(
-  db: DatabaseManager,
-  event: SubstrateEvent
-) {
-  // read event data
-  const {channelId} = new Content.ChannelUncensoredEvent(event).data
-
-  // load event
-  const channel = await db.get(Channel, { where: { id: channelId } })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel uncensoring requested', channelId)
-  }
-
-  // update channel
-  channel.isCensored = false;
-
-  // set last update time
-  channel.updatedAt = new Date(event.blockTimestamp.toNumber())
-
-  // save channel
-  await db.save<Channel>(channel)
-
-  // emit log event
-  logger.info('Channel has been uncensored', {id: channel.id})
+  logger.info('Channel censorship status has been updated', {id: channelId, isCensored: isCensored.isTrue})
 }
 
 /////////////////// ChannelCategory ////////////////////////////////////////////

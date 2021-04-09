@@ -3,13 +3,17 @@ import { SubstrateEvent, SubstrateExtrinsic } from "@dzlzv/hydra-common";
 import { Codec } from "@polkadot/types/types";
 import { typeRegistry } from ".";
 
-import { MemberId, PaidTermId } from "@joystream/types/augment";
-import { AccountId } from "@polkadot/types/interfaces";
+import { EntryMethod, MemberId, PaidTermId } from "@joystream/types/augment";
+import { AccountId, BalanceOf } from "@polkadot/types/interfaces";
 import { Bytes, Option } from "@polkadot/types";
 
 export namespace Members {
   export class MemberRegisteredEvent {
-    public readonly expectedParamTypes = ["MemberId", "AccountId"];
+    public readonly expectedParamTypes = [
+      "MemberId",
+      "AccountId",
+      "EntryMethod<PaidTermId, AccountId>"
+    ];
 
     constructor(public readonly ctx: SubstrateEvent) {}
 
@@ -44,6 +48,14 @@ export namespace Members {
       return createTypeUnsafe<AccountId & Codec>(typeRegistry, "AccountId", [
         this.ctx.params[1].value
       ]);
+    }
+
+    get entryMethod(): EntryMethod {
+      return createTypeUnsafe<EntryMethod & Codec>(
+        typeRegistry,
+        "EntryMethod",
+        [this.ctx.params[2].value]
+      );
     }
   }
   export class MemberUpdatedAboutTextEvent {
@@ -289,13 +301,20 @@ export namespace Members {
       );
     }
   }
+  /**
+   *  Screened members are awarded a initial locked balance that can only be slashed or used
+   *  for fees, and is not transferable. The screening authority must ensure that the provided
+   *  new_member_account was verified to avoid applying locks arbitrarily to accounts not controlled
+   *  by the member.
+   */
   export class AddScreenedMemberCall {
     public readonly extrinsic: SubstrateExtrinsic;
     public readonly expectedArgTypes = [
       "AccountId",
       "Option<Bytes>",
       "Option<Bytes>",
-      "Option<Bytes>"
+      "Option<Bytes>",
+      "Option<BalanceOf>"
     ];
 
     constructor(public readonly ctx: SubstrateEvent) {
@@ -353,6 +372,14 @@ export namespace Members {
         typeRegistry,
         "Option<Bytes>",
         [this.extrinsic.args[3].value]
+      );
+    }
+
+    get initialBalance(): Option<BalanceOf> {
+      return createTypeUnsafe<Option<BalanceOf> & Codec>(
+        typeRegistry,
+        "Option<BalanceOf>",
+        [this.extrinsic.args[4].value]
       );
     }
   }
