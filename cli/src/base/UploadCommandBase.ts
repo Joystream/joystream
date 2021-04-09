@@ -1,7 +1,8 @@
 import ContentDirectoryCommandBase from './ContentDirectoryCommandBase'
-import { VideoFFProbeMetadata, VideoFileMetadata, AssetType, InputAssetDetails } from '../Types'
+import { VideoFFProbeMetadata, VideoFileMetadata, AssetType, InputAsset, InputAssetDetails } from '../Types'
 import { ContentId, ContentParameters } from '@joystream/types/storage'
 import { MultiBar, Options, SingleBar } from 'cli-progress'
+import { Assets } from '../json-schemas/typings/Assets.schema'
 import ExitCodes from '../ExitCodes'
 import ipfsHash from 'ipfs-only-hash'
 import fs from 'fs'
@@ -10,6 +11,7 @@ import axios, { AxiosRequestConfig } from 'axios'
 import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
+import chalk from 'chalk'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
@@ -130,7 +132,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     return new URL(`asset/v0/${contentId.encode()}`, endpointRoot).toString()
   }
 
-  async getRandomProviderEndpoint(): Promise<string> {
+  async getRandomProviderEndpoint(): Promise<string | null> {
     const endpoints = _.shuffle(await this.getApi().allStorageProviderEndpoints())
     for (const endpoint of endpoints) {
       try {
@@ -143,7 +145,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       }
     }
 
-    this.error('No active storage provider found', { exit: ExitCodes.ActionCurrentlyUnavailable })
+    return null
   }
 
   async generateContentParameters(filePath: string, type: AssetType): Promise<ContentParameters> {
@@ -165,15 +167,22 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
     // Return data
     return await Promise.all(
-      paths.map(async (path) => ({
-        path,
-        parameters: await this.generateContentParameters(path, AssetType.AnyAsset),
-      }))
+      paths.map(async (path) => {
+        const parameters = await this.generateContentParameters(path, AssetType.AnyAsset)
+        return {
+          path,
+          contentId: parameters.content_id,
+          parameters,
+        }
+      })
     )
   }
 
   async uploadAsset(contentId: ContentId, filePath: string, endpoint?: string, multiBar?: MultiBar): Promise<void> {
     const providerEndpoint = endpoint || (await this.getRandomProviderEndpoint())
+    if (!providerEndpoint) {
+      this.error('No active provider found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
+    }
     const uploadUrl = this.assetUrl(providerEndpoint, contentId)
     const fileSize = this.getFileSize(filePath)
     const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
@@ -195,7 +204,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       }
       await axios.put(uploadUrl, fileStream, config)
     } catch (e) {
-      multiBar ? multiBar.stop() : progressBar.stop()
+      progressBar.stop()
       const msg = (e.response && e.response.data && e.response.data.message) || e.message || e
       this.error(`Unexpected error when trying to upload a file: ${msg}`, {
         exit: ExitCodes.ExternalInfrastructureError,
@@ -203,10 +212,65 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     }
   }
 
-  async uploadAssets(assets: InputAssetDetails[]): Promise<void> {
+  async uploadAssets(
+    assets: InputAsset[],
+    inputFilePath: string,
+    outputFilePostfix = '__rejectedContent'
+  ): Promise<void> {
     const endpoint = await this.getRandomProviderEndpoint()
+    if (!endpoint) {
+      this.warn('No storage provider is currently available!')
+      this.handleRejectedUploads(
+        assets,
+        assets.map(() => false),
+        inputFilePath,
+        outputFilePostfix
+      )
+      this.exit(ExitCodes.ActionCurrentlyUnavailable)
+    }
     const multiBar = new MultiBar(this.progressBarOptions)
-    await Promise.all(assets.map((a) => this.uploadAsset(a.parameters.content_id, a.path, endpoint, multiBar)))
+    // Workaround replacement for Promise.allSettled (which is only available in ES2020)
+    const results = await Promise.all(
+      assets.map(async (a) => {
+        try {
+          await this.uploadAsset(a.contentId, a.path, endpoint, multiBar)
+          return true
+        } catch (e) {
+          return false
+        }
+      })
+    )
+    this.handleRejectedUploads(assets, results, inputFilePath, outputFilePostfix)
     multiBar.stop()
+  }
+
+  private handleRejectedUploads(
+    assets: InputAsset[],
+    results: boolean[],
+    inputFilePath: string,
+    outputFilePostfix: string
+  ): void {
+    // Try to save rejected contentIds and paths for reupload purposes
+    const rejectedAssetsOutput: Assets = []
+    results.forEach(
+      (r, i) =>
+        r === false && rejectedAssetsOutput.push({ contentId: assets[i].contentId.encode(), path: assets[i].path })
+    )
+    if (rejectedAssetsOutput.length) {
+      this.warn(
+        `Some assets were not uploaded succesfully. Try reuploading them with ${chalk.white('content:reuploadAssets')}!`
+      )
+      console.log(rejectedAssetsOutput)
+      const outputPath = inputFilePath.replace('.json', `${outputFilePostfix}.json`)
+      try {
+        fs.writeFileSync(outputPath, JSON.stringify(rejectedAssetsOutput, null, 4))
+        this.log(`Rejected content ids succesfully saved to: ${chalk.white(outputPath)}!`)
+      } catch (e) {
+        console.error(e)
+        this.warn(
+          `Could not write rejected content output to ${outputPath}. Try copying the output above and creating the file manually!`
+        )
+      }
+    }
   }
 }

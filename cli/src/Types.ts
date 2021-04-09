@@ -15,7 +15,7 @@ import {
   ChannelCategoryMetadata,
   VideoCategoryMetadata,
 } from '@joystream/content-metadata-protobuf'
-import { ContentParameters } from '@joystream/types/storage'
+import { ContentId, ContentParameters } from '@joystream/types/storage'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -210,9 +210,13 @@ export enum AssetType {
   AnyAsset = 1,
 }
 
-export type InputAssetDetails = {
-  parameters: ContentParameters
+export type InputAsset = {
   path: string
+  contentId: ContentId
+}
+
+export type InputAssetDetails = InputAsset & {
+  parameters: ContentParameters
 }
 
 export type VideoFFProbeMetadata = {

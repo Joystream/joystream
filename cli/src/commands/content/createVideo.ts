@@ -80,7 +80,6 @@ export default class CreateVideoCommand extends UploadCommandBase {
     await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [actor, channelId, videoCreationParameters])
 
     // Upload assets
-    await this.uploadAssets(inputAssets)
-    // TODO: Reupload option if failed?
+    await this.uploadAssets(inputAssets, input)
   }
 }

@@ -56,6 +56,6 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [actor, channelCreationParameters])
 
-    await this.uploadAssets(inputAssets)
+    await this.uploadAssets(inputAssets, input)
   }
 }

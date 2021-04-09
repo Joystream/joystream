@@ -68,6 +68,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       channelUpdateParameters,
     ])
 
-    await this.uploadAssets(inputAssets)
+    await this.uploadAssets(inputAssets, input)
   }
 }

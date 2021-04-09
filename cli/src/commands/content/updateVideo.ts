@@ -63,6 +63,6 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideo', [actor, videoId, videoUpdateParameters])
 
-    await this.uploadAssets(inputAssets)
+    await this.uploadAssets(inputAssets, input)
   }
 }

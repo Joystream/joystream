@@ -1,5 +1,6 @@
 import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
+import Ajv from 'ajv'
 import ExitCodes from '../ExitCodes'
 import fs from 'fs'
 import path from 'path'
@@ -19,7 +20,7 @@ export const IOFlags = {
   }),
 }
 
-export async function getInputJson<T>(inputPath: string): Promise<T> {
+export async function getInputJson<T>(inputPath: string, schema?: Record<string, unknown>): Promise<T> {
   let content, jsonObj
   try {
     content = fs.readFileSync(inputPath).toString()
@@ -31,8 +32,19 @@ export async function getInputJson<T>(inputPath: string): Promise<T> {
   } catch (e) {
     throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
   }
+  if (schema) {
+    await validateInput(jsonObj, schema)
+  }
 
   return jsonObj as T
+}
+
+export async function validateInput(input: unknown, schema: Record<string, unknown>): Promise<void> {
+  const ajv = new Ajv({ allErrors: true })
+  const valid = ajv.validate(schema, input) as boolean
+  if (!valid) {
+    throw new CLIError(`Input JSON file is not valid: ${ajv.errorsText()}`)
+  }
 }
 
 export function saveOutputJson(outputPath: string | undefined, fileName: string, data: any): void {
