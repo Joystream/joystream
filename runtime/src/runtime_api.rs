@@ -10,7 +10,7 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
-use crate::{BuilderWorkingGroupInstance, DataDirectory, GatewayWorkingGroupInstance};
+use crate::{DataDirectory, GatewayWorkingGroupInstance, OperationsWorkingGroupInstance};
 
 use crate::constants::PRIMARY_PROBABILITY;
 
@@ -59,7 +59,8 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 //     frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
 
 // Alias for the builder working group
-pub(crate) type BuilderWorkingGroup<T> = working_group::Module<T, BuilderWorkingGroupInstance>;
+pub(crate) type OperationsWorkingGroup<T> =
+    working_group::Module<T, OperationsWorkingGroupInstance>;
 
 // Alias for the gateway working group
 pub(crate) type GatewayWorkingGroup<T> = working_group::Module<T, GatewayWorkingGroupInstance>;
@@ -77,7 +78,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 
         let default_content_working_group_mint_capacity = 0;
 
-        BuilderWorkingGroup::<Runtime>::initialize_working_group(
+        OperationsWorkingGroup::<Runtime>::initialize_working_group(
             default_text_constraint,
             default_text_constraint,
             default_text_constraint,
