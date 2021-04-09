@@ -6,7 +6,6 @@ import { CreateInterface } from '@joystream/types'
 import { flags } from '@oclif/command'
 import { VideoCreationParameters } from '@joystream/types/content'
 import { MediaType, VideoMetadata } from '@joystream/content-metadata-protobuf'
-import ExitCodes from '../../ExitCodes'
 
 export default class CreateVideoCommand extends UploadCommandBase {
   static description = 'Create video under specific channel inside content directory.'
@@ -52,15 +51,16 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
-    if (!videoPath || !thumbnailPhotoPath) {
-      // TODO: Handle with json schema validation?
-      this.error('Invalid input! videoPath and thumbnailVideoPath are required!', { exit: ExitCodes.InvalidInput })
-    }
-    const inputAssets = await this.prepareInputAssets([videoPath, thumbnailPhotoPath], input)
+    const assetsPaths = [videoPath, thumbnailPhotoPath].filter((a) => a !== undefined) as string[]
+    const inputAssets = await this.prepareInputAssets(assetsPaths, input)
     const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
     // Set assets indexes in the metadata
-    meta.setVideo(0)
-    meta.setThumbnailPhoto(1)
+    if (videoPath) {
+      meta.setVideo(0)
+    }
+    if (thumbnailPhotoPath) {
+      meta.setThumbnailPhoto(videoPath ? 1 : 0)
+    }
 
     // Try to get video file metadata
     const videoFileMetadata = await this.getVideoFileMetadata(inputAssets[0].path)

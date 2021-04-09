@@ -6,7 +6,6 @@ import { CreateInterface } from '@joystream/types'
 import { ChannelCreationParameters } from '@joystream/types/content'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import ExitCodes from '../../ExitCodes'
 
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
@@ -34,15 +33,16 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     const meta = channelMetadataFromInput(channelInput)
     const { coverPhotoPath, avatarPhotoPath } = channelInput
-    if (!coverPhotoPath || !avatarPhotoPath) {
-      // TODO: Handle with json schema validation?
-      this.error('Invalid input! coverPhotoPath and avatarPhotoPath are required!', { exit: ExitCodes.InvalidInput })
-    }
-    const inputAssets = await this.prepareInputAssets([coverPhotoPath, avatarPhotoPath], input)
+    const assetsPaths = [coverPhotoPath, avatarPhotoPath].filter((v) => v !== undefined) as string[]
+    const inputAssets = await this.prepareInputAssets(assetsPaths, input)
     const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
     // Set assets indexes in the metadata
-    meta.setCoverPhoto(0)
-    meta.setAvatarPhoto(1)
+    if (coverPhotoPath) {
+      meta.setCoverPhoto(0)
+    }
+    if (avatarPhotoPath) {
+      meta.setAvatarPhoto(coverPhotoPath ? 1 : 0)
+    }
 
     const channelCreationParameters: CreateInterface<ChannelCreationParameters> = {
       assets,
