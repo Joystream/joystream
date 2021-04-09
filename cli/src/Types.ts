@@ -87,7 +87,6 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
   WorkingGroups.Operations,
-  WorkingGroups.Gateway,
 ] as const
 
 export type Reward = {
