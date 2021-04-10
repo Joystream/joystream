@@ -522,6 +522,9 @@ export interface InputValue extends Null {}
 /** @name IPNSIdentity */
 export interface IPNSIdentity extends Null {}
 
+/** @name IsCensored */
+export interface IsCensored extends bool {}
+
 /** @name Lead */
 export interface Lead extends Null {}
 
