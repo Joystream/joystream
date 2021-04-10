@@ -522,6 +522,9 @@ export interface InputValue extends Null {}
 /** @name IPNSIdentity */
 export interface IPNSIdentity extends Null {}
 
+/** @name IsCensored */
+export interface IsCensored extends bool {}
+
 /** @name Lead */
 export interface Lead extends Null {}
 
@@ -1314,7 +1317,7 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
-  readonly isBuilder: boolean;
+  readonly isOperations: boolean;
   readonly isGateway: boolean;
 }
 

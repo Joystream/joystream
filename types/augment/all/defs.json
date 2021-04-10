@@ -84,7 +84,7 @@
         "_enum": [
             "Storage",
             "Content",
-            "Builder",
+            "Operations",
             "Gateway"
         ]
     },
@@ -827,5 +827,6 @@
             "ExistingVideo": "VideoId"
         }
     },
-    "MaxNumber": "u32"
+    "MaxNumber": "u32",
+    "IsCensored": "bool"
 }
