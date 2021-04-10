@@ -291,7 +291,7 @@ export async function content_VideoCensorshipStatusUpdated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {videoId, bool: isCensored} = new Content.VideoCensorshipStatusUpdatedEvent(event).data
+  const {videoId, isCensored} = new Content.VideoCensorshipStatusUpdatedEvent(event).data
 
   // load video
   const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })

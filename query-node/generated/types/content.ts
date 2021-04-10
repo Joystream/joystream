@@ -18,6 +18,7 @@ import {
   ContentId,
   CuratorGroupId,
   CuratorId,
+  IsCensored,
   PlaylistCreationParameters,
   PlaylistId,
   PlaylistUpdateParameters,
@@ -359,7 +360,7 @@ export namespace Content {
     public readonly expectedParamTypes = [
       "ContentActor",
       "ChannelId",
-      "bool",
+      "IsCensored",
       "Vec<u8>"
     ];
 
@@ -400,8 +401,8 @@ export namespace Content {
       ]);
     }
 
-    get bool(): bool {
-      return createTypeUnsafe<bool & Codec>(typeRegistry, "bool", [
+    get isCensored(): IsCensored {
+      return createTypeUnsafe<IsCensored & Codec>(typeRegistry, "IsCensored", [
         this.ctx.params[2].value
       ]);
     }
@@ -1011,7 +1012,7 @@ export namespace Content {
     public readonly expectedParamTypes = [
       "ContentActor",
       "VideoId",
-      "bool",
+      "IsCensored",
       "Vec<u8>"
     ];
 
@@ -1052,8 +1053,8 @@ export namespace Content {
       ]);
     }
 
-    get bool(): bool {
-      return createTypeUnsafe<bool & Codec>(typeRegistry, "bool", [
+    get isCensored(): IsCensored {
+      return createTypeUnsafe<IsCensored & Codec>(typeRegistry, "IsCensored", [
         this.ctx.params[2].value
       ]);
     }

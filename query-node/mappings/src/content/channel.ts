@@ -152,7 +152,7 @@ export async function content_ChannelCensorshipStatusUpdated(
   event: SubstrateEvent
 ) {
   // read event data
-  const {channelId, bool: isCensored} = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
+  const {channelId, isCensored} = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
 
   // load event
   const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
