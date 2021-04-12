@@ -105,9 +105,6 @@
       },
       "content": {
         "description": "Interactions with content directory module - managing classes, schemas, entities and permissions"
-      },
-      "media": {
-        "description": "Higher-level content directory interactions, ie. publishing and curating content"
       }
     }
   },
