@@ -90,6 +90,7 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentdeletechannelcategory-channelcategoryid)
 * [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
 * [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
+* [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
 * [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
 * [`joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`](#joystream-cli-contentsetfeaturedvideos-featuredvideoids)
 * [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
@@ -503,6 +504,20 @@ ARGUMENTS
 
 _See code: [src/commands/content/removeCuratorFromGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/removeCuratorFromGroup.ts)_
 
+## `joystream-cli content:reuploadAssets`
+
+Allows reuploading assets that were not succesfully uploaded during channel/video creation
+
+```
+USAGE
+  $ joystream-cli content:reuploadAssets
+
+OPTIONS
+  -i, --input=input  (required) Path to JSON file containing array of assets to reupload (contentIds and paths)
+```
+
+_See code: [src/commands/content/reuploadAssets.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/reuploadAssets.ts)_
+
 ## `joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`
 
 Set Curator Group status (Active/Inactive).
@@ -520,14 +535,14 @@ _See code: [src/commands/content/setCuratorGroupStatus.ts](https://github.com/Jo
 
 ## `joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`
 
-Set featured videos.
+Set featured videos. Requires lead access.
 
 ```
 USAGE
   $ joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS
 
 ARGUMENTS
-  FEATUREDVIDEOIDS  IDs of the featured videos
+  FEATUREDVIDEOIDS  Comma-separated video IDs (ie. 1,2,3)
 ```
 
 _See code: [src/commands/content/setFeaturedVideos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setFeaturedVideos.ts)_
@@ -706,10 +721,8 @@ ARGUMENTS
   WGAPPLICATIONID  Working Group Application ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/application.ts)_
@@ -723,23 +736,21 @@ USAGE
   $ joystream-cli working-groups:createOpening
 
 OPTIONS
-  -e, --edit                                               If provided along with --input - launches in edit mode
-                                                           allowing to modify the input before sending the exstinsic
+  -e, --edit                                          If provided along with --input - launches in edit mode allowing to
+                                                      modify the input before sending the exstinsic
 
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 
-  -i, --input=input                                        Path to JSON file to use as input (if not specified - the
-                                                           input can be provided interactively)
+  -i, --input=input                                   Path to JSON file to use as input (if not specified - the input
+                                                      can be provided interactively)
 
-  -o, --output=output                                      Path to the file where the output JSON should be saved (this
-                                                           output can be then reused as input)
+  -o, --output=output                                 Path to the file where the output JSON should be saved (this
+                                                      output can be then reused as input)
 
-  --dryRun                                                 If provided along with --output - skips sending the actual
-                                                           extrinsic(can be used to generate a "draft" which can be
-                                                           provided as input later)
+  --dryRun                                            If provided along with --output - skips sending the actual
+                                                      extrinsic(can be used to generate a "draft" which can be provided
+                                                      as input later)
 ```
 
 _See code: [src/commands/working-groups/createOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/createOpening.ts)_
@@ -756,10 +767,8 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/decreaseWorkerStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/decreaseWorkerStake.ts)_
@@ -776,10 +785,8 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
@@ -796,10 +803,8 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/fillOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/fillOpening.ts)_
@@ -813,10 +818,8 @@ USAGE
   $ joystream-cli working-groups:increaseStake
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/increaseStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/increaseStake.ts)_
@@ -830,10 +833,8 @@ USAGE
   $ joystream-cli working-groups:leaveRole
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
@@ -850,10 +851,8 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/opening.ts)_
@@ -867,10 +866,8 @@ USAGE
   $ joystream-cli working-groups:openings
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/openings.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/openings.ts)_
@@ -884,10 +881,8 @@ USAGE
   $ joystream-cli working-groups:overview
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
@@ -901,10 +896,8 @@ USAGE
   $ joystream-cli working-groups:setDefaultGroup
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/setDefaultGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/setDefaultGroup.ts)_
@@ -921,10 +914,8 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
@@ -941,10 +932,8 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/startAcceptingApplications.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startAcceptingApplications.ts)_
@@ -961,10 +950,8 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/startReviewPeriod.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startReviewPeriod.ts)_
@@ -981,10 +968,8 @@ ARGUMENTS
   WGAPPLICATIONID  Working Group Application ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/terminateApplication.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/terminateApplication.ts)_
@@ -1001,10 +986,8 @@ ARGUMENTS
   ACCOUNTADDRESS  New reward account address (if omitted, one of the existing CLI accounts can be selected)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/updateRewardAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRewardAccount.ts)_
@@ -1021,10 +1004,8 @@ ARGUMENTS
   ACCOUNTADDRESS  New role account address (if omitted, one of the existing CLI accounts can be selected)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
@@ -1041,10 +1022,8 @@ ARGUMENTS
   STORAGE  Worker storage
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/updateRoleStorage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleStorage.ts)_
@@ -1061,10 +1040,8 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|builder|gateway)  The working group context in which the command should be
-                                                           executed
-                                                           Available values are: storageProviders, curators, builder,
-                                                           gateway.
+  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
+                                                      Available values are: storageProviders, curators, operations.
 ```
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
