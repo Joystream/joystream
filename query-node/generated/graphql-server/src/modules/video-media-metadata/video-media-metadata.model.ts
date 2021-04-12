@@ -10,6 +10,7 @@ export class VideoMediaMetadata extends BaseModel {
   @ManyToOne(() => VideoMediaEncoding, (param: VideoMediaEncoding) => param.videomediametadataencoding, {
     skipGraphQLField: true,
     nullable: true,
+    cascade: ["insert", "update"],
   })
   encoding?: VideoMediaEncoding;
 
@@ -37,7 +38,7 @@ export class VideoMediaMetadata extends BaseModel {
   })
   size?: BN;
 
-  @OneToOne(() => Video, (param: Video) => param.mediaMetadata, { nullable: true })
+  @OneToOne(() => Video, (param: Video) => param.mediaMetadata, { nullable: true, cascade: ["insert", "update"] })
   video?: Video;
 
   @IntField({})

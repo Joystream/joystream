@@ -22,7 +22,7 @@ export class License extends BaseModel {
   })
   customText?: string;
 
-  @OneToMany(() => Video, (param: Video) => param.license, { nullable: true })
+  @OneToMany(() => Video, (param: Video) => param.license, { nullable: true, cascade: ["insert", "update"] })
   videolicense?: Video[];
 
   constructor(init?: Partial<License>) {

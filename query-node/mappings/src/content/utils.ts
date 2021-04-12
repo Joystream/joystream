@@ -1,6 +1,10 @@
-// TODO: can we rely on db having "foreign keys"? When item is deleted will automaticly be all relations to it unset?
-//       Similarly, will saving item also save all its related items no-yet-saved in db, or do they need to saved individually?
-//       Also, is the assumption that `db.save(MyType, {myProperty: undefined})` unsets value in db correct?
+// TODO: finish db cascade on save/remove; right now there is manually added `cascade: ["insert", "update"]` directive
+//       to all relations in `query-node/generated/graphql-server/src/modules/**/*.model.ts`. That should ensure all records
+//       are saved on one `db.save(...)` call. Missing features
+//       - find a proper way to cascade on remove or implement custom removals for every entity
+//       - convert manual changes done to `*model.ts` file into some patch or bash commands that can be executed
+//         every time query node codegen is run (that will overwrite said manual changes)
+//       - verify in integration tests that the records are trully created/updated/removed as expected
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'

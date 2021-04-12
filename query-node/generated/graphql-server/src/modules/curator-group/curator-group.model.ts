@@ -17,7 +17,7 @@ export class CuratorGroup extends BaseModel {
   })
   isActive!: boolean;
 
-  @OneToMany(() => Channel, (param: Channel) => param.ownerCuratorGroup)
+  @OneToMany(() => Channel, (param: Channel) => param.ownerCuratorGroup, { cascade: ["insert", "update"] })
   channels?: Channel[];
 
   constructor(init?: Partial<CuratorGroup>) {

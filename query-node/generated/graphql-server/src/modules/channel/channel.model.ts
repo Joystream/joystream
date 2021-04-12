@@ -22,15 +22,16 @@ export { AssetAvailability };
 
 @Model({ api: {} })
 export class Channel extends BaseModel {
-  @ManyToOne(() => Membership, (param: Membership) => param.channels, { skipGraphQLField: true, nullable: true })
+  @ManyToOne(() => Membership, (param: Membership) => param.channels, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   ownerMember?: Membership;
 
-  @ManyToOne(() => CuratorGroup, (param: CuratorGroup) => param.channels, { skipGraphQLField: true, nullable: true })
+  @ManyToOne(() => CuratorGroup, (param: CuratorGroup) => param.channels, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"]})
   ownerCuratorGroup?: CuratorGroup;
 
   @ManyToOne(() => ChannelCategory, (param: ChannelCategory) => param.channels, {
     skipGraphQLField: true,
     nullable: true,
+    cascade: ["insert", "update"],
   })
   category?: ChannelCategory;
 
@@ -55,6 +56,7 @@ export class Channel extends BaseModel {
   @ManyToOne(() => DataObject, (param: DataObject) => param.channelcoverPhotoDataObject, {
     skipGraphQLField: true,
     nullable: true,
+    cascade: ["insert", "update"],
   })
   coverPhotoDataObject?: DataObject;
 
@@ -72,6 +74,7 @@ export class Channel extends BaseModel {
   @ManyToOne(() => DataObject, (param: DataObject) => param.channelavatarDataObject, {
     skipGraphQLField: true,
     nullable: true,
+    cascade: ["insert", "update"],
   })
   avatarDataObject?: DataObject;
 
@@ -97,10 +100,10 @@ export class Channel extends BaseModel {
   })
   isCensored!: boolean;
 
-  @ManyToOne(() => Language, (param: Language) => param.channellanguage, { skipGraphQLField: true, nullable: true })
+  @ManyToOne(() => Language, (param: Language) => param.channellanguage, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   language?: Language;
 
-  @OneToMany(() => Video, (param: Video) => param.channel)
+  @OneToMany(() => Video, (param: Video) => param.channel, { cascade: ["insert", "update"] })
   videos?: Video[];
 
   @IntField({})

@@ -25,10 +25,10 @@ export { AssetAvailability };
 
 @Model({ api: {} })
 export class Video extends BaseModel {
-  @ManyToOne(() => Channel, (param: Channel) => param.videos, { skipGraphQLField: true })
+  @ManyToOne(() => Channel, (param: Channel) => param.videos, { skipGraphQLField: true, cascade: ["insert", "update"] })
   channel!: Channel;
 
-  @ManyToOne(() => VideoCategory, (param: VideoCategory) => param.videos, { skipGraphQLField: true, nullable: true })
+  @ManyToOne(() => VideoCategory, (param: VideoCategory) => param.videos, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   category?: VideoCategory;
 
   @StringField({
@@ -52,6 +52,7 @@ export class Video extends BaseModel {
   @ManyToOne(() => DataObject, (param: DataObject) => param.videothumbnailDataObject, {
     skipGraphQLField: true,
     nullable: true,
+    cascade: ["insert", "update"],
   })
   thumbnailDataObject?: DataObject;
 
@@ -66,7 +67,7 @@ export class Video extends BaseModel {
   })
   thumbnailAvailability!: AssetAvailability;
 
-  @ManyToOne(() => Language, (param: Language) => param.videolanguage, { skipGraphQLField: true, nullable: true })
+  @ManyToOne(() => Language, (param: Language) => param.videolanguage, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   language?: Language;
 
   @BooleanField({
@@ -98,12 +99,13 @@ export class Video extends BaseModel {
   })
   isExplicit?: boolean;
 
-  @ManyToOne(() => License, (param: License) => param.videolicense, { skipGraphQLField: true, nullable: true })
+  @ManyToOne(() => License, (param: License) => param.videolicense, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   license?: License;
 
   @ManyToOne(() => DataObject, (param: DataObject) => param.videomediaDataObject, {
     skipGraphQLField: true,
     nullable: true,
+    cascade: ["insert", "update"],
   })
   mediaDataObject?: DataObject;
 
@@ -118,7 +120,7 @@ export class Video extends BaseModel {
   })
   mediaAvailability!: AssetAvailability;
 
-  @OneToOneJoin(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.video, { nullable: true })
+  @OneToOneJoin(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.video, { nullable: true, cascade: ["insert", "update"] })
   mediaMetadata?: VideoMediaMetadata;
 
   @IntField({})
@@ -129,7 +131,7 @@ export class Video extends BaseModel {
   })
   isFeatured!: boolean;
 
-  @OneToOne(() => FeaturedVideo, (param: FeaturedVideo) => param.video, { nullable: true })
+  @OneToOne(() => FeaturedVideo, (param: FeaturedVideo) => param.video, { nullable: true, cascade: ["insert", "update"] })
   featured?: FeaturedVideo;
 
   constructor(init?: Partial<Video>) {

@@ -71,16 +71,16 @@ export class DataObject extends BaseModel {
   })
   joystreamContentId!: string;
 
-  @OneToMany(() => Channel, (param: Channel) => param.coverPhotoDataObject, { nullable: true })
+  @OneToMany(() => Channel, (param: Channel) => param.coverPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
   channelcoverPhotoDataObject?: Channel[];
 
-  @OneToMany(() => Channel, (param: Channel) => param.avatarDataObject, { nullable: true })
+  @OneToMany(() => Channel, (param: Channel) => param.avatarDataObject, { nullable: true, cascade: ["insert", "update"] })
   channelavatarDataObject?: Channel[];
 
-  @OneToMany(() => Video, (param: Video) => param.thumbnailDataObject, { nullable: true })
+  @OneToMany(() => Video, (param: Video) => param.thumbnailDataObject, { nullable: true, cascade: ["insert", "update"] })
   videothumbnailDataObject?: Video[];
 
-  @OneToMany(() => Video, (param: Video) => param.mediaDataObject, { nullable: true })
+  @OneToMany(() => Video, (param: Video) => param.mediaDataObject, { nullable: true, cascade: ["insert", "update"] })
   videomediaDataObject?: Video[];
 
   constructor(init?: Partial<DataObject>) {
