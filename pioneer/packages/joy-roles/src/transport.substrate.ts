@@ -57,7 +57,8 @@ type GroupLeadWithMemberId = {
 
 const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.ContentCurators]: 'contentDirectoryWorkingGroup'
+  [WorkingGroups.ContentCurators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Operations]: 'operationsWorkingGroup'
 } as const;
 
 export class Transport extends BaseTransport implements ITransport {

@@ -65,7 +65,7 @@ type GroupOverviewOuterProps = Partial<WorkingGroupMembership> & {
 
 type GroupOverviewProps = GroupOverviewOuterProps & {
   group: WorkingGroups;
-  description: string;
+  description: string | JSX.Element;
   customGroupName?: string;
   customJoinTitle?: string;
   customJoinDesc?: string;
@@ -129,6 +129,23 @@ export const StorageProviders = (props: GroupOverviewOuterProps) => (
     group={WorkingGroups.StorageProviders}
     description={
       'Storage Providers are responsible for storing and providing platform content!'
+    }
+    {...props}
+  />
+);
+
+export const OperationsGroup = (props: GroupOverviewOuterProps) => (
+  <GroupOverview
+    group={WorkingGroups.Operations}
+    description={
+      <span>
+        {"Operations Working Group encompases all the activites that don't require privilages on chain, for example:"}
+        <ul>
+          <li>Development</li>
+          <li>Management</li>
+          <li>Marketing</li>
+        </ul>
+      </span>
     }
     {...props}
   />
