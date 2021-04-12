@@ -1,8 +1,8 @@
 use frame_support::{debug, decl_event, decl_module, decl_storage, ensure};
+use frame_system::ensure_root;
 use sp_arithmetic::traits::{One, Zero};
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::ensure_root;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
 pub use common::currency::{BalanceOf, GovernanceCurrency};
@@ -22,8 +22,8 @@ impl<X: CouncilTermEnded> CouncilTermEnded for (X,) {
     }
 }
 
-pub trait Trait: system::Trait + recurringrewards::Trait + GovernanceCurrency {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + recurringrewards::Trait + GovernanceCurrency {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type CouncilTermEnded: CouncilTermEnded;
 }
@@ -71,7 +71,7 @@ decl_storage! {
 
 // Event for this module.
 decl_event!(
-    pub enum Event<T> where <T as system::Trait>::BlockNumber {
+    pub enum Event<T> where <T as frame_system::Trait>::BlockNumber {
         CouncilTermEnded(BlockNumber),
         NewCouncilTermStarted(BlockNumber),
     }
@@ -81,7 +81,7 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
     fn council_elected(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
         <ActiveCouncil<T>>::put(seats.clone());
 
-        let next_term_ends_at = <system::Module<T>>::block_number() + term;
+        let next_term_ends_at = <frame_system::Module<T>>::block_number() + term;
 
         <TermEndsAt<T>>::put(next_term_ends_at);
 
@@ -95,7 +95,7 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 
 impl<T: Trait> Module<T> {
     pub fn is_term_ended() -> bool {
-        <system::Module<T>>::block_number() >= Self::term_ends_at()
+        <frame_system::Module<T>>::block_number() >= Self::term_ends_at()
     }
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
@@ -107,7 +107,7 @@ impl<T: Trait> Module<T> {
 
         // When calculating when first payout occurs, add minimum of one block interval to ensure rewards module
         // has a chance to execute its on_finalize routine.
-        let next_payout_at = system::Module::<T>::block_number()
+        let next_payout_at = frame_system::Module::<T>::block_number()
             + Self::first_payout_after_reward_created()
             + T::BlockNumber::one();
 
@@ -229,7 +229,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_term_ends_at(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
+            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must set future block number");
             <TermEndsAt<T>>::put(ends_at);
         }
 
@@ -280,8 +280,11 @@ mod tests {
     use crate::DispatchResult;
     use frame_support::*;
 
-    fn add_council_member_as_root(account: <Test as system::Trait>::AccountId) -> DispatchResult {
-        Council::add_council_member(system::RawOrigin::Root.into(), account).map_err(|e| e.into())
+    fn add_council_member_as_root(
+        account: <Test as frame_system::Trait>::AccountId,
+    ) -> DispatchResult {
+        Council::add_council_member(frame_system::RawOrigin::Root.into(), account)
+            .map_err(|e| e.into())
     }
 
     #[test]
@@ -306,7 +309,7 @@ mod tests {
             assert_ok!(add_council_member_as_root(3));
 
             assert_ok!(Council::remove_council_member(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 2
             ));
 
@@ -320,7 +323,7 @@ mod tests {
     fn set_council_test() {
         initial_test_ext().execute_with(|| {
             assert_ok!(Council::set_council(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 vec![4, 5, 6]
             ));
             assert!(Council::is_councilor(&4));
@@ -334,7 +337,7 @@ mod tests {
         initial_test_ext().execute_with(|| {
             // Ensure a mint is created so we can create rewards
             assert_ok!(Council::set_council_mint_capacity(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 1000
             ));
 
@@ -356,7 +359,7 @@ mod tests {
                         backers: vec![],
                     },
                 ],
-                50 as u64, // <Test as system::Trait>::BlockNumber::from(50)
+                50 as u64, // <Test as frame_system::Trait>::BlockNumber::from(50)
             );
 
             assert!(Council::is_councilor(&5));

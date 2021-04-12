@@ -1,6 +1,6 @@
 [workspace]
 members = [
-	"runtime",
+	#"runtime",
 	"runtime-modules/proposals/engine",
 	"runtime-modules/proposals/codex",
 	"runtime-modules/proposals/discussion",
@@ -16,8 +16,8 @@ members = [
 	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
 	"runtime-modules/content",
-	"node",
-	"utils/chain-spec-builder/"
+	#"node",
+	#"utils/chain-spec-builder/"
 ]
 
 [profile.release]

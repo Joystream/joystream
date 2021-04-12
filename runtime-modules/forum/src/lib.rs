@@ -64,7 +64,7 @@ const ERROR_CATEGORY_NOT_BEING_UPDATED: &str = "Category not being updated.";
 const ERROR_CATEGORY_CANNOT_BE_UNARCHIVED_WHEN_DELETED: &str =
     "Category cannot be unarchived when deleted.";
 
-use system::{ensure_root, ensure_signed};
+use frame_system::{ensure_root, ensure_signed};
 
 /// Represents a user in this forum.
 #[derive(Debug, Copy, Clone)]
@@ -261,8 +261,8 @@ impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId> {
 type CategoryTreePath<BlockNumber, Moment, AccountId> =
     Vec<Category<BlockNumber, Moment, AccountId>>;
 
-pub trait Trait: system::Trait + pallet_timestamp::Trait + Sized {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + pallet_timestamp::Trait + Sized {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
 
@@ -329,7 +329,7 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
     {

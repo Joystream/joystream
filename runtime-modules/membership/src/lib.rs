@@ -13,16 +13,16 @@ use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get, LockableCurrency, WithdrawReason};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::{ensure_root, ensure_signed};
 
 use common::currency::{BalanceOf, GovernanceCurrency};
-pub trait Trait: system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type MemberId: Parameter
         + Member
@@ -80,11 +80,11 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
 /// Public membership object alias.
 pub type Membership<T> = MembershipObject<
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     <T as Trait>::PaidTermId,
     <T as Trait>::SubscriptionId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 #[derive(Encode, Decode, Default)]
@@ -243,7 +243,7 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as system::Trait>::AccountId,
+      <T as frame_system::Trait>::AccountId,
       <T as Trait>::MemberId,
       <T as Trait>::PaidTermId,
     {
@@ -292,7 +292,7 @@ decl_module! {
                 &who,
                 &user_info,
                 EntryMethod::Paid(paid_terms_id),
-                <system::Module<T>>::block_number(),
+                <frame_system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
             )?;
 
@@ -453,7 +453,7 @@ decl_module! {
                 );
 
                 ensure!(
-                    system::Module::<T>::account_nonce(&new_member_account).is_zero(),
+                    frame_system::Module::<T>::account_nonce(&new_member_account).is_zero(),
                     Error::<T>::OnlyNewAccountsCanBeUsedForScreenedMembers
                 );
 
@@ -479,7 +479,7 @@ decl_module! {
                 &new_member_account,
                 &user_info,
                 entry_method.clone(),
-                <system::Module<T>>::block_number(),
+                <frame_system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
             )?;
 

@@ -19,6 +19,7 @@ use codec::{Decode, Encode};
 use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
+use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -26,7 +27,6 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::ensure_signed;
 
 pub use common::storage::{
     ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
@@ -76,7 +76,7 @@ impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    system::Trait
+    frame_system::Trait
     + ContentActorAuthenticator
     + Clone
     + StorageOwnership
@@ -84,7 +84,7 @@ pub trait Trait:
     + GovernanceCurrency
 {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
@@ -113,7 +113,7 @@ pub trait Trait:
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
-    // Type that handles asset uploads to storage system
+    // Type that handles asset uploads to storage frame_system
     type StorageSystem: StorageSystem<Self>;
 }
 
@@ -122,7 +122,7 @@ pub trait Trait:
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NewAsset<ContentParameters> {
-    /// Upload to the storage system
+    /// Upload to the storage frame_system
     Upload(ContentParameters),
     /// Multiple url strings pointing at an asset
     Urls(Vec<Url>),
@@ -210,7 +210,7 @@ pub type Channel<T> = ChannelRecord<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
@@ -240,7 +240,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     BalanceOf<T>,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Information about channel being created.
@@ -646,7 +646,7 @@ decl_module! {
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
             let channel_id = NextChannelId::<T>::get();
@@ -697,7 +697,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let new_assets = if let Some(assets) = &params.assets {
                 let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
 
@@ -910,7 +910,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
             let video_id = NextVideoId::<T>::get();
@@ -967,7 +967,7 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let new_assets = if let Some(assets) = &params.assets {
                 let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
 
@@ -1400,7 +1400,7 @@ decl_event!(
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         ContentParameters = ContentParameters<T>,
-        AccountId = <T as system::Trait>::AccountId,
+        AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
     {

@@ -69,7 +69,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -90,16 +90,18 @@ impl system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl Trait for Runtime {
@@ -111,7 +113,7 @@ impl Trait for Runtime {
 
 #[derive(Clone)]
 pub enum OriginType {
-    Signed(<Runtime as system::Trait>::AccountId),
+    Signed(<Runtime as frame_system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root,
 }
@@ -120,7 +122,7 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     match origin {
         OriginType::Signed(account_id) => Origin::signed(account_id),
         //OriginType::Inherent => Origin::inherent,
-        OriginType::Root => system::RawOrigin::Root.into(), //Origin::root
+        OriginType::Root => frame_system::RawOrigin::Root.into(), //Origin::root
     }
 }
 
@@ -455,25 +457,25 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
 pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
 pub type RuntimeCategory = Category<
-    <Runtime as system::Trait>::BlockNumber,
+    <Runtime as frame_system::Trait>::BlockNumber,
     <Runtime as pallet_timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
+    <Runtime as frame_system::Trait>::AccountId,
 >;
 pub type RuntimeThread = Thread<
-    <Runtime as system::Trait>::BlockNumber,
+    <Runtime as frame_system::Trait>::BlockNumber,
     <Runtime as pallet_timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
+    <Runtime as frame_system::Trait>::AccountId,
     RuntimeThreadId,
 >;
 pub type RuntimePost = Post<
-    <Runtime as system::Trait>::BlockNumber,
+    <Runtime as frame_system::Trait>::BlockNumber,
     <Runtime as pallet_timestamp::Trait>::Moment,
-    <Runtime as system::Trait>::AccountId,
+    <Runtime as frame_system::Trait>::AccountId,
     RuntimeThreadId,
     RuntimePostId,
 >;
 pub type RuntimeBlockchainTimestamp = BlockAndTime<
-    <Runtime as system::Trait>::BlockNumber,
+    <Runtime as frame_system::Trait>::BlockNumber,
     <Runtime as pallet_timestamp::Trait>::Moment,
 >;
 
@@ -487,7 +489,7 @@ pub fn genesis_config(
     next_thread_id: u64,
     post_by_id: &RuntimeMap<RuntimePostId, RuntimePost>,
     next_post_id: u64,
-    forum_sudo: <Runtime as system::Trait>::AccountId,
+    forum_sudo: <Runtime as frame_system::Trait>::AccountId,
     category_title_constraint: &InputValidationLengthConstraint,
     category_description_constraint: &InputValidationLengthConstraint,
     thread_title_constraint: &InputValidationLengthConstraint,
@@ -523,7 +525,7 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
 pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
@@ -537,7 +539,7 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestEx
     t.into()
 }
 
-// pub type System = system::Module<Runtime>;
+// pub type System = frame_system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;

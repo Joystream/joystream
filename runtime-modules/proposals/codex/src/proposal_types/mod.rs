@@ -20,8 +20,8 @@ pub trait ProposalEncoder<T: crate::Trait> {
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfMint<T>,
     crate::BalanceOfGovernanceCurrency<T>,
-    <T as system::Trait>::BlockNumber,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::AccountId,
     working_group::OpeningId<T>,
     working_group::ApplicationId<T>,
     crate::BalanceOf<T>,

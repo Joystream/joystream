@@ -4,13 +4,13 @@ pub use super::{council, election};
 pub use common::currency::GovernanceCurrency;
 
 use frame_support::{impl_outer_origin, parameter_types};
+pub use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     BuildStorage, Perbill,
 };
-pub use system;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -27,7 +27,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -48,16 +48,18 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 impl council::Trait for Test {
     type Event = ();
@@ -101,6 +103,8 @@ impl balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -112,7 +116,7 @@ impl GovernanceCurrency for Test {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -159,5 +163,5 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 
 pub type Election = election::Module<Test>;
 pub type Council = council::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;

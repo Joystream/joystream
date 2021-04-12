@@ -28,6 +28,7 @@
 
 // Clippy linter warning
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+#![allow(clippy::match_like_matches_macro)]
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -35,13 +36,13 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, ReservableCurrency};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Hash;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::ops::Add;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::{ensure_root, ensure_signed};
 
 use super::sealed_vote::SealedVote;
 use super::stake::Stake;
@@ -52,8 +53,10 @@ pub use common::currency::{BalanceOf, GovernanceCurrency};
 
 use crate::DispatchResult;
 
-pub trait Trait: system::Trait + council::Trait + GovernanceCurrency + membership::Trait {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait:
+    frame_system::Trait + council::Trait + GovernanceCurrency + membership::Trait
+{
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
 }
@@ -183,9 +186,9 @@ decl_storage! {
 // Event for this module.
 decl_event!(
     pub enum Event<T> where
-    <T as system::Trait>::BlockNumber,
-    <T as system::Trait>::AccountId,
-    <T as system::Trait>::Hash  {
+    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Trait>::Hash  {
         /// A new election started
         ElectionStarted(),
         AnnouncingStarted(u32),
@@ -213,7 +216,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn current_block_number_plus(length: T::BlockNumber) -> T::BlockNumber {
-        <system::Module<T>>::block_number() + length
+        <frame_system::Module<T>>::block_number() + length
     }
 
     fn can_participate(sender: &T::AccountId) -> bool {
@@ -255,7 +258,7 @@ impl<T: Trait> Module<T> {
         ensure!(Self::commitments().is_empty(), "commitments must be empty");
 
         // Take snapshot of seat and backing stakes of an existing council
-        // Its important to note that the election system takes ownership of these stakes, and is responsible
+        // Its important to note that the election frame_system takes ownership of these stakes, and is responsible
         // to return any unused stake to original owners at the end of the election.
         Self::initialize_transferable_stakes(current_council);
 
@@ -394,7 +397,9 @@ impl<T: Trait> Module<T> {
         let new_council = new_council.into_iter().map(|(_, seat)| seat).collect();
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
-        Self::deposit_event(RawEvent::CouncilElected(<system::Module<T>>::block_number()));
+        Self::deposit_event(RawEvent::CouncilElected(
+            <frame_system::Module<T>>::block_number(),
+        ));
     }
 
     fn teardown_election(
@@ -785,7 +790,11 @@ impl<T: Trait> Module<T> {
         let mut salt = salt;
 
         // Tries to unseal, if salt is invalid will return error
-        sealed_vote.unseal(vote_for, &mut salt, <T as system::Trait>::Hashing::hash)?;
+        sealed_vote.unseal(
+            vote_for,
+            &mut salt,
+            <T as frame_system::Trait>::Hashing::hash,
+        )?;
 
         // Update the revealed vote
         <Votes<T>>::insert(commitment, sealed_vote);
@@ -881,21 +890,21 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_stage_announcing(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
+            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Announcing(ends_at));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_stage_revealing(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
+            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Revealing(ends_at));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_stage_voting(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <system::Module<T>>::block_number(), "must end at future block number");
+            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
         }
 
@@ -961,7 +970,7 @@ mod tests {
     use codec::Encode;
     use frame_support::traits::OnFinalize;
     use frame_support::{assert_err, assert_ok};
-    use system::RawOrigin;
+    use frame_system::RawOrigin;
 
     #[test]
     fn election_starts_when_council_term_ends() {
@@ -1022,7 +1031,7 @@ mod tests {
         });
     }
 
-    fn assert_announcing_period(expected_period: <Test as system::Trait>::BlockNumber) {
+    fn assert_announcing_period(expected_period: <Test as frame_system::Trait>::BlockNumber) {
         assert!(
             Election::is_election_running(),
             "Election Stage was not set"
@@ -1388,7 +1397,7 @@ mod tests {
         initial_test_ext().execute_with(|| {
             let _ = Balances::deposit_creating(&20, 1000);
             let payload = vec![10u8];
-            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+            let commitment = <Test as frame_system::Trait>::Hashing::hash(&payload[..]);
 
             assert!(Election::try_add_vote(20, 100, commitment).is_ok());
 
@@ -1424,7 +1433,7 @@ mod tests {
             );
 
             let payload = vec![10u8];
-            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+            let commitment = <Test as frame_system::Trait>::Hashing::hash(&payload[..]);
 
             assert!(Election::try_add_vote(20, 100, commitment).is_ok());
 
@@ -1456,7 +1465,7 @@ mod tests {
             );
 
             let payload = vec![10u8];
-            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+            let commitment = <Test as frame_system::Trait>::Hashing::hash(&payload[..]);
 
             assert!(Election::try_add_vote(20, 1000, commitment).is_err());
             assert_eq!(Election::commitments(), vec![]);
@@ -1479,7 +1488,7 @@ mod tests {
             );
 
             let payload = vec![10u8];
-            let commitment = <Test as system::Trait>::Hashing::hash(&payload[..]);
+            let commitment = <Test as frame_system::Trait>::Hashing::hash(&payload[..]);
 
             assert!(Election::try_add_vote(20, 100, commitment).is_ok());
 
@@ -1500,12 +1509,12 @@ mod tests {
     }
 
     fn make_commitment_for_applicant(
-        applicant: <Test as system::Trait>::AccountId,
+        applicant: <Test as frame_system::Trait>::AccountId,
         salt: &mut Vec<u8>,
-    ) -> <Test as system::Trait>::Hash {
+    ) -> <Test as frame_system::Trait>::Hash {
         let mut payload = applicant.encode();
         payload.append(salt);
-        <Test as system::Trait>::Hashing::hash(&payload[..])
+        <Test as frame_system::Trait>::Hashing::hash(&payload[..])
     }
 
     #[test]

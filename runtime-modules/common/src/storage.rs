@@ -20,7 +20,7 @@ pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
     Member(MemberId),
     Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
     DAO(DAOId),         // acts through upcoming `content_finance` module
-    Council,            // acts through proposal system
+    Council,            // acts through proposal frame_system
     WorkingGroup(WorkingGroup), // acts through new extrinsic in working group
 }
 
@@ -37,7 +37,7 @@ pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
     ) -> DispatchResult;
 
-    // Checks if given owner can add provided content to the storage system
+    // Checks if given owner can add provided content to the storage frame_system
     fn can_add_content(
         owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
@@ -48,7 +48,7 @@ pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
         content_ids: &[T::ContentId],
     ) -> DispatchResult;
 
-    // Checks if given owner can remove content under given content ids from the storage system
+    // Checks if given owner can remove content under given content ids from the storage frame_system
     fn can_remove_content(
         owner: &StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
         content_ids: &[T::ContentId],

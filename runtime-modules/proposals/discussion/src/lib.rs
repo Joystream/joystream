@@ -1,6 +1,6 @@
 //! # Proposals discussion module
 //! Proposals `discussion` module for the Joystream platform. Version 2.
-//! It contains discussion subsystem of the proposals.
+//! It contains discussion subframe_system of the proposals.
 //!
 //! ## Overview
 //!
@@ -20,7 +20,7 @@
 //!
 //! ```
 //! use frame_support::decl_module;
-//! use system::ensure_root;
+//! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions};
 //!
 //! pub trait Trait: discussions::Trait + membership::Trait {}
@@ -79,9 +79,9 @@ decl_event!(
 );
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: system::Trait + membership::Trait {
+pub trait Trait: frame_system::Trait + membership::Trait {
     /// Discussion event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates post author id and origin combination
     type PostAuthorOriginValidator: ActorOriginValidator<
@@ -329,9 +329,9 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    // Wrapper-function over system::block_number()
+    // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <system::Module<T>>::block_number()
+        <frame_system::Module<T>>::block_number()
     }
 
     // returns incremented thread counter if last thread author equals with provided parameter

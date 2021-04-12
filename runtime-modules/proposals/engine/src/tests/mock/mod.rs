@@ -9,13 +9,13 @@
 #![cfg(test)]
 
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+pub use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-pub use system;
 
 mod balance_manager;
 pub(crate) mod proposals;
@@ -46,7 +46,7 @@ impl_outer_event! {
         balances<T>,
         engine<T>,
         membership_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -60,6 +60,8 @@ impl balances::Trait for Test {
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -120,7 +122,7 @@ impl Default for proposals::Call<Test> {
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = system::ensure_signed(origin)?;
+        let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
     }
@@ -143,7 +145,7 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -164,20 +166,22 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -185,5 +189,5 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 }
 
 pub type ProposalsEngine = crate::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
