@@ -1049,6 +1049,6 @@ _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.co
 
 # Environment variables
 <!-- env -->
-`FORCE_COLOR` - can be set to `0` to disable output coloring
-`AUTO_CONFIRM` - can be set to `1` or `true` to skip any required confirmations (can be useful for creating bash scripts)
+- `FORCE_COLOR` - can be set to `0` to disable output coloring
+- `AUTO_CONFIRM` - can be set to `1` or `true` to skip any required confirmations (can be useful for creating bash scripts)
 <!-- envstop -->
