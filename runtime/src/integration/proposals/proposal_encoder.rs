@@ -143,7 +143,7 @@ struct Wg<T, I> {
 impl<T, I> Wg<T, I>
 where
     T: working_group::Trait<I>,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 {
     // Generic call constructor for the add working group opening.
     fn create_add_opening_call(
