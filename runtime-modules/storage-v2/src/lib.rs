@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
@@ -36,7 +36,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Storage event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
-    //TODO: add comment
+    /// Data object ID type.
     type DataObjectId: Parameter
         + Member
         + BaseArithmetic
@@ -46,7 +46,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + MaybeSerialize
         + PartialEq;
 
-    //TODO: add comment
+    /// Storage bucket ID type.
     type StorageBucketId: Parameter
         + Member
         + BaseArithmetic
@@ -168,20 +168,34 @@ pub struct UploadParametersObject<AccountId> {
     pub deletion_prize_source_account: AccountId,
 }
 
+/// Defines storage bucket parameters.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Voucher {
+    /// Total size limit.
     pub size_limit: u64,
+
+    /// Object number limit.
     pub objects_limit: u64,
+
+    /// Current size.
     pub size_used: u64,
+
+    /// Current object number.
     pub objects_used: u64,
 }
 
+/// Defines the storage bucket connection to the storage operator (storage WG worker).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum StorageBucketOperatorStatus<WorkerId> {
+    /// No connection.
     Missing,
+
+    /// Storage operator was invited.
     InvitedStorageWorker(WorkerId),
+
+    /// Storage operator accepted the invitation.
     StorageWorker(WorkerId),
 }
 
@@ -191,12 +205,21 @@ impl<WorkerId> Default for StorageBucketOperatorStatus<WorkerId> {
     }
 }
 
+/// A commitment to hold some set of bags for long term storage. A bucket may have a bucket
+/// operator, which is a single worker in the storage working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct StorageBucket<WorkerId> {
+    /// Current storage operator status.
     pub operator_status: StorageBucketOperatorStatus<WorkerId>,
+
+    /// Defines whether the bucket accepts new bags.
     pub accepting_new_bags: bool,
+
+    /// Number of pending (not accepted) data objects.
     pub number_of_pending_data_objects: u32,
+
+    /// Defines limits for a bucket.
     pub voucher: Voucher,
 }
 
