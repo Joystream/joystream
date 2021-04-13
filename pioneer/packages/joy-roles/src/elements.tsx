@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Card, Icon, Image, Label, Statistic, Button } from 'semantic-ui-react';
+import { Card, Icon, Image, Label, Statistic, Button, Transition } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
@@ -8,7 +8,6 @@ import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
 import { IMembership, MemberId } from '@joystream/types/members';
 import { GenericAccountId } from '@polkadot/types';
-import { WorkerId } from '@joystream/types/working-group';
 import { WorkingGroups } from './working_groups';
 import { RewardRelationship } from '@joystream/types/recurring-rewards';
 import { formatReward } from '@polkadot/joy-utils/functions/format';
@@ -49,26 +48,17 @@ export type GroupMember = {
   title: string;
   stake?: Balance;
   rewardRelationship?: RewardRelationship;
+  storage?: string;
 }
 
-export type GroupLead = {
-  memberId: MemberId;
-  workerId?: WorkerId; // In case of "working-group" module
-  roleAccount: GenericAccountId;
-  profile: IMembership;
-  title: string;
-  stake?: Balance;
-  rewardRelationship?: RewardRelationship;
-}
-
-export function GroupLeadView (props: GroupLead) {
+export function GroupLeadView (props: GroupMember) {
   let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
 
   if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
-  const { stake, rewardRelationship } = props;
+  const { stake, rewardRelationship, storage } = props;
 
   return (
     <Card color='grey' className='staked-card'>
@@ -91,7 +81,7 @@ export function GroupLeadView (props: GroupLead) {
           </Label>
         </Card.Description>
       </Card.Content>
-      <GroupMemberDetails {...{ stake, rewardRelationship }} />
+      <GroupMemberDetails {...{ stake, rewardRelationship, storage }} />
     </Card>
   );
 }
@@ -106,6 +96,7 @@ const StakeAndReward = styled.div`
 type GroupMemberDetailsProps = {
   rewardRelationship?: RewardRelationship;
   stake?: Balance;
+  storage?: string
 }
 
 export function GroupMemberDetails (props: GroupMemberDetailsProps) {
@@ -150,15 +141,24 @@ export function GroupMemberDetails (props: GroupMemberDetailsProps) {
     );
   }
 
+  if (props.storage) {
+    details.push(
+      <Label>
+        Worker Storage
+        <Label.Detail style={{ marginTop: '5px', marginLeft: 0, display: 'block', wordBreak: 'break-word', wordWrap: 'break-word' }}>{props.storage}</Label.Detail>
+      </Label>
+    )
+  }
+
   return (
     <Card.Content extra>
-      { showDetails && (
+      <Transition visible={showDetails} animation="fade down" duration={500}>
         <Card.Description>
           <StakeAndReward>
             {details.map((detail, index) => <div key={index}>{detail}</div>)}
           </StakeAndReward>
         </Card.Description>
-      ) }
+      </Transition>
       <Button onClick={ () => setShowDetails((v) => !v) } size='tiny' fluid>
         { showDetails ? 'Hide' : 'Show'} details
       </Button>
@@ -173,7 +173,7 @@ export function GroupMemberView (props: GroupMember) {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
-  const { stake, rewardRelationship } = props;
+  const { stake, rewardRelationship, storage } = props;
 
   return (
     <Card color='grey' className='staked-card'>
@@ -189,7 +189,7 @@ export function GroupMemberView (props: GroupMember) {
           </Label>
         </Card.Meta>
       </Card.Content>
-      <GroupMemberDetails {...{ stake, rewardRelationship }} />
+      <GroupMemberDetails {...{ stake, rewardRelationship, storage }} />
     </Card>
   );
 }

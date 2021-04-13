@@ -38,6 +38,7 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
     );
 
     this.setState(newState);
+    this.dispatch();
   }
 }
 

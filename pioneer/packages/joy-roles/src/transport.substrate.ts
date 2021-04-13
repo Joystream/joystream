@@ -143,6 +143,8 @@ export class Transport extends BaseTransport implements ITransport {
 
     const rewardRelationship = await this.workerRewardRelationship(worker);
 
+    const storage = await this.queryCachedByGroup(group).workerStorage(id)
+
     return ({
       roleAccount,
       group,
@@ -151,7 +153,8 @@ export class Transport extends BaseTransport implements ITransport {
       profile,
       title: workerRoleNameByGroup[group],
       stake: stakeValue,
-      rewardRelationship
+      rewardRelationship,
+      storage: this.api.createType('Text', storage).toString()
     });
   }
 
