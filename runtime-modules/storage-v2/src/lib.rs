@@ -9,28 +9,29 @@
 // TODO: add benchmarks
 // TODO: add constants:
 // Max size of blacklist.
-// Max number of storage buckets.
 // Max number of distribution bucket families
 // Max number of distribution buckets per family.
 // Max number of pending invitations per distribution bucket.
 // Max number of data objects per bag.
-
 
 #[cfg(test)]
 mod tests;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
+use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
+use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_arithmetic::traits::One;
+use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
-use sp_arithmetic::traits::{BaseArithmetic};
-use sp_runtime::traits::{MaybeSerialize, Member};
 
 /// Storage trait.
-pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait{
+pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Storage event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -53,6 +54,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait{
         + Copy
         + MaybeSerialize
         + PartialEq;
+
+    /// Defines max allowed storage bucket number.
+    type MaxStorageBucketNumber: Get<u64>;
 }
 
 // /// Member identifier in membership::member module
@@ -99,7 +103,7 @@ pub struct DataObject<StorageBucketId, Balance> {
 pub struct StaticBag<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
     pub objects: BTreeMap<DataObjectId, DataObject<StorageBucketId, Balance>>,
     pub stored_by: BTreeSet<StorageBucketId>,
-//TODO: implement -    pub distributed_by: BTreeSet<DistributionBucketId>,
+    //TODO: implement -    pub distributed_by: BTreeSet<DistributionBucketId>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -127,7 +131,7 @@ impl Default for BagId {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum StaticBagId {
     Council,
-//TODO: implement -    WorkingGroup(WorkingGroup),
+    //TODO: implement -    WorkingGroup(WorkingGroup),
 }
 
 impl Default for StaticBagId {
@@ -205,13 +209,13 @@ pub struct BaggedDataObject<DataObjectId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct UpdateStorageBucketForStaticBagsParams<StorageBucketId: Ord> {
-    pub bags: BTreeMap<BagId, BTreeSet<StorageBucketId>> //TODO: change to StaticBagId
+    pub bags: BTreeMap<BagId, BTreeSet<StorageBucketId>>, //TODO: change to StaticBagId
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AcceptPendingDataObjectsParams<DataObjectId: Ord> {
-    pub bagged_data_objects: BTreeSet<BaggedDataObject<DataObjectId>>
+    pub bagged_data_objects: BTreeSet<BaggedDataObject<DataObjectId>>,
 }
 
 decl_storage! {
@@ -221,10 +225,13 @@ decl_storage! {
         /// Council bag.
         pub CouncilBag get(fn council_bag): StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
 
-        // TODO change the comment
-        /// Storage bucket (flat) map
-        pub StorageBucketById get (fn storage_bucket_by_id)
-            : BTreeMap<T::StorageBucketId, StorageBucket<WorkerId<T>>>;
+        /// Storage bucket id counter. Starts at zero.
+        pub NextStorageBucketId get(fn next_storage_bucket_id) : T::StorageBucketId;
+
+        // TODO: rework back to "Storage bucket (flat) map" - BTreemap
+        /// Storage buckets.
+        pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
+            T::StorageBucketId => StorageBucket<WorkerId<T>>;
     }
 }
 
@@ -232,10 +239,16 @@ decl_event! {
     /// Storage events
  pub enum Event<T>
     where
-        <T as frame_system::Trait>::AccountId
+        <T as Trait>::StorageBucketId,
+        WorkerId = WorkerId<T>,
     {
-        /// Emits on adding of the content.
-        ContentAdded(AccountId),
+        /// Emits on creating the storage bucket.
+        /// Params
+        /// - storage bucket ID
+        /// - invited worker
+        /// - flag "accepting_new_data_objects"
+        /// - voucher struct
+        StorageBucketCreated(StorageBucketId, Option<WorkerId>, bool, Voucher),
     }
 }
 
@@ -255,6 +268,9 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
+
+        /// Exports const -  max allowed storage bucket number.
+        const MaxStorageBucketNumber: u64 = T::MaxStorageBucketNumber::get();
 
         /// Upload new objects, and does so atomically if there is more than one provided.
         /// TODO:
@@ -282,12 +298,46 @@ decl_module! {
         /// Create storage bucket.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_storage_bucket(
-            _origin,
-            _invite_worker: Option<WorkerId<T>>,
-            _accepting_new_data_objects: bool,
-            _voucher: Voucher
+            origin,
+            invite_worker: Option<WorkerId<T>>,
+            accepting_new_data_objects: bool,
+            voucher: Voucher
         ) {
-            //TODO implement
+            ensure_signed(origin)?; // TODO: change to the WG lead verification
+
+            //TODO: check max bucket number
+
+            let operator_status = invite_worker
+                .map(StorageBucketOperatorStatus::InvitedStorageWorker)
+                .unwrap_or(StorageBucketOperatorStatus::Missing);
+
+            //TODO: validate voucher?
+
+            let storage_bucket = StorageBucket {
+                 operator_status,
+                 accepting_new_bags: accepting_new_data_objects, //TODO: correct?
+                 number_of_pending_data_objects: 0,
+                 voucher: voucher.clone(),
+            };
+
+            let storage_bucket_id = Self::next_storage_bucket_id();
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <NextStorageBucketId<T>>::put(storage_bucket_id + One::one());
+
+            <StorageBucketById<T>>::insert(storage_bucket_id, storage_bucket);
+
+            Self::deposit_event(
+                RawEvent::StorageBucketCreated(
+                    storage_bucket_id,
+                    invite_worker,
+                    accepting_new_data_objects,
+                    voucher,
+                )
+            );
         }
 
 

@@ -21,11 +21,16 @@ mod storage {
     pub use crate::Event;
 }
 
+mod membership_mod {
+    pub use membership::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         storage<T>,
         frame_system<T>,
+        membership_mod<T>,
     }
 }
 
@@ -43,8 +48,34 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
+parameter_types! {
+    pub const MaxStorageBucketNumber: u64 = 2;
+}
+
 impl crate::Trait for Test {
     type Event = TestEvent;
+    type DataObjectId = u64;
+    type StorageBucketId = u64;
+    type MaxStorageBucketNumber = MaxStorageBucketNumber;
+}
+
+impl membership::Trait for Test {
+    type Event = TestEvent;
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+}
+
+impl pallet_timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl common::currency::GovernanceCurrency for Test {
+    type Currency = balances::Module<Self>;
 }
 
 parameter_types! {
