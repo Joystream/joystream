@@ -147,12 +147,12 @@ export function GroupMemberDetails (props: GroupMemberDetailsProps) {
         Worker Storage
         <Label.Detail style={{ marginTop: '5px', marginLeft: 0, display: 'block', wordBreak: 'break-word', wordWrap: 'break-word' }}>{props.storage}</Label.Detail>
       </Label>
-    )
+    );
   }
 
   return (
     <Card.Content extra>
-      <Transition visible={showDetails} animation="fade down" duration={500}>
+      <Transition visible={showDetails} animation='fade down' duration={500}>
         <Card.Description>
           <StakeAndReward>
             {details.map((detail, index) => <div key={index}>{detail}</div>)}

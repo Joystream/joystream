@@ -93,16 +93,16 @@ const GroupOverview = Loadable<GroupOverviewProps>(
     const joinDesc = customJoinDesc || `There are openings for new ${groupName}. This is a great way to support Joystream!`;
     const becomeLeadTitle = customBecomeLeadTitle || `Become ${groupName} Lead!`;
     const becomeLeadDesc = customBecomeLeadDesc || `An opportunity to become ${groupName} Leader is currently available! This is a great way to support Joystream!`;
-    const [showMembers, setShowMembers] = useState(false)
+    const [showMembers, setShowMembers] = useState(false);
 
     return (
       <GroupOverviewSection>
         <h2>{ groupName }</h2>
         <p>{ description }</p>
-        <Button onClick={() => setShowMembers(v => !v)}>
+        <Button onClick={() => setShowMembers((v) => !v)}>
           { showMembers ? 'Hide' : 'Show' } members
         </Button>
-        <Transition visible={showMembers} animation="fade down" duration={500}>
+        <Transition visible={showMembers} animation='fade down' duration={500}>
           <span>
             <Card.Group style={{ alignItems: 'flex-start' }}>
               { workers!.map((worker, key) => (

@@ -49,12 +49,6 @@ type StakePair<T = Balance> = {
   role: T;
 }
 
-type GroupLeadWithMemberId = {
-  lead: Worker;
-  memberId: MemberId;
-  workerId: WorkerId;
-}
-
 const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
   [WorkingGroups.ContentCurators]: 'contentDirectoryWorkingGroup',
@@ -143,7 +137,7 @@ export class Transport extends BaseTransport implements ITransport {
 
     const rewardRelationship = await this.workerRewardRelationship(worker);
 
-    const storage = await this.queryCachedByGroup(group).workerStorage(id)
+    const storage = await this.queryCachedByGroup(group).workerStorage(id);
 
     return ({
       roleAccount,
@@ -181,55 +175,15 @@ export class Transport extends BaseTransport implements ITransport {
     return false;
   }
 
-  protected async groupLead (group: WorkingGroups): Promise <GroupLeadWithMemberId | null> {
-    const optLeadId = (await this.queryCachedByGroup(group).currentLead()) as Option<WorkerId>;
-
-    if (!optLeadId.isSome) {
-      return null;
-    }
-
-    const leadWorkerId = optLeadId.unwrap();
-    const leadWorker = await this.queryCachedByGroup(group).workerById(leadWorkerId) as Worker;
-
-    if (leadWorker.isEmpty) {
-      return null;
-    }
-
-    return {
-      lead: leadWorker,
-      memberId: leadWorker.member_id,
-      workerId: leadWorkerId
-    };
-  }
-
   async groupLeadStatus (group: WorkingGroups = WorkingGroups.ContentCurators): Promise<GroupLeadStatus> {
-    const currentLead = await this.groupLead(group);
+    const optLeadId = await this.queryCachedByGroup(group).currentLead() as Option<WorkerId>;
 
-    if (currentLead !== null) {
-      const profile = await this.cacheApi.query.members.membershipById(currentLead.memberId) as Membership;
-
-      if (profile.handle.isEmpty) {
-        throw new Error(`${group} lead profile not found!`);
-      }
-
-      const rewardRelationshipId = currentLead.lead.reward_relationship;
-      const rewardRelationship = rewardRelationshipId.isSome
-        ? await this.rewardRelationshipById(rewardRelationshipId.unwrap())
-        : undefined;
-      const stake = currentLead.lead.role_stake_profile.isSome
-        ? await this.workerStake(currentLead.lead.role_stake_profile.unwrap())
-        : undefined;
+    if (optLeadId.isSome) {
+      const leadId = optLeadId.unwrap();
+      const leadWorker = await this.queryCachedByGroup(group).workerById(leadId) as Worker;
 
       return {
-        lead: {
-          memberId: currentLead.memberId,
-          workerId: currentLead.workerId,
-          roleAccount: currentLead.lead.role_account_id,
-          profile,
-          title: _.startCase(group) + ' Lead',
-          stake,
-          rewardRelationship
-        },
+        lead: await this.groupMember(group, leadId, leadWorker),
         loaded: true
       };
     } else {
@@ -544,7 +498,7 @@ export class Transport extends BaseTransport implements ITransport {
 
           return {
             workerId: id,
-            name: (groupLead?.workerId && groupLead.workerId.eq(id))
+            name: (groupLead?.workerId && groupLead.workerId === id.toNumber())
               ? _.startCase(group) + ' Lead'
               : workerRoleNameByGroup[group],
             reward: earnedValue,
