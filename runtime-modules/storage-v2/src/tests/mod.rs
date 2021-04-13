@@ -1,19 +1,19 @@
 #![cfg(test)]
 
 mod fixtures;
-mod mock;
+pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_system::RawOrigin;
 
 use fixtures::{run_to_block, CreateStorageBucketFixture, EventFixture};
-use mock::{initial_test_ext, Storage, Test};
+use mocks::{build_test_externalities, Storage, Test};
 
 use crate::{Error, RawEvent, StorageBucketOperatorStatus, Voucher};
 
 #[test]
 fn create_storage_bucket_succeeded() {
-    initial_test_ext().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
@@ -46,7 +46,7 @@ fn create_storage_bucket_succeeded() {
 
 #[test]
 fn create_storage_bucket_succeeded_with_invited_member() {
-    initial_test_ext().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let invited_worker_id = 10;
         let accepting_new_data_objects = true;
         let voucher = Voucher::default();
@@ -70,7 +70,7 @@ fn create_storage_bucket_succeeded_with_invited_member() {
 
 #[test]
 fn create_storage_bucket_fails_with_invalid_origin() {
-    initial_test_ext().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
@@ -79,7 +79,7 @@ fn create_storage_bucket_fails_with_invalid_origin() {
 
 #[test]
 fn create_storage_bucket_fails_with_exceeding_max_storage_bucket_limit() {
-    initial_test_ext().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         CreateStorageBucketFixture::default().call_and_assert(Ok(()));
 
         CreateStorageBucketFixture::default()

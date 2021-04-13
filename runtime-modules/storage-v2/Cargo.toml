@@ -1,5 +1,5 @@
 [package]
-name = 'pallet-storage-v2' # temp name
+name = 'pallet-storage-v2'
 version = '1.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
@@ -17,12 +17,19 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 
+# Benchmarking
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
+
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "sp-runtime/runtime-benchmarks",
+]
 std = [
     'serde',
     'codec/std',

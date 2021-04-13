@@ -2431,6 +2431,7 @@ dependencies = [
  "pallet-staking",
  "pallet-staking-reward-curve",
  "pallet-storage",
+ "pallet-storage-v2",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-token-mint",
@@ -4275,6 +4276,7 @@ dependencies = [
 name = "pallet-storage-v2"
 version = "1.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

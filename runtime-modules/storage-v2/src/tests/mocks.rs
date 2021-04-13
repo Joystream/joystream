@@ -114,7 +114,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-pub fn initial_test_ext() -> sp_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();

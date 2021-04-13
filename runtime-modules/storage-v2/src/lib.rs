@@ -18,6 +18,9 @@
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;

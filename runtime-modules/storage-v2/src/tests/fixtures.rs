@@ -3,7 +3,7 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
-use super::mock::{Balances, Storage, System, Test, TestEvent};
+use super::mocks::{Balances, Storage, System, Test, TestEvent};
 
 use crate::{RawEvent, Voucher};
 
