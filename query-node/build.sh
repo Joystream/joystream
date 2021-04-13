@@ -12,10 +12,11 @@ set +a
 # only use this when new Hydra releases and contents of `generated/` folder needs to be refreshed
 #yarn clean
 #yarn codegen:noinstall
-#yarn codegen:typegen
+#yarn codegen:typegen # if this fails try to run this command outside of yarn workspaces
 
 yarn query-node:build
 yarn mappings:build
+ln ../types/augment/all/defs.json mappings/lib/generated/types/typedefs.json
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
