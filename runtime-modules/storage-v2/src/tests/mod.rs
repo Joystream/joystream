@@ -7,9 +7,9 @@ use frame_support::dispatch::DispatchError;
 use frame_system::RawOrigin;
 
 use fixtures::{run_to_block, CreateStorageBucketFixture, EventFixture};
-use mock::{initial_test_ext, Storage};
+use mock::{initial_test_ext, Storage, Test};
 
-use crate::{RawEvent, StorageBucketOperatorStatus, Voucher};
+use crate::{Error, RawEvent, StorageBucketOperatorStatus, Voucher};
 
 #[test]
 fn create_storage_bucket_succeeded() {
@@ -74,5 +74,15 @@ fn create_storage_bucket_fails_with_invalid_origin() {
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn create_storage_bucket_fails_with_exceeding_max_storage_bucket_limit() {
+    initial_test_ext().execute_with(|| {
+        CreateStorageBucketFixture::default().call_and_assert(Ok(()));
+
+        CreateStorageBucketFixture::default()
+            .call_and_assert(Err(Error::<Test>::MaxStorageNumberLimitExceeded.into()));
     });
 }

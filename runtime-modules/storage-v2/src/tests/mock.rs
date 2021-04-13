@@ -49,7 +49,7 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxStorageBucketNumber: u64 = 2;
+    pub const MaxStorageBucketNumber: u64 = 1;
 }
 
 impl crate::Trait for Test {

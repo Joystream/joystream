@@ -4,6 +4,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+// TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
 // TODO: add types comments
 // TODO: add benchmarks
@@ -20,7 +21,7 @@ mod tests;
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -226,7 +227,10 @@ decl_storage! {
         pub CouncilBag get(fn council_bag): StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
 
         /// Storage bucket id counter. Starts at zero.
-        pub NextStorageBucketId get(fn next_storage_bucket_id) : T::StorageBucketId;
+        pub NextStorageBucketId get(fn next_storage_bucket_id): T::StorageBucketId;
+
+        /// Total number of the storage buckets in the system.
+        pub StorageBucketsNumber get(fn storage_buckets_number): u64;
 
         // TODO: rework back to "Storage bucket (flat) map" - BTreemap
         /// Storage buckets.
@@ -255,8 +259,11 @@ decl_event! {
 decl_error! {
     /// Storage module predefined errors
     pub enum Error for Module<T: Trait>{
-        /// Proposal cannot have an empty title"
-        EmptyTitleProvided,
+        /// Max storage number limit exceeded.
+        MaxStorageNumberLimitExceeded,
+
+        /// Empty "data object creation" collection.
+        NoObjectsOnUpload,
     }
 }
 
@@ -305,7 +312,11 @@ decl_module! {
         ) {
             ensure_signed(origin)?; // TODO: change to the WG lead verification
 
-            //TODO: check max bucket number
+            let buckets_number = Self::storage_buckets_number();
+            ensure!(
+                buckets_number < T::MaxStorageBucketNumber::get(),
+                Error::<T>::MaxStorageNumberLimitExceeded
+            );
 
             let operator_status = invite_worker
                 .map(StorageBucketOperatorStatus::InvitedStorageWorker)
@@ -325,6 +336,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            StorageBucketsNumber::put(buckets_number + 1);
 
             <NextStorageBucketId<T>>::put(storage_bucket_id + One::one());
 
@@ -373,8 +386,14 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     // TODO: add comment
-    fn validate_upload_parameter(_params: &UploadParameters<T>) -> DispatchResult {
+    fn validate_upload_parameter(params: &UploadParameters<T>) -> DispatchResult {
         //TODO implement
+
+        ensure!(
+            !params.object_creation.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
+
         Ok(())
     }
 }

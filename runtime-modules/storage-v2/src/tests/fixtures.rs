@@ -5,7 +5,7 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::{Balances, Storage, System, Test, TestEvent};
 
-use crate::{RawEvent, StorageBucket, Voucher};
+use crate::{RawEvent, Voucher};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -19,6 +19,7 @@ pub fn run_to_block(n: u64) {
     }
 }
 
+#[allow(dead_code)]
 pub fn increase_account_balance(account_id: &u64, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
@@ -31,12 +32,14 @@ impl EventFixture {
         Self::assert_last_global_event(converted_event)
     }
 
+    #[allow(dead_code)]
     pub fn contains_crate_event(expected_raw_event: RawEvent<u64, u64>) {
         let converted_event = TestEvent::storage(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
+    #[allow(dead_code)]
     pub fn assert_last_global_event(expected_event: TestEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
@@ -101,6 +104,7 @@ impl CreateStorageBucketFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
         let next_storage_bucket_id = Storage::next_storage_bucket_id();
+        let buckets_number = Storage::storage_buckets_number();
         let actual_result = Storage::create_storage_bucket(
             self.origin.clone().into(),
             self.invite_worker,
@@ -115,6 +119,7 @@ impl CreateStorageBucketFixture {
                 next_storage_bucket_id + 1,
                 Storage::next_storage_bucket_id()
             );
+            assert_eq!(buckets_number + 1, Storage::storage_buckets_number());
             assert!(<crate::StorageBucketById<Test>>::contains_key(
                 next_storage_bucket_id
             ));
@@ -122,6 +127,7 @@ impl CreateStorageBucketFixture {
             Some(next_storage_bucket_id)
         } else {
             assert_eq!(next_storage_bucket_id, Storage::next_storage_bucket_id());
+            assert_eq!(buckets_number, Storage::storage_buckets_number());
             assert!(!<crate::StorageBucketById<Test>>::contains_key(
                 next_storage_bucket_id
             ));
