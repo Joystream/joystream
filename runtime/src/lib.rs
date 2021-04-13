@@ -672,6 +672,17 @@ parameter_types! {
     pub const SurchargeReward: Balance = 0; // no reward
 }
 
+parameter_types! {
+    pub const MaxStorageBucketNumber: u64 = 1;
+}
+
+impl storage_v2::Trait for Runtime {
+    type Event = Event;
+    type DataObjectId = DataObjectId;
+    type StorageBucketId = StorageBucketId;
+    type MaxStorageBucketNumber = MaxStorageBucketNumber;
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -740,5 +751,6 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        StorageV2: storage_v2::{Module, Call, Storage, Event<T>},
     }
 );

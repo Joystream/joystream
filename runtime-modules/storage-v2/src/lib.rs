@@ -33,6 +33,7 @@ use sp_arithmetic::traits::One;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec::Vec;
 
 /// Storage trait.
 pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {

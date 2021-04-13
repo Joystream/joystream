@@ -65,6 +65,12 @@ pub type ActorId = u64;
 /// Represent an member in membership group, which is the same in the working groups.
 pub type MemberId = u64;
 
+/// Represent a data object from the storage pallet.
+pub type DataObjectId = u64;
+
+/// Represent a storage bucket from the storage pallet.
+pub type StorageBucketId = u64;
+
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
 /// account.
