@@ -3,16 +3,13 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { u64 } from '@polkadot/types/primitive';
 
-import { Network } from 'query-node/src/modules/enums/enums'
-
 // Asset
 import {
   DataObjectOwner,
-} from 'query-node/src/modules/variants/variants.model'
-import {
   DataObject,
   LiaisonJudgement,
-} from 'query-node/src/modules/data-object/data-object.model'
+  Network,
+} from 'query-node'
 import {
   ContentParameters
 } from '@joystream/types/augment'

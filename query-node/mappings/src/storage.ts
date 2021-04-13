@@ -16,17 +16,16 @@ import {
   ContentParameters,
   StorageObjectOwner,
 } from '@joystream/types/augment'
-import { LiaisonJudgement } from 'query-node/src/modules/enums/enums'
-
 import {
+  DataObject,
   DataObjectOwner,
   DataObjectOwnerMember,
   DataObjectOwnerChannel,
   DataObjectOwnerDao,
   DataObjectOwnerCouncil,
   DataObjectOwnerWorkingGroup,
-} from 'query-node/src/modules/variants/variants.model'
-import { DataObject } from 'query-node/src/modules/data-object/data-object.model'
+  LiaisonJudgement,
+} from 'query-node'
 
 export async function data_directory_ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data

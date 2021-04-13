@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "description": "Generated Warthog Project",
   "license": "MIT",
+  "main": "dist/model/index.js",
+  "types": "dist/model/index.d.ts",
   "scripts": {
     "bootstrap": "yarn bootstrap:dev",
     "bootstrap:dev": "yarn && yarn build:dev && yarn db:drop && yarn db:create && yarn db:migrate && yarn db:seed",

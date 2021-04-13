@@ -19,12 +19,12 @@ import {
 } from './utils'
 
 // primary entities
-import { Channel } from 'query-node/src/modules/channel/channel.model'
-import { Video } from 'query-node/src/modules/video/video.model'
-import { VideoCategory } from 'query-node/src/modules/video-category/video-category.model'
+import { Channel } from 'query-node'
+import { Video } from 'query-node'
+import { VideoCategory } from 'query-node'
 
 // secondary entities
-import { License } from 'query-node/src/modules/license/license.model'
+import { License } from 'query-node'
 
 // Joystream types
 import {

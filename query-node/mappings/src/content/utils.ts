@@ -34,30 +34,29 @@ import {
   prepareDataObject,
 } from '../common'
 
-// primary entities
-import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
-import { Channel } from 'query-node/src/modules/channel/channel.model'
-import { ChannelCategory } from 'query-node/src/modules/channel-category/channel-category.model'
-import { Video } from 'query-node/src/modules/video/video.model'
-import { VideoCategory } from 'query-node/src/modules/video-category/video-category.model'
 
-// secondary entities
-import { Language } from 'query-node/src/modules/language/language.model'
-import { License } from 'query-node/src/modules/license/license.model'
-import { VideoMediaEncoding } from 'query-node/src/modules/video-media-encoding/video-media-encoding.model'
-import { VideoMediaMetadata } from 'query-node/src/modules/video-media-metadata/video-media-metadata.model'
+import {
+  // primary entities
+  CuratorGroup,
+  Channel,
+  ChannelCategory,
+  Video,
+  VideoCategory,
 
-// Asset
-import { AssetAvailability } from 'query-node/src/modules/enums/enums';
-import {
-  DataObject,
-  LiaisonJudgement
-} from 'query-node/src/modules/data-object/data-object.model'
-import {
+  // secondary entities
+  Language,
+  License,
+  VideoMediaEncoding,
+  VideoMediaMetadata,
+
+  // asset
   DataObjectOwner,
   DataObjectOwnerMember,
   DataObjectOwnerChannel,
-} from 'query-node/src/modules/variants/variants.model'
+  DataObject,
+  LiaisonJudgement,
+  AssetAvailability,
+} from 'query-node'
 
 // Joystream types
 import {

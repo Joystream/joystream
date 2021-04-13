@@ -10,7 +10,7 @@ import {
   logger,
 } from './common'
 import { Members } from '../../generated/types'
-import { MembershipEntryMethod, Membership } from 'query-node/src/modules/membership/membership.model'
+import { MembershipEntryMethod, Membership } from 'query-node'
 import { EntryMethod } from '@joystream/types/augment'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

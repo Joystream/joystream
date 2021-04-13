@@ -13,16 +13,14 @@ import {
 } from './utils'
 
 import {
+  Channel,
+  ChannelCategory,
   DataObject,
-} from 'query-node/src/modules/data-object/data-object.model'
+} from 'query-node'
 import {
   inconsistentState,
   logger,
 } from '../common'
-
-// primary entities
-import { Channel } from 'query-node/src/modules/channel/channel.model'
-import { ChannelCategory } from 'query-node/src/modules/channel-category/channel-category.model'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {

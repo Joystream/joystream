@@ -136,16 +136,15 @@ mappings:
       handler: content_ChannelUpdated(DatabaseManager, SubstrateEvent)
     - event: content.ChannelAssetsRemoved
       handler: content_ChannelAssetsRemoved(DatabaseManager, SubstrateEvent)
-    - event: content.ChannelCensored
-      handler: content_ChannelCensored(DatabaseManager, SubstrateEvent)
-    - event: content.ChannelUncensored
-      handler: content_ChannelUncensored(DatabaseManager, SubstrateEvent)
-    - event: content.ChannelOwnershipTransferRequested
-      handler: content_ChannelOwnershipTransferRequested(DatabaseManager, SubstrateEvent)
-    - event: content.ChannelOwnershipTransferRequestWithdrawn
-      handler: content_ChannelOwnershipTransferRequestWithdrawn(DatabaseManager, SubstrateEvent)
-    - event: content.ChannelOwnershipTransferred
-      handler: content_ChannelOwnershipTransferred(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelCensorshipStatusUpdated
+      handler: content_ChannelCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
+    # these events are defined in runtime but never calles (at the time of writing)
+    #- event: content.ChannelOwnershipTransferRequested
+    #  handler: content_ChannelOwnershipTransferRequested(DatabaseManager, SubstrateEvent)
+    #- event: content.ChannelOwnershipTransferRequestWithdrawn
+    #  handler: content_ChannelOwnershipTransferRequestWithdrawn(DatabaseManager, SubstrateEvent)
+    #- event: content.ChannelOwnershipTransferred
+    #  handler: content_ChannelOwnershipTransferred(DatabaseManager, SubstrateEvent)
     - event: content.ChannelCategoryCreated
       handler: content_ChannelCategoryCreated(DatabaseManager, SubstrateEvent)
     - event: content.ChannelCategoryUpdated
@@ -176,8 +175,9 @@ mappings:
       handler: data_directory_ContentRemoved(DatabaseManager, SubstrateEvent)
     - event: data_directory.ContentAccepted
       handler: data_directory_ContentAccepted(DatabaseManager, SubstrateEvent)
-    - event: data_directory.ContentUploadingStatusUpdated
-      handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
+    # not handled at the moment
+    #- event: data_directory.ContentUploadingStatusUpdated
+    #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
 
   extrinsicHandlers:
     # infer defaults here

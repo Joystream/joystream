@@ -2,7 +2,7 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
 
-import { CuratorGroup } from 'query-node/src/modules/curator-group/curator-group.model'
+import { CuratorGroup } from 'query-node'
 import { Content } from '../../../generated/types'
 
 import {
