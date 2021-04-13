@@ -653,7 +653,8 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)` doesn't depend on the state or parameters
+        /// `O (R)` where
+        /// - R is the number of replies to be deleted
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
