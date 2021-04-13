@@ -3,7 +3,6 @@
 use crate::mock::*;
 use crate::*;
 use frame_support::assert_ok;
-use frame_system::ensure_signed;
 
 //Blog, post or reply id
 const FIRST_ID: u64 = 0;
@@ -39,7 +38,7 @@ fn assert_failure(
 
 fn ensure_replies_equality(
     reply: Option<Reply<Runtime, DefaultInstance>>,
-    reply_owner_id: <Runtime as frame_system::Trait>::AccountId,
+    reply_owner_id: ParticipantId<Runtime>,
     parent: ParentId<<Runtime as Trait>::ReplyId, PostId>,
 ) {
     // Ensure  stored reply is equal to expected one
@@ -420,8 +419,6 @@ fn editable_reply_creation_success() {
             <Runtime as Trait>::ReplyDeposit::get()
         );
 
-        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
-
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -442,14 +439,14 @@ fn editable_reply_creation_success() {
         // Replies related storage updated succesfully
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
 
-        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
+        ensure_replies_equality(reply, SECOND_OWNER_PARTICIPANT_ID, ParentId::Post(FIRST_ID));
 
         // Root replies counter updated
         assert_eq!(post.replies_count(), 1);
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::ReplyCreated(
-            reply_owner_id,
+            SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
             get_reply_text(),
@@ -489,8 +486,6 @@ fn non_editable_reply_creation_success() {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
 
-        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
-
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
@@ -513,7 +508,7 @@ fn non_editable_reply_creation_success() {
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::ReplyCreated(
-            reply_owner_id,
+            SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
             get_reply_text(),
@@ -538,8 +533,6 @@ fn editable_direct_reply_creation_success() {
             &SECOND_OWNER_ORIGIN,
             <Runtime as Trait>::ReplyDeposit::get(),
         );
-
-        let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         assert_ok!(create_reply(
             FIRST_OWNER_ORIGIN,
@@ -573,7 +566,7 @@ fn editable_direct_reply_creation_success() {
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::DirectReplyCreated(
-            direct_reply_owner_id,
+            SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
             SECOND_ID,
@@ -595,8 +588,6 @@ fn non_editable_direct_reply_creation_success() {
             &FIRST_OWNER_ORIGIN,
             <Runtime as Trait>::ReplyDeposit::get(),
         );
-
-        let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         assert_ok!(create_reply(
             FIRST_OWNER_ORIGIN,
@@ -629,7 +620,7 @@ fn non_editable_direct_reply_creation_success() {
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::DirectReplyCreated(
-            direct_reply_owner_id,
+            SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
             SECOND_ID,
@@ -651,8 +642,6 @@ fn editable_direct_reply_to_non_editable_reply_creation_success() {
             &SECOND_OWNER_ORIGIN,
             <Runtime as Trait>::ReplyDeposit::get(),
         );
-
-        let direct_reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         assert_ok!(create_reply(
             FIRST_OWNER_ORIGIN,
@@ -686,7 +675,7 @@ fn editable_direct_reply_to_non_editable_reply_creation_success() {
 
         // Event checked
         let reply_created_event = get_test_event(RawEvent::DirectReplyCreated(
-            direct_reply_owner_id,
+            SECOND_OWNER_PARTICIPANT_ID,
             FIRST_ID,
             FIRST_ID,
             SECOND_ID,
@@ -796,8 +785,6 @@ fn reply_editing_success() {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
 
-        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
-
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
             <Runtime as Trait>::ReplyDeposit::get(),
@@ -826,7 +813,7 @@ fn reply_editing_success() {
         // Reply after editing checked
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
 
-        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
+        ensure_replies_equality(reply, SECOND_OWNER_PARTICIPANT_ID, ParentId::Post(FIRST_ID));
 
         // Event checked
         let reply_edited_event = get_test_event(RawEvent::ReplyEdited(
@@ -844,8 +831,6 @@ fn reply_editing_post_locked_error() {
     ExtBuilder::default().build().execute_with(|| {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
-
-        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
@@ -878,7 +863,7 @@ fn reply_editing_post_locked_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
+        ensure_replies_equality(reply, SECOND_OWNER_PARTICIPANT_ID, ParentId::Post(FIRST_ID));
 
         // Failure checked
         assert_failure(
@@ -925,8 +910,6 @@ fn reply_editing_ownership_error() {
             <Runtime as Trait>::ReplyDeposit::get(),
         );
 
-        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
-
         create_reply(
             SECOND_OWNER_ORIGIN,
             SECOND_OWNER_PARTICIPANT_ID,
@@ -950,7 +933,7 @@ fn reply_editing_ownership_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
+        ensure_replies_equality(reply, SECOND_OWNER_PARTICIPANT_ID, ParentId::Post(FIRST_ID));
 
         // Failure checked
         assert_failure(
@@ -986,8 +969,6 @@ fn reply_editing_participant_error() {
         // Create post for future replies
         create_post(Origin::root()).unwrap();
 
-        let reply_owner_id = ensure_signed(Origin::signed(SECOND_OWNER_ORIGIN)).unwrap();
-
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
             <Runtime as Trait>::ReplyDeposit::get(),
@@ -1012,7 +993,7 @@ fn reply_editing_participant_error() {
         let reply = reply_by_id(FIRST_ID, FIRST_ID);
 
         // Compare with default unedited reply
-        ensure_replies_equality(reply, reply_owner_id, ParentId::Post(FIRST_ID));
+        ensure_replies_equality(reply, SECOND_OWNER_PARTICIPANT_ID, ParentId::Post(FIRST_ID));
 
         // Failure checked
         assert_failure(

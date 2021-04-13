@@ -12,9 +12,9 @@ use sp_runtime::{
     DispatchResult, Perbill,
 };
 
-pub(crate) const FIRST_OWNER_ORIGIN: u64 = 0;
+pub(crate) const FIRST_OWNER_ORIGIN: u128 = 0;
 pub(crate) const FIRST_OWNER_PARTICIPANT_ID: u64 = 0;
-pub(crate) const SECOND_OWNER_ORIGIN: u64 = 2;
+pub(crate) const SECOND_OWNER_ORIGIN: u128 = 2;
 pub(crate) const SECOND_OWNER_PARTICIPANT_ID: u64 = 2;
 pub(crate) const BAD_MEMBER_ID: u64 = 100000;
 
@@ -55,7 +55,7 @@ impl frame_system::Trait for Runtime {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = TestEvent;
@@ -262,7 +262,7 @@ impl WeightInfo for () {
     fn edit_reply(_: u32) -> Weight {
         unimplemented!()
     }
-    fn delete_reply() -> Weight {
+    fn delete_replies(_: u32) -> Weight {
         unimplemented!()
     }
 }
@@ -406,7 +406,7 @@ pub fn get_reply_text() -> Vec<u8> {
 }
 
 pub fn get_reply(
-    owner: <Runtime as frame_system::Trait>::AccountId,
+    owner: ParticipantId<Runtime>,
     parent_id: ParentId<<Runtime as Trait>::ReplyId, PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
@@ -419,7 +419,7 @@ pub fn get_reply(
 }
 
 pub fn create_reply(
-    origin_id: u64,
+    origin_id: u128,
     participant_id: u64,
     post_id: PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
@@ -437,7 +437,7 @@ pub fn create_reply(
 }
 
 pub fn delete_reply(
-    origin_id: u64,
+    origin_id: u128,
     participant_id: u64,
     post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,
@@ -445,12 +445,16 @@ pub fn delete_reply(
     TestBlogModule::delete_replies(
         Origin::signed(origin_id),
         participant_id,
-        vec![(post_id, reply_id, false)],
+        vec![ReplyToDelete {
+            post_id,
+            reply_id,
+            hide: false,
+        }],
     )
 }
 
 pub fn edit_reply(
-    origin_id: u64,
+    origin_id: u128,
     participant_id: u64,
     post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,

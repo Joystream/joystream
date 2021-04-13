@@ -310,17 +310,18 @@ benchmarks_instance! {
         let post_id = generate_post::<T, I>();
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let mut replies = Vec::new();
+        let hide = false;
 
         for _ in 0..=i {
             let reply_id =
                 generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
-            replies.push((post_id, reply_id, false));
+            replies.push(ReplyToDelete {post_id, reply_id, hide});
         }
 
         let origin = RawOrigin::Signed(account_id);
     }: _(origin.clone(), participant_id, replies.clone())
     verify {
-        for (post_id, reply_id, hide) in replies {
+        for ReplyToDelete {post_id, reply_id, hide} in replies {
             assert!(!<ReplyById<T, I>>::contains_key(post_id, reply_id));
 
             assert_in_events::<T, I>(RawEvent::ReplyDeleted(

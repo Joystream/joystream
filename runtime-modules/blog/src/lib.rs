@@ -47,7 +47,7 @@ use frame_support::{
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::SaturatedConversion;
 use sp_runtime::{
-    traits::{AccountIdConversion, Hash, MaybeSerialize, Member},
+    traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating},
     ModuleId,
 };
 use sp_std::prelude::*;
@@ -81,7 +81,7 @@ pub trait WeightInfo {
     fn create_reply_to_post(t: u32) -> Weight;
     fn create_reply_to_reply(t: u32) -> Weight;
     fn edit_reply(t: u32) -> Weight;
-    fn delete_reply() -> Weight;
+    fn delete_replies(i: u32) -> Weight;
 }
 
 type BlogWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
@@ -330,6 +330,17 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
         self.text_hash = T::Hashing::hash(&new_text);
         self.last_edited = frame_system::Module::<T>::block_number()
     }
+}
+
+/// Represents a single reply that will be deleted by `delete_replies`
+#[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
+pub struct ReplyToDelete<ReplyId> {
+    /// Id of the post corresponding to the reply that will be deleted
+    post_id: PostId,
+    /// Id of the reply to be deleted
+    reply_id: ReplyId,
+    /// Whether to hide the reply or just remove it from the storage
+    hide: bool,
 }
 
 // Blog`s pallet storage items.
@@ -642,20 +653,20 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)` doesn't depends on the state or parameters
+        /// `O (1)` doesn't depend on the state or parameters
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = BlogWeightInfo::<T, I>::delete_reply()]
+        #[weight = BlogWeightInfo::<T, I>::delete_replies(replies.len().saturated_into())]
         pub fn delete_replies(
             origin,
             participant_id: ParticipantId<T>,
-            replies: Vec<(PostId, T::ReplyId, bool)>,
+            replies: Vec<ReplyToDelete<T::ReplyId>>,
         ) -> DispatchResult {
             let account_id = Self::ensure_valid_participant(origin, participant_id)?;
 
             let mut erase_replies = Vec::new();
-            for (post_id, reply_id, hide) in replies {
+            for ReplyToDelete { post_id, reply_id, hide } in replies {
                 // Ensure post with given id exists
                 let post = Self::ensure_post_exists(post_id)?;
 
@@ -666,7 +677,7 @@ decl_module! {
                 let reply = Self::ensure_reply_exists(post_id, reply_id)?;
 
                 // Ensure reply -> owner relation exists if post lifetime hasn't ran out
-                if (frame_system::Module::<T>::block_number() - reply.last_edited) <
+                if (frame_system::Module::<T>::block_number().saturating_sub(reply.last_edited)) <
                     T::ReplyLifetime::get()
                 {
                     Self::ensure_reply_ownership(&reply, &participant_id)?;
