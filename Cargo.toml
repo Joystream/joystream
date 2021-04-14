@@ -16,7 +16,7 @@ members = [
 	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
 	"runtime-modules/content",
-	#"node",
+	"node",
 	#"utils/chain-spec-builder/"
 ]
 
