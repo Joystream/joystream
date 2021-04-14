@@ -16,7 +16,6 @@ set +a
 
 yarn query-node:build
 yarn mappings:build
-ln ../types/augment/all/defs.json mappings/lib/generated/types/typedefs.json
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
