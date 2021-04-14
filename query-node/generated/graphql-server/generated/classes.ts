@@ -2493,11 +2493,11 @@ export enum VideoOrderByEnum {
   duration_ASC = "duration_ASC",
   duration_DESC = "duration_DESC",
 
-  thumbnailDataObjectId_ASC = "thumbnailDataObjectId_ASC",
-  thumbnailDataObjectId_DESC = "thumbnailDataObjectId_DESC",
+  thumbnailPhotoDataObjectId_ASC = "thumbnailPhotoDataObjectId_ASC",
+  thumbnailPhotoDataObjectId_DESC = "thumbnailPhotoDataObjectId_DESC",
 
-  thumbnailAvailability_ASC = "thumbnailAvailability_ASC",
-  thumbnailAvailability_DESC = "thumbnailAvailability_DESC",
+  thumbnailPhotoAvailability_ASC = "thumbnailPhotoAvailability_ASC",
+  thumbnailPhotoAvailability_DESC = "thumbnailPhotoAvailability_DESC",
 
   languageId_ASC = "languageId_ASC",
   languageId_DESC = "languageId_DESC",
@@ -2675,16 +2675,16 @@ export class VideoWhereInput {
   duration_in?: number[];
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  thumbnailDataObjectId_eq?: string;
+  thumbnailPhotoDataObjectId_eq?: string;
 
   @TypeGraphQLField(() => [ID], { nullable: true })
-  thumbnailDataObjectId_in?: string[];
+  thumbnailPhotoDataObjectId_in?: string[];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
-  thumbnailAvailability_eq?: AssetAvailability;
+  thumbnailPhotoAvailability_eq?: AssetAvailability;
 
   @TypeGraphQLField(() => [AssetAvailability], { nullable: true })
-  thumbnailAvailability_in?: AssetAvailability[];
+  thumbnailPhotoAvailability_in?: AssetAvailability[];
 
   @TypeGraphQLField(() => ID, { nullable: true })
   languageId_eq?: string;
@@ -2804,13 +2804,13 @@ export class VideoCreateInput {
   duration?: number;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  thumbnailDataObjectId?: string;
+  thumbnailPhotoDataObjectId?: string;
 
   @TypeGraphQLField(() => [String])
-  thumbnailUrls!: string[];
+  thumbnailPhotoUrls!: string[];
 
   @TypeGraphQLField(() => AssetAvailability)
-  thumbnailAvailability!: AssetAvailability;
+  thumbnailPhotoAvailability!: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
   languageId?: string;
@@ -2870,13 +2870,13 @@ export class VideoUpdateInput {
   duration?: number;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  thumbnailDataObjectId?: string;
+  thumbnailPhotoDataObjectId?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
-  thumbnailUrls?: string[];
+  thumbnailPhotoUrls?: string[];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
-  thumbnailAvailability?: AssetAvailability;
+  thumbnailPhotoAvailability?: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
   languageId?: string;
@@ -3276,11 +3276,11 @@ export enum ChannelOrderByEnum {
   coverPhotoAvailability_ASC = "coverPhotoAvailability_ASC",
   coverPhotoAvailability_DESC = "coverPhotoAvailability_DESC",
 
-  avatarDataObjectId_ASC = "avatarDataObjectId_ASC",
-  avatarDataObjectId_DESC = "avatarDataObjectId_DESC",
+  avatarPhotoDataObjectId_ASC = "avatarPhotoDataObjectId_ASC",
+  avatarPhotoDataObjectId_DESC = "avatarPhotoDataObjectId_DESC",
 
-  avatarAvailability_ASC = "avatarAvailability_ASC",
-  avatarAvailability_DESC = "avatarAvailability_DESC",
+  avatarPhotoAvailability_ASC = "avatarPhotoAvailability_ASC",
+  avatarPhotoAvailability_DESC = "avatarPhotoAvailability_DESC",
 
   isPublic_ASC = "isPublic_ASC",
   isPublic_DESC = "isPublic_DESC",
@@ -3449,16 +3449,16 @@ export class ChannelWhereInput {
   coverPhotoAvailability_in?: AssetAvailability[];
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  avatarDataObjectId_eq?: string;
+  avatarPhotoDataObjectId_eq?: string;
 
   @TypeGraphQLField(() => [ID], { nullable: true })
-  avatarDataObjectId_in?: string[];
+  avatarPhotoDataObjectId_in?: string[];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
-  avatarAvailability_eq?: AssetAvailability;
+  avatarPhotoAvailability_eq?: AssetAvailability;
 
   @TypeGraphQLField(() => [AssetAvailability], { nullable: true })
-  avatarAvailability_in?: AssetAvailability[];
+  avatarPhotoAvailability_in?: AssetAvailability[];
 
   @TypeGraphQLField(() => Boolean, { nullable: true })
   isPublic_eq?: Boolean;
@@ -3533,13 +3533,13 @@ export class ChannelCreateInput {
   coverPhotoAvailability!: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  avatarDataObjectId?: string;
+  avatarPhotoDataObjectId?: string;
 
   @TypeGraphQLField(() => [String])
-  avatarUrls!: string[];
+  avatarPhotoUrls!: string[];
 
   @TypeGraphQLField(() => AssetAvailability)
-  avatarAvailability!: AssetAvailability;
+  avatarPhotoAvailability!: AssetAvailability;
 
   @TypeGraphQLField({ nullable: true })
   isPublic?: boolean;
@@ -3584,13 +3584,13 @@ export class ChannelUpdateInput {
   coverPhotoAvailability?: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  avatarDataObjectId?: string;
+  avatarPhotoDataObjectId?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
-  avatarUrls?: string[];
+  avatarPhotoUrls?: string[];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
-  avatarAvailability?: AssetAvailability;
+  avatarPhotoAvailability?: AssetAvailability;
 
   @TypeGraphQLField({ nullable: true })
   isPublic?: boolean;

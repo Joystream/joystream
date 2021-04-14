@@ -96,14 +96,14 @@ type Channel implements BaseGraphQLObject {
 
   """Availability meta information"""
   coverPhotoAvailability: AssetAvailability!
-  avatarDataObject: DataObject
-  avatarDataObjectId: String
+  avatarPhotoDataObject: DataObject
+  avatarPhotoDataObjectId: String
 
   """URLs where the asset content can be accessed (if any)"""
-  avatarUrls: [String!]!
+  avatarPhotoUrls: [String!]!
 
   """Availability meta information"""
-  avatarAvailability: AssetAvailability!
+  avatarPhotoAvailability: AssetAvailability!
 
   """Flag signaling whether a channel is public."""
   isPublic: Boolean
@@ -234,9 +234,9 @@ input ChannelCreateInput {
   coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]!
   coverPhotoAvailability: AssetAvailability!
-  avatarDataObjectId: ID
-  avatarUrls: [String!]!
-  avatarAvailability: AssetAvailability!
+  avatarPhotoDataObjectId: ID
+  avatarPhotoUrls: [String!]!
+  avatarPhotoAvailability: AssetAvailability!
   isPublic: Boolean
   isCensored: Boolean!
   languageId: ID
@@ -271,10 +271,10 @@ enum ChannelOrderByInput {
   coverPhotoDataObjectId_DESC
   coverPhotoAvailability_ASC
   coverPhotoAvailability_DESC
-  avatarDataObjectId_ASC
-  avatarDataObjectId_DESC
-  avatarAvailability_ASC
-  avatarAvailability_DESC
+  avatarPhotoDataObjectId_ASC
+  avatarPhotoDataObjectId_DESC
+  avatarPhotoAvailability_ASC
+  avatarPhotoAvailability_DESC
   isPublic_ASC
   isPublic_DESC
   isCensored_ASC
@@ -295,9 +295,9 @@ input ChannelUpdateInput {
   coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]
   coverPhotoAvailability: AssetAvailability
-  avatarDataObjectId: ID
-  avatarUrls: [String!]
-  avatarAvailability: AssetAvailability
+  avatarPhotoDataObjectId: ID
+  avatarPhotoUrls: [String!]
+  avatarPhotoAvailability: AssetAvailability
   isPublic: Boolean
   isCensored: Boolean
   languageId: ID
@@ -354,10 +354,10 @@ input ChannelWhereInput {
   coverPhotoDataObjectId_in: [ID!]
   coverPhotoAvailability_eq: AssetAvailability
   coverPhotoAvailability_in: [AssetAvailability!]
-  avatarDataObjectId_eq: ID
-  avatarDataObjectId_in: [ID!]
-  avatarAvailability_eq: AssetAvailability
-  avatarAvailability_in: [AssetAvailability!]
+  avatarPhotoDataObjectId_eq: ID
+  avatarPhotoDataObjectId_in: [ID!]
+  avatarPhotoAvailability_eq: AssetAvailability
+  avatarPhotoAvailability_in: [AssetAvailability!]
   isPublic_eq: Boolean
   isPublic_in: [Boolean!]
   isCensored_eq: Boolean
@@ -494,8 +494,8 @@ type DataObject implements BaseGraphQLObject {
   """Joystream runtime content"""
   joystreamContentId: String!
   channelcoverPhotoDataObject: [Channel!]
-  channelavatarDataObject: [Channel!]
-  videothumbnailDataObject: [Video!]
+  channelavatarPhotoDataObject: [Channel!]
+  videothumbnailPhotoDataObject: [Video!]
   videomediaDataObject: [Video!]
 }
 
@@ -1481,14 +1481,14 @@ type Video implements BaseGraphQLObject {
 
   """Video duration in seconds"""
   duration: Int
-  thumbnailDataObject: DataObject
-  thumbnailDataObjectId: String
+  thumbnailPhotoDataObject: DataObject
+  thumbnailPhotoDataObjectId: String
 
   """URLs where the asset content can be accessed (if any)"""
-  thumbnailUrls: [String!]!
+  thumbnailPhotoUrls: [String!]!
 
   """Availability meta information"""
-  thumbnailAvailability: AssetAvailability!
+  thumbnailPhotoAvailability: AssetAvailability!
   language: Language
   languageId: String
 
@@ -1640,9 +1640,9 @@ input VideoCreateInput {
   title: String
   description: String
   duration: Float
-  thumbnailDataObjectId: ID
-  thumbnailUrls: [String!]!
-  thumbnailAvailability: AssetAvailability!
+  thumbnailPhotoDataObjectId: ID
+  thumbnailPhotoUrls: [String!]!
+  thumbnailPhotoAvailability: AssetAvailability!
   languageId: ID
   hasMarketing: Boolean
   publishedBeforeJoystream: DateTime
@@ -1912,10 +1912,10 @@ enum VideoOrderByInput {
   description_DESC
   duration_ASC
   duration_DESC
-  thumbnailDataObjectId_ASC
-  thumbnailDataObjectId_DESC
-  thumbnailAvailability_ASC
-  thumbnailAvailability_DESC
+  thumbnailPhotoDataObjectId_ASC
+  thumbnailPhotoDataObjectId_DESC
+  thumbnailPhotoAvailability_ASC
+  thumbnailPhotoAvailability_DESC
   languageId_ASC
   languageId_DESC
   hasMarketing_ASC
@@ -1948,9 +1948,9 @@ input VideoUpdateInput {
   title: String
   description: String
   duration: Float
-  thumbnailDataObjectId: ID
-  thumbnailUrls: [String!]
-  thumbnailAvailability: AssetAvailability
+  thumbnailPhotoDataObjectId: ID
+  thumbnailPhotoUrls: [String!]
+  thumbnailPhotoAvailability: AssetAvailability
   languageId: ID
   hasMarketing: Boolean
   publishedBeforeJoystream: DateTime
@@ -2011,10 +2011,10 @@ input VideoWhereInput {
   duration_lt: Int
   duration_lte: Int
   duration_in: [Int!]
-  thumbnailDataObjectId_eq: ID
-  thumbnailDataObjectId_in: [ID!]
-  thumbnailAvailability_eq: AssetAvailability
-  thumbnailAvailability_in: [AssetAvailability!]
+  thumbnailPhotoDataObjectId_eq: ID
+  thumbnailPhotoDataObjectId_in: [ID!]
+  thumbnailPhotoAvailability_eq: AssetAvailability
+  thumbnailPhotoAvailability_in: [AssetAvailability!]
   languageId_eq: ID
   languageId_in: [ID!]
   hasMarketing_eq: Boolean

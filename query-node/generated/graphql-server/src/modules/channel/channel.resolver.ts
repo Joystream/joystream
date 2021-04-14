@@ -179,12 +179,12 @@ export class ChannelResolver {
   }
 
   @FieldResolver(() => DataObject)
-  async avatarDataObject(@Root() r: Channel): Promise<DataObject | null> {
+  async avatarPhotoDataObject(@Root() r: Channel): Promise<DataObject | null> {
     const result = await getConnection()
       .getRepository(Channel)
-      .findOne(r.id, { relations: ['avatarDataObject'] });
-    if (result && result.avatarDataObject !== undefined) {
-      return result.avatarDataObject;
+      .findOne(r.id, { relations: ['avatarPhotoDataObject'] });
+    if (result && result.avatarPhotoDataObject !== undefined) {
+      return result.avatarPhotoDataObject;
     }
     return null;
   }

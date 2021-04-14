@@ -203,13 +203,13 @@ type Channel @entity {
   # Channel's avatar photo.
 
   "Asset's data object"
-  avatarDataObject: DataObject
+  avatarPhotoDataObject: DataObject
 
   "URLs where the asset content can be accessed (if any)"
-  avatarUrls: [String!]
+  avatarPhotoUrls: [String!]
 
   "Availability meta information"
-  avatarAvailability: AssetAvailability!
+  avatarPhotoAvailability: AssetAvailability!
 
   ##########################
 
@@ -276,13 +276,13 @@ type Video @entity {
   # Video thumbnail (recommended ratio: 16:9)
 
   "Asset's data object"
-  thumbnailDataObject: DataObject
+  thumbnailPhotoDataObject: DataObject
 
   "URLs where the asset content can be accessed (if any)"
-  thumbnailUrls: [String!]
+  thumbnailPhotoUrls: [String!]
 
   "Availability meta information"
-  thumbnailAvailability: AssetAvailability!
+  thumbnailPhotoAvailability: AssetAvailability!
 
   ##########################
 

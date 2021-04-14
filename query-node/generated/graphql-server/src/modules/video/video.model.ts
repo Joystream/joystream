@@ -49,23 +49,23 @@ export class Video extends BaseModel {
   })
   duration?: number;
 
-  @ManyToOne(() => DataObject, (param: DataObject) => param.videothumbnailDataObject, {
+  @ManyToOne(() => DataObject, (param: DataObject) => param.videothumbnailPhotoDataObject, {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
   })
-  thumbnailDataObject?: DataObject;
+  thumbnailPhotoDataObject?: DataObject;
 
   @CustomField({
     db: { type: 'text', array: true },
     api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` },
   })
-  thumbnailUrls!: string[];
+  thumbnailPhotoUrls!: string[];
 
   @EnumField('AssetAvailability', AssetAvailability, {
     description: `Availability meta information`,
   })
-  thumbnailAvailability!: AssetAvailability;
+  thumbnailPhotoAvailability!: AssetAvailability;
 
   @ManyToOne(() => Language, (param: Language) => param.videolanguage, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   language?: Language;

@@ -158,12 +158,12 @@ export class VideoResolver {
   }
 
   @FieldResolver(() => DataObject)
-  async thumbnailDataObject(@Root() r: Video): Promise<DataObject | null> {
+  async thumbnailPhotoDataObject(@Root() r: Video): Promise<DataObject | null> {
     const result = await getConnection()
       .getRepository(Video)
-      .findOne(r.id, { relations: ['thumbnailDataObject'] });
-    if (result && result.thumbnailDataObject !== undefined) {
-      return result.thumbnailDataObject;
+      .findOne(r.id, { relations: ['thumbnailPhotoDataObject'] });
+    if (result && result.thumbnailPhotoDataObject !== undefined) {
+      return result.thumbnailPhotoDataObject;
     }
     return null;
   }

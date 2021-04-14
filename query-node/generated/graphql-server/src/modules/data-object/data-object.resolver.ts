@@ -142,23 +142,23 @@ export class DataObjectResolver {
   }
 
   @FieldResolver(() => Channel)
-  async channelavatarDataObject(@Root() r: DataObject): Promise<Channel[] | null> {
+  async channelavatarPhotoDataObject(@Root() r: DataObject): Promise<Channel[] | null> {
     const result = await getConnection()
       .getRepository(DataObject)
-      .findOne(r.id, { relations: ['channelavatarDataObject'] });
-    if (result && result.channelavatarDataObject !== undefined) {
-      return result.channelavatarDataObject;
+      .findOne(r.id, { relations: ['channelavatarPhotoDataObject'] });
+    if (result && result.channelavatarPhotoDataObject !== undefined) {
+      return result.channelavatarPhotoDataObject;
     }
     return null;
   }
 
   @FieldResolver(() => Video)
-  async videothumbnailDataObject(@Root() r: DataObject): Promise<Video[] | null> {
+  async videothumbnailPhotoDataObject(@Root() r: DataObject): Promise<Video[] | null> {
     const result = await getConnection()
       .getRepository(DataObject)
-      .findOne(r.id, { relations: ['videothumbnailDataObject'] });
-    if (result && result.videothumbnailDataObject !== undefined) {
-      return result.videothumbnailDataObject;
+      .findOne(r.id, { relations: ['videothumbnailPhotoDataObject'] });
+    if (result && result.videothumbnailPhotoDataObject !== undefined) {
+      return result.videothumbnailPhotoDataObject;
     }
     return null;
   }

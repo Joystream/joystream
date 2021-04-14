@@ -74,11 +74,11 @@ export class DataObject extends BaseModel {
   @OneToMany(() => Channel, (param: Channel) => param.coverPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
   channelcoverPhotoDataObject?: Channel[];
 
-  @OneToMany(() => Channel, (param: Channel) => param.avatarDataObject, { nullable: true, cascade: ["insert", "update"] })
-  channelavatarDataObject?: Channel[];
+  @OneToMany(() => Channel, (param: Channel) => param.avatarPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
+  channelavatarPhotoDataObject?: Channel[];
 
-  @OneToMany(() => Video, (param: Video) => param.thumbnailDataObject, { nullable: true, cascade: ["insert", "update"] })
-  videothumbnailDataObject?: Video[];
+  @OneToMany(() => Video, (param: Video) => param.thumbnailPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
+  videothumbnailPhotoDataObject?: Video[];
 
   @OneToMany(() => Video, (param: Video) => param.mediaDataObject, { nullable: true, cascade: ["insert", "update"] })
   videomediaDataObject?: Video[];

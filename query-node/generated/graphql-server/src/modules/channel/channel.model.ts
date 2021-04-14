@@ -71,23 +71,23 @@ export class Channel extends BaseModel {
   })
   coverPhotoAvailability!: AssetAvailability;
 
-  @ManyToOne(() => DataObject, (param: DataObject) => param.channelavatarDataObject, {
+  @ManyToOne(() => DataObject, (param: DataObject) => param.channelavatarPhotoDataObject, {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
   })
-  avatarDataObject?: DataObject;
+  avatarPhotoDataObject?: DataObject;
 
   @CustomField({
     db: { type: 'text', array: true },
     api: { type: 'string', description: `URLs where the asset content can be accessed (if any)` },
   })
-  avatarUrls!: string[];
+  avatarPhotoUrls!: string[];
 
   @EnumField('AssetAvailability', AssetAvailability, {
     description: `Availability meta information`,
   })
-  avatarAvailability!: AssetAvailability;
+  avatarPhotoAvailability!: AssetAvailability;
 
   @BooleanField({
     nullable: true,

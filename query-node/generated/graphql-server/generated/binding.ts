@@ -115,10 +115,10 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'coverPhotoDataObjectId_DESC' |
   'coverPhotoAvailability_ASC' |
   'coverPhotoAvailability_DESC' |
-  'avatarDataObjectId_ASC' |
-  'avatarDataObjectId_DESC' |
-  'avatarAvailability_ASC' |
-  'avatarAvailability_DESC' |
+  'avatarPhotoDataObjectId_ASC' |
+  'avatarPhotoDataObjectId_DESC' |
+  'avatarPhotoAvailability_ASC' |
+  'avatarPhotoAvailability_DESC' |
   'isPublic_ASC' |
   'isPublic_DESC' |
   'isCensored_ASC' |
@@ -281,10 +281,10 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'description_DESC' |
   'duration_ASC' |
   'duration_DESC' |
-  'thumbnailDataObjectId_ASC' |
-  'thumbnailDataObjectId_DESC' |
-  'thumbnailAvailability_ASC' |
-  'thumbnailAvailability_DESC' |
+  'thumbnailPhotoDataObjectId_ASC' |
+  'thumbnailPhotoDataObjectId_DESC' |
+  'thumbnailPhotoAvailability_ASC' |
+  'thumbnailPhotoAvailability_DESC' |
   'languageId_ASC' |
   'languageId_DESC' |
   'hasMarketing_ASC' |
@@ -396,9 +396,9 @@ export interface ChannelCreateInput {
   coverPhotoDataObjectId?: ID_Input | null
   coverPhotoUrls: Array<String>
   coverPhotoAvailability: AssetAvailability
-  avatarDataObjectId?: ID_Input | null
-  avatarUrls: Array<String>
-  avatarAvailability: AssetAvailability
+  avatarPhotoDataObjectId?: ID_Input | null
+  avatarPhotoUrls: Array<String>
+  avatarPhotoAvailability: AssetAvailability
   isPublic?: Boolean | null
   isCensored: Boolean
   languageId?: ID_Input | null
@@ -415,9 +415,9 @@ export interface ChannelUpdateInput {
   coverPhotoDataObjectId?: ID_Input | null
   coverPhotoUrls?: String[] | String | null
   coverPhotoAvailability?: AssetAvailability | null
-  avatarDataObjectId?: ID_Input | null
-  avatarUrls?: String[] | String | null
-  avatarAvailability?: AssetAvailability | null
+  avatarPhotoDataObjectId?: ID_Input | null
+  avatarPhotoUrls?: String[] | String | null
+  avatarPhotoAvailability?: AssetAvailability | null
   isPublic?: Boolean | null
   isCensored?: Boolean | null
   languageId?: ID_Input | null
@@ -474,10 +474,10 @@ export interface ChannelWhereInput {
   coverPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
   coverPhotoAvailability_eq?: AssetAvailability | null
   coverPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
-  avatarDataObjectId_eq?: ID_Input | null
-  avatarDataObjectId_in?: ID_Output[] | ID_Output | null
-  avatarAvailability_eq?: AssetAvailability | null
-  avatarAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  avatarPhotoDataObjectId_eq?: ID_Input | null
+  avatarPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  avatarPhotoAvailability_eq?: AssetAvailability | null
+  avatarPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
   isPublic_eq?: Boolean | null
   isPublic_in?: Boolean[] | Boolean | null
   isCensored_eq?: Boolean | null
@@ -1180,9 +1180,9 @@ export interface VideoCreateInput {
   title?: String | null
   description?: String | null
   duration?: Float | null
-  thumbnailDataObjectId?: ID_Input | null
-  thumbnailUrls: Array<String>
-  thumbnailAvailability: AssetAvailability
+  thumbnailPhotoDataObjectId?: ID_Input | null
+  thumbnailPhotoUrls: Array<String>
+  thumbnailPhotoAvailability: AssetAvailability
   languageId?: ID_Input | null
   hasMarketing?: Boolean | null
   publishedBeforeJoystream?: DateTime | null
@@ -1335,9 +1335,9 @@ export interface VideoUpdateInput {
   title?: String | null
   description?: String | null
   duration?: Float | null
-  thumbnailDataObjectId?: ID_Input | null
-  thumbnailUrls?: String[] | String | null
-  thumbnailAvailability?: AssetAvailability | null
+  thumbnailPhotoDataObjectId?: ID_Input | null
+  thumbnailPhotoUrls?: String[] | String | null
+  thumbnailPhotoAvailability?: AssetAvailability | null
   languageId?: ID_Input | null
   hasMarketing?: Boolean | null
   publishedBeforeJoystream?: DateTime | null
@@ -1398,10 +1398,10 @@ export interface VideoWhereInput {
   duration_lt?: Int | null
   duration_lte?: Int | null
   duration_in?: Int[] | Int | null
-  thumbnailDataObjectId_eq?: ID_Input | null
-  thumbnailDataObjectId_in?: ID_Output[] | ID_Output | null
-  thumbnailAvailability_eq?: AssetAvailability | null
-  thumbnailAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  thumbnailPhotoDataObjectId_eq?: ID_Input | null
+  thumbnailPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  thumbnailPhotoAvailability_eq?: AssetAvailability | null
+  thumbnailPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
   languageId_eq?: ID_Input | null
   languageId_in?: ID_Output[] | ID_Output | null
   hasMarketing_eq?: Boolean | null
@@ -1498,10 +1498,10 @@ export interface Channel extends BaseGraphQLObject {
   coverPhotoDataObjectId?: String | null
   coverPhotoUrls: Array<String>
   coverPhotoAvailability: AssetAvailability
-  avatarDataObject?: DataObject | null
-  avatarDataObjectId?: String | null
-  avatarUrls: Array<String>
-  avatarAvailability: AssetAvailability
+  avatarPhotoDataObject?: DataObject | null
+  avatarPhotoDataObjectId?: String | null
+  avatarPhotoUrls: Array<String>
+  avatarPhotoAvailability: AssetAvailability
   isPublic?: Boolean | null
   isCensored: Boolean
   language?: Language | null
@@ -1604,8 +1604,8 @@ export interface DataObject extends BaseGraphQLObject {
   ipfsContentId: String
   joystreamContentId: String
   channelcoverPhotoDataObject?: Array<Channel> | null
-  channelavatarDataObject?: Array<Channel> | null
-  videothumbnailDataObject?: Array<Video> | null
+  channelavatarPhotoDataObject?: Array<Channel> | null
+  videothumbnailPhotoDataObject?: Array<Video> | null
   videomediaDataObject?: Array<Video> | null
 }
 
@@ -1802,10 +1802,10 @@ export interface Video extends BaseGraphQLObject {
   title?: String | null
   description?: String | null
   duration?: Int | null
-  thumbnailDataObject?: DataObject | null
-  thumbnailDataObjectId?: String | null
-  thumbnailUrls: Array<String>
-  thumbnailAvailability: AssetAvailability
+  thumbnailPhotoDataObject?: DataObject | null
+  thumbnailPhotoDataObjectId?: String | null
+  thumbnailPhotoUrls: Array<String>
+  thumbnailPhotoAvailability: AssetAvailability
   language?: Language | null
   languageId?: String | null
   hasMarketing?: Boolean | null
