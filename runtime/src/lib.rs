@@ -33,6 +33,7 @@ mod runtime_api;
 mod tests;
 mod weights; // Runtime integration tests
 
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, KeyOwnerProofSystem, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
@@ -681,6 +682,14 @@ impl storage_v2::Trait for Runtime {
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
+
+    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        StorageWorkingGroup::ensure_origin_is_active_leader(origin)
+    }
+
+    fn ensure_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
+        StorageWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+    }
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

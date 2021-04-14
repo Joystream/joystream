@@ -25,7 +25,6 @@ use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
-use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
@@ -62,10 +61,15 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Defines max allowed storage bucket number.
     type MaxStorageBucketNumber: Get<u64>;
-}
 
-// /// Member identifier in membership::member module
-// pub type MemberId<T> = <T as membership::Trait>::MemberId;
+    /// Demand the working group leader authorization.
+    /// TODO: Refactor after merging with the Olympia release.
+    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
+
+    /// Validate origin for the worker.
+    /// TODO: Refactor after merging with the Olympia release.
+    fn ensure_worker_origin(origin: Self::Origin, worker_id: WorkerId<Self>) -> DispatchResult;
+}
 
 /// Type identifier for worker role, which must be same as membership actor identifier
 pub type WorkerId<T> = <T as membership::Trait>::ActorId;
@@ -280,6 +284,12 @@ decl_event! {
         /// - flag "accepting_new_data_objects"
         /// - voucher struct
         StorageBucketCreated(StorageBucketId, Option<WorkerId>, bool, Voucher),
+
+        /// Emits on accepting the storage bucket invitation.
+        /// Params
+        /// - storage bucket ID
+        /// - invited worker ID
+        StorageBucketInvitationAccepted(StorageBucketId, WorkerId),
     }
 }
 
@@ -291,6 +301,18 @@ decl_error! {
 
         /// Empty "data object creation" collection.
         NoObjectsOnUpload,
+
+        /// The requested storage bucket doesn't exist.
+        StorageBucketDoesntExist,
+
+        /// Cannot accept an invitation: there is no storage bucket invitation.
+        NoStorageBucketInvitation,
+
+        /// Cannot accept an invitation: storage provider was already set.
+        StorageProviderAlreadySet,
+
+        /// Cannot accept an invitation: another storage provider was invited.
+        DifferentStorageProviderInvited,
     }
 }
 
@@ -337,7 +359,7 @@ decl_module! {
             accepting_new_data_objects: bool,
             voucher: Voucher
         ) {
-            ensure_signed(origin)?; // TODO: change to the WG lead verification
+            T::ensure_working_group_leader_origin(origin)?;
 
             let buckets_number = Self::storage_buckets_number();
             ensure!(
@@ -379,8 +401,7 @@ decl_module! {
                 )
             );
         }
-
-
+        
         // ===== Storage Operator actions =====
 
         //TODO: add comment
@@ -403,16 +424,36 @@ decl_module! {
             //TODO implement
         }
 
-        //TODO: add comment
+        /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn accept_storage_bucket_invitation(_origin, _storage_bucket_id: T::StorageBucketId) {
-            //TODO implement
+        pub fn accept_storage_bucket_invitation(
+            origin,
+            worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId
+        ) {
+            T::ensure_worker_origin(origin, worker_id)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_invitation_status(&bucket, worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.operator_status = StorageBucketOperatorStatus::StorageWorker(worker_id);
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketInvitationAccepted(storage_bucket_id, worker_id)
+            );
         }
     }
 }
 
 impl<T: Trait> Module<T> {
-    // TODO: add comment
+    // Validates upload parameters.
     fn validate_upload_parameter(params: &UploadParameters<T>) -> DispatchResult {
         //TODO implement
 
@@ -422,5 +463,41 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    // Ensures the existence of the storage bucket.
+    // Returns the StorageBucket object or error.
+    fn ensure_storage_bucket_exists(
+        storage_bucket_id: T::StorageBucketId,
+    ) -> Result<StorageBucket<WorkerId<T>>, Error<T>> {
+        ensure!(
+            <StorageBucketById<T>>::contains_key(storage_bucket_id),
+            Error::<T>::StorageBucketDoesntExist
+        );
+
+        Ok(Self::storage_bucket_by_id(storage_bucket_id))
+    }
+
+    // Ensures the correct invitation for the storage bucket and storage provider.
+    fn ensure_bucket_invitation_status(
+        bucket: &StorageBucket<WorkerId<T>>,
+        worker_id: WorkerId<T>,
+    ) -> DispatchResult {
+        match bucket.operator_status {
+            StorageBucketOperatorStatus::Missing => {
+                Err(Error::<T>::NoStorageBucketInvitation.into())
+            }
+            StorageBucketOperatorStatus::StorageWorker(_) => {
+                Err(Error::<T>::StorageProviderAlreadySet.into())
+            }
+            StorageBucketOperatorStatus::InvitedStorageWorker(invited_worker_id) => {
+                ensure!(
+                    worker_id == invited_worker_id,
+                    Error::<T>::DifferentStorageProviderInvited
+                );
+
+                Ok(())
+            }
+        }
     }
 }

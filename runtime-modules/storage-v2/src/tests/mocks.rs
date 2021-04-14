@@ -1,7 +1,8 @@
 #![cfg(test)]
 
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-pub use frame_system;
+use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -52,11 +53,34 @@ parameter_types! {
     pub const MaxStorageBucketNumber: u64 = 1;
 }
 
+pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
+pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
+
 impl crate::Trait for Test {
     type Event = TestEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
+
+    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        if account_id != WG_LEADER_ACCOUNT_ID {
+            Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
+            Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl membership::Trait for Test {

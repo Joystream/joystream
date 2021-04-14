@@ -5,7 +5,7 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Storage, System, Test, TestEvent};
 
-use crate::{RawEvent, Voucher};
+use crate::{RawEvent, StorageBucketOperatorStatus, Voucher};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -62,6 +62,7 @@ impl EventFixture {
 }
 
 const DEFAULT_ACCOUNT_ID: u64 = 1;
+const DEFAULT_WORKER_ID: u64 = 1;
 
 pub struct CreateStorageBucketFixture {
     origin: RawOrigin<u64>,
@@ -133,6 +134,59 @@ impl CreateStorageBucketFixture {
             ));
 
             None
+        }
+    }
+}
+
+pub struct AcceptStorageBucketInvitationFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    storage_bucket_id: u64,
+}
+
+impl AcceptStorageBucketInvitationFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            worker_id: DEFAULT_WORKER_ID,
+            storage_bucket_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
+        Self {
+            storage_bucket_id,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+
+        let actual_result = Storage::accept_storage_bucket_invitation(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.storage_bucket_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+        if actual_result.is_ok() {
+            assert_eq!(
+                new_bucket.operator_status,
+                StorageBucketOperatorStatus::StorageWorker(self.worker_id)
+            );
+        } else {
+            assert_eq!(old_bucket, new_bucket);
         }
     }
 }
