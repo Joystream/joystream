@@ -7,7 +7,7 @@ dataSource:
   chain: joystream
   indexerVersion: '0.1.6'
 entities:
-  - mappings/lib/generated/**/*.model.js
+  - generated/graphql-server/dist/**/*.model.js
 typegen:
   metadata:
     source: wss://sumer.joystream.app
