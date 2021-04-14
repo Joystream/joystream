@@ -50,6 +50,7 @@ use sp_runtime::{
     traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating},
     ModuleId,
 };
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
 mod benchmarking;
@@ -656,7 +657,7 @@ decl_module! {
         /// `O (R)` where
         /// - R is the number of replies to be deleted
         /// - DB:
-        ///    - O(1) doesn't depend on the state or parameters
+        ///    - O(R)
         /// # </weight>
         #[weight = BlogWeightInfo::<T, I>::delete_replies(replies.len().saturated_into())]
         pub fn delete_replies(
@@ -667,6 +668,7 @@ decl_module! {
             let account_id = Self::ensure_valid_participant(origin, participant_id)?;
 
             let mut erase_replies = Vec::new();
+            let mut pay_off_map = BTreeMap::new();
             for ReplyToDelete { post_id, reply_id, hide } in replies {
                 // Ensure post with given id exists
                 let post = Self::ensure_post_exists(post_id)?;
@@ -688,7 +690,18 @@ decl_module! {
                     ensure!(!hide, Error::<T, I>::ReplyOwnershipError);
                 }
 
+                *pay_off_map.entry(post_id).or_default() += reply.cleanup_pay_off;
                 erase_replies.push((post_id, reply_id, reply.cleanup_pay_off, hide));
+            }
+
+            for (post_id, post_deposit) in pay_off_map.into_iter() {
+                ensure!(
+                    Balances::<T>::usable_balance(
+                        &Self::get_treasury_account(post_id)
+                    ) >= post_deposit,
+                    Error::<T, I>::InsufficientBalanceInPostAccount
+
+                );
             }
 
             //
@@ -711,10 +724,13 @@ decl_module! {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    fn get_treasury_account(post_id: PostId) -> T::AccountId {
+        T::ModuleId::get().into_sub_account(post_id)
+    }
+
     fn pay_off(post_id: PostId, amount: BalanceOf<T>, account_id: &T::AccountId) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(post_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
-            &state_cleanup_treasury_account,
+            &Self::get_treasury_account(post_id),
             account_id,
             amount,
             ExistenceRequirement::AllowDeath,
@@ -726,10 +742,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         post_id: PostId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(post_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
-            &state_cleanup_treasury_account,
+            &Self::get_treasury_account(post_id),
             amount,
             ExistenceRequirement::AllowDeath,
         )

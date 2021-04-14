@@ -94,14 +94,14 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn generate_post<T: Trait<I>, I: Instance>() -> PostId {
-    assert_eq!(Blog::<T, I>::post_count(), 0);
+fn generate_post<T: Trait<I>, I: Instance>(seq_num: u64) -> PostId {
+    assert_eq!(Blog::<T, I>::post_count(), seq_num);
 
     Blog::<T, I>::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
 
-    let post_id = 0;
+    let post_id = seq_num;
 
-    assert_eq!(Blog::<T, I>::post_count(), 1);
+    assert_eq!(Blog::<T, I>::post_count(), seq_num + 1);
 
     assert_eq!(
         Blog::<T, I>::post_by_id(post_id),
@@ -170,7 +170,7 @@ benchmarks_instance! {
     }
 
     lock_post {
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
     }: _(RawOrigin::Root, post_id)
     verify {
         assert!(Blog::<T, I>::post_by_id(post_id).is_locked());
@@ -178,7 +178,7 @@ benchmarks_instance! {
     }
 
     unlock_post {
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         Blog::<T, I>::lock_post(RawOrigin::Root.into(), post_id).unwrap();
         assert!(Blog::<T, I>::post_by_id(post_id).is_locked());
     }: _(RawOrigin::Root, post_id)
@@ -191,7 +191,7 @@ benchmarks_instance! {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let title = Some(vec![1u8; t.try_into().unwrap()]);
         let body = Some(vec![1u8; b.try_into().unwrap()]);
     }: _(RawOrigin::Root, post_id, title.clone(), body.clone())
@@ -206,7 +206,7 @@ benchmarks_instance! {
     create_reply_to_post {
         let t in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let origin = RawOrigin::Signed(account_id);
         let text = vec![0u8; t.try_into().unwrap()];
@@ -239,7 +239,7 @@ benchmarks_instance! {
     create_reply_to_reply {
         let t in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
@@ -276,7 +276,7 @@ benchmarks_instance! {
     edit_reply {
         let t in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
@@ -306,13 +306,13 @@ benchmarks_instance! {
     }
 
     delete_replies {
-        let i in 0 .. 100;
-        let post_id = generate_post::<T, I>();
+        let i in 1 .. T::PostsMaxNumber::get().try_into().unwrap();
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let mut replies = Vec::new();
         let hide = false;
 
-        for _ in 0..=i {
+        for seq_num in 0..i {
+            let post_id = generate_post::<T, I>(seq_num.into());
             let reply_id =
                 generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
             replies.push(ReplyToDelete {post_id, reply_id, hide});

@@ -29,6 +29,10 @@ decl_error! {
         InvalidReactionIndex,
 
         /// Insuficient balance for reply creation
-        InsufficientBalanceForReply
+        InsufficientBalanceForReply,
+
+        /// This error represent the invalid state where there is not enough funds in a post
+        /// account to pay off its delete
+        InsufficientBalanceInPostAccount,
     }
 }
