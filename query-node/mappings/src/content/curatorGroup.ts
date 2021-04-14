@@ -1,3 +1,4 @@
+import { fixBlockTimestamp } from '../eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
@@ -25,8 +26,8 @@ export async function content_CuratorGroupCreated(
     isActive: false, // runtime creates inactive curator groups by default
 
     // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp.toNumber()),
-    updatedAt: new Date(event.blockTimestamp.toNumber()),
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
   })
 
   // save curator group
@@ -55,7 +56,7 @@ export async function content_CuratorGroupStatusSet(
   curatorGroup.isActive = isActive.isTrue
 
   // set last update time
-  curatorGroup.updatedAt = new Date(event.blockTimestamp.toNumber())
+  curatorGroup.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)
@@ -83,7 +84,7 @@ export async function content_CuratorAdded(
   curatorGroup.curatorIds.push(curatorId)
 
   // set last update time
-  curatorGroup.updatedAt = new Date(event.blockTimestamp.toNumber())
+  curatorGroup.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save curator group
   await db.save<CuratorGroup>(curatorGroup)

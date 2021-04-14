@@ -1,3 +1,4 @@
+import { fixBlockTimestamp } from '../eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import BN from 'bn.js'
@@ -61,8 +62,8 @@ export async function content_VideoCategoryCreated(
     createdInBlock: event.blockNumber,
 
     // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp.toNumber()),
-    updatedAt: new Date(event.blockTimestamp.toNumber()),
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     // integrate metadata
     ...protobufContent
@@ -111,7 +112,7 @@ export async function content_VideoCategoryUpdated(
   }
 
   // set last update time
-  videoCategory.updatedAt = new Date(event.blockTimestamp.toNumber())
+  videoCategory.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save video category
   await db.save<VideoCategory>(videoCategory)
@@ -187,8 +188,8 @@ export async function content_VideoCreated(
     createdInBlock: event.blockNumber,
 
     // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp.toNumber()),
-    updatedAt: new Date(event.blockTimestamp.toNumber()),
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     // integrate metadata
     ...protobufContent
@@ -252,7 +253,7 @@ export async function content_VideoUpdated(
   }
 
   // set last update time
-  video.updatedAt = new Date(event.blockTimestamp.toNumber())
+  video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save video
   await db.save<Video>(video)
@@ -305,7 +306,7 @@ export async function content_VideoCensorshipStatusUpdated(
   video.isCensored = isCensored.isTrue;
 
   // set last update time
-  video.updatedAt = new Date(event.blockTimestamp.toNumber())
+  video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save video
   await db.save<Video>(video)
@@ -345,7 +346,7 @@ export async function content_FeaturedVideosSet(
     video.isFeatured = false;
 
     // set last update time
-    video.updatedAt = new Date(event.blockTimestamp.toNumber())
+    video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
     await db.save<Video>(video)
   }
@@ -372,7 +373,7 @@ export async function content_FeaturedVideosSet(
     video.isFeatured = true;
 
     // set last update time
-    video.updatedAt = new Date(event.blockTimestamp.toNumber())
+    video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
     await db.save<Video>(video)
   }

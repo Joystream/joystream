@@ -1,3 +1,4 @@
+import { fixBlockTimestamp } from './eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions, In } from 'typeorm'
@@ -37,8 +38,8 @@ export async function data_directory_ContentAdded(db: DatabaseManager, event: Su
     const dataObject = await prepareDataObject(parameters, event.blockNumber, owner)
 
     // fill in auto-generated fields
-    dataObject.createdAt = new Date(event.blockTimestamp.toNumber())
-    dataObject.updatedAt = new Date(event.blockTimestamp.toNumber())
+    dataObject.createdAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+    dataObject.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
     await db.save<DataObject>(dataObject)
   }
@@ -82,7 +83,7 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   dataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
   // set last update time
-  dataObject.updatedAt = new Date(event.blockTimestamp.toNumber())
+  dataObject.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save object
   await db.save<DataObject>(dataObject)

@@ -1,3 +1,4 @@
+import { fixBlockTimestamp } from './eventFix'
 import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
@@ -32,8 +33,8 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
     entry: convertEntryMethod(entryMethod),
 
     // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp.toNumber()),
-    updatedAt: new Date(event.blockTimestamp.toNumber()),
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
   })
 
   // save membership
@@ -55,7 +56,7 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
   member.about = convertBytesToString(text)
 
   // set last update time
-  member.updatedAt = new Date(event.blockTimestamp.toNumber())
+  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -76,7 +77,7 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
   member.avatarUri = convertBytesToString(uri)
 
   // set last update time
-  member.updatedAt = new Date(event.blockTimestamp.toNumber())
+  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -97,7 +98,7 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
   member.handle = convertBytesToString(handle)
 
   // set last update time
-  member.updatedAt = new Date(event.blockTimestamp.toNumber())
+  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -117,7 +118,7 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
   member.rootAccount = newRootAccount.toString()
 
   // set last update time
-  member.updatedAt = new Date(event.blockTimestamp.toNumber())
+  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save member
   await db.save<Membership>(member)
@@ -138,7 +139,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   member.controllerAccount = newControllerAccount.toString()
 
   // set last update time
-  member.updatedAt = new Date(event.blockTimestamp.toNumber())
+  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save member
   await db.save<Membership>(member)

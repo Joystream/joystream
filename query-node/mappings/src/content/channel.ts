@@ -1,3 +1,4 @@
+import { fixBlockTimestamp } from '../eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import ISO6391 from 'iso-639-1';
@@ -48,8 +49,8 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     createdInBlock: event.blockNumber,
 
     // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp.toNumber()),
-    updatedAt: new Date(event.blockTimestamp.toNumber()),
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     // integrate metadata
     ...protobufContent
@@ -114,7 +115,7 @@ export async function content_ChannelUpdated(
   }
 
   // set last update time
-  channel.updatedAt = new Date(event.blockTimestamp.toNumber())
+  channel.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save channel
   await db.save<Channel>(channel)
@@ -164,7 +165,7 @@ export async function content_ChannelCensorshipStatusUpdated(
   channel.isCensored = isCensored.isTrue;
 
   // set last update time
-  channel.updatedAt = new Date(event.blockTimestamp.toNumber())
+  channel.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save channel
   await db.save<Channel>(channel)
@@ -202,8 +203,8 @@ export async function content_ChannelCategoryCreated(
     createdInBlock: event.blockNumber,
 
     // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp.toNumber()),
-    updatedAt: new Date(event.blockTimestamp.toNumber()),
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     // integrate metadata
     ...protobufContent
@@ -254,7 +255,7 @@ export async function content_ChannelCategoryUpdated(
   }
 
   // set last update time
-  channelCategory.updatedAt = new Date(event.blockTimestamp.toNumber())
+  channelCategory.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
   // save channel category
   await db.save<ChannelCategory>(channelCategory)
