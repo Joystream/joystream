@@ -24,6 +24,16 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
+fn assert_in_events<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+
+    assert!(!events.is_empty(), "There are no events in event queue");
+
+    // compare to the last event record
+    assert!(events.iter().any(|e| e.event == system_event));
+}
+
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
@@ -84,14 +94,14 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn generate_post<T: Trait<I>, I: Instance>() -> PostId {
-    assert_eq!(Blog::<T, I>::post_count(), 0);
+fn generate_post<T: Trait<I>, I: Instance>(seq_num: u64) -> PostId {
+    assert_eq!(Blog::<T, I>::post_count(), seq_num);
 
     Blog::<T, I>::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
 
-    let post_id = 0;
+    let post_id = seq_num;
 
-    assert_eq!(Blog::<T, I>::post_count(), 1);
+    assert_eq!(Blog::<T, I>::post_count(), seq_num + 1);
 
     assert_eq!(
         Blog::<T, I>::post_by_id(post_id),
@@ -113,12 +123,18 @@ fn generate_reply<T: Trait<I>, I: Instance>(
         post_id,
         None,
         vec![0u8],
+        true,
     )
     .unwrap();
 
     assert_eq!(
         Blog::<T, I>::reply_by_id(post_id, T::ReplyId::zero()),
-        Reply::<T, I>::new(vec![0u8], participant_id, ParentId::Post(post_id))
+        Reply::<T, I>::new(
+            vec![0u8],
+            participant_id,
+            ParentId::Post(post_id),
+            T::ReplyDeposit::get()
+        )
     );
 
     T::ReplyId::zero()
@@ -154,7 +170,7 @@ benchmarks_instance! {
     }
 
     lock_post {
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
     }: _(RawOrigin::Root, post_id)
     verify {
         assert!(Blog::<T, I>::post_by_id(post_id).is_locked());
@@ -162,7 +178,7 @@ benchmarks_instance! {
     }
 
     unlock_post {
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         Blog::<T, I>::lock_post(RawOrigin::Root.into(), post_id).unwrap();
         assert!(Blog::<T, I>::post_by_id(post_id).is_locked());
     }: _(RawOrigin::Root, post_id)
@@ -175,7 +191,7 @@ benchmarks_instance! {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let title = Some(vec![1u8; t.try_into().unwrap()]);
         let body = Some(vec![1u8; b.try_into().unwrap()]);
     }: _(RawOrigin::Root, post_id, title.clone(), body.clone())
@@ -190,11 +206,11 @@ benchmarks_instance! {
     create_reply_to_post {
         let t in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let origin = RawOrigin::Signed(account_id);
         let text = vec![0u8; t.try_into().unwrap()];
-    }: create_reply(origin.clone(), participant_id, post_id, None, text.clone())
+    }: create_reply(origin.clone(), participant_id, post_id, None, text.clone(), true)
     verify {
         let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
         expected_post.increment_replies_counter();
@@ -204,7 +220,8 @@ benchmarks_instance! {
             Reply::<T, I>::new(
                 text.clone(),
                 participant_id,
-                ParentId::Post(post_id)
+                ParentId::Post(post_id),
+                T::ReplyDeposit::get(),
             )
         );
 
@@ -213,7 +230,8 @@ benchmarks_instance! {
                 participant_id,
                 post_id,
                 Zero::zero(),
-                text
+                text,
+                true
             ).into()
         );
     }
@@ -221,7 +239,7 @@ benchmarks_instance! {
     create_reply_to_reply {
         let t in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
@@ -229,7 +247,7 @@ benchmarks_instance! {
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
         let text = vec![0u8; t.try_into().unwrap()];
-    }: create_reply(origin.clone(), participant_id, post_id, Some(reply_id), text.clone())
+    }: create_reply(origin.clone(), participant_id, post_id, Some(reply_id), text.clone(), true)
     verify {
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
@@ -238,7 +256,8 @@ benchmarks_instance! {
             Reply::<T, I>::new(
                 text.clone(),
                 participant_id,
-                ParentId::Reply(reply_id)
+                ParentId::Reply(reply_id),
+                T::ReplyDeposit::get(),
             )
         );
 
@@ -248,7 +267,8 @@ benchmarks_instance! {
                 post_id,
                 reply_id,
                 One::one(),
-                text
+                text,
+                true,
             ).into()
         );
     }
@@ -256,7 +276,7 @@ benchmarks_instance! {
     edit_reply {
         let t in 0 .. MAX_BYTES;
 
-        let post_id = generate_post::<T, I>();
+        let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
         let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
         let origin = RawOrigin::Signed(account_id);
@@ -272,7 +292,8 @@ benchmarks_instance! {
             Reply::<T, I>::new(
                 updated_text.clone(),
                 participant_id,
-                ParentId::Post(post_id)
+                ParentId::Post(post_id),
+                T::ReplyDeposit::get(),
             )
         );
 
@@ -282,6 +303,34 @@ benchmarks_instance! {
                 reply_id,
                 updated_text
             ).into());
+    }
+
+    delete_replies {
+        let i in 1 .. T::PostsMaxNumber::get().try_into().unwrap();
+        let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
+        let mut replies = Vec::new();
+        let hide = false;
+
+        for seq_num in 0..i {
+            let post_id = generate_post::<T, I>(seq_num.into());
+            let reply_id =
+                generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+            replies.push(ReplyToDelete {post_id, reply_id, hide});
+        }
+
+        let origin = RawOrigin::Signed(account_id);
+    }: _(origin.clone(), participant_id, replies.clone())
+    verify {
+        for ReplyToDelete {post_id, reply_id, hide} in replies {
+            assert!(!<ReplyById<T, I>>::contains_key(post_id, reply_id));
+
+            assert_in_events::<T, I>(RawEvent::ReplyDeleted(
+                    participant_id,
+                    post_id,
+                    reply_id,
+                    hide,
+                ).into());
+        }
     }
 }
 
@@ -337,6 +386,13 @@ mod tests {
     fn test_edit_reply() {
         ExtBuilder::default().build().execute_with(|| {
             assert_ok!(test_benchmark_edit_reply::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_delete_replies() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_ok!(test_benchmark_delete_replies::<Runtime>());
         })
     }
 }
