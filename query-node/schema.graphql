@@ -116,7 +116,7 @@ type DataObjectOwnerMember @variant {
   #"Member identifier"
   #memberId: Membership!
   "Member identifier"
-  member: BigInt!
+  member: BigInt # TODO: make this mandatory again (see DataObject mapping for more info)
 
   "Variant needs to have at least one property. This value is not used."
   dummy: Int

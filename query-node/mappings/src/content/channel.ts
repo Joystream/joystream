@@ -23,6 +23,10 @@ import {
   logger,
 } from '../common'
 
+import {
+  AssetAvailability,
+} from 'query-node'
+import BN from 'bn.js'
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data

@@ -46,6 +46,10 @@ export async function prepareDataObject(
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
     ipfsContentId: contentParameters.ipfs_content_id.toHex(),
     joystreamContentId: contentParameters.content_id.toHex(),
+
+
+    createdById: '1',
+    updatedById: '1',
   })
 
   return dataObject

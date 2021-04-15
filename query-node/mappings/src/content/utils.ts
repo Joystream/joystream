@@ -8,6 +8,7 @@
 
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { Bytes } from '@polkadot/types'
 import ISO6391 from 'iso-639-1';
 import BN from 'bn.js'
 import { u64 } from '@polkadot/types/primitive';
@@ -82,8 +83,8 @@ function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObj
   return true
 }
 
-export interface IReadProtobufArguments{
-  metadata: Uint8Array
+export interface IReadProtobufArguments {
+  metadata: Bytes
   db: DatabaseManager
   blockNumber: number
 }
@@ -100,14 +101,17 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   type: T,
   parameters: IReadProtobufArguments,
 ): Promise<Partial<T>> {
+  // true option here is crucial, it indicates that we want just the underlying bytes (by default it will also include bytes encoding the length)
+  const metaU8a = parameters.metadata.toU8a(true);
+
   // process channel category
   if (type instanceof ChannelCategory) {
-    return ChannelCategoryMetadata.deserializeBinary(parameters.metadata).toObject() as Partial<T>
+    return ChannelCategoryMetadata.deserializeBinary(metaU8a).toObject() as Partial<T>
   }
 
   // process video category
   if (type instanceof VideoCategory) {
-    return VideoCategoryMetadata.deserializeBinary(parameters.metadata).toObject() as Partial<T>
+    return VideoCategoryMetadata.deserializeBinary(metaU8a).toObject() as Partial<T>
   }
 
   // this should never happen
@@ -130,10 +134,12 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   type: T,
   parameters: IReadProtobufArgumentsWithAssets,
 ): Promise<Partial<T>> {
+  // true option here is crucial, it indicates that we want just the underlying bytes (by default it will also include bytes encoding the length)
+  const metaU8a = parameters.metadata.toU8a(true);
 
   // process channel
   if (type instanceof Channel) {
-    const meta = ChannelMetadata.deserializeBinary(parameters.metadata)
+    const meta = ChannelMetadata.deserializeBinary(metaU8a)
     const metaAsObject = meta.toObject()
     const result = metaAsObject as any as Partial<Channel>
 
@@ -165,7 +171,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare language if needed
     if (metaAsObject.language) {
-      result.language = await prepareLanguage(metaAsObject.language, parameters.db)
+      result.language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
     }
 
     return result as Partial<T>
@@ -173,7 +179,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
   // process video
   if (type instanceof Video) {
-    const meta = VideoMetadata.deserializeBinary(parameters.metadata)
+    const meta = VideoMetadata.deserializeBinary(metaU8a)
     const metaAsObject = meta.toObject()
     const result = metaAsObject as any as Partial<Video>
 
@@ -224,7 +230,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare language if needed
     if (metaAsObject.language) {
-      result.language = await prepareLanguage(metaAsObject.language, parameters.db)
+      result.language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
     }
 
     // prepare information about media published somewhere else before Joystream if needed.
@@ -243,7 +249,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
 export function convertContentActorToOwner(contentActor: ContentActor, channelId: BN): typeof DataObjectOwner {
   const owner = new DataObjectOwnerChannel()
-  owner.channel = channelId
+  //owner.channel = channelId // TODO: make this work; it causes error `TypeError, message: attempted to use private field on non-instance`
 
   return owner
 
@@ -362,7 +368,7 @@ function integrateAsset<T>(propertyName: string, result: Object, asset: AssetSto
   }
 
   // (un)set asset's properties
-  result[nameUrl] = undefined // plan deletion (will have effect when saved to db)
+  result[nameUrl] = [] // plan deletion (will have effect when saved to db)
   result[nameAvailability] = conversionTable[asset.liaisonJudgement]
   result[nameDataObject] = asset
 }
@@ -395,7 +401,7 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   return videoSize
 }
 
-async function prepareLanguage(languageIso: string, db: DatabaseManager): Promise<Language> {
+async function prepareLanguage(languageIso: string, db: DatabaseManager, blockNumber: number): Promise<Language> {
   // validate language string
   const isValidIso = ISO6391.validate(languageIso);
 
@@ -412,10 +418,18 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager): Promis
     return language;
   }
 
+
   // create new language
   const newLanguage = new Language({
-    iso: languageIso
+    iso: languageIso,
+    createdInBlock: blockNumber,
+
+    // TODO: remove these lines after Hydra auto-fills the values when cascading save (remove them on all places)
+    createdById: '1',
+    updatedById: '1',
   })
+
+  await db.save<Language>(newLanguage)
 
   return newLanguage
 }
@@ -425,7 +439,12 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promis
   //       and not here even it might appear so.
 
   // crete new license
-  const license = new License(licenseProtobuf)
+  const license = new License({
+    ...licenseProtobuf,
+
+    createdById: '1',
+    updatedById: '1',
+  })
 
   return license
 }
@@ -439,6 +458,9 @@ async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, video
     encoding,
     pixelWidth: videoProtobuf.mediaPixelWidth,
     pixelHeight: videoProtobuf.mediaPixelHeight,
+
+    createdById: '1',
+    updatedById: '1',
   })
 
   // fill in video size if provided
