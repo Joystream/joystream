@@ -612,9 +612,9 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
             .hire();
 
         let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
-        let block_number = reward_period * 2;
+        let missed_reward_block_number = reward_period * 2;
 
-        run_to_block(block_number);
+        run_to_block(missed_reward_block_number);
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
@@ -624,8 +624,11 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
-        let leaving_block = block_number + worker.job_unstaking_period;
+        let leaving_block = missed_reward_block_number + worker.job_unstaking_period;
         run_to_block(leaving_block);
+
+        let missed_reward = missed_reward_block_number * reward_per_block;
+        EventFixture::contains_crate_event(RawEvent::MissedRewardPaid(account_id, missed_reward));
 
         // Didn't get the last reward period: leaving earlier than rewarding.
         let reward_block_count = leaving_block - reward_period;
