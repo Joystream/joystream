@@ -828,5 +828,8 @@
         }
     },
     "MaxNumber": "u32",
-    "IsCensored": "bool"
+    "IsCensored": "bool",
+    "CompactAssignments": "CompactAssignmentsTo257",
+    "RewardDestination": "RewardDestinationTo257"
+}
 }
