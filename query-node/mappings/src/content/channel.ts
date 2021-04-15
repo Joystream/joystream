@@ -99,7 +99,7 @@ export async function content_ChannelUpdated(
         db,
         blockNumber: event.blockNumber,
         assets: channelUpdateParameters.assets.unwrapOr([]),
-        contentOwner: convertContentActorToOwner(contentActor, channelId),
+        contentOwner: convertContentActorToOwner(contentActor, channelId.toBn()),
       }
     )
 
