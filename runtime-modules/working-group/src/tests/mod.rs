@@ -592,6 +592,8 @@ fn leave_worker_role_succeeds() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStartedLeaving(worker_id, None));
+
         let worker = TestWorkingGroup::worker_by_id(worker_id);
         run_to_block(1 + worker.job_unstaking_period);
 

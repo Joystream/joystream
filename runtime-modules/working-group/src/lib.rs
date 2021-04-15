@@ -181,11 +181,11 @@ decl_event!(
         /// - Rationale.
         WorkerExited(WorkerId),
 
-        /// Emits when worker is leaving immediatly after extrinsic is called
+        /// Emits when worker started leaving their role.
         /// Params:
         /// - Worker id.
         /// - Rationale.
-        WorkerLeft(WorkerId, Option<Vec<u8>>),
+        WorkerStartedLeaving(WorkerId, Option<Vec<u8>>),
 
         /// Emits on terminating the worker.
         /// Params:
@@ -653,6 +653,9 @@ decl_module! {
             WorkerById::<T, I>::mutate(worker_id, |worker| {
                 worker.started_leaving_at = Some(Self::current_block())
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStartedLeaving(worker_id, rationale));
         }
 
         /// Terminate the active worker by the lead.
