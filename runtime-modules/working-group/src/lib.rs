@@ -272,6 +272,12 @@ decl_event!(
         /// - Receiver Account Id.
         /// - Missed reward
         MissedRewardPaid(AccountId, Balance),
+
+        /// Emits on reaching new missed reward.
+        /// Params:
+        /// - Worker ID.
+        /// - Missed reward (optional). None means 'no missed reward'.
+        NewMissedRewardLevelReached(WorkerId, Option<Balance>),
     }
 );
 
@@ -1380,12 +1386,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                // Update worker missed reward.
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.missed_reward = new_missed_reward;
-                });
+                Self::update_worker_missed_reward(worker_id, new_missed_reward);
             }
         }
+    }
+
+    // Update worker missed reward.
+    fn update_worker_missed_reward(
+        worker_id: &WorkerId<T>,
+        new_missed_reward: Option<BalanceOf<T>>,
+    ) {
+        WorkerById::<T, I>::mutate(worker_id, |worker| {
+            worker.missed_reward = new_missed_reward;
+        });
+
+        Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
+            *worker_id,
+            new_missed_reward,
+        ));
     }
 
     // Saves missed reward for a worker.
@@ -1395,10 +1413,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        // Update worker missed reward.
-        WorkerById::<T, I>::mutate(worker_id, |worker| {
-            worker.missed_reward = Some(new_missed_reward);
-        });
+        Self::update_worker_missed_reward(worker_id, Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment

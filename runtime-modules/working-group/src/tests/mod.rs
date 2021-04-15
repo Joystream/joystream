@@ -628,6 +628,10 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         run_to_block(leaving_block);
 
         let missed_reward = missed_reward_block_number * reward_per_block;
+        EventFixture::contains_crate_event(RawEvent::NewMissedRewardLevelReached(
+            worker_id,
+            Some(missed_reward),
+        ));
         EventFixture::contains_crate_event(RawEvent::MissedRewardPaid(account_id, missed_reward));
 
         // Didn't get the last reward period: leaving earlier than rewarding.
