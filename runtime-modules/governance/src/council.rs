@@ -32,7 +32,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as Council {
         pub ActiveCouncil get(fn active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
 
-        pub TermEndsAt get(fn term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
+        pub TermEndsAt get(fn term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1u32);
 
         /// The mint that funds council member rewards and spending proposals budget
         pub CouncilMint get(fn council_mint) : <T as minting::Trait>::MintId;
@@ -56,7 +56,7 @@ decl_storage! {
         build(|_config: &GenesisConfig<T>| {
             // Create the council mint.
             let mint_id_result = <minting::Module<T>>::add_mint(
-                minting::BalanceOf::<T>::from(0),
+                minting::BalanceOf::<T>::from(0u32),
                 None
             );
 

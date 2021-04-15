@@ -6,6 +6,8 @@
 //Substrate internal issues.
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::unnecessary_mut_passed)]
+#![allow(non_fmt_panic)]
+#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -82,8 +84,8 @@ pub use content::MaxNumber;
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 7,
-    spec_version: 16,
+    authoring_version: 9,
+    spec_version: 0,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,

@@ -959,7 +959,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             initial_test_ext().execute_with(|| {
                 let member_id: MemberId = 1;
                 let account_id: [u8; 32] = [member_id as u8; 32];
-                let stake_amount = 100;
+                let stake_amount = 100u32;
 
                 let opening_policy_commitment = OpeningPolicyCommitment {
                     role_staking_policy: Some(hiring::StakingPolicy {

@@ -19,7 +19,8 @@ pub struct ContentParameters<ContentId, DataObjectTypeId> {
 pub enum StorageObjectOwner<MemberId, ChannelId, DAOId> {
     Member(MemberId),
     Channel(ChannelId), // acts through content directory module, where again DAOs can own channels for example
-    DAO(DAOId),         // acts through upcoming `content_finance` module
+    #[allow(clippy::upper_case_acronyms)]
+    DAO(DAOId), // acts through upcoming `content_finance` module
     Council,            // acts through proposal frame_system
     WorkingGroup(WorkingGroup), // acts through new extrinsic in working group
 }

@@ -79,9 +79,7 @@ impl SetLeadFixture {
 }
 
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
-pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
 pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
-pub const TEST_FIRST_METADATA_ID: u64 = 4000;
 
 pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
@@ -275,9 +273,7 @@ pub struct ExtBuilder {
     global_voucher: Voucher,
     default_voucher: Voucher,
     first_data_object_type_id: u64,
-    first_content_id: u64,
     first_relationship_id: u64,
-    first_metadata_id: u64,
     uploading_blocked: bool,
 }
 
@@ -289,9 +285,7 @@ impl Default for ExtBuilder {
             global_voucher: DEFAULT_GLOBAL_VOUCHER,
             default_voucher: DEFAULT_VOUCHER,
             first_data_object_type_id: 1,
-            first_content_id: 2,
             first_relationship_id: 3,
-            first_metadata_id: 4,
             uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
         }
     }
@@ -303,18 +297,8 @@ impl ExtBuilder {
         self
     }
 
-    pub fn first_content_id(mut self, first_content_id: u64) -> Self {
-        self.first_content_id = first_content_id;
-        self
-    }
-
     pub fn first_relationship_id(mut self, first_relationship_id: u64) -> Self {
         self.first_relationship_id = first_relationship_id;
-        self
-    }
-
-    pub fn first_metadata_id(mut self, first_metadata_id: u64) -> Self {
-        self.first_metadata_id = first_metadata_id;
         self
     }
 
@@ -387,9 +371,7 @@ pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Te
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default()
         .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
-        .first_content_id(TEST_FIRST_CONTENT_ID)
         .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
-        .first_metadata_id(TEST_FIRST_METADATA_ID)
         .build()
         .execute_with(|| f())
 }

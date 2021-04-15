@@ -1631,17 +1631,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     hiring::ApplicationById::<T>::get(successful_application.hiring_application_id);
 
                 // Staking profile for worker
-                let stake_profile = if let Some(ref stake_id) = application.active_role_staking_id {
-                    Some(RoleStakeProfile::new(
+                let stake_profile = application.active_role_staking_id.as_ref().map(|stake_id| {
+                    RoleStakeProfile::new(
                         stake_id,
                         &opening
                             .policy_commitment
                             .terminate_role_stake_unstaking_period,
                         &opening.policy_commitment.exit_role_stake_unstaking_period,
-                    ))
-                } else {
-                    None
-                };
+                    )
+                });
 
                 // Get worker id
                 let new_worker_id = <NextWorkerId<T, I>>::get();

@@ -867,9 +867,9 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn request_channel_transfer(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            request: ChannelOwnershipTransferRequest<T>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _request: ChannelOwnershipTransferRequest<T>,
         ) {
             // requester must be new_owner
             Self::not_implemented()?;
@@ -877,8 +877,8 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_channel_transfer_request(
-            origin,
-            request_id: T::ChannelOwnershipTransferRequestId,
+            _origin,
+            _request_id: T::ChannelOwnershipTransferRequestId,
         ) {
             // origin must be original requester (ie. proposed new channel owner)
             Self::not_implemented()?;
@@ -886,9 +886,9 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            request_id: T::ChannelOwnershipTransferRequestId,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _request_id: T::ChannelOwnershipTransferRequestId,
         ) {
             // only current owner of channel can approve
             Self::not_implemented()?;
@@ -1042,30 +1042,30 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: PlaylistCreationParameters,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _params: PlaylistCreationParameters,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            playlist: T::PlaylistId,
-            params: PlaylistUpdateParameters,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _playlist: T::PlaylistId,
+            _params: PlaylistUpdateParameters,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            playlist: T::PlaylistId,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _playlist: T::PlaylistId,
         ) {
             Self::not_implemented()?;
         }
@@ -1150,47 +1150,47 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            params: PersonCreationParameters<ContentParameters<T>>,
+            _origin,
+            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _params: PersonCreationParameters<ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            person: T::PersonId,
-            params: PersonUpdateParameters<ContentParameters<T>>,
+            _origin,
+            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _person: T::PersonId,
+            _params: PersonUpdateParameters<ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            person: T::PersonId,
+            _origin,
+            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _person: T::PersonId,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_person_to_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            person: T::PersonId
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _video_id: T::VideoId,
+            _person: T::PersonId
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_person_from_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _video_id: T::VideoId
         ) {
             Self::not_implemented()?;
         }
@@ -1233,29 +1233,29 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_series(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: SeriesParameters<T::VideoId, ContentParameters<T>>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_series(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: SeriesParameters<T::VideoId, ContentParameters<T>>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_series(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            series: T::SeriesId,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _series: T::SeriesId,
         ) {
             Self::not_implemented()?;
         }

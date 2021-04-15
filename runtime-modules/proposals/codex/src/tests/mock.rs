@@ -1,4 +1,6 @@
 #![cfg(test)]
+// Internal substrate warning.
+#![allow(non_fmt_panic)]
 
 use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
 pub use frame_system;

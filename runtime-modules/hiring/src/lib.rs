@@ -13,6 +13,7 @@
 //!
 //! Dependency: Joystream stake module
 
+#![allow(clippy::collapsible_match)]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
@@ -1256,14 +1257,9 @@ impl<T: Trait> Module<T> {
         opt_imbalance: Option<NegativeImbalance<T>>,
         application_id: &T::ApplicationId,
     ) -> Option<T::StakeId> {
-        if let Some(imbalance) = opt_imbalance {
-            Some(Self::infallible_stake_initiation_on_application(
-                imbalance,
-                application_id,
-            ))
-        } else {
-            None
-        }
+        opt_imbalance.map(|imbalance| {
+            Self::infallible_stake_initiation_on_application(imbalance, application_id)
+        })
     }
 
     fn infallible_stake_initiation_on_application(
@@ -1398,11 +1394,9 @@ impl<T: Trait> Module<T> {
     pub(crate) fn create_stake_balance(
         opt_stake_imbalance: &Option<NegativeImbalance<T>>,
     ) -> Option<BalanceOf<T>> {
-        if let Some(ref imbalance) = opt_stake_imbalance {
-            Some(imbalance.peek())
-        } else {
-            None
-        }
+        opt_stake_imbalance
+            .as_ref()
+            .map(|imbalance| imbalance.peek())
     }
 
     /// Performs all necessary check before adding an opening

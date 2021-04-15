@@ -5,7 +5,7 @@ set -e
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # code build tools
     sudo apt-get update
-    sudo apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386 make libssl-dev python
+    sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
     # docker
     sudo apt-get install -y docker.io docker-compose containerd runc
 elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -15,7 +15,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     fi
     # install additional packages
     brew update
-    brew install b2sum gnu-tar jq curl
+    brew install coreutils gnu-tar jq curl
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
 fi
 
@@ -25,24 +25,21 @@ curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
+rustup install nightly-2021-03-24
+rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
+
+rustup default nightly-2021-03-24
+
 rustup component add rustfmt clippy
-
-rustup install nightly-2020-10-06
-rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-06
-
-rustup install 1.47.0
-rustup default 1.47.0
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 
 # source env variables added by Volta
-source source ~/.bash_profile || ~/.profile || source ~/.bashrc || :
+source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
 
 volta install node@12
 volta install yarn
 volta install npx
 
-echo "Starting new terminal/shell session to make newly installed tools available."
-
-exec bash -l
+echo "You may need to open a new terminal/shell session to make newly installed tools available."
