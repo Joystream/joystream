@@ -5,7 +5,9 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mocks::{Balances, Storage, System, Test, TestEvent};
 
-use crate::{RawEvent, StorageBucketOperatorStatus, Voucher};
+use crate::{
+    RawEvent, StorageBucketOperatorStatus, UpdateStorageBucketForStaticBagsParams, Voucher,
+};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -26,14 +28,18 @@ pub fn increase_account_balance(account_id: &u64, balance: u64) {
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64>) {
+    pub fn assert_last_crate_event(
+        expected_raw_event: RawEvent<u64, u64, UpdateStorageBucketForStaticBagsParams<u64>>,
+    ) {
         let converted_event = TestEvent::storage(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
     #[allow(dead_code)]
-    pub fn contains_crate_event(expected_raw_event: RawEvent<u64, u64>) {
+    pub fn contains_crate_event(
+        expected_raw_event: RawEvent<u64, u64, UpdateStorageBucketForStaticBagsParams<u64>>,
+    ) {
         let converted_event = TestEvent::storage(expected_raw_event);
 
         Self::contains_global_event(converted_event)
@@ -188,5 +194,36 @@ impl AcceptStorageBucketInvitationFixture {
         } else {
             assert_eq!(old_bucket, new_bucket);
         }
+    }
+}
+
+pub struct UpdateStorageBucketForStaticBagsFixture {
+    origin: RawOrigin<u64>,
+    params: UpdateStorageBucketForStaticBagsParams<u64>,
+}
+
+impl UpdateStorageBucketForStaticBagsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            params: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_params(self, params: UpdateStorageBucketForStaticBagsParams<u64>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_storage_buckets_for_static_bags(
+            self.origin.clone().into(),
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }

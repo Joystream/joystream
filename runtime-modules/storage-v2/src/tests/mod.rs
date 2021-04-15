@@ -5,14 +5,19 @@ pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_system::RawOrigin;
+use sp_std::collections::btree_set::BTreeSet;
 
 use fixtures::{
     run_to_block, AcceptStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
+    UpdateStorageBucketForStaticBagsFixture,
 };
 use mocks::{build_test_externalities, Storage, Test, WG_LEADER_ACCOUNT_ID};
 
 use crate::tests::mocks::DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
-use crate::{Error, RawEvent, StorageBucketOperatorStatus, Voucher};
+use crate::{
+    Error, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    UpdateStorageBucketForStaticBagsParams, Voucher,
+};
 
 #[test]
 fn create_storage_bucket_succeeded() {
@@ -210,5 +215,57 @@ fn accept_storage_bucket_invitation_fails_with_already_set_storage_provider() {
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
             .call_and_assert(Err(Error::<Test>::StorageProviderAlreadySet.into()));
+    });
+}
+
+#[test]
+fn update_storage_buckets_for_static_bags_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let storage_provider_id = 10;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let mut buckets = BTreeSet::new();
+        buckets.insert(bucket_id);
+
+        let mut params = UpdateStorageBucketForStaticBagsParams::<u64>::default();
+        params.bags.insert(StaticBagId::Council, buckets);
+
+        UpdateStorageBucketForStaticBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_params(params.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
+    });
+}
+
+#[test]
+fn update_storage_buckets_for_static_bags_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateStorageBucketForStaticBagsFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_storage_buckets_for_static_bags_fails_with_empty_params() {
+    build_test_externalities().execute_with(|| {
+        UpdateStorageBucketForStaticBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::UpdateStorageBucketForStaticBagsParamsIsEmpty.into(),
+            ));
     });
 }

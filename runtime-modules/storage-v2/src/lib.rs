@@ -238,10 +238,13 @@ pub struct BaggedDataObject<DataObjectId> {
     pub data_object_id: DataObjectId,
 }
 
+/// Data wrapper structure. Helps passing the parameters to the
+/// `update_storage_buckets_for_static_bags` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct UpdateStorageBucketForStaticBagsParams<StorageBucketId: Ord> {
-    pub bags: BTreeMap<BagId, BTreeSet<StorageBucketId>>, //TODO: change to StaticBagId
+    /// Defines new relationship between static bags and storage buckets.
+    pub bags: BTreeMap<StaticBagId, BTreeSet<StorageBucketId>>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -276,6 +279,8 @@ decl_event! {
     where
         <T as Trait>::StorageBucketId,
         WorkerId = WorkerId<T>,
+        UpdateStorageBucketForStaticBagsParams =
+            UpdateStorageBucketForStaticBagsParams<<T as Trait>::StorageBucketId>
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -290,6 +295,11 @@ decl_event! {
         /// - storage bucket ID
         /// - invited worker ID
         StorageBucketInvitationAccepted(StorageBucketId, WorkerId),
+
+        /// Emits on updating storage buckets for static bags.
+        /// Params
+        /// - 'static bags-to-storage bucket set' container
+        StorageBucketsUpdatedForStaticBags(UpdateStorageBucketForStaticBagsParams),
     }
 }
 
@@ -313,6 +323,9 @@ decl_error! {
 
         /// Cannot accept an invitation: another storage provider was invited.
         DifferentStorageProviderInvited,
+
+        /// The parameter structure is empty: UpdateStorageBucketForStaticBagsParams.
+        UpdateStorageBucketForStaticBagsParamsIsEmpty,
     }
 }
 
@@ -339,17 +352,29 @@ decl_module! {
             Self::validate_upload_parameter(&params)?;
         }
 
+        // ===== Storage Lead actions =====
+
         //TODO: add comment
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_for_static_bags(
-            _origin,
-            _update: UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>
- //           _update: Vec<(BagId, Vec<T::StorageBucketId>)>
+            origin,
+            params: UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>
         ) {
-            //TODO implement
-        }
+            T::ensure_working_group_leader_origin(origin)?; // TODO: correct authentication?
 
-        // ===== Storage Lead actions =====
+            ensure!(
+                !params.bags.is_empty(),
+                Error::<T>::UpdateStorageBucketForStaticBagsParamsIsEmpty
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            //TODO implement state mutation
+
+            Self::deposit_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
+        }
 
         /// Create storage bucket.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -401,7 +426,7 @@ decl_module! {
                 )
             );
         }
-        
+
         // ===== Storage Operator actions =====
 
         //TODO: add comment
