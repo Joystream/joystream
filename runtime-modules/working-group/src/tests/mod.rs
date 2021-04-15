@@ -610,7 +610,9 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let worker_id = HireRegularWorkerFixture::default()
             .with_reward_per_block(Some(reward_per_block))
             .hire();
-        let block_number = 4;
+
+        let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
+        let block_number = reward_period * 2;
 
         run_to_block(block_number);
 
@@ -622,11 +624,14 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
         let worker = TestWorkingGroup::worker_by_id(worker_id);
-        run_to_block(block_number + worker.job_unstaking_period);
+        let leaving_block = block_number + worker.job_unstaking_period;
+        run_to_block(leaving_block);
 
+        // Didn't get the last reward period: leaving earlier than rewarding.
+        let reward_block_count = leaving_block - reward_period;
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
+            reward_block_count * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
         );
     });
 }
@@ -1868,6 +1873,12 @@ fn rewards_payments_are_successful() {
             Balances::usable_balance(&account_id),
             block_number * reward_per_block
         );
+
+        let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
+        EventFixture::assert_last_crate_event(RawEvent::RewardPaid(
+            account_id,
+            reward_per_block * reward_period,
+        ));
     });
 }
 

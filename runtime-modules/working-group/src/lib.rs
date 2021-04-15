@@ -256,10 +256,16 @@ decl_event!(
 
         /// Emits on budget from the working group being spent
         /// Params:
-        /// - Reciever Account Id.
+        /// - Receiver Account Id.
         /// - Balance spent.
         /// - Rationale.
         BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
+
+        /// Emits on paying the reward.
+        /// Params:
+        /// - Receiver Account Id.
+        /// - Reward
+        RewardPaid(AccountId, Balance),
     }
 );
 
@@ -1303,7 +1309,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Check whether the budget is not zero.
             if actual_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, actual_reward);
+                Self::pay_reward(&worker.reward_account_id, actual_reward);
             }
 
             // Check whether the budget is insufficient.
@@ -1326,6 +1332,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
     }
 
+    // Helper-function joining the reward payment with the event.
+    fn pay_reward(account_id: &T::AccountId, amount: BalanceOf<T>) {
+        Self::pay_from_budget(account_id, amount);
+        Self::deposit_event(RawEvent::RewardPaid(account_id.clone(), amount));
+    }
+
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
     fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &Worker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
@@ -1334,7 +1346,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Checks if the budget allows any payment.
             if could_be_paid_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+                Self::pay_reward(&worker.reward_account_id, could_be_paid_reward);
 
                 let new_missed_reward = if insufficient_amount > Zero::zero() {
                     Some(insufficient_amount)
@@ -1379,7 +1391,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::iter()
             .filter_map(|(worker_id, worker)| {
                 if let Some(started_leaving_at) = worker.started_leaving_at {
-                    if started_leaving_at + worker.job_unstaking_period >= Self::current_block() {
+                    if started_leaving_at + worker.job_unstaking_period <= Self::current_block() {
                         return Some((worker_id, worker).into());
                     }
                 }
