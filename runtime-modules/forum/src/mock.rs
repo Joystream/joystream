@@ -447,12 +447,6 @@ impl WeightInfo for () {
     fn edit_thread_title(_: u32, _: u32) -> Weight {
         0
     }
-    fn update_thread_archival_status_lead(_: u32) -> Weight {
-        0
-    }
-    fn update_thread_archival_status_moderator(_: u32) -> Weight {
-        0
-    }
     fn delete_thread(_: u32) -> Weight {
         0
     }
@@ -468,7 +462,7 @@ impl WeightInfo for () {
     fn moderate_thread_lead(_: u32, _: u32) -> Weight {
         0
     }
-    fn moderate_thread_moderator(_: u32, _: u32, _: u32) -> Weight {
+    fn moderate_thread_moderator(_: u32, _: u32) -> Weight {
         0
     }
     fn add_post(_: u32, _: u32) -> Weight {
@@ -870,37 +864,6 @@ pub fn move_thread_mock(
                 thread_id,
                 new_category_id,
                 PrivilegedActor::Moderator(moderator_id),
-                category_id
-            ))
-        );
-    }
-}
-
-pub fn update_thread_archival_status_mock(
-    origin: OriginType,
-    actor: PrivilegedActor<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    new_archival_status: bool,
-    result: DispatchResult,
-) {
-    assert_eq!(
-        TestForumModule::update_thread_archival_status(
-            mock_origin(origin),
-            actor.clone(),
-            category_id,
-            thread_id,
-            new_archival_status
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadUpdated(
-                thread_id,
-                new_archival_status,
-                actor,
                 category_id
             ))
         );
