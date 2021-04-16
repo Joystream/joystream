@@ -3,31 +3,34 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { Membership } from 'query-node/dist/src/modules/membership/membership.model'
 import { Members } from './generated/types'
 import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
-import { EventType, MembershipEntryMethod } from 'query-node/dist/src/modules/enums/enums'
-import { MembershipSystemSnapshot } from 'query-node/dist/src/modules/membership-system-snapshot/membership-system-snapshot.model'
-import { MemberMetadata } from 'query-node/dist/src/modules/member-metadata/member-metadata.model'
-import { MembershipBoughtEvent } from 'query-node/dist/src/modules/membership-bought-event/membership-bought-event.model'
-import { MemberProfileUpdatedEvent } from 'query-node/dist/src/modules/member-profile-updated-event/member-profile-updated-event.model'
-import { MemberAccountsUpdatedEvent } from 'query-node/dist/src/modules/member-accounts-updated-event/member-accounts-updated-event.model'
-import { MemberInvitedEvent } from 'query-node/dist/src/modules/member-invited-event/member-invited-event.model'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { Event } from 'query-node/dist/src/modules/event/event.model'
-import { MemberVerificationStatusUpdatedEvent } from 'query-node/dist/src/modules/member-verification-status-updated-event/member-verification-status-updated-event.model'
 import { createEvent } from './common'
-import { InvitesTransferredEvent } from 'query-node/dist/src/modules/invites-transferred-event/invites-transferred-event.model'
-import { StakingAccountConfirmedEvent } from 'query-node/dist/src/modules/staking-account-confirmed-event/staking-account-confirmed-event.model'
-import { StakingAccountRemovedEvent } from 'query-node/dist/src/modules/staking-account-removed-event/staking-account-removed-event.model'
-import { InitialInvitationCountUpdatedEvent } from 'query-node/dist/src/modules/initial-invitation-count-updated-event/initial-invitation-count-updated-event.model'
-import { MembershipPriceUpdatedEvent } from 'query-node/dist/src/modules/membership-price-updated-event/membership-price-updated-event.model'
-import { ReferralCutUpdatedEvent } from 'query-node/dist/src/modules/referral-cut-updated-event/referral-cut-updated-event.model'
-import { InitialInvitationBalanceUpdatedEvent } from 'query-node/dist/src/modules/initial-invitation-balance-updated-event/initial-invitation-balance-updated-event.model'
-import { StakingAccountAddedEvent } from 'query-node/dist/src/modules/staking-account-added-event/staking-account-added-event.model'
-import { LeaderInvitationQuotaUpdatedEvent } from 'query-node/dist/src/modules/leader-invitation-quota-updated-event/leader-invitation-quota-updated-event.model'
+import {
+  Membership,
+  EventType,
+  MembershipEntryMethod,
+  MembershipSystemSnapshot,
+  MemberMetadata,
+  MembershipBoughtEvent,
+  MemberProfileUpdatedEvent,
+  MemberAccountsUpdatedEvent,
+  MemberInvitedEvent,
+  Event,
+  MemberVerificationStatusUpdatedEvent,
+  InvitesTransferredEvent,
+  StakingAccountConfirmedEvent,
+  StakingAccountRemovedEvent,
+  InitialInvitationCountUpdatedEvent,
+  MembershipPriceUpdatedEvent,
+  ReferralCutUpdatedEvent,
+  InitialInvitationBalanceUpdatedEvent,
+  StakingAccountAddedEvent,
+  LeaderInvitationQuotaUpdatedEvent,
+} from 'query-node/dist/model'
 
 async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await db.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })

@@ -1564,19 +1564,19 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-common@2.0.1-beta.17", "@dzlzv/hydra-common@^2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.0.1-beta.17.tgz#2c99c88ff877add3d3f9ad9a94f5788d755c4c42"
-  integrity sha512-fOxzei0mCRD7KL3MSY5saoJFknnoVysy9qHpfk6yNkyFsykHmekv1mqgicNwuC5HLq/ChxKoQHPeuVV3oltG/w==
+"@dzlzv/hydra-common@2.1.0-beta.7", "@dzlzv/hydra-common@^2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-common/-/hydra-common-2.1.0-beta.7.tgz#7b0159b4d6ab396fe94cffbd0e3527c68fab1c94"
+  integrity sha512-UrudbN6eKl13teVqapMs3nliim7/dJ7xba0hXuhdGLWhMwp9O1F+9YRXRAj6UQgfVf1n9bo99MkvxiJ+tKWggg==
   dependencies:
     bn.js "^5.1.3"
 
-"@dzlzv/hydra-db-utils@2.0.1-beta.17", "@dzlzv/hydra-db-utils@^2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.0.1-beta.17.tgz#92ddc4c26ef22e1d247ace2f83e5b93d727f09f9"
-  integrity sha512-DPPCD5NfKICorkHsam55VMPsEXQCtuGVe6LasjEWdseDN2d9Px8t8o2+up51nOy8Gqc1dm0xCk+qSTe7GRD8ow==
+"@dzlzv/hydra-db-utils@2.1.0-beta.7", "@dzlzv/hydra-db-utils@^2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-db-utils/-/hydra-db-utils-2.1.0-beta.7.tgz#83de3152b9a88158a74c2dc3192e5503bb2b962a"
+  integrity sha512-Qlt/FaHRnyH9h07MBXVQaCGgAa7A+feJglITUwrRJ7bvYHRVo/vyhFpQ4X2E4TazUUPoY4BWQ7IAG4eQXOsogQ==
   dependencies:
-    "@dzlzv/hydra-common" "^2.0.1-beta.17"
+    "@dzlzv/hydra-common" "^2.1.0-beta.7"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.1.3"
     ioredis "^4.17.3"
@@ -1584,13 +1584,13 @@
     shortid "^2.2.16"
     typeorm "^0.2.25"
 
-"@dzlzv/hydra-processor@2.0.1-beta.17":
-  version "2.0.1-beta.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.0.1-beta.17.tgz#eefe5f54157722b162ffcff629eadbf16c82e1f1"
-  integrity sha512-fKLNt9+Z2py+R91CxPbPJi7kdNCZadnerBCxf4UUCrCr2PIpqDRF/0KsKxEHnW1xGpgTe0LhbA7d4vMbsV0X/w==
+"@dzlzv/hydra-processor@2.1.0-beta.7":
+  version "2.1.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-processor/-/hydra-processor-2.1.0-beta.7.tgz#950c0ea3a306dc1dad531efafd21d85160f10f41"
+  integrity sha512-y2+x6BzjqXdJqq9MJrj8asCRLzhUNexHpHz4Ox0Qf6gzu4DPYQV8r9C+LwEyaN4aXDit5ZEMqve9aBPNJZnTFw==
   dependencies:
-    "@dzlzv/hydra-common" "^2.0.1-beta.17"
-    "@dzlzv/hydra-db-utils" "^2.0.1-beta.17"
+    "@dzlzv/hydra-common" "^2.1.0-beta.7"
+    "@dzlzv/hydra-db-utils" "^2.1.0-beta.7"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"

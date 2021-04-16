@@ -4,6 +4,8 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import fs from 'fs'
 import { decodeAddress } from '@polkadot/keyring'
+import { Bytes } from '@polkadot/types'
+import { createType } from '@joystream/types'
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
@@ -44,5 +46,9 @@ export class Utils {
 
   public static camelToSnakeCase(key: string): string {
     return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
+
+  public static metadataToBytes(meta: { serializeBinary(): Uint8Array }): Bytes {
+    return createType('Bytes', '0x' + Buffer.from(meta.serializeBinary()).toString('hex'))
   }
 }

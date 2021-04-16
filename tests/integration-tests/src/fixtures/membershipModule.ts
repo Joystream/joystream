@@ -18,24 +18,23 @@ import {
   StakingAccountAddedEvent,
   StakingAccountConfirmedEvent,
   StakingAccountRemovedEvent,
-  Event,
   MembershipSystemSnapshot,
 } from '../QueryNodeApiSchema.generated'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { CreateInterface, createType } from '@joystream/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { EventDetails, MemberInvitedEventDetails, MembershipBoughtEventDetails, MembershipEventName } from '../types'
+import {
+  MemberContext,
+  AnyQueryNodeEvent,
+  EventDetails,
+  MemberInvitedEventDetails,
+  MembershipBoughtEventDetails,
+  MembershipEventName,
+} from '../types'
 
 // FIXME: Retrieve from runtime when possible!
 const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
-
-type MemberContext = {
-  account: string
-  memberId: MemberId
-}
-
-type AnyQueryNodeEvent = { event: Event }
 
 // common code for fixtures
 abstract class MembershipFixture extends BaseFixture {

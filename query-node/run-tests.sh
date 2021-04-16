@@ -25,4 +25,9 @@ docker-compose down -v
 
 ./start.sh
 
-time yarn workspace integration-tests run-test-scenario olympia
+# pass the scenario name without .ts extension
+SCENARIO=$1
+# fallback if scenario if not specified
+SCENARIO=${SCENARIO:=full}
+
+time yarn workspace integration-tests run-test-scenario ${SCENARIO}

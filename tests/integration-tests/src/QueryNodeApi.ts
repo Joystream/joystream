@@ -1,14 +1,17 @@
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { MemberId } from '@joystream/types/common'
 import {
+  AppliedOnOpeningEvent,
   InitialInvitationBalanceUpdatedEvent,
   InitialInvitationCountUpdatedEvent,
   MembershipPriceUpdatedEvent,
   MembershipSystemSnapshot,
+  OpeningAddedEvent,
   Query,
   ReferralCutUpdatedEvent,
 } from './QueryNodeApiSchema.generated'
 import Debugger from 'debug'
+import { ApplicationId, OpeningId } from '@joystream/types/working-group'
 
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
@@ -490,5 +493,158 @@ export class QueryNodeApi {
         variables: { eventId },
       })
     ).data.initialInvitationCountUpdatedEvents[0]
+  }
+
+  public async getOpeningById(
+    id: OpeningId
+  ): Promise<ApolloQueryResult<Pick<Query, 'workingGroupOpeningByUniqueInput'>>> {
+    const OPENING_BY_ID = gql`
+      query($openingId: ID!) {
+        workingGroupOpeningByUniqueInput(where: { id: $openingId }) {
+          id
+          group {
+            name
+          }
+          applications {
+            id
+          }
+          type
+          status {
+            __typename
+          }
+          metadata {
+            shortDescription
+            description
+            hiringLimit
+            expectedEnding
+            applicationDetails
+            applicationFormQuestions {
+              question
+              type
+              index
+            }
+          }
+          stakeAmount
+          unstakingPeriod
+          rewardPerBlock
+          createdAtBlock
+          createdAt
+        }
+      }
+    `
+
+    this.queryDebug(`Executing getOpeningById(${id.toString()})`)
+
+    return this.queryNodeProvider.query<Pick<Query, 'workingGroupOpeningByUniqueInput'>>({
+      query: OPENING_BY_ID,
+      variables: { openingId: id.toString() },
+    })
+  }
+
+  public async getApplicationById(
+    id: ApplicationId
+  ): Promise<ApolloQueryResult<Pick<Query, 'workingGroupApplicationByUniqueInput'>>> {
+    const APPLICATION_BY_ID = gql`
+      query($applicationId: ID!) {
+        workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
+          id
+          createdAtBlock
+          createdAt
+          opening {
+            id
+          }
+          applicant {
+            id
+          }
+          roleAccount
+          rewardAccount
+          stakingAccount
+          status {
+            __typename
+          }
+          answers {
+            question {
+              question
+            }
+            answer
+          }
+        }
+      }
+    `
+
+    this.queryDebug(`Executing getApplicationById(${id.toString()})`)
+
+    return this.queryNodeProvider.query<Pick<Query, 'workingGroupApplicationByUniqueInput'>>({
+      query: APPLICATION_BY_ID,
+      variables: { applicationId: id.toString() },
+    })
+  }
+
+  public async getAppliedOnOpeningEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<AppliedOnOpeningEvent | undefined> {
+    const APPLIED_ON_OPENING_BY_ID = gql`
+      query($eventId: ID!) {
+        appliedOnOpeningEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          group {
+            name
+          }
+          opening {
+            id
+          }
+          application {
+            id
+          }
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getAppliedOnOpeningEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'appliedOnOpeningEvents'>>({
+        query: APPLIED_ON_OPENING_BY_ID,
+        variables: { eventId },
+      })
+    ).data.appliedOnOpeningEvents[0]
+  }
+
+  public async getOpeningAddedEvent(blockNumber: number, indexInBlock: number): Promise<OpeningAddedEvent | undefined> {
+    const OPENING_ADDED_BY_ID = gql`
+      query($eventId: ID!) {
+        openingAddedEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          group {
+            name
+          }
+          opening {
+            id
+          }
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getOpeningAddedEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'openingAddedEvents'>>({
+        query: OPENING_ADDED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.openingAddedEvents[0]
   }
 }

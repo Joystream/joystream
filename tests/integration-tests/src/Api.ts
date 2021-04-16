@@ -14,7 +14,17 @@ import { types } from '@joystream/types'
 import { v4 as uuid } from 'uuid'
 import Debugger from 'debug'
 import { DispatchError } from '@polkadot/types/interfaces/system'
-import { EventDetails, MemberInvitedEventDetails, MembershipBoughtEventDetails, MembershipEventName } from './types'
+import {
+  EventDetails,
+  MemberInvitedEventDetails,
+  MembershipBoughtEventDetails,
+  MembershipEventName,
+  OpeningAddedEventDetails,
+  WorkingGroupsEventName,
+  WorkingGroupModuleName,
+  AppliedOnOpeningEventDetails,
+} from './types'
+import { ApplicationId, Opening, OpeningId } from '@joystream/types/working-group'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -257,7 +267,19 @@ export class Api {
   ): Promise<EventDetails> {
     const details = await this.retrieveEventDetails(result, 'members', eventName)
     if (!details) {
-      throw new Error(`${eventName} details not found in result: ${JSON.stringify(result.toHuman())}`)
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
+  public async retrieveWorkingGroupsEventDetails(
+    result: ISubmittableResult,
+    moduleName: WorkingGroupModuleName,
+    eventName: WorkingGroupsEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, moduleName, eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
     }
     return details
   }
@@ -275,6 +297,28 @@ export class Api {
     return {
       ...details,
       newMemberId: details.event.data[0] as MemberId,
+    }
+  }
+
+  public async retrieveOpeningAddedEventDetails(
+    result: ISubmittableResult,
+    moduleName: WorkingGroupModuleName
+  ): Promise<OpeningAddedEventDetails> {
+    const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'OpeningAdded')
+    return {
+      ...details,
+      openingId: details.event.data[0] as OpeningId,
+    }
+  }
+
+  public async retrieveAppliedOnOpeningEventDetails(
+    result: ISubmittableResult,
+    moduleName: WorkingGroupModuleName
+  ): Promise<AppliedOnOpeningEventDetails> {
+    const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'AppliedOnOpening')
+    return {
+      ...details,
+      applicationId: details.event.data[1] as ApplicationId,
     }
   }
 
@@ -296,5 +340,13 @@ export class Api {
         //
       }
     }
+  }
+
+  public async getOpening(group: WorkingGroupModuleName, id: OpeningId): Promise<Opening> {
+    const opening = await this.api.query[group].openingById(id)
+    if (opening.isEmpty) {
+      throw new Error(`Opening by id ${id} not found!`)
+    }
+    return opening
   }
 }
