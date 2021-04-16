@@ -56,6 +56,8 @@ import {
   DataObject,
   LiaisonJudgement,
   AssetAvailability,
+
+  Membership,
 } from 'query-node'
 
 // Joystream types
@@ -248,7 +250,47 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   throw `Not implemented metadata type`
 }
 
-export function convertContentActorToOwner(contentActor: ContentActor, channelId: number): typeof DataObjectOwner {
+export async function convertContentActorToChannelOwner(db: DatabaseManager, contentActor: ContentActor): Promise<{
+  ownerMember?: Membership,
+  ownerCuratorGroup?: CuratorGroup,
+}> {
+  if (contentActor.isMember) {
+    const memberId = contentActor.asMember.toNumber()
+    const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Actor is non-existing member`, memberId)
+    }
+
+    return {
+      ownerMember: member,
+      ownerCuratorGroup: undefined, // this will clear the field
+    }
+  }
+
+  if (contentActor.isCurator) {
+    const curatorGroupId = contentActor.asCurator[0].toNumber()
+    const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup> })
+
+    // ensure curator group exists
+    if (!curatorGroup) {
+      return inconsistentState('Actor is non-existing curator group', curatorGroupId)
+    }
+
+    return {
+      ownerMember: undefined, // this will clear the field
+      ownerCuratorGroup: curatorGroup,
+    }
+  }
+
+  // TODO: contentActor.isLead
+
+  logger.error('Not implemented ContentActor type', {contentActor: contentActor.toString()})
+  throw 'Not-implemented ContentActor type used'
+}
+
+export function convertContentActorToDataObjectOwner(contentActor: ContentActor, channelId: number): typeof DataObjectOwner {
   const owner = new DataObjectOwnerChannel()
   owner.channel = channelId
 

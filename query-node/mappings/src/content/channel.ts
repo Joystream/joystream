@@ -10,7 +10,8 @@ import { Content } from '../../../generated/types'
 import {
   readProtobuf,
   readProtobufWithAssets,
-  convertContentActorToOwner,
+  convertContentActorToChannelOwner,
+  convertContentActorToDataObjectOwner,
 } from './utils'
 
 import {
@@ -40,7 +41,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
       db,
       blockNumber: event.blockNumber,
       assets: channelCreationParameters.assets,
-      contentOwner: convertContentActorToOwner(contentActor, channelId.toNumber()),
+      contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
     }
   )
 
@@ -61,6 +62,9 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     // fill in auto-generated fields
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
     updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+
+    // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
+    ...await convertContentActorToChannelOwner(db, contentActor),
 
     // integrate metadata
     ...protobufContent
@@ -105,7 +109,7 @@ export async function content_ChannelUpdated(
         db,
         blockNumber: event.blockNumber,
         assets: channelUpdateParameters.assets.unwrapOr([]),
-        contentOwner: convertContentActorToOwner(contentActor, channelId.toNumber()),
+        contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
       }
     )
 

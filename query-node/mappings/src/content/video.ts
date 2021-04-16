@@ -14,7 +14,7 @@ import {
 } from '../common'
 
 import {
-  convertContentActorToOwner,
+  convertContentActorToDataObjectOwner,
   readProtobuf,
   readProtobufWithAssets
 } from './utils'
@@ -170,7 +170,7 @@ export async function content_VideoCreated(
       db,
       blockNumber: event.blockNumber,
       assets: videoCreationParameters.assets,
-      contentOwner: convertContentActorToOwner(contentActor, channelId.toNumber()),
+      contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
     }
   )
 
@@ -244,7 +244,7 @@ export async function content_VideoUpdated(
         db,
         blockNumber: event.blockNumber,
         assets: videoUpdateParameters.assets.unwrapOr([]),
-        contentOwner: convertContentActorToOwner(contentActor, (new BN(video.channel.id)).toNumber()),
+        contentOwner: convertContentActorToDataObjectOwner(contentActor, (new BN(video.channel.id)).toNumber()),
       }
     )
 
