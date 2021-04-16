@@ -79,7 +79,7 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   }
 
   // update object
-  dataObject.liaisonId = storageProviderId
+  dataObject.liaisonId = storageProviderId.toNumber()
   dataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
   // set last update time
@@ -97,21 +97,21 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
 function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof DataObjectOwner {
   if (objectOwner.isMember) {
     const owner = new DataObjectOwnerMember()
-    owner.member = objectOwner.asMember.toBn()
+    owner.member = objectOwner.asMember.toNumber()
 
     return owner
   }
 
   if (objectOwner.isChannel) {
     const owner = new DataObjectOwnerChannel()
-    owner.channel = objectOwner.asChannel.toBn()
+    owner.channel = objectOwner.asChannel.toNumber()
 
     return owner
   }
 
   if (objectOwner.isDao) {
     const owner = new DataObjectOwnerDao()
-    owner.dao = objectOwner.asDao.toBn()
+    owner.dao = objectOwner.asDao.toNumber()
 
     return owner
   }

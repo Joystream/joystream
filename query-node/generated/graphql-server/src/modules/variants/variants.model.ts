@@ -11,18 +11,16 @@ import {
   StringField,
 } from 'warthog';
 
-import BN from 'bn.js';
-
 import { ObjectType, Field, createUnionType } from 'type-graphql';
 
 @ObjectType()
 export class DataObjectOwnerChannel {
   public isTypeOf: string = 'DataObjectOwnerChannel';
 
-  @NumericField({
+  @IntField({
     description: `Channel identifier`,
   })
-  channel!: BN;
+  channel!: number;
 
   @IntField({
     nullable: true,
@@ -44,19 +42,19 @@ export class DataObjectOwnerCouncil {
 export class DataObjectOwnerDao {
   public isTypeOf: string = 'DataObjectOwnerDao';
 
-  @NumericField({
+  @IntField({
     description: `DAO identifier`,
   })
-  dao!: BN;
+  dao!: number;
 }
 @ObjectType()
 export class DataObjectOwnerMember {
   public isTypeOf: string = 'DataObjectOwnerMember';
 
-  @NumericField({
+  @IntField({
     description: `Member identifier`,
   })
-  member!: BN;
+  member!: number;
 
   @IntField({
     nullable: true,

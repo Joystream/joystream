@@ -26,7 +26,7 @@ import {
 import {
   AssetAvailability,
 } from 'query-node'
-import BN from 'bn.js'
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
@@ -40,7 +40,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
       db,
       blockNumber: event.blockNumber,
       assets: channelCreationParameters.assets,
-      contentOwner: convertContentActorToOwner(contentActor, channelId.toBn()),
+      contentOwner: convertContentActorToOwner(contentActor, channelId.toNumber()),
     }
   )
 
@@ -105,7 +105,7 @@ export async function content_ChannelUpdated(
         db,
         blockNumber: event.blockNumber,
         assets: channelUpdateParameters.assets.unwrapOr([]),
-        contentOwner: convertContentActorToOwner(contentActor, channelId.toBn()),
+        contentOwner: convertContentActorToOwner(contentActor, channelId.toNumber()),
       }
     )
 

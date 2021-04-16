@@ -1,6 +1,4 @@
-import { BaseModel, IntField, NumericField, Model, OneToMany, EnumField, StringField } from 'warthog';
-
-import BN from 'bn.js';
+import { BaseModel, IntField, Model, OneToMany, EnumField, StringField } from 'warthog';
 
 import { Column } from 'typeorm';
 import { Field } from 'type-graphql';
@@ -33,28 +31,16 @@ export class DataObject extends BaseModel {
   })
   typeId!: number;
 
-  @NumericField({
+  @IntField({
     description: `Content size in bytes`,
-
-    transformer: {
-      to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
-      from: (dbValue: string) =>
-        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
-    },
   })
-  size!: BN;
+  size!: number;
 
-  @NumericField({
+  @IntField({
     nullable: true,
     description: `Storage provider id of the liaison`,
-
-    transformer: {
-      to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
-      from: (dbValue: string) =>
-        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
-    },
   })
-  liaisonId?: BN;
+  liaisonId?: number;
 
   @EnumField('LiaisonJudgement', LiaisonJudgement, {
     description: `Storage provider as liaison judgment`,

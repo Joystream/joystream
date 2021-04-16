@@ -37,7 +37,7 @@ type Membership @entity {
   entry: MembershipEntryMethod!
 
   "The type of subscription the member has purchased if any."
-  subscription: BigInt
+  subscription: Int
 
   channels: [Channel!]! @derivedFrom(field: "ownerMember")
 }
@@ -87,10 +87,10 @@ type DataObject @entity {
   typeId: Int!
 
   "Content size in bytes"
-  size: BigInt!
+  size: Int!
 
   "Storage provider id of the liaison"
-  liaisonId: BigInt # liaison is unset until storage provider accepts or rejects the content
+  liaisonId: Int # liaison is unset until storage provider accepts or rejects the content
 
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
@@ -111,12 +111,12 @@ union DataObjectOwner = DataObjectOwnerMember
 
 "Asset owned by a member"
 type DataObjectOwnerMember @variant {
-  # use `BigInt` instead of `Membership` before variant relations are featured in Hydra
+  # use `Int` instead of `Membership` before variant relations are featured in Hydra
   # TODO: setup proper relations
   #"Member identifier"
   #memberId: Membership!
   "Member identifier"
-  member: BigInt # TODO: make this mandatory again (see DataObject mapping for more info)
+  member: Int!
 
   "Variant needs to have at least one property. This value is not used."
   dummy: Int
@@ -124,11 +124,11 @@ type DataObjectOwnerMember @variant {
 
 "Asset owned by a channel"
 type DataObjectOwnerChannel @variant {
-  # use `BigInt` instead of `Channel` before variant relations are featured in Hydra
+  # use `Int` instead of `Channel` before variant relations are featured in Hydra
   #"Channel identifier"
   #channel: Channel!
   "Channel identifier"
-  channel: BigInt!
+  channel: Int!
 
   "Variant needs to have at least one property. This value is not used."
   dummy: Int
@@ -137,7 +137,7 @@ type DataObjectOwnerChannel @variant {
 "Asset owned by a DAO"
 type DataObjectOwnerDao @variant {
   "DAO identifier"
-  dao: BigInt!
+  dao: Int!
 }
 
 "Asset owned by the Council"
@@ -232,7 +232,7 @@ type CuratorGroup @entity {
   id: ID!
 
   "Curators belonging to this group"
-  curatorIds: [BigInt!]!
+  curatorIds: [Int!]!
 
   "Is group active or not"
   isActive: Boolean!
@@ -347,7 +347,7 @@ type VideoMediaMetadata @entity {
   pixelHeight: Int
 
   "Video media size in bytes"
-  size: BigInt
+  size: Int
 
   video: Video @derivedFrom(field: "mediaMetadata")
 

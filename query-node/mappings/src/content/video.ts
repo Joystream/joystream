@@ -1,7 +1,7 @@
+import BN from 'bn.js'
 import { fixBlockTimestamp } from '../eventFix'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import BN from 'bn.js'
 import { FindConditions, In } from 'typeorm'
 
 import {
@@ -170,7 +170,7 @@ export async function content_VideoCreated(
       db,
       blockNumber: event.blockNumber,
       assets: videoCreationParameters.assets,
-      contentOwner: convertContentActorToOwner(contentActor, channelId.toBn()),
+      contentOwner: convertContentActorToOwner(contentActor, channelId.toNumber()),
     }
   )
 
@@ -244,7 +244,7 @@ export async function content_VideoUpdated(
         db,
         blockNumber: event.blockNumber,
         assets: videoUpdateParameters.assets.unwrapOr([]),
-        contentOwner: convertContentActorToOwner(contentActor, new BN(video.channel.id)),
+        contentOwner: convertContentActorToOwner(contentActor, (new BN(video.channel.id)).toNumber()),
       }
     )
 

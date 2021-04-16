@@ -1,6 +1,4 @@
-import { BaseModel, IntField, NumericField, Model, OneToMany, EnumField, StringField } from 'warthog';
-
-import BN from 'bn.js';
+import { BaseModel, IntField, Model, OneToMany, EnumField, StringField } from 'warthog';
 
 import { Channel } from '../channel/channel.model';
 
@@ -47,17 +45,11 @@ export class Membership extends BaseModel {
   })
   entry!: MembershipEntryMethod;
 
-  @NumericField({
+  @IntField({
     nullable: true,
     description: `The type of subscription the member has purchased if any.`,
-
-    transformer: {
-      to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
-      from: (dbValue: string) =>
-        dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
-    },
   })
-  subscription?: BN;
+  subscription?: number;
 
   @OneToMany(() => Channel, (param: Channel) => param.ownerMember, { cascade: ["insert", "update"] })
   channels?: Channel[];

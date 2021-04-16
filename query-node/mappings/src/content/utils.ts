@@ -10,7 +10,6 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { Bytes } from '@polkadot/types'
 import ISO6391 from 'iso-639-1';
-import BN from 'bn.js'
 import { u64 } from '@polkadot/types/primitive';
 import { FindConditions } from 'typeorm'
 
@@ -247,9 +246,9 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   throw `Not implemented metadata type`
 }
 
-export function convertContentActorToOwner(contentActor: ContentActor, channelId: BN): typeof DataObjectOwner {
+export function convertContentActorToOwner(contentActor: ContentActor, channelId: number): typeof DataObjectOwner {
   const owner = new DataObjectOwnerChannel()
-  //owner.channel = channelId // TODO: make this work; it causes error `TypeError, message: attempted to use private field on non-instance`
+  owner.channel = channelId
 
   return owner
 
@@ -373,7 +372,7 @@ function integrateAsset<T>(propertyName: string, result: Object, asset: AssetSto
   result[nameDataObject] = asset
 }
 
-async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<BN | undefined> {
+async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<number | undefined> {
   // escape if no asset is required
   if (assetIndex === undefined) {
     return undefined
@@ -396,7 +395,8 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   // extract video size
   const contentParameters: ContentParameters = rawAsset.asUpload
   // `size` is masked by `size` special name in struct that's why there needs to be `.get('size') as u64`
-  const videoSize = (contentParameters.get('size') as unknown as u64).toBn()
+  const videoSize = (contentParameters.get('size') as unknown as u64).toNumber()
+
 
   return videoSize
 }
@@ -449,7 +449,7 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promis
   return license
 }
 
-async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: BN | undefined): Promise<VideoMediaMetadata> {
+async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined): Promise<VideoMediaMetadata> {
   // create new encoding info
   const encoding = new VideoMediaEncoding(videoProtobuf.mediaType)
 

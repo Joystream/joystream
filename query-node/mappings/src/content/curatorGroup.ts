@@ -81,7 +81,7 @@ export async function content_CuratorAdded(
   }
 
   // update curator group
-  curatorGroup.curatorIds.push(curatorId)
+  curatorGroup.curatorIds.push(curatorId.toNumber())
 
   // set last update time
   curatorGroup.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
@@ -108,7 +108,7 @@ export async function content_CuratorRemoved(
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  const curatorIndex = curatorGroup.curatorIds.indexOf(curatorId)
+  const curatorIndex = curatorGroup.curatorIds.indexOf(curatorId.toNumber())
 
   // ensure curator group exists
   if (curatorIndex < 0) {

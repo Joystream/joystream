@@ -1,16 +1,14 @@
-import { BaseModel, BooleanField, NumericField, Model, OneToMany, CustomField, StringField } from 'warthog';
-
-import BN from 'bn.js';
+import { BaseModel, BooleanField, IntField, Model, OneToMany, CustomField, StringField } from 'warthog';
 
 import { Channel } from '../channel/channel.model';
 
 @Model({ api: {} })
 export class CuratorGroup extends BaseModel {
   @CustomField({
-    db: { type: 'numeric', array: true },
-    api: { type: 'numeric', description: `Curators belonging to this group` },
+    db: { type: 'integer', array: true },
+    api: { type: 'integer', description: `Curators belonging to this group` },
   })
-  curatorIds!: BN[];
+  curatorIds!: number[];
 
   @BooleanField({
     description: `Is group active or not`,
