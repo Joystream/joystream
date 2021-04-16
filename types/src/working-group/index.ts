@@ -115,7 +115,7 @@ export type IApplyOnOpeningParameters = {
   opening_id: OpeningId
   role_account_id: AccountId
   reward_account_id: AccountId
-  description: Text
+  description: Bytes
   stake_parameters: StakeParameters
 }
 
@@ -125,7 +125,7 @@ export class ApplyOnOpeningParameters
     opening_id: OpeningId,
     role_account_id: AccountId,
     reward_account_id: AccountId,
-    description: Text,
+    description: Bytes,
     stake_parameters: StakeParameters,
   })
   implements IApplyOnOpeningParameters {}

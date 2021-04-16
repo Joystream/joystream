@@ -55,7 +55,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::MemberId;
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
@@ -110,7 +110,7 @@ pub trait Trait:
     frame_system::Trait
     + proposals_engine::Trait
     + proposals_discussion::Trait
-    + common::Trait
+    + common::membership::Trait
     + staking::Trait
     + proposals_engine::Trait
 {
@@ -887,6 +887,5 @@ impl<T: Trait> ProposalObserver<T> for Module<T> {
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);
 
         proposals_discussion::ThreadById::<T>::remove(thread_id);
-        proposals_discussion::PostThreadIdByPostId::<T>::remove_prefix(thread_id);
     }
 }

@@ -20,7 +20,14 @@ impl EventFixture {
             })
             .collect::<Vec<EventRecord<_, _>>>();
 
-        assert_eq!(System::events(), expected_events);
+        let actual_events: Vec<_> = System::events()
+            .into_iter()
+            .filter(|e| match e.event {
+                TestEvent::discussion(..) => true,
+                _ => false,
+            })
+            .collect();
+        assert_eq!(actual_events, expected_events);
     }
 }
 
@@ -49,7 +56,11 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
     for post_entry in post_entries {
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
-        let expected_post = DiscussionPost { author_id: 1 };
+        let expected_post = DiscussionPost {
+            author_id: 1,
+            cleanup_pay_off: <Test as Trait>::PostDeposit::get(),
+            last_edited: frame_system::Module::<Test>::block_number(),
+        };
 
         assert_eq!(actual_post, expected_post);
     }
@@ -90,10 +101,13 @@ impl DiscussionFixture {
 
 struct PostFixture {
     pub text: Vec<u8>,
-    pub origin: RawOrigin<u64>,
+    pub origin: RawOrigin<u128>,
     pub thread_id: u64,
     pub post_id: Option<u64>,
     pub author_id: u64,
+    pub initial_balance: u64,
+    pub account_id: u128,
+    pub editable: bool,
 }
 
 impl PostFixture {
@@ -104,15 +118,26 @@ impl PostFixture {
             thread_id,
             origin: RawOrigin::Signed(1),
             post_id: None,
+            initial_balance: <Test as Trait>::PostDeposit::get(),
+            account_id: 1,
+            editable: true,
         }
     }
 
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    fn with_account_id(self, account_id: u128) -> Self {
+        PostFixture { account_id, ..self }
+    }
+
+    fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         PostFixture { origin, ..self }
     }
 
     fn with_author(self, author_id: u64) -> Self {
         PostFixture { author_id, ..self }
+    }
+
+    fn with_editable(self, editable: bool) -> Self {
+        PostFixture { editable, ..self }
     }
 
     fn change_thread_id(self, thread_id: u64) -> Self {
@@ -126,18 +151,70 @@ impl PostFixture {
         }
     }
 
+    fn with_initial_balance(self, initial_balance: u64) -> Self {
+        PostFixture {
+            initial_balance,
+            ..self
+        }
+    }
+
     fn add_post_and_assert(&mut self, result: DispatchResult) -> Option<u64> {
+        balances::Module::<Test>::make_free_balance_be(&self.account_id, self.initial_balance);
+        let initial_balance = balances::Module::<Test>::usable_balance(&self.account_id);
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
             self.author_id,
             self.thread_id,
             self.text.clone(),
+            self.editable,
         );
 
         assert_eq!(add_post_result, result);
 
         if result.is_ok() {
-            self.post_id = Some(<PostCount>::get());
+            let post_id = <PostCount>::get();
+            self.post_id = Some(post_id);
+            if self.editable {
+                assert!(<PostThreadIdByPostId<Test>>::contains_key(
+                    self.thread_id,
+                    post_id
+                ));
+                assert_eq!(
+                    balances::Module::<Test>::usable_balance(&self.account_id),
+                    initial_balance - <Test as Trait>::PostDeposit::get()
+                );
+            } else {
+                assert!(!<PostThreadIdByPostId<Test>>::contains_key(
+                    self.thread_id,
+                    post_id
+                ));
+            }
+        }
+
+        self.post_id
+    }
+
+    fn delete_post_and_assert(&mut self, result: DispatchResult) -> Option<u64> {
+        let initial_balance = balances::Module::<Test>::usable_balance(&self.account_id);
+        let add_post_result = Discussions::delete_post(
+            self.origin.clone().into(),
+            self.author_id,
+            self.post_id.unwrap(),
+            self.thread_id,
+            true,
+        );
+
+        assert_eq!(add_post_result, result);
+
+        if result.is_ok() {
+            assert_eq!(
+                balances::Module::<Test>::usable_balance(&self.account_id),
+                initial_balance + <Test as Trait>::PostDeposit::get()
+            );
+            assert!(!<PostThreadIdByPostId<Test>>::contains_key(
+                self.thread_id,
+                self.post_id.unwrap()
+            ));
         }
 
         self.post_id
@@ -169,7 +246,7 @@ fn create_discussion_call_succeeds() {
 }
 
 #[test]
-fn create_post_call_succeeds() {
+fn create_post_call_succeeds_editable() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
 
@@ -177,14 +254,157 @@ fn create_post_call_succeeds() {
             .create_discussion_and_assert(Ok(1))
             .unwrap();
 
-        let mut post_fixture = PostFixture::default_for_thread(thread_id);
+        let mut post_fixture = PostFixture::default_for_thread(thread_id).with_editable(true);
+
+        post_fixture.add_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn delete_post_call_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id).with_editable(true);
+
+        post_fixture.add_post_and_assert(Ok(()));
+        post_fixture.delete_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn delete_post_call_fails_with_invalid_user() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id).with_editable(true);
+
+        post_fixture.add_post_and_assert(Ok(()));
+        post_fixture
+            .with_origin(RawOrigin::Signed(12))
+            .with_author(13)
+            .with_account_id(13)
+            .delete_post_and_assert(Err(DispatchError::Other("Invalid author")));
+    });
+}
+
+#[test]
+fn delete_post_call_fails_with_incorrect_user() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id).with_editable(true);
+
+        post_fixture.add_post_and_assert(Ok(()));
+        post_fixture
+            .with_origin(RawOrigin::Signed(10))
+            .with_author(10)
+            .with_account_id(10)
+            .delete_post_and_assert(Err(Error::<Test>::CannotDeletePost.into()));
+    });
+}
+
+#[test]
+fn delete_post_call_fails_with_any_user_before_post_lifetime() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id).with_editable(true);
+
+        post_fixture.add_post_and_assert(Ok(()));
+
+        let current_block = frame_system::Module::<Test>::block_number();
+
+        run_to_block(current_block + <Test as Trait>::PostLifeTime::get());
+
+        post_fixture
+            .with_origin(RawOrigin::Signed(10))
+            .with_author(10)
+            .with_account_id(10)
+            .delete_post_and_assert(Err(Error::<Test>::CannotDeletePost.into()));
+    });
+}
+
+#[test]
+fn delete_post_call_succeds_with_any_user_after_post_lifetime() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id).with_editable(true);
+
+        post_fixture.add_post_and_assert(Ok(()));
+
+        // Erasing manually to prevent circular dependency with proposal codex
+        <ThreadById<Test>>::remove(thread_id);
+
+        let current_block = frame_system::Module::<Test>::block_number();
+
+        run_to_block(current_block + <Test as Trait>::PostLifeTime::get());
+
+        post_fixture
+            .with_origin(RawOrigin::Signed(10))
+            .with_author(10)
+            .with_account_id(10)
+            .delete_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn create_post_call_fails_editable_insufficient_funds() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_editable(true)
+            .with_initial_balance(<Test as Trait>::PostDeposit::get() - 1);
+
+        post_fixture.add_post_and_assert(Err(Error::<Test>::InsufficientBalanceForPost.into()));
+    });
+}
+
+#[test]
+fn create_post_call_succeeds_non_editable() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let mut post_fixture = PostFixture::default_for_thread(thread_id)
+            .with_editable(false)
+            .with_initial_balance(0);
 
         post_fixture.add_post_and_assert(Ok(()));
     });
 }
 
 struct ChangeThreadModeFixture {
-    pub origin: RawOrigin<u64>,
+    pub origin: RawOrigin<u128>,
     pub thread_id: u64,
     pub member_id: u64,
     pub mode: ThreadMode<u64>,
@@ -208,7 +428,7 @@ impl ChangeThreadModeFixture {
         Self { member_id, ..self }
     }
 
-    fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -264,6 +484,7 @@ fn update_post_call_fails_because_of_the_wrong_author() {
 
         let mut post_fixture = PostFixture::default_for_thread(thread_id)
             .with_origin(RawOrigin::Signed(12))
+            .with_account_id(12)
             .with_author(12);
 
         post_fixture.add_post_and_assert(Ok(()));
@@ -489,6 +710,7 @@ fn create_post_call_succeeds_with_closed_mode_by_councilor() {
 
         let mut post_fixture = PostFixture::default_for_thread(thread_id)
             .with_origin(RawOrigin::Signed(2))
+            .with_account_id(2)
             .with_author(2);
 
         post_fixture.add_post_and_assert(Ok(()));
@@ -507,6 +729,7 @@ fn create_post_call_succeeds_with_closed_mode_by_white_listed_member() {
 
         let mut post_fixture = PostFixture::default_for_thread(thread_id)
             .with_origin(RawOrigin::Signed(11))
+            .with_account_id(11)
             .with_author(11);
 
         post_fixture.add_post_and_assert(Ok(()));

@@ -19,7 +19,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }
@@ -66,7 +66,7 @@ impl pallet_balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }

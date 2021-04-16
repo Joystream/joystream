@@ -56,7 +56,7 @@ use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
@@ -92,7 +92,7 @@ pub trait WeightInfo {
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + balances::Trait + common::Trait
+    frame_system::Trait + balances::Trait + common::membership::Trait
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -118,8 +118,11 @@ pub trait Trait<I: Instance = DefaultInstance>:
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    /// Minimum stake required for an opening
-    type MinimumStakeForOpening: Get<Self::Balance>;
+    /// Minimum stake required for applying into an opening
+    type MinimumApplicationStake: Get<Self::Balance>;
+
+    /// Stake needed to create an opening
+    type LeaderOpeningStake: Get<Self::Balance>;
 }
 
 decl_event!(
@@ -363,15 +366,30 @@ decl_module! {
             stake_policy: StakePolicy<T::BlockNumber, BalanceOf<T>>,
             reward_per_block: Option<BalanceOf<T>>
         ){
-            checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
+            checks::ensure_origin_for_opening_type::<T, I>(origin.clone(), opening_type)?;
 
             checks::ensure_valid_stake_policy::<T, I>(&stake_policy)?;
 
             checks::ensure_valid_reward_per_block::<T, I>(&reward_per_block)?;
 
+            checks::ensure_stake_for_opening_type::<T, I>(origin, opening_type)?;
+
             //
             // == MUTATION SAFE ==
             //
+
+            let mut creation_stake = BalanceOf::<T>::zero();
+            if opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                creation_stake = T::LeaderOpeningStake::get();
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    creation_stake.saturating_add(current_stake)
+                )?;
+            }
 
             let hashed_description = T::Hashing::hash(&description);
 
@@ -382,6 +400,7 @@ decl_module! {
                 description_hash: hashed_description.as_ref().to_vec(),
                 stake_policy: stake_policy.clone(),
                 reward_per_block,
+                creation_stake,
             };
 
             let new_opening_id = NextOpeningId::<I>::get();
@@ -541,6 +560,17 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            if opening.opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    current_stake.saturating_sub(opening.creation_stake)
+                )?;
+            }
 
             // Process successful applications
             let application_id_to_worker_id = Self::fulfill_successful_applications(
@@ -860,6 +890,18 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            // Remove opening stake
+            if opening.opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    current_stake.saturating_sub(opening.creation_stake)
+                )?;
+            }
 
             // Remove the opening.
             <OpeningById::<T, I>>::remove(opening_id);

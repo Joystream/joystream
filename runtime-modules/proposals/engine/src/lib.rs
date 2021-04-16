@@ -74,7 +74,7 @@
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
-//! pub trait Trait: engine::Trait + common::Trait {}
+//! pub trait Trait: engine::Trait + common::membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -152,7 +152,8 @@ use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
-use common::origin::{CouncilOriginValidator, MemberOriginValidator};
+use common::council::CouncilOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
@@ -174,7 +175,7 @@ type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
 
 /// Proposals engine trait.
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::Trait + balances::Trait
+    frame_system::Trait + pallet_timestamp::Trait + common::membership::Trait + balances::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;

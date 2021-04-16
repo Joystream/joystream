@@ -20,7 +20,7 @@ pub enum WorkingGroup {
 }
 
 /// Working group interface to work with its members - workers and leaders.
-pub trait WorkingGroupAuthenticator<T: crate::Trait> {
+pub trait WorkingGroupAuthenticator<T: crate::membership::Trait> {
     /// Validate origin for the worker.
     fn ensure_worker_origin(origin: T::Origin, worker_id: &T::ActorId) -> DispatchResult;
 

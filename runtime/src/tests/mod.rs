@@ -164,10 +164,8 @@ pub(crate) fn insert_member(account_id: AccountId32) {
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle.to_vec()),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -179,11 +177,28 @@ pub(crate) fn set_staking_account(
     staking_account_id: AccountId32,
     member_id: u64,
 ) {
+    let current_balance = pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id);
+
+    let _ = pallet_balances::Module::<Runtime>::deposit_creating(
+        &staking_account_id,
+        <Runtime as membership::Trait>::CandidateStake::get(),
+    );
+
+    assert_eq!(
+        pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
+        current_balance + <Runtime as membership::Trait>::CandidateStake::get()
+    );
+
     membership::Module::<Runtime>::add_staking_account_candidate(
         RawOrigin::Signed(staking_account_id.clone()).into(),
         member_id,
     )
     .unwrap();
+
+    assert_eq!(
+        pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
+        current_balance
+    );
 
     membership::Module::<Runtime>::confirm_staking_account(
         RawOrigin::Signed(controller_account_id.clone()).into(),

@@ -30,21 +30,27 @@
 //! - [unlock_post](./struct.Module.html#method.unlock_post)
 //! - [edit_post](./struct.Module.html#method.edit_post)
 //! - [create_reply](./struct.Module.html#method.create_reply)
-//! - [edit_reply](./struct.Module.html#method.create_reply)
+//! - [edit_reply](./struct.Module.html#method.edit_reply)
+//! - [delete_replies](./struct.Module.html#method.delete_replies)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Codec, Decode, Encode};
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use errors::Error;
 pub use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::weights::Weight;
 use frame_support::{
     decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter, StorageDoubleMap,
 };
 use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use sp_runtime::SaturatedConversion;
+use sp_runtime::{
+    traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating},
+    ModuleId,
+};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
 mod benchmarking;
@@ -61,6 +67,11 @@ pub type PostId = u64;
 /// Blogger participant ID alias for the member of the system.
 pub type ParticipantId<T> = common::MemberId<T>;
 
+/// Balance alias for `balances` module.
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+type Balances<T> = balances::Module<T>;
+
 /// blog WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
@@ -71,10 +82,15 @@ pub trait WeightInfo {
     fn create_reply_to_post(t: u32) -> Weight;
     fn create_reply_to_reply(t: u32) -> Weight;
     fn edit_reply(t: u32) -> Weight;
+    fn delete_replies(i: u32) -> Weight;
 }
 
+type BlogWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
+
 // The pallet's configuration trait.
-pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Trait {
+pub trait Trait<I: Instance = DefaultInstance>:
+    frame_system::Trait + common::membership::Trait + balances::Trait
+{
     /// Origin from which participant must come.
     type ParticipantEnsureOrigin: MemberOriginValidator<
         Self::Origin,
@@ -87,9 +103,6 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
 
     /// The maximum number of posts in a blog.
     type PostsMaxNumber: Get<MaxNumber>;
-
-    /// The maximum number of replies to a post.
-    type RepliesMaxNumber: Get<MaxNumber>;
 
     /// Type of identifier for replies.
     type ReplyId: Parameter
@@ -105,6 +118,15 @@ pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait + common::Tr
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Deposit needed to create a reply
+    type ReplyDeposit: Get<Self::Balance>;
+
+    /// The forum module Id, used to derive the account Id to hold the thread bounty
+    type ModuleId: Get<ModuleId>;
+
+    /// Time a reply can live until it can be deleted by anyone
+    type ReplyLifetime: Get<Self::BlockNumber>;
 }
 
 /// Type, representing blog related post structure
@@ -231,6 +253,10 @@ pub struct Reply<T: Trait<I>, I: Instance> {
     owner: ParticipantId<T>,
     /// Reply`s parent id
     parent_id: ParentId<T::ReplyId, PostId>,
+    /// Pay off by deleting post
+    cleanup_pay_off: T::Balance,
+    /// Last time reply was edited
+    last_edited: T::BlockNumber,
 }
 
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
@@ -242,6 +268,8 @@ impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Reply<T, I> {
             .field("text_hash", &self.text_hash)
             .field("owner", &self.owner)
             .field("parent_id", &self.parent_id)
+            .field("cleanup_pay_off", &self.cleanup_pay_off)
+            .field("last_edited", &self.last_edited)
             .finish()
     }
 }
@@ -255,6 +283,8 @@ impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
         self.text_hash == other.text_hash
             && self.owner == other.owner
             && self.parent_id == other.parent_id
+            && self.cleanup_pay_off == other.cleanup_pay_off
+            && self.last_edited == other.last_edited
     }
 }
 
@@ -268,6 +298,8 @@ impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
             text_hash: Default::default(),
             owner: Default::default(),
             parent_id: Default::default(),
+            cleanup_pay_off: Default::default(),
+            last_edited: Default::default(),
         }
     }
 }
@@ -278,11 +310,14 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
         text: Vec<u8>,
         owner: ParticipantId<T>,
         parent_id: ParentId<T::ReplyId, PostId>,
+        cleanup_pay_off: T::Balance,
     ) -> Self {
         Self {
             text_hash: T::Hashing::hash(&text),
             owner,
             parent_id,
+            cleanup_pay_off,
+            last_edited: frame_system::Module::<T>::block_number(),
         }
     }
 
@@ -293,8 +328,20 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
 
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
-        self.text_hash = T::Hashing::hash(&new_text)
+        self.text_hash = T::Hashing::hash(&new_text);
+        self.last_edited = frame_system::Module::<T>::block_number()
     }
+}
+
+/// Represents a single reply that will be deleted by `delete_replies`
+#[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
+pub struct ReplyToDelete<ReplyId> {
+    /// Id of the post corresponding to the reply that will be deleted
+    post_id: PostId,
+    /// Id of the reply to be deleted
+    reply_id: ReplyId,
+    /// Whether to hide the reply or just remove it from the storage
+    hide: bool,
 }
 
 // Blog`s pallet storage items.
@@ -336,10 +383,10 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::create_post(
+        #[weight = BlogWeightInfo::<T, I>::create_post(
                 title.len().saturated_into(),
                 body.len().saturated_into()
-            )]
+        )]
         pub fn create_post(origin, title: Vec<u8>, body: Vec<u8>) -> DispatchResult  {
 
             // Ensure blog -> owner relation exists
@@ -375,7 +422,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::lock_post()]
+        #[weight = BlogWeightInfo::<T, I>::lock_post()]
         pub fn lock_post(origin, post_id: PostId) -> DispatchResult {
 
             // Ensure blog -> owner relation exists
@@ -406,7 +453,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::unlock_post()]
+        #[weight = BlogWeightInfo::<T, I>::unlock_post()]
         pub fn unlock_post(origin, post_id: PostId) -> DispatchResult {
 
             // Ensure blog -> owner relation exists
@@ -484,9 +531,10 @@ decl_module! {
             participant_id: ParticipantId<T>,
             post_id: PostId,
             reply_id: Option<T::ReplyId>,
-            text: Vec<u8>
+            text: Vec<u8>,
+            editable: bool,
         ) -> DispatchResult {
-            Self::ensure_valid_participant(origin, participant_id)?;
+            let account_id = Self::ensure_valid_participant(origin, participant_id)?;
 
             // Ensure post with given id exists
             let post = Self::ensure_post_exists(post_id)?;
@@ -494,35 +542,60 @@ decl_module! {
             // Ensure post unlocked, so mutations can be performed
             Self::ensure_post_unlocked(&post)?;
 
-            // Ensure root replies limit not reached
-            Self::ensure_replies_limit_not_reached(&post)?;
+            if let Some(reply_id) = reply_id {
+                // Check parent existed at some point in time(whether it is in storage or not)
+                ensure!(reply_id < post.replies_count(), Error::<T, I>::ReplyNotFound);
+            }
 
-            // New reply creation
-            let reply = if let Some(reply_id) = reply_id {
-                // Check parent reply existance in case of direct reply
-                Self::ensure_reply_exists(post_id, reply_id)?;
-                Reply::<T, I>::new(text.clone(), participant_id, ParentId::Reply(reply_id))
-            } else {
-                Reply::<T, I>::new(text.clone(), participant_id, ParentId::Post(post_id))
-            };
+            if editable {
+                ensure!(
+                    Balances::<T>::usable_balance(&account_id) >= T::ReplyDeposit::get(),
+                    Error::<T, I>::InsufficientBalanceForReply
+                );
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
+            if editable {
+                Self::transfer_to_state_cleanup_treasury_account(
+                    T::ReplyDeposit::get(),
+                    post_id,
+                    &account_id
+                )?;
+            }
+
             // Update runtime storage with new reply
             let post_replies_count = post.replies_count();
-            <ReplyById<T, I>>::insert(post_id, post_replies_count, reply);
 
             // Increment replies counter, associated with given post
             <PostById<T, I>>::mutate(post_id, |inner_post| inner_post.increment_replies_counter());
 
+            if editable {
+                let parent_id = if let Some(reply_id) = reply_id {
+                    ParentId::Reply(reply_id)
+                } else {
+                    ParentId::Post(post_id)
+                };
+
+
+                let reply = Reply::<T, I>::new(
+                    text.clone(),
+                    participant_id,
+                    parent_id,
+                    T::ReplyDeposit::get()
+                );
+
+                <ReplyById<T, I>>::insert(post_id, post_replies_count, reply);
+            }
+
             if let Some(reply_id) = reply_id {
                 // Trigger event
-                Self::deposit_event(RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, post_replies_count, text));
+                Self::deposit_event(RawEvent::DirectReplyCreated(participant_id, post_id, reply_id, post_replies_count, text, editable));
             } else {
                 // Trigger event
-                Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, post_replies_count, text));
+                Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, post_replies_count, text, editable));
             }
             Ok(())
         }
@@ -538,7 +611,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = T::WeightInfo::edit_reply(new_text.len().saturated_into())]
+        #[weight = BlogWeightInfo::<T, I>::edit_reply(new_text.len().saturated_into())]
         pub fn edit_reply(
             origin,
             participant_id: ParticipantId<T>,
@@ -576,36 +649,132 @@ decl_module! {
             Ok(())
         }
 
+        /// Remove reply from storage
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (R)` where
+        /// - R is the number of replies to be deleted
+        /// - DB:
+        ///    - O(R)
+        /// # </weight>
+        #[weight = BlogWeightInfo::<T, I>::delete_replies(replies.len().saturated_into())]
+        pub fn delete_replies(
+            origin,
+            participant_id: ParticipantId<T>,
+            replies: Vec<ReplyToDelete<T::ReplyId>>,
+        ) -> DispatchResult {
+            let account_id = Self::ensure_valid_participant(origin, participant_id)?;
+
+            let mut erase_replies = Vec::new();
+            let mut pay_off_map = BTreeMap::new();
+            for ReplyToDelete { post_id, reply_id, hide } in replies {
+                // Ensure post with given id exists
+                let post = Self::ensure_post_exists(post_id)?;
+
+                // Ensure post unlocked, so mutations can be performed
+                Self::ensure_post_unlocked(&post)?;
+
+                // Ensure reply with given id exists
+                let reply = Self::ensure_reply_exists(post_id, reply_id)?;
+
+                // Ensure reply -> owner relation exists if post lifetime hasn't ran out
+                if (frame_system::Module::<T>::block_number().saturating_sub(reply.last_edited)) <
+                    T::ReplyLifetime::get()
+                {
+                    Self::ensure_reply_ownership(&reply, &participant_id)?;
+                }
+
+                if !reply.is_owner(&participant_id) {
+                    ensure!(!hide, Error::<T, I>::ReplyOwnershipError);
+                }
+
+                *pay_off_map.entry(post_id).or_default() += reply.cleanup_pay_off;
+                erase_replies.push((post_id, reply_id, reply.cleanup_pay_off, hide));
+            }
+
+            for (post_id, post_deposit) in pay_off_map.into_iter() {
+                ensure!(
+                    Balances::<T>::usable_balance(
+                        &Self::get_treasury_account(post_id)
+                    ) >= post_deposit,
+                    Error::<T, I>::InsufficientBalanceInPostAccount
+
+                );
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            for (post_id, reply_id, cleanup_pay_off, hide) in erase_replies {
+                Self::pay_off(post_id, cleanup_pay_off, &account_id)?;
+
+                // Update reply with new text
+                <ReplyById<T, I>>::remove(post_id, reply_id);
+
+                // Trigger event
+                Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id, hide));
+            }
+            Ok(())
+        }
+
     }
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+    fn get_treasury_account(post_id: PostId) -> T::AccountId {
+        T::ModuleId::get().into_sub_account(post_id)
+    }
+
+    fn pay_off(post_id: PostId, amount: BalanceOf<T>, account_id: &T::AccountId) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &Self::get_treasury_account(post_id),
+            account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    fn transfer_to_state_cleanup_treasury_account(
+        amount: BalanceOf<T>,
+        post_id: PostId,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            account_id,
+            &Self::get_treasury_account(post_id),
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
     // edit_post_weight
     fn edit_post_weight(title: &Option<Vec<u8>>, body: &Option<Vec<u8>>) -> Weight {
         let title_len: u32 = title.as_ref().map_or(0, |t| t.len().saturated_into());
         let body_len: u32 = body.as_ref().map_or(0, |b| b.len().saturated_into());
 
-        T::WeightInfo::edit_post(title_len, body_len)
+        BlogWeightInfo::<T, I>::edit_post(title_len, body_len)
     }
 
     // calculate create_reply weight
     fn create_reply_weight(text_len: usize) -> Weight {
         let text_len: u32 = text_len.saturated_into();
-        T::WeightInfo::create_reply_to_post(text_len)
-            .max(T::WeightInfo::create_reply_to_reply(text_len))
+        BlogWeightInfo::<T, I>::create_reply_to_post(text_len)
+            .max(BlogWeightInfo::<T, I>::create_reply_to_reply(text_len))
     }
 
     // Get participant id from origin
     fn ensure_valid_participant(
         origin: T::Origin,
         participant_id: ParticipantId<T>,
-    ) -> Result<(), DispatchError> {
+    ) -> Result<T::AccountId, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
         ensure!(
             T::ParticipantEnsureOrigin::is_member_controller_account(&participant_id, &account_id),
             Error::<T, I>::MembershipError
         );
-        Ok(())
+        Ok(account_id)
     }
 
     fn ensure_post_exists(post_id: PostId) -> Result<Post<T, I>, DispatchError> {
@@ -663,18 +832,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         Ok(posts_count)
     }
-
-    fn ensure_replies_limit_not_reached(post: &Post<T, I>) -> Result<(), DispatchError> {
-        // Get replies count, associated with given post
-        let root_replies_count = post.replies_count();
-
-        ensure!(
-            root_replies_count < T::RepliesMaxNumber::get().into(),
-            Error::<T, I>::RepliesLimitReached
-        );
-
-        Ok(())
-    }
 }
 
 decl_event!(
@@ -701,10 +858,13 @@ decl_event!(
         PostEdited(PostId, UpdatedTitle, UpdatedBody),
 
         /// A reply to a post was created
-        ReplyCreated(ParticipantId, PostId, ReplyId, Text),
+        ReplyCreated(ParticipantId, PostId, ReplyId, Text, bool),
 
         /// A reply to a reply was created
-        DirectReplyCreated(ParticipantId, PostId, ReplyId, ReplyId, Text),
+        DirectReplyCreated(ParticipantId, PostId, ReplyId, ReplyId, Text, bool),
+
+        /// A reply was deleted from storage
+        ReplyDeleted(ParticipantId, PostId, ReplyId, bool),
 
         /// A reply was edited
         ReplyEdited(ParticipantId, PostId, ReplyId, Text),

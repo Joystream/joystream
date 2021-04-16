@@ -156,7 +156,7 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
 }
 
 impl balances::Trait for Test {
@@ -181,9 +181,12 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -191,10 +194,10 @@ impl common::Trait for Test {
 // Weights info stub
 pub struct Weights;
 impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn update_profile(_: u32) -> Weight {
@@ -218,7 +221,7 @@ impl membership::WeightInfo for Weights {
     fn transfer_invites() -> Weight {
         unimplemented!()
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         unimplemented!()
     }
     fn set_membership_price() -> Weight {
@@ -254,6 +257,10 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
 }
 
 impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
@@ -269,7 +276,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -278,7 +285,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
         unimplemented!();
     }
 
@@ -288,7 +295,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -368,7 +375,7 @@ impl Default for proposals::Call<Test> {
     }
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         _account_id: u64,
@@ -383,7 +390,7 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::origin::CouncilOriginValidator<Origin, u64, u64> for () {
+impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 

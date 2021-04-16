@@ -60,10 +60,8 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -328,7 +326,7 @@ benchmarks! {
                 stake_policy: working_group::StakePolicy {
                     stake_amount:
                         <T as working_group::Trait<working_group::Instance1>>
-                            ::MinimumStakeForOpening::get(),
+                            ::MinimumApplicationStake::get(),
                     leaving_unstaking_period: Zero::zero(),
                 },
                 reward_per_block: None,

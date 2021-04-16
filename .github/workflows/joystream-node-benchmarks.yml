@@ -41,7 +41,7 @@ jobs:
 
       - name: Generate Weights
         run: |
-          ./scripts/generate-weights.sh
+          ./scripts/generate-weights.sh 5 2
           # Show any changes in computed weights
           git diff
         if: env.GIT_DIFF

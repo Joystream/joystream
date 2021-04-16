@@ -83,9 +83,11 @@ impl pallet_timestamp::Trait for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 impl balances::Trait for Test {
@@ -98,7 +100,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -107,7 +109,10 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: LockIdentifier = [9; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MinimumStakeForOpening: u32 = 50;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u32 = 20;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
@@ -119,15 +124,17 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = Weights;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl LockComparator<u64> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock == InvitedMemberLockId::get() {
+            existing_locks.contains(new_lock)
+        } else {
+            false
+        }
     }
 }
 
@@ -224,10 +231,10 @@ impl working_group::WeightInfo for Weights {
 }
 
 impl WeightInfo for () {
-    fn buy_membership_without_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
         0
     }
-    fn buy_membership_with_referrer(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
         0
     }
     fn update_profile(_: u32) -> Weight {
@@ -251,7 +258,7 @@ impl WeightInfo for () {
     fn transfer_invites() -> Weight {
         0
     }
-    fn invite_member(_: u32, _: u32, _: u32, _: u32) -> Weight {
+    fn invite_member(_: u32, _: u32) -> Weight {
         0
     }
     fn set_membership_price() -> Weight {
@@ -280,7 +287,7 @@ impl WeightInfo for () {
     }
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         _: u64,
@@ -298,9 +305,13 @@ impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
 impl Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
 
@@ -326,7 +337,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Trait>::Origin,
-        worker_id: &<Test as common::Trait>::ActorId,
+        worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Trait>::Origin> =
             origin.into();
@@ -346,7 +357,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
         LEAD_SET.with(|lead_set| {
             if *lead_set.borrow() {
                 Some(ALICE_MEMBER_ID)
@@ -362,7 +373,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -372,15 +383,15 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 impl
     crate::MembershipWorkingGroupHelper<
         <Test as frame_system::Trait>::AccountId,
-        <Test as common::Trait>::MemberId,
-        <Test as common::Trait>::ActorId,
+        <Test as common::membership::Trait>::MemberId,
+        <Test as common::membership::Trait>::ActorId,
     > for Test
 {
     fn insert_a_lead(
         _opening_id: u32,
         _caller_id: &<Test as frame_system::Trait>::AccountId,
-        _member_id: <Test as common::Trait>::MemberId,
-    ) -> <Test as common::Trait>::ActorId {
+        _member_id: <Test as common::membership::Trait>::MemberId,
+    ) -> <Test as common::membership::Trait>::ActorId {
         ALICE_MEMBER_ID
     }
 }

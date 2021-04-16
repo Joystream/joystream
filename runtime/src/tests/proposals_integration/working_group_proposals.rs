@@ -390,7 +390,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
 >(
     working_group: WorkingGroup,
 ) where
-    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
@@ -409,7 +409,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -465,7 +465,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
     common::MemberId<T>: From<u64>,
 {
     initial_test_ext().execute_with(|| {
@@ -481,7 +481,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -503,7 +503,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                                 T::Balance::from(
                                     <Runtime as working_group::Trait<
                                         MembershipWorkingGroupInstance,
-                                    >>::MinimumStakeForOpening::get(
+                                    >>::MinimumApplicationStake::get(
                                     )
                                     .try_into()
                                     .unwrap(),
@@ -574,19 +574,22 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
 }
 
 fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
-    T: working_group::Trait<I> + frame_system::Trait + common::Trait + pallet_balances::Trait,
+    T: working_group::Trait<I>
+        + frame_system::Trait
+        + common::membership::Trait
+        + pallet_balances::Trait,
     I: frame_support::traits::Instance,
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as common::Trait>::MemberId,
+        <T as common::membership::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
-    <T as common::Trait>::ActorId: Into<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -613,7 +616,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
             staking_account_id: staking_account_id.into(),
         };
 
-        let old_balance = Balances::usable_balance(&account_id.into());
+        let old_balance = Balances::free_balance(&account_id.into());
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),
@@ -725,14 +728,14 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as common::Trait>::MemberId,
+        <T as common::membership::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
-    <T as common::Trait>::ActorId: Into<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -872,7 +875,7 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -912,7 +915,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -931,7 +934,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -942,7 +945,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
             StakeParameters {
                 stake: <Runtime as working_group::Trait<
                     MembershipWorkingGroupInstance,
-                >>::MinimumStakeForOpening::get()
+                >>::MinimumApplicationStake::get()
                 .into(),
                 staking_account_id: account_id.into(),
             }
@@ -1059,8 +1062,8 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
-    <T as common::Trait>::ActorId: Into<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::ActorId: Into<u64>,
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -1073,7 +1076,7 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
             StakeParameters {
                 stake: <Runtime as working_group::Trait<
                     MembershipWorkingGroupInstance,
-                >>::MinimumStakeForOpening::get()
+                >>::MinimumApplicationStake::get()
                 .into(),
                 staking_account_id: account_id.into(),
             }
@@ -1086,7 +1089,7 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Trait<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumStakeForOpening::get() as u128,
+                    >>::MinimumApplicationStake::get() as u128,
                     leaving_unstaking_period: 1_000_000,
                 },
                 1,
@@ -1192,15 +1195,15 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as common::Trait>::MemberId,
+        <T as common::membership::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
     common::MemberId<T>: From<u64>,
-    <T as common::Trait>::ActorId: Into<u64>,
+    <T as common::membership::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -1284,7 +1287,10 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         let new_stake: working_group::BalanceOf<T> = SM::current_stake(&account_id.into()).into();
 
         assert_eq!(new_stake, 0.into());
-        assert_eq!(new_balance, old_balance + stake_amount);
+        assert_eq!(
+            new_balance,
+            old_balance + stake_amount - <Runtime as membership::Trait>::CandidateStake::get()
+        );
     });
 }
 
@@ -1331,14 +1337,14 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
     SM: staking_handler::StakingHandler<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
-        <T as common::Trait>::MemberId,
+        <T as common::membership::Trait>::MemberId,
     >,
 >(
     working_group: WorkingGroup,
 ) where
     <T as frame_system::Trait>::AccountId: From<[u8; 32]>,
-    <T as common::Trait>::MemberId: From<u64>,
-    <T as common::Trait>::ActorId: Into<u64>,
+    <T as common::membership::Trait>::MemberId: From<u64>,
+    <T as common::membership::Trait>::ActorId: Into<u64>,
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
@@ -1422,6 +1428,9 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         let new_stake: working_group::BalanceOf<T> = SM::current_stake(&account_id.into()).into();
 
         assert_eq!(new_stake, 0.into());
-        assert_eq!(new_balance, old_balance);
+        assert_eq!(
+            new_balance,
+            old_balance - <Runtime as membership::Trait>::CandidateStake::get()
+        );
     });
 }

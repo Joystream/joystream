@@ -1,7 +1,7 @@
 {
   "name": "@joystream/types",
   "version": "0.15.0",
-  "description": "Types for Joystream Substrate Runtime - Babylon release",
+  "description": "Types for Joystream Substrate Runtime - Olympia release",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {

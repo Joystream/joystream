@@ -4,6 +4,9 @@
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 
+STEPS=${1:-50}
+REPEAT=${2:-20}
+
 benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
@@ -11,8 +14,8 @@ benchmark() {
       --pallet=$1 \
       --extrinsic=* \
       --chain=dev \
-      --steps=50 \
-      --repeat=20 \
+      --steps=$STEPS \
+      --repeat=$REPEAT \
       --execution=wasm \
       --output=. 2>&1 > /dev/null)
 
@@ -40,6 +43,12 @@ benchmark substrate_utility
 benchmark pallet_session
 benchmark pallet_timestamp
 
+# Pallet staking benchmarking takes too long.
+# benchmark pallet_staking
+
+# Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
+# benchmark pallet_balances
+
 # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
 # Will have it commented out until we test it in the reference machine. If there
 # it still takes too long we will get rid of this benchmark for good and use always
@@ -56,5 +65,6 @@ benchmark council
 benchmark referendum
 benchmark forum
 benchmark membership
+benchmark bounty
 benchmark blog
 benchmark joystream_utility

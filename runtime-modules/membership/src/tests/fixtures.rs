@@ -52,11 +52,9 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TestUserInfo {
-    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
     pub handle_hash: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
+    pub metadata: Vec<u8>,
 }
 
 pub fn get_alice_info() -> TestUserInfo {
@@ -64,12 +62,19 @@ pub fn get_alice_info() -> TestUserInfo {
     let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
+    let metadata = b"
+    {
+        'name': 'Alice',
+        'avatar_uri': 'http://avatar-url.com/alice',
+        'about': 'my name is alice',
+    }
+    "
+    .to_vec();
+
     TestUserInfo {
-        name: Some(b"Alice".to_vec()),
         handle: Some(handle),
         handle_hash: Some(hash),
-        avatar_uri: Some(b"http://avatar-url.com/alice".to_vec()),
-        about: Some(b"my name is alice".to_vec()),
+        metadata,
     }
 }
 
@@ -78,12 +83,19 @@ pub fn get_bob_info() -> TestUserInfo {
     let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
+    let metadata = b"
+    {
+        'name': 'Bob',
+        'avatar_uri': 'http://avatar-url.com/bob',
+        'about': 'my name is bob',
+    }
+    "
+    .to_vec();
+
     TestUserInfo {
-        name: Some(b"Bob".to_vec()),
         handle: Some(handle),
         handle_hash: Some(hash),
-        avatar_uri: Some(b"http://avatar-url.com/bob".to_vec()),
-        about: Some(b"my name is bob".to_vec()),
+        metadata,
     }
 }
 
@@ -98,11 +110,9 @@ pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
     BuyMembershipParameters {
         root_account: ALICE_ACCOUNT_ID,
         controller_account: ALICE_ACCOUNT_ID,
-        name: info.name,
         handle: info.handle,
-        avatar_uri: info.avatar_uri,
-        about: info.about,
         referrer_id: None,
+        metadata: info.metadata,
     }
 }
 
@@ -167,10 +177,8 @@ pub struct BuyMembershipFixture {
     pub origin: RawOrigin<u64>,
     pub root_account: u64,
     pub controller_account: u64,
-    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
+    pub metadata: Vec<u8>,
     pub referrer_id: Option<u64>,
 }
 
@@ -181,10 +189,8 @@ impl Default for BuyMembershipFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             root_account: ALICE_ACCOUNT_ID,
             controller_account: ALICE_ACCOUNT_ID,
-            name: alice.name,
             handle: alice.handle,
-            avatar_uri: alice.avatar_uri,
-            about: alice.about,
+            metadata: alice.metadata,
             referrer_id: None,
         }
     }
@@ -195,10 +201,8 @@ impl BuyMembershipFixture {
         let params = BuyMembershipParameters {
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
-            name: self.name.clone(),
             handle: self.handle.clone(),
-            avatar_uri: self.avatar_uri.clone(),
-            about: self.about.clone(),
+            metadata: self.metadata.clone(),
             referrer_id: self.referrer_id.clone(),
         };
 
@@ -244,10 +248,10 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
 
 pub struct SetReferralCutFixture {
     pub origin: RawOrigin<u64>,
-    pub value: u64,
+    pub value: u8,
 }
 
-pub const DEFAULT_REFERRAL_CUT_VALUE: u64 = 100;
+pub const DEFAULT_REFERRAL_CUT_VALUE: u8 = 50;
 
 impl Default for SetReferralCutFixture {
     fn default() -> Self {
@@ -271,6 +275,10 @@ impl SetReferralCutFixture {
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_referral_cut(self, value: u8) -> Self {
+        Self { value, ..self }
     }
 }
 
@@ -332,10 +340,8 @@ pub struct InviteMembershipFixture {
     pub origin: RawOrigin<u64>,
     pub root_account: u64,
     pub controller_account: u64,
-    pub name: Option<Vec<u8>>,
     pub handle: Option<Vec<u8>>,
-    pub avatar_uri: Option<Vec<u8>>,
-    pub about: Option<Vec<u8>>,
+    pub metadata: Vec<u8>,
 }
 
 impl Default for InviteMembershipFixture {
@@ -346,10 +352,8 @@ impl Default for InviteMembershipFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             root_account: BOB_ACCOUNT_ID,
             controller_account: BOB_ACCOUNT_ID,
-            name: bob.name,
             handle: bob.handle,
-            avatar_uri: bob.avatar_uri,
-            about: bob.about,
+            metadata: bob.metadata,
         }
     }
 }
@@ -360,10 +364,8 @@ impl InviteMembershipFixture {
             inviting_member_id: self.member_id.clone(),
             root_account: self.root_account.clone(),
             controller_account: self.controller_account.clone(),
-            name: self.name.clone(),
             handle: self.handle.clone(),
-            avatar_uri: self.avatar_uri.clone(),
-            about: self.about.clone(),
+            metadata: self.metadata.clone(),
         }
     }
 
@@ -556,6 +558,7 @@ pub struct AddStakingAccountFixture {
     pub origin: RawOrigin<u64>,
     pub member_id: u64,
     pub staking_account_id: u64,
+    pub initial_balance: u64,
 }
 
 impl Default for AddStakingAccountFixture {
@@ -564,12 +567,14 @@ impl Default for AddStakingAccountFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
             staking_account_id: ALICE_ACCOUNT_ID,
+            initial_balance: <Test as Trait>::CandidateStake::get(),
         }
     }
 }
 
 impl AddStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        Balances::make_free_balance_be(&self.staking_account_id, self.initial_balance);
         let actual_result =
             Membership::add_staking_account_candidate(self.origin.clone().into(), self.member_id);
 
@@ -588,6 +593,13 @@ impl AddStakingAccountFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
+    }
+
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
     }
 }
 
@@ -609,12 +621,19 @@ impl Default for RemoveStakingAccountFixture {
 
 impl RemoveStakingAccountFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let initial_balance = Balances::usable_balance(&self.staking_account_id);
+
         let actual_result =
             Membership::remove_staking_account(self.origin.clone().into(), self.member_id);
 
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
+            assert_eq!(
+                Balances::usable_balance(&self.staking_account_id),
+                initial_balance + <Test as Trait>::CandidateStake::get()
+            );
+
             assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
                 &self.staking_account_id,
             ));

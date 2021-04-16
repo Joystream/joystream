@@ -11,6 +11,7 @@ import proposals from './proposals'
 import contentDirectory from './content-directory'
 import referendum from './referendum'
 import constitution from './constitution'
+import bounty from './bounty'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
@@ -33,6 +34,7 @@ export const types: RegistryTypes = {
   ...contentDirectory,
   ...referendum,
   ...constitution,
+  ...bounty,
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)

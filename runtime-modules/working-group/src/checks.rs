@@ -12,6 +12,7 @@ use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
+use staking_handler::StakingHandler;
 
 use crate::types::{ApplicationInfo, StakeParameters};
 
@@ -30,6 +31,30 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
             ensure_root(origin).map_err(|err| err.into())
         }
     }
+}
+
+pub(crate) fn ensure_stake_for_opening_type<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    opening_type: OpeningType,
+) -> DispatchResult {
+    // Lead needs stake to generate opening
+    if opening_type == OpeningType::Regular {
+        // We check here that the origin is active leader
+        // just to make this future proof for any change in
+        // `ensure_origin_for_opening_type`
+        ensure_origin_is_active_leader::<T, I>(origin)?;
+        let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?);
+
+        ensure!(
+            T::StakingHandler::is_enough_balance_for_stake(
+                &lead.staking_account_id,
+                T::LeaderOpeningStake::get()
+            ),
+            Error::<T, I>::InsufficientBalanceToCoverStake
+        );
+    }
+
+    Ok(())
 }
 
 // Check opening: returns the opening by id if it is exists.
@@ -191,7 +216,7 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
     stake_policy: &StakePolicy<T::BlockNumber, BalanceOf<T>>,
 ) -> Result<(), DispatchError> {
     ensure!(
-        stake_policy.stake_amount >= T::MinimumStakeForOpening::get(),
+        stake_policy.stake_amount >= T::MinimumApplicationStake::get(),
         Error::<T, I>::BelowMinimumStakes
     );
 

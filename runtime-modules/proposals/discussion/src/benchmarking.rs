@@ -70,7 +70,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
+fn member_account<T: common::membership::Trait + balances::Trait + membership::Trait>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -88,10 +88,8 @@ fn member_account<T: common::Trait + balances::Trait + membership::Trait>(
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
         controller_account: account_id.clone(),
-        name: None,
         handle: Some(handle),
-        avatar_uri: None,
-        about: None,
+        metadata: Vec::new(),
         referrer_id: None,
     };
 
@@ -253,7 +251,8 @@ benchmarks! {
 
         let text = vec![0u8; j.try_into().unwrap()];
 
-    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text.clone())
+        assert!(Balances::<T>::usable_balance(&account_id) >= T::PostDeposit::get());
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text.clone(), true)
     verify {
         let post_id = T::PostId::from(1);
 
@@ -281,8 +280,36 @@ benchmarks! {
         let (_, _) = member_account::<T>("caller_member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
-        // Worst case scenario there is a council
-        elect_council::<T>(2);
+        let thread_id = ProposalsDiscussion::<T>::create_thread(
+            caller_member_id,
+            ThreadMode::Open
+        ).unwrap();
+
+        assert!(ThreadById::<T>::contains_key(thread_id), "Thread not created");
+
+        ProposalsDiscussion::<T>::add_post(
+            RawOrigin::Signed(account_id.clone()).into(),
+            caller_member_id,
+            thread_id,
+            vec![0u8],
+            true
+        ).unwrap();
+
+        let post_id = T::PostId::from(1);
+
+        assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
+
+        let new_text = vec![0u8; j.try_into().unwrap()];
+    }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text.clone())
+    verify {
+        assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id, thread_id, new_text).into());
+    }
+
+    delete_post {
+        // We do this to ignore the id 0 because the `Test` runtime
+        // returns 0 as an invalid id but 1 as a valid one
+        let (_, _) = member_account::<T>("caller_member", 0);
+        let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,
@@ -295,17 +322,18 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             caller_member_id,
             thread_id,
-            vec![0u8]
+            vec![0u8],
+            true
         ).unwrap();
 
         let post_id = T::PostId::from(1);
 
         assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
 
-        let new_text = vec![0u8; j.try_into().unwrap()];
-    }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text.clone())
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, post_id, thread_id, true)
     verify {
-        assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id, thread_id, new_text).into());
+        assert!(!PostThreadIdByPostId::<T>::contains_key(thread_id, post_id));
+        assert_last_event::<T>(RawEvent::PostDeleted(caller_member_id, thread_id, post_id, true).into());
     }
 
     change_thread_mode {

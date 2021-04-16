@@ -5,7 +5,8 @@ use super::{
     CouncilStageAnnouncing, Error, Module, Trait,
 };
 use crate::mock::*;
-use common::origin::CouncilOriginValidator;
+use common::council::CouncilBudgetManager;
+use common::council::CouncilOriginValidator;
 use frame_support::traits::Currency;
 use frame_support::StorageValue;
 use frame_system::RawOrigin;
@@ -1717,7 +1718,7 @@ fn test_funding_request_succeeds() {
             origin,
             vec![
                 common::FundingRequestParameters {
-                    amount: 5,
+                    amount: 15,
                     account: 0,
                 },
                 common::FundingRequestParameters {
@@ -1726,6 +1727,30 @@ fn test_funding_request_succeeds() {
                 },
             ],
             Ok(()),
+        );
+    });
+}
+
+#[test]
+fn test_council_budget_manager_works_correctlyl() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Root;
+        let initial_budget = 100;
+
+        Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
+
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
+            initial_budget
+        );
+
+        let new_budget = 200;
+        <Module<Runtime> as CouncilBudgetManager<u64>>::set_budget(new_budget);
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
+            new_budget
         );
     });
 }

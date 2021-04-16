@@ -471,31 +471,35 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
             (
                 InputPropertyValue::Single(single_property_value),
                 PropertyType::Single(ref single_property_type),
-            ) => matches!((single_property_value, single_property_type.deref()),
+            ) => matches!(
+                (single_property_value, single_property_type.deref()),
                 (InputValue::Bool(_), Type::Bool)
-                | (InputValue::Uint16(_), Type::Uint16)
-                | (InputValue::Uint32(_), Type::Uint32)
-                | (InputValue::Uint64(_), Type::Uint64)
-                | (InputValue::Int16(_), Type::Int16)
-                | (InputValue::Int32(_), Type::Int32)
-                | (InputValue::Int64(_), Type::Int64)
-                | (InputValue::Text(_), Type::Text(_))
-                | (InputValue::TextToHash(_), Type::Hash(_))
-                | (InputValue::Reference(_), Type::Reference(_, _))),
+                    | (InputValue::Uint16(_), Type::Uint16)
+                    | (InputValue::Uint32(_), Type::Uint32)
+                    | (InputValue::Uint64(_), Type::Uint64)
+                    | (InputValue::Int16(_), Type::Int16)
+                    | (InputValue::Int32(_), Type::Int32)
+                    | (InputValue::Int64(_), Type::Int64)
+                    | (InputValue::Text(_), Type::Text(_))
+                    | (InputValue::TextToHash(_), Type::Hash(_))
+                    | (InputValue::Reference(_), Type::Reference(_, _))
+            ),
             (
                 InputPropertyValue::Vector(vec_value),
                 PropertyType::Vector(ref vec_property_type),
-            ) => matches!((vec_value, vec_property_type.get_vec_type()),
+            ) => matches!(
+                (vec_value, vec_property_type.get_vec_type()),
                 (VecInputValue::Bool(_), Type::Bool)
-                | (VecInputValue::Uint16(_), Type::Uint16)
-                | (VecInputValue::Uint32(_), Type::Uint32)
-                | (VecInputValue::Uint64(_), Type::Uint64)
-                | (VecInputValue::Int16(_), Type::Int16)
-                | (VecInputValue::Int32(_), Type::Int32)
-                | (VecInputValue::Int64(_), Type::Int64)
-                | (VecInputValue::Text(_), Type::Text(_))
-                | (VecInputValue::TextToHash(_), Type::Hash(_))
-                | (VecInputValue::Reference(_), Type::Reference(_, _))),
+                    | (VecInputValue::Uint16(_), Type::Uint16)
+                    | (VecInputValue::Uint32(_), Type::Uint32)
+                    | (VecInputValue::Uint64(_), Type::Uint64)
+                    | (VecInputValue::Int16(_), Type::Int16)
+                    | (VecInputValue::Int32(_), Type::Int32)
+                    | (VecInputValue::Int64(_), Type::Int64)
+                    | (VecInputValue::Text(_), Type::Text(_))
+                    | (VecInputValue::TextToHash(_), Type::Hash(_))
+                    | (VecInputValue::Reference(_), Type::Reference(_, _))
+            ),
             _ => false,
         }
     }

@@ -747,7 +747,7 @@ fn veto_proposal_succeeds_during_voting_period() {
 
         assert!(matches!(
             <Proposals<Test>>::get(proposal_id).status,
-            ProposalStatus::Active{..}
+            ProposalStatus::Active { .. }
         ));
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
@@ -791,7 +791,7 @@ fn veto_proposal_succeeds_during_grace_period() {
 
         assert!(matches!(
             <Proposals<Test>>::get(proposal_id).status,
-            ProposalStatus::PendingExecution{..}
+            ProposalStatus::PendingExecution { .. }
         ));
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
@@ -834,7 +834,7 @@ fn veto_proposal_succeeds_during_pending_constitutionality() {
 
         assert!(matches!(
             <Proposals<Test>>::get(proposal_id).status,
-            ProposalStatus::PendingConstitutionality{..}
+            ProposalStatus::PendingConstitutionality { .. }
         ));
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
