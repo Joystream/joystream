@@ -52,6 +52,12 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     videos: [],
     createdInBlock: event.blockNumber,
 
+    // default values for properties that might or might not be filled by metadata
+    coverPhotoUrls: [],
+    coverPhotoAvailability: AssetAvailability.PENDING,
+    avatarPhotoUrls: [],
+    avatarPhotoAvailability: AssetAvailability.PENDING,
+
     // fill in auto-generated fields
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
     updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),

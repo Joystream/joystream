@@ -20,9 +20,12 @@ import {
 } from './utils'
 
 // primary entities
-import { Channel } from 'query-node'
-import { Video } from 'query-node'
-import { VideoCategory } from 'query-node'
+import {
+  AssetAvailability,
+  Channel,
+  Video,
+  VideoCategory,
+} from 'query-node'
 
 // secondary entities
 import { License } from 'query-node'
@@ -186,6 +189,13 @@ export async function content_VideoCreated(
     isCensored: false,
     channel,
     createdInBlock: event.blockNumber,
+
+    // default values for properties that might or might not be filled by metadata
+    thumbnailPhotoUrls: [],
+    thumbnailPhotoAvailability: AssetAvailability.PENDING,
+    mediaUrls: [],
+    mediaAvailability: AssetAvailability.PENDING,
+
 
     // fill in auto-generated fields
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
