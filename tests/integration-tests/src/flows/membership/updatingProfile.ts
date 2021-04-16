@@ -17,7 +17,7 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
     account,
     memberId,
   })
-  await new FixtureRunner(updateProfileHappyCaseFixture).run()
+  await new FixtureRunner(updateProfileHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

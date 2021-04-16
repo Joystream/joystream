@@ -29,7 +29,7 @@ export default async function managingStakingAccounts({ api, query, env }: FlowP
     { account, memberId },
     stakingAccounts
   )
-  await new FixtureRunner(addStakingAccountsHappyCaseFixture).run()
+  await new FixtureRunner(addStakingAccountsHappyCaseFixture).runWithQueryNodeChecks()
 
   const removeStakingAccountsHappyCaseFixture = new RemoveStakingAccountsHappyCaseFixture(
     api,
@@ -37,7 +37,7 @@ export default async function managingStakingAccounts({ api, query, env }: FlowP
     { account, memberId },
     stakingAccounts
   )
-  await new FixtureRunner(removeStakingAccountsHappyCaseFixture).run()
+  await new FixtureRunner(removeStakingAccountsHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

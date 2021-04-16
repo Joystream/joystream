@@ -28,12 +28,15 @@ export default async function membershipSystem({ api, query, env }: FlowProps): 
   ]
 
   const fixtures = updates.map((u) => new SudoUpdateMembershipSystem(api, query, u))
+  const runners = fixtures.map((f) => new FixtureRunner(f))
   // Fixtures should be executed one-by-one to not interfere with each other (before->after snapshot checks)
-  for (const key in fixtures) {
-    const fixture = fixtures[key]
-    debug(`Running update fixture number ${key + 1}`)
-    await new FixtureRunner(fixture).run()
+  for (const key in runners) {
+    debug(`Running update fixture number ${parseInt(key) + 1}`)
+    await runners[key].run()
   }
+
+  debug('Running query node checks')
+  await Promise.all(runners.map((r) => r.runQueryNodeChecks()))
 
   debug('Done')
 }

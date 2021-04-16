@@ -78,6 +78,10 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
   private memberIds: MemberId[] = []
   private query: QueryNodeApi
 
+  private extrinsics: SubmittableExtrinsic<'promise'>[] = []
+  private events: MembershipBoughtEventDetails[] = []
+  private members: Membership[] = []
+
   public constructor(api: Api, query: QueryNodeApi, accounts: string[]) {
     super(api)
     this.accounts = accounts
@@ -146,28 +150,29 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
 
     await this.api.treasuryTransferBalanceToAccounts(this.accounts, estimatedFee)
 
-    const extrinsics = this.accounts.map((a) => this.generateBuyMembershipTx(a))
-    const results = await Promise.all(this.accounts.map((a, i) => this.api.signAndSend(extrinsics[i], a)))
-    const events = await Promise.all(results.map((r) => this.api.retrieveMembershipBoughtEventDetails(r)))
-    this.memberIds = events.map((e) => e.memberId)
+    this.extrinsics = this.accounts.map((a) => this.generateBuyMembershipTx(a))
+    const results = await Promise.all(this.accounts.map((a, i) => this.api.signAndSend(this.extrinsics[i], a)))
+    this.events = await Promise.all(results.map((r) => this.api.retrieveMembershipBoughtEventDetails(r)))
+    this.memberIds = this.events.map((e) => e.memberId)
 
     this.debug(`Registered ${this.memberIds.length} new members`)
 
     assert.equal(this.memberIds.length, this.accounts.length)
 
     // Assert that created members have expected root and controller accounts
-    const members = await Promise.all(this.memberIds.map((id) => this.api.query.members.membershipById(id)))
+    this.members = await Promise.all(this.memberIds.map((id) => this.api.query.members.membershipById(id)))
 
-    members.forEach((member, index) => {
+    this.members.forEach((member, index) => {
       assert(member.root_account.eq(this.accounts[index]))
       assert(member.controller_account.eq(this.accounts[index]))
     })
+  }
 
-    // Query-node part:
-
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
     // Ensure newly created members were parsed by query node
     await Promise.all(
-      members.map(async (member, i) => {
+      this.members.map(async (member, i) => {
         const memberId = this.memberIds[i]
         await this.query.tryQueryWithTimeout(
           () => this.query.getMemberById(memberId),
@@ -176,9 +181,9 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
         // Ensure the query node event is valid
         const res = await this.query.getMembershipBoughtEvents(memberId)
         this.assertEventMatchQueriedResult(
-          events[i],
+          this.events[i],
           this.accounts[i],
-          extrinsics[i].hash.toString(),
+          this.extrinsics[i].hash.toString(),
           res.data.membershipBoughtEvents
         )
       })
@@ -236,6 +241,9 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
   private newHandle = 'New handle'
   private newAbout = 'New about'
 
+  private event?: EventDetails
+  private tx?: SubmittableExtrinsic<'promise'>
+
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext) {
     super(api)
     this.query = query
@@ -280,22 +288,25 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
     metadata.setName(this.newName)
     metadata.setAbout(this.newAbout)
     // TODO: avatar
-    const tx = this.api.tx.members.updateProfile(
+    this.tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
       this.newHandle,
       '0x' + Buffer.from(metadata.serializeBinary()).toString('hex')
     )
-    const txFee = await this.api.estimateTxFee(tx, this.memberContext.account)
+    const txFee = await this.api.estimateTxFee(this.tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)
-    const txRes = await this.api.signAndSend(tx, this.memberContext.account)
-    const txHash = tx.hash.toString()
-    const updateEvent = await this.api.retrieveMembershipEventDetails(txRes, 'MemberProfileUpdated')
+    const txRes = await this.api.signAndSend(this.tx, this.memberContext.account)
+    this.event = await this.api.retrieveMembershipEventDetails(txRes, 'MemberProfileUpdated')
+  }
+
+  async runQueryNodeChecks() {
+    await super.runQueryNodeChecks()
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(this.memberContext.memberId),
       (res) => this.assertProfileUpdateSuccesful(res.data.membershipByUniqueInput)
     )
     const res = await this.query.getMemberProfileUpdatedEvents(this.memberContext.memberId)
-    this.assertQueryNodeEventIsValid(updateEvent, txHash, res.data.memberProfileUpdatedEvents)
+    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), res.data.memberProfileUpdatedEvents)
   }
 }
 
@@ -305,6 +316,9 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
   // Update data
   private newRootAccount: string
   private newControllerAccount: string
+
+  private tx?: SubmittableExtrinsic<'promise'>
+  private event?: EventDetails
 
   public constructor(
     api: Api,
@@ -347,22 +361,25 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
   }
 
   async execute(): Promise<void> {
-    const tx = this.api.tx.members.updateAccounts(
+    this.tx = this.api.tx.members.updateAccounts(
       this.memberContext.memberId,
       this.newRootAccount,
       this.newControllerAccount
     )
-    const txFee = await this.api.estimateTxFee(tx, this.memberContext.account)
+    const txFee = await this.api.estimateTxFee(this.tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)
-    const txRes = await this.api.signAndSend(tx, this.memberContext.account)
-    const txHash = tx.hash.toString()
-    const updateEvent = await this.api.retrieveMembershipEventDetails(txRes, 'MemberAccountsUpdated')
+    const txRes = await this.api.signAndSend(this.tx, this.memberContext.account)
+    this.event = await this.api.retrieveMembershipEventDetails(txRes, 'MemberAccountsUpdated')
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(this.memberContext.memberId),
       (res) => this.assertAccountsUpdateSuccesful(res.data.membershipByUniqueInput)
     )
     const res = await this.query.getMemberAccountsUpdatedEvents(this.memberContext.memberId)
-    this.assertQueryNodeEventIsValid(updateEvent, txHash, res.data.memberAccountsUpdatedEvents)
+    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), res.data.memberAccountsUpdatedEvents)
   }
 }
 
@@ -370,6 +387,10 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
   private query: QueryNodeApi
   private inviterContext: MemberContext
   private accounts: string[]
+
+  private initialInvitesCount?: number
+  private extrinsics: SubmittableExtrinsic<'promise'>[] = []
+  private events: MemberInvitedEventDetails[] = []
 
   public constructor(api: Api, query: QueryNodeApi, inviterContext: MemberContext, accounts: string[]) {
     super(api)
@@ -428,8 +449,8 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
   }
 
   async execute(): Promise<void> {
-    const extrinsics = this.accounts.map((a) => this.generateInviteMemberTx(this.inviterContext.memberId, a))
-    const feePerTx = await this.api.estimateTxFee(extrinsics[0], this.inviterContext.account)
+    this.extrinsics = this.accounts.map((a) => this.generateInviteMemberTx(this.inviterContext.memberId, a))
+    const feePerTx = await this.api.estimateTxFee(this.extrinsics[0], this.inviterContext.account)
     await this.api.treasuryTransferBalance(this.inviterContext.account, feePerTx.muln(this.accounts.length))
 
     const initialInvitationBalance = await this.api.query.members.initialInvitationBalance()
@@ -438,12 +459,18 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
       this.api.tx.membershipWorkingGroup.setBudget(initialInvitationBalance.muln(this.accounts.length))
     )
 
-    const { invites: initialInvitesCount } = await this.api.query.members.membershipById(this.inviterContext.memberId)
+    const { invites } = await this.api.query.members.membershipById(this.inviterContext.memberId)
+    this.initialInvitesCount = invites.toNumber()
 
-    const txResults = await Promise.all(extrinsics.map((tx) => this.api.signAndSend(tx, this.inviterContext.account)))
-    const events = await Promise.all(txResults.map((res) => this.api.retrieveMemberInvitedEventDetails(res)))
-    const invitedMembersIds = events.map((e) => e.newMemberId)
+    const txResults = await Promise.all(
+      this.extrinsics.map((tx) => this.api.signAndSend(tx, this.inviterContext.account))
+    )
+    this.events = await Promise.all(txResults.map((res) => this.api.retrieveMemberInvitedEventDetails(res)))
+  }
 
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const invitedMembersIds = this.events.map((e) => e.newMemberId)
     await Promise.all(
       this.accounts.map(async (account, i) => {
         const memberId = invitedMembersIds[i]
@@ -453,9 +480,9 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
         )
         const res = await this.query.getMemberInvitedEvents(memberId)
         this.aseertQueryNodeEventIsValid(
-          events[i],
+          this.events[i],
           account,
-          extrinsics[i].hash.toString(),
+          this.extrinsics[i].hash.toString(),
           res.data.memberInvitedEvents
         )
       })
@@ -467,7 +494,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     assert.isOk(inviter)
     const { inviteCount, invitees } = inviter as QueryNodeMembership
     // Assert that inviteCount was correctly updated
-    assert.equal(inviteCount, initialInvitesCount.toNumber() - this.accounts.length)
+    assert.equal(inviteCount, this.initialInvitesCount! - this.accounts.length)
     // Assert that all invited members are part of "invetees" field
     assert.isNotEmpty(invitees)
     assert.includeMembers(
@@ -482,6 +509,11 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
   private fromContext: MemberContext
   private toContext: MemberContext
   private invitesToTransfer: number
+
+  private fromMemberInitialInvites?: number
+  private toMemberInitialInvites?: number
+  private event?: EventDetails
+  private tx?: SubmittableExtrinsic<'promise'>
 
   public constructor(
     api: Api,
@@ -514,8 +546,8 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
 
   async execute(): Promise<void> {
     const { fromContext, toContext, invitesToTransfer } = this
-    const tx = this.api.tx.members.transferInvites(fromContext.memberId, toContext.memberId, invitesToTransfer)
-    const txFee = await this.api.estimateTxFee(tx, fromContext.account)
+    this.tx = this.api.tx.members.transferInvites(fromContext.memberId, toContext.memberId, invitesToTransfer)
+    const txFee = await this.api.estimateTxFee(this.tx, fromContext.account)
     await this.api.treasuryTransferBalance(fromContext.account, txFee)
 
     const [fromMember, toMember] = await this.api.query.members.membershipById.multi<Membership>([
@@ -523,11 +555,17 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
       toContext.memberId,
     ])
 
-    // Send transfer invites extrinsic
-    const txRes = await this.api.signAndSend(tx, fromContext.account)
-    const event = await this.api.retrieveMembershipEventDetails(txRes, 'InvitesTransferred')
-    const txHash = tx.hash.toString()
+    this.fromMemberInitialInvites = fromMember.invites.toNumber()
+    this.toMemberInitialInvites = toMember.invites.toNumber()
 
+    // Send transfer invites extrinsic
+    const txRes = await this.api.signAndSend(this.tx, fromContext.account)
+    this.event = await this.api.retrieveMembershipEventDetails(txRes, 'InvitesTransferred')
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const { fromContext, toContext, invitesToTransfer } = this
     // Check "from" member
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(fromContext.memberId),
@@ -535,7 +573,7 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
         if (!queriedFromMember) {
           throw new Error('Source member not found')
         }
-        assert.equal(queriedFromMember.inviteCount, fromMember.invites.toNumber() - invitesToTransfer)
+        assert.equal(queriedFromMember.inviteCount, this.fromMemberInitialInvites! - invitesToTransfer)
       }
     )
 
@@ -546,14 +584,14 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
     if (!queriedToMember) {
       throw new Error('Target member not found')
     }
-    assert.equal(queriedToMember.inviteCount, toMember.invites.toNumber() + invitesToTransfer)
+    assert.equal(queriedToMember.inviteCount, this.toMemberInitialInvites! + invitesToTransfer)
 
     // Check event
     const {
       data: { invitesTransferredEvents },
     } = await this.query.getInvitesTransferredEvents(fromContext.memberId)
 
-    this.assertQueryNodeEventIsValid(event, txHash, invitesTransferredEvents)
+    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), invitesTransferredEvents)
   }
 }
 
@@ -561,6 +599,11 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
   private query: QueryNodeApi
   private memberContext: MemberContext
   private accounts: string[]
+
+  private addExtrinsics: SubmittableExtrinsic<'promise'>[] = []
+  private confirmExtrinsics: SubmittableExtrinsic<'promise'>[] = []
+  private addEvents: EventDetails[] = []
+  private confirmEvents: EventDetails[] = []
 
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext, accounts: string[]) {
     super(api)
@@ -597,31 +640,31 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
 
   async execute(): Promise<void> {
     const { memberContext, accounts } = this
-    const addStakingCandidateTxs = accounts.map(() =>
-      this.api.tx.members.addStakingAccountCandidate(memberContext.memberId)
-    )
-    const confirmStakingAccountTxs = accounts.map((a) =>
-      this.api.tx.members.confirmStakingAccount(memberContext.memberId, a)
-    )
-    const addStakingCandidateFee = await this.api.estimateTxFee(addStakingCandidateTxs[0], accounts[0])
-    const confirmStakingAccountFee = await this.api.estimateTxFee(confirmStakingAccountTxs[0], memberContext.account)
+    this.addExtrinsics = accounts.map(() => this.api.tx.members.addStakingAccountCandidate(memberContext.memberId))
+    this.confirmExtrinsics = accounts.map((a) => this.api.tx.members.confirmStakingAccount(memberContext.memberId, a))
+    const addStakingCandidateFee = await this.api.estimateTxFee(this.addExtrinsics[0], accounts[0])
+    const confirmStakingAccountFee = await this.api.estimateTxFee(this.confirmExtrinsics[0], memberContext.account)
 
     await this.api.treasuryTransferBalance(memberContext.account, confirmStakingAccountFee.muln(accounts.length))
     const stakingAccountRequiredBalance = addStakingCandidateFee.addn(MINIMUM_STAKING_ACCOUNT_BALANCE)
     await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, stakingAccountRequiredBalance)))
     // Add staking account candidates
-    const addResults = await Promise.all(accounts.map((a, i) => this.api.signAndSend(addStakingCandidateTxs[i], a)))
-    const addEvents = await Promise.all(
+    const addResults = await Promise.all(accounts.map((a, i) => this.api.signAndSend(this.addExtrinsics[i], a)))
+    this.addEvents = await Promise.all(
       addResults.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountAdded'))
     )
     // Confirm staking accounts
     const confirmResults = await Promise.all(
-      confirmStakingAccountTxs.map((tx) => this.api.signAndSend(tx, memberContext.account))
+      this.confirmExtrinsics.map((tx) => this.api.signAndSend(tx, memberContext.account))
     )
-    const confirmEvents = await Promise.all(
+    this.confirmEvents = await Promise.all(
       confirmResults.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountConfirmed'))
     )
+  }
 
+  async runQueryNodeChecks() {
+    await super.runQueryNodeChecks()
+    const { memberContext, accounts, addEvents, confirmEvents, addExtrinsics, confirmExtrinsics } = this
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(memberContext.memberId),
       ({ data: { membershipByUniqueInput: membership } }) => {
@@ -644,13 +687,13 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
       this.assertQueryNodeAddAccountEventIsValid(
         addEvents[i],
         account,
-        addStakingCandidateTxs[i].hash.toString(),
+        addExtrinsics[i].hash.toString(),
         stakingAccountAddedEvents
       )
       this.assertQueryNodeConfirmAccountEventIsValid(
         confirmEvents[i],
         account,
-        confirmStakingAccountTxs[i].hash.toString(),
+        confirmExtrinsics[i].hash.toString(),
         stakingAccountConfirmedEvents
       )
     })
@@ -661,6 +704,9 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
   private query: QueryNodeApi
   private memberContext: MemberContext
   private accounts: string[]
+
+  private events: EventDetails[] = []
+  private extrinsics: SubmittableExtrinsic<'promise'>[] = []
 
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext, accounts: string[]) {
     super(api)
@@ -684,17 +730,21 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
 
   async execute(): Promise<void> {
     const { memberContext, accounts } = this
-    const removeStakingAccountTxs = accounts.map(() => this.api.tx.members.removeStakingAccount(memberContext.memberId))
+    this.extrinsics = accounts.map(() => this.api.tx.members.removeStakingAccount(memberContext.memberId))
 
-    const removeStakingAccountFee = await this.api.estimateTxFee(removeStakingAccountTxs[0], accounts[0])
+    const removeStakingAccountFee = await this.api.estimateTxFee(this.extrinsics[0], accounts[0])
 
     await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, removeStakingAccountFee)))
     // Remove staking accounts
-    const results = await Promise.all(accounts.map((a, i) => this.api.signAndSend(removeStakingAccountTxs[i], a)))
-    const events = await Promise.all(
+    const results = await Promise.all(accounts.map((a, i) => this.api.signAndSend(this.extrinsics[i], a)))
+    this.events = await Promise.all(
       results.map((r) => this.api.retrieveMembershipEventDetails(r, 'StakingAccountRemoved'))
     )
+  }
 
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const { memberContext, accounts, events, extrinsics } = this
     // Check member
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(memberContext.memberId),
@@ -715,7 +765,7 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
         this.assertQueryNodeRemoveAccountEventIsValid(
           events[i],
           account,
-          removeStakingAccountTxs[i].hash.toString(),
+          extrinsics[i].hash.toString(),
           stakingAccountRemovedEvents
         )
       })
@@ -733,6 +783,10 @@ type MembershipSystemValues = {
 export class SudoUpdateMembershipSystem extends MembershipFixture {
   private query: QueryNodeApi
   private newValues: Partial<MembershipSystemValues>
+
+  private events: EventDetails[] = []
+  private eventNames: MembershipEventName[] = []
+  private extrinsics: SubmittableExtrinsic<'promise'>[] = []
 
   public constructor(api: Api, query: QueryNodeApi, newValues: Partial<MembershipSystemValues>) {
     super(api)
@@ -783,41 +837,40 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
   }
 
   async execute(): Promise<void> {
-    const extrinsics: { tx: SubmittableExtrinsic<'promise'>; eventName: MembershipEventName }[] = []
     if (this.newValues.referralCut !== undefined) {
-      extrinsics.push({
-        tx: this.api.tx.sudo.sudo(this.api.tx.members.setReferralCut(this.newValues.referralCut)),
-        eventName: 'ReferralCutUpdated',
-      })
+      this.extrinsics.push(this.api.tx.sudo.sudo(this.api.tx.members.setReferralCut(this.newValues.referralCut)))
+      this.eventNames.push('ReferralCutUpdated')
     }
     if (this.newValues.defaultInviteCount !== undefined) {
-      extrinsics.push({
-        tx: this.api.tx.sudo.sudo(this.api.tx.members.setInitialInvitationCount(this.newValues.defaultInviteCount)),
-        eventName: 'InitialInvitationCountUpdated',
-      })
+      this.extrinsics.push(
+        this.api.tx.sudo.sudo(this.api.tx.members.setInitialInvitationCount(this.newValues.defaultInviteCount))
+      )
+      this.eventNames.push('InitialInvitationCountUpdated')
     }
     if (this.newValues.membershipPrice !== undefined) {
-      extrinsics.push({
-        tx: this.api.tx.sudo.sudo(this.api.tx.members.setMembershipPrice(this.newValues.membershipPrice)),
-        eventName: 'MembershipPriceUpdated',
-      })
+      this.extrinsics.push(
+        this.api.tx.sudo.sudo(this.api.tx.members.setMembershipPrice(this.newValues.membershipPrice))
+      )
+      this.eventNames.push('MembershipPriceUpdated')
     }
     if (this.newValues.invitedInitialBalance !== undefined) {
-      extrinsics.push({
-        tx: this.api.tx.sudo.sudo(
-          this.api.tx.members.setInitialInvitationBalance(this.newValues.invitedInitialBalance)
-        ),
-        eventName: 'InitialInvitationBalanceUpdated',
-      })
+      this.extrinsics.push(
+        this.api.tx.sudo.sudo(this.api.tx.members.setInitialInvitationBalance(this.newValues.invitedInitialBalance))
+      )
+      this.eventNames.push('InitialInvitationBalanceUpdated')
     }
 
     // We don't use api.makeSudoCall, since we cannot(?) then access tx hashes
     const sudo = await this.api.query.sudo.key()
-    const results = await Promise.all(extrinsics.map(({ tx }) => this.api.signAndSend(tx, sudo)))
-    const events = await Promise.all(
-      results.map((r, i) => this.api.retrieveMembershipEventDetails(r, extrinsics[i].eventName))
+    const results = await Promise.all(this.extrinsics.map((tx) => this.api.signAndSend(tx, sudo)))
+    this.events = await Promise.all(
+      results.map((r, i) => this.api.retrieveMembershipEventDetails(r, this.eventNames[i]))
     )
+  }
 
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const { events, extrinsics, eventNames } = this
     const beforeSnapshotMaxBlockNumber = Math.min(...events.map((e) => e.blockNumber)) - 1
     const afterSnapshotBlockNumber = Math.max(...events.map((e) => e.blockNumber))
 
@@ -840,7 +893,8 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
     // Check events
     await Promise.all(
       events.map(async (event, i) => {
-        const { eventName, tx } = extrinsics[i]
+        const tx = extrinsics[i]
+        const eventName = eventNames[i]
         const txHash = tx.hash.toString()
         const { blockNumber, indexInBlock } = event
         if (eventName === 'ReferralCutUpdated') {

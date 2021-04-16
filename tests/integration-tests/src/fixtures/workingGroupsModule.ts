@@ -18,6 +18,7 @@ import { WorkingGroupModuleName, MemberContext, AppliedOnOpeningEventDetails, Op
 import { OpeningId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
 import _ from 'lodash'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 
 // TODO: Fetch from runtime when possible!
 const MIN_APPLICATION_STAKE = new BN(2000)
@@ -44,6 +45,9 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
   private debug: Debugger.Debugger
   private openingParams: OpeningParams
   private createdOpeningId?: OpeningId
+
+  private event?: OpeningAddedEventDetails
+  private tx?: SubmittableExtrinsic<'promise'>
 
   private defaultOpeningParams: OpeningParams = {
     stake: MIN_APPLICATION_STAKE,
@@ -154,7 +158,7 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
-    const tx = this.api.tx.sudo.sudo(
+    this.tx = this.api.tx.sudo.sudo(
       this.api.tx[this.group].addOpening(
         Utils.metadataToBytes(this.getMetadata()),
         'Leader',
@@ -163,14 +167,18 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
       )
     )
     const sudoKey = await this.api.query.sudo.key()
-    const result = await this.api.signAndSend(tx, sudoKey)
-    const eventDetails = await this.api.retrieveOpeningAddedEventDetails(result, this.group)
+    const result = await this.api.signAndSend(this.tx, sudoKey)
+    this.event = await this.api.retrieveOpeningAddedEventDetails(result, this.group)
 
-    this.createdOpeningId = eventDetails.openingId
+    this.createdOpeningId = this.event.openingId
 
-    this.debug(`Lead opening created (id: ${eventDetails.openingId.toString()})`)
+    this.debug(`Lead opening created (id: ${this.event.openingId.toString()})`)
+  }
 
-    // Query-node part:
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const eventDetails = this.event!
+    const tx = this.tx!
     // Query the opening
     await this.query.tryQueryWithTimeout(
       () => this.query.getOpeningById(eventDetails.openingId),
@@ -193,6 +201,9 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
   private stakingAccount: string
   private openingId: OpeningId
   private openingMetadata: OpeningMetadata.AsObject
+
+  private event?: AppliedOnOpeningEventDetails
+  private tx?: SubmittableExtrinsic<'promise'>
 
   public constructor(
     api: Api,
@@ -268,7 +279,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     const stakingAccountBalance = await this.api.getBalance(this.stakingAccount)
     assert.isAbove(stakingAccountBalance.toNumber(), stake.toNumber())
 
-    const tx = this.api.tx[this.group].applyOnOpening({
+    this.tx = this.api.tx[this.group].applyOnOpening({
       member_id: this.applicant.memberId,
       description: Utils.metadataToBytes(this.getMetadata()),
       opening_id: this.openingId,
@@ -279,14 +290,18 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
         staking_account_id: this.stakingAccount,
       },
     })
-    const txFee = await this.api.estimateTxFee(tx, this.applicant.account)
+    const txFee = await this.api.estimateTxFee(this.tx, this.applicant.account)
     await this.api.treasuryTransferBalance(this.applicant.account, txFee)
-    const result = await this.api.signAndSend(tx, this.applicant.account)
-    const eventDetails = await this.api.retrieveAppliedOnOpeningEventDetails(result, this.group)
+    const result = await this.api.signAndSend(this.tx, this.applicant.account)
+    this.event = await this.api.retrieveAppliedOnOpeningEventDetails(result, this.group)
 
-    this.debug(`Application submitted (id: ${eventDetails.applicationId.toString()})`)
+    this.debug(`Application submitted (id: ${this.event.applicationId.toString()})`)
+  }
 
-    // Query-node part:
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const eventDetails = this.event!
+    const tx = this.tx!
     // Query the application
     await this.query.tryQueryWithTimeout(
       () => this.query.getApplicationById(eventDetails.applicationId),

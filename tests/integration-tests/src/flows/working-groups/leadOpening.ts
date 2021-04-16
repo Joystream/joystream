@@ -11,7 +11,8 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
   api.enableDebugTxLogs()
 
   const sudoLeadOpeningFixture = new SudoCreateLeadOpeningFixture(api, query, 'storageWorkingGroup')
-  await new FixtureRunner(sudoLeadOpeningFixture).run()
+  const openingRunner = new FixtureRunner(sudoLeadOpeningFixture)
+  await openingRunner.run()
   const openingId = sudoLeadOpeningFixture.getCreatedOpeningId()
   const openingParams = sudoLeadOpeningFixture.getDefaultOpeningParams()
 
@@ -39,7 +40,12 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
     openingId,
     openingParams.metadata
   )
-  await new FixtureRunner(applyOnOpeningFixture).run()
+  const applicationRunner = new FixtureRunner(applyOnOpeningFixture)
+  await applicationRunner.run()
+
+  // Run query node checks once the flow is done
+  await openingRunner.runQueryNodeChecks()
+  await applicationRunner.runQueryNodeChecks()
 
   debug('Done')
 }

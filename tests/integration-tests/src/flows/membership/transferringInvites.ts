@@ -20,7 +20,7 @@ export default async function transferringInvites({ api, query, env }: FlowProps
     { memberId: fromMemberId, account: fromAcc },
     { memberId: toMemberId, account: toAcc }
   )
-  await new FixtureRunner(transferInvitesHappyCaseFixture).run()
+  await new FixtureRunner(transferInvitesHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

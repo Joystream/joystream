@@ -15,11 +15,19 @@ export abstract class BaseFixture {
 
   // Derviced classes must not override this
   public async runner(): Promise<void> {
+    await this.execute()
     this._executed = true
-    return this.execute()
   }
 
   abstract execute(): Promise<void>
+
+  // Not abstract for backward compatibility
+  public async runQueryNodeChecks(): Promise<void> {
+    if (!this.executed) {
+      throw new Error('Cannot run query node checks before Fixture is executed')
+    }
+    // Implement in child class!
+  }
 
   // Used by execution implementation to signal failure
   protected error(err: Error): void {
@@ -31,7 +39,7 @@ export abstract class BaseFixture {
   }
 
   public didFail(): boolean {
-    if (!this.execute) {
+    if (!this.executed) {
       throw new Error('Trying to check execution result before running fixture')
     }
     return this._err !== undefined
@@ -88,6 +96,7 @@ export abstract class BaseFixture {
 export class FixtureRunner {
   private fixture: BaseFixture
   private ran = false
+  private queryNodeChecksRan = false
 
   constructor(fixture: BaseFixture) {
     this.fixture = fixture
@@ -106,5 +115,20 @@ export class FixtureRunner {
     // TODO: record ending block
     const err = this.fixture.executionError()
     assert.equal(err, undefined)
+  }
+
+  public async runQueryNodeChecks(): Promise<void> {
+    if (this.queryNodeChecksRan) {
+      throw new Error('Fixture query node checks already ran')
+    }
+
+    this.queryNodeChecksRan = true
+
+    await this.fixture.runQueryNodeChecks()
+  }
+
+  public async runWithQueryNodeChecks(): Promise<void> {
+    await this.run()
+    await this.runQueryNodeChecks()
   }
 }

@@ -24,7 +24,7 @@ export default async function updatingAccounts({ api, query }: FlowProps): Promi
     newRootAccount,
     newControllerAccount
   )
-  await new FixtureRunner(updateAccountsHappyCaseFixture).run()
+  await new FixtureRunner(updateAccountsHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

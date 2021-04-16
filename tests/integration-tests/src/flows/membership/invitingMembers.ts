@@ -25,7 +25,7 @@ export default async function invitingMembers({ api, query, env }: FlowProps): P
     { account: inviterAcc, memberId: inviterMemberId },
     inviteesAccs
   )
-  await new FixtureRunner(inviteMembersHappyCaseFixture).run()
+  await new FixtureRunner(inviteMembersHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }
