@@ -644,6 +644,46 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
 }
 
 #[test]
+fn leave_worker_role_succeeds_with_correct_unstaking_period() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 10;
+        run_to_block(starting_block);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        // Assert initial worker existence
+        assert!(<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+
+        let default_unstaking_period =
+            TestWorkingGroup::worker_by_id(worker_id).job_unstaking_period;
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        // Assert worker existence after leave_role
+        assert!(<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+
+        run_to_block(starting_block + default_unstaking_period - 1);
+
+        // Assert worker existence one block before the end of the unstaking period.
+        assert!(<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+
+        run_to_block(starting_block + default_unstaking_period);
+
+        // Assert worker removal after the unstaking period.
+        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
+    });
+}
+
+#[test]
 fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
     build_test_externalities().execute_with(|| {
         let account_id = 2;
