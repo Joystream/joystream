@@ -20,6 +20,12 @@
         ]
     },
     "MemoText": "Text",
+    "BalanceKind": {
+        "_enum": [
+            "Positive",
+            "Negative"
+        ]
+    },
     "Address": "AccountId",
     "LookupSource": "AccountId",
     "Membership": {
@@ -36,20 +42,16 @@
     "BuyMembershipParameters": {
         "root_account": "AccountId",
         "controller_account": "AccountId",
-        "name": "Option<Text>",
         "handle": "Option<Text>",
-        "avatar_uri": "Option<Text>",
-        "about": "Option<Text>",
+        "metadata": "Bytes",
         "referrer_id": "Option<MemberId>"
     },
     "InviteMembershipParameters": {
         "inviting_member_id": "MemberId",
         "root_account": "AccountId",
         "controller_account": "AccountId",
-        "name": "Option<Text>",
         "handle": "Option<Text>",
-        "avatar_uri": "Option<Text>",
-        "about": "Option<Text>"
+        "metadata": "Bytes"
     },
     "CouncilStageAnnouncing": {
         "candidatesCount": "u64"
@@ -132,13 +134,22 @@
             "Moderator": "ModeratorId"
         }
     },
+    "ThreadOf": {
+        "title_hash": "Hash",
+        "category_id": "CategoryId",
+        "author_id": "ForumUserId",
+        "archived": "bool",
+        "poll": "Option<Poll>",
+        "num_direct_posts": "u32"
+    },
     "ApplicationId": "u64",
     "Application": {
         "role_account_id": "AccountId",
         "reward_account_id": "AccountId",
         "staking_account_id": "AccountId",
         "member_id": "MemberId",
-        "description_hash": "Text"
+        "description_hash": "Bytes",
+        "opening_id": "OpeningId"
     },
     "ApplicationInfo": {
         "application_id": "ApplicationId",
@@ -150,7 +161,7 @@
     "Worker": {
         "member_id": "MemberId",
         "role_account_id": "AccountId",
-        "staking_account_id": "Option<AccountId>",
+        "staking_account_id": "AccountId",
         "reward_account_id": "AccountId",
         "started_leaving_at": "Option<u32>",
         "job_unstaking_period": "u32",
@@ -165,8 +176,8 @@
     "Opening": {
         "opening_type": "OpeningType",
         "created": "u32",
-        "description_hash": "Text",
-        "stake_policy": "Option<StakePolicy>",
+        "description_hash": "Bytes",
+        "stake_policy": "StakePolicy",
         "reward_per_block": "Option<u128>"
     },
     "OpeningId": "u64",
@@ -190,8 +201,8 @@
         "opening_id": "OpeningId",
         "role_account_id": "AccountId",
         "reward_account_id": "AccountId",
-        "description": "Text",
-        "stake_parameters": "Option<StakeParameters>"
+        "description": "Bytes",
+        "stake_parameters": "StakeParameters"
     },
     "Penalty": {
         "slashing_text": "Text",
@@ -232,6 +243,16 @@
         "active": "bool"
     },
     "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
+    "ParticipantId": "u64",
+    "Title": "Text",
+    "UpdatedTitle": "Option<Text>",
+    "UpdatedBody": "Option<Text>",
+    "ReplyId": "u64",
+    "Reply": {
+        "text_hash": "Hash",
+        "owner": "ParticipantId",
+        "parent_id": "PostId"
+    },
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -252,34 +273,60 @@
     },
     "ProposalDetails": {
         "_enum": {
-            "Text": "Text",
+            "Signal": "Text",
             "RuntimeUpgrade": "Bytes",
-            "Spending": "(Balance,AccountId)",
-            "SetValidatorCount": "u32",
-            "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
-            "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
-            "SetWorkingGroupBudgetCapacity": "(Balance,WorkingGroup)",
-            "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
-            "SlashWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
-            "SetWorkingGroupLeaderReward": "(WorkerId,Balance,WorkingGroup)",
-            "TerminateWorkingGroupLeaderRole": "TerminateRoleParameters",
-            "AmendConstitution": "Text"
+            "FundingRequest": "Vec<FundingRequestParameters>",
+            "SetMaxValidatorCount": "u32",
+            "CreateWorkingGroupLeadOpening": "CreateOpeningParameters",
+            "FillWorkingGroupLeadOpening": "FillOpeningParameters",
+            "UpdateWorkingGroupBudget": "(Balance,WorkingGroup,BalanceKind)",
+            "DecreaseWorkingGroupLeadStake": "(WorkerId,Balance,WorkingGroup)",
+            "SlashWorkingGroupLead": "(WorkerId,Balance,WorkingGroup)",
+            "SetWorkingGroupLeadReward": "(WorkerId,Option<Balance>,WorkingGroup)",
+            "TerminateWorkingGroupLead": "TerminateRoleParameters",
+            "AmendConstitution": "Text",
+            "CancelWorkingGroupLeadOpening": "(OpeningId,WorkingGroup)",
+            "SetMembershipPrice": "u128",
+            "SetCouncilBudgetIncrement": "u128",
+            "SetCouncilorReward": "u128",
+            "SetInitialInvitationBalance": "u128",
+            "SetInitialInvitationCount": "u32",
+            "SetMembershipLeadInvitationQuota": "u32",
+            "SetReferralCut": "u128",
+            "CreateBlogPost": "(Text,Text)",
+            "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
+            "LockBlogPost": "PostId",
+            "UnlockBlogPost": "PostId",
+            "VetoProposal": "ProposalId"
         }
     },
     "ProposalDetailsOf": {
         "_enum": {
-            "Text": "Text",
+            "Signal": "Text",
             "RuntimeUpgrade": "Bytes",
-            "Spending": "(Balance,AccountId)",
-            "SetValidatorCount": "u32",
-            "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
-            "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
-            "SetWorkingGroupBudgetCapacity": "(Balance,WorkingGroup)",
-            "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
-            "SlashWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
-            "SetWorkingGroupLeaderReward": "(WorkerId,Balance,WorkingGroup)",
-            "TerminateWorkingGroupLeaderRole": "TerminateRoleParameters",
-            "AmendConstitution": "Text"
+            "FundingRequest": "Vec<FundingRequestParameters>",
+            "SetMaxValidatorCount": "u32",
+            "CreateWorkingGroupLeadOpening": "CreateOpeningParameters",
+            "FillWorkingGroupLeadOpening": "FillOpeningParameters",
+            "UpdateWorkingGroupBudget": "(Balance,WorkingGroup,BalanceKind)",
+            "DecreaseWorkingGroupLeadStake": "(WorkerId,Balance,WorkingGroup)",
+            "SlashWorkingGroupLead": "(WorkerId,Balance,WorkingGroup)",
+            "SetWorkingGroupLeadReward": "(WorkerId,Option<Balance>,WorkingGroup)",
+            "TerminateWorkingGroupLead": "TerminateRoleParameters",
+            "AmendConstitution": "Text",
+            "CancelWorkingGroupLeadOpening": "(OpeningId,WorkingGroup)",
+            "SetMembershipPrice": "u128",
+            "SetCouncilBudgetIncrement": "u128",
+            "SetCouncilorReward": "u128",
+            "SetInitialInvitationBalance": "u128",
+            "SetInitialInvitationCount": "u32",
+            "SetMembershipLeadInvitationQuota": "u32",
+            "SetReferralCut": "u128",
+            "CreateBlogPost": "(Text,Text)",
+            "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
+            "LockBlogPost": "PostId",
+            "UnlockBlogPost": "PostId",
+            "VetoProposal": "ProposalId"
         }
     },
     "VotingResults": {
@@ -321,9 +368,9 @@
     "DiscussionPost": {
         "author_id": "u64"
     },
-    "AddOpeningParameters": {
+    "CreateOpeningParameters": {
         "description": "Text",
-        "stake_policy": "Option<StakePolicy>",
+        "stake_policy": "StakePolicy",
         "reward_per_block": "Option<u128>",
         "working_group": "WorkingGroup"
     },
@@ -334,7 +381,7 @@
     },
     "TerminateRoleParameters": {
         "worker_id": "WorkerId",
-        "penalty": "Option<Penalty>",
+        "slashing_amount": "Option<u128>",
         "working_group": "WorkingGroup"
     },
     "ProposalDecision": {
@@ -368,6 +415,10 @@
             "Executed": "Null",
             "ExecutionFailed": "ExecutionFailed"
         }
+    },
+    "FundingRequestParameters": {
+        "account": "AccountId",
+        "amount": "u128"
     },
     "Nonce": "u64",
     "EntityId": "u64",
@@ -635,5 +686,59 @@
     "VotePower": "u128",
     "ConstitutionInfo": {
         "text_hash": "Hash"
+    },
+    "BountyId": "u32",
+    "EntryId": "u32",
+    "BountyActor": {
+        "_enum": {
+            "Council": "Null",
+            "Member": "MemberId"
+        }
+    },
+    "AssuranceContractType": {
+        "_enum": {
+            "Open": "Null",
+            "Closed": "Vec<MemberId>"
+        }
+    },
+    "FundingType_Limited": {
+        "min_funding_amount": "u128",
+        "max_funding_amount": "u128",
+        "funding_period": "u32"
+    },
+    "FundingType_Perpetual": {
+        "target": "u128"
+    },
+    "FundingType": {
+        "_enum": {
+            "Perpetual": "FundingType_Perpetual",
+            "Limited": "FundingType_Limited"
+        }
+    },
+    "BountyCreationParameters": {
+        "oracle": "BountyActor",
+        "contract_type": "AssuranceContractType",
+        "creator": "BountyActor",
+        "cherry": "u128",
+        "entrant_stake": "u128",
+        "funding_type": "FundingType",
+        "work_period": "u32",
+        "judging_period": "u32"
+    },
+    "OracleJudgment_Winner": {
+        "reward": "u128"
+    },
+    "OracleJudgment": {
+        "_enum": {
+            "Winner": "OracleJudgment_Winner",
+            "Rejected": "Null"
+        }
+    },
+    "Entry": {
+        "member_id": "MemberId",
+        "staking_account_id": "GenericAccountId",
+        "submitted_at": "u32",
+        "work_submitted": "bool",
+        "oracle_judgment_result": "Option<OracleJudgment>"
     }
 }
