@@ -233,9 +233,11 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare information about media published somewhere else before Joystream if needed.
-    if (metaAsObject.publishedBeforeJoystream) {
+    if (metaAsObject.publishedBeforeJoystream && metaAsObject.publishedBeforeJoystream.isPublished) {
       // this will change the `channel`!
       handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream.date)
+    } else {
+      delete metaAsObject.publishedBeforeJoystream // make sure the object is unset
     }
 
     return result as Partial<T>
@@ -276,6 +278,8 @@ function handlePublishedBeforeJoystream(video: Partial<Video>, publishedAtString
   // published elsewhere before Joystream
   if (publishedAtString) {
     video.publishedBeforeJoystream = new Date(publishedAtString)
+
+    return
   }
 
   // unset publish info

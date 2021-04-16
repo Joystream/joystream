@@ -94,7 +94,7 @@ export async function content_ChannelUpdated(
   }
 
   // prepare changed metadata
-  const newMetadata = channelUpdateParameters.new_meta.isSome && channelUpdateParameters.new_meta.unwrapOr(null)
+  const newMetadata = channelUpdateParameters.new_meta.unwrapOr(null)
 
   //  update metadata if it was changed
   if (newMetadata) {
@@ -116,7 +116,7 @@ export async function content_ChannelUpdated(
   }
 
   // prepare changed reward account
-  const newRewardAccount = channelUpdateParameters.reward_account.isSome && channelUpdateParameters.reward_account.unwrapOr(null)
+  const newRewardAccount = channelUpdateParameters.reward_account.unwrapOr(null)
 
   // reward account change happened?
   if (newRewardAccount) {
@@ -305,7 +305,7 @@ function handleChannelRewardAccountChange(
   channel: Channel, // will be modified inside of the function!
   reward_account: Option<AccountId>
 ) {
-  const rewardAccount = reward_account.isSome && reward_account.unwrapOr(null)
+  const rewardAccount = reward_account.unwrapOr(null)
 
   // new different reward account set?
   if (rewardAccount) {

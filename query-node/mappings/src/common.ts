@@ -43,7 +43,7 @@ export async function prepareDataObject(
     // `size` is masked by `size` special name in `Struct` so there needs to be `.get('size') as unknown as u64` to retrieve proper value
     size: (contentParameters.get('size') as unknown as u64).toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
-    ipfsContentId: contentParameters.ipfs_content_id.toHex(),
+    ipfsContentId: contentParameters.ipfs_content_id.toString(),
     joystreamContentId: contentParameters.content_id.toHex(),
 
 

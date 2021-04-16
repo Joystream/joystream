@@ -233,7 +233,7 @@ export async function content_VideoUpdated(
   }
 
   // prepare changed metadata
-  const newMetadata = videoUpdateParameters.new_meta.isSome && videoUpdateParameters.new_meta.unwrapOr(null)
+  const newMetadata = videoUpdateParameters.new_meta.unwrapOr(null)
 
   // update metadata if it was changed
   if (newMetadata) {
