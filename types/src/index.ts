@@ -94,9 +94,11 @@ type CreateInterface<T extends Codec> =
   | T
   | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
 
-export function createType<TypeName extends keyof InterfaceTypes>(
-  type: TypeName,
-  value: InterfaceTypes[TypeName] extends Codec ? CreateInterface<InterfaceTypes[TypeName]> : any
-): InterfaceTypes[TypeName] {
+export type AnyTypeName = keyof InterfaceTypes
+
+export function createType<TN extends AnyTypeName, T extends InterfaceTypes[TN] = InterfaceTypes[TN]>(
+  type: TN,
+  value: CreateInterface<T>
+): InterfaceTypes[TN] {
   return registry.createType(type, value)
 }
