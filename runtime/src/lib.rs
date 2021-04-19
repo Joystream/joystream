@@ -674,7 +674,8 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxStorageBucketNumber: u64 = 1;
+    pub const MaxStorageBucketNumber: u64 = 20; //TODO: adjust value
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
 }
 
 impl storage_v2::Trait for Runtime {
@@ -682,6 +683,8 @@ impl storage_v2::Trait for Runtime {
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)

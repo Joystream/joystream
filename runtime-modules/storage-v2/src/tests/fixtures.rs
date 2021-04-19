@@ -3,10 +3,13 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
-use super::mocks::{Balances, Storage, System, Test, TestEvent};
+use super::mocks::{
+    Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+};
 
 use crate::{
-    RawEvent, StorageBucketOperatorStatus, UpdateStorageBucketForStaticBagsParams, Voucher,
+    DataObjectCreationParameters, RawEvent, StorageBucketOperatorStatus,
+    UpdateStorageBucketForStaticBagsParams, UploadParameters, Voucher,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -29,7 +32,13 @@ pub fn increase_account_balance(account_id: &u64, balance: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<u64, u64, UpdateStorageBucketForStaticBagsParams<u64>>,
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            UpdateStorageBucketForStaticBagsParams<u64>,
+            u64,
+            UploadParameters<Test>,
+        >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
 
@@ -38,7 +47,13 @@ impl EventFixture {
 
     #[allow(dead_code)]
     pub fn contains_crate_event(
-        expected_raw_event: RawEvent<u64, u64, UpdateStorageBucketForStaticBagsParams<u64>>,
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            UpdateStorageBucketForStaticBagsParams<u64>,
+            u64,
+            UploadParameters<Test>,
+        >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
 
@@ -226,4 +241,61 @@ impl UpdateStorageBucketForStaticBagsFixture {
 
         assert_eq!(actual_result, expected_result);
     }
+}
+
+pub struct UploadFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    params: UploadParameters<Test>,
+}
+
+impl UploadFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            member_id: DEFAULT_MEMBER_ID,
+            params: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_params(self, params: UploadParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::upload(
+            self.origin.clone().into(),
+            self.member_id,
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub fn create_data_object_candidates(
+    starting_index: u8,
+    number: u8,
+) -> Vec<DataObjectCreationParameters> {
+    let range = starting_index..(starting_index + number);
+
+    range
+        .into_iter()
+        .map(|idx| DataObjectCreationParameters {
+            size: idx as u64,
+            ipfs_content_id: vec![idx],
+        })
+        .collect()
+}
+
+pub fn create_single_data_object() -> Vec<DataObjectCreationParameters> {
+    create_data_object_candidates(1, 1)
 }

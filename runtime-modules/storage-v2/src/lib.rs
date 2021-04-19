@@ -1,9 +1,13 @@
+//! # Storage module
+//! Storage module for the Joystream platform. Version 2.
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 // #![warn(missing_docs)]
 
+// TODO: add static-dynamic bag abstraction (BagManager)
 // TODO: Add alias for StaticBag
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
@@ -14,7 +18,6 @@
 // Max number of distribution bucket families
 // Max number of distribution buckets per family.
 // Max number of pending invitations per distribution bucket.
-// Max number of data objects per bag.
 
 #[cfg(test)]
 mod tests;
@@ -31,9 +34,13 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_arithmetic::traits::One;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter;
 use sp_std::vec::Vec;
+
+use common::origin::ActorOriginValidator;
 
 /// Storage trait.
 pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
@@ -61,7 +68,13 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + PartialEq;
 
     /// Defines max allowed storage bucket number.
-    type MaxStorageBucketNumber: Get<u64>;
+    type MaxStorageBucketNumber: Get<u64>; //TODO: adjust value
+
+    /// Defines max number of data objects per bag.
+    type MaxNumberOfDataObjectsPerBag: Get<u64>; //TODO: adjust value
+
+    /// Validates member id and origin combination.
+    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Demand the working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
@@ -72,6 +85,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     fn ensure_worker_origin(origin: Self::Origin, worker_id: WorkerId<Self>) -> DispatchResult;
 }
 
+/// Alias for the member id.
+pub type MemberId<T> = <T as membership::Trait>::MemberId;
+
 /// Type identifier for worker role, which must be same as membership actor identifier
 pub type WorkerId<T> = <T as membership::Trait>::ActorId;
 
@@ -80,46 +96,48 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 //type DistributionBucketId = u64; // TODO: Move to the Trait
 // type ChannelId = u64; // Move to the Trait
 // type DaoId = u64; // Move to the Trait
-// type WorkerId = u64; // Move to the Trait
 
+/// The fundamental concept in the system, which represents single static binary object in the
+/// system. The main goal of the system is to retain an index of all such objects, including who
+/// owns them, and information about what actors are currently tasked with storing and distributing
+/// them to end users. The system is unaware of the underlying content represented by such an
+/// object, as it is used by different parts of the Joystream system.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PendingDataObjectStatus<StorageBucketId> {
-    pub liaison: StorageBucketId,
-}
+pub struct DataObject<Balance> {
+    /// Defines whether the data object was accepted by a liaison.
+    pub accepted: bool,
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum DataObjectStatus<StorageBucketId> {
-    Pending(PendingDataObjectStatus<StorageBucketId>),
-    AcceptedByLiaison,
-}
-
-impl<StorageBucketId: Default> Default for DataObjectStatus<StorageBucketId> {
-    fn default() -> Self {
-        Self::Pending(Default::default())
-    }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DataObject<StorageBucketId, Balance> {
-    pub status: DataObjectStatus<StorageBucketId>,
+    /// A reward for the data object deletion.
     pub deletion_prize: Balance,
+
+    /// Object size in bytes.
+    pub size: u64,
+
+    /// Content identifier presented as IPFS hash.
+    pub ipfs_content_id: Vec<u8>,
 }
 
+/// Static bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct StaticBag<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
-    pub objects: BTreeMap<DataObjectId, DataObject<StorageBucketId, Balance>>,
+    /// Associated data objects.
+    pub objects: BTreeMap<DataObjectId, DataObject<Balance>>,
+
+    /// Associated storage buckets.
     pub stored_by: BTreeSet<StorageBucketId>,
     //TODO: implement -    pub distributed_by: BTreeSet<DistributionBucketId>,
 }
 
+/// Parameters for the data object creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct DataObjectCreationParameters {
+    /// Object size in bytes.
     pub size: u64,
+
+    /// Content identifier presented as IPFS hash.
     pub ipfs_content_id: Vec<u8>,
 }
 
@@ -127,8 +145,9 @@ pub struct DataObjectCreationParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum BagId {
-    //TODO: implement -    DynamicBag(DynamicBagId),
+    /// Static bag type.
     StaticBag(StaticBagId),
+    //TODO: implement -    DynamicBag(DynamicBagId),
 }
 
 impl Default for BagId {
@@ -137,9 +156,11 @@ impl Default for BagId {
     }
 }
 
+/// A type for static bags ID.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum StaticBagId {
+    /// Dedicated bag for a council.
     Council,
     //TODO: implement -    WorkingGroup(WorkingGroup),
 }
@@ -165,6 +186,7 @@ impl Default for StaticBagId {
 //     }
 // }
 
+/// Alias for the UploadParametersObject
 pub type UploadParameters<T> = UploadParametersObject<<T as frame_system::Trait>::AccountId>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -172,9 +194,16 @@ pub type UploadParameters<T> = UploadParametersObject<<T as frame_system::Trait>
 pub struct UploadParametersObject<AccountId> {
     /// Public key used authentication in upload to liaison.
     pub authentication_key: Vec<u8>,
-    pub bag: BagId,
-    pub object_creation: Vec<DataObjectCreationParameters>,
-    pub deletion_prize_source_account: AccountId,
+
+    /// Static or dynamic bag to upload data.
+    pub bag_id: BagId,
+
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    //TODO: consider removing.
+    /// Account for the data object deletion prize.
+    pub deletion_prize_source_account_id: AccountId,
 }
 
 /// Defines storage bucket parameters.
@@ -254,6 +283,18 @@ pub struct AcceptPendingDataObjectsParams<DataObjectId: Ord> {
     pub bagged_data_objects: BTreeSet<BaggedDataObject<DataObjectId>>,
 }
 
+// Helper-struct for the data object uploading
+struct DataObjectCandidates<T: Trait> {
+    // next data object ID to be saved in the storage
+    next_data_object_id: T::DataObjectId,
+
+    // 'ID-data object' map
+    data_objects_map: BTreeMap<T::DataObjectId, DataObject<BalanceOf<T>>>,
+
+    // new data object ID list
+    data_object_ids: Vec<T::DataObjectId>,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Storage {
         // === Static bags
@@ -263,6 +304,9 @@ decl_storage! {
 
         /// Storage bucket id counter. Starts at zero.
         pub NextStorageBucketId get(fn next_storage_bucket_id): T::StorageBucketId;
+
+        /// Data object id counter. Starts at zero.
+        pub NextDataObjectId get(fn next_data_object_id): T::DataObjectId;
 
         /// Total number of the storage buckets in the system.
         pub StorageBucketsNumber get(fn storage_buckets_number): u64;
@@ -281,7 +325,9 @@ decl_event! {
         <T as Trait>::StorageBucketId,
         WorkerId = WorkerId<T>,
         UpdateStorageBucketForStaticBagsParams =
-            UpdateStorageBucketForStaticBagsParams<<T as Trait>::StorageBucketId>
+            UpdateStorageBucketForStaticBagsParams<<T as Trait>::StorageBucketId>,
+        <T as Trait>::DataObjectId,
+        UploadParameters = UploadParameters<T>,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -301,6 +347,12 @@ decl_event! {
         /// Params
         /// - 'static bags-to-storage bucket set' container
         StorageBucketsUpdatedForStaticBags(UpdateStorageBucketForStaticBagsParams),
+
+        /// Emits on uploading data objects.
+        /// Params
+        /// - data objects IDs
+        /// - initial uploading parameters
+        DataObjectdUploaded(Vec<DataObjectId>, UploadParameters),
     }
 }
 
@@ -327,6 +379,18 @@ decl_error! {
 
         /// The parameter structure is empty: UpdateStorageBucketForStaticBagsParams.
         UpdateStorageBucketForStaticBagsParamsIsEmpty,
+
+        /// Upload data error: empty content ID provided.
+        EmptyContentId,
+
+        /// Upload data error: zero object size.
+        ZeroObjectSize,
+
+        /// Upload data error: invalid deletion prize source account.
+        InvalidDeletionPrizeSourceAccount,
+
+        /// Upload data error: data objects per bag limit exceeded.
+        DataObjectsPerBagLimitExceeded,
     }
 }
 
@@ -342,15 +406,45 @@ decl_module! {
         /// Exports const -  max allowed storage bucket number.
         const MaxStorageBucketNumber: u64 = T::MaxStorageBucketNumber::get();
 
-        /// Upload new objects, and does so atomically if there is more than one provided.
-        /// TODO:
-        /// - Must return rich information about bags & data objects created.
-        /// - a `can_upload` extrinsic is likely going to be needed
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn upload(_origin, params: UploadParameters<T>) {
-            //TODO implement
+        /// Exports const -  max number of data objects per bag.
+        const MaxNumberOfDataObjectsPerBag: u64 = T::MaxNumberOfDataObjectsPerBag::get();
 
-            Self::validate_upload_parameter(&params)?;
+        /// Upload new data objects.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn upload(origin, member_id: T::MemberId, params: UploadParameters<T>) {
+            let account_id = T::MemberOriginValidator::ensure_actor_origin(
+                origin,
+                member_id,
+            )?;
+
+            //TODO: is is so?  "a `can_upload` extrinsic is likely going to be needed"
+
+            Self::validate_upload_parameters(&params, account_id)?;
+
+            // TODO: authentication_key
+
+            // TODO: check account for deletion prize for all objects
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+             // TODO: remove the deletion prize
+
+            let mut data = Self::create_data_objects(params.object_creation_list.clone());
+
+            <NextDataObjectId<T>>::put(data.next_data_object_id);
+
+            //TODO: add dynamic bags
+            let BagId::StaticBag(static_bag_id) = params.bag_id.clone();
+
+            let mut bag = Self::static_bag(&static_bag_id);
+
+            bag.objects.append(&mut data.data_objects_map);
+
+            Self::save_static_bag(&static_bag_id, bag);
+
+            Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
         }
 
         // ===== Storage Lead actions =====
@@ -488,13 +582,41 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     // Validates upload parameters.
-    fn validate_upload_parameter(params: &UploadParameters<T>) -> DispatchResult {
-        //TODO implement
+    fn validate_upload_parameters(
+        params: &UploadParameters<T>,
+        account_id: T::AccountId,
+    ) -> DispatchResult {
+        //TODO: add dynamic bags
+        let BagId::StaticBag(static_bag_id) = params.bag_id.clone();
+        let bag = Self::static_bag(&static_bag_id);
+
+        let total_possible_data_objects_number: u64 =
+            (params.object_creation_list.len() + bag.objects.len()).saturated_into();
 
         ensure!(
-            !params.object_creation.is_empty(),
+            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
+            Error::<T>::DataObjectsPerBagLimitExceeded
+        );
+
+        ensure!(
+            !params.object_creation_list.is_empty(),
             Error::<T>::NoObjectsOnUpload
         );
+
+        //TODO: Redundant check. Use Account_id directly.
+        ensure!(
+            params.deletion_prize_source_account_id == account_id,
+            Error::<T>::InvalidDeletionPrizeSourceAccount
+        );
+
+        for object_params in params.object_creation_list.iter() {
+            // TODO: Check for duplicates for CID?
+            ensure!(
+                !object_params.ipfs_content_id.is_empty(),
+                Error::<T>::EmptyContentId
+            );
+            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+        }
 
         Ok(())
     }
@@ -551,6 +673,37 @@ impl<T: Trait> Module<T> {
     ) {
         match bag_id {
             StaticBagId::Council => CouncilBag::<T>::put(bag),
+        }
+    }
+
+    fn create_data_objects(
+        object_creation_list: Vec<DataObjectCreationParameters>,
+    ) -> DataObjectCandidates<T> {
+        let deletion_prize: BalanceOf<T> = Default::default(); //TODO
+
+        let data_objects = object_creation_list.iter().cloned().map(|obj| DataObject {
+            accepted: false,
+            deletion_prize,
+            size: obj.size,
+            ipfs_content_id: obj.ipfs_content_id,
+        });
+
+        let mut next_data_object_id = Self::next_data_object_id();
+        let ids = iter::repeat_with(|| {
+            let id = next_data_object_id;
+            next_data_object_id += One::one();
+
+            id
+        })
+        .take(data_objects.len());
+
+        let data_objects_map = ids.zip(data_objects).collect::<BTreeMap<_, _>>();
+        let data_object_ids = data_objects_map.keys().cloned().collect();
+
+        DataObjectCandidates {
+            next_data_object_id,
+            data_objects_map,
+            data_object_ids,
         }
     }
 }

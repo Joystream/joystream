@@ -51,6 +51,7 @@ impl balances::Trait for Test {
 
 parameter_types! {
     pub const MaxStorageBucketNumber: u64 = 1;
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
 }
 
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -61,6 +62,8 @@ impl crate::Trait for Test {
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
+    type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
+    type MemberOriginValidator = ();
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -79,6 +82,21 @@ impl crate::Trait for Test {
             Err(DispatchError::BadOrigin)
         } else {
             Ok(())
+        }
+    }
+}
+
+pub const DEFAULT_MEMBER_ID: u64 = 100;
+pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = frame_system::ensure_signed(origin)?;
+
+        if signed_account_id == DEFAULT_MEMBER_ACCOUNT_ID && member_id == DEFAULT_MEMBER_ID {
+            Ok(signed_account_id)
+        } else {
+            Err(DispatchError::BadOrigin.into())
         }
     }
 }

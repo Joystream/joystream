@@ -5,18 +5,22 @@ pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_system::RawOrigin;
+use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
 
 use fixtures::{
-    run_to_block, AcceptStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
-    UpdateStorageBucketForStaticBagsFixture,
+    create_data_object_candidates, create_single_data_object, run_to_block,
+    AcceptStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
+    UpdateStorageBucketForStaticBagsFixture, UploadFixture,
 };
-use mocks::{build_test_externalities, Storage, Test, WG_LEADER_ACCOUNT_ID};
+use mocks::{
+    build_test_externalities, MaxNumberOfDataObjectsPerBag, Storage, Test,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
+};
 
-use crate::tests::mocks::DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
 use crate::{
-    Error, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    UpdateStorageBucketForStaticBagsParams, Voucher,
+    BagId, DataObject, DataObjectCreationParameters, Error, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, UpdateStorageBucketForStaticBagsParams, UploadParameters, Voucher,
 };
 
 #[test]
@@ -270,5 +274,176 @@ fn update_storage_buckets_for_static_bags_fails_with_empty_params() {
             .call_and_assert(Err(
                 Error::<Test>::UpdateStorageBucketForStaticBagsParamsIsEmpty.into(),
             ));
+    });
+}
+
+#[test]
+fn upload_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        // check bag content
+        let data_object_id = 0u64;
+        let bag = Storage::council_bag();
+        assert_eq!(
+            bag.objects.iter().collect::<Vec<_>>(),
+            vec![(
+                &data_object_id,
+                &DataObject {
+                    ipfs_content_id: upload_params.object_creation_list[0]
+                        .clone()
+                        .ipfs_content_id,
+                    size: upload_params.object_creation_list[0].clone().size,
+                    deletion_prize: 0,
+                    accepted: false,
+                }
+            )]
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectdUploaded(
+            vec![data_object_id],
+            upload_params,
+        ));
+    });
+}
+
+#[test]
+fn upload_succeeded_with_non_empty_bag() {
+    build_test_externalities().execute_with(|| {
+        let upload_params1 = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates(1, 2),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params1.clone())
+            .call_and_assert(Ok(()));
+
+        let upload_params2 = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates(3, 2),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params2.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::council_bag();
+        assert_eq!(bag.objects.len(), 4);
+    });
+}
+
+#[test]
+fn upload_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        UploadFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::Other("Bad origin")));
+
+        let invalid_member_id = 555;
+        UploadFixture::default()
+            .with_member_id(invalid_member_id)
+            .call_and_assert(Err(DispatchError::Other("Bad origin")));
+    });
+}
+
+#[test]
+fn upload_fails_with_empty_params_object() {
+    build_test_externalities().execute_with(|| {
+        let upload_params = UploadParameters::<Test>::default();
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::NoObjectsOnUpload.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_zero_object_size() {
+    build_test_externalities().execute_with(|| {
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: vec![DataObjectCreationParameters {
+                ipfs_content_id: vec![1],
+                size: 0,
+            }],
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::ZeroObjectSize.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_empty_object_cid() {
+    build_test_externalities().execute_with(|| {
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: vec![DataObjectCreationParameters {
+                ipfs_content_id: Vec::new(),
+                size: 220,
+            }],
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::EmptyContentId.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_invalid_deletion_prize_account() {
+    build_test_externalities().execute_with(|| {
+        let invalid_account_id = 13300;
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: invalid_account_id,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::InvalidDeletionPrizeSourceAccount.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_max_data_object_size_exceeded() {
+    build_test_externalities().execute_with(|| {
+        let max_object_size = MaxNumberOfDataObjectsPerBag::get();
+        let invalid_object_number: u8 = (max_object_size + 1).saturated_into();
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates(1, invalid_object_number),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::DataObjectsPerBagLimitExceeded.into()));
     });
 }
