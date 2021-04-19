@@ -3457,6 +3457,7 @@ export type OpeningFilledEvent = BaseGraphQlObject & {
   groupId: Scalars['String']
   opening: WorkingGroupOpening
   openingId: Scalars['String']
+  workersHired: Array<Worker>
 }
 
 export type OpeningFilledEventConnection = {
@@ -5899,6 +5900,8 @@ export type Worker = BaseGraphQlObject & {
   hiredAtBlock: Scalars['Int']
   /** Time the worker was hired at */
   hiredAtTime: Scalars['DateTime']
+  entry: OpeningFilledEvent
+  entryId: Scalars['String']
   application: WorkingGroupApplication
   applicationId: Scalars['String']
   /** Worker's storage data */
@@ -5935,6 +5938,7 @@ export type WorkerCreateInput = {
   stake: Scalars['BigInt']
   hiredAtBlock: Scalars['Float']
   hiredAtTime: Scalars['DateTime']
+  entryId: Scalars['ID']
   applicationId: Scalars['ID']
   storage?: Maybe<Scalars['String']>
 }
@@ -6065,6 +6069,8 @@ export enum WorkerOrderByInput {
   HiredAtBlockDesc = 'hiredAtBlock_DESC',
   HiredAtTimeAsc = 'hiredAtTime_ASC',
   HiredAtTimeDesc = 'hiredAtTime_DESC',
+  EntryIdAsc = 'entryId_ASC',
+  EntryIdDesc = 'entryId_DESC',
   ApplicationIdAsc = 'applicationId_ASC',
   ApplicationIdDesc = 'applicationId_DESC',
   StorageAsc = 'storage_ASC',
@@ -6678,6 +6684,7 @@ export type WorkerUpdateInput = {
   stake?: Maybe<Scalars['BigInt']>
   hiredAtBlock?: Maybe<Scalars['Float']>
   hiredAtTime?: Maybe<Scalars['DateTime']>
+  entryId?: Maybe<Scalars['ID']>
   applicationId?: Maybe<Scalars['ID']>
   storage?: Maybe<Scalars['String']>
 }
@@ -6746,6 +6753,8 @@ export type WorkerWhereInput = {
   hiredAtTime_lte?: Maybe<Scalars['DateTime']>
   hiredAtTime_gt?: Maybe<Scalars['DateTime']>
   hiredAtTime_gte?: Maybe<Scalars['DateTime']>
+  entryId_eq?: Maybe<Scalars['ID']>
+  entryId_in?: Maybe<Array<Scalars['ID']>>
   applicationId_eq?: Maybe<Scalars['ID']>
   applicationId_in?: Maybe<Array<Scalars['ID']>>
   storage_eq?: Maybe<Scalars['String']>
@@ -6815,6 +6824,8 @@ export type WorkingGroupApplication = BaseGraphQlObject & {
   openingId: Scalars['String']
   applicant: Membership
   applicantId: Scalars['String']
+  /** Application stake */
+  stake: Scalars['BigInt']
   /** Applicant's initial role account */
   roleAccount: Scalars['String']
   /** Applicant's initial reward account */
@@ -6842,6 +6853,7 @@ export type WorkingGroupApplicationCreateInput = {
   createdAt: Scalars['DateTime']
   openingId: Scalars['ID']
   applicantId: Scalars['ID']
+  stake: Scalars['BigInt']
   roleAccount: Scalars['String']
   rewardAccount: Scalars['String']
   stakingAccount: Scalars['String']
@@ -6866,6 +6878,8 @@ export enum WorkingGroupApplicationOrderByInput {
   OpeningIdDesc = 'openingId_DESC',
   ApplicantIdAsc = 'applicantId_ASC',
   ApplicantIdDesc = 'applicantId_DESC',
+  StakeAsc = 'stake_ASC',
+  StakeDesc = 'stake_DESC',
   RoleAccountAsc = 'roleAccount_ASC',
   RoleAccountDesc = 'roleAccount_DESC',
   RewardAccountAsc = 'rewardAccount_ASC',
@@ -6886,6 +6900,7 @@ export type WorkingGroupApplicationUpdateInput = {
   createdAt?: Maybe<Scalars['DateTime']>
   openingId?: Maybe<Scalars['ID']>
   applicantId?: Maybe<Scalars['ID']>
+  stake?: Maybe<Scalars['BigInt']>
   roleAccount?: Maybe<Scalars['String']>
   rewardAccount?: Maybe<Scalars['String']>
   stakingAccount?: Maybe<Scalars['String']>
@@ -6922,6 +6937,12 @@ export type WorkingGroupApplicationWhereInput = {
   openingId_in?: Maybe<Array<Scalars['ID']>>
   applicantId_eq?: Maybe<Scalars['ID']>
   applicantId_in?: Maybe<Array<Scalars['ID']>>
+  stake_eq?: Maybe<Scalars['BigInt']>
+  stake_gt?: Maybe<Scalars['BigInt']>
+  stake_gte?: Maybe<Scalars['BigInt']>
+  stake_lt?: Maybe<Scalars['BigInt']>
+  stake_lte?: Maybe<Scalars['BigInt']>
+  stake_in?: Maybe<Array<Scalars['BigInt']>>
   roleAccount_eq?: Maybe<Scalars['String']>
   roleAccount_contains?: Maybe<Scalars['String']>
   roleAccount_startsWith?: Maybe<Scalars['String']>

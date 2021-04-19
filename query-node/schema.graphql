@@ -495,6 +495,9 @@ type Worker @entity {
   "Time the worker was hired at"
   hiredAtTime: DateTime!
 
+  "The event that caused the worker to be hired"
+  entry: OpeningFilledEvent!
+
   "Related worker entry application"
   application: WorkingGroupApplication!
 
@@ -657,6 +660,9 @@ type WorkingGroupApplication @entity {
   "Applicant's membership"
   applicant: Membership!
 
+  "Application stake"
+  stake: BigInt!
+
   "Applicant's initial role account"
   roleAccount: String!
 
@@ -750,8 +756,8 @@ type OpeningFilledEvent @entity {
   "Related opening"
   opening: WorkingGroupOpening!
 
-  # TODO: Can we just get accepted applications via event.opening.applications(where: { status: 'Accepted' })?
-  # Otherwise we would need a field like "acceptedIn" filed in application or a separate table to make OneToMany
+  "Workers that have been hired as a result of filling the opening"
+  workersHired: [Worker!] @derivedFrom(field: "entry")
 }
 
 type LeaderSetEvent @entity {

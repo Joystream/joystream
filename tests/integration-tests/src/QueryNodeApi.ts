@@ -7,6 +7,7 @@ import {
   MembershipPriceUpdatedEvent,
   MembershipSystemSnapshot,
   OpeningAddedEvent,
+  OpeningFilledEvent,
   Query,
   ReferralCutUpdatedEvent,
 } from './QueryNodeApiSchema.generated'
@@ -32,7 +33,7 @@ export class QueryNodeApi {
     timeoutMs = 210000,
     retryTimeMs = 30000
   ): Promise<QueryResultT> {
-    const label = query.toString().replace(/^.*\./g, '')
+    const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const retryDebug = this.tryDebug.extend(label).extend('retry')
     const failDebug = this.tryDebug.extend(label).extend('failed')
     return new Promise((resolve, reject) => {
@@ -507,6 +508,9 @@ export class QueryNodeApi {
           }
           applications {
             id
+            status {
+              __typename
+            }
           }
           type
           status {
@@ -568,6 +572,7 @@ export class QueryNodeApi {
             }
             answer
           }
+          stake
         }
       }
     `
@@ -646,5 +651,65 @@ export class QueryNodeApi {
         variables: { eventId },
       })
     ).data.openingAddedEvents[0]
+  }
+
+  public async getOpeningFilledEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<OpeningFilledEvent | undefined> {
+    const OPENING_FILLED_BY_ID = gql`
+      query($eventId: ID!) {
+        openingFilledEvents(where: { eventId_eq: $eventId }) {
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          group {
+            name
+          }
+          opening {
+            id
+          }
+          workersHired {
+            id
+            group {
+              name
+            }
+            membership {
+              id
+            }
+            roleAccount
+            rewardAccount
+            stakeAccount
+            status {
+              __typename
+            }
+            isLead
+            stake
+            payouts {
+              id
+            }
+            hiredAtBlock
+            hiredAtTime
+            application {
+              id
+            }
+            storage
+          }
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getOpeningFilledEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'openingFilledEvents'>>({
+        query: OPENING_FILLED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.openingFilledEvents[0]
   }
 }

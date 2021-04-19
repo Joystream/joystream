@@ -24,7 +24,15 @@ import {
   AppliedOnOpeningEvent,
   Membership,
   ApplicationStatusPending,
+  ApplicationStatusAccepted,
+  ApplicationStatusRejected,
+  Worker,
+  WorkerStatusActive,
+  OpeningFilledEvent,
+  OpeningStatusFilled,
 } from 'query-node/dist/model'
+import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { createType } from '@joystream/types'
 
 // Shortcuts
 type InputTypeMap = OpeningMetadata.ApplicationFormQuestion.InputTypeMap
@@ -41,11 +49,31 @@ async function getWorkingGroup(db: DatabaseManager, event_: SubstrateEvent): Pro
   return group
 }
 
+async function getOpening(
+  db: DatabaseManager,
+  id: OpeningId | string,
+  relations: string[] = []
+): Promise<WorkingGroupOpening> {
+  const opening = await db.get(WorkingGroupOpening, { where: { id: id.toString() }, relations })
+  if (!opening) {
+    throw new Error(`Opening not found by id ${id.toString()}`)
+  }
+
+  return opening
+}
+
+async function getApplication(db: DatabaseManager, id: ApplicationId): Promise<WorkingGroupApplication> {
+  const application = await db.get(WorkingGroupApplication, { where: { id: id.toString() } })
+  if (!application) {
+    throw new Error(`Application not found by id ${id.toString()}`)
+  }
+
+  return application
+}
+
 async function getApplicationFormQuestions(db: DatabaseManager, openingId: string): Promise<ApplicationFormQuestion[]> {
-  const openingWithQuestions = await db.get(WorkingGroupOpening, {
-    where: { id: openingId },
-    relations: ['metadata', 'metadata.applicationFormQuestions'],
-  })
+  const openingWithQuestions = await getOpening(db, openingId, ['metadata', 'metadata.applicationFormQuestions'])
+
   if (!openingWithQuestions) {
     throw new Error(`Opening not found by id: ${openingId}`)
   }
@@ -180,7 +208,7 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
       member_id: memberId,
       reward_account_id: rewardAccount,
       role_account_id: roleAccout,
-      stake_parameters: { staking_account_id: stakingAccount },
+      stake_parameters: { stake, staking_account_id: stakingAccount },
     },
   } = new WorkingGroups.AppliedOnOpeningEvent(event_).data
   const group = await getWorkingGroup(db, event_)
@@ -197,6 +225,7 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
     stakingAccount: stakingAccount.toString(),
     status: new ApplicationStatusPending(),
     answers: [],
+    stake,
   })
 
   await db.save<WorkingGroupApplication>(application)
@@ -217,8 +246,79 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
 }
 
 export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const {
+    openingId,
+    applicationId: applicationIdsSet,
+    applicationIdToWorkerIdMap,
+  } = new WorkingGroups.OpeningFilledEvent(event_).data
+
+  const group = await getWorkingGroup(db, event_)
+  const opening = await getOpening(db, openingId, ['applications', 'applications.applicant'])
+  const acceptedApplicationIds = createType('Vec<ApplicationId>', applicationIdsSet.toHex() as any)
+
+  // Save the event
+  const event = await createEvent(event_, EventType.OpeningFilled)
+  const openingFilledEvent = new OpeningFilledEvent({
+    createdAt: new Date(event_.blockTimestamp.toNumber()),
+    updatedAt: new Date(event_.blockTimestamp.toNumber()),
+    event,
+    group,
+    opening,
+  })
+
+  await db.save<Event>(event)
+  await db.save<OpeningFilledEvent>(openingFilledEvent)
+
+  // Update applications and create new workers
+  await Promise.all(
+    (opening.applications || []).map(async (application) => {
+      const isAccepted = acceptedApplicationIds.some((id) => id.toString() === application.id)
+      application.status = isAccepted ? new ApplicationStatusAccepted() : new ApplicationStatusRejected()
+      if (isAccepted) {
+        // Cannot use "applicationIdToWorkerIdMap.get" here,
+        // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
+        const [, workerId] =
+          Array.from(applicationIdToWorkerIdMap.entries()).find(
+            ([applicationId]) => applicationId.toString() === application.id
+          ) || []
+        if (!workerId) {
+          throw new Error(
+            `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
+          )
+        }
+        const worker = new Worker({
+          createdAt: new Date(event_.blockTimestamp.toNumber()),
+          updatedAt: new Date(event_.blockTimestamp.toNumber()),
+          id: workerId.toString(),
+          hiredAtBlock: event_.blockNumber,
+          hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
+          application,
+          group,
+          isLead: opening.type === WorkingGroupOpeningType.LEADER,
+          membership: application.applicant,
+          stake: application.stake,
+          roleAccount: application.roleAccount,
+          rewardAccount: application.rewardAccount,
+          stakeAccount: application.stakingAccount,
+          payouts: [],
+          status: new WorkerStatusActive(),
+          entry: openingFilledEvent,
+        })
+        await db.save<Worker>(worker)
+      }
+      await db.save<WorkingGroupApplication>(application)
+    })
+  )
+
+  // Set opening status
+  const openingFilled = new OpeningStatusFilled()
+  openingFilled.openingFilledEventId = openingFilledEvent.id
+  opening.status = openingFilled
+
+  await db.save<WorkingGroupOpening>(opening)
 }
+
 export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }

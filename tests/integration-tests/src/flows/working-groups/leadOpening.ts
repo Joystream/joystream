@@ -1,5 +1,9 @@
 import { FlowProps } from '../../Flow'
-import { ApplyOnOpeningHappyCaseFixture, SudoCreateLeadOpeningFixture } from '../../fixtures/workingGroupsModule'
+import {
+  ApplyOnOpeningHappyCaseFixture,
+  SudoCreateLeadOpeningFixture,
+  SudoFillLeadOpening,
+} from '../../fixtures/workingGroupsModule'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
@@ -42,10 +46,15 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
   )
   const applicationRunner = new FixtureRunner(applyOnOpeningFixture)
   await applicationRunner.run()
+  const applicationId = applyOnOpeningFixture.getCreatedApplicationId()
 
-  // Run query node checks once the flow is done
+  // Run query node checks once this part of the flow is done
   await openingRunner.runQueryNodeChecks()
   await applicationRunner.runQueryNodeChecks()
+
+  // Fill opening
+  const fillOpeningFixture = new SudoFillLeadOpening(api, query, 'storageWorkingGroup', openingId, [applicationId])
+  await new FixtureRunner(fillOpeningFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

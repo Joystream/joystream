@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32 } from '@polkadot/types'
+import { u32, BTreeMap } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { AccountId, MemberId } from '@joystream/types/common'
@@ -23,8 +23,9 @@ import {
   WorkingGroupsEventName,
   WorkingGroupModuleName,
   AppliedOnOpeningEventDetails,
+  OpeningFilledEventDetails,
 } from './types'
-import { ApplicationId, Opening, OpeningId } from '@joystream/types/working-group'
+import { ApplicationId, Opening, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@joystream/types/working-group'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -196,6 +197,15 @@ export class Api {
     return accountData.data.free
   }
 
+  public async getStakedBalance(address: string | AccountId, lockId?: string): Promise<BN> {
+    const locks = await this.api.query.balances.locks(address)
+    if (lockId) {
+      const foundLock = locks.find((l) => l.id.eq(lockId))
+      return foundLock ? foundLock.amount : new BN(0)
+    }
+    return locks.reduce((sum, lock) => sum.add(lock.amount), new BN(0))
+  }
+
   public async transferBalance({
     from,
     to,
@@ -318,7 +328,19 @@ export class Api {
     const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'AppliedOnOpening')
     return {
       ...details,
+      params: details.event.data[0] as ApplyOnOpeningParameters,
       applicationId: details.event.data[1] as ApplicationId,
+    }
+  }
+
+  public async retrieveOpeningFilledEventDetails(
+    result: ISubmittableResult,
+    moduleName: WorkingGroupModuleName
+  ): Promise<OpeningFilledEventDetails> {
+    const details = await this.retrieveWorkingGroupsEventDetails(result, moduleName, 'OpeningFilled')
+    return {
+      ...details,
+      applicationIdToWorkerIdMap: details.event.data[1] as BTreeMap<ApplicationId, WorkerId>,
     }
   }
 

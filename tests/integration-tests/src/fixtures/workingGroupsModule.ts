@@ -9,16 +9,27 @@ import {
   AppliedOnOpeningEvent,
   EventType,
   OpeningAddedEvent,
+  OpeningFilledEvent,
   WorkingGroupApplication,
   WorkingGroupOpening,
   WorkingGroupOpeningType,
+  Worker,
 } from '../QueryNodeApiSchema.generated'
 import { ApplicationMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
-import { WorkingGroupModuleName, MemberContext, AppliedOnOpeningEventDetails, OpeningAddedEventDetails } from '../types'
-import { OpeningId } from '@joystream/types/working-group'
+import {
+  WorkingGroupModuleName,
+  MemberContext,
+  AppliedOnOpeningEventDetails,
+  OpeningAddedEventDetails,
+  OpeningFilledEventDetails,
+  lockIdByWorkingGroup,
+} from '../types'
+import { Application, ApplicationId, Opening, OpeningId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
 import _ from 'lodash'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { JoyBTreeSet } from '@joystream/types/common'
+import { registry } from '@joystream/types'
 
 // TODO: Fetch from runtime when possible!
 const MIN_APPLICATION_STAKE = new BN(2000)
@@ -44,7 +55,6 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
   private group: WorkingGroupModuleName
   private debug: Debugger.Debugger
   private openingParams: OpeningParams
-  private createdOpeningId?: OpeningId
 
   private event?: OpeningAddedEventDetails
   private tx?: SubmittableExtrinsic<'promise'>
@@ -89,10 +99,10 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
   }
 
   public getCreatedOpeningId(): OpeningId {
-    if (!this.createdOpeningId) {
+    if (!this.event) {
       throw new Error('Trying to get created opening id before it was created!')
     }
-    return this.createdOpeningId
+    return this.event.openingId
   }
 
   public constructor(
@@ -170,8 +180,6 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     const result = await this.api.signAndSend(this.tx, sudoKey)
     this.event = await this.api.retrieveOpeningAddedEventDetails(result, this.group)
 
-    this.createdOpeningId = this.event.openingId
-
     this.debug(`Lead opening created (id: ${this.event.openingId.toString()})`)
   }
 
@@ -202,6 +210,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
   private openingId: OpeningId
   private openingMetadata: OpeningMetadata.AsObject
 
+  private opening?: Opening
   private event?: AppliedOnOpeningEventDetails
   private tx?: SubmittableExtrinsic<'promise'>
 
@@ -222,6 +231,13 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     this.stakingAccount = stakingAccount
     this.openingId = openingId
     this.openingMetadata = openingMetadata
+  }
+
+  public getCreatedApplicationId(): ApplicationId {
+    if (!this.event) {
+      throw new Error('Trying to get created application id before the application was created!')
+    }
+    return this.event.applicationId
   }
 
   private getMetadata(): ApplicationMetadata {
@@ -247,6 +263,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     assert.equal(qApplication.rewardAccount, this.applicant.account)
     assert.equal(qApplication.stakingAccount, this.stakingAccount)
     assert.equal(qApplication.status.__typename, 'ApplicationStatusPending')
+    assert.equal(qApplication.stake, eventDetails.params.stake_parameters.stake)
 
     const applicationMetadata = this.getMetadata()
     assert.deepEqual(
@@ -274,8 +291,8 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
-    const opening = await this.api.getOpening(this.group, this.openingId)
-    const stake = opening.stake_policy.stake_amount
+    this.opening = await this.api.getOpening(this.group, this.openingId)
+    const stake = this.opening.stake_policy.stake_amount
     const stakingAccountBalance = await this.api.getBalance(this.stakingAccount)
     assert.isAbove(stakingAccountBalance.toNumber(), stake.toNumber())
 
@@ -313,5 +330,145 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
       eventDetails.indexInBlock
     )
     this.assertQueriedOpeningAddedEventIsValid(eventDetails, tx.hash.toString(), qAppliedOnOpeningEvent)
+  }
+}
+
+export class SudoFillLeadOpening extends BaseFixture {
+  private query: QueryNodeApi
+  private group: WorkingGroupModuleName
+  private debug: Debugger.Debugger
+  private openingId: OpeningId
+  private acceptedApplicationIds: ApplicationId[]
+
+  private acceptedApplications?: Application[]
+  private applicationStakes?: BN[]
+  private tx?: SubmittableExtrinsic<'promise'>
+  private event?: OpeningFilledEventDetails
+
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    openingId: OpeningId,
+    acceptedApplicationIds: ApplicationId[]
+  ) {
+    super(api)
+    this.query = query
+    this.debug = Debugger('fixture:SudoFillLeadOpening')
+    this.group = group
+    this.openingId = openingId
+    this.acceptedApplicationIds = acceptedApplicationIds
+  }
+
+  async execute() {
+    // Query the applications data
+    this.acceptedApplications = await this.api.query[this.group].applicationById.multi(this.acceptedApplicationIds)
+    this.applicationStakes = await Promise.all(
+      this.acceptedApplications.map((a) =>
+        this.api.getStakedBalance(a.staking_account_id, lockIdByWorkingGroup[this.group])
+      )
+    )
+    // Fill the opening
+    this.tx = this.api.tx.sudo.sudo(
+      this.api.tx[this.group].fillOpening(
+        this.openingId,
+        new (JoyBTreeSet(ApplicationId))(registry, this.acceptedApplicationIds)
+      )
+    )
+    const sudoKey = await this.api.query.sudo.key()
+    const result = await this.api.signAndSend(this.tx, sudoKey)
+    this.event = await this.api.retrieveOpeningFilledEventDetails(result, this.group)
+  }
+
+  private assertQueriedOpeningFilledEventIsValid(
+    eventDetails: OpeningFilledEventDetails,
+    txHash: string,
+    qEvent?: OpeningFilledEvent
+  ) {
+    if (!qEvent) {
+      throw new Error('Query node: OpeningFilledEvent not found')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.OpeningFilled)
+    assert.equal(qEvent.opening.id, this.openingId.toString())
+    assert.equal(qEvent.group.name, this.group)
+    this.acceptedApplicationIds.forEach((acceptedApplId, i) => {
+      // Cannot use "applicationIdToWorkerIdMap.get" here,
+      // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
+      const [, workerId] =
+        Array.from(eventDetails.applicationIdToWorkerIdMap.entries()).find(([applicationId]) =>
+          applicationId.eq(acceptedApplId)
+        ) || []
+      if (!workerId) {
+        throw new Error(`WorkerId for application id ${acceptedApplId.toString()} not found in OpeningFilled event!`)
+      }
+      const qWorker = qEvent.workersHired.find((w) => w.id === workerId.toString())
+      if (!qWorker) {
+        throw new Error(`Query node: Worker not found in OpeningFilled.hiredWorkers (id: ${workerId.toString()})`)
+      }
+      this.assertHiredWorkerIsValid(
+        eventDetails,
+        this.acceptedApplicationIds[i],
+        this.acceptedApplications![i],
+        this.applicationStakes![i],
+        qWorker
+      )
+    })
+  }
+
+  private assertHiredWorkerIsValid(
+    eventDetails: OpeningFilledEventDetails,
+    applicationId: ApplicationId,
+    application: Application,
+    applicationStake: BN,
+    qWorker: Worker
+  ) {
+    assert.equal(qWorker.group.name, this.group)
+    assert.equal(qWorker.membership.id, application.member_id.toString())
+    assert.equal(qWorker.roleAccount, application.role_account_id.toString())
+    assert.equal(qWorker.rewardAccount, application.reward_account_id.toString())
+    assert.equal(qWorker.stakeAccount, application.staking_account_id.toString())
+    assert.equal(qWorker.status.__typename, 'WorkerStatusActive')
+    assert.equal(qWorker.isLead, true)
+    assert.equal(qWorker.stake, applicationStake.toString())
+    assert.equal(qWorker.hiredAtBlock, eventDetails.blockNumber)
+    assert.equal(qWorker.application.id, applicationId.toString())
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const eventDetails = this.event!
+    const tx = this.tx!
+    // Query the event and check event + hiredWorkers
+    await this.query.tryQueryWithTimeout(
+      () => this.query.getOpeningFilledEvent(eventDetails.blockNumber, eventDetails.indexInBlock),
+      (event) => this.assertQueriedOpeningFilledEventIsValid(eventDetails, tx.hash.toString(), event)
+    )
+
+    // Check opening status
+    const {
+      data: { workingGroupOpeningByUniqueInput: qOpening },
+    } = await this.query.getOpeningById(this.openingId)
+    if (!qOpening) {
+      throw new Error(`Query node: Opening ${this.openingId.toString()} not found!`)
+    }
+    assert.equal(qOpening.status.__typename, 'OpeningStatusFilled')
+
+    // Check application statuses
+    const acceptedApplications = this.acceptedApplicationIds.map((id) => {
+      const application = qOpening.applications.find((a) => a.id === id.toString())
+      if (!application) {
+        throw new Error(`Application not found by id ${id.toString()} in opening ${qOpening.id}`)
+      }
+      assert.equal(application.status.__typename, 'ApplicationStatusAccepted')
+      return application
+    })
+
+    qOpening.applications
+      .filter((a) => !acceptedApplications.some((acceptedA) => acceptedA.id === a.id))
+      .forEach((a) => assert.equal(a.status.__typename, 'ApplicationStatusRejected'))
+
+    // TODO: LeadSet event
+    // TODO: check WorkingGroup.lead
   }
 }
