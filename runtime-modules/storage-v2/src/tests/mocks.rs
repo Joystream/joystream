@@ -50,7 +50,7 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxStorageBucketNumber: u64 = 1;
+    pub const MaxStorageBucketNumber: u64 = 2;
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
 }
 

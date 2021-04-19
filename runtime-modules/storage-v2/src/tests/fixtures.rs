@@ -299,3 +299,59 @@ pub fn create_data_object_candidates(
 pub fn create_single_data_object() -> Vec<DataObjectCreationParameters> {
     create_data_object_candidates(1, 1)
 }
+
+pub struct SetStorageOperatorMetadataFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    storage_bucket_id: u64,
+    metadata: Vec<u8>,
+}
+
+impl SetStorageOperatorMetadataFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            worker_id: DEFAULT_WORKER_ID,
+            storage_bucket_id: Default::default(),
+            metadata: Vec::new(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
+        Self {
+            storage_bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
+        Self { metadata, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_metadata = Storage::storage_operator_metadata(self.worker_id);
+        let actual_result = Storage::set_storage_operator_metadata(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.storage_bucket_id,
+            self.metadata.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+        let new_metadata = Storage::storage_operator_metadata(self.worker_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(new_metadata, self.metadata);
+        } else {
+            assert_eq!(old_metadata, new_metadata);
+        }
+    }
+}

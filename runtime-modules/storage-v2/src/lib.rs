@@ -315,6 +315,11 @@ decl_storage! {
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
+
+        // TODO: consider moving it inside the storage bucket
+        /// Storage operator metadata.
+        pub StorageOperatorMetadata get (fn storage_operator_metadata): map hasher(blake2_128_concat)
+            WorkerId<T> => Vec<u8>;
     }
 }
 
@@ -353,14 +358,22 @@ decl_event! {
         /// - data objects IDs
         /// - initial uploading parameters
         DataObjectdUploaded(Vec<DataObjectId>, UploadParameters),
+
+        /// Emits on setting the storage operator metadata.
+        /// Params
+        /// - storage bucket ID
+        /// - invited worker ID
+        /// - metadata
+        StorageOperatorMetadataSet(StorageBucketId, WorkerId, Vec<u8>),
+
     }
 }
 
 decl_error! {
     /// Storage module predefined errors
     pub enum Error for Module<T: Trait>{
-        /// Max storage number limit exceeded.
-        MaxStorageNumberLimitExceeded,
+        /// Max storage bucket number limit exceeded.
+        MaxStorageBucketNumberLimitExceeded,
 
         /// Empty "data object creation" collection.
         NoObjectsOnUpload,
@@ -391,6 +404,9 @@ decl_error! {
 
         /// Upload data error: data objects per bag limit exceeded.
         DataObjectsPerBagLimitExceeded,
+
+        /// Invalid storage provider for bucket.
+        InvalidStorageProvider,
     }
 }
 
@@ -462,7 +478,7 @@ decl_module! {
             let buckets_number = Self::storage_buckets_number();
             ensure!(
                 buckets_number < T::MaxStorageBucketNumber::get(),
-                Error::<T>::MaxStorageNumberLimitExceeded
+                Error::<T>::MaxStorageBucketNumberLimitExceeded
             );
 
             let operator_status = invite_worker
@@ -558,14 +574,31 @@ decl_module! {
             );
         }
 
-        //TODO: add comment
+        /// Sets storage operator metadata (eg.: storage node URL).
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_storage_operator_metadata(
-            _origin,
-            _storage_bucket_id: T::StorageBucketId,
-            _metadata: Vec<u8>
+            origin,
+            worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId,
+            metadata: Vec<u8>
         ) {
-            //TODO implement
+            T::ensure_worker_origin(origin, worker_id)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            //TODO: validate metadata?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageOperatorMetadata::<T>>::insert(worker_id, metadata.clone());
+
+            Self::deposit_event(
+                RawEvent::StorageOperatorMetadataSet(storage_bucket_id, worker_id, metadata)
+            );
         }
 
         //TODO: add comment
@@ -650,6 +683,27 @@ impl<T: Trait> Module<T> {
                 ensure!(
                     worker_id == invited_worker_id,
                     Error::<T>::DifferentStorageProviderInvited
+                );
+
+                Ok(())
+            }
+        }
+    }
+
+    // Ensures correct storage provider for the storage bucket.
+    fn ensure_bucket_invitation_accepted(
+        bucket: &StorageBucket<WorkerId<T>>,
+        worker_id: WorkerId<T>,
+    ) -> DispatchResult {
+        match bucket.operator_status {
+            StorageBucketOperatorStatus::Missing => Err(Error::<T>::InvalidStorageProvider.into()),
+            StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
+                Err(Error::<T>::InvalidStorageProvider.into())
+            }
+            StorageBucketOperatorStatus::StorageWorker(invited_worker_id) => {
+                ensure!(
+                    worker_id == invited_worker_id,
+                    Error::<T>::InvalidStorageProvider
                 );
 
                 Ok(())
