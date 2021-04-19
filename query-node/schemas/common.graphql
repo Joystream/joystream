@@ -1,0 +1,67 @@
+enum Network {
+  BABYLON
+  ALEXANDRIA
+  ROME
+  OLYMPIA
+}
+
+enum EventType {
+  # Memberships
+  MembershipBought
+  MemberInvited
+  MemberProfileUpdated
+  MemberAccountsUpdated
+  MemberVerificationStatusUpdated
+  ReferralCutUpdated
+  InvitesTransferred
+  MembershipPriceUpdated
+  InitialInvitationBalanceUpdated
+  LeaderInvitationQuotaUpdated
+  InitialInvitationCountUpdated
+  StakingAccountAddedEvent
+  StakingAccountConfirmed
+  StakingAccountRemoved
+  # Working Groups
+  OpeningAdded
+  AppliedOnOpening
+  OpeningFilled
+  LeaderSet
+  WorkerRoleAccountUpdated
+  LeaderUnset
+  WorkerExited
+  TerminatedWorker
+  TerminatedLeader
+  StakeSlashed
+  StakeDecreased
+  StakeIncreased
+  ApplicationWithdrawn
+  OpeningCanceled
+  BudgetSet
+  WorkerRewardAccountUpdated
+  WorkerRewardAmountUpdated
+  StatusTextChanged
+  BudgetSpending
+}
+
+type Event @entity {
+  "{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of a block in which the event was emitted."
+  inBlock: Int!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  "Type of the event"
+  type: EventType!
+}
+
+# FIXME: Warthog bug currently prevents it from beeing implemented
+# interface IEvent @entity {
+#   "Generic event data"
+#   event: Event!
+# }

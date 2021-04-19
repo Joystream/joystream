@@ -1,0 +1,174 @@
+type MembershipBoughtEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "New membership created."
+  newMember: Membership!
+
+  "New member root account in SS58 encoding."
+  rootAccount: String!
+
+  "New member controller in SS58 encoding."
+  controllerAccount: String!
+
+  "New member handle."
+  handle: String!
+
+  "New member metadata"
+  metadata: MemberMetadata!
+
+  "Referrer member."
+  referrer: Membership
+}
+
+type MemberInvitedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Inviting member."
+  invitingMember: Membership!
+
+  "New membership created."
+  newMember: Membership!
+
+  "New member root account in SS58 encoding."
+  rootAccount: String!
+
+  "New member controller in SS58 encoding."
+  controllerAccount: String!
+
+  "New member handle."
+  handle: String!
+
+  "New member metadata"
+  metadata: MemberMetadata!
+}
+
+type MemberProfileUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership being updated."
+  member: Membership!
+
+  "New member handle. Null means no new value was provided."
+  newHandle: String
+
+  "New member metadata. (empty values inside metadata mean no new value was provided)"
+  newMetadata: MemberMetadata!
+}
+
+type MemberAccountsUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership in question."
+  member: Membership!
+
+  "New member root account in SS58 encoding. Null means no new value was provided."
+  newRootAccount: String
+
+  "New member controller in SS58 encoding. Null means no new value was provided."
+  newControllerAccount: String
+}
+
+type MemberVerificationStatusUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership in question."
+  member: Membership!
+
+  "Worker updating status"
+  worker: Worker!
+
+  "New status."
+  isVerified: Boolean!
+}
+
+type ReferralCutUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "New cut value."
+  newValue: Int!
+}
+
+type InvitesTransferredEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership sending invites."
+  sourceMember: Membership!
+
+  "Membership receiving invites."
+  targetMember: Membership!
+
+  "Number of invites transferred."
+  numberOfInvites: Int!
+}
+
+type MembershipPriceUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The new membership price."
+  newPrice: BigInt!
+}
+
+type InitialInvitationBalanceUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "New initial invitation balance."
+  newInitialBalance: BigInt!
+}
+
+type LeaderInvitationQuotaUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "New quota."
+  newInvitationQuota: Int!
+}
+
+type InitialInvitationCountUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "New initial invitation count for members."
+  newInitialInvitationCount: Int!
+}
+
+type StakingAccountAddedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership in question."
+  member: Membership!
+
+  "New staking account in SS58 encoding."
+  account: String!
+}
+
+type StakingAccountConfirmedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership in question."
+  member: Membership!
+
+  "New staking account in SS58 encoding."
+  account: String!
+}
+
+type StakingAccountRemovedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Membership in question."
+  member: Membership!
+
+  "New staking account in SS58 encoding."
+  account: String!
+}

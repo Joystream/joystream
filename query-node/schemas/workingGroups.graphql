@@ -1,0 +1,282 @@
+type WorkerStatusActive @variant {
+  # No additional information needed
+  _phantom: Int
+}
+
+type WorkerStatusLeft @variant {
+  # TODO: Variant relationships
+  # TODO: This is not yet emitted by runtime
+  workerLeftEventId: ID!
+
+  # Set when the unstaking period is finished
+  workerExitedEventId: ID
+}
+
+type WorkerStatusTerminated @variant {
+  # TODO: Variant relationship
+  terminatedWorkerEventId: ID!
+
+  # Set when the unstaking period is finished
+  workerExitedEventId: ID
+}
+
+union WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
+
+# Working Groups
+type Worker @entity {
+  "The group that the worker belongs to"
+  group: WorkingGroup!
+
+  "Worker membership"
+  membership: Membership!
+
+  "Worker's role account"
+  roleAccount: String!
+
+  "Worker's reward account"
+  rewardAccount: String!
+
+  "Worker's staking account"
+  stakeAccount: String!
+
+  "Current worker status"
+  status: WorkerStatus!
+
+  "Whether the worker is also the working group lead"
+  isLead: Boolean!
+
+  "Current role stake (in JOY)"
+  stake: BigInt!
+
+  "All related reward payouts"
+  payouts: [WorkerPayoutEvent!] @derivedFrom(field: "worker")
+
+  # TODO: should we use createdAt for consistency / doesn't Hydra actually require us to override this field?
+  "Blocknumber of the block the worker was hired at"
+  hiredAtBlock: Int!
+
+  "Time the worker was hired at"
+  hiredAtTime: DateTime!
+
+  "The event that caused the worker to be hired"
+  entry: OpeningFilledEvent!
+
+  "Related worker entry application"
+  application: WorkingGroupApplication!
+
+  "Worker's storage data"
+  storage: String
+}
+
+type WorkingGroupMetadata @entity {
+  "Status name"
+  name: String!
+
+  "Status message"
+  message: String
+
+  "Working group about text"
+  about: String
+
+  "Working group description text"
+  description: String
+
+  "Blocknumber of the block at which status was set"
+  setAtBlock: Int!
+
+  "The time at which status was set"
+  setAtTime: DateTime!
+}
+
+type WorkingGroup @entity {
+  "Working group runtime id"
+  id: ID!
+
+  "Working group name"
+  name: String!
+
+  "Working group current metadata"
+  status: WorkingGroupMetadata
+
+  "Current working group leader"
+  leader: Worker
+
+  "Workers that currently belong to the group or belonged to the group in the past"
+  workers: [Worker!] @derivedFrom(field: "group")
+
+  "All openings related to this group"
+  openings: [WorkingGroupOpening!] @derivedFrom(field: "group")
+
+  "Current working group budget (JOY)"
+  budget: BigInt!
+
+  # ...
+}
+
+type OpeningStatusCancelled @variant {
+  # TODO: Variant relationships
+  openingCancelledEventId: ID!
+}
+
+type OpeningStatusOpen @variant {
+  # No additional information needed
+  _phantom: Int
+}
+
+type OpeningStatusFilled @variant {
+  # TODO: Variant relationships
+  openingFilledEventId: ID!
+}
+
+union WorkingGroupOpeningStatus = OpeningStatusOpen | OpeningStatusFilled | OpeningStatusCancelled
+
+enum WorkingGroupOpeningType {
+  REGULAR
+  LEADER
+}
+
+type WorkingGroupOpeningMetadata @entity {
+  "Opening short description"
+  shortDescription: String!
+
+  "Opening description (md-formatted)"
+  description: String!
+
+  "Expected max. number of applicants that will be hired"
+  hiringLimit: Int!
+
+  "Expected time when the opening will close"
+  expectedEnding: DateTime!
+
+  "Md-formatted text explaining the application process"
+  applicationDetails: String!
+
+  "List of questions that should be answered during application"
+  applicationFormQuestions: [ApplicationFormQuestion!]! @derivedFrom(field: "openingMetadata")
+}
+
+type WorkingGroupOpening @entity {
+  "Opening runtime id"
+  id: ID!
+
+  "Related working group"
+  group: WorkingGroup!
+
+  "List of opening applications"
+  applications: [WorkingGroupApplication!] @derivedFrom(field: "opening")
+
+  "Type of the opening (Leader/Regular)"
+  type: WorkingGroupOpeningType!
+
+  "Current opening status"
+  status: WorkingGroupOpeningStatus!
+
+  "Opening metadata"
+  metadata: WorkingGroupOpeningMetadata!
+
+  "Role stake amount"
+  stakeAmount: BigInt!
+
+  "Role stake unstaking period in blocks"
+  unstakingPeriod: Int!
+
+  "Initial workers' reward per block"
+  rewardPerBlock: BigInt!
+
+  "Blocknumber of opening creation block"
+  createdAtBlock: Int!
+
+  "Time of opening creation"
+  createdAt: DateTime!
+}
+
+type ApplicationStatusPending @variant {
+  # No additional information needed
+  _phantom: Int
+}
+
+type ApplicationStatusAccepted @variant {
+  # TODO: Variant relationships
+  openingFilledEventId: ID!
+}
+
+type ApplicationStatusRejected @variant {
+  # TODO: Variant relationships
+  openingFilledEventId: ID!
+}
+
+type ApplicationStatusWithdrawn @variant {
+  # TODO: Variant relationships
+  applicationWithdrawnEventId: ID!
+}
+
+union WorkingGroupApplicationStatus =
+    ApplicationStatusPending
+  | ApplicationStatusAccepted
+  | ApplicationStatusRejected
+  | ApplicationStatusWithdrawn
+
+type WorkingGroupApplication @entity {
+  "Application runtime id"
+  id: ID!
+
+  "Related working group opening"
+  opening: WorkingGroupOpening!
+
+  "Applicant's membership"
+  applicant: Membership!
+
+  "Application stake"
+  stake: BigInt!
+
+  "Applicant's initial role account"
+  roleAccount: String!
+
+  "Applicant's initial reward account"
+  rewardAccount: String!
+
+  "Applicant's initial staking account"
+  stakingAccount: String!
+
+  "Answers to application form questions"
+  answers: [ApplicationFormQuestionAnswer!] @derivedFrom(field: "application")
+
+  "Current application status"
+  status: WorkingGroupApplicationStatus!
+
+  "Blocknumber of application creation block"
+  createdAtBlock: Int!
+
+  "Time of application creation"
+  createdAt: DateTime!
+}
+
+type ApplicationFormQuestionAnswer @entity {
+  "Related application"
+  application: WorkingGroupApplication!
+
+  "The question beeing answered"
+  question: ApplicationFormQuestion!
+
+  "Applicant's answer"
+  answer: String!
+}
+
+enum ApplicationFormQuestionType {
+  TEXT
+  TEXTAREA
+}
+
+type ApplicationFormQuestion @entity {
+  "Related opening metadata"
+  openingMetadata: WorkingGroupOpeningMetadata!
+
+  "The question itself"
+  question: String!
+
+  "Type of the question (UI answer input type)"
+  type: ApplicationFormQuestionType!
+
+  "Index of the question"
+  index: Int!
+}

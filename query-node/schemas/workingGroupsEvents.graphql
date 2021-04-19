@@ -1,0 +1,280 @@
+type OpeningAddedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related opening"
+  opening: WorkingGroupOpening!
+
+  # Other opening data like: metadata, type, staking policy, reward etc. is immutable, so can be read directly from Opening entity
+}
+
+type AppliedOnOpeningEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related opening"
+  opening: WorkingGroupOpening!
+
+  "The application that was created"
+  application: WorkingGroupApplication!
+
+  # Same as with opening - application parameters are immutable and can be fetched from Application entity
+}
+
+type OpeningFilledEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related opening"
+  opening: WorkingGroupOpening!
+
+  "Workers that have been hired as a result of filling the opening"
+  workersHired: [Worker!] @derivedFrom(field: "entry")
+}
+
+type LeaderSetEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related Lead worker"
+  worker: Worker!
+}
+
+type WorkerRoleAccountUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "New role account"
+  newRoleAccount: String!
+}
+
+type LeaderUnsetEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+}
+
+type WorkerExitedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+}
+
+type TerminatedWorkerEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "Slash amount (if any)"
+  penalty: BigInt
+
+  "Optional rationale"
+  rationale: String
+}
+
+type TerminatedLeaderEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "Slash amount (if any)"
+  penalty: BigInt
+
+  "Optional rationale"
+  rationale: String
+}
+
+type StakeSlashedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "Balance that was requested to be slashed"
+  requestedAmount: BigInt!
+
+  "Balance that was actually slashed"
+  slashedAmount: BigInt!
+
+  "Optional rationale"
+  rationale: String
+}
+
+type StakeDecreasedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "The amount of JOY the stake was decreased by"
+  amount: BigInt!
+}
+
+type StakeIncreasedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "The amount of JOY the stake was increased by"
+  amount: BigInt!
+}
+
+type ApplicationWithdrawnEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related application"
+  application: WorkingGroupApplication!
+}
+
+type OpeningCanceledEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related opening"
+  opening: WorkingGroupOpening!
+}
+
+type BudgetSetEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "New working group budget"
+  newBudget: BigInt!
+}
+
+type WorkerRewardAccountUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "New reward account"
+  newRewardAccount: String!
+}
+
+type WorkerRewardAmountUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "New worker reward per block"
+  newRewardPerBlock: BigInt!
+}
+
+# TODO: Should we rename the event/extrinsic in the runtime?
+type StatusTextChangedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "New working group metadata"
+  metadata: WorkingGroupMetadata!
+}
+
+type BudgetSpendingEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Reciever account address"
+  reciever: String!
+
+  "Amount beeing spent"
+  amount: BigInt!
+
+  "Optional rationale"
+  rationale: String
+}
+
+enum PayoutType {
+  "Standard reward payout"
+  STANDARD_REWARD
+  "Return of the previously missed reward"
+  RETURN_MISSED
+}
+
+# TODO: This will be either based on the actual runtime event or be just a custom query-node event generated of preBlock/postBlock
+type WorkerPayoutEvent @entity {
+  "Type of the worker payout"
+  type: PayoutType
+
+  "Related worker"
+  worker: Worker!
+
+  "Amount recieved"
+  recieved: BigInt!
+
+  "Amount missed (due to, for example, empty working group budget)"
+  missed: BigInt!
+}

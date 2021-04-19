@@ -1,0 +1,90 @@
+enum MembershipEntryMethod {
+  PAID
+  INVITED
+  GENESIS
+}
+
+type MemberMetadata @entity {
+  "Member's name"
+  name: String
+
+  "Avatar data object"
+  avatar: DataObject
+
+  "Short text chosen by member to share information about themselves"
+  about: String
+}
+
+"Stored information about a registered user"
+type Membership @entity {
+  "MemberId: runtime identifier for a user"
+  id: ID!
+
+  "The unique handle chosen by member"
+  handle: String! @unique @fulltext(query: "membersByHandle")
+
+  "Member's metadata"
+  metadata: MemberMetadata!
+
+  "Member's controller account id"
+  controllerAccount: String!
+
+  "Member's root account id"
+  rootAccount: String!
+
+  "Block number when member was registered"
+  registeredAtBlock: Int!
+
+  "Timestamp when member was registered"
+  registeredAtTime: DateTime!
+
+  "How the member was registered"
+  entry: MembershipEntryMethod!
+
+  "Whether member has been verified by membership working group."
+  isVerified: Boolean!
+
+  "Staking accounts bounded to membership."
+  boundAccounts: [String!]
+
+  "Current count of invites left to send."
+  inviteCount: Int!
+
+  "All members invited by this member."
+  invitees: [Membership!] @derivedFrom(field: "invitedBy")
+
+  "A member that invited this member (if any)"
+  invitedBy: Membership
+
+  "All members referred by this member"
+  referredMembers: [Membership!] @derivedFrom(field: "referredBy")
+
+  "A member that referred this member (if any)"
+  referredBy: Membership
+
+  "Whether member is founding member."
+  isFoundingMember: Boolean!
+
+  "Member's working group roles (current and past)"
+  roles: [Worker!] @derivedFrom(field: "membership")
+}
+
+type MembershipSystemSnapshot @entity {
+  "Block number of the snapshot block"
+  snapshotBlock: Int!
+
+  "Time of the snapshot (based on block timestamp)"
+  snapshotTime: DateTime!
+
+  "Initial invitation count of a new member."
+  defaultInviteCount: Int!
+
+  "Current price to buy a membership."
+  membershipPrice: BigInt!
+
+  "Percentage of tokens diverted to invitor."
+  referralCut: Int!
+
+  "The initial, locked, balance credited to controller account of invitee."
+  invitedInitialBalance: BigInt!
+}
