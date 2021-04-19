@@ -31,13 +31,11 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     if (rewardAccount === undefined) {
       // Reward account remains unchanged
       return null
-    }
-    else if (rewardAccount === null) {
+    } else if (rewardAccount === null) {
       // Reward account changed to empty
       // FIXME: There seems to be no way to encode it currently
       return this.createType('Option<AccountId>', null)
-    }
-    else {
+    } else {
       // Reward account set to new account
       return rewardAccount
     }
