@@ -7,7 +7,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    ModuleId, Perbill,
 };
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -52,6 +52,8 @@ impl balances::Trait for Test {
 parameter_types! {
     pub const MaxStorageBucketNumber: u64 = 2;
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const DataObjectDeletionPrize: u64 = 10;
+    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
 }
 
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -63,6 +65,8 @@ impl crate::Trait for Test {
     type StorageBucketId = u64;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
+    type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type ModuleId = StorageModuleId;
     type MemberOriginValidator = ();
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {

@@ -9,18 +9,20 @@ use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
 
 use crate::{
-    BagId, DataObject, DataObjectCreationParameters, Error, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, UpdateStorageBucketForStaticBagsParams, UploadParameters, Voucher,
+    BagId, DataObject, DataObjectCreationParameters, Error, ModuleAccount, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, StorageTreasury, UpdateStorageBucketForStaticBagsParams,
+    UploadParameters, Voucher,
 };
 
 use mocks::{
-    build_test_externalities, MaxNumberOfDataObjectsPerBag, Storage, Test,
-    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
+    build_test_externalities, Balances, DataObjectDeletionPrize, MaxNumberOfDataObjectsPerBag,
+    Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+    WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::{
-    create_data_object_candidates, create_single_data_object, run_to_block,
-    AcceptStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
+    create_data_object_candidates, create_single_data_object, increase_account_balance,
+    run_to_block, AcceptStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
     SetStorageOperatorMetadataFixture, UpdateStorageBucketForStaticBagsFixture, UploadFixture,
 };
 
@@ -290,6 +292,9 @@ fn upload_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
@@ -319,6 +324,16 @@ fn upload_succeeded() {
             )]
         );
 
+        // check balances
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance - DataObjectDeletionPrize::get()
+        );
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            DataObjectDeletionPrize::get()
+        );
+
         EventFixture::assert_last_crate_event(RawEvent::DataObjectdUploaded(
             vec![data_object_id],
             upload_params,
@@ -329,6 +344,8 @@ fn upload_succeeded() {
 #[test]
 fn upload_succeeded_with_non_empty_bag() {
     build_test_externalities().execute_with(|| {
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, 1000);
+
         let upload_params1 = UploadParameters::<Test> {
             bag_id: BagId::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
@@ -452,6 +469,22 @@ fn upload_fails_with_max_data_object_size_exceeded() {
         UploadFixture::default()
             .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::DataObjectsPerBagLimitExceeded.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_insufficient_balance_for_deletion_prize() {
+    build_test_externalities().execute_with(|| {
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     });
 }
 

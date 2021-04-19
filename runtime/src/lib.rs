@@ -49,7 +49,7 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -676,6 +676,8 @@ parameter_types! {
 parameter_types! {
     pub const MaxStorageBucketNumber: u64 = 20; //TODO: adjust value
     pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
+    pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
+    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
 }
 
 impl storage_v2::Trait for Runtime {
@@ -685,6 +687,8 @@ impl storage_v2::Trait for Runtime {
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
+    type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type ModuleId = StorageModuleId;
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)

@@ -24,7 +24,6 @@ pub fn run_to_block(n: u64) {
     }
 }
 
-#[allow(dead_code)]
 pub fn increase_account_balance(account_id: &u64, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }

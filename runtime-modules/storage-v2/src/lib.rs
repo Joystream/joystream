@@ -27,17 +27,18 @@ mod benchmarking;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::Get;
+use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_arithmetic::traits::One;
-use sp_runtime::traits::{MaybeSerialize, Member};
-use sp_runtime::SaturatedConversion;
+use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
+use sp_runtime::{ModuleId, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
+use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
@@ -73,6 +74,12 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Defines max number of data objects per bag.
     type MaxNumberOfDataObjectsPerBag: Get<u64>; //TODO: adjust value
 
+    /// Defines a prize for a data object deletion.
+    type DataObjectDeletionPrize: Get<BalanceOf<Self>>; //TODO: adjust value
+
+    /// The module id, used for deriving its sovereign account ID.
+    type ModuleId: Get<ModuleId>;
+
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
@@ -84,6 +91,63 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// TODO: Refactor after merging with the Olympia release.
     fn ensure_worker_origin(origin: Self::Origin, worker_id: WorkerId<Self>) -> DispatchResult;
 }
+
+/// Operations with local pallet account.
+pub trait ModuleAccount<T: balances::Trait> {
+    /// The module id, used for deriving its sovereign account ID.
+    type ModuleId: Get<ModuleId>;
+
+    /// The account ID of the module account.
+    fn module_account_id() -> T::AccountId {
+        Self::ModuleId::get().into_sub_account(Vec::<u8>::new())
+    }
+
+    /// Transfer tokens from the module account to the destination account (spends from
+    /// module account).
+    fn transfer_from_module_account(
+        dest_account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &Self::module_account_id(),
+            dest_account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    /// Transfer tokens from the module account to the destination account (fills module account).
+    fn transfer_to_module_account(
+        src_account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            src_account_id,
+            &Self::module_account_id(),
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+}
+
+/// Implementation of the StakingHandler.
+pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
+    /// Phantom marker for the trait.
+    trait_marker: PhantomData<T>,
+
+    /// Phantom marker for the module id type.
+    module_id_marker: PhantomData<ModId>,
+}
+
+impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
+    type ModuleId = ModId;
+}
+
+/// Local module account handler.
+pub type StorageTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
+
+// Alias for the Substrate balances pallet.
+type Balances<T> = balances::Module<T>;
 
 /// Alias for the member id.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
@@ -283,16 +347,19 @@ pub struct AcceptPendingDataObjectsParams<DataObjectId: Ord> {
     pub bagged_data_objects: BTreeSet<BaggedDataObject<DataObjectId>>,
 }
 
-// Helper-struct for the data object uploading
+// Helper-struct for the data object uploading.
 struct DataObjectCandidates<T: Trait> {
-    // next data object ID to be saved in the storage
+    // next data object ID to be saved in the storage.
     next_data_object_id: T::DataObjectId,
 
-    // 'ID-data object' map
+    // 'ID-data object' map.
     data_objects_map: BTreeMap<T::DataObjectId, DataObject<BalanceOf<T>>>,
 
-    // new data object ID list
+    // new data object ID list.
     data_object_ids: Vec<T::DataObjectId>,
+
+    // total deletion prize for all data objects.
+    total_deletion_prize: BalanceOf<T>,
 }
 
 decl_storage! {
@@ -365,7 +432,6 @@ decl_event! {
         /// - invited worker ID
         /// - metadata
         StorageOperatorMetadataSet(StorageBucketId, WorkerId, Vec<u8>),
-
     }
 }
 
@@ -407,6 +473,9 @@ decl_error! {
 
         /// Invalid storage provider for bucket.
         InvalidStorageProvider,
+
+        /// Insufficient balance for an operation.
+        InsufficientBalance,
     }
 }
 
@@ -419,11 +488,14 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
-        /// Exports const -  max allowed storage bucket number.
+        /// Exports const - max allowed storage bucket number.
         const MaxStorageBucketNumber: u64 = T::MaxStorageBucketNumber::get();
 
-        /// Exports const -  max number of data objects per bag.
+        /// Exports const - max number of data objects per bag.
         const MaxNumberOfDataObjectsPerBag: u64 = T::MaxNumberOfDataObjectsPerBag::get();
+
+        /// Exports const - a prize for a data object deletion.
+        const DataObjectDeletionPrize: BalanceOf<T> = T::DataObjectDeletionPrize::get();
 
         /// Upload new data objects.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -439,8 +511,6 @@ decl_module! {
 
             // TODO: authentication_key
 
-            // TODO: check account for deletion prize for all objects
-
             //
             // == MUTATION SAFE ==
             //
@@ -448,6 +518,11 @@ decl_module! {
              // TODO: remove the deletion prize
 
             let mut data = Self::create_data_objects(params.object_creation_list.clone());
+
+            <StorageTreasury<T>>::transfer_to_module_account(
+                &params.deletion_prize_source_account_id,
+                data.total_deletion_prize
+            )?;
 
             <NextDataObjectId<T>>::put(data.next_data_object_id);
 
@@ -623,8 +698,10 @@ impl<T: Trait> Module<T> {
         let BagId::StaticBag(static_bag_id) = params.bag_id.clone();
         let bag = Self::static_bag(&static_bag_id);
 
+        let new_objects_number = params.object_creation_list.len();
+
         let total_possible_data_objects_number: u64 =
-            (params.object_creation_list.len() + bag.objects.len()).saturated_into();
+            (new_objects_number + bag.objects.len()).saturated_into();
 
         ensure!(
             total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
@@ -650,6 +727,14 @@ impl<T: Trait> Module<T> {
             );
             ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
         }
+
+        let total_deletion_prize: BalanceOf<T> =
+            new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
+
+        ensure!(
+            Balances::<T>::usable_balance(account_id) >= total_deletion_prize,
+            Error::<T>::InsufficientBalance
+        );
 
         Ok(())
     }
@@ -730,6 +815,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Create data objects from the creation data.
     fn create_data_objects(
         object_creation_list: Vec<DataObjectCreationParameters>,
     ) -> DataObjectCandidates<T> {
@@ -751,6 +837,9 @@ impl<T: Trait> Module<T> {
         })
         .take(data_objects.len());
 
+        let total_deletion_prize: BalanceOf<T> =
+            data_objects.len().saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
+
         let data_objects_map = ids.zip(data_objects).collect::<BTreeMap<_, _>>();
         let data_object_ids = data_objects_map.keys().cloned().collect();
 
@@ -758,6 +847,7 @@ impl<T: Trait> Module<T> {
             next_data_object_id,
             data_objects_map,
             data_object_ids,
+            total_deletion_prize,
         }
     }
 }
