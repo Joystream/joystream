@@ -4,6 +4,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 // #![warn(missing_docs)]
 
+// TODO: Add alias for StaticBag
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
 // TODO: add types comments
@@ -354,28 +355,6 @@ decl_module! {
 
         // ===== Storage Lead actions =====
 
-        //TODO: add comment
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_buckets_for_static_bags(
-            origin,
-            params: UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>
-        ) {
-            T::ensure_working_group_leader_origin(origin)?; // TODO: correct authentication?
-
-            ensure!(
-                !params.bags.is_empty(),
-                Error::<T>::UpdateStorageBucketForStaticBagsParamsIsEmpty
-            );
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            //TODO implement state mutation
-
-            Self::deposit_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
-        }
-
         /// Create storage bucket.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_storage_bucket(
@@ -427,27 +406,37 @@ decl_module! {
             );
         }
 
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_buckets_for_static_bags(
+            origin,
+            params: UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>
+        ) {
+            T::ensure_working_group_leader_origin(origin)?; // TODO: correct authentication?
+
+            ensure!(
+                !params.bags.is_empty(),
+                Error::<T>::UpdateStorageBucketForStaticBagsParamsIsEmpty
+            );
+
+            // TODO: validate bucket existence for each bag?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            for (bag_id, buckets) in params.bags.iter() {
+                let mut bag = Self::static_bag(bag_id);
+
+                bag.stored_by = buckets.clone();
+
+                Self::save_static_bag(bag_id, bag);
+            }
+
+            Self::deposit_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
+        }
+
         // ===== Storage Operator actions =====
-
-        //TODO: add comment
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_storage_operator_metadata(
-            _origin,
-            _storage_bucket_id: T::StorageBucketId,
-            _metadata: Vec<u8>
-        ) {
-            //TODO implement
-        }
-
-        //TODO: add comment
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn accept_pending_data_objects(
-            _origin,
-            _worker_id: WorkerId<T>,
-            _objects: AcceptPendingDataObjectsParams<T::DataObjectId>
-        ) {
-            //TODO implement
-        }
 
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -473,6 +462,26 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::StorageBucketInvitationAccepted(storage_bucket_id, worker_id)
             );
+        }
+
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_storage_operator_metadata(
+            _origin,
+            _storage_bucket_id: T::StorageBucketId,
+            _metadata: Vec<u8>
+        ) {
+            //TODO implement
+        }
+
+        //TODO: add comment
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_pending_data_objects(
+            _origin,
+            _worker_id: WorkerId<T>,
+            _objects: AcceptPendingDataObjectsParams<T::DataObjectId>
+        ) {
+            //TODO implement
         }
     }
 }
@@ -523,6 +532,25 @@ impl<T: Trait> Module<T> {
 
                 Ok(())
             }
+        }
+    }
+
+    // Get static bag by its ID from the storage.
+    fn static_bag(
+        bag_id: &StaticBagId,
+    ) -> StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>> {
+        match bag_id {
+            StaticBagId::Council => Self::council_bag(),
+        }
+    }
+
+    // Save static bag to the storage
+    fn save_static_bag(
+        bag_id: &StaticBagId,
+        bag: StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>,
+    ) {
+        match bag_id {
+            StaticBagId::Council => CouncilBag::<T>::put(bag),
         }
     }
 }

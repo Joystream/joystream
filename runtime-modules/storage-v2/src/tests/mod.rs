@@ -237,12 +237,15 @@ fn update_storage_buckets_for_static_bags_succeeded() {
         buckets.insert(bucket_id);
 
         let mut params = UpdateStorageBucketForStaticBagsParams::<u64>::default();
-        params.bags.insert(StaticBagId::Council, buckets);
+        params.bags.insert(StaticBagId::Council, buckets.clone());
 
         UpdateStorageBucketForStaticBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_params(params.clone())
             .call_and_assert(Ok(()));
+
+        let bag = Storage::council_bag();
+        assert_eq!(bag.stored_by, buckets);
 
         EventFixture::assert_last_crate_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
     });
