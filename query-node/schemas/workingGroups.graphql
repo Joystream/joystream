@@ -24,6 +24,12 @@ union WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTermina
 
 # Working Groups
 type Worker @entity {
+  "Worker id ({workingGroupName}-{workerId})"
+  id: ID!
+
+  "WorkerId in specific working group module"
+  runtimeId: Int!
+
   "The group that the worker belongs to"
   group: WorkingGroup!
 
@@ -89,9 +95,6 @@ type WorkingGroupMetadata @entity {
 }
 
 type WorkingGroup @entity {
-  "Working group runtime id"
-  id: ID!
-
   "Working group name"
   name: String!
 
@@ -156,8 +159,11 @@ type WorkingGroupOpeningMetadata @entity {
 }
 
 type WorkingGroupOpening @entity {
-  "Opening runtime id"
+  "Opening id ({workingGroupName}-{openingId})"
   id: ID!
+
+  "OpeningId in specific working group module"
+  runtimeId: Int!
 
   "Related working group"
   group: WorkingGroup!
@@ -217,8 +223,11 @@ union WorkingGroupApplicationStatus =
   | ApplicationStatusWithdrawn
 
 type WorkingGroupApplication @entity {
-  "Application runtime id"
+  "Application id ({workingGroupName}-{applicationId})"
   id: ID!
+
+  "ApplicationId in specific working group module"
+  runtimeId: Int!
 
   "Related working group opening"
   opening: WorkingGroupOpening!

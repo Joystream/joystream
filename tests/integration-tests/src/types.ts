@@ -81,6 +81,13 @@ export type WorkingGroupModuleName =
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
 
+export const workingGroups: WorkingGroupModuleName[] = [
+  'storageWorkingGroup',
+  'contentDirectoryWorkingGroup',
+  'forumWorkingGroup',
+  'membershipWorkingGroup',
+]
+
 export const lockIdByWorkingGroup: { [K in WorkingGroupModuleName]: string } = {
   storageWorkingGroup: '0x0606060606060606',
   contentDirectoryWorkingGroup: '0x0707070707070707',

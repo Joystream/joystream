@@ -5879,6 +5879,8 @@ export type Worker = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
+  /** WorkerId in specific working group module */
+  runtimeId: Scalars['Int']
   group: WorkingGroup
   groupId: Scalars['String']
   membership: Membership
@@ -5928,6 +5930,7 @@ export type WorkerConnection = {
 }
 
 export type WorkerCreateInput = {
+  runtimeId: Scalars['Float']
   groupId: Scalars['ID']
   membershipId: Scalars['ID']
   roleAccount: Scalars['String']
@@ -6051,6 +6054,8 @@ export enum WorkerOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  RuntimeIdAsc = 'runtimeId_ASC',
+  RuntimeIdDesc = 'runtimeId_DESC',
   GroupIdAsc = 'groupId_ASC',
   GroupIdDesc = 'groupId_DESC',
   MembershipIdAsc = 'membershipId_ASC',
@@ -6674,6 +6679,7 @@ export type WorkerStatusTerminatedWhereUniqueInput = {
 }
 
 export type WorkerUpdateInput = {
+  runtimeId?: Maybe<Scalars['Float']>
   groupId?: Maybe<Scalars['ID']>
   membershipId?: Maybe<Scalars['ID']>
   roleAccount?: Maybe<Scalars['String']>
@@ -6714,6 +6720,12 @@ export type WorkerWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  runtimeId_eq?: Maybe<Scalars['Int']>
+  runtimeId_gt?: Maybe<Scalars['Int']>
+  runtimeId_gte?: Maybe<Scalars['Int']>
+  runtimeId_lt?: Maybe<Scalars['Int']>
+  runtimeId_lte?: Maybe<Scalars['Int']>
+  runtimeId_in?: Maybe<Array<Scalars['Int']>>
   groupId_eq?: Maybe<Scalars['ID']>
   groupId_in?: Maybe<Array<Scalars['ID']>>
   membershipId_eq?: Maybe<Scalars['ID']>
@@ -6820,6 +6832,8 @@ export type WorkingGroupApplication = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
+  /** ApplicationId in specific working group module */
+  runtimeId: Scalars['Int']
   opening: WorkingGroupOpening
   openingId: Scalars['String']
   applicant: Membership
@@ -6851,6 +6865,7 @@ export type WorkingGroupApplicationConnection = {
 
 export type WorkingGroupApplicationCreateInput = {
   createdAt: Scalars['DateTime']
+  runtimeId: Scalars['Float']
   openingId: Scalars['ID']
   applicantId: Scalars['ID']
   stake: Scalars['BigInt']
@@ -6874,6 +6889,8 @@ export enum WorkingGroupApplicationOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  RuntimeIdAsc = 'runtimeId_ASC',
+  RuntimeIdDesc = 'runtimeId_DESC',
   OpeningIdAsc = 'openingId_ASC',
   OpeningIdDesc = 'openingId_DESC',
   ApplicantIdAsc = 'applicantId_ASC',
@@ -6898,6 +6915,7 @@ export type WorkingGroupApplicationStatus =
 
 export type WorkingGroupApplicationUpdateInput = {
   createdAt?: Maybe<Scalars['DateTime']>
+  runtimeId?: Maybe<Scalars['Float']>
   openingId?: Maybe<Scalars['ID']>
   applicantId?: Maybe<Scalars['ID']>
   stake?: Maybe<Scalars['BigInt']>
@@ -6933,6 +6951,12 @@ export type WorkingGroupApplicationWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  runtimeId_eq?: Maybe<Scalars['Int']>
+  runtimeId_gt?: Maybe<Scalars['Int']>
+  runtimeId_gte?: Maybe<Scalars['Int']>
+  runtimeId_lt?: Maybe<Scalars['Int']>
+  runtimeId_lte?: Maybe<Scalars['Int']>
+  runtimeId_in?: Maybe<Array<Scalars['Int']>>
   openingId_eq?: Maybe<Scalars['ID']>
   openingId_in?: Maybe<Array<Scalars['ID']>>
   applicantId_eq?: Maybe<Scalars['ID']>
@@ -7142,6 +7166,8 @@ export type WorkingGroupOpening = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
+  /** OpeningId in specific working group module */
+  runtimeId: Scalars['Int']
   group: WorkingGroup
   groupId: Scalars['String']
   applications: Array<WorkingGroupApplication>
@@ -7174,6 +7200,7 @@ export type WorkingGroupOpeningConnection = {
 
 export type WorkingGroupOpeningCreateInput = {
   createdAt: Scalars['DateTime']
+  runtimeId: Scalars['Float']
   groupId: Scalars['ID']
   type: WorkingGroupOpeningType
   status: Scalars['JSONObject']
@@ -7326,6 +7353,8 @@ export enum WorkingGroupOpeningOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  RuntimeIdAsc = 'runtimeId_ASC',
+  RuntimeIdDesc = 'runtimeId_DESC',
   GroupIdAsc = 'groupId_ASC',
   GroupIdDesc = 'groupId_DESC',
   TypeAsc = 'type_ASC',
@@ -7351,6 +7380,7 @@ export enum WorkingGroupOpeningType {
 
 export type WorkingGroupOpeningUpdateInput = {
   createdAt?: Maybe<Scalars['DateTime']>
+  runtimeId?: Maybe<Scalars['Float']>
   groupId?: Maybe<Scalars['ID']>
   type?: Maybe<WorkingGroupOpeningType>
   status?: Maybe<Scalars['JSONObject']>
@@ -7386,6 +7416,12 @@ export type WorkingGroupOpeningWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  runtimeId_eq?: Maybe<Scalars['Int']>
+  runtimeId_gt?: Maybe<Scalars['Int']>
+  runtimeId_gte?: Maybe<Scalars['Int']>
+  runtimeId_lt?: Maybe<Scalars['Int']>
+  runtimeId_lte?: Maybe<Scalars['Int']>
+  runtimeId_in?: Maybe<Array<Scalars['Int']>>
   groupId_eq?: Maybe<Scalars['ID']>
   groupId_in?: Maybe<Array<Scalars['ID']>>
   type_eq?: Maybe<WorkingGroupOpeningType>

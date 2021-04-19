@@ -13,6 +13,7 @@ import {
 } from './QueryNodeApiSchema.generated'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { WorkingGroupModuleName } from './types'
 
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
@@ -497,17 +498,20 @@ export class QueryNodeApi {
   }
 
   public async getOpeningById(
-    id: OpeningId
+    id: OpeningId,
+    group: WorkingGroupModuleName
   ): Promise<ApolloQueryResult<Pick<Query, 'workingGroupOpeningByUniqueInput'>>> {
     const OPENING_BY_ID = gql`
       query($openingId: ID!) {
         workingGroupOpeningByUniqueInput(where: { id: $openingId }) {
           id
+          runtimeId
           group {
             name
           }
           applications {
             id
+            runtimeId
             status {
               __typename
             }
@@ -537,25 +541,29 @@ export class QueryNodeApi {
       }
     `
 
-    this.queryDebug(`Executing getOpeningById(${id.toString()})`)
+    const openingId = `${group}-${id.toString()}`
+    this.queryDebug(`Executing getOpeningById(${openingId})`)
 
     return this.queryNodeProvider.query<Pick<Query, 'workingGroupOpeningByUniqueInput'>>({
       query: OPENING_BY_ID,
-      variables: { openingId: id.toString() },
+      variables: { openingId },
     })
   }
 
   public async getApplicationById(
-    id: ApplicationId
+    id: ApplicationId,
+    group: WorkingGroupModuleName
   ): Promise<ApolloQueryResult<Pick<Query, 'workingGroupApplicationByUniqueInput'>>> {
     const APPLICATION_BY_ID = gql`
       query($applicationId: ID!) {
         workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
           id
+          runtimeId
           createdAtBlock
           createdAt
           opening {
             id
+            runtimeId
           }
           applicant {
             id
@@ -577,11 +585,12 @@ export class QueryNodeApi {
       }
     `
 
-    this.queryDebug(`Executing getApplicationById(${id.toString()})`)
+    const applicationId = `${group}-${id.toString()}`
+    this.queryDebug(`Executing getApplicationById(${applicationId})`)
 
     return this.queryNodeProvider.query<Pick<Query, 'workingGroupApplicationByUniqueInput'>>({
       query: APPLICATION_BY_ID,
-      variables: { applicationId: id.toString() },
+      variables: { applicationId },
     })
   }
 
@@ -603,9 +612,11 @@ export class QueryNodeApi {
           }
           opening {
             id
+            runtimeId
           }
           application {
             id
+            runtimeId
           }
         }
       }
@@ -637,6 +648,7 @@ export class QueryNodeApi {
           }
           opening {
             id
+            runtimeId
           }
         }
       }
@@ -671,9 +683,11 @@ export class QueryNodeApi {
           }
           opening {
             id
+            runtimeId
           }
           workersHired {
             id
+            runtimeId
             group {
               name
             }
@@ -695,6 +709,7 @@ export class QueryNodeApi {
             hiredAtTime
             application {
               id
+              runtimeId
             }
             storage
           }

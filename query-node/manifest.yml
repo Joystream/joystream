@@ -93,7 +93,7 @@ mappings:
       handler: members_InitialInvitationBalanceUpdated(DatabaseManager, SubstrateEvent)
     - event: members.LeaderInvitationQuotaUpdated
       handler: members_LeaderInvitationQuotaUpdated(DatabaseManager, SubstrateEvent)
-    # Working Groups module
+    # Storage working group
     - event: storageWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.AppliedOnOpening
@@ -131,6 +131,123 @@ mappings:
     - event: storageWorkingGroup.StatusTextChanged
       handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    # Forum working group
+    - event: forumWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    # Membership working group
+    - event: membershipWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    # Content directory working group
+    - event: contentDirectoryWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here

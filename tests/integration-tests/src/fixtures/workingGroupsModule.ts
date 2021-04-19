@@ -125,7 +125,7 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     if (!qOpening) {
       throw new Error('Query node: Opening not found')
     }
-    assert.equal(qOpening.id, eventDetails.openingId.toString())
+    assert.equal(qOpening.runtimeId, eventDetails.openingId.toNumber())
     assert.equal(qOpening.createdAtBlock, eventDetails.blockNumber)
     assert.equal(qOpening.group.name, this.group)
     assert.equal(qOpening.rewardPerBlock, this.openingParams.reward.toString())
@@ -164,7 +164,7 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.type, EventType.OpeningAdded)
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.opening.id, eventDetails.openingId.toString())
+    assert.equal(qEvent.opening.runtimeId, eventDetails.openingId.toNumber())
   }
 
   async execute(): Promise<void> {
@@ -189,7 +189,7 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     const tx = this.tx!
     // Query the opening
     await this.query.tryQueryWithTimeout(
-      () => this.query.getOpeningById(eventDetails.openingId),
+      () => this.query.getOpeningById(eventDetails.openingId, this.group),
       (r) => this.assertOpeningMatchQueriedResult(eventDetails, r.data.workingGroupOpeningByUniqueInput)
     )
     // Query the event
@@ -255,9 +255,9 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     if (!qApplication) {
       throw new Error('Application not found')
     }
-    assert.equal(qApplication.id, eventDetails.applicationId.toString())
+    assert.equal(qApplication.runtimeId, eventDetails.applicationId.toNumber())
     assert.equal(qApplication.createdAtBlock, eventDetails.blockNumber)
-    assert.equal(qApplication.opening.id, this.openingId.toString())
+    assert.equal(qApplication.opening.runtimeId, this.openingId.toNumber())
     assert.equal(qApplication.applicant.id, this.applicant.memberId.toString())
     assert.equal(qApplication.roleAccount, this.applicant.account)
     assert.equal(qApplication.rewardAccount, this.applicant.account)
@@ -286,8 +286,8 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.type, EventType.AppliedOnOpening)
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.opening.id, this.openingId.toString())
-    assert.equal(qEvent.application.id, eventDetails.applicationId.toString())
+    assert.equal(qEvent.opening.runtimeId, this.openingId.toNumber())
+    assert.equal(qEvent.application.runtimeId, eventDetails.applicationId.toNumber())
   }
 
   async execute(): Promise<void> {
@@ -321,7 +321,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     const tx = this.tx!
     // Query the application
     await this.query.tryQueryWithTimeout(
-      () => this.query.getApplicationById(eventDetails.applicationId),
+      () => this.query.getApplicationById(eventDetails.applicationId, this.group),
       (r) => this.assertApplicationMatchQueriedResult(eventDetails, r.data.workingGroupApplicationByUniqueInput)
     )
     // Query the event
@@ -390,7 +390,7 @@ export class SudoFillLeadOpening extends BaseFixture {
     }
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.type, EventType.OpeningFilled)
-    assert.equal(qEvent.opening.id, this.openingId.toString())
+    assert.equal(qEvent.opening.runtimeId, this.openingId.toNumber())
     assert.equal(qEvent.group.name, this.group)
     this.acceptedApplicationIds.forEach((acceptedApplId, i) => {
       // Cannot use "applicationIdToWorkerIdMap.get" here,
@@ -402,7 +402,7 @@ export class SudoFillLeadOpening extends BaseFixture {
       if (!workerId) {
         throw new Error(`WorkerId for application id ${acceptedApplId.toString()} not found in OpeningFilled event!`)
       }
-      const qWorker = qEvent.workersHired.find((w) => w.id === workerId.toString())
+      const qWorker = qEvent.workersHired.find((w) => w.runtimeId === workerId.toNumber())
       if (!qWorker) {
         throw new Error(`Query node: Worker not found in OpeningFilled.hiredWorkers (id: ${workerId.toString()})`)
       }
@@ -432,7 +432,7 @@ export class SudoFillLeadOpening extends BaseFixture {
     assert.equal(qWorker.isLead, true)
     assert.equal(qWorker.stake, applicationStake.toString())
     assert.equal(qWorker.hiredAtBlock, eventDetails.blockNumber)
-    assert.equal(qWorker.application.id, applicationId.toString())
+    assert.equal(qWorker.application.runtimeId, applicationId.toNumber())
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -448,7 +448,7 @@ export class SudoFillLeadOpening extends BaseFixture {
     // Check opening status
     const {
       data: { workingGroupOpeningByUniqueInput: qOpening },
-    } = await this.query.getOpeningById(this.openingId)
+    } = await this.query.getOpeningById(this.openingId, this.group)
     if (!qOpening) {
       throw new Error(`Query node: Opening ${this.openingId.toString()} not found!`)
     }
@@ -456,7 +456,7 @@ export class SudoFillLeadOpening extends BaseFixture {
 
     // Check application statuses
     const acceptedApplications = this.acceptedApplicationIds.map((id) => {
-      const application = qOpening.applications.find((a) => a.id === id.toString())
+      const application = qOpening.applications.find((a) => a.runtimeId === id.toNumber())
       if (!application) {
         throw new Error(`Application not found by id ${id.toString()} in opening ${qOpening.id}`)
       }
