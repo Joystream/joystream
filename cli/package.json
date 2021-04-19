@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.3.2",
+  "version": "0.5.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -40,7 +40,9 @@
     "moment": "^2.24.0",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
-    "tslib": "^1.11.1"
+    "tslib": "^1.11.1",
+    "mime-types": "^2.1.30",
+    "@types/mime-types": "^2.1.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
@@ -104,7 +106,7 @@
         "description": "Working group lead and worker actions"
       },
       "content": {
-        "description": "Interactions with content directory module - managing classes, schemas, entities and permissions"
+        "description": "Interactions with content directory module - managing vidoes, channels, assets, categories and curator groups"
       }
     }
   },

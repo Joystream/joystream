@@ -251,15 +251,15 @@ export type VideoCategoryInputParameters = VideoCategoryMetadata.AsObject
 
 // JSONSchema utility types
 export type JSONTypeName<T> = T extends string
-  ? 'string'
+  ? 'string' | ['string', 'null']
   : T extends number
-  ? 'number'
+  ? 'number' | ['number', 'null']
   : T extends any[]
-  ? 'array'
+  ? 'array' | ['array', 'null']
   : T extends Record<string, unknown>
-  ? 'object'
+  ? 'object' | ['object', 'null']
   : T extends boolean
-  ? 'boolean'
+  ? 'boolean' | ['boolean', 'null']
   : never
 
 export type PropertySchema<P> = Omit<

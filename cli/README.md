@@ -45,7 +45,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.3.2 linux-x64 node-v13.12.0
+@joystream/cli/0.5.0 linux-x64 node-v13.12.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND

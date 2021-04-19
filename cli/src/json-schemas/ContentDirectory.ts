@@ -29,7 +29,7 @@ export const ChannelInputSchema: JsonSchema<ChannelInputParameters> = {
     title: { type: 'string' },
     coverPhotoPath: { type: 'string' },
     avatarPhotoPath: { type: 'string' },
-    rewardAccount: { type: 'string' },
+    rewardAccount: { type: ['string', 'null'] },
   },
 }
 

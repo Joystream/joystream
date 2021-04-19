@@ -6,6 +6,8 @@ import UploadCommandBase from '../../base/UploadCommandBase'
 import { CreateInterface } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
+import { Option } from '@polkadot/types'
+import { AccountId } from '@polkadot/types/interfaces'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
@@ -25,6 +27,22 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     },
   ]
 
+  parseRewardAccountInput(rewardAccount?: string | null): string | null | Option<AccountId> {
+    if (rewardAccount === undefined) {
+      // Reward account remains unchanged
+      return null
+    }
+    else if (rewardAccount === null) {
+      // Reward account changed to empty
+      // FIXME: There seems to be no way to encode it currently
+      return this.createType('Option<AccountId>', null)
+    }
+    else {
+      // Reward account set to new account
+      return rewardAccount
+    }
+  }
+
   async run() {
     const {
       flags: { input },
@@ -41,7 +59,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
 
     const meta = channelMetadataFromInput(channelInput)
 
-    const { coverPhotoPath, avatarPhotoPath } = channelInput
+    const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
     const inputPaths = [coverPhotoPath, avatarPhotoPath].filter((p) => p !== undefined) as string[]
     const inputAssets = await this.prepareInputAssets(inputPaths, input)
     const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
@@ -56,10 +74,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
       assets,
       new_meta: metadataToBytes(meta),
-      reward_account: channelInput.rewardAccount,
+      reward_account: this.parseRewardAccountInput(rewardAccount),
     }
 
-    this.jsonPrettyPrint(JSON.stringify({ assets, metadata: meta.toObject() }))
+    this.jsonPrettyPrint(JSON.stringify({ assets, metadata: meta.toObject(), rewardAccount }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 

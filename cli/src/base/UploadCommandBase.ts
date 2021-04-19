@@ -12,6 +12,7 @@ import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
 import chalk from 'chalk'
+import mimeTypes from 'mime-types'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
@@ -27,6 +28,10 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   getFileSize(path: string): number {
     const cachedSize = this.fileSizeCache.get(path)
     return cachedSize !== undefined ? cachedSize : fs.statSync(path).size
+  }
+
+  normalizeEndpoint(endpoint: string) {
+    return endpoint.endsWith('/') ? endpoint : endpoint + '/'
   }
 
   createReadStreamWithProgressBar(
@@ -104,7 +109,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
     const size = this.getFileSize(filePath)
     const container = path.extname(filePath).slice(1)
-    const mimeType = `video/${container}` // TODO: Is this enough?
+    const mimeType = mimeTypes.lookup(container) || `unknown`
     return {
       size,
       container,
@@ -129,16 +134,15 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
   assetUrl(endpointRoot: string, contentId: ContentId): string {
     // This will also make sure the resulting url is a valid url
-    return new URL(`asset/v0/${contentId.encode()}`, endpointRoot).toString()
+    return new URL(`asset/v0/${contentId.encode()}`, this.normalizeEndpoint(endpointRoot)).toString()
   }
 
   async getRandomProviderEndpoint(): Promise<string | null> {
     const endpoints = _.shuffle(await this.getApi().allStorageProviderEndpoints())
     for (const endpoint of endpoints) {
       try {
-        const url = new URL(endpoint).toString()
-        // TODO: Some better way to test if provider is online?
-        await axios.get(url, { validateStatus: (s) => s === 404 /* 404 is expected */ })
+        const url = new URL('swagger.json', this.normalizeEndpoint(endpoint)).toString()
+        await axios.head(url)
         return endpoint
       } catch (e) {
         continue
