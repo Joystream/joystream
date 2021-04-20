@@ -794,7 +794,6 @@ benchmarks! {
             category_id,
             title_hash: T::calculate_hash(&title),
             author_id: forum_user_id.saturated_into(),
-            archived: false,
             poll: poll.clone(),
             cleanup_pay_off: T::ThreadDeposit::get(),
             number_of_posts: 1,
@@ -856,81 +855,6 @@ benchmarks! {
                 forum_user_id.saturated_into(),
                 category_id,
                 text
-            ).into()
-        );
-    }
-
-    update_thread_archival_status_lead {
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
-
-        let forum_user_id = 0;
-        let caller_id =
-            insert_a_leader::<T>(forum_user_id);
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
-
-        // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
-        // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text.clone(), None);
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
-        let new_archival_status = true;
-
-    }: update_thread_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, new_archival_status)
-    verify {
-        thread.archived = new_archival_status;
-
-        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
-
-        assert_last_event::<T>(
-            RawEvent::ThreadUpdated(
-                thread_id,
-                new_archival_status,
-                PrivilegedActor::Lead,
-                category_id
-            ).into()
-        );
-    }
-
-    update_thread_archival_status_moderator {
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
-
-        let forum_user_id = 0;
-        let caller_id =
-            insert_a_leader::<T>(forum_user_id);
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
-
-        // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
-        // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text.clone(), None);
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
-        let new_archival_status = true;
-
-        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(),
-            moderator_id,
-            category_id,
-            true,
-        )
-        .unwrap();
-
-    }: update_thread_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, new_archival_status)
-    verify {
-        thread.archived = new_archival_status;
-
-        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
-
-        assert_last_event::<T>(
-            RawEvent::ThreadUpdated(
-                thread_id,
-                new_archival_status,
-                PrivilegedActor::Moderator(moderator_id),
-                category_id
             ).into()
         );
     }
@@ -1815,22 +1739,6 @@ mod tests {
     fn test_edit_thread_title() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_edit_thread_title::<Runtime>());
-        });
-    }
-
-    #[test]
-    fn test_update_thread_archival_status_lead() {
-        with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_thread_archival_status_lead::<Runtime>());
-        });
-    }
-
-    #[test]
-    fn test_update_thread_archival_status_moderator() {
-        with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_thread_archival_status_moderator::<
-                Runtime,
-            >());
         });
     }
 

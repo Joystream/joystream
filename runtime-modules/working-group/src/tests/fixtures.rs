@@ -44,6 +44,35 @@ impl EventFixture {
 
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
+
+    pub fn contains_crate_event(
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            u64,
+            OpeningType,
+            StakePolicy<u64, u64>,
+            ApplyOnOpeningParameters<Test>,
+            DefaultInstance,
+        >,
+    ) {
+        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+
+        Self::contains_global_event(converted_event)
+    }
+
+    fn contains_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert!(System::events().iter().any(|ev| *ev == expected_event));
+    }
 }
 
 pub struct AddOpeningFixture {
