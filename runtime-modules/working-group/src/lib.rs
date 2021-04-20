@@ -52,7 +52,7 @@ pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
     OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
-use types::{ApplicationInfo, WorkerInfo};
+use types::{ApplicationInfo, RewardPaymentType, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
@@ -181,11 +181,11 @@ decl_event!(
         /// - Rationale.
         WorkerExited(WorkerId),
 
-        /// Emits when worker is leaving immediatly after extrinsic is called
+        /// Emits when worker started leaving their role.
         /// Params:
         /// - Worker id.
         /// - Rationale.
-        WorkerLeft(WorkerId, Option<Vec<u8>>),
+        WorkerStartedLeaving(WorkerId, Option<Vec<u8>>),
 
         /// Emits on terminating the worker.
         /// Params:
@@ -256,10 +256,28 @@ decl_event!(
 
         /// Emits on budget from the working group being spent
         /// Params:
-        /// - Reciever Account Id.
+        /// - Receiver Account Id.
         /// - Balance spent.
         /// - Rationale.
         BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
+
+        /// Emits on paying the reward.
+        /// Params:
+        /// - Receiver Account Id.
+        /// - Reward
+        RewardPaid(AccountId, Balance),
+
+        /// Emits on paying the missed reward.
+        /// Params:
+        /// - Receiver Account Id.
+        /// - Missed reward
+        MissedRewardPaid(AccountId, Balance),
+
+        /// Emits on reaching new missed reward.
+        /// Params:
+        /// - Worker ID.
+        /// - Missed reward (optional). None means 'no missed reward'.
+        NewMissedRewardLevelReached(WorkerId, Option<Balance>),
     }
 );
 
@@ -653,6 +671,9 @@ decl_module! {
             WorkerById::<T, I>::mutate(worker_id, |worker| {
                 worker.started_leaving_at = Some(Self::current_block())
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStartedLeaving(worker_id, rationale));
         }
 
         /// Terminate the active worker by the lead.
@@ -1300,7 +1321,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Check whether the budget is not zero.
             if actual_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, actual_reward);
+                Self::pay_reward(
+                    &worker.reward_account_id,
+                    actual_reward,
+                    RewardPaymentType::RegularReward,
+                );
             }
 
             // Check whether the budget is insufficient.
@@ -1323,6 +1348,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
     }
 
+    // Helper-function joining the reward payment with the event.
+    fn pay_reward(
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+        reward_payment_type: RewardPaymentType,
+    ) {
+        Self::pay_from_budget(account_id, amount);
+
+        let event = match reward_payment_type {
+            RewardPaymentType::MissedReward => {
+                RawEvent::MissedRewardPaid(account_id.clone(), amount)
+            }
+            RewardPaymentType::RegularReward => RawEvent::RewardPaid(account_id.clone(), amount),
+        };
+
+        Self::deposit_event(event);
+    }
+
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
     fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &Worker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
@@ -1331,7 +1374,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Checks if the budget allows any payment.
             if could_be_paid_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+                Self::pay_reward(
+                    &worker.reward_account_id,
+                    could_be_paid_reward,
+                    RewardPaymentType::MissedReward,
+                );
 
                 let new_missed_reward = if insufficient_amount > Zero::zero() {
                     Some(insufficient_amount)
@@ -1339,12 +1386,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                // Update worker missed reward.
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.missed_reward = new_missed_reward;
-                });
+                Self::update_worker_missed_reward(worker_id, new_missed_reward);
             }
         }
+    }
+
+    // Update worker missed reward.
+    fn update_worker_missed_reward(
+        worker_id: &WorkerId<T>,
+        new_missed_reward: Option<BalanceOf<T>>,
+    ) {
+        WorkerById::<T, I>::mutate(worker_id, |worker| {
+            worker.missed_reward = new_missed_reward;
+        });
+
+        Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
+            *worker_id,
+            new_missed_reward,
+        ));
     }
 
     // Saves missed reward for a worker.
@@ -1354,10 +1413,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        // Update worker missed reward.
-        WorkerById::<T, I>::mutate(worker_id, |worker| {
-            worker.missed_reward = Some(new_missed_reward);
-        });
+        Self::update_worker_missed_reward(worker_id, Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment
@@ -1376,7 +1432,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::iter()
             .filter_map(|(worker_id, worker)| {
                 if let Some(started_leaving_at) = worker.started_leaving_at {
-                    if started_leaving_at + worker.job_unstaking_period >= Self::current_block() {
+                    if started_leaving_at + worker.job_unstaking_period <= Self::current_block() {
                         return Some((worker_id, worker).into());
                     }
                 }
