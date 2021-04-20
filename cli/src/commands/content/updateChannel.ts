@@ -3,7 +3,7 @@ import { channelMetadataFromInput, metadataToBytes } from '../../helpers/seriali
 import { ChannelInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import { CreateInterface } from '@joystream/types'
+import { CreateInterface, createType, registry } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
 import { Option } from '@polkadot/types'
@@ -27,14 +27,13 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     },
   ]
 
-  parseRewardAccountInput(rewardAccount?: string | null): string | null | Option<AccountId> {
+  parseRewardAccountInput(rewardAccount?: string | null): string | null | Uint8Array {
     if (rewardAccount === undefined) {
       // Reward account remains unchanged
       return null
     } else if (rewardAccount === null) {
       // Reward account changed to empty
-      // FIXME: There seems to be no way to encode it currently
-      return this.createType('Option<AccountId>', null)
+      return new Uint8Array([1, 0])
     } else {
       // Reward account set to new account
       return rewardAccount
