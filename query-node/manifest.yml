@@ -100,8 +100,8 @@ mappings:
       handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
-    - event: storageWorkingGroup.LeaderSet
-      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    # - event: storageWorkingGroup.LeaderSet
+    #   handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.LeaderUnset
@@ -139,8 +139,8 @@ mappings:
       handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
     - event: forumWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
-    - event: forumWorkingGroup.LeaderSet
-      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    # - event: forumWorkingGroup.LeaderSet
+    #   handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
     - event: forumWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
     - event: forumWorkingGroup.LeaderUnset
@@ -178,8 +178,8 @@ mappings:
       handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
     - event: membershipWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
-    - event: membershipWorkingGroup.LeaderSet
-      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    # - event: membershipWorkingGroup.LeaderSet
+    #   handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
     - event: membershipWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
     - event: membershipWorkingGroup.LeaderUnset
@@ -217,8 +217,8 @@ mappings:
       handler: workingGroups_AppliedOnOpening(DatabaseManager, SubstrateEvent)
     - event: contentDirectoryWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled(DatabaseManager, SubstrateEvent)
-    - event: contentDirectoryWorkingGroup.LeaderSet
-      handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
+    # - event: contentDirectoryWorkingGroup.LeaderSet
+    #   handler: workingGroups_LeaderSet(DatabaseManager, SubstrateEvent)
     - event: contentDirectoryWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated(DatabaseManager, SubstrateEvent)
     - event: contentDirectoryWorkingGroup.LeaderUnset

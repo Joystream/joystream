@@ -1,8 +1,8 @@
 import { FlowProps } from '../../Flow'
 import {
   ApplyOnOpeningHappyCaseFixture,
-  SudoCreateLeadOpeningFixture,
-  SudoFillLeadOpening,
+  CreateOpeningFixture,
+  SudoFillLeadOpeningFixture,
 } from '../../fixtures/workingGroupsModule'
 
 import Debugger from 'debug'
@@ -17,7 +17,7 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
       debug('Started')
       api.enableDebugTxLogs()
 
-      const sudoLeadOpeningFixture = new SudoCreateLeadOpeningFixture(api, query, group)
+      const sudoLeadOpeningFixture = new CreateOpeningFixture(api, query, group, undefined, true)
       const openingRunner = new FixtureRunner(sudoLeadOpeningFixture)
       await openingRunner.run()
       const openingId = sudoLeadOpeningFixture.getCreatedOpeningId()
@@ -52,11 +52,10 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
       const applicationId = applyOnOpeningFixture.getCreatedApplicationId()
 
       // Run query node checks once this part of the flow is done
-      await openingRunner.runQueryNodeChecks()
-      await applicationRunner.runQueryNodeChecks()
+      await Promise.all([openingRunner.runQueryNodeChecks(), applicationRunner.runQueryNodeChecks()])
 
       // Fill opening
-      const fillOpeningFixture = new SudoFillLeadOpening(api, query, group, openingId, [applicationId])
+      const fillOpeningFixture = new SudoFillLeadOpeningFixture(api, query, group, openingId, [applicationId])
       await new FixtureRunner(fillOpeningFixture).runWithQueryNodeChecks()
 
       debug('Done')

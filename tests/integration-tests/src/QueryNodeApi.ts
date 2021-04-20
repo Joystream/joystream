@@ -1,12 +1,14 @@
 import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 import { MemberId } from '@joystream/types/common'
 import {
+  ApplicationWithdrawnEvent,
   AppliedOnOpeningEvent,
   InitialInvitationBalanceUpdatedEvent,
   InitialInvitationCountUpdatedEvent,
   MembershipPriceUpdatedEvent,
   MembershipSystemSnapshot,
   OpeningAddedEvent,
+  OpeningCanceledEvent,
   OpeningFilledEvent,
   Query,
   ReferralCutUpdatedEvent,
@@ -508,17 +510,38 @@ export class QueryNodeApi {
           runtimeId
           group {
             name
+            leader {
+              runtimeId
+            }
           }
           applications {
             id
             runtimeId
             status {
               __typename
+              ... on ApplicationStatusCancelled {
+                openingCancelledEventId
+              }
+              ... on ApplicationStatusWithdrawn {
+                applicationWithdrawnEventId
+              }
+              ... on ApplicationStatusAccepted {
+                openingFilledEventId
+              }
+              ... on ApplicationStatusRejected {
+                openingFilledEventId
+              }
             }
           }
           type
           status {
             __typename
+            ... on OpeningStatusFilled {
+              openingFilledEventId
+            }
+            ... on OpeningStatusCancelled {
+              openingCancelledEventId
+            }
           }
           metadata {
             shortDescription
@@ -573,6 +596,18 @@ export class QueryNodeApi {
           stakingAccount
           status {
             __typename
+            ... on ApplicationStatusCancelled {
+              openingCancelledEventId
+            }
+            ... on ApplicationStatusWithdrawn {
+              applicationWithdrawnEventId
+            }
+            ... on ApplicationStatusAccepted {
+              openingFilledEventId
+            }
+            ... on ApplicationStatusRejected {
+              openingFilledEventId
+            }
           }
           answers {
             question {
@@ -672,6 +707,7 @@ export class QueryNodeApi {
     const OPENING_FILLED_BY_ID = gql`
       query($eventId: ID!) {
         openingFilledEvents(where: { eventId_eq: $eventId }) {
+          id
           event {
             inBlock
             inExtrinsic
@@ -726,5 +762,77 @@ export class QueryNodeApi {
         variables: { eventId },
       })
     ).data.openingFilledEvents[0]
+  }
+
+  public async getApplicationWithdrawnEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<ApplicationWithdrawnEvent | undefined> {
+    const APPLICATION_WITHDRAWN_BY_ID = gql`
+      query($eventId: ID!) {
+        applicationWithdrawnEvents(where: { eventId_eq: $eventId }) {
+          id
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          group {
+            name
+          }
+          application {
+            id
+            runtimeId
+          }
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getApplicationWithdrawnEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'applicationWithdrawnEvents'>>({
+        query: APPLICATION_WITHDRAWN_BY_ID,
+        variables: { eventId },
+      })
+    ).data.applicationWithdrawnEvents[0]
+  }
+
+  public async getOpeningCancelledEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<OpeningCanceledEvent | undefined> {
+    const OPENING_CANCELLED_BY_ID = gql`
+      query($eventId: ID!) {
+        openingCanceledEvents(where: { eventId_eq: $eventId }) {
+          id
+          event {
+            inBlock
+            inExtrinsic
+            indexInBlock
+            type
+          }
+          group {
+            name
+          }
+          opening {
+            id
+            runtimeId
+          }
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getOpeningCancelledEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'openingCanceledEvents'>>({
+        query: OPENING_CANCELLED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.openingCanceledEvents[0]
   }
 }

@@ -30,8 +30,15 @@ import {
   WorkerStatusActive,
   OpeningFilledEvent,
   OpeningStatusFilled,
+  // LeaderSetEvent,
+  OpeningCanceledEvent,
+  OpeningStatusCancelled,
+  ApplicationStatusCancelled,
+  ApplicationWithdrawnEvent,
+  ApplicationStatusWithdrawn,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
+import _ from 'lodash'
 
 // Shortcuts
 type InputTypeMap = OpeningMetadata.ApplicationFormQuestion.InputTypeMap
@@ -93,11 +100,38 @@ function parseQuestionInputType(type: InputTypeMap[keyof InputTypeMap]) {
   return ApplicationFormQuestionType.TEXT
 }
 
-async function createOpeningMeta(db: DatabaseManager, metadataBytes: Bytes): Promise<WorkingGroupOpeningMetadata> {
-  const metadata = await deserializeMetadata(OpeningMetadata, metadataBytes)
-  if (!metadata) {
-    // TODO: Use some defaults?
-  }
+function getDefaultOpeningMetadata(opening: WorkingGroupOpening): OpeningMetadata {
+  const metadata = new OpeningMetadata()
+  metadata.setShortDescription(
+    `${_.startCase(opening.group.name)} ${
+      opening.type === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
+    } opening`
+  )
+  metadata.setDescription(
+    `Apply to this opening in order to be considered for ${_.startCase(opening.group.name)} ${
+      opening.type === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
+    } role!`
+  )
+  metadata.setApplicationDetails(`- Fill the application form`)
+  const applicationFormQuestion = new OpeningMetadata.ApplicationFormQuestion()
+  applicationFormQuestion.setQuestion('What makes you a good candidate?')
+  applicationFormQuestion.setType(OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA)
+  metadata.addApplicationFormQuestions(applicationFormQuestion)
+
+  return metadata
+}
+
+async function createOpeningMeta(
+  db: DatabaseManager,
+  event_: SubstrateEvent,
+  opening: WorkingGroupOpening,
+  metadataBytes: Bytes
+): Promise<WorkingGroupOpeningMetadata> {
+  const deserializedMetadata = await deserializeMetadata(OpeningMetadata, metadataBytes)
+  const metadata = deserializedMetadata || (await getDefaultOpeningMetadata(opening))
+  const originallyValid = !!deserializedMetadata
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   const {
     applicationFormQuestionsList,
     applicationDetails,
@@ -105,9 +139,12 @@ async function createOpeningMeta(db: DatabaseManager, metadataBytes: Bytes): Pro
     expectedEndingTimestamp,
     hiringLimit,
     shortDescription,
-  } = metadata!.toObject()
+  } = metadata.toObject()
 
   const openingMetadata = new WorkingGroupOpeningMetadata({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    originallyValid,
     applicationDetails,
     description,
     shortDescription,
@@ -121,6 +158,8 @@ async function createOpeningMeta(db: DatabaseManager, metadataBytes: Bytes): Pro
   await Promise.all(
     applicationFormQuestionsList.map(async ({ question, type }, index) => {
       const applicationFormQuestion = new ApplicationFormQuestion({
+        createdAt: eventTime,
+        updatedAt: eventTime,
         question,
         type: parseQuestionInputType(type!),
         index,
@@ -141,13 +180,15 @@ async function createApplicationQuestionAnswers(
 ) {
   const metadata = deserializeMetadata(ApplicationMetadata, metadataBytes)
   if (!metadata) {
-    // TODO: Handle invalid state?
+    return
   }
   const questions = await getApplicationFormQuestions(db, application.opening.id)
-  const { answersList } = metadata!.toObject()
+  const { answersList } = metadata.toObject()
   await Promise.all(
     answersList.slice(0, questions.length).map(async (answer, index) => {
       const applicationFormQuestionAnswer = new ApplicationFormQuestionAnswer({
+        createdAt: application.createdAt,
+        updatedAt: application.updatedAt,
         application,
         question: questions[index],
         answer,
@@ -170,17 +211,16 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     stakePolicy,
   } = new WorkingGroups.OpeningAddedEvent(event_).data
   const group = await getWorkingGroup(db, event_)
-  const metadata = await createOpeningMeta(db, metadataBytes)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const opening = new WorkingGroupOpening({
-    createdAt: new Date(event_.blockTimestamp.toNumber()),
-    updatedAt: new Date(event_.blockTimestamp.toNumber()),
+    createdAt: eventTime,
+    updatedAt: eventTime,
     createdAtBlock: event_.blockNumber,
     id: `${group.name}-${openingRuntimeId.toString()}`,
     runtimeId: openingRuntimeId.toNumber(),
     applications: [],
     group,
-    metadata,
     rewardPerBlock: rewardPerBlock.unwrapOr(new BN(0)),
     stakeAmount: stakePolicy.stake_amount,
     unstakingPeriod: stakePolicy.leaving_unstaking_period.toNumber(),
@@ -188,10 +228,15 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
 
+  const metadata = await createOpeningMeta(db, event_, opening, metadataBytes)
+  opening.metadata = metadata
+
   await db.save<WorkingGroupOpening>(opening)
 
   const event = await createEvent(event_, EventType.OpeningAdded)
   const openingAddedEvent = new OpeningAddedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event,
     group,
     opening,
@@ -203,6 +248,8 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
 
 export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   const {
     applicationId: applicationRuntimeId,
     applyOnOpeningParameters: {
@@ -218,8 +265,8 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
   const openingDbId = `${group.name}-${openingRuntimeId.toString()}`
 
   const application = new WorkingGroupApplication({
-    createdAt: new Date(event_.blockTimestamp.toNumber()),
-    updatedAt: new Date(event_.blockTimestamp.toNumber()),
+    createdAt: eventTime,
+    updatedAt: eventTime,
     createdAtBlock: event_.blockNumber,
     id: `${group.name}-${applicationRuntimeId.toString()}`,
     runtimeId: applicationRuntimeId.toNumber(),
@@ -238,8 +285,8 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
 
   const event = await createEvent(event_, EventType.AppliedOnOpening)
   const appliedOnOpeningEvent = new AppliedOnOpeningEvent({
-    createdAt: new Date(event_.blockTimestamp.toNumber()),
-    updatedAt: new Date(event_.blockTimestamp.toNumber()),
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event,
     group,
     opening: new WorkingGroupOpening({ id: openingDbId }),
@@ -252,6 +299,8 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
 
 export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   const {
     openingId: openingRuntimeId,
     applicationId: applicationIdsSet,
@@ -268,8 +317,8 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
   // Save the event
   const event = await createEvent(event_, EventType.OpeningFilled)
   const openingFilledEvent = new OpeningFilledEvent({
-    createdAt: new Date(event_.blockTimestamp.toNumber()),
-    updatedAt: new Date(event_.blockTimestamp.toNumber()),
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event,
     group,
     opening,
@@ -278,59 +327,169 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
   await db.save<Event>(event)
   await db.save<OpeningFilledEvent>(openingFilledEvent)
 
+  const hiredWorkers: Worker[] = []
   // Update applications and create new workers
   await Promise.all(
-    (opening.applications || []).map(async (application) => {
-      const isAccepted = acceptedApplicationIds.some((runtimeId) => runtimeId.toNumber() === application.runtimeId)
-      application.status = isAccepted ? new ApplicationStatusAccepted() : new ApplicationStatusRejected()
-      if (isAccepted) {
-        // Cannot use "applicationIdToWorkerIdMap.get" here,
-        // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
-        const [, workerRuntimeId] =
-          Array.from(applicationIdToWorkerIdMap.entries()).find(
-            ([applicationRuntimeId]) => applicationRuntimeId.toNumber() === application.runtimeId
-          ) || []
-        if (!workerRuntimeId) {
-          throw new Error(
-            `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
-          )
+    (opening.applications || [])
+      // Skip withdrawn applications
+      .filter((application) => application.status.isTypeOf !== 'ApplicationStatusWithdrawn')
+      .map(async (application) => {
+        const isAccepted = acceptedApplicationIds.some((runtimeId) => runtimeId.toNumber() === application.runtimeId)
+        const applicationStatus = isAccepted ? new ApplicationStatusAccepted() : new ApplicationStatusRejected()
+        applicationStatus.openingFilledEventId = openingFilledEvent.id
+        application.status = applicationStatus
+        application.updatedAt = eventTime
+        if (isAccepted) {
+          // Cannot use "applicationIdToWorkerIdMap.get" here,
+          // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
+          const [, workerRuntimeId] =
+            Array.from(applicationIdToWorkerIdMap.entries()).find(
+              ([applicationRuntimeId]) => applicationRuntimeId.toNumber() === application.runtimeId
+            ) || []
+          if (!workerRuntimeId) {
+            throw new Error(
+              `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
+            )
+          }
+          const worker = new Worker({
+            createdAt: eventTime,
+            updatedAt: eventTime,
+            id: `${group.name}-${workerRuntimeId.toString()}`,
+            runtimeId: workerRuntimeId.toNumber(),
+            hiredAtBlock: event_.blockNumber,
+            hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
+            application,
+            group,
+            isLead: opening.type === WorkingGroupOpeningType.LEADER,
+            membership: application.applicant,
+            stake: application.stake,
+            roleAccount: application.roleAccount,
+            rewardAccount: application.rewardAccount,
+            stakeAccount: application.stakingAccount,
+            payouts: [],
+            status: new WorkerStatusActive(),
+            entry: openingFilledEvent,
+          })
+          await db.save<Worker>(worker)
+          hiredWorkers.push(worker)
         }
-        const worker = new Worker({
-          createdAt: new Date(event_.blockTimestamp.toNumber()),
-          updatedAt: new Date(event_.blockTimestamp.toNumber()),
-          id: `${group.name}-${workerRuntimeId.toString()}`,
-          runtimeId: workerRuntimeId.toNumber(),
-          hiredAtBlock: event_.blockNumber,
-          hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
-          application,
-          group,
-          isLead: opening.type === WorkingGroupOpeningType.LEADER,
-          membership: application.applicant,
-          stake: application.stake,
-          roleAccount: application.roleAccount,
-          rewardAccount: application.rewardAccount,
-          stakeAccount: application.stakingAccount,
-          payouts: [],
-          status: new WorkerStatusActive(),
-          entry: openingFilledEvent,
-        })
-        await db.save<Worker>(worker)
-      }
-      await db.save<WorkingGroupApplication>(application)
-    })
+        await db.save<WorkingGroupApplication>(application)
+      })
   )
 
   // Set opening status
   const openingFilled = new OpeningStatusFilled()
   openingFilled.openingFilledEventId = openingFilledEvent.id
   opening.status = openingFilled
+  opening.updatedAt = eventTime
+  await db.save<WorkingGroupOpening>(opening)
+
+  // Update working group if necessary
+  if (opening.type === WorkingGroupOpeningType.LEADER && hiredWorkers.length) {
+    group.leader = hiredWorkers[0]
+    group.updatedAt = eventTime
+    await db.save<WorkingGroup>(group)
+  }
+}
+
+// FIXME: Currently this event cannot be handled directly, because the worker does not yet exist at the time when it is emitted
+// export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+//   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+//   const { workerId: workerRuntimeId } = new WorkingGroups.LeaderSetEvent(event_).data
+
+//   const group = await getWorkingGroup(db, event_)
+//   const workerDbId = `${group.name}-${workerRuntimeId.toString()}`
+//   const worker = new Worker({ id: workerDbId })
+//   const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+//   // Create and save event
+//   const event = createEvent(event_, EventType.LeaderSet)
+//   const leaderSetEvent = new LeaderSetEvent({
+//     createdAt: eventTime,
+//     updatedAt: eventTime,
+//     event,
+//     group,
+//     worker,
+//   })
+
+//   await db.save<Event>(event)
+//   await db.save<LeaderSetEvent>(leaderSetEvent)
+// }
+
+export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { openingId: openingRuntimeId } = new WorkingGroups.OpeningCanceledEvent(event_).data
+
+  const group = await getWorkingGroup(db, event_)
+  const opening = await getOpening(db, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  // Create and save event
+  const event = createEvent(event_, EventType.OpeningCanceled)
+  const openingCanceledEvent = new OpeningCanceledEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    event,
+    group,
+    opening,
+  })
+
+  await db.save<Event>(event)
+  await db.save<OpeningCanceledEvent>(openingCanceledEvent)
+
+  // Set opening status
+  const openingCancelled = new OpeningStatusCancelled()
+  openingCancelled.openingCancelledEventId = openingCanceledEvent.id
+  opening.status = openingCancelled
+  opening.updatedAt = eventTime
 
   await db.save<WorkingGroupOpening>(opening)
+
+  // Set applications status
+  const applicationCancelled = new ApplicationStatusCancelled()
+  applicationCancelled.openingCancelledEventId = openingCanceledEvent.id
+  await Promise.all(
+    (opening.applications || [])
+      // Skip withdrawn applications
+      .filter((application) => application.status.isTypeOf !== 'ApplicationStatusWithdrawn')
+      .map(async (application) => {
+        application.status = applicationCancelled
+        application.updatedAt = eventTime
+        await db.save<WorkingGroupApplication>(application)
+      })
+  )
 }
 
-export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { applicationId: applicationRuntimeId } = new WorkingGroups.ApplicationWithdrawnEvent(event_).data
+
+  const group = await getWorkingGroup(db, event_)
+  const application = await getApplication(db, `${group.name}-${applicationRuntimeId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  // Create and save event
+  const event = createEvent(event_, EventType.ApplicationWithdrawn)
+  const applicationWithdrawnEvent = new ApplicationWithdrawnEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    event,
+    group,
+    application,
+  })
+
+  await db.save<Event>(event)
+  await db.save<ApplicationWithdrawnEvent>(applicationWithdrawnEvent)
+
+  // Set application status
+  const statusWithdrawn = new ApplicationStatusWithdrawn()
+  statusWithdrawn.applicationWithdrawnEventId = applicationWithdrawnEvent.id
+  application.status = statusWithdrawn
+  application.updatedAt = eventTime
+
+  await db.save<WorkingGroupApplication>(application)
 }
+
 export async function workingGroups_WorkerRoleAccountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
@@ -356,12 +515,6 @@ export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: 
   // TBD
 }
 export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
-export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
-export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }
 export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {

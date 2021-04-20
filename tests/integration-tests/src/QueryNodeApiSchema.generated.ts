@@ -280,6 +280,55 @@ export type ApplicationStatusAcceptedWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type ApplicationStatusCancelled = {
+  __typename?: 'ApplicationStatusCancelled'
+  openingCancelledEventId: Scalars['String']
+}
+
+export type ApplicationStatusCancelledCreateInput = {
+  openingCancelledEventId: Scalars['String']
+}
+
+export type ApplicationStatusCancelledUpdateInput = {
+  openingCancelledEventId?: Maybe<Scalars['String']>
+}
+
+export type ApplicationStatusCancelledWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  openingCancelledEventId_eq?: Maybe<Scalars['String']>
+  openingCancelledEventId_contains?: Maybe<Scalars['String']>
+  openingCancelledEventId_startsWith?: Maybe<Scalars['String']>
+  openingCancelledEventId_endsWith?: Maybe<Scalars['String']>
+  openingCancelledEventId_in?: Maybe<Array<Scalars['String']>>
+}
+
+export type ApplicationStatusCancelledWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type ApplicationStatusPending = {
   __typename?: 'ApplicationStatusPending'
   phantom?: Maybe<Scalars['Int']>
@@ -1385,6 +1434,7 @@ export type Event = BaseGraphQlObject & {
   openingcanceledeventevent?: Maybe<Array<OpeningCanceledEvent>>
   openingfilledeventevent?: Maybe<Array<OpeningFilledEvent>>
   referralcutupdatedeventevent?: Maybe<Array<ReferralCutUpdatedEvent>>
+  rewardpaideventevent?: Maybe<Array<RewardPaidEvent>>
   stakedecreasedeventevent?: Maybe<Array<StakeDecreasedEvent>>
   stakeincreasedeventevent?: Maybe<Array<StakeIncreasedEvent>>
   stakeslashedeventevent?: Maybe<Array<StakeSlashedEvent>>
@@ -1398,6 +1448,7 @@ export type Event = BaseGraphQlObject & {
   workerrewardaccountupdatedeventevent?: Maybe<Array<WorkerRewardAccountUpdatedEvent>>
   workerrewardamountupdatedeventevent?: Maybe<Array<WorkerRewardAmountUpdatedEvent>>
   workerroleaccountupdatedeventevent?: Maybe<Array<WorkerRoleAccountUpdatedEvent>>
+  workerstartedleavingeventevent?: Maybe<Array<WorkerStartedLeavingEvent>>
 }
 
 export type EventConnection = {
@@ -1461,6 +1512,7 @@ export enum EventType {
   WorkerExited = 'WorkerExited',
   TerminatedWorker = 'TerminatedWorker',
   TerminatedLeader = 'TerminatedLeader',
+  WorkerStartedLeaving = 'WorkerStartedLeaving',
   StakeSlashed = 'StakeSlashed',
   StakeDecreased = 'StakeDecreased',
   StakeIncreased = 'StakeIncreased',
@@ -1471,6 +1523,8 @@ export enum EventType {
   WorkerRewardAmountUpdated = 'WorkerRewardAmountUpdated',
   StatusTextChanged = 'StatusTextChanged',
   BudgetSpending = 'BudgetSpending',
+  RewardPaid = 'RewardPaid',
+  NewMissedRewardLevelReached = 'NewMissedRewardLevelReached',
 }
 
 export type EventUpdateInput = {
@@ -3693,11 +3747,6 @@ export type PageInfo = {
   endCursor?: Maybe<Scalars['String']>
 }
 
-export enum PayoutType {
-  StandardReward = 'STANDARD_REWARD',
-  ReturnMissed = 'RETURN_MISSED',
-}
-
 export type ProcessorState = {
   __typename?: 'ProcessorState'
   lastCompleteBlock: Scalars['Float']
@@ -3790,6 +3839,9 @@ export type Query = {
   referralCutUpdatedEvents: Array<ReferralCutUpdatedEvent>
   referralCutUpdatedEventByUniqueInput?: Maybe<ReferralCutUpdatedEvent>
   referralCutUpdatedEventsConnection: ReferralCutUpdatedEventConnection
+  rewardPaidEvents: Array<RewardPaidEvent>
+  rewardPaidEventByUniqueInput?: Maybe<RewardPaidEvent>
+  rewardPaidEventsConnection: RewardPaidEventConnection
   stakeDecreasedEvents: Array<StakeDecreasedEvent>
   stakeDecreasedEventByUniqueInput?: Maybe<StakeDecreasedEvent>
   stakeDecreasedEventsConnection: StakeDecreasedEventConnection
@@ -3820,9 +3872,6 @@ export type Query = {
   workerExitedEvents: Array<WorkerExitedEvent>
   workerExitedEventByUniqueInput?: Maybe<WorkerExitedEvent>
   workerExitedEventsConnection: WorkerExitedEventConnection
-  workerPayoutEvents: Array<WorkerPayoutEvent>
-  workerPayoutEventByUniqueInput?: Maybe<WorkerPayoutEvent>
-  workerPayoutEventsConnection: WorkerPayoutEventConnection
   workerRewardAccountUpdatedEvents: Array<WorkerRewardAccountUpdatedEvent>
   workerRewardAccountUpdatedEventByUniqueInput?: Maybe<WorkerRewardAccountUpdatedEvent>
   workerRewardAccountUpdatedEventsConnection: WorkerRewardAccountUpdatedEventConnection
@@ -3832,6 +3881,9 @@ export type Query = {
   workerRoleAccountUpdatedEvents: Array<WorkerRoleAccountUpdatedEvent>
   workerRoleAccountUpdatedEventByUniqueInput?: Maybe<WorkerRoleAccountUpdatedEvent>
   workerRoleAccountUpdatedEventsConnection: WorkerRoleAccountUpdatedEventConnection
+  workerStartedLeavingEvents: Array<WorkerStartedLeavingEvent>
+  workerStartedLeavingEventByUniqueInput?: Maybe<WorkerStartedLeavingEvent>
+  workerStartedLeavingEventsConnection: WorkerStartedLeavingEventConnection
   workers: Array<Worker>
   workerByUniqueInput?: Maybe<Worker>
   workersConnection: WorkerConnection
@@ -4399,6 +4451,26 @@ export type QueryReferralCutUpdatedEventsConnectionArgs = {
   orderBy?: Maybe<ReferralCutUpdatedEventOrderByInput>
 }
 
+export type QueryRewardPaidEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<RewardPaidEventWhereInput>
+  orderBy?: Maybe<RewardPaidEventOrderByInput>
+}
+
+export type QueryRewardPaidEventByUniqueInputArgs = {
+  where: RewardPaidEventWhereUniqueInput
+}
+
+export type QueryRewardPaidEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<RewardPaidEventWhereInput>
+  orderBy?: Maybe<RewardPaidEventOrderByInput>
+}
+
 export type QueryStakeDecreasedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -4599,26 +4671,6 @@ export type QueryWorkerExitedEventsConnectionArgs = {
   orderBy?: Maybe<WorkerExitedEventOrderByInput>
 }
 
-export type QueryWorkerPayoutEventsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<WorkerPayoutEventWhereInput>
-  orderBy?: Maybe<WorkerPayoutEventOrderByInput>
-}
-
-export type QueryWorkerPayoutEventByUniqueInputArgs = {
-  where: WorkerPayoutEventWhereUniqueInput
-}
-
-export type QueryWorkerPayoutEventsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<WorkerPayoutEventWhereInput>
-  orderBy?: Maybe<WorkerPayoutEventOrderByInput>
-}
-
 export type QueryWorkerRewardAccountUpdatedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -4677,6 +4729,26 @@ export type QueryWorkerRoleAccountUpdatedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerRoleAccountUpdatedEventWhereInput>
   orderBy?: Maybe<WorkerRoleAccountUpdatedEventOrderByInput>
+}
+
+export type QueryWorkerStartedLeavingEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<WorkerStartedLeavingEventWhereInput>
+  orderBy?: Maybe<WorkerStartedLeavingEventOrderByInput>
+}
+
+export type QueryWorkerStartedLeavingEventByUniqueInputArgs = {
+  where: WorkerStartedLeavingEventWhereUniqueInput
+}
+
+export type QueryWorkerStartedLeavingEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<WorkerStartedLeavingEventWhereInput>
+  orderBy?: Maybe<WorkerStartedLeavingEventOrderByInput>
 }
 
 export type QueryWorkersArgs = {
@@ -4887,6 +4959,124 @@ export type ReferralCutUpdatedEventWhereInput = {
 }
 
 export type ReferralCutUpdatedEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type RewardPaidEvent = BaseGraphQlObject & {
+  __typename?: 'RewardPaidEvent'
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  event: Event
+  eventId: Scalars['String']
+  group: WorkingGroup
+  groupId: Scalars['String']
+  worker: Worker
+  workerId: Scalars['String']
+  /** The account that recieved the reward */
+  rewardAccount: Scalars['String']
+  /** Amount recieved */
+  amount: Scalars['BigInt']
+}
+
+export type RewardPaidEventConnection = {
+  __typename?: 'RewardPaidEventConnection'
+  totalCount: Scalars['Int']
+  edges: Array<RewardPaidEventEdge>
+  pageInfo: PageInfo
+}
+
+export type RewardPaidEventCreateInput = {
+  eventId: Scalars['ID']
+  groupId: Scalars['ID']
+  workerId: Scalars['ID']
+  rewardAccount: Scalars['String']
+  amount: Scalars['BigInt']
+}
+
+export type RewardPaidEventEdge = {
+  __typename?: 'RewardPaidEventEdge'
+  node: RewardPaidEvent
+  cursor: Scalars['String']
+}
+
+export enum RewardPaidEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  EventIdAsc = 'eventId_ASC',
+  EventIdDesc = 'eventId_DESC',
+  GroupIdAsc = 'groupId_ASC',
+  GroupIdDesc = 'groupId_DESC',
+  WorkerIdAsc = 'workerId_ASC',
+  WorkerIdDesc = 'workerId_DESC',
+  RewardAccountAsc = 'rewardAccount_ASC',
+  RewardAccountDesc = 'rewardAccount_DESC',
+  AmountAsc = 'amount_ASC',
+  AmountDesc = 'amount_DESC',
+}
+
+export type RewardPaidEventUpdateInput = {
+  eventId?: Maybe<Scalars['ID']>
+  groupId?: Maybe<Scalars['ID']>
+  workerId?: Maybe<Scalars['ID']>
+  rewardAccount?: Maybe<Scalars['String']>
+  amount?: Maybe<Scalars['BigInt']>
+}
+
+export type RewardPaidEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  eventId_eq?: Maybe<Scalars['ID']>
+  eventId_in?: Maybe<Array<Scalars['ID']>>
+  groupId_eq?: Maybe<Scalars['ID']>
+  groupId_in?: Maybe<Array<Scalars['ID']>>
+  workerId_eq?: Maybe<Scalars['ID']>
+  workerId_in?: Maybe<Array<Scalars['ID']>>
+  rewardAccount_eq?: Maybe<Scalars['String']>
+  rewardAccount_contains?: Maybe<Scalars['String']>
+  rewardAccount_startsWith?: Maybe<Scalars['String']>
+  rewardAccount_endsWith?: Maybe<Scalars['String']>
+  rewardAccount_in?: Maybe<Array<Scalars['String']>>
+  amount_eq?: Maybe<Scalars['BigInt']>
+  amount_gt?: Maybe<Scalars['BigInt']>
+  amount_gte?: Maybe<Scalars['BigInt']>
+  amount_lt?: Maybe<Scalars['BigInt']>
+  amount_lte?: Maybe<Scalars['BigInt']>
+  amount_in?: Maybe<Array<Scalars['BigInt']>>
+}
+
+export type RewardPaidEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -5897,7 +6087,7 @@ export type Worker = BaseGraphQlObject & {
   isLead: Scalars['Boolean']
   /** Current role stake (in JOY) */
   stake: Scalars['BigInt']
-  payouts: Array<WorkerPayoutEvent>
+  payouts: Array<RewardPaidEvent>
   /** Blocknumber of the block the worker was hired at */
   hiredAtBlock: Scalars['Int']
   /** Time the worker was hired at */
@@ -5919,6 +6109,7 @@ export type Worker = BaseGraphQlObject & {
   workerrewardaccountupdatedeventworker?: Maybe<Array<WorkerRewardAccountUpdatedEvent>>
   workerrewardamountupdatedeventworker?: Maybe<Array<WorkerRewardAmountUpdatedEvent>>
   workerroleaccountupdatedeventworker?: Maybe<Array<WorkerRoleAccountUpdatedEvent>>
+  workerstartedleavingeventworker?: Maybe<Array<WorkerStartedLeavingEvent>>
   workinggroupleader?: Maybe<Array<WorkingGroup>>
 }
 
@@ -6080,117 +6271,6 @@ export enum WorkerOrderByInput {
   ApplicationIdDesc = 'applicationId_DESC',
   StorageAsc = 'storage_ASC',
   StorageDesc = 'storage_DESC',
-}
-
-export type WorkerPayoutEvent = BaseGraphQlObject & {
-  __typename?: 'WorkerPayoutEvent'
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  /** Type of the worker payout */
-  type?: Maybe<PayoutType>
-  worker: Worker
-  workerId: Scalars['String']
-  /** Amount recieved */
-  recieved: Scalars['BigInt']
-  /** Amount missed (due to, for example, empty working group budget) */
-  missed: Scalars['BigInt']
-}
-
-export type WorkerPayoutEventConnection = {
-  __typename?: 'WorkerPayoutEventConnection'
-  totalCount: Scalars['Int']
-  edges: Array<WorkerPayoutEventEdge>
-  pageInfo: PageInfo
-}
-
-export type WorkerPayoutEventCreateInput = {
-  type?: Maybe<PayoutType>
-  workerId: Scalars['ID']
-  recieved: Scalars['BigInt']
-  missed: Scalars['BigInt']
-}
-
-export type WorkerPayoutEventEdge = {
-  __typename?: 'WorkerPayoutEventEdge'
-  node: WorkerPayoutEvent
-  cursor: Scalars['String']
-}
-
-export enum WorkerPayoutEventOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  TypeAsc = 'type_ASC',
-  TypeDesc = 'type_DESC',
-  WorkerIdAsc = 'workerId_ASC',
-  WorkerIdDesc = 'workerId_DESC',
-  RecievedAsc = 'recieved_ASC',
-  RecievedDesc = 'recieved_DESC',
-  MissedAsc = 'missed_ASC',
-  MissedDesc = 'missed_DESC',
-}
-
-export type WorkerPayoutEventUpdateInput = {
-  type?: Maybe<PayoutType>
-  workerId?: Maybe<Scalars['ID']>
-  recieved?: Maybe<Scalars['BigInt']>
-  missed?: Maybe<Scalars['BigInt']>
-}
-
-export type WorkerPayoutEventWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  type_eq?: Maybe<PayoutType>
-  type_in?: Maybe<Array<PayoutType>>
-  workerId_eq?: Maybe<Scalars['ID']>
-  workerId_in?: Maybe<Array<Scalars['ID']>>
-  recieved_eq?: Maybe<Scalars['BigInt']>
-  recieved_gt?: Maybe<Scalars['BigInt']>
-  recieved_gte?: Maybe<Scalars['BigInt']>
-  recieved_lt?: Maybe<Scalars['BigInt']>
-  recieved_lte?: Maybe<Scalars['BigInt']>
-  recieved_in?: Maybe<Array<Scalars['BigInt']>>
-  missed_eq?: Maybe<Scalars['BigInt']>
-  missed_gt?: Maybe<Scalars['BigInt']>
-  missed_gte?: Maybe<Scalars['BigInt']>
-  missed_lt?: Maybe<Scalars['BigInt']>
-  missed_lte?: Maybe<Scalars['BigInt']>
-  missed_in?: Maybe<Array<Scalars['BigInt']>>
-}
-
-export type WorkerPayoutEventWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type WorkerRewardAccountUpdatedEvent = BaseGraphQlObject & {
@@ -6512,6 +6592,112 @@ export type WorkerRoleAccountUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type WorkerStartedLeavingEvent = BaseGraphQlObject & {
+  __typename?: 'WorkerStartedLeavingEvent'
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  event: Event
+  eventId: Scalars['String']
+  group: WorkingGroup
+  groupId: Scalars['String']
+  worker: Worker
+  workerId: Scalars['String']
+  /** Optional rationale */
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type WorkerStartedLeavingEventConnection = {
+  __typename?: 'WorkerStartedLeavingEventConnection'
+  totalCount: Scalars['Int']
+  edges: Array<WorkerStartedLeavingEventEdge>
+  pageInfo: PageInfo
+}
+
+export type WorkerStartedLeavingEventCreateInput = {
+  eventId: Scalars['ID']
+  groupId: Scalars['ID']
+  workerId: Scalars['ID']
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type WorkerStartedLeavingEventEdge = {
+  __typename?: 'WorkerStartedLeavingEventEdge'
+  node: WorkerStartedLeavingEvent
+  cursor: Scalars['String']
+}
+
+export enum WorkerStartedLeavingEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  EventIdAsc = 'eventId_ASC',
+  EventIdDesc = 'eventId_DESC',
+  GroupIdAsc = 'groupId_ASC',
+  GroupIdDesc = 'groupId_DESC',
+  WorkerIdAsc = 'workerId_ASC',
+  WorkerIdDesc = 'workerId_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type WorkerStartedLeavingEventUpdateInput = {
+  eventId?: Maybe<Scalars['ID']>
+  groupId?: Maybe<Scalars['ID']>
+  workerId?: Maybe<Scalars['ID']>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type WorkerStartedLeavingEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  eventId_eq?: Maybe<Scalars['ID']>
+  eventId_in?: Maybe<Array<Scalars['ID']>>
+  groupId_eq?: Maybe<Scalars['ID']>
+  groupId_in?: Maybe<Array<Scalars['ID']>>
+  workerId_eq?: Maybe<Scalars['ID']>
+  workerId_in?: Maybe<Array<Scalars['ID']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+}
+
+export type WorkerStartedLeavingEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
 
 export type WorkerStatusActive = {
@@ -6566,17 +6752,17 @@ export type WorkerStatusActiveWhereUniqueInput = {
 
 export type WorkerStatusLeft = {
   __typename?: 'WorkerStatusLeft'
-  workerLeftEventId: Scalars['String']
+  workerStartedLeavingEventId: Scalars['String']
   workerExitedEventId?: Maybe<Scalars['String']>
 }
 
 export type WorkerStatusLeftCreateInput = {
-  workerLeftEventId: Scalars['String']
+  workerStartedLeavingEventId: Scalars['String']
   workerExitedEventId?: Maybe<Scalars['String']>
 }
 
 export type WorkerStatusLeftUpdateInput = {
-  workerLeftEventId?: Maybe<Scalars['String']>
+  workerStartedLeavingEventId?: Maybe<Scalars['String']>
   workerExitedEventId?: Maybe<Scalars['String']>
 }
 
@@ -6605,11 +6791,11 @@ export type WorkerStatusLeftWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  workerLeftEventId_eq?: Maybe<Scalars['String']>
-  workerLeftEventId_contains?: Maybe<Scalars['String']>
-  workerLeftEventId_startsWith?: Maybe<Scalars['String']>
-  workerLeftEventId_endsWith?: Maybe<Scalars['String']>
-  workerLeftEventId_in?: Maybe<Array<Scalars['String']>>
+  workerStartedLeavingEventId_eq?: Maybe<Scalars['String']>
+  workerStartedLeavingEventId_contains?: Maybe<Scalars['String']>
+  workerStartedLeavingEventId_startsWith?: Maybe<Scalars['String']>
+  workerStartedLeavingEventId_endsWith?: Maybe<Scalars['String']>
+  workerStartedLeavingEventId_in?: Maybe<Array<Scalars['String']>>
   workerExitedEventId_eq?: Maybe<Scalars['String']>
   workerExitedEventId_contains?: Maybe<Scalars['String']>
   workerExitedEventId_startsWith?: Maybe<Scalars['String']>
@@ -6809,6 +6995,7 @@ export type WorkingGroup = BaseGraphQlObject & {
   openingaddedeventgroup?: Maybe<Array<OpeningAddedEvent>>
   openingcanceledeventgroup?: Maybe<Array<OpeningCanceledEvent>>
   openingfilledeventgroup?: Maybe<Array<OpeningFilledEvent>>
+  rewardpaideventgroup?: Maybe<Array<RewardPaidEvent>>
   stakedecreasedeventgroup?: Maybe<Array<StakeDecreasedEvent>>
   stakeincreasedeventgroup?: Maybe<Array<StakeIncreasedEvent>>
   stakeslashedeventgroup?: Maybe<Array<StakeSlashedEvent>>
@@ -6819,6 +7006,7 @@ export type WorkingGroup = BaseGraphQlObject & {
   workerrewardaccountupdatedeventgroup?: Maybe<Array<WorkerRewardAccountUpdatedEvent>>
   workerrewardamountupdatedeventgroup?: Maybe<Array<WorkerRewardAmountUpdatedEvent>>
   workerroleaccountupdatedeventgroup?: Maybe<Array<WorkerRoleAccountUpdatedEvent>>
+  workerstartedleavingeventgroup?: Maybe<Array<WorkerStartedLeavingEvent>>
 }
 
 export type WorkingGroupApplication = BaseGraphQlObject & {
@@ -6912,6 +7100,7 @@ export type WorkingGroupApplicationStatus =
   | ApplicationStatusAccepted
   | ApplicationStatusRejected
   | ApplicationStatusWithdrawn
+  | ApplicationStatusCancelled
 
 export type WorkingGroupApplicationUpdateInput = {
   createdAt?: Maybe<Scalars['DateTime']>

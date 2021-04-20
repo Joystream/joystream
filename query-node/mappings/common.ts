@@ -15,13 +15,14 @@ export function createEvent({ blockNumber, extrinsic, index }: SubstrateEvent, t
 
 type MetadataClass<T> = {
   deserializeBinary: (bytes: Uint8Array) => T
+  name: string
 }
 
 export function deserializeMetadata<T>(metadataType: MetadataClass<T>, metadataBytes: Bytes): T | null {
   try {
     return metadataType.deserializeBinary(metadataBytes.toU8a(true))
   } catch (e) {
-    console.error(`Invalid opening metadata! (${metadataBytes.toHex()})`)
+    console.error(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
   }
 }

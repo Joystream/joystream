@@ -25,7 +25,14 @@ import {
   AppliedOnOpeningEventDetails,
   OpeningFilledEventDetails,
 } from './types'
-import { ApplicationId, Opening, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@joystream/types/working-group'
+import {
+  ApplicationId,
+  Opening,
+  OpeningId,
+  WorkerId,
+  ApplyOnOpeningParameters,
+  Worker,
+} from '@joystream/types/working-group'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -370,5 +377,21 @@ export class Api {
       throw new Error(`Opening by id ${id} not found!`)
     }
     return opening
+  }
+
+  public async getLeader(group: WorkingGroupModuleName): Promise<Worker> {
+    const leadId = await this.api.query[group].currentLead()
+    if (leadId.isNone) {
+      throw new Error('Cannot get lead role key: Lead not yet hired!')
+    }
+    return await this.api.query[group].workerById(leadId.unwrap())
+  }
+
+  public async getLeadRoleKey(group: WorkingGroupModuleName): Promise<string> {
+    return (await this.getLeader(group)).role_account_id.toString()
+  }
+
+  public async getLeaderStakingKey(group: WorkingGroupModuleName): Promise<string> {
+    return (await this.getLeader(group)).staking_account_id.toString()
   }
 }

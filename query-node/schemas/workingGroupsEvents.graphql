@@ -119,6 +119,20 @@ type TerminatedLeaderEvent @entity {
   rationale: String
 }
 
+type WorkerStartedLeavingEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "Optional rationale"
+  rationale: String
+}
+
 type StakeSlashedEvent @entity {
   "Generic event data"
   event: Event!
@@ -265,16 +279,19 @@ enum PayoutType {
 }
 
 # TODO: This will be either based on the actual runtime event or be just a custom query-node event generated of preBlock/postBlock
-type WorkerPayoutEvent @entity {
-  "Type of the worker payout"
-  type: PayoutType
+type RewardPaidEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
 
   "Related worker"
   worker: Worker!
 
-  "Amount recieved"
-  recieved: BigInt!
+  "The account that recieved the reward"
+  rewardAccount: String!
 
-  "Amount missed (due to, for example, empty working group budget)"
-  missed: BigInt!
+  "Amount recieved"
+  amount: BigInt!
 }

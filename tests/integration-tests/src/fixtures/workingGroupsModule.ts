@@ -14,6 +14,8 @@ import {
   WorkingGroupOpening,
   WorkingGroupOpeningType,
   Worker,
+  ApplicationWithdrawnEvent,
+  OpeningCanceledEvent,
 } from '../QueryNodeApiSchema.generated'
 import { ApplicationMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
 import {
@@ -23,6 +25,7 @@ import {
   OpeningAddedEventDetails,
   OpeningFilledEventDetails,
   lockIdByWorkingGroup,
+  EventDetails,
 } from '../types'
 import { Application, ApplicationId, Opening, OpeningId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
@@ -34,6 +37,7 @@ import { registry } from '@joystream/types'
 // TODO: Fetch from runtime when possible!
 const MIN_APPLICATION_STAKE = new BN(2000)
 const MIN_USTANKING_PERIOD = 43201
+export const LEADER_OPENING_STAKE = new BN(2000)
 
 export type OpeningParams = {
   stake: BN
@@ -50,11 +54,12 @@ const queryNodeQuestionTypeToMetadataQuestionType = (type: ApplicationFormQuesti
   return OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA
 }
 
-export class SudoCreateLeadOpeningFixture extends BaseFixture {
+export class CreateOpeningFixture extends BaseFixture {
   private query: QueryNodeApi
   private group: WorkingGroupModuleName
   private debug: Debugger.Debugger
   private openingParams: OpeningParams
+  private asSudo: boolean
 
   private event?: OpeningAddedEventDetails
   private tx?: SubmittableExtrinsic<'promise'>
@@ -64,8 +69,8 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     unstakingPeriod: MIN_USTANKING_PERIOD,
     reward: new BN(10),
     metadata: {
-      shortDescription: 'Test sudo lead opening',
-      description: '# Test sudo lead opening',
+      shortDescription: 'Test opening',
+      description: '# Test opening',
       expectedEndingTimestamp: Date.now() + 60,
       hiringLimit: 1,
       applicationDetails: '- This is automatically created opening, do not apply!',
@@ -109,13 +114,15 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     api: Api,
     query: QueryNodeApi,
     group: WorkingGroupModuleName,
-    openingParams?: Partial<OpeningParams>
+    openingParams?: Partial<OpeningParams>,
+    asSudo = false
   ) {
     super(api)
     this.query = query
-    this.debug = Debugger('fixture:SudoCreateLeadOpeningFixture')
+    this.debug = Debugger('fixture:CreateOpeningFixture')
     this.group = group
     this.openingParams = _.merge(this.defaultOpeningParams, openingParams)
+    this.asSudo = asSudo
   }
 
   private assertOpeningMatchQueriedResult(
@@ -129,7 +136,7 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
     assert.equal(qOpening.createdAtBlock, eventDetails.blockNumber)
     assert.equal(qOpening.group.name, this.group)
     assert.equal(qOpening.rewardPerBlock, this.openingParams.reward.toString())
-    assert.equal(qOpening.type, WorkingGroupOpeningType.Leader)
+    assert.equal(qOpening.type, this.asSudo ? WorkingGroupOpeningType.Leader : WorkingGroupOpeningType.Regular)
     assert.equal(qOpening.status.__typename, 'OpeningStatusOpen')
     assert.equal(qOpening.stakeAmount, this.openingParams.stake.toString())
     assert.equal(qOpening.unstakingPeriod, this.openingParams.unstakingPeriod)
@@ -168,19 +175,24 @@ export class SudoCreateLeadOpeningFixture extends BaseFixture {
   }
 
   async execute(): Promise<void> {
-    this.tx = this.api.tx.sudo.sudo(
-      this.api.tx[this.group].addOpening(
-        Utils.metadataToBytes(this.getMetadata()),
-        'Leader',
-        { stake_amount: this.openingParams.stake, leaving_unstaking_period: this.openingParams.unstakingPeriod },
-        this.openingParams.reward
-      )
+    const account = this.asSudo
+      ? await (await this.api.query.sudo.key()).toString()
+      : await this.api.getLeadRoleKey(this.group)
+    this.tx = this.api.tx[this.group].addOpening(
+      Utils.metadataToBytes(this.getMetadata()),
+      this.asSudo ? 'Leader' : 'Regular',
+      { stake_amount: this.openingParams.stake, leaving_unstaking_period: this.openingParams.unstakingPeriod },
+      this.openingParams.reward
     )
-    const sudoKey = await this.api.query.sudo.key()
-    const result = await this.api.signAndSend(this.tx, sudoKey)
+    if (this.asSudo) {
+      this.tx = this.api.tx.sudo.sudo(this.tx)
+    }
+    const txFee = await this.api.estimateTxFee(this.tx, account)
+    await this.api.treasuryTransferBalance(account, txFee)
+    const result = await this.api.signAndSend(this.tx, account)
     this.event = await this.api.retrieveOpeningAddedEventDetails(result, this.group)
 
-    this.debug(`Lead opening created (id: ${this.event.openingId.toString()})`)
+    this.debug(`Opening created (id: ${this.event.openingId.toString()})`)
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -333,7 +345,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
   }
 }
 
-export class SudoFillLeadOpening extends BaseFixture {
+export class SudoFillLeadOpeningFixture extends BaseFixture {
   private query: QueryNodeApi
   private group: WorkingGroupModuleName
   private debug: Debugger.Debugger
@@ -354,7 +366,7 @@ export class SudoFillLeadOpening extends BaseFixture {
   ) {
     super(api)
     this.query = query
-    this.debug = Debugger('fixture:SudoFillLeadOpening')
+    this.debug = Debugger('fixture:SudoFillLeadOpeningFixture')
     this.group = group
     this.openingId = openingId
     this.acceptedApplicationIds = acceptedApplicationIds
@@ -440,10 +452,10 @@ export class SudoFillLeadOpening extends BaseFixture {
     const eventDetails = this.event!
     const tx = this.tx!
     // Query the event and check event + hiredWorkers
-    await this.query.tryQueryWithTimeout(
+    const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getOpeningFilledEvent(eventDetails.blockNumber, eventDetails.indexInBlock),
-      (event) => this.assertQueriedOpeningFilledEventIsValid(eventDetails, tx.hash.toString(), event)
-    )
+      (qEvent) => this.assertQueriedOpeningFilledEventIsValid(eventDetails, tx.hash.toString(), qEvent)
+    )) as OpeningFilledEvent
 
     // Check opening status
     const {
@@ -453,22 +465,198 @@ export class SudoFillLeadOpening extends BaseFixture {
       throw new Error(`Query node: Opening ${this.openingId.toString()} not found!`)
     }
     assert.equal(qOpening.status.__typename, 'OpeningStatusFilled')
+    if (qOpening.status.__typename === 'OpeningStatusFilled') {
+      assert.equal(qOpening.status.openingFilledEventId, qEvent.id)
+    }
 
     // Check application statuses
-    const acceptedApplications = this.acceptedApplicationIds.map((id) => {
-      const application = qOpening.applications.find((a) => a.runtimeId === id.toNumber())
-      if (!application) {
-        throw new Error(`Application not found by id ${id.toString()} in opening ${qOpening.id}`)
+    const acceptedQApplications = this.acceptedApplicationIds.map((id) => {
+      const qApplication = qOpening.applications.find((a) => a.runtimeId === id.toNumber())
+      if (!qApplication) {
+        throw new Error(`Query node: Application not found by id ${id.toString()} in opening ${qOpening.id}`)
       }
-      assert.equal(application.status.__typename, 'ApplicationStatusAccepted')
-      return application
+      assert.equal(qApplication.status.__typename, 'ApplicationStatusAccepted')
+      if (qApplication.status.__typename === 'ApplicationStatusAccepted') {
+        assert.equal(qApplication.status.openingFilledEventId, qEvent.id)
+      }
+      return qApplication
     })
 
     qOpening.applications
-      .filter((a) => !acceptedApplications.some((acceptedA) => acceptedA.id === a.id))
-      .forEach((a) => assert.equal(a.status.__typename, 'ApplicationStatusRejected'))
+      .filter((a) => !acceptedQApplications.some((acceptedQA) => acceptedQA.id === a.id))
+      .forEach((qApplication) => {
+        assert.equal(qApplication.status.__typename, 'ApplicationStatusRejected')
+        if (qApplication.status.__typename === 'ApplicationStatusRejected') {
+          assert.equal(qApplication.status.openingFilledEventId, qEvent.id)
+        }
+      })
 
-    // TODO: LeadSet event
-    // TODO: check WorkingGroup.lead
+    // Check working group lead
+    if (!qOpening.group.leader) {
+      throw new Error('Query node: Group leader not set!')
+    }
+    assert.equal(qOpening.group.leader.runtimeId, qEvent.workersHired[0].runtimeId)
+  }
+}
+
+export class WithdrawApplicationsFixture extends BaseFixture {
+  private query: QueryNodeApi
+  private group: WorkingGroupModuleName
+  private debug: Debugger.Debugger
+  private applicationIds: ApplicationId[]
+  private accounts: string[]
+
+  private txs: SubmittableExtrinsic<'promise'>[] = []
+  private events: EventDetails[] = []
+
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    accounts: string[],
+    applicationIds: ApplicationId[]
+  ) {
+    super(api)
+    this.query = query
+    this.debug = Debugger('fixture:WithdrawApplicationsFixture')
+    this.group = group
+    this.accounts = accounts
+    this.applicationIds = applicationIds
+  }
+
+  async execute() {
+    this.txs = this.applicationIds.map((id) => this.api.tx[this.group].withdrawApplication(id))
+    const txFee = await this.api.estimateTxFee(this.txs[0], this.accounts[0])
+    await Promise.all(this.accounts.map((a) => this.api.treasuryTransferBalance(a, txFee)))
+    const results = await Promise.all(this.txs.map((tx, i) => this.api.signAndSend(tx, this.accounts[i])))
+    this.events = await Promise.all(
+      results.map((r) => this.api.retrieveWorkingGroupsEventDetails(r, this.group, 'ApplicationWithdrawn'))
+    )
+  }
+
+  private assertQueriedApplicationWithdrawnEventIsValid(
+    applicationId: ApplicationId,
+    txHash: string,
+    qEvent?: ApplicationWithdrawnEvent
+  ) {
+    if (!qEvent) {
+      throw new Error('Query node: ApplicationWithdrawnEvent not found!')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.ApplicationWithdrawn)
+    assert.equal(qEvent.application.runtimeId, applicationId.toNumber())
+    assert.equal(qEvent.group.name, this.group)
+  }
+
+  private assertApplicationStatusIsValid(
+    qEvent: ApplicationWithdrawnEvent,
+    qApplication?: WorkingGroupApplication | null
+  ) {
+    if (!qApplication) {
+      throw new Error('Query node: Application not found!')
+    }
+    assert.equal(qApplication.status.__typename, 'ApplicationStatusWithdrawn')
+    if (qApplication.status.__typename === 'ApplicationStatusWithdrawn') {
+      assert.equal(qApplication.status.applicationWithdrawnEventId, qEvent.id)
+    }
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+
+    // Query the evens
+    const qEvents = (await Promise.all(
+      this.events.map((eventDetails, i) =>
+        this.query.tryQueryWithTimeout(
+          () => this.query.getApplicationWithdrawnEvent(eventDetails.blockNumber, eventDetails.indexInBlock),
+          (qEvent) =>
+            this.assertQueriedApplicationWithdrawnEventIsValid(
+              this.applicationIds[i],
+              this.txs[i].hash.toString(),
+              qEvent
+            )
+        )
+      )
+    )) as ApplicationWithdrawnEvent[]
+
+    // Check application statuses
+    await Promise.all(
+      this.applicationIds.map(async (id, i) => {
+        const {
+          data: { workingGroupApplicationByUniqueInput: qApplication },
+        } = await this.query.getApplicationById(id, this.group)
+        this.assertApplicationStatusIsValid(qEvents[i], qApplication)
+      })
+    )
+  }
+}
+
+export class CancelOpeningFixture extends BaseFixture {
+  private query: QueryNodeApi
+  private group: WorkingGroupModuleName
+  private debug: Debugger.Debugger
+  private openingId: OpeningId
+
+  private tx?: SubmittableExtrinsic<'promise'>
+  private event?: EventDetails
+
+  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, openingId: OpeningId) {
+    super(api)
+    this.query = query
+    this.debug = Debugger('fixture:CancelOpeningFixture')
+    this.group = group
+    this.openingId = openingId
+  }
+
+  async execute() {
+    const account = await this.api.getLeadRoleKey(this.group)
+    this.tx = this.api.tx[this.group].cancelOpening(this.openingId)
+    const txFee = await this.api.estimateTxFee(this.tx, account)
+    await this.api.treasuryTransferBalance(account, txFee)
+    const result = await this.api.signAndSend(this.tx, account)
+    this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'OpeningCanceled')
+  }
+
+  private assertQueriedOpeningIsValid(qEvent: OpeningCanceledEvent, qOpening?: WorkingGroupOpening | null) {
+    if (!qOpening) {
+      throw new Error('Query node: Opening not found!')
+    }
+    assert.equal(qOpening.status.__typename, 'OpeningStatusCancelled')
+    if (qOpening.status.__typename === 'OpeningStatusCancelled') {
+      assert.equal(qOpening.status.openingCancelledEventId, qEvent.id)
+    }
+    qOpening.applications.forEach((a) => this.assertApplicationStatusIsValid(qEvent, a))
+  }
+
+  private assertApplicationStatusIsValid(qEvent: OpeningCanceledEvent, qApplication: WorkingGroupApplication) {
+    // It's possible that some of the applications have been withdrawn
+    assert.oneOf(qApplication.status.__typename, ['ApplicationStatusWithdrawn', 'ApplicationStatusCancelled'])
+    if (qApplication.status.__typename === 'ApplicationStatusCancelled') {
+      assert.equal(qApplication.status.openingCancelledEventId, qEvent.id)
+    }
+  }
+
+  private assertQueriedOpeningCancelledEventIsValid(txHash: string, qEvent?: OpeningCanceledEvent) {
+    if (!qEvent) {
+      throw new Error('Query node: OpeningCancelledEvent not found!')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.OpeningCanceled)
+    assert.equal(qEvent.group.name, this.group)
+    assert.equal(qEvent.opening.runtimeId, this.openingId.toNumber())
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const tx = this.tx!
+    const event = this.event!
+    const qEvent = (await this.query.tryQueryWithTimeout(
+      () => this.query.getOpeningCancelledEvent(event.blockNumber, event.indexInBlock),
+      (qEvent) => this.assertQueriedOpeningCancelledEventIsValid(tx.hash.toString(), qEvent)
+    )) as OpeningCanceledEvent
+    const {
+      data: { workingGroupOpeningByUniqueInput: qOpening },
+    } = await this.query.getOpeningById(this.openingId, this.group)
+    this.assertQueriedOpeningIsValid(qEvent, qOpening)
   }
 }

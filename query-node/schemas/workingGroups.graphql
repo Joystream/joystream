@@ -5,8 +5,7 @@ type WorkerStatusActive @variant {
 
 type WorkerStatusLeft @variant {
   # TODO: Variant relationships
-  # TODO: This is not yet emitted by runtime
-  workerLeftEventId: ID!
+  workerStartedLeavingEventId: ID!
 
   # Set when the unstaking period is finished
   workerExitedEventId: ID
@@ -55,7 +54,7 @@ type Worker @entity {
   stake: BigInt!
 
   "All related reward payouts"
-  payouts: [WorkerPayoutEvent!] @derivedFrom(field: "worker")
+  payouts: [RewardPaidEvent!] @derivedFrom(field: "worker")
 
   # TODO: should we use createdAt for consistency / doesn't Hydra actually require us to override this field?
   "Blocknumber of the block the worker was hired at"
@@ -139,6 +138,9 @@ enum WorkingGroupOpeningType {
 }
 
 type WorkingGroupOpeningMetadata @entity {
+  "Whether the originally provided metadata was valid"
+  originallyValid: Boolean!
+
   "Opening short description"
   shortDescription: String!
 
@@ -146,10 +148,10 @@ type WorkingGroupOpeningMetadata @entity {
   description: String!
 
   "Expected max. number of applicants that will be hired"
-  hiringLimit: Int!
+  hiringLimit: Int
 
   "Expected time when the opening will close"
-  expectedEnding: DateTime!
+  expectedEnding: DateTime
 
   "Md-formatted text explaining the application process"
   applicationDetails: String!
@@ -211,6 +213,10 @@ type ApplicationStatusRejected @variant {
   openingFilledEventId: ID!
 }
 
+type ApplicationStatusCancelled @variant {
+  openingCancelledEventId: ID!
+}
+
 type ApplicationStatusWithdrawn @variant {
   # TODO: Variant relationships
   applicationWithdrawnEventId: ID!
@@ -221,6 +227,7 @@ union WorkingGroupApplicationStatus =
   | ApplicationStatusAccepted
   | ApplicationStatusRejected
   | ApplicationStatusWithdrawn
+  | ApplicationStatusCancelled
 
 type WorkingGroupApplication @entity {
   "Application id ({workingGroupName}-{applicationId})"

@@ -31,6 +31,7 @@ enum EventType {
   WorkerExited
   TerminatedWorker
   TerminatedLeader
+  WorkerStartedLeaving
   StakeSlashed
   StakeDecreased
   StakeIncreased
@@ -41,6 +42,8 @@ enum EventType {
   WorkerRewardAmountUpdated
   StatusTextChanged
   BudgetSpending
+  RewardPaid
+  NewMissedRewardLevelReached
 }
 
 type Event @entity {
