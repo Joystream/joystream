@@ -18,14 +18,11 @@ const currentNetwork = Network.BABYLON
 /*
   Reports that insurmountable inconsistent state has been encountered and throws an exception.
 */
-export function inconsistentState(extraInfo: string, data?: unknown): never {
+export function inconsistentState(extraInfo: string, data?: unknown): void {
   const errorMessage = 'Inconsistent state: ' + extraInfo
 
   // log error
   logger.error(errorMessage, data)
-
-  // throw exception
-  throw errorMessage
 }
 
 /*

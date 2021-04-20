@@ -260,7 +260,12 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure member exists
     if (!member) {
-      return inconsistentState(`Actor is non-existing member`, memberId)
+      inconsistentState(`Actor is non-existing member`, memberId)
+      return {
+        // this will clear fields
+        ownerMember: undefined,
+        ownerCuratorGroup: undefined,
+      }
     }
 
     return {
@@ -275,7 +280,12 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure curator group exists
     if (!curatorGroup) {
-      return inconsistentState('Actor is non-existing curator group', curatorGroupId)
+      inconsistentState('Actor is non-existing curator group', curatorGroupId)
+      return {
+        // this will clear fields
+        ownerMember: undefined,
+        ownerCuratorGroup: undefined,
+      }
     }
 
     return {
@@ -366,13 +376,14 @@ interface IExtractAssetParameters {
 /*
   Selects asset from provided set of assets and prepares asset data fit to be saved to db.
 */
-async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetStorageOrUrls> {
+async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetStorageOrUrls | undefined> {
   // ensure asset index is valid
   if (parameters.assetIndex > parameters.assets.length) {
-    return inconsistentState(`Non-existing asset extraction requested`, {
+    inconsistentState(`Non-existing asset extraction requested`, {
       assetsProvided: parameters.assets.length,
       assetIndex: parameters.assetIndex,
     })
+    return undefined
   }
 
   // convert asset to data object record
@@ -390,11 +401,19 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetS
 
   Changes `result` argument!
 */
-function integrateAsset<T>(propertyName: string, result: Object, asset: AssetStorageOrUrls) {
+function integrateAsset<T>(propertyName: string, result: Object, asset: AssetStorageOrUrls | undefined) {
   // helpers - property names
   const nameUrl = propertyName + 'Urls'
   const nameDataObject = propertyName + 'DataObject'
   const nameAvailability = propertyName + 'Availability'
+
+  if (asset === undefined) {
+    result[nameUrl] = []
+    result[nameAvailability] = AssetAvailability.INVALID
+    result[nameDataObject] = undefined // plan deletion (will have effect when saved to db)
+
+    return result
+  }
 
   // is asset saved in storage?
   if (!isAssetInStorage(asset)) {
@@ -426,7 +445,8 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
 
   // ensure asset index is valid
   if (assetIndex > assets.length) {
-    return inconsistentState(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
+    inconsistentState(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
+    return undefined
   }
 
   const rawAsset = assets[assetIndex]
@@ -447,13 +467,14 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   return videoSize
 }
 
-async function prepareLanguage(languageIso: string, db: DatabaseManager, blockNumber: number): Promise<Language> {
+async function prepareLanguage(languageIso: string, db: DatabaseManager, blockNumber: number): Promise<Language | undefined> {
   // validate language string
   const isValidIso = ISO6391.validate(languageIso);
 
   // ensure language string is valid
   if (!isValidIso) {
-    return inconsistentState(`Invalid language ISO-639-1 provided`, languageIso)
+    inconsistentState(`Invalid language ISO-639-1 provided`, languageIso)
+    return undefined
   }
 
   // load language
@@ -517,13 +538,14 @@ async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, video
   return videoMeta
 }
 
-async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Promise<VideoCategory> {
+async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Promise<VideoCategory | undefined> {
   // load video category
   const category = await db.get(VideoCategory, { where: { id: categoryId.toString() } as FindConditions<VideoCategory> })
 
   // ensure video category exists
   if (!category) {
-    return inconsistentState('Non-existing video category association with video requested', categoryId)
+    inconsistentState('Non-existing video category association with video requested', categoryId)
+    return undefined
   }
 
   return category

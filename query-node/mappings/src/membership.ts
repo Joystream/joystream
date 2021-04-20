@@ -50,7 +50,12 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
   const { text, memberId } = new Members.ChangeMemberAboutTextCall(event).args
 
   // load member
-  const member = await getMemberById(db, memberId)
+  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+  // ensure member exists
+  if (!member) {
+    return inconsistentState(`Non-existing member about text update requested`, memberId)
+  }
 
   // update member
   member.about = convertBytesToString(text)
@@ -71,7 +76,12 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
   const { uri, memberId } = new Members.ChangeMemberAvatarCall(event).args
 
   // load member
-  const member = await getMemberById(db, memberId)
+  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+  // ensure member exists
+  if (!member) {
+    return inconsistentState(`Non-existing member avatar update requested`, memberId)
+  }
 
   // update member
   member.avatarUri = convertBytesToString(uri)
@@ -92,7 +102,12 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
   const { handle, memberId } = new Members.ChangeMemberHandleCall(event).args
 
   // load member
-  const member = await getMemberById(db, memberId)
+  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+  // ensure member exists
+  if (!member) {
+    return inconsistentState(`Non-existing member handle update requested`, memberId)
+  }
 
   // update member
   member.handle = convertBytesToString(handle)
@@ -112,7 +127,13 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
   // read event data
   const { newRootAccount, memberId } = new Members.SetRootAccountCall(event).args
 
-  const member = await getMemberById(db, memberId)
+  // load member
+  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+  // ensure member exists
+  if (!member) {
+    return inconsistentState(`Non-existing member root account update requested`, memberId)
+  }
 
   // update member
   member.rootAccount = newRootAccount.toString()
@@ -133,7 +154,12 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   const { newControllerAccount, memberId } = new Members.SetControllerAccountCall(event).args
 
   // load member
-  const member = await getMemberById(db, memberId)
+  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+  // ensure member exists
+  if (!member) {
+    return inconsistentState(`Non-existing member controller account update requested`, memberId)
+  }
 
   // update member
   member.controllerAccount = newControllerAccount.toString()
@@ -149,20 +175,6 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
-
-/*
-  Retrive membership from the database
-*/
-async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
-  // load member
-  const member = await db.get(Membership, { where: { id: id.toString() } as FindConditions<Membership> })
-
-  // ensure member exists
-  if (!member) {
-    return inconsistentState(`Operation on non-existing member requested`, id)
-  }
-  return member
-}
 
 /*
   Helper for converting Bytes type to string
