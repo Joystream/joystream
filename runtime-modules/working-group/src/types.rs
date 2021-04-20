@@ -258,3 +258,12 @@ pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
 >;
+
+// Reward payment type enum.
+pub(crate) enum RewardPaymentType {
+    // The reward was missed.
+    MissedReward,
+
+    // The reward was paid in time.
+    RegularReward,
+}
