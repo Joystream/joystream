@@ -635,6 +635,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
             Some(missed_reward),
         ));
         EventFixture::contains_crate_event(RawEvent::RewardPaid(
+            worker_id,
             account_id,
             missed_reward,
             RewardPaymentType::MissedReward,
@@ -1929,6 +1930,7 @@ fn rewards_payments_are_successful() {
 
         let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
         EventFixture::assert_last_crate_event(RawEvent::RewardPaid(
+            worker_id,
             account_id,
             reward_per_block * reward_period,
             RewardPaymentType::RegularReward,
