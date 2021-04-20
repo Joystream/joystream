@@ -3,11 +3,9 @@ import { channelMetadataFromInput, metadataToBytes } from '../../helpers/seriali
 import { ChannelInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import { CreateInterface, createType, registry } from '@joystream/types'
+import { CreateInterface } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
-import { Option } from '@polkadot/types'
-import { AccountId } from '@polkadot/types/interfaces'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
