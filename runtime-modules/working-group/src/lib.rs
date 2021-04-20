@@ -50,9 +50,9 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
+    OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
-use types::{ApplicationInfo, RewardPaymentType, WorkerInfo};
+use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
@@ -265,13 +265,8 @@ decl_event!(
         /// Params:
         /// - Receiver Account Id.
         /// - Reward
-        RewardPaid(AccountId, Balance),
-
-        /// Emits on paying the missed reward.
-        /// Params:
-        /// - Receiver Account Id.
-        /// - Missed reward
-        MissedRewardPaid(AccountId, Balance),
+        /// - Payment type (missed reward or regular one)
+        RewardPaid(AccountId, Balance, RewardPaymentType),
 
         /// Emits on reaching new missed reward.
         /// Params:
@@ -1355,15 +1350,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         reward_payment_type: RewardPaymentType,
     ) {
         Self::pay_from_budget(account_id, amount);
-
-        let event = match reward_payment_type {
-            RewardPaymentType::MissedReward => {
-                RawEvent::MissedRewardPaid(account_id.clone(), amount)
-            }
-            RewardPaymentType::RegularReward => RawEvent::RewardPaid(account_id.clone(), amount),
-        };
-
-        Self::deposit_event(event);
+        Self::deposit_event(RawEvent::RewardPaid(
+            account_id.clone(),
+            amount,
+            reward_payment_type,
+        ));
     }
 
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
