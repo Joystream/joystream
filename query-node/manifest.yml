@@ -10,7 +10,8 @@ entities:
   - generated/graphql-server/dist/**/*.model.js
 typegen:
   metadata:
-    source: wss://sumer.joystream.app
+    source: wss://sumer-dev.joystream.app/rpc
+    #source: wss://sumer.joystream.app
     #source: ws://localhost:9944 # use this to download types from local node (useful during development)
   events:
     # membership

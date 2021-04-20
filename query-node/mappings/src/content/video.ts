@@ -189,6 +189,7 @@ export async function content_VideoCreated(
     isCensored: false,
     channel,
     createdInBlock: event.blockNumber,
+    isFeatured: false,
 
     // default values for properties that might or might not be filled by metadata
     thumbnailPhotoUrls: [],

@@ -194,7 +194,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
       // prepare video file size if poosible
       const videoSize = await extractVideoSize(parameters.assets, metaAsObject.video)
 
-      result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize)
+      result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber)
       delete metaAsObject.mediaType
     }
 
@@ -516,15 +516,21 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promis
   return license
 }
 
-async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined): Promise<VideoMediaMetadata> {
+async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): Promise<VideoMediaMetadata> {
   // create new encoding info
-  const encoding = new VideoMediaEncoding(videoProtobuf.mediaType)
+  const encoding = new VideoMediaEncoding({
+    ...videoProtobuf.mediaType,
+
+    createdById: '1',
+    updatedById: '1',
+  })
 
   // create new video metadata
   const videoMeta = new VideoMediaMetadata({
     encoding,
     pixelWidth: videoProtobuf.mediaPixelWidth,
     pixelHeight: videoProtobuf.mediaPixelHeight,
+    createdInBlock: blockNumber,
 
     createdById: '1',
     updatedById: '1',
