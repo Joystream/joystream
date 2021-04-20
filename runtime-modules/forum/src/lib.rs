@@ -65,14 +65,12 @@ pub trait WeightInfo {
     fn delete_category_moderator(i: u32) -> Weight;
     fn create_thread(j: u32, k: u32, i: u32) -> Weight;
     fn edit_thread_title(i: u32, j: u32) -> Weight;
-    fn update_thread_archival_status_lead(i: u32) -> Weight;
-    fn update_thread_archival_status_moderator(i: u32) -> Weight;
     fn delete_thread(i: u32) -> Weight;
     fn move_thread_to_category_lead(i: u32) -> Weight;
     fn move_thread_to_category_moderator(i: u32) -> Weight;
     fn vote_on_poll(i: u32, j: u32) -> Weight;
     fn moderate_thread_lead(i: u32, k: u32) -> Weight;
-    fn moderate_thread_moderator(i: u32, j: u32, k: u32) -> Weight;
+    fn moderate_thread_moderator(i: u32, k: u32) -> Weight;
     fn add_post(i: u32, j: u32) -> Weight;
     fn react_post(i: u32) -> Weight;
     fn edit_post_text(i: u32, j: u32) -> Weight;
@@ -242,9 +240,6 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
     /// Author of post.
     pub author_id: ForumUserId,
 
-    /// Whether thread is archived.
-    pub archived: bool,
-
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
 
@@ -339,9 +334,6 @@ decl_error! {
 
         /// Thread not being updated.
         ThreadNotBeingUpdated,
-
-        /// Thread is immutable, i.e. archived.
-        ThreadImmutable,
 
         /// Not enough balance to create thread
         InsufficientBalanceForThreadCreation,
@@ -805,7 +797,6 @@ decl_module! {
                 category_id,
                 title_hash: T::calculate_hash(&title),
                 author_id: forum_user_id,
-                archived: false,
                 poll: poll.clone(),
                 cleanup_pay_off: T::ThreadDeposit::get(),
                 number_of_posts: 0,
@@ -886,53 +877,6 @@ decl_module! {
                     new_title,
                 )
             );
-
-            Ok(())
-        }
-
-        /// Update thread archival status
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the category depth
-        /// - DB:
-        ///    - O(W)
-        /// # </weight>
-        #[weight = WeightInfoForum::<T>::update_thread_archival_status_lead(
-            T::MaxCategoryDepth::get() as u32,
-        ).max(WeightInfoForum::<T>::update_thread_archival_status_moderator(
-            T::MaxCategoryDepth::get() as u32,
-        ))]
-        fn update_thread_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_archival_status: bool) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            let account_id = ensure_signed(origin)?;
-
-            // Ensure actor can update category
-            let (_, thread) = Self::ensure_can_update_thread_archival_status(account_id, &actor, &category_id, &thread_id)?;
-
-            // No change, invalid transaction
-            if new_archival_status == thread.archived {
-                return Err(Error::<T>::ThreadNotBeingUpdated.into());
-            }
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Mutate thread, and set possible new change parameters
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |c| c.archived = new_archival_status);
-
-            // Generate event
-            Self::deposit_event(RawEvent::ThreadUpdated(
-                    thread_id,
-                    new_archival_status,
-                    actor,
-                    category_id
-                ));
 
             Ok(())
         }
@@ -1121,7 +1065,6 @@ decl_module! {
         ).max(
             WeightInfoForum::<T>::moderate_thread_moderator(
                 T::MaxCategoryDepth::get() as u32,
-                0,
                 rationale.len().saturated_into(),
             )
         )]
@@ -1692,29 +1635,8 @@ impl<T: Trait> Module<T> {
         // Make sure thread exists
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
-        if thread.archived {
-            return Err(Error::<T>::ThreadImmutable);
-        }
-
         // and corresponding category is mutable
         let category = Self::ensure_category_is_mutable(category_id)?;
-
-        Ok((category, thread))
-    }
-
-    fn ensure_can_update_thread_archival_status(
-        account_id: T::AccountId,
-        actor: &PrivilegedActor<T>,
-        category_id: &T::CategoryId,
-        thread_id: &T::ThreadId,
-    ) -> Result<(Category<T::CategoryId, T::ThreadId, T::Hash>, ThreadOf<T>), Error<T>> {
-        // Check actor's role
-        Self::ensure_actor_role(&account_id, actor)?;
-
-        let (category, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
-
-        // Ensure actor can delete category
-        Self::ensure_can_moderate_category_path(actor, category_id)?;
 
         Ok((category, thread))
     }
