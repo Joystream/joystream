@@ -7,9 +7,10 @@ use super::mocks::{
     Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
 };
 
+use crate::tests::mocks::DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
 use crate::{
-    DataObjectCreationParameters, RawEvent, StorageBucketOperatorStatus,
-    UpdateStorageBucketForStaticBagsParams, UploadParameters, Voucher,
+    AcceptPendingDataObjectsParams, DataObjectCreationParameters, RawEvent,
+    StorageBucketOperatorStatus, UpdateStorageBucketForStaticBagsParams, UploadParameters, Voucher,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -37,6 +38,7 @@ impl EventFixture {
             UpdateStorageBucketForStaticBagsParams<u64>,
             u64,
             UploadParameters<Test>,
+            AcceptPendingDataObjectsParams<u64>,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -52,6 +54,7 @@ impl EventFixture {
             UpdateStorageBucketForStaticBagsParams<u64>,
             u64,
             UploadParameters<Test>,
+            AcceptPendingDataObjectsParams<u64>,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -59,7 +62,6 @@ impl EventFixture {
         Self::contains_global_event(converted_event)
     }
 
-    #[allow(dead_code)]
     pub fn assert_last_global_event(expected_event: TestEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
@@ -352,5 +354,43 @@ impl SetStorageOperatorMetadataFixture {
         } else {
             assert_eq!(old_metadata, new_metadata);
         }
+    }
+}
+
+pub struct AcceptPendingDataObjectsFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    params: AcceptPendingDataObjectsParams<u64>,
+}
+
+impl AcceptPendingDataObjectsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID),
+            worker_id: DEFAULT_WORKER_ID,
+            params: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn with_params(self, params: AcceptPendingDataObjectsParams<u64>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::accept_pending_data_objects(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }

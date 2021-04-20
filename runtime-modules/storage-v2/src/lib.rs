@@ -325,10 +325,15 @@ pub struct StorageBucket<WorkerId> {
     pub voucher: Voucher,
 }
 
+/// Data wrapper structure. Helps passing parameters to extrinsics.
+/// Defines a 'bag-to-data object' pair.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub struct BaggedDataObject<DataObjectId> {
+pub struct AssignedDataObject<DataObjectId> {
+    /// Bag ID.
     pub bag_id: BagId,
+
+    /// Data object ID.
     pub data_object_id: DataObjectId,
 }
 
@@ -341,10 +346,13 @@ pub struct UpdateStorageBucketForStaticBagsParams<StorageBucketId: Ord> {
     pub bags: BTreeMap<StaticBagId, BTreeSet<StorageBucketId>>,
 }
 
+/// Data wrapper structure. Helps passing the parameters to the
+/// `accept_pending_data_objects` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AcceptPendingDataObjectsParams<DataObjectId: Ord> {
-    pub bagged_data_objects: BTreeSet<BaggedDataObject<DataObjectId>>,
+    /// 'Bag' to 'data object' container.
+    pub assigned_data_objects: BTreeSet<AssignedDataObject<DataObjectId>>,
 }
 
 // Helper-struct for the data object uploading.
@@ -400,6 +408,7 @@ decl_event! {
             UpdateStorageBucketForStaticBagsParams<<T as Trait>::StorageBucketId>,
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
+        AcceptPendingDataObjectsParams = AcceptPendingDataObjectsParams<<T as Trait>::DataObjectId>,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -432,6 +441,12 @@ decl_event! {
         /// - invited worker ID
         /// - metadata
         StorageOperatorMetadataSet(StorageBucketId, WorkerId, Vec<u8>),
+
+        /// Emits on accepting pending data objects.
+        /// Params
+        /// - worker ID (storage provider ID)
+        /// - pending data objects
+        PendingDataObjectsAccepted(WorkerId, AcceptPendingDataObjectsParams),
     }
 }
 
@@ -676,14 +691,38 @@ decl_module! {
             );
         }
 
-        //TODO: add comment
+        /// A storage provider signals that the data object was successfully uploaded to its storage.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_pending_data_objects(
-            _origin,
-            _worker_id: WorkerId<T>,
-            _objects: AcceptPendingDataObjectsParams<T::DataObjectId>
+            origin,
+            worker_id: WorkerId<T>,
+            params: AcceptPendingDataObjectsParams<T::DataObjectId>
         ) {
-            //TODO implement
+            T::ensure_worker_origin(origin, worker_id)?;
+
+            //TODO: // validate objects
+            //TODO: // limit objects
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            for bag_to_object in params.assigned_data_objects.iter() {
+                //TODO: add dynamic bags
+                let BagId::StaticBag(static_bag_id) = bag_to_object.bag_id.clone();
+
+                let mut bag = Self::static_bag(&static_bag_id);
+
+                let data_object = bag.objects.get_mut(&bag_to_object.data_object_id);
+
+                if let Some(data_object) = data_object {
+                    data_object.accepted = true;
+                }
+
+                Self::save_static_bag(&static_bag_id, bag);
+            }
+
+            Self::deposit_event(RawEvent::PendingDataObjectsAccepted(worker_id, params));
         }
     }
 }

@@ -9,7 +9,8 @@ use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
 
 use crate::{
-    BagId, DataObject, DataObjectCreationParameters, Error, ModuleAccount, RawEvent, StaticBagId,
+    AcceptPendingDataObjectsParams, AssignedDataObject, BagId, DataObject,
+    DataObjectCreationParameters, Error, ModuleAccount, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, StorageTreasury, UpdateStorageBucketForStaticBagsParams,
     UploadParameters, Voucher,
 };
@@ -22,8 +23,9 @@ use mocks::{
 
 use fixtures::{
     create_data_object_candidates, create_single_data_object, increase_account_balance,
-    run_to_block, AcceptStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
-    SetStorageOperatorMetadataFixture, UpdateStorageBucketForStaticBagsFixture, UploadFixture,
+    run_to_block, AcceptPendingDataObjectsFixture, AcceptStorageBucketInvitationFixture,
+    CreateStorageBucketFixture, EventFixture, SetStorageOperatorMetadataFixture,
+    UpdateStorageBucketForStaticBagsFixture, UploadFixture,
 };
 
 #[test]
@@ -588,5 +590,74 @@ fn set_storage_operator_metadata_fails_with_invalid_storage_association() {
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(incorrect_storage_provider_id)
             .call_and_assert(Err(Error::<Test>::InvalidStorageProvider.into()));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let storage_provider_id = 10;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let council_bag_id = BagId::StaticBag(StaticBagId::Council);
+        let upload_params = UploadParameters::<Test> {
+            bag_id: council_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0; // just uploaded data object
+
+        let mut objects = BTreeSet::new();
+        objects.insert(AssignedDataObject {
+            bag_id: council_bag_id,
+            data_object_id,
+        });
+
+        let accept_params = AcceptPendingDataObjectsParams {
+            assigned_data_objects: objects,
+        };
+
+        let bag = Storage::council_bag();
+        // Check `accepted` flag for the fist data object in the bag.
+        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, false);
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_params(accept_params.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::council_bag();
+        // Check `accepted` flag for the fist data object in the bag.
+        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
+
+        EventFixture::assert_last_crate_event(RawEvent::PendingDataObjectsAccepted(
+            storage_provider_id,
+            accept_params,
+        ));
     });
 }
