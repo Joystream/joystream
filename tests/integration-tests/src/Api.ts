@@ -266,14 +266,17 @@ export class Api {
       return
     }
 
-    const blockHash = status.asInBlock
-    const { number: blockNumber } = await this.api.rpc.chain.getHeader(blockHash)
+    const blockHash = status.asInBlock.toString()
+    const blockNumber = (await this.api.rpc.chain.getHeader(blockHash)).number.toNumber()
+    const blockTimestamp = (await this.api.query.timestamp.now.at(blockHash)).toNumber()
     const blockEvents = await this.api.query.system.events.at(blockHash)
     const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) => blockEvent.hash.eq(record.event.hash))
 
     return {
       event: record.event,
-      blockNumber: blockNumber.toNumber(),
+      blockNumber,
+      blockHash,
+      blockTimestamp,
       indexInBlock,
     }
   }

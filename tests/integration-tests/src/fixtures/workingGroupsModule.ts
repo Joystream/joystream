@@ -133,7 +133,7 @@ export class CreateOpeningFixture extends BaseFixture {
       throw new Error('Query node: Opening not found')
     }
     assert.equal(qOpening.runtimeId, eventDetails.openingId.toNumber())
-    assert.equal(qOpening.createdAtBlock, eventDetails.blockNumber)
+    assert.equal(qOpening.createdAtBlock.number, eventDetails.blockNumber)
     assert.equal(qOpening.group.name, this.group)
     assert.equal(qOpening.rewardPerBlock, this.openingParams.reward.toString())
     assert.equal(qOpening.type, this.asSudo ? WorkingGroupOpeningType.Leader : WorkingGroupOpeningType.Regular)
@@ -268,7 +268,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
       throw new Error('Application not found')
     }
     assert.equal(qApplication.runtimeId, eventDetails.applicationId.toNumber())
-    assert.equal(qApplication.createdAtBlock, eventDetails.blockNumber)
+    assert.equal(qApplication.createdAtBlock.number, eventDetails.blockNumber)
     assert.equal(qApplication.opening.runtimeId, this.openingId.toNumber())
     assert.equal(qApplication.applicant.id, this.applicant.memberId.toString())
     assert.equal(qApplication.roleAccount, this.applicant.account)
@@ -443,7 +443,7 @@ export class SudoFillLeadOpeningFixture extends BaseFixture {
     assert.equal(qWorker.status.__typename, 'WorkerStatusActive')
     assert.equal(qWorker.isLead, true)
     assert.equal(qWorker.stake, applicationStake.toString())
-    assert.equal(qWorker.hiredAtBlock, eventDetails.blockNumber)
+    assert.equal(qWorker.hiredAtBlock.number, eventDetails.blockNumber)
     assert.equal(qWorker.application.runtimeId, applicationId.toNumber())
   }
 

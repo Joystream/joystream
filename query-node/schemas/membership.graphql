@@ -32,8 +32,8 @@ type Membership @entity {
   "Member's root account id"
   rootAccount: String!
 
-  "Block number when member was registered"
-  registeredAtBlock: Int!
+  "Block at which the member was registered"
+  registeredAtBlock: Block!
 
   "Timestamp when member was registered"
   registeredAtTime: DateTime!
@@ -70,8 +70,8 @@ type Membership @entity {
 }
 
 type MembershipSystemSnapshot @entity {
-  "Block number of the snapshot block"
-  snapshotBlock: Int!
+  "The snapshot block"
+  snapshotBlock: Block!
 
   "Time of the snapshot (based on block timestamp)"
   snapshotTime: DateTime!

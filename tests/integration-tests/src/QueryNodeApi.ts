@@ -17,6 +17,20 @@ import Debugger from 'debug'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
 import { WorkingGroupModuleName } from './types'
 
+const EVENT_GENERIC_FIELDS = `
+  id
+  event {
+    inBlock {
+      number
+      timestamp
+      network
+    }
+    inExtrinsic
+    indexInBlock
+    type
+  }
+`
+
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -85,7 +99,11 @@ export class QueryNodeApi {
           }
           controllerAccount
           rootAccount
-          registeredAtBlock
+          registeredAtBlock {
+            number
+            timestamp
+            network
+          }
           registeredAtTime
           entry
           isVerified
@@ -112,12 +130,7 @@ export class QueryNodeApi {
     const MEMBERTSHIP_BOUGHT_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           newMember {
             id
           }
@@ -149,12 +162,7 @@ export class QueryNodeApi {
     const MEMBER_PROFILE_UPDATED_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           member {
             id
           }
@@ -181,12 +189,7 @@ export class QueryNodeApi {
     const MEMBER_ACCOUNTS_UPDATED_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           member {
             id
           }
@@ -210,12 +213,7 @@ export class QueryNodeApi {
     const MEMBER_INVITED_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         memberInvitedEvents(where: { newMemberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           invitingMember {
             id
           }
@@ -247,12 +245,7 @@ export class QueryNodeApi {
     const INVITES_TRANSFERRED_BY_MEMBER_ID = gql`
       query($from: ID!) {
         invitesTransferredEvents(where: { sourceMemberId_eq: $from }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           sourceMember {
             id
           }
@@ -278,12 +271,7 @@ export class QueryNodeApi {
     const STAKING_ACCOUNT_ADDED_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           member {
             id
           }
@@ -306,12 +294,7 @@ export class QueryNodeApi {
     const STAKING_ACCOUNT_CONFIRMED_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           member {
             id
           }
@@ -334,12 +317,7 @@ export class QueryNodeApi {
     const STAKING_ACCOUNT_REMOVED_BY_MEMBER_ID = gql`
       query($memberId: ID!) {
         stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           member {
             id
           }
@@ -356,29 +334,34 @@ export class QueryNodeApi {
     })
   }
 
+  // FIXME: Cross-filtering is not enabled yet, so we have to use timestamp workaround
   public async getMembershipSystemSnapshot(
-    blockNumber: number,
+    timestamp: number,
     matchType: 'eq' | 'lt' | 'lte' | 'gt' | 'gte' = 'eq'
   ): Promise<MembershipSystemSnapshot | undefined> {
     const MEMBERSHIP_SYSTEM_SNAPSHOT_QUERY = gql`
-      query($blockNumber: Int!) {
-        membershipSystemSnapshots(where: { snapshotBlock_${matchType}: $blockNumber }, orderBy: snapshotBlock_DESC, limit: 1) {
-          snapshotBlock,
-          snapshotTime,
-          referralCut,
-          invitedInitialBalance,
-          defaultInviteCount,
+      query($time: DateTime!) {
+        membershipSystemSnapshots(where: { snapshotTime_${matchType}: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+          snapshotBlock {
+            timestamp
+            network
+            number
+          }
+          snapshotTime
+          referralCut
+          invitedInitialBalance
+          defaultInviteCount
           membershipPrice
         }
       }
     `
 
-    this.queryDebug(`Executing getMembershipSystemSnapshot(${matchType} ${blockNumber})`)
+    this.queryDebug(`Executing getMembershipSystemSnapshot(${matchType} ${timestamp})`)
 
     return (
       await this.queryNodeProvider.query<Pick<Query, 'membershipSystemSnapshots'>>({
         query: MEMBERSHIP_SYSTEM_SNAPSHOT_QUERY,
-        variables: { blockNumber },
+        variables: { time: new Date(timestamp) },
       })
     ).data.membershipSystemSnapshots[0]
   }
@@ -390,12 +373,7 @@ export class QueryNodeApi {
     const REFERRAL_CUT_UPDATED_BY_ID = gql`
       query($eventId: ID!) {
         referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           newValue
         }
       }
@@ -419,12 +397,7 @@ export class QueryNodeApi {
     const MEMBERSHIP_PRICE_UPDATED_BY_ID = gql`
       query($eventId: ID!) {
         membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           newPrice
         }
       }
@@ -448,12 +421,7 @@ export class QueryNodeApi {
     const INITIAL_INVITATION_BALANCE_UPDATED_BY_ID = gql`
       query($eventId: ID!) {
         initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           newInitialBalance
         }
       }
@@ -477,12 +445,7 @@ export class QueryNodeApi {
     const INITIAL_INVITATION_COUNT_UPDATED_BY_ID = gql`
       query($eventId: ID!) {
         initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           newInitialInvitationCount
         }
       }
@@ -558,7 +521,11 @@ export class QueryNodeApi {
           stakeAmount
           unstakingPeriod
           rewardPerBlock
-          createdAtBlock
+          createdAtBlock {
+            number
+            timestamp
+            network
+          }
           createdAt
         }
       }
@@ -582,7 +549,11 @@ export class QueryNodeApi {
         workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
           id
           runtimeId
-          createdAtBlock
+          createdAtBlock {
+            number
+            timestamp
+            network
+          }
           createdAt
           opening {
             id
@@ -636,12 +607,7 @@ export class QueryNodeApi {
     const APPLIED_ON_OPENING_BY_ID = gql`
       query($eventId: ID!) {
         appliedOnOpeningEvents(where: { eventId_eq: $eventId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           group {
             name
           }
@@ -672,12 +638,7 @@ export class QueryNodeApi {
     const OPENING_ADDED_BY_ID = gql`
       query($eventId: ID!) {
         openingAddedEvents(where: { eventId_eq: $eventId }) {
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           group {
             name
           }
@@ -707,13 +668,7 @@ export class QueryNodeApi {
     const OPENING_FILLED_BY_ID = gql`
       query($eventId: ID!) {
         openingFilledEvents(where: { eventId_eq: $eventId }) {
-          id
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           group {
             name
           }
@@ -741,7 +696,11 @@ export class QueryNodeApi {
             payouts {
               id
             }
-            hiredAtBlock
+            hiredAtBlock {
+              number
+              timestamp
+              network
+            }
             hiredAtTime
             application {
               id
@@ -771,13 +730,7 @@ export class QueryNodeApi {
     const APPLICATION_WITHDRAWN_BY_ID = gql`
       query($eventId: ID!) {
         applicationWithdrawnEvents(where: { eventId_eq: $eventId }) {
-          id
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           group {
             name
           }
@@ -807,13 +760,7 @@ export class QueryNodeApi {
     const OPENING_CANCELLED_BY_ID = gql`
       query($eventId: ID!) {
         openingCanceledEvents(where: { eventId_eq: $eventId }) {
-          id
-          event {
-            inBlock
-            inExtrinsic
-            indexInBlock
-            type
-          }
+          ${EVENT_GENERIC_FIELDS}
           group {
             name
           }

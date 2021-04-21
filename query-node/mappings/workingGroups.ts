@@ -6,7 +6,7 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { StorageWorkingGroup as WorkingGroups } from './generated/types'
 import { ApplicationMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { createEvent, deserializeMetadata } from './common'
+import { createEvent, deserializeMetadata, getOrCreateBlock } from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -18,7 +18,6 @@ import {
   OpeningStatusOpen,
   WorkingGroupOpeningType,
   EventType,
-  Event,
   WorkingGroupApplication,
   ApplicationFormQuestionAnswer,
   AppliedOnOpeningEvent,
@@ -216,7 +215,7 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
   const opening = new WorkingGroupOpening({
     createdAt: eventTime,
     updatedAt: eventTime,
-    createdAtBlock: event_.blockNumber,
+    createdAtBlock: await getOrCreateBlock(db, event_),
     id: `${group.name}-${openingRuntimeId.toString()}`,
     runtimeId: openingRuntimeId.toNumber(),
     applications: [],
@@ -233,7 +232,7 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
 
   await db.save<WorkingGroupOpening>(opening)
 
-  const event = await createEvent(event_, EventType.OpeningAdded)
+  const event = await createEvent(db, event_, EventType.OpeningAdded)
   const openingAddedEvent = new OpeningAddedEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
@@ -242,7 +241,6 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     opening,
   })
 
-  await db.save<Event>(event)
   await db.save<OpeningAddedEvent>(openingAddedEvent)
 }
 
@@ -267,7 +265,7 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
   const application = new WorkingGroupApplication({
     createdAt: eventTime,
     updatedAt: eventTime,
-    createdAtBlock: event_.blockNumber,
+    createdAtBlock: await getOrCreateBlock(db, event_),
     id: `${group.name}-${applicationRuntimeId.toString()}`,
     runtimeId: applicationRuntimeId.toNumber(),
     opening: new WorkingGroupOpening({ id: openingDbId }),
@@ -283,7 +281,7 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
   await db.save<WorkingGroupApplication>(application)
   await createApplicationQuestionAnswers(db, application, metadataBytes)
 
-  const event = await createEvent(event_, EventType.AppliedOnOpening)
+  const event = await createEvent(db, event_, EventType.AppliedOnOpening)
   const appliedOnOpeningEvent = new AppliedOnOpeningEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
@@ -293,7 +291,6 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
     application,
   })
 
-  await db.save<Event>(event)
   await db.save<AppliedOnOpeningEvent>(appliedOnOpeningEvent)
 }
 
@@ -315,7 +312,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
   const acceptedApplicationIds = createType('Vec<ApplicationId>', applicationIdsSet.toHex() as any)
 
   // Save the event
-  const event = await createEvent(event_, EventType.OpeningFilled)
+  const event = await createEvent(db, event_, EventType.OpeningFilled)
   const openingFilledEvent = new OpeningFilledEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
@@ -324,7 +321,6 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
     opening,
   })
 
-  await db.save<Event>(event)
   await db.save<OpeningFilledEvent>(openingFilledEvent)
 
   const hiredWorkers: Worker[] = []
@@ -356,7 +352,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
             updatedAt: eventTime,
             id: `${group.name}-${workerRuntimeId.toString()}`,
             runtimeId: workerRuntimeId.toNumber(),
-            hiredAtBlock: event_.blockNumber,
+            hiredAtBlock: await getOrCreateBlock(db, event_),
             hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
             application,
             group,
@@ -425,7 +421,7 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   // Create and save event
-  const event = createEvent(event_, EventType.OpeningCanceled)
+  const event = await createEvent(db, event_, EventType.OpeningCanceled)
   const openingCanceledEvent = new OpeningCanceledEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
@@ -434,7 +430,6 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
     opening,
   })
 
-  await db.save<Event>(event)
   await db.save<OpeningCanceledEvent>(openingCanceledEvent)
 
   // Set opening status
@@ -469,7 +464,7 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   // Create and save event
-  const event = createEvent(event_, EventType.ApplicationWithdrawn)
+  const event = await createEvent(db, event_, EventType.ApplicationWithdrawn)
   const applicationWithdrawnEvent = new ApplicationWithdrawnEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
@@ -478,7 +473,6 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
     application,
   })
 
-  await db.save<Event>(event)
   await db.save<ApplicationWithdrawnEvent>(applicationWithdrawnEvent)
 
   // Set application status

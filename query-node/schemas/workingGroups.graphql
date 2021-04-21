@@ -56,9 +56,8 @@ type Worker @entity {
   "All related reward payouts"
   payouts: [RewardPaidEvent!] @derivedFrom(field: "worker")
 
-  # TODO: should we use createdAt for consistency / doesn't Hydra actually require us to override this field?
-  "Blocknumber of the block the worker was hired at"
-  hiredAtBlock: Int!
+  "Block the worker was hired at"
+  hiredAtBlock: Block!
 
   "Time the worker was hired at"
   hiredAtTime: DateTime!
@@ -86,8 +85,8 @@ type WorkingGroupMetadata @entity {
   "Working group description text"
   description: String
 
-  "Blocknumber of the block at which status was set"
-  setAtBlock: Int!
+  "Block the status was set at"
+  setAtBlock: Block!
 
   "The time at which status was set"
   setAtTime: DateTime!
@@ -191,8 +190,8 @@ type WorkingGroupOpening @entity {
   "Initial workers' reward per block"
   rewardPerBlock: BigInt!
 
-  "Blocknumber of opening creation block"
-  createdAtBlock: Int!
+  "Block the opening was created at"
+  createdAtBlock: Block!
 
   "Time of opening creation"
   createdAt: DateTime!
@@ -260,8 +259,8 @@ type WorkingGroupApplication @entity {
   "Current application status"
   status: WorkingGroupApplicationStatus!
 
-  "Blocknumber of application creation block"
-  createdAtBlock: Int!
+  "Block the application was created at"
+  createdAtBlock: Block!
 
   "Time of application creation"
   createdAt: DateTime!

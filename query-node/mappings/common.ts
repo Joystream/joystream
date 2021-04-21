@@ -1,16 +1,28 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { EventType } from 'query-node/dist/src/modules/enums/enums'
+import { EventType, Network } from 'query-node/dist/src/modules/enums/enums'
 import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
+import { Block } from 'query-node/dist/model'
+import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 
-export function createEvent({ blockNumber, extrinsic, index }: SubstrateEvent, type: EventType): Event {
-  return new Event({
+export const CURRENT_NETWORK = Network.OLYMPIA
+
+export async function createEvent(
+  db: DatabaseManager,
+  substrateEvent: SubstrateEvent,
+  type: EventType
+): Promise<Event> {
+  const { blockNumber, index, extrinsic } = substrateEvent
+  const event = new Event({
     id: `${blockNumber}-${index}`,
-    inBlock: blockNumber,
+    inBlock: await getOrCreateBlock(db, substrateEvent),
     inExtrinsic: extrinsic?.hash,
     indexInBlock: index,
     type,
   })
+  await db.save<Event>(event)
+
+  return event
 }
 
 type MetadataClass<T> = {
@@ -25,4 +37,24 @@ export function deserializeMetadata<T>(metadataType: MetadataClass<T>, metadataB
     console.error(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
   }
+}
+
+export async function getOrCreateBlock(
+  db: DatabaseManager,
+  { blockNumber, blockTimestamp }: SubstrateEvent
+): Promise<Block> {
+  const block = await db.get(Block, { where: { number: blockNumber } })
+  if (!block) {
+    const newBlock = new Block({
+      id: `${CURRENT_NETWORK}-${blockNumber}`,
+      number: blockNumber,
+      timestamp: blockTimestamp,
+      network: CURRENT_NETWORK,
+    })
+    await db.save<Block>(newBlock)
+
+    return newBlock
+  }
+
+  return block
 }

@@ -64,7 +64,9 @@ abstract class MembershipFixture extends BaseFixture {
 
   findMatchingQueryNodeEvent<T extends AnyQueryNodeEvent>(eventToFind: EventDetails, queryNodeEvents: T[]) {
     const { blockNumber, indexInBlock } = eventToFind
-    const qEvent = queryNodeEvents.find((e) => e.event.inBlock === blockNumber && e.event.indexInBlock === indexInBlock)
+    const qEvent = queryNodeEvents.find(
+      (e) => e.event.inBlock.number === blockNumber && e.event.indexInBlock === indexInBlock
+    )
     if (!qEvent) {
       throw new Error(`Could not find matching query-node event (expected ${blockNumber}:${indexInBlock})!`)
     }
@@ -126,7 +128,7 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     const [qEvent] = qEvents
     const txParams = this.generateParamsFromAccountId(account)
     const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
-    assert.equal(qEvent.event.inBlock, eventDetails.blockNumber)
+    assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
     assert.equal(qEvent.event.type, EventType.MembershipBought)
@@ -435,7 +437,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     const [qEvent] = qEvents
     const txParams = this.generateParamsFromAccountId(account)
     const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
-    assert.equal(qEvent.event.inBlock, eventDetails.blockNumber)
+    assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
     assert.equal(qEvent.event.type, EventType.MemberInvited)
@@ -805,8 +807,8 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
   }
 
   private async assertBeforeSnapshotIsValid(beforeSnapshot: MembershipSystemSnapshot) {
-    assert.isNumber(beforeSnapshot.snapshotBlock)
-    const chainValues = await this.getMembershipSystemValuesAt(beforeSnapshot.snapshotBlock)
+    assert.isNumber(beforeSnapshot.snapshotBlock.number)
+    const chainValues = await this.getMembershipSystemValuesAt(beforeSnapshot.snapshotBlock.number)
     assert.equal(beforeSnapshot.referralCut, chainValues.referralCut)
     assert.equal(beforeSnapshot.invitedInitialBalance, chainValues.invitedInitialBalance.toString())
     assert.equal(beforeSnapshot.membershipPrice, chainValues.membershipPrice.toString())
@@ -871,19 +873,23 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     const { events, extrinsics, eventNames } = this
-    const beforeSnapshotMaxBlockNumber = Math.min(...events.map((e) => e.blockNumber)) - 1
-    const afterSnapshotBlockNumber = Math.max(...events.map((e) => e.blockNumber))
+    const beforeSnapshotMaxBlockTimestamp = (
+      await this.api.query.timestamp.now.at(
+        await this.api.getBlockHash(Math.min(...events.map((e) => e.blockNumber)) - 1)
+      )
+    ).toNumber()
+    const afterSnapshotBlockTimestamp = Math.max(...events.map((e) => e.blockTimestamp))
 
     // Fetch "afterSnapshot" first to make sure query node has progressed enough
     const afterSnapshot = (await this.query.tryQueryWithTimeout(
-      () => this.query.getMembershipSystemSnapshot(afterSnapshotBlockNumber),
+      () => this.query.getMembershipSystemSnapshot(afterSnapshotBlockTimestamp),
       (snapshot) => assert.isOk(snapshot)
     )) as MembershipSystemSnapshot
 
-    const beforeSnapshot = await this.query.getMembershipSystemSnapshot(beforeSnapshotMaxBlockNumber, 'lte')
+    const beforeSnapshot = await this.query.getMembershipSystemSnapshot(beforeSnapshotMaxBlockTimestamp, 'lte')
 
     if (!beforeSnapshot) {
-      throw new Error(`MembershipSystemSnapshot before block ${beforeSnapshotMaxBlockNumber} not found!`)
+      throw new Error(`MembershipSystemSnapshot before timestamp ${beforeSnapshotMaxBlockTimestamp} not found!`)
     }
 
     // Validate snapshots

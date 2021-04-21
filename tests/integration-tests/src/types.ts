@@ -14,6 +14,8 @@ export type AnyQueryNodeEvent = { event: GenericEventData }
 export interface EventDetails {
   event: Event
   blockNumber: number
+  blockTimestamp: number
+  blockHash: string
   indexInBlock: number
 }
 

@@ -46,6 +46,20 @@ enum EventType {
   NewMissedRewardLevelReached
 }
 
+type Block @entity {
+  "{network}-{blockNumber}"
+  id: ID!
+
+  "Block number (height)"
+  number: Int!
+
+  "Block timestamp"
+  timestamp: BigInt!
+
+  "Network the block was produced in"
+  network: Network!
+}
+
 type Event @entity {
   "{blockNumber}-{indexInBlock}"
   id: ID!
@@ -53,8 +67,8 @@ type Event @entity {
   "Hash of the extrinsic which caused the event to be emitted"
   inExtrinsic: String
 
-  "Blocknumber of a block in which the event was emitted."
-  inBlock: Int!
+  "Block in which the event was emitted."
+  inBlock: Block!
 
   "Index of event in block from which it was emitted."
   indexInBlock: Int!

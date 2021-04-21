@@ -8,7 +8,7 @@ import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { createEvent } from './common'
+import { createEvent, getOrCreateBlock } from './common'
 import {
   Membership,
   EventType,
@@ -19,7 +19,6 @@ import {
   MemberProfileUpdatedEvent,
   MemberAccountsUpdatedEvent,
   MemberInvitedEvent,
-  Event,
   MemberVerificationStatusUpdatedEvent,
   InvitesTransferredEvent,
   StakingAccountConfirmedEvent,
@@ -41,7 +40,10 @@ async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Members
 }
 
 async function getLatestMembershipSystemSnapshot(db: DatabaseManager): Promise<MembershipSystemSnapshot> {
-  const membershipSystem = await db.get(MembershipSystemSnapshot, { order: { snapshotBlock: 'DESC' } })
+  const membershipSystem = await db.get(MembershipSystemSnapshot, {
+    order: { snapshotBlock: 'DESC' },
+    relations: ['snapshotBlock'],
+  })
   if (!membershipSystem) {
     throw new Error(`Membership system snapshot not found! Forgot to run "yarn workspace query-node-root db:init"?`)
   }
@@ -50,12 +52,12 @@ async function getLatestMembershipSystemSnapshot(db: DatabaseManager): Promise<M
 
 async function getOrCreateMembershipSnapshot(db: DatabaseManager, event_: SubstrateEvent) {
   const latestSnapshot = await getLatestMembershipSystemSnapshot(db)
-  return latestSnapshot.snapshotBlock === event_.blockNumber
+  return latestSnapshot.snapshotBlock.number === event_.blockNumber
     ? latestSnapshot
     : new MembershipSystemSnapshot({
         ...latestSnapshot,
         id: undefined,
-        snapshotBlock: event_.blockNumber,
+        snapshotBlock: await getOrCreateBlock(db, event_),
         snapshotTime: new Date(new BN(event_.blockTimestamp).toNumber()),
       })
 }
@@ -97,7 +99,7 @@ async function newMembershipFromParams(
     controllerAccount: controllerAccount.toString(),
     handle: handle.unwrap().toString(),
     metadata: metadataEntity,
-    registeredAtBlock: event_.blockNumber,
+    registeredAtBlock: await getOrCreateBlock(db, event_),
     registeredAtTime: new Date(event_.blockTimestamp.toNumber()),
     entry: entryMethod,
     referredBy:
@@ -131,8 +133,9 @@ export async function members_MembershipBought(db: DatabaseManager, event_: Subs
     MembershipEntryMethod.PAID,
     buyMembershipParameters
   )
+
   const membershipBoughtEvent = new MembershipBoughtEvent({
-    event: createEvent(event_, EventType.MembershipBought),
+    event: await createEvent(db, event_, EventType.MembershipBought),
     newMember: member,
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
@@ -144,7 +147,6 @@ export async function members_MembershipBought(db: DatabaseManager, event_: Subs
     referrer: member.referredBy,
   })
 
-  await db.save<Event>(membershipBoughtEvent.event)
   await db.save<MemberMetadata>(membershipBoughtEvent.metadata)
   await db.save<MembershipBoughtEvent>(membershipBoughtEvent)
 }
@@ -169,7 +171,7 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
   await db.save<Membership>(member)
 
   const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
-    event: createEvent(event_, EventType.MemberProfileUpdated),
+    event: await createEvent(db, event_, EventType.MemberProfileUpdated),
     member: member,
     newHandle: member.handle,
     newMetadata: new MemberMetadata({
@@ -178,7 +180,6 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
     }),
   })
 
-  await db.save<Event>(memberProfileUpdatedEvent.event)
   await db.save<MemberMetadata>(memberProfileUpdatedEvent.newMetadata)
   await db.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
 }
@@ -197,13 +198,12 @@ export async function members_MemberAccountsUpdated(db: DatabaseManager, event_:
   await db.save<Membership>(member)
 
   const memberAccountsUpdatedEvent = new MemberAccountsUpdatedEvent({
-    event: createEvent(event_, EventType.MemberAccountsUpdated),
+    event: await createEvent(db, event_, EventType.MemberAccountsUpdated),
     member: member,
     newRootAccount: member.rootAccount,
     newControllerAccount: member.controllerAccount,
   })
 
-  await db.save<Event>(memberAccountsUpdatedEvent.event)
   await db.save<MemberAccountsUpdatedEvent>(memberAccountsUpdatedEvent)
 }
 
@@ -218,12 +218,11 @@ export async function members_MemberVerificationStatusUpdated(
   await db.save<Membership>(member)
 
   const memberVerificationStatusUpdatedEvent = new MemberVerificationStatusUpdatedEvent({
-    event: createEvent(event_, EventType.MemberVerificationStatusUpdated),
+    event: await createEvent(db, event_, EventType.MemberVerificationStatusUpdated),
     member: member,
     isVerified: member.isVerified,
   })
 
-  await db.save<Event>(memberVerificationStatusUpdatedEvent.event)
   await db.save<MemberVerificationStatusUpdatedEvent>(memberVerificationStatusUpdatedEvent)
 }
 
@@ -241,13 +240,12 @@ export async function members_InvitesTransferred(db: DatabaseManager, event_: Su
   await db.save<Membership>(targetMember)
 
   const invitesTransferredEvent = new InvitesTransferredEvent({
-    event: createEvent(event_, EventType.InvitesTransferred),
+    event: await createEvent(db, event_, EventType.InvitesTransferred),
     sourceMember,
     targetMember,
     numberOfInvites: numberOfInvites.toNumber(),
   })
 
-  await db.save<Event>(invitesTransferredEvent.event)
   await db.save<InvitesTransferredEvent>(invitesTransferredEvent)
 }
 
@@ -267,7 +265,7 @@ export async function members_MemberInvited(db: DatabaseManager, event_: Substra
   await db.save<Membership>(invitingMember)
 
   const memberInvitedEvent = new MemberInvitedEvent({
-    event: createEvent(event_, EventType.MemberInvited),
+    event: await createEvent(db, event_, EventType.MemberInvited),
     invitingMember,
     newMember: invitedMember,
     handle: invitedMember.handle,
@@ -279,7 +277,6 @@ export async function members_MemberInvited(db: DatabaseManager, event_: Substra
     }),
   })
 
-  await db.save<Event>(memberInvitedEvent.event)
   await db.save<MemberMetadata>(memberInvitedEvent.metadata)
   await db.save<MemberInvitedEvent>(memberInvitedEvent)
 }
@@ -288,12 +285,11 @@ export async function members_StakingAccountAdded(db: DatabaseManager, event_: S
   const { memberId, accountId } = new Members.StakingAccountAddedEvent(event_).data
 
   const stakingAccountAddedEvent = new StakingAccountAddedEvent({
-    event: createEvent(event_, EventType.StakingAccountAddedEvent),
+    event: await createEvent(db, event_, EventType.StakingAccountAddedEvent),
     member: new Membership({ id: memberId.toString() }),
     account: accountId.toString(),
   })
 
-  await db.save<Event>(stakingAccountAddedEvent.event)
   await db.save<StakingAccountAddedEvent>(stakingAccountAddedEvent)
 }
 
@@ -305,12 +301,11 @@ export async function members_StakingAccountConfirmed(db: DatabaseManager, event
   await db.save<Membership>(member)
 
   const stakingAccountConfirmedEvent = new StakingAccountConfirmedEvent({
-    event: createEvent(event_, EventType.StakingAccountConfirmed),
+    event: await createEvent(db, event_, EventType.StakingAccountConfirmed),
     member,
     account: accountId.toString(),
   })
 
-  await db.save<Event>(stakingAccountConfirmedEvent.event)
   await db.save<StakingAccountConfirmedEvent>(stakingAccountConfirmedEvent)
 }
 
@@ -325,12 +320,11 @@ export async function members_StakingAccountRemoved(db: DatabaseManager, event_:
   await db.save<Membership>(member)
 
   const stakingAccountRemovedEvent = new StakingAccountRemovedEvent({
-    event: createEvent(event_, EventType.StakingAccountRemoved),
+    event: await createEvent(db, event_, EventType.StakingAccountRemoved),
     member,
     account: accountId.toString(),
   })
 
-  await db.save<Event>(stakingAccountRemovedEvent.event)
   await db.save<StakingAccountRemovedEvent>(stakingAccountRemovedEvent)
 }
 
@@ -345,11 +339,10 @@ export async function members_InitialInvitationCountUpdated(
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationCountUpdatedEvent = new InitialInvitationCountUpdatedEvent({
-    event: createEvent(event_, EventType.InitialInvitationCountUpdated),
+    event: await createEvent(db, event_, EventType.InitialInvitationCountUpdated),
     newInitialInvitationCount: newDefaultInviteCount.toNumber(),
   })
 
-  await db.save<Event>(initialInvitationCountUpdatedEvent.event)
   await db.save<InitialInvitationCountUpdatedEvent>(initialInvitationCountUpdatedEvent)
 }
 
@@ -361,11 +354,10 @@ export async function members_MembershipPriceUpdated(db: DatabaseManager, event_
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const membershipPriceUpdatedEvent = new MembershipPriceUpdatedEvent({
-    event: createEvent(event_, EventType.MembershipPriceUpdated),
+    event: await createEvent(db, event_, EventType.MembershipPriceUpdated),
     newPrice: newMembershipPrice,
   })
 
-  await db.save<Event>(membershipPriceUpdatedEvent.event)
   await db.save<MembershipPriceUpdatedEvent>(membershipPriceUpdatedEvent)
 }
 
@@ -377,11 +369,10 @@ export async function members_ReferralCutUpdated(db: DatabaseManager, event_: Su
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const referralCutUpdatedEvent = new ReferralCutUpdatedEvent({
-    event: createEvent(event_, EventType.ReferralCutUpdated),
+    event: await createEvent(db, event_, EventType.ReferralCutUpdated),
     newValue: newReferralCut.toNumber(),
   })
 
-  await db.save<Event>(referralCutUpdatedEvent.event)
   await db.save<ReferralCutUpdatedEvent>(referralCutUpdatedEvent)
 }
 
@@ -396,11 +387,10 @@ export async function members_InitialInvitationBalanceUpdated(
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationBalanceUpdatedEvent = new InitialInvitationBalanceUpdatedEvent({
-    event: createEvent(event_, EventType.InitialInvitationBalanceUpdated),
+    event: await createEvent(db, event_, EventType.InitialInvitationBalanceUpdated),
     newInitialBalance: newInvitedInitialBalance,
   })
 
-  await db.save<Event>(initialInvitationBalanceUpdatedEvent.event)
   await db.save<InitialInvitationBalanceUpdatedEvent>(initialInvitationBalanceUpdatedEvent)
 }
 
@@ -408,10 +398,9 @@ export async function members_LeaderInvitationQuotaUpdated(db: DatabaseManager, 
   const { u32: newQuota } = new Members.LeaderInvitationQuotaUpdatedEvent(event_).data
 
   const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({
-    event: createEvent(event_, EventType.LeaderInvitationQuotaUpdated),
+    event: await createEvent(db, event_, EventType.LeaderInvitationQuotaUpdated),
     newInvitationQuota: newQuota.toNumber(),
   })
 
-  await db.save<Event>(leaderInvitationQuotaUpdatedEvent.event)
   await db.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)
 }
