@@ -1,6 +1,6 @@
 //! # Proposals discussion module
 //! Proposals `discussion` module for the Joystream platform. Version 2.
-//! It contains discussion subframe_system of the proposals.
+//! It contains discussion system of the proposals.
 //!
 //! ## Overview
 //!

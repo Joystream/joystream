@@ -1,10 +1,10 @@
 //! # Proposals codex module
 //! Proposals `codex` module for the Joystream platform. Version 2.
-//! Component of the proposals frame_system. It contains preset proposal types.
+//! Component of the proposals system. It contains preset proposal types.
 //!
 //! ## Overview
 //!
-//! The proposals codex module serves as a facade and entry point of the proposals frame_system. It uses
+//! The proposals codex module serves as a facade and entry point of the proposals system. It uses
 //! proposals `engine` module to maintain a lifecycle of the proposal and to execute proposals.
 //! During the proposal creation, `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
