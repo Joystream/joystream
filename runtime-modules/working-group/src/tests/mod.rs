@@ -16,7 +16,9 @@ use crate::tests::mock::{
     STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
-use crate::{DefaultInstance, Error, OpeningType, RawEvent, StakePolicy, Trait, Worker};
+use crate::{
+    DefaultInstance, Error, OpeningType, RawEvent, RewardPaymentType, StakePolicy, Trait, Worker,
+};
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
     increase_total_balance_issuance_using_account_id, AddOpeningFixture, ApplyOnOpeningFixture,
@@ -632,7 +634,12 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
             worker_id,
             Some(missed_reward),
         ));
-        EventFixture::contains_crate_event(RawEvent::MissedRewardPaid(account_id, missed_reward));
+        EventFixture::contains_crate_event(RawEvent::RewardPaid(
+            worker_id,
+            account_id,
+            missed_reward,
+            RewardPaymentType::MissedReward,
+        ));
 
         // Didn't get the last reward period: leaving earlier than rewarding.
         let reward_block_count = leaving_block - reward_period;
@@ -1923,8 +1930,10 @@ fn rewards_payments_are_successful() {
 
         let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
         EventFixture::assert_last_crate_event(RawEvent::RewardPaid(
+            worker_id,
             account_id,
             reward_per_block * reward_period,
+            RewardPaymentType::RegularReward,
         ));
     });
 }
