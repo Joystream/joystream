@@ -181,7 +181,7 @@ type WorkingGroupOpening @entity {
   "Opening metadata"
   metadata: WorkingGroupOpeningMetadata!
 
-  "Role stake amount"
+  "Min. application/role stake amount"
   stakeAmount: BigInt!
 
   "Role stake unstaking period in blocks"
@@ -195,6 +195,29 @@ type WorkingGroupOpening @entity {
 
   "Time of opening creation"
   createdAt: DateTime!
+}
+
+type UpcomingWorkingGroupOpening @entity {
+  "Event the upcoming opening was created in"
+  createdInEvent: StatusTextChangedEvent! @unique
+
+  "Block the upcoming opening was added at"
+  createdAtBlock: Block!
+
+  "Related working group"
+  group: WorkingGroup!
+
+  "Expected opening start time"
+  expectedStart: DateTime!
+
+  "Expected min. application/role stake amount"
+  stakeAmount: BigInt!
+
+  "Expected reward per block"
+  rewardPerBlock: BigInt!
+
+  "Opening metadata"
+  metadata: WorkingGroupOpeningMetadata!
 }
 
 type ApplicationStatusPending @variant {

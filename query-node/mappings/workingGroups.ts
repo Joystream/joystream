@@ -4,7 +4,12 @@ eslint-disable @typescript-eslint/naming-convention
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { StorageWorkingGroup as WorkingGroups } from './generated/types'
-import { ApplicationMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
+import {
+  AddUpcomingOpening,
+  ApplicationMetadata,
+  OpeningMetadata,
+  WorkingGroupMetadataAction,
+} from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
 import { createEvent, deserializeMetadata, getOrCreateBlock } from './common'
 import BN from 'bn.js'
@@ -35,6 +40,8 @@ import {
   ApplicationStatusCancelled,
   ApplicationWithdrawnEvent,
   ApplicationStatusWithdrawn,
+  UpcomingWorkingGroupOpening,
+  StatusTextChangedEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -99,16 +106,14 @@ function parseQuestionInputType(type: InputTypeMap[keyof InputTypeMap]) {
   return ApplicationFormQuestionType.TEXT
 }
 
-function getDefaultOpeningMetadata(opening: WorkingGroupOpening): OpeningMetadata {
+function getDefaultOpeningMetadata(group: WorkingGroup, openingType: WorkingGroupOpeningType): OpeningMetadata {
   const metadata = new OpeningMetadata()
   metadata.setShortDescription(
-    `${_.startCase(opening.group.name)} ${
-      opening.type === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
-    } opening`
+    `${_.startCase(group.name)} ${openingType === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'} opening`
   )
   metadata.setDescription(
-    `Apply to this opening in order to be considered for ${_.startCase(opening.group.name)} ${
-      opening.type === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
+    `Apply to this opening in order to be considered for ${_.startCase(group.name)} ${
+      openingType === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
     } role!`
   )
   metadata.setApplicationDetails(`- Fill the application form`)
@@ -123,12 +128,20 @@ function getDefaultOpeningMetadata(opening: WorkingGroupOpening): OpeningMetadat
 async function createOpeningMeta(
   db: DatabaseManager,
   event_: SubstrateEvent,
-  opening: WorkingGroupOpening,
-  metadataBytes: Bytes
+  group: WorkingGroup,
+  openingType: WorkingGroupOpeningType,
+  originalMeta: Bytes | OpeningMetadata
 ): Promise<WorkingGroupOpeningMetadata> {
-  const deserializedMetadata = await deserializeMetadata(OpeningMetadata, metadataBytes)
-  const metadata = deserializedMetadata || (await getDefaultOpeningMetadata(opening))
-  const originallyValid = !!deserializedMetadata
+  let originallyValid: boolean
+  let metadata: OpeningMetadata
+  if (originalMeta instanceof Bytes) {
+    const deserializedMetadata = await deserializeMetadata(OpeningMetadata, originalMeta)
+    metadata = deserializedMetadata || (await getDefaultOpeningMetadata(group, openingType))
+    originallyValid = !!deserializedMetadata
+  } else {
+    metadata = originalMeta
+    originallyValid = true
+  }
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const {
@@ -199,6 +212,58 @@ async function createApplicationQuestionAnswers(
   )
 }
 
+async function handleAddUpcomingOpeningAction(
+  db: DatabaseManager,
+  event_: SubstrateEvent,
+  statusChangedEvent: StatusTextChangedEvent,
+  action: AddUpcomingOpening
+) {
+  const upcomingOpeningMeta = action.getMetadata().toObject()
+  const group = await getWorkingGroup(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const openingMeta = await createOpeningMeta(
+    db,
+    event_,
+    group,
+    WorkingGroupOpeningType.REGULAR,
+    action.getMetadata().getMetadata()
+  )
+  const upcomingOpening = new UpcomingWorkingGroupOpening({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    metadata: openingMeta,
+    group,
+    rewardPerBlock: new BN(upcomingOpeningMeta.rewardPerBlock!),
+    expectedStart: new Date(upcomingOpeningMeta.expectedStart!),
+    stakeAmount: new BN(upcomingOpeningMeta.minApplicationStake!),
+    createdInEvent: statusChangedEvent,
+    createdAtBlock: await getOrCreateBlock(db, event_),
+  })
+  await db.save<UpcomingWorkingGroupOpening>(upcomingOpening)
+}
+
+async function handleWorkingGroupMetadataAction(
+  db: DatabaseManager,
+  event_: SubstrateEvent,
+  statusChangedEvent: StatusTextChangedEvent,
+  action: WorkingGroupMetadataAction
+) {
+  switch (action.getActionCase()) {
+    case WorkingGroupMetadataAction.ActionCase.ADDUPCOMINGOPENING: {
+      await handleAddUpcomingOpeningAction(db, event_, statusChangedEvent, action.getAddupcomingopening()!)
+      break
+    }
+    case WorkingGroupMetadataAction.ActionCase.REMOVEUPCOMINGOPENING: {
+      // TODO
+      break
+    }
+    case WorkingGroupMetadataAction.ActionCase.SETGROUPMETADATA: {
+      // TODO:
+      break
+    }
+  }
+}
+
 // Mapping functions
 export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
@@ -227,7 +292,7 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
 
-  const metadata = await createOpeningMeta(db, event_, opening, metadataBytes)
+  const metadata = await createOpeningMeta(db, event_, group, opening.type, metadataBytes)
   opening.metadata = metadata
 
   await db.save<WorkingGroupOpening>(opening)
@@ -484,6 +549,32 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
   await db.save<WorkingGroupApplication>(application)
 }
 
+export async function workingGroups_StatusTextChanged(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { optBytes } = new WorkingGroups.StatusTextChangedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const statusTextChangedEvent = new StatusTextChangedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.StatusTextChanged),
+    metadata: optBytes.isSome ? optBytes.unwrap().toString() : undefined,
+  })
+
+  await db.save<StatusTextChangedEvent>(statusTextChangedEvent)
+
+  if (optBytes.isSome) {
+    const metadata = deserializeMetadata(WorkingGroupMetadataAction, optBytes.unwrap())
+    if (metadata) {
+      handleWorkingGroupMetadataAction(db, event_, statusTextChangedEvent, metadata)
+    }
+  } else {
+    console.warn('StatusTextChanged event: no metadata provided')
+  }
+}
+
 export async function workingGroups_WorkerRoleAccountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
@@ -524,9 +615,6 @@ export async function workingGroups_WorkerRewardAmountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  // TBD
-}
-export async function workingGroups_StatusTextChanged(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }
 export async function workingGroups_BudgetSpending(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {

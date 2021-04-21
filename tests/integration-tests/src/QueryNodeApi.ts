@@ -12,6 +12,8 @@ import {
   OpeningFilledEvent,
   Query,
   ReferralCutUpdatedEvent,
+  StatusTextChangedEvent,
+  UpcomingWorkingGroupOpening,
 } from './QueryNodeApiSchema.generated'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
@@ -781,5 +783,74 @@ export class QueryNodeApi {
         variables: { eventId },
       })
     ).data.openingCanceledEvents[0]
+  }
+
+  public async getStatusTextChangedEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<StatusTextChangedEvent | undefined> {
+    const STATUS_TEXT_CHANGED_BY_ID = gql`
+      query($eventId: ID!) {
+        statusTextChangedEvents(where: { eventId_eq: $eventId }) {
+          ${EVENT_GENERIC_FIELDS}
+          group {
+            name
+          }
+          metadata
+        }
+      }
+    `
+
+    const eventId = `${blockNumber}-${indexInBlock}`
+    this.queryDebug(`Executing getStatusTextChangedEvent(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'statusTextChangedEvents'>>({
+        query: STATUS_TEXT_CHANGED_BY_ID,
+        variables: { eventId },
+      })
+    ).data.statusTextChangedEvents[0]
+  }
+
+  public async getUpcomingOpeningByCreatedInEventId(eventId: string): Promise<UpcomingWorkingGroupOpening | undefined> {
+    const UPCOMING_OPENING_BY_ID = gql`
+      query($eventId: ID!) {
+        upcomingWorkingGroupOpenings(where: { createdInEventId_eq: $eventId }) {
+          group {
+            name
+          }
+          metadata {
+            shortDescription
+            description
+            hiringLimit
+            expectedEnding
+            applicationDetails
+            applicationFormQuestions {
+              question
+              type
+              index
+            }
+          }
+          expectedStart
+          stakeAmount
+          rewardPerBlock
+          createdAtBlock {
+            number
+            timestamp
+            network
+          }
+          createdAt
+        }
+      }
+    `
+
+    this.queryDebug(`Executing getUpcomingOpeningByCreatedInEventId(${eventId})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'upcomingWorkingGroupOpenings'>>({
+        query: UPCOMING_OPENING_BY_ID,
+        variables: { eventId },
+      })
+    ).data.upcomingWorkingGroupOpenings[0]
   }
 }

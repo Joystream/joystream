@@ -44,7 +44,7 @@ typegen:
     - storageWorkingGroup.BudgetSet
     - storageWorkingGroup.WorkerRewardAccountUpdated
     - storageWorkingGroup.WorkerRewardAmountUpdated
-    # - storageWorkingGroup.StatusTextChanged FIXME: Hydra bug
+    - storageWorkingGroup.StatusTextChanged
     - storageWorkingGroup.BudgetSpending
   calls:
     - members.updateProfile

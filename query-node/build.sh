@@ -26,5 +26,10 @@ yarn format
 # and are inline with root workspace resolutions
 yarn
 
-yarn workspace query-node build:dev
+# FIXME: Temporary workaround for Hydra bug. After it's fixed this can be just: "yarn workspace query-node build:dev"
+yarn workspace query-node config:dev
+yarn workspace query-node codegen
+sed -i 's/get bytes(): Option/get optBytes(): Option/' ./mappings/generated/types/storage-working-group.ts
+yarn workspace query-node compile
+
 yarn workspace query-node-mappings build

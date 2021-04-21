@@ -250,8 +250,8 @@ type StatusTextChangedEvent @entity {
   "Related group"
   group: WorkingGroup!
 
-  "New working group metadata"
-  metadata: WorkingGroupMetadata!
+  "Original action metadata as hex string"
+  metadata: String
 }
 
 type BudgetSpendingEvent @entity {

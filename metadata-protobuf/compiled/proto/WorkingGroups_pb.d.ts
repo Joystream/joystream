@@ -90,6 +90,46 @@ export namespace OpeningMetadata {
   }
 }
 
+export class UpcomingOpeningMetadata extends jspb.Message {
+  hasExpectedStart(): boolean;
+  clearExpectedStart(): void;
+  getExpectedStart(): number | undefined;
+  setExpectedStart(value: number): void;
+
+  hasRewardPerBlock(): boolean;
+  clearRewardPerBlock(): void;
+  getRewardPerBlock(): number | undefined;
+  setRewardPerBlock(value: number): void;
+
+  hasMinApplicationStake(): boolean;
+  clearMinApplicationStake(): void;
+  getMinApplicationStake(): number | undefined;
+  setMinApplicationStake(value: number): void;
+
+  hasMetadata(): boolean;
+  clearMetadata(): void;
+  getMetadata(): OpeningMetadata;
+  setMetadata(value?: OpeningMetadata): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): UpcomingOpeningMetadata.AsObject;
+  static toObject(includeInstance: boolean, msg: UpcomingOpeningMetadata): UpcomingOpeningMetadata.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: UpcomingOpeningMetadata, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): UpcomingOpeningMetadata;
+  static deserializeBinaryFromReader(message: UpcomingOpeningMetadata, reader: jspb.BinaryReader): UpcomingOpeningMetadata;
+}
+
+export namespace UpcomingOpeningMetadata {
+  export type AsObject = {
+    expectedStart?: number,
+    rewardPerBlock?: number,
+    minApplicationStake?: number,
+    metadata: OpeningMetadata.AsObject,
+  }
+}
+
 export class ApplicationMetadata extends jspb.Message {
   clearAnswersList(): void;
   getAnswersList(): Array<string>;
@@ -149,6 +189,114 @@ export namespace WorkingGroupStatusMetadata {
     about?: string,
     status?: string,
     statusMessage?: string,
+  }
+}
+
+export class SetGroupMetadata extends jspb.Message {
+  hasNewmetadata(): boolean;
+  clearNewmetadata(): void;
+  getNewmetadata(): WorkingGroupStatusMetadata;
+  setNewmetadata(value?: WorkingGroupStatusMetadata): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SetGroupMetadata.AsObject;
+  static toObject(includeInstance: boolean, msg: SetGroupMetadata): SetGroupMetadata.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: SetGroupMetadata, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SetGroupMetadata;
+  static deserializeBinaryFromReader(message: SetGroupMetadata, reader: jspb.BinaryReader): SetGroupMetadata;
+}
+
+export namespace SetGroupMetadata {
+  export type AsObject = {
+    newmetadata: WorkingGroupStatusMetadata.AsObject,
+  }
+}
+
+export class AddUpcomingOpening extends jspb.Message {
+  hasMetadata(): boolean;
+  clearMetadata(): void;
+  getMetadata(): UpcomingOpeningMetadata;
+  setMetadata(value?: UpcomingOpeningMetadata): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): AddUpcomingOpening.AsObject;
+  static toObject(includeInstance: boolean, msg: AddUpcomingOpening): AddUpcomingOpening.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: AddUpcomingOpening, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): AddUpcomingOpening;
+  static deserializeBinaryFromReader(message: AddUpcomingOpening, reader: jspb.BinaryReader): AddUpcomingOpening;
+}
+
+export namespace AddUpcomingOpening {
+  export type AsObject = {
+    metadata: UpcomingOpeningMetadata.AsObject,
+  }
+}
+
+export class RemoveUpcomingOpening extends jspb.Message {
+  hasId(): boolean;
+  clearId(): void;
+  getId(): string | undefined;
+  setId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RemoveUpcomingOpening.AsObject;
+  static toObject(includeInstance: boolean, msg: RemoveUpcomingOpening): RemoveUpcomingOpening.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RemoveUpcomingOpening, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RemoveUpcomingOpening;
+  static deserializeBinaryFromReader(message: RemoveUpcomingOpening, reader: jspb.BinaryReader): RemoveUpcomingOpening;
+}
+
+export namespace RemoveUpcomingOpening {
+  export type AsObject = {
+    id?: string,
+  }
+}
+
+export class WorkingGroupMetadataAction extends jspb.Message {
+  hasSetgroupmetadata(): boolean;
+  clearSetgroupmetadata(): void;
+  getSetgroupmetadata(): SetGroupMetadata | undefined;
+  setSetgroupmetadata(value?: SetGroupMetadata): void;
+
+  hasAddupcomingopening(): boolean;
+  clearAddupcomingopening(): void;
+  getAddupcomingopening(): AddUpcomingOpening | undefined;
+  setAddupcomingopening(value?: AddUpcomingOpening): void;
+
+  hasRemoveupcomingopening(): boolean;
+  clearRemoveupcomingopening(): void;
+  getRemoveupcomingopening(): RemoveUpcomingOpening | undefined;
+  setRemoveupcomingopening(value?: RemoveUpcomingOpening): void;
+
+  getActionCase(): WorkingGroupMetadataAction.ActionCase;
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): WorkingGroupMetadataAction.AsObject;
+  static toObject(includeInstance: boolean, msg: WorkingGroupMetadataAction): WorkingGroupMetadataAction.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: WorkingGroupMetadataAction, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): WorkingGroupMetadataAction;
+  static deserializeBinaryFromReader(message: WorkingGroupMetadataAction, reader: jspb.BinaryReader): WorkingGroupMetadataAction;
+}
+
+export namespace WorkingGroupMetadataAction {
+  export type AsObject = {
+    setgroupmetadata?: SetGroupMetadata.AsObject,
+    addupcomingopening?: AddUpcomingOpening.AsObject,
+    removeupcomingopening?: RemoveUpcomingOpening.AsObject,
+  }
+
+  export enum ActionCase {
+    ACTION_NOT_SET = 0,
+    SETGROUPMETADATA = 1,
+    ADDUPCOMINGOPENING = 2,
+    REMOVEUPCOMINGOPENING = 3,
   }
 }
 

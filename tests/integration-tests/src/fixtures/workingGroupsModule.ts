@@ -16,8 +16,17 @@ import {
   Worker,
   ApplicationWithdrawnEvent,
   OpeningCanceledEvent,
+  StatusTextChangedEvent,
+  UpcomingWorkingGroupOpening,
+  WorkingGroupOpeningMetadata,
 } from '../QueryNodeApiSchema.generated'
-import { ApplicationMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
+import {
+  AddUpcomingOpening,
+  ApplicationMetadata,
+  OpeningMetadata,
+  UpcomingOpeningMetadata,
+  WorkingGroupMetadataAction,
+} from '@joystream/metadata-protobuf'
 import {
   WorkingGroupModuleName,
   MemberContext,
@@ -54,15 +63,22 @@ const queryNodeQuestionTypeToMetadataQuestionType = (type: ApplicationFormQuesti
   return OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA
 }
 
-export class CreateOpeningFixture extends BaseFixture {
-  private query: QueryNodeApi
-  private group: WorkingGroupModuleName
-  private debug: Debugger.Debugger
-  private openingParams: OpeningParams
-  private asSudo: boolean
+abstract class BaseCreateOpeningFixture extends BaseFixture {
+  protected query: QueryNodeApi
+  protected group: WorkingGroupModuleName
+  protected openingParams: OpeningParams
 
-  private event?: OpeningAddedEventDetails
-  private tx?: SubmittableExtrinsic<'promise'>
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    openingParams?: Partial<OpeningParams>
+  ) {
+    super(api)
+    this.query = query
+    this.group = group
+    this.openingParams = _.merge(this.defaultOpeningParams, openingParams)
+  }
 
   private defaultOpeningParams: OpeningParams = {
     stake: MIN_APPLICATION_STAKE,
@@ -85,7 +101,7 @@ export class CreateOpeningFixture extends BaseFixture {
     return this.defaultOpeningParams
   }
 
-  private getMetadata(): OpeningMetadata {
+  protected getMetadata(): OpeningMetadata {
     const metadataObj = this.openingParams.metadata as Required<OpeningMetadata.AsObject>
     const metadata = new OpeningMetadata()
     metadata.setShortDescription(metadataObj.shortDescription)
@@ -103,12 +119,31 @@ export class CreateOpeningFixture extends BaseFixture {
     return metadata
   }
 
-  public getCreatedOpeningId(): OpeningId {
-    if (!this.event) {
-      throw new Error('Trying to get created opening id before it was created!')
-    }
-    return this.event.openingId
+  protected assertQueriedOpeningMetadataIsValid(qOpeningMeta: WorkingGroupOpeningMetadata) {
+    assert.equal(qOpeningMeta.shortDescription, this.openingParams.metadata.shortDescription)
+    assert.equal(qOpeningMeta.description, this.openingParams.metadata.description)
+    assert.equal(new Date(qOpeningMeta.expectedEnding).getTime(), this.openingParams.metadata.expectedEndingTimestamp)
+    assert.equal(qOpeningMeta.hiringLimit, this.openingParams.metadata.hiringLimit)
+    assert.equal(qOpeningMeta.applicationDetails, this.openingParams.metadata.applicationDetails)
+    assert.deepEqual(
+      qOpeningMeta.applicationFormQuestions
+        .sort((a, b) => a.index - b.index)
+        .map(({ question, type }) => ({
+          question,
+          type: queryNodeQuestionTypeToMetadataQuestionType(type),
+        })),
+      this.openingParams.metadata.applicationFormQuestionsList
+    )
   }
+
+  abstract execute(): Promise<void>
+}
+export class CreateOpeningFixture extends BaseCreateOpeningFixture {
+  private debug: Debugger.Debugger
+  private asSudo: boolean
+
+  private event?: OpeningAddedEventDetails
+  private tx?: SubmittableExtrinsic<'promise'>
 
   public constructor(
     api: Api,
@@ -117,12 +152,16 @@ export class CreateOpeningFixture extends BaseFixture {
     openingParams?: Partial<OpeningParams>,
     asSudo = false
   ) {
-    super(api)
-    this.query = query
-    this.debug = Debugger('fixture:CreateOpeningFixture')
-    this.group = group
-    this.openingParams = _.merge(this.defaultOpeningParams, openingParams)
+    super(api, query, group, openingParams)
+    this.debug = Debugger(`fixture:CreateOpeningFixture:${group}`)
     this.asSudo = asSudo
+  }
+
+  public getCreatedOpeningId(): OpeningId {
+    if (!this.event) {
+      throw new Error('Trying to get created opening id before it was created!')
+    }
+    return this.event.openingId
   }
 
   private assertOpeningMatchQueriedResult(
@@ -141,23 +180,7 @@ export class CreateOpeningFixture extends BaseFixture {
     assert.equal(qOpening.stakeAmount, this.openingParams.stake.toString())
     assert.equal(qOpening.unstakingPeriod, this.openingParams.unstakingPeriod)
     // Metadata
-    assert.equal(qOpening.metadata.shortDescription, this.openingParams.metadata.shortDescription)
-    assert.equal(qOpening.metadata.description, this.openingParams.metadata.description)
-    assert.equal(
-      new Date(qOpening.metadata.expectedEnding).getTime(),
-      this.openingParams.metadata.expectedEndingTimestamp
-    )
-    assert.equal(qOpening.metadata.hiringLimit, this.openingParams.metadata.hiringLimit)
-    assert.equal(qOpening.metadata.applicationDetails, this.openingParams.metadata.applicationDetails)
-    assert.deepEqual(
-      qOpening.metadata.applicationFormQuestions
-        .sort((a, b) => a.index - b.index)
-        .map(({ question, type }) => ({
-          question,
-          type: queryNodeQuestionTypeToMetadataQuestionType(type),
-        })),
-      this.openingParams.metadata.applicationFormQuestionsList
-    )
+    this.assertQueriedOpeningMetadataIsValid(qOpening.metadata)
   }
 
   private assertQueriedOpeningAddedEventIsValid(
@@ -237,7 +260,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
   ) {
     super(api)
     this.query = query
-    this.debug = Debugger('fixture:ApplyOnOpeningHappyCaseFixture')
+    this.debug = Debugger(`fixture:ApplyOnOpeningHappyCaseFixture:${group}`)
     this.group = group
     this.applicant = applicant
     this.stakingAccount = stakingAccount
@@ -366,7 +389,7 @@ export class SudoFillLeadOpeningFixture extends BaseFixture {
   ) {
     super(api)
     this.query = query
-    this.debug = Debugger('fixture:SudoFillLeadOpeningFixture')
+    this.debug = Debugger(`fixture:SudoFillLeadOpeningFixture:${group}`)
     this.group = group
     this.openingId = openingId
     this.acceptedApplicationIds = acceptedApplicationIds
@@ -518,7 +541,7 @@ export class WithdrawApplicationsFixture extends BaseFixture {
   ) {
     super(api)
     this.query = query
-    this.debug = Debugger('fixture:WithdrawApplicationsFixture')
+    this.debug = Debugger(`fixture:WithdrawApplicationsFixture:${group}`)
     this.group = group
     this.accounts = accounts
     this.applicationIds = applicationIds
@@ -603,7 +626,7 @@ export class CancelOpeningFixture extends BaseFixture {
   public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, openingId: OpeningId) {
     super(api)
     this.query = query
-    this.debug = Debugger('fixture:CancelOpeningFixture')
+    this.debug = Debugger(`fixture:CancelOpeningFixture:${group}`)
     this.group = group
     this.openingId = openingId
   }
@@ -658,5 +681,89 @@ export class CancelOpeningFixture extends BaseFixture {
       data: { workingGroupOpeningByUniqueInput: qOpening },
     } = await this.query.getOpeningById(this.openingId, this.group)
     this.assertQueriedOpeningIsValid(qEvent, qOpening)
+  }
+}
+export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
+  private debug: Debugger.Debugger
+  private expectedStartTs: number
+
+  private tx?: SubmittableExtrinsic<'promise'>
+  private event?: EventDetails
+
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    openingParams?: OpeningParams,
+    expectedStartTs?: number
+  ) {
+    super(api, query, group, openingParams)
+    this.debug = Debugger(`fixture:CreateUpcomingOpening:${group}`)
+    this.expectedStartTs = expectedStartTs || Date.now() + 3600
+  }
+
+  private getActionMetadata(): WorkingGroupMetadataAction {
+    const actionMeta = new WorkingGroupMetadataAction()
+    const addUpcomingOpeningMeta = new AddUpcomingOpening()
+
+    const upcomingOpeningMeta = new UpcomingOpeningMetadata()
+    const openingMeta = this.getMetadata()
+    upcomingOpeningMeta.setMetadata(openingMeta)
+    upcomingOpeningMeta.setExpectedStart(this.expectedStartTs)
+    upcomingOpeningMeta.setMinApplicationStake(this.openingParams.stake.toNumber())
+    upcomingOpeningMeta.setRewardPerBlock(this.openingParams.reward.toNumber())
+
+    addUpcomingOpeningMeta.setMetadata(upcomingOpeningMeta)
+    actionMeta.setAddupcomingopening(addUpcomingOpeningMeta)
+
+    return actionMeta
+  }
+
+  async execute() {
+    const account = await this.api.getLeadRoleKey(this.group)
+    this.tx = this.api.tx[this.group].setStatusText(Utils.metadataToBytes(this.getActionMetadata()))
+    const txFee = await this.api.estimateTxFee(this.tx, account)
+    await this.api.treasuryTransferBalance(account, txFee)
+    const result = await this.api.signAndSend(this.tx, account)
+    this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
+  }
+
+  private assertQueriedUpcomingOpeningIsValid(
+    eventDetails: EventDetails,
+    qUpcomingOpening?: UpcomingWorkingGroupOpening | null
+  ) {
+    if (!qUpcomingOpening) {
+      throw new Error('Query node: Upcoming opening not found!')
+    }
+    assert.equal(new Date(qUpcomingOpening.expectedStart).getTime(), this.expectedStartTs)
+    assert.equal(qUpcomingOpening.group.name, this.group)
+    assert.equal(qUpcomingOpening.rewardPerBlock, this.openingParams.reward.toString())
+    assert.equal(qUpcomingOpening.stakeAmount, this.openingParams.stake.toString())
+    assert.equal(qUpcomingOpening.createdAtBlock.number, eventDetails.blockNumber)
+    this.assertQueriedOpeningMetadataIsValid(qUpcomingOpening.metadata)
+  }
+
+  private assertQueriedStatusTextChangedEventIsValid(txHash: string, qEvent?: StatusTextChangedEvent) {
+    if (!qEvent) {
+      throw new Error('Query node: StatusTextChangedEvent not found!')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.StatusTextChanged)
+    assert.equal(qEvent.group.name, this.group)
+    assert.equal(qEvent.metadata, Utils.metadataToBytes(this.getActionMetadata()).toString())
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const tx = this.tx!
+    const event = this.event!
+    // Query the event
+    const qEvent = (await this.query.tryQueryWithTimeout(
+      () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
+      (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
+    )) as OpeningCanceledEvent
+    // Query the opening
+    const qUpcomingOpening = await this.query.getUpcomingOpeningByCreatedInEventId(qEvent.id)
+    this.assertQueriedUpcomingOpeningIsValid(event, qUpcomingOpening)
   }
 }
