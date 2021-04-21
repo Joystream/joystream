@@ -52,10 +52,13 @@ async function getLatestMembershipSystemSnapshot(db: DatabaseManager): Promise<M
 
 async function getOrCreateMembershipSnapshot(db: DatabaseManager, event_: SubstrateEvent) {
   const latestSnapshot = await getLatestMembershipSystemSnapshot(db)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
   return latestSnapshot.snapshotBlock.number === event_.blockNumber
     ? latestSnapshot
     : new MembershipSystemSnapshot({
         ...latestSnapshot,
+        createdAt: eventTime,
+        updatedAt: eventTime,
         id: undefined,
         snapshotBlock: await getOrCreateBlock(db, event_),
         snapshotTime: new Date(new BN(event_.blockTimestamp).toNumber()),
@@ -82,18 +85,22 @@ async function newMembershipFromParams(
   entryMethod: MembershipEntryMethod,
   params: BuyMembershipParameters | InviteMembershipParameters
 ): Promise<Membership> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(db)
   const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
   const metadata = deserializeMemberMeta(metatadaBytes)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const metadataEntity = new MemberMetadata({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     name: metadata?.getName(),
     about: metadata?.getAbout(),
     // TODO: avatar
   })
 
   const member = new Membership({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
@@ -125,7 +132,9 @@ async function newMembershipFromParams(
 }
 
 export async function members_MembershipBought(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId, buyMembershipParameters } = new Members.MembershipBoughtEvent(event_).data
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
   const member = await newMembershipFromParams(
     db,
     event_,
@@ -135,6 +144,8 @@ export async function members_MembershipBought(db: DatabaseManager, event_: Subs
   )
 
   const membershipBoughtEvent = new MembershipBoughtEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.MembershipBought),
     newMember: member,
     controllerAccount: member.controllerAccount,
@@ -152,25 +163,33 @@ export async function members_MembershipBought(db: DatabaseManager, event_: Subs
 }
 
 export async function members_MemberProfileUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId } = new Members.MemberProfileUpdatedEvent(event_).data
   const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event_).args
   const metadata = metadataBytesOpt.isSome ? deserializeMemberMeta(metadataBytesOpt.unwrap()) : undefined
   const member = await getMemberById(db, memberId)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   if (metadata?.hasName()) {
     member.metadata.name = metadata.getName()
+    member.metadata.updatedAt = eventTime
   }
   if (metadata?.hasAbout()) {
     member.metadata.about = metadata.getAbout()
+    member.metadata.updatedAt = eventTime
   }
   // TODO: avatar
   if (handle.isSome) {
     member.handle = bytesToString(handle.unwrap())
+    member.updatedAt = eventTime
   }
 
   await db.save<MemberMetadata>(member.metadata)
   await db.save<Membership>(member)
 
   const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.MemberProfileUpdated),
     member: member,
     newHandle: member.handle,
@@ -185,19 +204,25 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
 }
 
 export async function members_MemberAccountsUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId } = new Members.MemberAccountsUpdatedEvent(event_).data
   const { newRootAccount, newControllerAccount } = new Members.UpdateAccountsCall(event_).args
   const member = await getMemberById(db, memberId)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   if (newControllerAccount.isSome) {
     member.controllerAccount = newControllerAccount.unwrap().toString()
   }
   if (newRootAccount.isSome) {
     member.rootAccount = newRootAccount.unwrap().toString()
   }
+  member.updatedAt = eventTime
 
   await db.save<Membership>(member)
 
   const memberAccountsUpdatedEvent = new MemberAccountsUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.MemberAccountsUpdated),
     member: member,
     newRootAccount: member.rootAccount,
@@ -211,13 +236,19 @@ export async function members_MemberVerificationStatusUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId, bool: verificationStatus } = new Members.MemberVerificationStatusUpdatedEvent(event_).data
   const member = await getMemberById(db, memberId)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   member.isVerified = verificationStatus.valueOf()
+  member.updatedAt = eventTime
 
   await db.save<Membership>(member)
 
   const memberVerificationStatusUpdatedEvent = new MemberVerificationStatusUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.MemberVerificationStatusUpdated),
     member: member,
     isVerified: member.isVerified,
@@ -227,19 +258,26 @@ export async function members_MemberVerificationStatusUpdated(
 }
 
 export async function members_InvitesTransferred(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const {
     memberIds: { 0: sourceMemberId, 1: targetMemberId },
     u32: numberOfInvites,
   } = new Members.InvitesTransferredEvent(event_).data
   const sourceMember = await getMemberById(db, sourceMemberId)
   const targetMember = await getMemberById(db, targetMemberId)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   sourceMember.inviteCount -= numberOfInvites.toNumber()
+  sourceMember.updatedAt = eventTime
   targetMember.inviteCount += numberOfInvites.toNumber()
+  targetMember.updatedAt = eventTime
 
   await db.save<Membership>(sourceMember)
   await db.save<Membership>(targetMember)
 
   const invitesTransferredEvent = new InvitesTransferredEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.InvitesTransferred),
     sourceMember,
     targetMember,
@@ -250,7 +288,9 @@ export async function members_InvitesTransferred(db: DatabaseManager, event_: Su
 }
 
 export async function members_MemberInvited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId, inviteMembershipParameters } = new Members.MemberInvitedEvent(event_).data
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
   const invitedMember = await newMembershipFromParams(
     db,
     event_,
@@ -262,9 +302,12 @@ export async function members_MemberInvited(db: DatabaseManager, event_: Substra
   // Decrease invite count of inviting member
   const invitingMember = await getMemberById(db, inviteMembershipParameters.inviting_member_id)
   invitingMember.inviteCount -= 1
+  invitedMember.updatedAt = eventTime
   await db.save<Membership>(invitingMember)
 
   const memberInvitedEvent = new MemberInvitedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.MemberInvited),
     invitingMember,
     newMember: invitedMember,
@@ -282,9 +325,13 @@ export async function members_MemberInvited(db: DatabaseManager, event_: Substra
 }
 
 export async function members_StakingAccountAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId, accountId } = new Members.StakingAccountAddedEvent(event_).data
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const stakingAccountAddedEvent = new StakingAccountAddedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.StakingAccountAddedEvent),
     member: new Membership({ id: memberId.toString() }),
     account: accountId.toString(),
@@ -294,13 +341,19 @@ export async function members_StakingAccountAdded(db: DatabaseManager, event_: S
 }
 
 export async function members_StakingAccountConfirmed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId, accountId } = new Members.StakingAccountConfirmedEvent(event_).data
   const member = await getMemberById(db, memberId)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   member.boundAccounts.push(accountId.toString())
+  member.updatedAt = eventTime
 
   await db.save<Membership>(member)
 
   const stakingAccountConfirmedEvent = new StakingAccountConfirmedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.StakingAccountConfirmed),
     member,
     account: accountId.toString(),
@@ -310,16 +363,22 @@ export async function members_StakingAccountConfirmed(db: DatabaseManager, event
 }
 
 export async function members_StakingAccountRemoved(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId, accountId } = new Members.StakingAccountRemovedEvent(event_).data
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
   const member = await getMemberById(db, memberId)
+
   member.boundAccounts.splice(
     member.boundAccounts.findIndex((a) => a === accountId.toString()),
     1
   )
+  member.updatedAt = eventTime
 
   await db.save<Membership>(member)
 
   const stakingAccountRemovedEvent = new StakingAccountRemovedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.StakingAccountRemoved),
     member,
     account: accountId.toString(),
@@ -332,13 +391,18 @@ export async function members_InitialInvitationCountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { u32: newDefaultInviteCount } = new Members.InitialInvitationCountUpdatedEvent(event_).data
   const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   membershipSystemSnapshot.defaultInviteCount = newDefaultInviteCount.toNumber()
 
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationCountUpdatedEvent = new InitialInvitationCountUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.InitialInvitationCountUpdated),
     newInitialInvitationCount: newDefaultInviteCount.toNumber(),
   })
@@ -347,13 +411,18 @@ export async function members_InitialInvitationCountUpdated(
 }
 
 export async function members_MembershipPriceUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { balance: newMembershipPrice } = new Members.MembershipPriceUpdatedEvent(event_).data
   const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   membershipSystemSnapshot.membershipPrice = newMembershipPrice
 
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const membershipPriceUpdatedEvent = new MembershipPriceUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.MembershipPriceUpdated),
     newPrice: newMembershipPrice,
   })
@@ -362,13 +431,18 @@ export async function members_MembershipPriceUpdated(db: DatabaseManager, event_
 }
 
 export async function members_ReferralCutUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { u8: newReferralCut } = new Members.ReferralCutUpdatedEvent(event_).data
   const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   membershipSystemSnapshot.referralCut = newReferralCut.toNumber()
 
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const referralCutUpdatedEvent = new ReferralCutUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.ReferralCutUpdated),
     newValue: newReferralCut.toNumber(),
   })
@@ -380,13 +454,18 @@ export async function members_InitialInvitationBalanceUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { balance: newInvitedInitialBalance } = new Members.InitialInvitationBalanceUpdatedEvent(event_).data
   const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
   membershipSystemSnapshot.invitedInitialBalance = newInvitedInitialBalance
 
   await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationBalanceUpdatedEvent = new InitialInvitationBalanceUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.InitialInvitationBalanceUpdated),
     newInitialBalance: newInvitedInitialBalance,
   })
@@ -395,9 +474,13 @@ export async function members_InitialInvitationBalanceUpdated(
 }
 
 export async function members_LeaderInvitationQuotaUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { u32: newQuota } = new Members.LeaderInvitationQuotaUpdatedEvent(event_).data
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
     event: await createEvent(db, event_, EventType.LeaderInvitationQuotaUpdated),
     newInvitationQuota: newQuota.toNumber(),
   })
