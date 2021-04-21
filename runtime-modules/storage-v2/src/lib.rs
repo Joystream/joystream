@@ -130,7 +130,7 @@ pub trait ModuleAccount<T: balances::Trait> {
     }
 }
 
-/// Implementation of the StakingHandler.
+/// Implementation of the ModuleAccountHandler.
 pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
     /// Phantom marker for the trait.
     trait_marker: PhantomData<T>,
@@ -491,6 +491,12 @@ decl_error! {
 
         /// Insufficient balance for an operation.
         InsufficientBalance,
+
+        /// The `accept_pending_data_objects` extrinsic parameters are empty.
+        AcceptPendingDataObjectsParamsAreEmpty,
+
+        /// Data object doesn't exist.
+        DataObjectDoesntExist,
     }
 }
 
@@ -529,8 +535,6 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-
-             // TODO: remove the deletion prize
 
             let mut data = Self::create_data_objects(params.object_creation_list.clone());
 
@@ -700,8 +704,12 @@ decl_module! {
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
-            //TODO: // validate objects
-            //TODO: // limit objects
+            Self::validate_accept_pending_data_objects_params(&params)?;
+
+            //TODO: should I validate bucket voucher here?
+
+            // TODO: how do we validate that objects are accepted by correct storage provider that
+            // was invited to the storage bucket. Should we introduce an additional storage bucket id?
 
             //
             // == MUTATION SAFE ==
@@ -858,7 +866,7 @@ impl<T: Trait> Module<T> {
     fn create_data_objects(
         object_creation_list: Vec<DataObjectCreationParameters>,
     ) -> DataObjectCandidates<T> {
-        let deletion_prize: BalanceOf<T> = Default::default(); //TODO
+        let deletion_prize = T::DataObjectDeletionPrize::get();
 
         let data_objects = object_creation_list.iter().cloned().map(|obj| DataObject {
             accepted: false,
@@ -877,7 +885,7 @@ impl<T: Trait> Module<T> {
         .take(data_objects.len());
 
         let total_deletion_prize: BalanceOf<T> =
-            data_objects.len().saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
+            data_objects.len().saturated_into::<BalanceOf<T>>() * deletion_prize;
 
         let data_objects_map = ids.zip(data_objects).collect::<BTreeMap<_, _>>();
         let data_object_ids = data_objects_map.keys().cloned().collect();
@@ -888,5 +896,32 @@ impl<T: Trait> Module<T> {
             data_object_ids,
             total_deletion_prize,
         }
+    }
+
+    // Ensures validity `accept_pending_data_objects` extrinsic parameters
+    fn validate_accept_pending_data_objects_params(
+        params: &AcceptPendingDataObjectsParams<T::DataObjectId>,
+    ) -> DispatchResult {
+        ensure!(
+            !params.assigned_data_objects.is_empty(),
+            Error::<T>::AcceptPendingDataObjectsParamsAreEmpty
+        );
+
+        for bag_to_object in params.assigned_data_objects.iter() {
+            //TODO: add dynamic bags
+            let BagId::StaticBag(static_bag_id) = bag_to_object.bag_id.clone();
+
+            let bag = Self::static_bag(&static_bag_id);
+
+            ensure!(
+                bag.objects.contains_key(&bag_to_object.data_object_id),
+                Error::<T>::DataObjectDoesntExist
+            );
+        }
+
+        // TODO: how do we validate that objects are accepted by correct storage provider - that
+        // was invited to the storage bucket?
+
+        Ok(())
     }
 }

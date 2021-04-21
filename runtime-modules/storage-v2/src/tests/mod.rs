@@ -320,7 +320,7 @@ fn upload_succeeded() {
                         .clone()
                         .ipfs_content_id,
                     size: upload_params.object_creation_list[0].clone().size,
-                    deletion_prize: 0,
+                    deletion_prize: DataObjectDeletionPrize::get(),
                     accepted: false,
                 }
             )]
@@ -659,5 +659,53 @@ fn accept_pending_data_objects_succeeded() {
             storage_provider_id,
             accept_params,
         ));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_fails_with_empty_params() {
+    build_test_externalities().execute_with(|| {
+        let accept_params = AcceptPendingDataObjectsParams {
+            assigned_data_objects: BTreeSet::new(),
+        };
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_params(accept_params.clone())
+            .call_and_assert(Err(
+                Error::<Test>::AcceptPendingDataObjectsParamsAreEmpty.into()
+            ));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_fails_with_non_existing_data_object() {
+    build_test_externalities().execute_with(|| {
+        let data_object_id = 0;
+        let council_bag_id = BagId::StaticBag(StaticBagId::Council);
+
+        let mut objects = BTreeSet::new();
+        objects.insert(AssignedDataObject {
+            bag_id: council_bag_id,
+            data_object_id,
+        });
+
+        let accept_params = AcceptPendingDataObjectsParams {
+            assigned_data_objects: objects,
+        };
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_params(accept_params.clone())
+            .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
     });
 }

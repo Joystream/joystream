@@ -272,6 +272,7 @@ impl UploadFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_next_data_object_id = Storage::next_data_object_id();
         let actual_result = Storage::upload(
             self.origin.clone().into(),
             self.member_id,
@@ -279,6 +280,16 @@ impl UploadFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // check next data object ID
+            assert_eq!(
+                Storage::next_data_object_id(),
+                old_next_data_object_id + self.params.object_creation_list.len() as u64
+            );
+        } else {
+            assert_eq!(Storage::next_data_object_id(), old_next_data_object_id);
+        }
     }
 }
 
