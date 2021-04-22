@@ -346,7 +346,7 @@ fn upload_succeeded() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -397,7 +397,7 @@ fn upload_succeeded_with_non_empty_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, 1000);
 
         let upload_params1 = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, 2),
@@ -408,7 +408,7 @@ fn upload_succeeded_with_non_empty_bag() {
             .call_and_assert(Ok(()));
 
         let upload_params2 = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(3, 2),
@@ -452,7 +452,7 @@ fn upload_fails_with_empty_params_object() {
 fn upload_fails_with_zero_object_size() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
@@ -471,7 +471,7 @@ fn upload_fails_with_zero_object_size() {
 fn upload_fails_with_empty_object_cid() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
@@ -491,7 +491,7 @@ fn upload_fails_with_invalid_deletion_prize_account() {
     build_test_externalities().execute_with(|| {
         let invalid_account_id = 13300;
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: invalid_account_id,
             object_creation_list: create_single_data_object(),
@@ -510,7 +510,7 @@ fn upload_fails_with_max_data_object_size_exceeded() {
         let invalid_object_number: u8 = (max_object_size + 1).saturated_into();
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, invalid_object_number),
@@ -526,7 +526,7 @@ fn upload_fails_with_max_data_object_size_exceeded() {
 fn upload_fails_with_insufficient_balance_for_deletion_prize() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -665,7 +665,7 @@ fn accept_pending_data_objects_succeeded() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let council_bag_id = BagId::StaticBag(StaticBagId::Council);
+        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let upload_params = UploadParameters::<Test> {
             bag_id: council_bag_id.clone(),
             authentication_key: Vec::new(),
@@ -685,7 +685,7 @@ fn accept_pending_data_objects_succeeded() {
             data_object_id,
         });
 
-        let accept_params = AcceptPendingDataObjectsParams {
+        let accept_params = AcceptPendingDataObjectsParams::<Test> {
             assigned_data_objects: objects,
         };
 
@@ -722,7 +722,7 @@ fn accept_pending_data_objects_fails_with_invalid_origin() {
 #[test]
 fn accept_pending_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
-        let accept_params = AcceptPendingDataObjectsParams {
+        let accept_params = AcceptPendingDataObjectsParams::<Test> {
             assigned_data_objects: BTreeSet::new(),
         };
 
@@ -739,7 +739,7 @@ fn accept_pending_data_objects_fails_with_empty_params() {
 fn accept_pending_data_objects_fails_with_non_existing_data_object() {
     build_test_externalities().execute_with(|| {
         let data_object_id = 0;
-        let council_bag_id = BagId::StaticBag(StaticBagId::Council);
+        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
         let mut objects = BTreeSet::new();
         objects.insert(AssignedDataObject {
@@ -747,7 +747,7 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
             data_object_id,
         });
 
-        let accept_params = AcceptPendingDataObjectsParams {
+        let accept_params = AcceptPendingDataObjectsParams::<Test> {
             assigned_data_objects: objects,
         };
 

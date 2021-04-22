@@ -684,11 +684,13 @@ impl storage_v2::Trait for Runtime {
     type Event = Event;
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
+    type ChannelId = ChannelId;
+    type DaoId = DaoId;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type ModuleId = StorageModuleId;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)

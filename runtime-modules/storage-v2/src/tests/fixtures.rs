@@ -38,7 +38,7 @@ impl EventFixture {
             UpdateStorageBucketForStaticBagsParams<u64>,
             u64,
             UploadParameters<Test>,
-            AcceptPendingDataObjectsParams<u64>,
+            AcceptPendingDataObjectsParams<Test>,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -54,7 +54,7 @@ impl EventFixture {
             UpdateStorageBucketForStaticBagsParams<u64>,
             u64,
             UploadParameters<Test>,
-            AcceptPendingDataObjectsParams<u64>,
+            AcceptPendingDataObjectsParams<Test>,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -371,7 +371,7 @@ impl SetStorageOperatorMetadataFixture {
 pub struct AcceptPendingDataObjectsFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
-    params: AcceptPendingDataObjectsParams<u64>,
+    params: AcceptPendingDataObjectsParams<Test>,
 }
 
 impl AcceptPendingDataObjectsFixture {
@@ -391,7 +391,7 @@ impl AcceptPendingDataObjectsFixture {
         Self { worker_id, ..self }
     }
 
-    pub fn with_params(self, params: AcceptPendingDataObjectsParams<u64>) -> Self {
+    pub fn with_params(self, params: AcceptPendingDataObjectsParams<Test>) -> Self {
         Self { params, ..self }
     }
 

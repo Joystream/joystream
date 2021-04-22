@@ -23,7 +23,7 @@ mod tests;
 mod benchmarking;
 
 use codec::{Codec, Decode, Encode};
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 #[cfg(feature = "std")]
@@ -58,6 +58,26 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Storage bucket ID type.
     type StorageBucketId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Channel ID type (part of the dynamic bag ID).
+    type ChannelId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// DAO ID type (part of the dynamic bag ID).
+    type DaoId: Parameter
         + Member
         + BaseArithmetic
         + Codec
@@ -156,8 +176,6 @@ pub type WorkerId<T> = <T as membership::Trait>::ActorId;
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 //type DistributionBucketId = u64; // TODO: Move to the Trait
-// type ChannelId = u64; // Move to the Trait
-// type DaoId = u64; // Move to the Trait
 
 /// The fundamental concept in the system, which represents single static binary object in the
 /// system. The main goal of the system is to retain an index of all such objects, including who
@@ -180,10 +198,14 @@ pub struct DataObject<Balance> {
     pub ipfs_content_id: Vec<u8>,
 }
 
+/// Type alias for the StaticBagObject.
+pub type StaticBag<T> =
+    StaticBagObject<<T as Trait>::DataObjectId, <T as Trait>::StorageBucketId, BalanceOf<T>>;
+
 /// Static bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StaticBag<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
+pub struct StaticBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
     /// Associated data objects.
     pub objects: BTreeMap<DataObjectId, DataObject<Balance>>,
 
@@ -203,16 +225,21 @@ pub struct DataObjectCreationParameters {
     pub ipfs_content_id: Vec<u8>,
 }
 
+/// Type alias for the BagIdType.
+pub type BagId<T> = BagIdType<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DaoId>;
+
 /// Identifier for a bag.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum BagId {
+pub enum BagIdType<MemberId, ChannelId, DaoId> {
     /// Static bag type.
     StaticBag(StaticBagId),
-    //TODO: implement -    DynamicBag(DynamicBagId),
+
+    /// Dynamic bag type.
+    DynamicBag(DynamicBagIdType<MemberId, ChannelId, DaoId>),
 }
 
-impl Default for BagId {
+impl<MemberId, ChannelId, DaoId> Default for BagIdType<MemberId, ChannelId, DaoId> {
     fn default() -> Self {
         Self::StaticBag(Default::default())
     }
@@ -235,33 +262,47 @@ impl Default for StaticBagId {
     }
 }
 
-//TODO: implement:
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-// pub enum DynamicBagId {
-//     Member(MemberId),
-//     Channel(ChannelId),
-//     Dao(DaoId),
-// }
-//
-// impl Default for DynamicBagId {
-//     fn default() -> Self {
-//         Self::Member(Default::default())
-//     }
-// }
+/// Type alias for the DynamicBagIdType.
+pub type DynamicBagId<T> =
+    DynamicBagIdType<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DaoId>;
+
+/// A type for dynamic bags ID.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum DynamicBagIdType<MemberId, ChannelId, DaoId> {
+    /// Dynamic bag assigned to a member.
+    Member(MemberId),
+
+    /// Dynamic bag assigned to media channel.
+    Channel(ChannelId),
+
+    /// Dynamic bag assigned to a DAO.
+    Dao(DaoId),
+}
+
+impl<MemberId: Default, ChannelId, DaoId> Default for DynamicBagIdType<MemberId, ChannelId, DaoId> {
+    fn default() -> Self {
+        Self::Member(Default::default())
+    }
+}
 
 /// Alias for the UploadParametersObject
-pub type UploadParameters<T> = UploadParametersObject<<T as frame_system::Trait>::AccountId>;
+pub type UploadParameters<T> = UploadParametersObject<
+    MemberId<T>,
+    <T as Trait>::ChannelId,
+    <T as Trait>::DaoId,
+    <T as frame_system::Trait>::AccountId,
+>;
 
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct UploadParametersObject<AccountId> {
+pub struct UploadParametersObject<MemberId, ChannelId, DaoId, AccountId> {
     /// Public key used authentication in upload to liaison.
     pub authentication_key: Vec<u8>,
 
     /// Static or dynamic bag to upload data.
-    pub bag_id: BagId,
+    pub bag_id: BagIdType<MemberId, ChannelId, DaoId>,
 
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
@@ -330,9 +371,9 @@ pub struct StorageBucket<WorkerId> {
 /// Defines a 'bag-to-data object' pair.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub struct AssignedDataObject<DataObjectId> {
+pub struct AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId> {
     /// Bag ID.
-    pub bag_id: BagId,
+    pub bag_id: BagIdType<MemberId, ChannelId, DaoId>,
 
     /// Data object ID.
     pub data_object_id: DataObjectId,
@@ -347,13 +388,27 @@ pub struct UpdateStorageBucketForStaticBagsParams<StorageBucketId: Ord> {
     pub bags: BTreeMap<StaticBagId, BTreeSet<StorageBucketId>>,
 }
 
+/// Type alias for the AcceptPendingDataObjectsParamsObject.
+pub type AcceptPendingDataObjectsParams<T> = AcceptPendingDataObjectsParamsObject<
+    MemberId<T>,
+    <T as Trait>::ChannelId,
+    <T as Trait>::DaoId,
+    <T as Trait>::DataObjectId,
+>;
+
 /// Data wrapper structure. Helps passing the parameters to the
 /// `accept_pending_data_objects` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AcceptPendingDataObjectsParams<DataObjectId: Ord> {
+pub struct AcceptPendingDataObjectsParamsObject<
+    MemberId: Ord,
+    ChannelId: Ord,
+    DaoId: Ord,
+    DataObjectId: Ord,
+> {
     /// 'Bag' to 'data object' container.
-    pub assigned_data_objects: BTreeSet<AssignedDataObject<DataObjectId>>,
+    pub assigned_data_objects:
+        BTreeSet<AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId>>,
 }
 
 // Helper-struct for the data object uploading.
@@ -371,16 +426,34 @@ struct DataObjectCandidates<T: Trait> {
     total_deletion_prize: BalanceOf<T>,
 }
 
+/// Type alias for the DynamicBagObject.
+pub type DynamicBag<T> =
+    DynamicBagObject<<T as Trait>::DataObjectId, <T as Trait>::StorageBucketId, BalanceOf<T>>;
+
+/// Dynamic bag container.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct DynamicBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
+    /// Associated data objects.
+    pub objects: BTreeMap<DataObjectId, DataObject<Balance>>,
+
+    /// Associated storage buckets.
+    pub stored_by: BTreeSet<StorageBucketId>,
+    //TODO: implement -  pub distributed_by: BTreeSet<DistributionBucketId>,
+    /// Dynamic bag deletion prize.
+    pub deletion_prize: Balance,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Storage {
         // === Static bags
 
         /// Council bag.
-        pub CouncilBag get(fn council_bag): StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
+        pub CouncilBag get(fn council_bag): StaticBag<T>;
 
         /// Working group bag storage map.
         pub WorkingGroupBags get(fn working_group_bag): map hasher(blake2_128_concat)
-            WorkingGroup => StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
+            WorkingGroup => StaticBag<T>;
 
         /// Storage bucket id counter. Starts at zero.
         pub NextStorageBucketId get(fn next_storage_bucket_id): T::StorageBucketId;
@@ -413,7 +486,7 @@ decl_event! {
             UpdateStorageBucketForStaticBagsParams<<T as Trait>::StorageBucketId>,
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
-        AcceptPendingDataObjectsParams = AcceptPendingDataObjectsParams<<T as Trait>::DataObjectId>,
+        AcceptPendingDataObjectsParams = AcceptPendingDataObjectsParams<T>,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -551,13 +624,14 @@ decl_module! {
             <NextDataObjectId<T>>::put(data.next_data_object_id);
 
             //TODO: add dynamic bags
-            let BagId::StaticBag(static_bag_id) = params.bag_id.clone();
+            if let BagId::<T>::StaticBag(static_bag_id) = params.bag_id.clone() {
 
-            let mut bag = Self::static_bag(&static_bag_id);
+                let mut bag = Self::static_bag(&static_bag_id);
 
-            bag.objects.append(&mut data.data_objects_map);
+                bag.objects.append(&mut data.data_objects_map);
 
-            Self::save_static_bag(&static_bag_id, bag);
+                Self::save_static_bag(&static_bag_id, bag);
+            }
 
             Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
         }
@@ -700,13 +774,13 @@ decl_module! {
         pub fn accept_pending_data_objects(
             origin,
             worker_id: WorkerId<T>,
-            params: AcceptPendingDataObjectsParams<T::DataObjectId>
+            params: AcceptPendingDataObjectsParams<T>
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
             Self::validate_accept_pending_data_objects_params(&params)?;
 
-            //TODO: should I use bucket voucher here to validate the operation?
+            // TODO: should I use bucket voucher here to validate the operation?
 
             // TODO: how do we validate that objects are accepted by correct storage provider that
             // was invited to the storage bucket. Should we introduce an additional storage bucket id?
@@ -717,20 +791,29 @@ decl_module! {
 
             for bag_to_object in params.assigned_data_objects.iter() {
                 //TODO: add dynamic bags
-                let BagId::StaticBag(static_bag_id) = bag_to_object.bag_id.clone();
+                if let BagId::<T>::StaticBag(static_bag_id) = bag_to_object.bag_id.clone() {
+                    let mut bag = Self::static_bag(&static_bag_id);
 
-                let mut bag = Self::static_bag(&static_bag_id);
+                    let data_object = bag.objects.get_mut(&bag_to_object.data_object_id);
 
-                let data_object = bag.objects.get_mut(&bag_to_object.data_object_id);
+                    if let Some(data_object) = data_object {
+                        data_object.accepted = true;
+                    }
 
-                if let Some(data_object) = data_object {
-                    data_object.accepted = true;
+                    Self::save_static_bag(&static_bag_id, bag);
                 }
-
-                Self::save_static_bag(&static_bag_id, bag);
             }
 
             Self::deposit_event(RawEvent::PendingDataObjectsAccepted(worker_id, params));
+        }
+
+        /// Update what storage buckets back a dynamic bags.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_buckets_for_dynamic_bags(
+            _origin,
+            //_update: BTreeMap<DynamicBagId, BTreeSet<StorageBucketId>>
+        ) {
+            //TODO: implement
         }
     }
 }
@@ -742,47 +825,48 @@ impl<T: Trait> Module<T> {
         account_id: T::AccountId,
     ) -> DispatchResult {
         //TODO: add dynamic bags
-        let BagId::StaticBag(static_bag_id) = params.bag_id.clone();
-        let bag = Self::static_bag(&static_bag_id);
+        if let BagId::<T>::StaticBag(static_bag_id) = params.bag_id.clone() {
+            let bag = Self::static_bag(&static_bag_id);
 
-        let new_objects_number = params.object_creation_list.len();
+            let new_objects_number = params.object_creation_list.len();
 
-        let total_possible_data_objects_number: u64 =
-            (new_objects_number + bag.objects.len()).saturated_into();
+            let total_possible_data_objects_number: u64 =
+                (new_objects_number + bag.objects.len()).saturated_into();
 
-        ensure!(
-            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
-            Error::<T>::DataObjectsPerBagLimitExceeded
-        );
-
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
-
-        //TODO: Redundant check. Use Account_id directly.
-        ensure!(
-            params.deletion_prize_source_account_id == account_id,
-            Error::<T>::InvalidDeletionPrizeSourceAccount
-        );
-
-        for object_params in params.object_creation_list.iter() {
-            // TODO: Check for duplicates for CID?
             ensure!(
-                !object_params.ipfs_content_id.is_empty(),
-                Error::<T>::EmptyContentId
+                total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
+                Error::<T>::DataObjectsPerBagLimitExceeded
             );
-            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+
+            ensure!(
+                !params.object_creation_list.is_empty(),
+                Error::<T>::NoObjectsOnUpload
+            );
+
+            //TODO: Redundant check. Use Account_id directly.
+            ensure!(
+                params.deletion_prize_source_account_id == account_id,
+                Error::<T>::InvalidDeletionPrizeSourceAccount
+            );
+
+            for object_params in params.object_creation_list.iter() {
+                // TODO: Check for duplicates for CID?
+                ensure!(
+                    !object_params.ipfs_content_id.is_empty(),
+                    Error::<T>::EmptyContentId
+                );
+                ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+            }
+
+            let total_deletion_prize: BalanceOf<T> = new_objects_number
+                .saturated_into::<BalanceOf<T>>()
+                * T::DataObjectDeletionPrize::get();
+
+            ensure!(
+                Balances::<T>::usable_balance(account_id) >= total_deletion_prize,
+                Error::<T>::InsufficientBalance
+            );
         }
-
-        let total_deletion_prize: BalanceOf<T> =
-            new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
-
-        ensure!(
-            Balances::<T>::usable_balance(account_id) >= total_deletion_prize,
-            Error::<T>::InsufficientBalance
-        );
-
         Ok(())
     }
 
@@ -844,9 +928,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Get static bag by its ID from the storage.
-    pub(crate) fn static_bag(
-        bag_id: &StaticBagId,
-    ) -> StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>> {
+    pub(crate) fn static_bag(bag_id: &StaticBagId) -> StaticBag<T> {
         match bag_id {
             StaticBagId::Council => Self::council_bag(),
             StaticBagId::WorkingGroup(working_group) => Self::working_group_bag(working_group),
@@ -854,10 +936,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Save static bag to the storage.
-    fn save_static_bag(
-        bag_id: &StaticBagId,
-        bag: StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>,
-    ) {
+    fn save_static_bag(bag_id: &StaticBagId, bag: StaticBag<T>) {
         match bag_id {
             StaticBagId::Council => CouncilBag::<T>::put(bag),
             StaticBagId::WorkingGroup(working_group) => {
@@ -904,7 +983,7 @@ impl<T: Trait> Module<T> {
 
     // Ensures validity of the `accept_pending_data_objects` extrinsic parameters
     fn validate_accept_pending_data_objects_params(
-        params: &AcceptPendingDataObjectsParams<T::DataObjectId>,
+        params: &AcceptPendingDataObjectsParams<T>,
     ) -> DispatchResult {
         ensure!(
             !params.assigned_data_objects.is_empty(),
@@ -912,15 +991,24 @@ impl<T: Trait> Module<T> {
         );
 
         for bag_to_object in params.assigned_data_objects.iter() {
-            //TODO: add dynamic bags
-            let BagId::StaticBag(static_bag_id) = bag_to_object.bag_id.clone();
+            match bag_to_object.bag_id.clone() {
+                BagId::<T>::StaticBag(static_bag_id) => {
+                    let bag = Self::static_bag(&static_bag_id);
 
-            let bag = Self::static_bag(&static_bag_id);
+                    ensure!(
+                        bag.objects.contains_key(&bag_to_object.data_object_id),
+                        Error::<T>::DataObjectDoesntExist
+                    );
+                }
+                BagId::<T>::DynamicBag(dynamic_bag_id) => {
+                    let bag = Self::dynamic_bag(&dynamic_bag_id)?;
 
-            ensure!(
-                bag.objects.contains_key(&bag_to_object.data_object_id),
-                Error::<T>::DataObjectDoesntExist
-            );
+                    ensure!(
+                        bag.objects.contains_key(&bag_to_object.data_object_id),
+                        Error::<T>::DataObjectDoesntExist
+                    );
+                }
+            }
         }
 
         // TODO: how do we validate that objects are accepted by correct storage provider - that
@@ -948,5 +1036,10 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    // Get dynamic bag by its ID from the storage.
+    pub(crate) fn dynamic_bag(_bag_id: &DynamicBagId<T>) -> Result<DynamicBag<T>, DispatchError> {
+        unimplemented!();
     }
 }
