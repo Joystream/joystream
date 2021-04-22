@@ -242,7 +242,30 @@ type WorkerRewardAmountUpdatedEvent @entity {
   newRewardPerBlock: BigInt!
 }
 
-# TODO: Should we rename the event/extrinsic in the runtime?
+type UpcomingOpeningAdded @variant {
+  upcomingOpeningId: ID!
+}
+
+type UpcomingOpeningRemoved @variant {
+  upcomingOpeningId: ID!
+}
+
+type WorkingGroupMetadataSet @variant {
+  # TODO: Variant relationships
+  metadataId: ID!
+}
+
+type InvalidActionMetadata @variant {
+  "Reason why the action metadata was considered invalid"
+  reason: String!
+}
+
+union WorkingGroupMetadataActionResult =
+    UpcomingOpeningAdded
+  | UpcomingOpeningRemoved
+  | WorkingGroupMetadataSet
+  | InvalidActionMetadata
+
 type StatusTextChangedEvent @entity {
   "Generic event data"
   event: Event!
@@ -252,6 +275,9 @@ type StatusTextChangedEvent @entity {
 
   "Original action metadata as hex string"
   metadata: String
+
+  "Event result depeding on the metadata action type"
+  result: WorkingGroupMetadataActionResult!
 }
 
 type BudgetSpendingEvent @entity {

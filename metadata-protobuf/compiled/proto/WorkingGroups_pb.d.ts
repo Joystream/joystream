@@ -152,7 +152,7 @@ export namespace ApplicationMetadata {
   }
 }
 
-export class WorkingGroupStatusMetadata extends jspb.Message {
+export class WorkingGroupMetadata extends jspb.Message {
   hasDescription(): boolean;
   clearDescription(): void;
   getDescription(): string | undefined;
@@ -174,16 +174,16 @@ export class WorkingGroupStatusMetadata extends jspb.Message {
   setStatusMessage(value: string): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): WorkingGroupStatusMetadata.AsObject;
-  static toObject(includeInstance: boolean, msg: WorkingGroupStatusMetadata): WorkingGroupStatusMetadata.AsObject;
+  toObject(includeInstance?: boolean): WorkingGroupMetadata.AsObject;
+  static toObject(includeInstance: boolean, msg: WorkingGroupMetadata): WorkingGroupMetadata.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: WorkingGroupStatusMetadata, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): WorkingGroupStatusMetadata;
-  static deserializeBinaryFromReader(message: WorkingGroupStatusMetadata, reader: jspb.BinaryReader): WorkingGroupStatusMetadata;
+  static serializeBinaryToWriter(message: WorkingGroupMetadata, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): WorkingGroupMetadata;
+  static deserializeBinaryFromReader(message: WorkingGroupMetadata, reader: jspb.BinaryReader): WorkingGroupMetadata;
 }
 
-export namespace WorkingGroupStatusMetadata {
+export namespace WorkingGroupMetadata {
   export type AsObject = {
     description?: string,
     about?: string,
@@ -193,10 +193,10 @@ export namespace WorkingGroupStatusMetadata {
 }
 
 export class SetGroupMetadata extends jspb.Message {
-  hasNewmetadata(): boolean;
-  clearNewmetadata(): void;
-  getNewmetadata(): WorkingGroupStatusMetadata;
-  setNewmetadata(value?: WorkingGroupStatusMetadata): void;
+  hasNewMetadata(): boolean;
+  clearNewMetadata(): void;
+  getNewMetadata(): WorkingGroupMetadata;
+  setNewMetadata(value?: WorkingGroupMetadata): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SetGroupMetadata.AsObject;
@@ -210,7 +210,7 @@ export class SetGroupMetadata extends jspb.Message {
 
 export namespace SetGroupMetadata {
   export type AsObject = {
-    newmetadata: WorkingGroupStatusMetadata.AsObject,
+    newMetadata: WorkingGroupMetadata.AsObject,
   }
 }
 
@@ -259,20 +259,20 @@ export namespace RemoveUpcomingOpening {
 }
 
 export class WorkingGroupMetadataAction extends jspb.Message {
-  hasSetgroupmetadata(): boolean;
-  clearSetgroupmetadata(): void;
-  getSetgroupmetadata(): SetGroupMetadata | undefined;
-  setSetgroupmetadata(value?: SetGroupMetadata): void;
+  hasSetGroupMetadata(): boolean;
+  clearSetGroupMetadata(): void;
+  getSetGroupMetadata(): SetGroupMetadata | undefined;
+  setSetGroupMetadata(value?: SetGroupMetadata): void;
 
-  hasAddupcomingopening(): boolean;
-  clearAddupcomingopening(): void;
-  getAddupcomingopening(): AddUpcomingOpening | undefined;
-  setAddupcomingopening(value?: AddUpcomingOpening): void;
+  hasAddUpcomingOpening(): boolean;
+  clearAddUpcomingOpening(): void;
+  getAddUpcomingOpening(): AddUpcomingOpening | undefined;
+  setAddUpcomingOpening(value?: AddUpcomingOpening): void;
 
-  hasRemoveupcomingopening(): boolean;
-  clearRemoveupcomingopening(): void;
-  getRemoveupcomingopening(): RemoveUpcomingOpening | undefined;
-  setRemoveupcomingopening(value?: RemoveUpcomingOpening): void;
+  hasRemoveUpcomingOpening(): boolean;
+  clearRemoveUpcomingOpening(): void;
+  getRemoveUpcomingOpening(): RemoveUpcomingOpening | undefined;
+  setRemoveUpcomingOpening(value?: RemoveUpcomingOpening): void;
 
   getActionCase(): WorkingGroupMetadataAction.ActionCase;
   serializeBinary(): Uint8Array;
@@ -287,16 +287,16 @@ export class WorkingGroupMetadataAction extends jspb.Message {
 
 export namespace WorkingGroupMetadataAction {
   export type AsObject = {
-    setgroupmetadata?: SetGroupMetadata.AsObject,
-    addupcomingopening?: AddUpcomingOpening.AsObject,
-    removeupcomingopening?: RemoveUpcomingOpening.AsObject,
+    setGroupMetadata?: SetGroupMetadata.AsObject,
+    addUpcomingOpening?: AddUpcomingOpening.AsObject,
+    removeUpcomingOpening?: RemoveUpcomingOpening.AsObject,
   }
 
   export enum ActionCase {
     ACTION_NOT_SET = 0,
-    SETGROUPMETADATA = 1,
-    ADDUPCOMINGOPENING = 2,
-    REMOVEUPCOMINGOPENING = 3,
+    SET_GROUP_METADATA = 1,
+    ADD_UPCOMING_OPENING = 2,
+    REMOVE_UPCOMING_OPENING = 3,
   }
 }
 

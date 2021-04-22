@@ -1873,6 +1873,56 @@ export type InitialInvitationCountUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type InvalidActionMetadata = {
+  __typename?: 'InvalidActionMetadata'
+  /** Reason why the action metadata was considered invalid */
+  reason: Scalars['String']
+}
+
+export type InvalidActionMetadataCreateInput = {
+  reason: Scalars['String']
+}
+
+export type InvalidActionMetadataUpdateInput = {
+  reason?: Maybe<Scalars['String']>
+}
+
+export type InvalidActionMetadataWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  reason_eq?: Maybe<Scalars['String']>
+  reason_contains?: Maybe<Scalars['String']>
+  reason_startsWith?: Maybe<Scalars['String']>
+  reason_endsWith?: Maybe<Scalars['String']>
+  reason_in?: Maybe<Array<Scalars['String']>>
+}
+
+export type InvalidActionMetadataWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type InvitesTransferredEvent = BaseGraphQlObject & {
   __typename?: 'InvitesTransferredEvent'
   id: Scalars['ID']
@@ -5891,6 +5941,8 @@ export type StatusTextChangedEvent = BaseGraphQlObject & {
   groupId: Scalars['String']
   /** Original action metadata as hex string */
   metadata?: Maybe<Scalars['String']>
+  /** Event result depeding on metadata action type */
+  result?: Maybe<WorkingGroupMetadataActionResult>
   upcomingworkinggroupopeningcreatedInEvent?: Maybe<Array<UpcomingWorkingGroupOpening>>
 }
 
@@ -5905,6 +5957,7 @@ export type StatusTextChangedEventCreateInput = {
   eventId: Scalars['ID']
   groupId: Scalars['ID']
   metadata?: Maybe<Scalars['String']>
+  result: Scalars['JSONObject']
 }
 
 export type StatusTextChangedEventEdge = {
@@ -5932,6 +5985,7 @@ export type StatusTextChangedEventUpdateInput = {
   eventId?: Maybe<Scalars['ID']>
   groupId?: Maybe<Scalars['ID']>
   metadata?: Maybe<Scalars['String']>
+  result?: Maybe<Scalars['JSONObject']>
 }
 
 export type StatusTextChangedEventWhereInput = {
@@ -5968,6 +6022,7 @@ export type StatusTextChangedEventWhereInput = {
   metadata_startsWith?: Maybe<Scalars['String']>
   metadata_endsWith?: Maybe<Scalars['String']>
   metadata_in?: Maybe<Array<Scalars['String']>>
+  result_json?: Maybe<Scalars['JSONObject']>
 }
 
 export type StatusTextChangedEventWhereUniqueInput = {
@@ -6215,6 +6270,104 @@ export type TerminatedWorkerEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type UpcomingOpeningAdded = {
+  __typename?: 'UpcomingOpeningAdded'
+  upcomingOpeningId: Scalars['String']
+}
+
+export type UpcomingOpeningAddedCreateInput = {
+  upcomingOpeningId: Scalars['String']
+}
+
+export type UpcomingOpeningAddedUpdateInput = {
+  upcomingOpeningId?: Maybe<Scalars['String']>
+}
+
+export type UpcomingOpeningAddedWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  upcomingOpeningId_eq?: Maybe<Scalars['String']>
+  upcomingOpeningId_contains?: Maybe<Scalars['String']>
+  upcomingOpeningId_startsWith?: Maybe<Scalars['String']>
+  upcomingOpeningId_endsWith?: Maybe<Scalars['String']>
+  upcomingOpeningId_in?: Maybe<Array<Scalars['String']>>
+}
+
+export type UpcomingOpeningAddedWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type UpcomingOpeningRemoved = {
+  __typename?: 'UpcomingOpeningRemoved'
+  upcomingOpeningId: Scalars['String']
+}
+
+export type UpcomingOpeningRemovedCreateInput = {
+  upcomingOpeningId: Scalars['String']
+}
+
+export type UpcomingOpeningRemovedUpdateInput = {
+  upcomingOpeningId?: Maybe<Scalars['String']>
+}
+
+export type UpcomingOpeningRemovedWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  upcomingOpeningId_eq?: Maybe<Scalars['String']>
+  upcomingOpeningId_contains?: Maybe<Scalars['String']>
+  upcomingOpeningId_startsWith?: Maybe<Scalars['String']>
+  upcomingOpeningId_endsWith?: Maybe<Scalars['String']>
+  upcomingOpeningId_in?: Maybe<Array<Scalars['String']>>
+}
+
+export type UpcomingOpeningRemovedWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type UpcomingWorkingGroupOpening = BaseGraphQlObject & {
   __typename?: 'UpcomingWorkingGroupOpening'
   id: Scalars['ID']
@@ -6227,6 +6380,8 @@ export type UpcomingWorkingGroupOpening = BaseGraphQlObject & {
   version: Scalars['Int']
   createdInEvent: StatusTextChangedEvent
   createdInEventId: Scalars['String']
+  createdAtBlock: Block
+  createdAtBlockId: Scalars['String']
   group: WorkingGroup
   groupId: Scalars['String']
   /** Expected opening start time */
@@ -6235,8 +6390,6 @@ export type UpcomingWorkingGroupOpening = BaseGraphQlObject & {
   stakeAmount: Scalars['BigInt']
   /** Expected reward per block */
   rewardPerBlock: Scalars['BigInt']
-  createdAtBlock: Block
-  createdAtBlockId: Scalars['String']
   metadata: WorkingGroupOpeningMetadata
   metadataId: Scalars['String']
 }
@@ -6250,11 +6403,11 @@ export type UpcomingWorkingGroupOpeningConnection = {
 
 export type UpcomingWorkingGroupOpeningCreateInput = {
   createdInEventId: Scalars['ID']
+  createdAtBlockId: Scalars['ID']
   groupId: Scalars['ID']
   expectedStart: Scalars['DateTime']
   stakeAmount: Scalars['BigInt']
   rewardPerBlock: Scalars['BigInt']
-  createdAtBlockId: Scalars['ID']
   metadataId: Scalars['ID']
 }
 
@@ -6273,6 +6426,8 @@ export enum UpcomingWorkingGroupOpeningOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   CreatedInEventIdAsc = 'createdInEventId_ASC',
   CreatedInEventIdDesc = 'createdInEventId_DESC',
+  CreatedAtBlockIdAsc = 'createdAtBlockId_ASC',
+  CreatedAtBlockIdDesc = 'createdAtBlockId_DESC',
   GroupIdAsc = 'groupId_ASC',
   GroupIdDesc = 'groupId_DESC',
   ExpectedStartAsc = 'expectedStart_ASC',
@@ -6281,19 +6436,17 @@ export enum UpcomingWorkingGroupOpeningOrderByInput {
   StakeAmountDesc = 'stakeAmount_DESC',
   RewardPerBlockAsc = 'rewardPerBlock_ASC',
   RewardPerBlockDesc = 'rewardPerBlock_DESC',
-  CreatedAtBlockIdAsc = 'createdAtBlockId_ASC',
-  CreatedAtBlockIdDesc = 'createdAtBlockId_DESC',
   MetadataIdAsc = 'metadataId_ASC',
   MetadataIdDesc = 'metadataId_DESC',
 }
 
 export type UpcomingWorkingGroupOpeningUpdateInput = {
   createdInEventId?: Maybe<Scalars['ID']>
+  createdAtBlockId?: Maybe<Scalars['ID']>
   groupId?: Maybe<Scalars['ID']>
   expectedStart?: Maybe<Scalars['DateTime']>
   stakeAmount?: Maybe<Scalars['BigInt']>
   rewardPerBlock?: Maybe<Scalars['BigInt']>
-  createdAtBlockId?: Maybe<Scalars['ID']>
   metadataId?: Maybe<Scalars['ID']>
 }
 
@@ -6324,6 +6477,8 @@ export type UpcomingWorkingGroupOpeningWhereInput = {
   deletedById_in?: Maybe<Array<Scalars['ID']>>
   createdInEventId_eq?: Maybe<Scalars['ID']>
   createdInEventId_in?: Maybe<Array<Scalars['ID']>>
+  createdAtBlockId_eq?: Maybe<Scalars['ID']>
+  createdAtBlockId_in?: Maybe<Array<Scalars['ID']>>
   groupId_eq?: Maybe<Scalars['ID']>
   groupId_in?: Maybe<Array<Scalars['ID']>>
   expectedStart_eq?: Maybe<Scalars['DateTime']>
@@ -6343,8 +6498,6 @@ export type UpcomingWorkingGroupOpeningWhereInput = {
   rewardPerBlock_lt?: Maybe<Scalars['BigInt']>
   rewardPerBlock_lte?: Maybe<Scalars['BigInt']>
   rewardPerBlock_in?: Maybe<Array<Scalars['BigInt']>>
-  createdAtBlockId_eq?: Maybe<Scalars['ID']>
-  createdAtBlockId_in?: Maybe<Array<Scalars['ID']>>
   metadataId_eq?: Maybe<Scalars['ID']>
   metadataId_in?: Maybe<Array<Scalars['ID']>>
 }
@@ -7268,8 +7421,8 @@ export type WorkingGroup = BaseGraphQlObject & {
   version: Scalars['Int']
   /** Working group name */
   name: Scalars['String']
-  status?: Maybe<WorkingGroupMetadata>
-  statusId?: Maybe<Scalars['String']>
+  metadata?: Maybe<WorkingGroupMetadata>
+  metadataId?: Maybe<Scalars['String']>
   leader?: Maybe<Worker>
   leaderId?: Maybe<Scalars['String']>
   workers: Array<Worker>
@@ -7480,7 +7633,7 @@ export type WorkingGroupConnection = {
 
 export type WorkingGroupCreateInput = {
   name: Scalars['String']
-  statusId?: Maybe<Scalars['ID']>
+  metadataId?: Maybe<Scalars['ID']>
   leaderId?: Maybe<Scalars['ID']>
   budget: Scalars['BigInt']
 }
@@ -7501,20 +7654,24 @@ export type WorkingGroupMetadata = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
-  /** Status name */
-  name: Scalars['String']
-  /** Status message */
-  message?: Maybe<Scalars['String']>
+  /** Working group status */
+  status?: Maybe<Scalars['String']>
+  /** Working group status message */
+  statusMessage?: Maybe<Scalars['String']>
   /** Working group about text */
   about?: Maybe<Scalars['String']>
   /** Working group description text */
   description?: Maybe<Scalars['String']>
   setAtBlock: Block
   setAtBlockId: Scalars['String']
-  /** The time at which status was set */
-  setAtTime: Scalars['DateTime']
-  workinggroupstatus?: Maybe<Array<WorkingGroup>>
+  workinggroupmetadata?: Maybe<Array<WorkingGroup>>
 }
+
+export type WorkingGroupMetadataActionResult =
+  | UpcomingOpeningAdded
+  | UpcomingOpeningRemoved
+  | WorkingGroupMetadataSet
+  | InvalidActionMetadata
 
 export type WorkingGroupMetadataConnection = {
   __typename?: 'WorkingGroupMetadataConnection'
@@ -7524,12 +7681,11 @@ export type WorkingGroupMetadataConnection = {
 }
 
 export type WorkingGroupMetadataCreateInput = {
-  name: Scalars['String']
-  message?: Maybe<Scalars['String']>
+  status?: Maybe<Scalars['String']>
+  statusMessage?: Maybe<Scalars['String']>
   about?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   setAtBlockId: Scalars['ID']
-  setAtTime: Scalars['DateTime']
 }
 
 export type WorkingGroupMetadataEdge = {
@@ -7545,27 +7701,73 @@ export enum WorkingGroupMetadataOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
-  NameAsc = 'name_ASC',
-  NameDesc = 'name_DESC',
-  MessageAsc = 'message_ASC',
-  MessageDesc = 'message_DESC',
+  StatusAsc = 'status_ASC',
+  StatusDesc = 'status_DESC',
+  StatusMessageAsc = 'statusMessage_ASC',
+  StatusMessageDesc = 'statusMessage_DESC',
   AboutAsc = 'about_ASC',
   AboutDesc = 'about_DESC',
   DescriptionAsc = 'description_ASC',
   DescriptionDesc = 'description_DESC',
   SetAtBlockIdAsc = 'setAtBlockId_ASC',
   SetAtBlockIdDesc = 'setAtBlockId_DESC',
-  SetAtTimeAsc = 'setAtTime_ASC',
-  SetAtTimeDesc = 'setAtTime_DESC',
+}
+
+export type WorkingGroupMetadataSet = {
+  __typename?: 'WorkingGroupMetadataSet'
+  metadataId: Scalars['String']
+}
+
+export type WorkingGroupMetadataSetCreateInput = {
+  metadataId: Scalars['String']
+}
+
+export type WorkingGroupMetadataSetUpdateInput = {
+  metadataId?: Maybe<Scalars['String']>
+}
+
+export type WorkingGroupMetadataSetWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  metadataId_eq?: Maybe<Scalars['String']>
+  metadataId_contains?: Maybe<Scalars['String']>
+  metadataId_startsWith?: Maybe<Scalars['String']>
+  metadataId_endsWith?: Maybe<Scalars['String']>
+  metadataId_in?: Maybe<Array<Scalars['String']>>
+}
+
+export type WorkingGroupMetadataSetWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type WorkingGroupMetadataUpdateInput = {
-  name?: Maybe<Scalars['String']>
-  message?: Maybe<Scalars['String']>
+  status?: Maybe<Scalars['String']>
+  statusMessage?: Maybe<Scalars['String']>
   about?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   setAtBlockId?: Maybe<Scalars['ID']>
-  setAtTime?: Maybe<Scalars['DateTime']>
 }
 
 export type WorkingGroupMetadataWhereInput = {
@@ -7593,16 +7795,16 @@ export type WorkingGroupMetadataWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  name_eq?: Maybe<Scalars['String']>
-  name_contains?: Maybe<Scalars['String']>
-  name_startsWith?: Maybe<Scalars['String']>
-  name_endsWith?: Maybe<Scalars['String']>
-  name_in?: Maybe<Array<Scalars['String']>>
-  message_eq?: Maybe<Scalars['String']>
-  message_contains?: Maybe<Scalars['String']>
-  message_startsWith?: Maybe<Scalars['String']>
-  message_endsWith?: Maybe<Scalars['String']>
-  message_in?: Maybe<Array<Scalars['String']>>
+  status_eq?: Maybe<Scalars['String']>
+  status_contains?: Maybe<Scalars['String']>
+  status_startsWith?: Maybe<Scalars['String']>
+  status_endsWith?: Maybe<Scalars['String']>
+  status_in?: Maybe<Array<Scalars['String']>>
+  statusMessage_eq?: Maybe<Scalars['String']>
+  statusMessage_contains?: Maybe<Scalars['String']>
+  statusMessage_startsWith?: Maybe<Scalars['String']>
+  statusMessage_endsWith?: Maybe<Scalars['String']>
+  statusMessage_in?: Maybe<Array<Scalars['String']>>
   about_eq?: Maybe<Scalars['String']>
   about_contains?: Maybe<Scalars['String']>
   about_startsWith?: Maybe<Scalars['String']>
@@ -7615,11 +7817,6 @@ export type WorkingGroupMetadataWhereInput = {
   description_in?: Maybe<Array<Scalars['String']>>
   setAtBlockId_eq?: Maybe<Scalars['ID']>
   setAtBlockId_in?: Maybe<Array<Scalars['ID']>>
-  setAtTime_eq?: Maybe<Scalars['DateTime']>
-  setAtTime_lt?: Maybe<Scalars['DateTime']>
-  setAtTime_lte?: Maybe<Scalars['DateTime']>
-  setAtTime_gt?: Maybe<Scalars['DateTime']>
-  setAtTime_gte?: Maybe<Scalars['DateTime']>
 }
 
 export type WorkingGroupMetadataWhereUniqueInput = {
@@ -7944,8 +8141,8 @@ export enum WorkingGroupOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   NameAsc = 'name_ASC',
   NameDesc = 'name_DESC',
-  StatusIdAsc = 'statusId_ASC',
-  StatusIdDesc = 'statusId_DESC',
+  MetadataIdAsc = 'metadataId_ASC',
+  MetadataIdDesc = 'metadataId_DESC',
   LeaderIdAsc = 'leaderId_ASC',
   LeaderIdDesc = 'leaderId_DESC',
   BudgetAsc = 'budget_ASC',
@@ -7954,7 +8151,7 @@ export enum WorkingGroupOrderByInput {
 
 export type WorkingGroupUpdateInput = {
   name?: Maybe<Scalars['String']>
-  statusId?: Maybe<Scalars['ID']>
+  metadataId?: Maybe<Scalars['ID']>
   leaderId?: Maybe<Scalars['ID']>
   budget?: Maybe<Scalars['BigInt']>
 }
@@ -7989,8 +8186,8 @@ export type WorkingGroupWhereInput = {
   name_startsWith?: Maybe<Scalars['String']>
   name_endsWith?: Maybe<Scalars['String']>
   name_in?: Maybe<Array<Scalars['String']>>
-  statusId_eq?: Maybe<Scalars['ID']>
-  statusId_in?: Maybe<Array<Scalars['ID']>>
+  metadataId_eq?: Maybe<Scalars['ID']>
+  metadataId_in?: Maybe<Array<Scalars['ID']>>
   leaderId_eq?: Maybe<Scalars['ID']>
   leaderId_in?: Maybe<Array<Scalars['ID']>>
   budget_eq?: Maybe<Scalars['BigInt']>
@@ -8002,5 +8199,6 @@ export type WorkingGroupWhereInput = {
 }
 
 export type WorkingGroupWhereUniqueInput = {
-  id: Scalars['ID']
+  id?: Maybe<Scalars['ID']>
+  name?: Maybe<Scalars['String']>
 }

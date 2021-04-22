@@ -8,6 +8,8 @@ import {
   AddUpcomingOpening,
   ApplicationMetadata,
   OpeningMetadata,
+  RemoveUpcomingOpening,
+  SetGroupMetadata,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
@@ -42,6 +44,12 @@ import {
   ApplicationStatusWithdrawn,
   UpcomingWorkingGroupOpening,
   StatusTextChangedEvent,
+  WorkingGroupMetadata,
+  WorkingGroupMetadataSet,
+  UpcomingOpeningRemoved,
+  InvalidActionMetadata,
+  WorkingGroupMetadataActionResult,
+  UpcomingOpeningAdded,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -51,9 +59,13 @@ type InputTypeMap = OpeningMetadata.ApplicationFormQuestion.InputTypeMap
 const InputType = OpeningMetadata.ApplicationFormQuestion.InputType
 
 // Reusable functions
-async function getWorkingGroup(db: DatabaseManager, event_: SubstrateEvent): Promise<WorkingGroup> {
+async function getWorkingGroup(
+  db: DatabaseManager,
+  event_: SubstrateEvent,
+  relations: string[] = []
+): Promise<WorkingGroup> {
   const [groupName] = event_.name.split('.')
-  const group = await db.get(WorkingGroup, { where: { name: groupName } })
+  const group = await db.get(WorkingGroup, { where: { name: groupName }, relations })
   if (!group) {
     throw new Error(`Working group ${groupName} not found!`)
   }
@@ -217,7 +229,7 @@ async function handleAddUpcomingOpeningAction(
   event_: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
   action: AddUpcomingOpening
-) {
+): Promise<UpcomingOpeningAdded> {
   const upcomingOpeningMeta = action.getMetadata().toObject()
   const group = await getWorkingGroup(db, event_)
   const eventTime = new Date(event_.blockTimestamp.toNumber())
@@ -240,6 +252,60 @@ async function handleAddUpcomingOpeningAction(
     createdAtBlock: await getOrCreateBlock(db, event_),
   })
   await db.save<UpcomingWorkingGroupOpening>(upcomingOpening)
+
+  const result = new UpcomingOpeningAdded()
+  result.upcomingOpeningId = upcomingOpening.id
+
+  return result
+}
+
+async function handleRemoveUpcomingOpeningAction(
+  db: DatabaseManager,
+  action: RemoveUpcomingOpening
+): Promise<UpcomingOpeningRemoved | InvalidActionMetadata> {
+  const id = action.getId()
+  const upcomingOpening = await db.get(UpcomingWorkingGroupOpening, { where: { id } })
+  let result: UpcomingOpeningRemoved | InvalidActionMetadata
+  if (upcomingOpening) {
+    result = new UpcomingOpeningRemoved()
+    result.upcomingOpeningId = upcomingOpening.id
+    await db.remove<UpcomingWorkingGroupOpening>(upcomingOpening)
+  } else {
+    const error = `Cannot remove upcoming opening: Entity by id ${id} not found!`
+    console.error(error)
+    result = new InvalidActionMetadata()
+    result.reason = error
+  }
+  return result
+}
+
+async function handleSetWorkingGroupMetadataAction(
+  db: DatabaseManager,
+  event_: SubstrateEvent,
+  action: SetGroupMetadata
+): Promise<WorkingGroupMetadataSet> {
+  const { newMetadata } = action.toObject()
+  const group = await getWorkingGroup(db, event_, ['metadata'])
+  const groupMetadata = group.metadata!
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const newGroupMetadata = new WorkingGroupMetadata({
+    ...groupMetadata,
+    ...newMetadata,
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    setAtBlock: await getOrCreateBlock(db, event_),
+  })
+  await db.save<WorkingGroupMetadata>(newGroupMetadata)
+
+  group.metadata = newGroupMetadata
+  group.updatedAt = eventTime
+  await db.save<WorkingGroup>(group)
+
+  const result = new WorkingGroupMetadataSet()
+  result.metadataId = newGroupMetadata.id
+
+  return result
 }
 
 async function handleWorkingGroupMetadataAction(
@@ -247,21 +313,21 @@ async function handleWorkingGroupMetadataAction(
   event_: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
   action: WorkingGroupMetadataAction
-) {
+): Promise<typeof WorkingGroupMetadataActionResult> {
   switch (action.getActionCase()) {
-    case WorkingGroupMetadataAction.ActionCase.ADDUPCOMINGOPENING: {
-      await handleAddUpcomingOpeningAction(db, event_, statusChangedEvent, action.getAddupcomingopening()!)
-      break
+    case WorkingGroupMetadataAction.ActionCase.ADD_UPCOMING_OPENING: {
+      return handleAddUpcomingOpeningAction(db, event_, statusChangedEvent, action.getAddUpcomingOpening()!)
     }
-    case WorkingGroupMetadataAction.ActionCase.REMOVEUPCOMINGOPENING: {
-      // TODO
-      break
+    case WorkingGroupMetadataAction.ActionCase.REMOVE_UPCOMING_OPENING: {
+      return handleRemoveUpcomingOpeningAction(db, action.getRemoveUpcomingOpening()!)
     }
-    case WorkingGroupMetadataAction.ActionCase.SETGROUPMETADATA: {
-      // TODO:
-      break
+    case WorkingGroupMetadataAction.ActionCase.SET_GROUP_METADATA: {
+      return handleSetWorkingGroupMetadataAction(db, event_, action.getSetGroupMetadata()!)
     }
   }
+  const result = new InvalidActionMetadata()
+  result.reason = 'Unexpected action type'
+  return result
 }
 
 // Mapping functions
@@ -555,24 +621,41 @@ export async function workingGroups_StatusTextChanged(db: DatabaseManager, event
   const group = await getWorkingGroup(db, event_)
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
+  // Since result cannot be empty at this point, but we already need to have an existing StatusTextChangedEvent
+  // in order to be able to create UpcomingOpening.createdInEvent relation, we use a temporary "mock" result
+  const mockResult = new InvalidActionMetadata()
+  mockResult.reason = 'Metadata not yet processed'
   const statusTextChangedEvent = new StatusTextChangedEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
     group,
     event: await createEvent(db, event_, EventType.StatusTextChanged),
     metadata: optBytes.isSome ? optBytes.unwrap().toString() : undefined,
+    result: mockResult,
   })
 
   await db.save<StatusTextChangedEvent>(statusTextChangedEvent)
 
+  let result: typeof WorkingGroupMetadataActionResult
+
   if (optBytes.isSome) {
     const metadata = deserializeMetadata(WorkingGroupMetadataAction, optBytes.unwrap())
     if (metadata) {
-      handleWorkingGroupMetadataAction(db, event_, statusTextChangedEvent, metadata)
+      result = await handleWorkingGroupMetadataAction(db, event_, statusTextChangedEvent, metadata)
+    } else {
+      result = new InvalidActionMetadata()
+      result.reason = 'Invalid metadata: Cannot deserialize metadata binary'
     }
   } else {
-    console.warn('StatusTextChanged event: no metadata provided')
+    const error = 'No encoded metadata was provided'
+    console.error(`StatusTextChanged event: ${error}`)
+    result = new InvalidActionMetadata()
+    result.reason = error
   }
+
+  // Now we can set the "real" result
+  statusTextChangedEvent.result = result
+  await db.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated(

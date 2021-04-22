@@ -73,11 +73,11 @@ type Worker @entity {
 }
 
 type WorkingGroupMetadata @entity {
-  "Status name"
-  name: String!
+  "Working group status"
+  status: String
 
-  "Status message"
-  message: String
+  "Working group status message"
+  statusMessage: String
 
   "Working group about text"
   about: String
@@ -85,19 +85,16 @@ type WorkingGroupMetadata @entity {
   "Working group description text"
   description: String
 
-  "Block the status was set at"
+  "Block the metadata was set at"
   setAtBlock: Block!
-
-  "The time at which status was set"
-  setAtTime: DateTime!
 }
 
 type WorkingGroup @entity {
   "Working group name"
-  name: String!
+  name: String! @unique
 
   "Working group current metadata"
-  status: WorkingGroupMetadata
+  metadata: WorkingGroupMetadata
 
   "Current working group leader"
   leader: Worker
@@ -110,8 +107,6 @@ type WorkingGroup @entity {
 
   "Current working group budget (JOY)"
   budget: BigInt!
-
-  # ...
 }
 
 type OpeningStatusCancelled @variant {

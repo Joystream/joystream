@@ -30,7 +30,7 @@ message ApplicationMetadata {
 
 // set_status_text extrinsic messages:
 
-message WorkingGroupStatusMetadata {
+message WorkingGroupMetadata {
   optional string description = 1; // Full status description (md-formatted)
   optional string about = 2; // Status about text (md-formatted)
   optional string status = 3; // The status itself (expected to be 1-3 words)
@@ -38,7 +38,7 @@ message WorkingGroupStatusMetadata {
 }
 
 message SetGroupMetadata {
-  required WorkingGroupStatusMetadata newMetadata = 1; // New working group metadata to set (can be a partial update)
+  required WorkingGroupMetadata new_metadata = 1; // New working group metadata to set (can be a partial update)
 }
 
 message AddUpcomingOpening {
@@ -51,8 +51,8 @@ message RemoveUpcomingOpening {
 
 message WorkingGroupMetadataAction {
   oneof action {
-    SetGroupMetadata setGroupMetadata = 1;
-    AddUpcomingOpening addUpcomingOpening = 2;
-    RemoveUpcomingOpening removeUpcomingOpening = 3;
+    SetGroupMetadata set_group_metadata = 1;
+    AddUpcomingOpening add_upcoming_opening = 2;
+    RemoveUpcomingOpening remove_upcoming_opening = 3;
   }
 }

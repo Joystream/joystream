@@ -14,6 +14,8 @@ import {
   ReferralCutUpdatedEvent,
   StatusTextChangedEvent,
   UpcomingWorkingGroupOpening,
+  WorkingGroup,
+  WorkingGroupMetadata,
 } from './QueryNodeApiSchema.generated'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
@@ -797,6 +799,20 @@ export class QueryNodeApi {
             name
           }
           metadata
+          result {
+            ... on UpcomingOpeningAdded {
+              upcomingOpeningId
+            }
+            ... on UpcomingOpeningRemoved {
+              upcomingOpeningId
+            }
+            ... on WorkingGroupMetadataSet {
+              metadataId
+            }
+            ... on InvalidActionMetadata {
+              reason
+            }
+          }
         }
       }
     `
@@ -816,6 +832,7 @@ export class QueryNodeApi {
     const UPCOMING_OPENING_BY_ID = gql`
       query($eventId: ID!) {
         upcomingWorkingGroupOpenings(where: { createdInEventId_eq: $eventId }) {
+          id
           group {
             name
           }
@@ -852,5 +869,70 @@ export class QueryNodeApi {
         variables: { eventId },
       })
     ).data.upcomingWorkingGroupOpenings[0]
+  }
+
+  public async getWorkingGroup(name: WorkingGroupModuleName): Promise<WorkingGroup | undefined> {
+    const GROUP_BY_NAME = gql`
+      query($name: String!) {
+        workingGroupByUniqueInput(where: { name: $name }) {
+          name
+          metadata {
+            id
+            status
+            statusMessage
+            about
+            description
+            setAtBlock {
+              number
+            }
+          }
+          leader {
+            id
+          }
+          budget
+        }
+      }
+    `
+
+    this.queryDebug(`Executing getWorkingGroup(${name})`)
+
+    return (
+      (
+        await this.queryNodeProvider.query<Pick<Query, 'workingGroupByUniqueInput'>>({
+          query: GROUP_BY_NAME,
+          variables: { name },
+        })
+      ).data.workingGroupByUniqueInput || undefined
+    )
+  }
+
+  // FIXME: Use blockheights once possible
+  public async getGroupMetaSnapshot(
+    timestamp: number,
+    matchType: 'eq' | 'lt' | 'lte' | 'gt' | 'gte' = 'eq'
+  ): Promise<WorkingGroupMetadata | undefined> {
+    const GROUP_META_SNAPSHOT_BY_TIMESTAMP = gql`
+      query($timestamp: DateTime!) {
+        workingGroupMetadata(where: { createdAt_${matchType}: $timestamp, createdAt_lte: $toTime }, orderBy: createdAt_DESC, limit: 1) {
+          id
+          status
+          statusMessage
+          about
+          description
+          setAtBlock {
+            number
+          }
+        }
+      }
+    `
+
+    this.queryDebug(`Executing getGroupMetaSnapshot(${timestamp}, ${matchType})`)
+
+    return (
+      await this.queryNodeProvider.query<Pick<Query, 'workingGroupMetadata'>>({
+        query: GROUP_META_SNAPSHOT_BY_TIMESTAMP,
+        variables: { timestamp: new Date(timestamp) },
+      })
+    ).data.workingGroupMetadata[0]
   }
 }

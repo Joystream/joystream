@@ -19,13 +19,18 @@ import {
   StatusTextChangedEvent,
   UpcomingWorkingGroupOpening,
   WorkingGroupOpeningMetadata,
+  WorkingGroup,
+  WorkingGroupMetadata as QWorkingGroupMetadata,
 } from '../QueryNodeApiSchema.generated'
 import {
   AddUpcomingOpening,
   ApplicationMetadata,
   OpeningMetadata,
+  RemoveUpcomingOpening,
   UpcomingOpeningMetadata,
   WorkingGroupMetadataAction,
+  WorkingGroupMetadata,
+  SetGroupMetadata,
 } from '@joystream/metadata-protobuf'
 import {
   WorkingGroupModuleName,
@@ -689,6 +694,7 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
 
   private tx?: SubmittableExtrinsic<'promise'>
   private event?: EventDetails
+  private createdUpcomingOpeningId?: string
 
   public constructor(
     api: Api,
@@ -700,6 +706,13 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
     super(api, query, group, openingParams)
     this.debug = Debugger(`fixture:CreateUpcomingOpening:${group}`)
     this.expectedStartTs = expectedStartTs || Date.now() + 3600
+  }
+
+  public getCreatedUpcomingOpeningId() {
+    if (!this.createdUpcomingOpeningId) {
+      throw new Error('Trying to get created UpcomingOpening id before it is known')
+    }
+    return this.createdUpcomingOpeningId
   }
 
   private getActionMetadata(): WorkingGroupMetadataAction {
@@ -714,7 +727,7 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
     upcomingOpeningMeta.setRewardPerBlock(this.openingParams.reward.toNumber())
 
     addUpcomingOpeningMeta.setMetadata(upcomingOpeningMeta)
-    actionMeta.setAddupcomingopening(addUpcomingOpeningMeta)
+    actionMeta.setAddUpcomingOpening(addUpcomingOpeningMeta)
 
     return actionMeta
   }
@@ -751,6 +764,10 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
     assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.metadata, Utils.metadataToBytes(this.getActionMetadata()).toString())
+    if (!qEvent.result) {
+      throw new Error('StatusTextChangedEvent: No result found')
+    }
+    assert.equal(qEvent.result.__typename, 'UpcomingOpeningAdded')
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -761,9 +778,195 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
     const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
       (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
-    )) as OpeningCanceledEvent
+    )) as StatusTextChangedEvent
     // Query the opening
     const qUpcomingOpening = await this.query.getUpcomingOpeningByCreatedInEventId(qEvent.id)
     this.assertQueriedUpcomingOpeningIsValid(event, qUpcomingOpening)
+    if (qEvent.result && qEvent.result.__typename === 'UpcomingOpeningAdded') {
+      assert.equal(qEvent.result.upcomingOpeningId, qUpcomingOpening!.id)
+    }
+    this.createdUpcomingOpeningId = qUpcomingOpening!.id
+  }
+}
+
+export class RemoveUpcomingOpeningFixture extends BaseFixture {
+  private query: QueryNodeApi
+  private group: WorkingGroupModuleName
+  private upcomingOpeningId: string
+  private debug: Debugger.Debugger
+
+  private tx?: SubmittableExtrinsic<'promise'>
+  private event?: EventDetails
+
+  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, upcomingOpeningId: string) {
+    super(api)
+    this.query = query
+    this.group = group
+    this.upcomingOpeningId = upcomingOpeningId
+    this.debug = Debugger(`fixture:RemoveUpcomingOpeningFixture:${group}`)
+  }
+
+  private getActionMetadata(): WorkingGroupMetadataAction {
+    const actionMeta = new WorkingGroupMetadataAction()
+    const removeUpcomingOpeningMeta = new RemoveUpcomingOpening()
+    removeUpcomingOpeningMeta.setId(this.upcomingOpeningId)
+    actionMeta.setRemoveUpcomingOpening(removeUpcomingOpeningMeta)
+
+    return actionMeta
+  }
+
+  async execute() {
+    const account = await this.api.getLeadRoleKey(this.group)
+    this.tx = this.api.tx[this.group].setStatusText(Utils.metadataToBytes(this.getActionMetadata()))
+    const txFee = await this.api.estimateTxFee(this.tx, account)
+    await this.api.treasuryTransferBalance(account, txFee)
+    const result = await this.api.signAndSend(this.tx, account)
+    this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
+  }
+
+  private assertQueriedStatusTextChangedEventIsValid(txHash: string, qEvent?: StatusTextChangedEvent) {
+    if (!qEvent) {
+      throw new Error('Query node: StatusTextChangedEvent not found!')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.StatusTextChanged)
+    assert.equal(qEvent.group.name, this.group)
+    assert.equal(qEvent.metadata, Utils.metadataToBytes(this.getActionMetadata()).toString())
+    if (!qEvent.result) {
+      throw new Error('StatusTextChangedEvent: No result found')
+    }
+    assert.equal(qEvent.result.__typename, 'UpcomingOpeningRemoved')
+    if (qEvent.result.__typename === 'UpcomingOpeningRemoved') {
+      assert.equal(qEvent.result.upcomingOpeningId, this.upcomingOpeningId)
+    }
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const tx = this.tx!
+    const event = this.event!
+    // Query the event
+    const qEvent = (await this.query.tryQueryWithTimeout(
+      () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
+      (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
+    )) as StatusTextChangedEvent
+    // Query the opening and make sure it doesn't exist
+    if (qEvent.result && qEvent.result.__typename === 'UpcomingOpeningRemoved') {
+      const qUpcomingOpening = await this.query.getUpcomingOpeningByCreatedInEventId(qEvent.result.upcomingOpeningId)
+      assert.isUndefined(qUpcomingOpening)
+    }
+  }
+}
+
+export class UpdateGroupStatusFixture extends BaseFixture {
+  private query: QueryNodeApi
+  private group: WorkingGroupModuleName
+  private metadata: WorkingGroupMetadata.AsObject
+  private debug: Debugger.Debugger
+
+  private tx?: SubmittableExtrinsic<'promise'>
+  private event?: EventDetails
+
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    metadata: WorkingGroupMetadata.AsObject
+  ) {
+    super(api)
+    this.query = query
+    this.group = group
+    this.metadata = metadata
+    this.debug = Debugger(`fixture:UpdateGroupStatusFixture:${group}`)
+  }
+
+  private getActionMetadata(): WorkingGroupMetadataAction {
+    const actionMeta = new WorkingGroupMetadataAction()
+    const setGroupMeta = new SetGroupMetadata()
+    const newGroupMeta = new WorkingGroupMetadata()
+
+    newGroupMeta.setAbout(this.metadata.about!)
+    newGroupMeta.setDescription(this.metadata.description!)
+    newGroupMeta.setStatus(this.metadata.status!)
+    newGroupMeta.setStatusMessage(this.metadata.statusMessage!)
+
+    setGroupMeta.setNewMetadata(newGroupMeta)
+    actionMeta.setSetGroupMetadata(setGroupMeta)
+
+    return actionMeta
+  }
+
+  async execute() {
+    const account = await this.api.getLeadRoleKey(this.group)
+    this.tx = this.api.tx[this.group].setStatusText(Utils.metadataToBytes(this.getActionMetadata()))
+    const txFee = await this.api.estimateTxFee(this.tx, account)
+    await this.api.treasuryTransferBalance(account, txFee)
+    const result = await this.api.signAndSend(this.tx, account)
+    this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
+  }
+
+  private assertQueriedStatusTextChangedEventIsValid(txHash: string, qEvent?: StatusTextChangedEvent) {
+    if (!qEvent) {
+      throw new Error('Query node: StatusTextChangedEvent not found!')
+    }
+    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.event.type, EventType.StatusTextChanged)
+    assert.equal(qEvent.group.name, this.group)
+    assert.equal(qEvent.metadata, Utils.metadataToBytes(this.getActionMetadata()).toString())
+    if (!qEvent.result) {
+      throw new Error('StatusTextChangedEvent: No result found')
+    }
+    assert.equal(qEvent.result.__typename, 'WorkingGroupMetadataSet')
+  }
+
+  private assertQueriedGroupIsValid(qGroup: WorkingGroup | undefined, qMeta: QWorkingGroupMetadata) {
+    if (!qGroup) {
+      throw new Error(`Query node: Group ${this.group} not found!`)
+    }
+    if (!qGroup.metadata) {
+      throw new Error(`Query node: Group metadata is empty!`)
+    }
+    assert.equal(qGroup.metadata.id, qMeta.id)
+  }
+
+  private assertQueriedMetadataSnapshotsAreValid(
+    eventDetails: EventDetails,
+    beforeSnapshot?: QWorkingGroupMetadata,
+    afterSnapshot?: QWorkingGroupMetadata
+  ) {
+    if (!afterSnapshot) {
+      throw new Error('Query node: WorkingGroupMetadata snapshot not found!')
+    }
+    const expectedMeta = _.merge(this.metadata, beforeSnapshot)
+    assert.equal(afterSnapshot.status, expectedMeta.status)
+    assert.equal(afterSnapshot.statusMessage, expectedMeta.statusMessage)
+    assert.equal(afterSnapshot.description, expectedMeta.description)
+    assert.equal(afterSnapshot.about, expectedMeta.about)
+    assert.equal(afterSnapshot.setAtBlock.number, eventDetails.blockNumber)
+  }
+
+  async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    const tx = this.tx!
+    const event = this.event!
+    // Query & check the event
+    const qEvent = (await this.query.tryQueryWithTimeout(
+      () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
+      (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
+    )) as StatusTextChangedEvent
+
+    // Query & check the metadata snapshots
+    const beforeSnapshot = await this.query.getGroupMetaSnapshot(event.blockTimestamp, 'lt')
+    const afterSnapshot = await this.query.getGroupMetaSnapshot(event.blockTimestamp, 'eq')
+    this.assertQueriedMetadataSnapshotsAreValid(event, beforeSnapshot, afterSnapshot)
+
+    // Query & check the group
+    const qGroup = await this.query.getWorkingGroup(this.group)
+    this.assertQueriedGroupIsValid(qGroup, afterSnapshot!)
+
+    // Check event relation
+    if (qEvent.result && qEvent.result.__typename === 'WorkingGroupMetadataSet') {
+      assert.equal(qEvent.result.metadataId, afterSnapshot!.id)
+    }
   }
 }
