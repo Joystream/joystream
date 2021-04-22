@@ -110,7 +110,7 @@ export async function content_VideoCategoryUpdated(
   )
 
   // update all fields read from protobuf
-  for (let [key, value] of Object(protobufContent).entries()) {
+  for (let [key, value] of Object.entries(protobufContent)) {
     videoCategory[key] = value
   }
 
@@ -253,7 +253,7 @@ export async function content_VideoUpdated(
     const originalLicense = video.license
 
     // update all fields read from protobuf
-    for (let [key, value] of Object(protobufContent).entries()) {
+    for (let [key, value] of Object.entries(protobufContent)) {
       video[key] = value
     }
 

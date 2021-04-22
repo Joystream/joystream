@@ -114,7 +114,7 @@ export async function content_ChannelUpdated(
     )
 
     // update all fields read from protobuf
-    for (let [key, value] of Object(protobufContent).entries()) {
+    for (let [key, value] of Object.entries(protobufContent)) {
       channel[key] = value
     }
   }
@@ -264,7 +264,7 @@ export async function content_ChannelCategoryUpdated(
   )
 
   // update all fields read from protobuf
-  for (let [key, value] of Object(protobufContent).entries()) {
+  for (let [key, value] of Object.entries(protobufContent)) {
     channelCategory[key] = value
   }
 

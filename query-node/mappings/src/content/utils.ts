@@ -378,7 +378,7 @@ interface IExtractAssetParameters {
 */
 async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetStorageOrUrls | undefined> {
   // ensure asset index is valid
-  if (parameters.assetIndex > parameters.assets.length) {
+  if (parameters.assetIndex >= parameters.assets.length) {
     inconsistentState(`Non-existing asset extraction requested`, {
       assetsProvided: parameters.assets.length,
       assetIndex: parameters.assetIndex,
