@@ -69,6 +69,9 @@ import {
   ContentActor,
 } from '@joystream/types/augment'
 
+import { ContentParameters as Joystream_ContentParameters } from '@joystream/types/storage'
+import { registry } from '@joystream/types'
+
 /*
   Asset either stored in storage or describing list of URLs.
 */
@@ -465,11 +468,10 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
 
   // !rawAsset.isUrls && rawAsset.isUpload // asset is in storage
 
+  // convert generic content parameters coming from processor to custom Joystream data type
+  const joystreamContentParameters = new Joystream_ContentParameters(registry, rawAsset.asUpload.toJSON() as any)
   // extract video size
-  const contentParameters: ContentParameters = rawAsset.asUpload
-  // `size` is masked by `size` special name in struct that's why there needs to be `.get('size') as u64`
-  const videoSize = (contentParameters.get('size') as unknown as u64).toNumber()
-
+  const videoSize = joystreamContentParameters.size_in_bytes.toNumber()
 
   return videoSize
 }

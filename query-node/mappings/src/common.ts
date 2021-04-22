@@ -10,8 +10,11 @@ import {
   Network,
 } from 'query-node'
 import {
-  ContentParameters
+  ContentParameters,
 } from '@joystream/types/augment'
+
+import { ContentParameters as Joystream_ContentParameters } from '@joystream/types/storage'
+import { registry } from '@joystream/types'
 
 const currentNetwork = Network.BABYLON
 
@@ -33,16 +36,17 @@ export async function prepareDataObject(
   blockNumber: number,
   owner: typeof DataObjectOwner,
 ): Promise<DataObject> {
+  // convert generic content parameters coming from processor to custom Joystream data type
+  const joystreamContentParameters = new Joystream_ContentParameters(registry, contentParameters.toJSON() as any)
+
   const dataObject = new DataObject({
     owner,
     createdInBlock: blockNumber,
     typeId: contentParameters.type_id.toNumber(),
-    // `size` is masked by `size` special name in `Struct` so there needs to be `.get('size') as unknown as u64` to retrieve proper value
-    size: (contentParameters.get('size') as unknown as u64).toNumber(),
+    size: joystreamContentParameters.size_in_bytes.toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
     ipfsContentId: contentParameters.ipfs_content_id.toUtf8(),
-    joystreamContentId: contentParameters.content_id.toHex(),
-
+    joystreamContentId: joystreamContentParameters.content_id.encode(),
 
     createdById: '1',
     updatedById: '1',
