@@ -9,7 +9,6 @@
 // TODO: Add alias for StaticBag
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
-// TODO: add types comments
 // TODO: add benchmarks
 // TODO: add constants:
 // Max size of blacklist.
@@ -40,6 +39,7 @@ use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
+use common::working_group::WorkingGroup;
 
 /// Storage trait.
 pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
@@ -224,7 +224,9 @@ impl Default for BagId {
 pub enum StaticBagId {
     /// Dedicated bag for a council.
     Council,
-    //TODO: implement -    WorkingGroup(WorkingGroup),
+
+    /// Dedicated bag for some working group.
+    WorkingGroup(WorkingGroup),
 }
 
 impl Default for StaticBagId {
@@ -375,6 +377,10 @@ decl_storage! {
 
         /// Council bag.
         pub CouncilBag get(fn council_bag): StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
+
+        /// Working group bag storage map.
+        pub WorkingGroupBags get(fn working_group_bag): map hasher(blake2_128_concat)
+            WorkingGroup => StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>;
 
         /// Storage bucket id counter. Starts at zero.
         pub NextStorageBucketId get(fn next_storage_bucket_id): T::StorageBucketId;
@@ -838,21 +844,25 @@ impl<T: Trait> Module<T> {
     }
 
     // Get static bag by its ID from the storage.
-    fn static_bag(
+    pub(crate) fn static_bag(
         bag_id: &StaticBagId,
     ) -> StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>> {
         match bag_id {
             StaticBagId::Council => Self::council_bag(),
+            StaticBagId::WorkingGroup(working_group) => Self::working_group_bag(working_group),
         }
     }
 
-    // Save static bag to the storage
+    // Save static bag to the storage.
     fn save_static_bag(
         bag_id: &StaticBagId,
         bag: StaticBag<T::DataObjectId, T::StorageBucketId, BalanceOf<T>>,
     ) {
         match bag_id {
             StaticBagId::Council => CouncilBag::<T>::put(bag),
+            StaticBagId::WorkingGroup(working_group) => {
+                <WorkingGroupBags<T>>::insert(working_group, bag)
+            }
         }
     }
 

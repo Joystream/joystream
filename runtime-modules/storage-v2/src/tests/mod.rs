@@ -8,6 +8,8 @@ use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
 
+use common::working_group::WorkingGroup;
+
 use crate::{
     AcceptPendingDataObjectsParams, AssignedDataObject, BagId, DataObject,
     DataObjectCreationParameters, Error, ModuleAccount, RawEvent, StaticBagId,
@@ -263,6 +265,35 @@ fn update_storage_buckets_for_static_bags_succeeded() {
         assert_eq!(bag.stored_by, buckets);
 
         EventFixture::assert_last_crate_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
+    });
+}
+
+#[test]
+fn update_storage_buckets_for_working_group_static_bags_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let storage_provider_id = 10;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let mut buckets = BTreeSet::new();
+        buckets.insert(bucket_id);
+
+        let bag_id = StaticBagId::WorkingGroup(WorkingGroup::Storage);
+        let mut params = UpdateStorageBucketForStaticBagsParams::<u64>::default();
+        params.bags.insert(bag_id.clone(), buckets.clone());
+
+        UpdateStorageBucketForStaticBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_params(params.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::static_bag(&bag_id);
+        assert_eq!(bag.stored_by, buckets);
     });
 }
 
