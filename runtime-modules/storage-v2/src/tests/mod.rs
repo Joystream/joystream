@@ -289,6 +289,23 @@ fn update_storage_buckets_for_static_bags_fails_with_empty_params() {
 }
 
 #[test]
+fn update_storage_buckets_for_static_bags_fails_with_non_existing_storage_buckets() {
+    build_test_externalities().execute_with(|| {
+        let invalid_bucket_id = 11000;
+        let mut buckets = BTreeSet::new();
+        buckets.insert(invalid_bucket_id);
+
+        let mut params = UpdateStorageBucketForStaticBagsParams::<u64>::default();
+        params.bags.insert(StaticBagId::Council, buckets.clone());
+
+        UpdateStorageBucketForStaticBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_params(params)
+            .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
+    });
+}
+
+#[test]
 fn upload_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;

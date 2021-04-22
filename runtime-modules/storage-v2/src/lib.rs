@@ -3,9 +3,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-
-// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 // TODO: add static-dynamic bag abstraction (BagManager)
 // TODO: Add alias for StaticBag
@@ -253,6 +251,7 @@ impl Default for StaticBagId {
 /// Alias for the UploadParametersObject
 pub type UploadParameters<T> = UploadParametersObject<<T as frame_system::Trait>::AccountId>;
 
+/// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct UploadParametersObject<AccountId> {
@@ -386,7 +385,7 @@ decl_storage! {
         /// Total number of the storage buckets in the system.
         pub StorageBucketsNumber get(fn storage_buckets_number): u64;
 
-        // TODO: rework back to "Storage bucket (flat) map" - BTreemap
+        // TODO: rework back to "Storage bucket (flat) map" - BTreemap?
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
@@ -610,7 +609,7 @@ decl_module! {
             );
         }
 
-        //TODO: add comment
+        /// Establishes a connection between static bags and storage buckets.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_for_static_bags(
             origin,
@@ -618,12 +617,7 @@ decl_module! {
         ) {
             T::ensure_working_group_leader_origin(origin)?; // TODO: correct authentication?
 
-            ensure!(
-                !params.bags.is_empty(),
-                Error::<T>::UpdateStorageBucketForStaticBagsParamsIsEmpty
-            );
-
-            // TODO: validate bucket existence for each bag?
+            Self::validate_update_storage_buckets_for_static_bags_params(&params)?;
 
             //
             // == MUTATION SAFE ==
@@ -706,7 +700,7 @@ decl_module! {
 
             Self::validate_accept_pending_data_objects_params(&params)?;
 
-            //TODO: should I validate bucket voucher here?
+            //TODO: should I use bucket voucher here to validate the operation?
 
             // TODO: how do we validate that objects are accepted by correct storage provider that
             // was invited to the storage bucket. Should we introduce an additional storage bucket id?
@@ -898,7 +892,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Ensures validity `accept_pending_data_objects` extrinsic parameters
+    // Ensures validity of the `accept_pending_data_objects` extrinsic parameters
     fn validate_accept_pending_data_objects_params(
         params: &AcceptPendingDataObjectsParams<T::DataObjectId>,
     ) -> DispatchResult {
@@ -921,6 +915,27 @@ impl<T: Trait> Module<T> {
 
         // TODO: how do we validate that objects are accepted by correct storage provider - that
         // was invited to the storage bucket?
+
+        Ok(())
+    }
+
+    // Ensures validity of the `update_storage_buckets_for_static_bags` extrinsic parameters
+    fn validate_update_storage_buckets_for_static_bags_params(
+        params: &UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>,
+    ) -> DispatchResult {
+        ensure!(
+            !params.bags.is_empty(),
+            Error::<T>::UpdateStorageBucketForStaticBagsParamsIsEmpty
+        );
+
+        for buckets in params.bags.values() {
+            for bucket_id in buckets.iter() {
+                ensure!(
+                    <StorageBucketById<T>>::contains_key(&bucket_id),
+                    Error::<T>::StorageBucketDoesntExist
+                );
+            }
+        }
 
         Ok(())
     }
