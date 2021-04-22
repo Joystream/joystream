@@ -5,7 +5,8 @@
   "main": "lib/mappings/src/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "build": "rm -rf lib && tsc --build tsconfig.json && yarn copy-types",
+    "copy-types": "cp ../../types/augment/all/defs.json lib/generated/types/typedefs.json",
     "lint": "echo \"Skippinng\"",
     "clean": "rm -rf lib"
   },
