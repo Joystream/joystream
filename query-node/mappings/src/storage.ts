@@ -22,6 +22,10 @@ import { ContentId as Custom_ContentId, ContentParameters as Custom_ContentParam
 import { registry } from '@joystream/types'
 
 import {
+  Channel,
+  Video,
+  AssetAvailability,
+
   DataObject,
   DataObjectOwner,
   DataObjectOwnerMember,
@@ -73,13 +77,14 @@ export async function dataDirectory_ContentRemoved(db: DatabaseManager, event: S
 export async function dataDirectory_ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const {contentId, storageProviderId} = new DataDirectory.ContentAcceptedEvent(event).data
+  const encodedContentId = encodeContentId(contentId)
 
   // load asset
-  const dataObject = await db.get(DataObject, { where: { joystreamContentId: encodeContentId(contentId) } as FindConditions<DataObject>})
+  const dataObject = await db.get(DataObject, { where: { joystreamContentId: encodedContentId } as FindConditions<DataObject>})
 
   // ensure object exists
   if (!dataObject) {
-    return inconsistentState('Non-existing content acceptation requested', encodeContentId(contentId))
+    return inconsistentState('Non-existing content acceptation requested', encodedContentId)
   }
 
   // update object
@@ -93,7 +98,52 @@ export async function dataDirectory_ContentAccepted(db: DatabaseManager, event: 
   await db.save<DataObject>(dataObject)
 
   // emit log event
-  logger.info("Storage content has been accepted", {id: encodeContentId(contentId)})
+  logger.info("Storage content has been accepted", {id: encodedContentId})
+
+  // update asset availability for all connected channels and videos
+  // this will not be needed after redudant AssetAvailability will be removed (after some Hydra upgrades)
+  await updateConnectedAssets(db, dataObject)
+}
+
+/////////////////// Updating connected entities ////////////////////////////////
+
+async function updateConnectedAssets(db: DatabaseManager, dataObject: DataObject) {
+  await updateSingleConnectedAsset(db, new Channel(), 'avatarPhoto', dataObject)
+  await updateSingleConnectedAsset(db, new Channel(), 'coverPhoto', dataObject)
+
+  await updateSingleConnectedAsset(db, new Video(), 'thumbnailPhoto', dataObject)
+  await updateSingleConnectedAsset(db, new Video(), 'media', dataObject)
+}
+
+//async function updateSingleConnectedAsset(db: DatabaseManager, type: typeof Channel | typeof Video, propertyName: string, dataObject: DataObject) {
+async function updateSingleConnectedAsset<T extends Channel | Video>(db: DatabaseManager, type: T, propertyName: string, dataObject: DataObject) {
+  // prepare lookup condition
+  const condition = {
+    where: {
+      [propertyName + 'DataObject']: dataObject
+    }
+  } // as FindConditions<T>
+
+  // in therory the following condition(s) can be generalized `... db.get(type, ...` but in practice it doesn't work :-\
+  const items = type instanceof Channel
+    ? await db.getMany(Channel, condition)
+    : await db.getMany(Video, condition)
+
+  for (const item of items) {
+    item[propertyName + 'Availability'] = AssetAvailability.ACCEPTED
+
+    if (type instanceof Channel) {
+      await db.save<Channel>(item)
+
+      // emit log event
+      logger.info("Channel using Content has been accepted", {channelId: item.id.toString(), joystreamContentId: dataObject.joystreamContentId})
+    } else {
+      await db.save<Video>(item)
+
+      // emit log event
+      logger.info("Video using Content has been accepted", {videoId: item.id.toString(), joystreamContentId: dataObject.joystreamContentId})
+    }
+  }
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
