@@ -193,9 +193,9 @@ export async function content_VideoCreated(
 
     // default values for properties that might or might not be filled by metadata
     thumbnailPhotoUrls: [],
-    thumbnailPhotoAvailability: AssetAvailability.PENDING,
+    thumbnailPhotoAvailability: AssetAvailability.INVALID,
     mediaUrls: [],
-    mediaAvailability: AssetAvailability.PENDING,
+    mediaAvailability: AssetAvailability.INVALID,
 
 
     // fill in auto-generated fields

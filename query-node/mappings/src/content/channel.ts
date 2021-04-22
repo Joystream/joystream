@@ -55,9 +55,9 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
 
     // default values for properties that might or might not be filled by metadata
     coverPhotoUrls: [],
-    coverPhotoAvailability: AssetAvailability.PENDING,
+    coverPhotoAvailability: AssetAvailability.INVALID,
     avatarPhotoUrls: [],
-    avatarPhotoAvailability: AssetAvailability.PENDING,
+    avatarPhotoAvailability: AssetAvailability.INVALID,
 
     // fill in auto-generated fields
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
