@@ -4,45 +4,41 @@ import { Controller } from '@polkadot/joy-utils/react/helpers';
 import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
+import { AvailableGroups } from '../working_groups';
 
-import { ContentCurators,
-  WorkingGroupMembership,
-  StorageProviders } from './WorkingGroup';
+import { WorkingGroupMembership,
+  ContentCurators,
+  StorageProviders,
+  OperationsGroup } from './WorkingGroup';
 
 import styled from 'styled-components';
-import { normalizeError } from '@polkadot/joy-utils/functions/misc';
 
 type State = {
-  contentCurators?: WorkingGroupMembership;
+  curators?: WorkingGroupMembership;
   storageProviders?: WorkingGroupMembership;
+  operationsGroup?: WorkingGroupMembership;
 }
 
 export class WorkingGroupsController extends Controller<State, ITransport> {
-  constructor (transport: ITransport, initialState: State = {}) {
+  constructor (transport: ITransport) {
     super(transport, {});
   }
 
   refreshState () {
-    this.getCurationGroup();
-    this.getStorageGroup();
+    void this.getGroups();
   }
 
-  getCurationGroup () {
-    this.transport.curationGroup()
-      .then((value: WorkingGroupMembership) => {
-        this.setState({ contentCurators: value });
-        this.dispatch();
-      })
-      .catch((e) => this.onError(normalizeError(e)));
-  }
+  async getGroups () {
+    const newState: Partial<State> = {};
 
-  getStorageGroup () {
-    this.transport.storageGroup()
-      .then((value: WorkingGroupMembership) => {
-        this.setState({ storageProviders: value });
-        this.dispatch();
+    await Promise.all(
+      AvailableGroups.map(async (group) => {
+        newState[group] = await this.transport.groupOverview(group);
       })
-      .catch((e) => this.onError(normalizeError(e)));
+    );
+
+    this.setState(newState);
+    this.dispatch();
   }
 }
 
@@ -58,8 +54,9 @@ const WorkingGroupsOverview = styled.div`
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
   ({ state }) => (
     <WorkingGroupsOverview>
-      <ContentCurators {...state.contentCurators}/>
+      <ContentCurators {...state.curators}/>
       <StorageProviders {...state.storageProviders}/>
+      <OperationsGroup {...state.operationsGroup}/>
     </WorkingGroupsOverview>
   )
 );

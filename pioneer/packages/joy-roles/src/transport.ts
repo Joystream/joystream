@@ -9,6 +9,7 @@ import { WorkingGroups } from './working_groups';
 
 export interface ITransport {
   groupLeadStatus: (group: WorkingGroups) => Promise<GroupLeadStatus>;
+  groupOverview: (group: WorkingGroups) => Promise<WorkingGroupMembership>;
   curationGroup: () => Promise<WorkingGroupMembership>;
   storageGroup: () => Promise<WorkingGroupMembership>;
   currentOpportunities: () => Promise<Array<WorkingGroupOpening>>;
