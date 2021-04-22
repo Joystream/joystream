@@ -170,14 +170,14 @@ mappings:
       handler: content_FeaturedVideosSet(DatabaseManager, SubstrateEvent)
 
     # storage
-    - event: data_directory.ContentAdded
-      handler: data_directory_ContentAdded(DatabaseManager, SubstrateEvent)
-    - event: data_directory.ContentRemoved
-      handler: data_directory_ContentRemoved(DatabaseManager, SubstrateEvent)
-    - event: data_directory.ContentAccepted
-      handler: data_directory_ContentAccepted(DatabaseManager, SubstrateEvent)
+    - event: dataDirectory.ContentAdded
+      handler: dataDirectory_ContentAdded(DatabaseManager, SubstrateEvent)
+    - event: dataDirectory.ContentRemoved
+      handler: dataDirectory_ContentRemoved(DatabaseManager, SubstrateEvent)
+    - event: dataDirectory.ContentAccepted
+      handler: dataDirectory_ContentAccepted(DatabaseManager, SubstrateEvent)
     # not handled at the moment
-    #- event: data_directory.ContentUploadingStatusUpdated
+    #- event: dataDirectory.ContentUploadingStatusUpdated
     #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
 
   extrinsicHandlers:

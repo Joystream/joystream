@@ -69,7 +69,7 @@ import {
   ContentActor,
 } from '@joystream/types/augment'
 
-import { ContentParameters as Joystream_ContentParameters } from '@joystream/types/storage'
+import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
 
 /*
@@ -469,9 +469,9 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   // !rawAsset.isUrls && rawAsset.isUpload // asset is in storage
 
   // convert generic content parameters coming from processor to custom Joystream data type
-  const joystreamContentParameters = new Joystream_ContentParameters(registry, rawAsset.asUpload.toJSON() as any)
+  const customContentParameters = new Custom_ContentParameters(registry, rawAsset.asUpload.toJSON() as any)
   // extract video size
-  const videoSize = joystreamContentParameters.size_in_bytes.toNumber()
+  const videoSize = customContentParameters.size_in_bytes.toNumber()
 
   return videoSize
 }

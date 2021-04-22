@@ -17,6 +17,10 @@ import {
   ContentParameters,
   StorageObjectOwner,
 } from '@joystream/types/augment'
+
+import { ContentId as Custom_ContentId, ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
+import { registry } from '@joystream/types'
+
 import {
   DataObject,
   DataObjectOwner,
@@ -28,7 +32,7 @@ import {
   LiaisonJudgement,
 } from 'query-node'
 
-export async function data_directory_ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function dataDirectory_ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const {contentParameters, storageObjectOwner} = new DataDirectory.ContentAddedEvent(event).data
 
@@ -45,16 +49,16 @@ export async function data_directory_ContentAdded(db: DatabaseManager, event: Su
   }
 
   // emit log event
-  logger.info("Storage content has beed added", {ids: contentParameters.map(item => item.content_id.toString())})
+  logger.info("Storage content has beed added", {ids: contentParameters.map(item => encodeContentId(item.content_id))})
 }
 
-export async function data_directory_ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function dataDirectory_ContentRemoved(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const {contentId: contentIds} = new DataDirectory.ContentRemovedEvent(event).data
 
   // load assets
   const dataObjects = await db.getMany(DataObject, { where: {
-    joystreamContentId: In(contentIds.map(item => item.toString()))
+    joystreamContentId: In(contentIds.map(item => encodeContentId(item)))
   } as FindConditions<DataObject> })
 
   // remove assets from database
@@ -66,16 +70,16 @@ export async function data_directory_ContentRemoved(db: DatabaseManager, event: 
   logger.info("Storage content have been removed", {id: contentIds, dataObjectIds: dataObjects.map(item => item.id)})
 }
 
-export async function data_directory_ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function dataDirectory_ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const {contentId, storageProviderId} = new DataDirectory.ContentAcceptedEvent(event).data
 
   // load asset
-  const dataObject = await db.get(DataObject, { where: { joystreamContentId: contentId.toString() } as FindConditions<DataObject>})
+  const dataObject = await db.get(DataObject, { where: { joystreamContentId: encodeContentId(contentId) } as FindConditions<DataObject>})
 
   // ensure object exists
   if (!dataObject) {
-    return inconsistentState('Non-existing content acceptation requested', contentId)
+    return inconsistentState('Non-existing content acceptation requested', encodeContentId(contentId))
   }
 
   // update object
@@ -89,7 +93,7 @@ export async function data_directory_ContentAccepted(db: DatabaseManager, event:
   await db.save<DataObject>(dataObject)
 
   // emit log event
-  logger.info("Storage content has been accepted", {id: contentId})
+  logger.info("Storage content has been accepted", {id: encodeContentId(contentId)})
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
@@ -129,4 +133,10 @@ function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof Data
 
   logger.error('Not implemented StorageObjectOwner type', {objectOwner: objectOwner.toString()})
   throw 'Not implemented StorageObjectOwner type'
+}
+
+function encodeContentId(contentId: ContentId) {
+  const customContentId = new Custom_ContentId(registry, contentId);
+
+  return customContentId.encode()
 }
