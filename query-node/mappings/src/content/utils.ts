@@ -12,6 +12,7 @@ import { Bytes } from '@polkadot/types'
 import ISO6391 from 'iso-639-1';
 import { u64 } from '@polkadot/types/primitive';
 import { FindConditions } from 'typeorm'
+import * as jspb from "google-protobuf";
 
 // protobuf definitions
 import {
@@ -107,12 +108,18 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
 
   // process channel category
   if (type instanceof ChannelCategory) {
-    return ChannelCategoryMetadata.deserializeBinary(metaU8a).toObject() as Partial<T>
+    const meta = ChannelCategoryMetadata.deserializeBinary(metaU8a)
+    const result = convertMetadataToObject<ChannelCategoryMetadata.AsObject>(meta) as Partial<T>
+
+    return result
   }
 
   // process video category
   if (type instanceof VideoCategory) {
-    return VideoCategoryMetadata.deserializeBinary(metaU8a).toObject() as Partial<T>
+    const meta = VideoCategoryMetadata.deserializeBinary(metaU8a)
+    const result = convertMetadataToObject<VideoCategoryMetadata.AsObject>(meta) as Partial<T>
+
+    return result
   }
 
   // this should never happen
@@ -125,12 +132,6 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   In addition it handles any assets associated with the metadata.
 */
 
-/*
-export async function readProtobufWithAssets(
-  type: Channel | Video,
-  parameters: IReadProtobufArgumentsWithAssets,
-): Promise<Partial<typeof type>> {
-*/
 export async function readProtobufWithAssets<T extends Channel | Video>(
   type: T,
   parameters: IReadProtobufArgumentsWithAssets,
@@ -141,12 +142,13 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   // process channel
   if (type instanceof Channel) {
     const meta = ChannelMetadata.deserializeBinary(metaU8a)
-    const metaAsObject = meta.toObject()
+    const metaAsObject = convertMetadataToObject<ChannelMetadata.AsObject>(meta)
     const result = metaAsObject as any as Partial<Channel>
 
     // prepare cover photo asset if needed
-    if (metaAsObject.coverPhoto !== undefined) {
+    if ('coverPhoto' in metaAsObject) {
       const asset = await extractAsset({
+        //assetIndex: metaAsObject.coverPhoto,
         assetIndex: metaAsObject.coverPhoto,
         assets: parameters.assets,
         db: parameters.db,
@@ -158,7 +160,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare avatar photo asset if needed
-    if (metaAsObject.avatarPhoto !== undefined) {
+    if ('avatarPhoto' in metaAsObject) {
       const asset = await extractAsset({
         assetIndex: metaAsObject.avatarPhoto,
         assets: parameters.assets,
@@ -171,7 +173,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare language if needed
-    if (metaAsObject.language) {
+    if ('language' in metaAsObject) {
       result.language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
     }
 
@@ -181,16 +183,16 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   // process video
   if (type instanceof Video) {
     const meta = VideoMetadata.deserializeBinary(metaU8a)
-    const metaAsObject = meta.toObject()
+    const metaAsObject = convertMetadataToObject<VideoMetadata.AsObject>(meta)
     const result = metaAsObject as any as Partial<Video>
 
     // prepare video category if needed
-    if (metaAsObject.category !== undefined) {
+    if ('category' in metaAsObject) {
       result.category = await prepareVideoCategory(metaAsObject.category, parameters.db)
     }
 
     // prepare media meta information if needed
-    if (metaAsObject.mediaType) {
+    if ('mediaType' in metaAsObject) {
       // prepare video file size if poosible
       const videoSize = await extractVideoSize(parameters.assets, metaAsObject.video)
 
@@ -199,12 +201,12 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare license if needed
-    if (metaAsObject.license) {
+    if ('license' in metaAsObject) {
       result.license = await prepareLicense(metaAsObject.license)
     }
 
     // prepare thumbnail photo asset if needed
-    if (metaAsObject.thumbnailPhoto !== undefined) {
+    if ('thumbnailPhoto' in metaAsObject) {
       const asset = await extractAsset({
         assetIndex: metaAsObject.thumbnailPhoto,
         assets: parameters.assets,
@@ -217,7 +219,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare video asset if needed
-    if (metaAsObject.video !== undefined) {
+    if ('video' in metaAsObject) {
       const asset = await extractAsset({
         assetIndex: metaAsObject.video,
         assets: parameters.assets,
@@ -230,7 +232,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare language if needed
-    if (metaAsObject.language) {
+    if ('language' in metaAsObject) {
       result.language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
     }
 
@@ -366,7 +368,7 @@ async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetS
 }
 
 interface IExtractAssetParameters {
-  assetIndex: number
+  assetIndex: number | undefined
   assets: NewAsset[]
   db: DatabaseManager
   blockNumber: number
@@ -377,6 +379,11 @@ interface IExtractAssetParameters {
   Selects asset from provided set of assets and prepares asset data fit to be saved to db.
 */
 async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetStorageOrUrls | undefined> {
+  // is asset being unset?
+  if (parameters.assetIndex === undefined) {
+    return undefined
+  }
+
   // ensure asset index is valid
   if (parameters.assetIndex >= parameters.assets.length) {
     inconsistentState(`Non-existing asset extraction requested`, {
@@ -467,7 +474,12 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   return videoSize
 }
 
-async function prepareLanguage(languageIso: string, db: DatabaseManager, blockNumber: number): Promise<Language | undefined> {
+async function prepareLanguage(languageIso: string | undefined, db: DatabaseManager, blockNumber: number): Promise<Language | undefined> {
+  // is language being unset?
+  if (languageIso === undefined) {
+    return undefined
+  }
+
   // validate language string
   const isValidIso = ISO6391.validate(languageIso);
 
@@ -501,9 +513,14 @@ async function prepareLanguage(languageIso: string, db: DatabaseManager, blockNu
   return newLanguage
 }
 
-async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject): Promise<License> {
+async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefined): Promise<License | undefined> {
   // NOTE: Deletion of any previous license should take place in appropriate event handling function
   //       and not here even it might appear so.
+
+  // is license being unset?
+  if (licenseProtobuf === undefined) {
+    return undefined
+  }
 
   // crete new license
   const license = new License({
@@ -544,7 +561,12 @@ async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, video
   return videoMeta
 }
 
-async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Promise<VideoCategory | undefined> {
+async function prepareVideoCategory(categoryId: number | undefined, db: DatabaseManager): Promise<VideoCategory | undefined> {
+  // is category being unset?
+  if (categoryId === undefined) {
+    return undefined
+  }
+
   // load video category
   const category = await db.get(VideoCategory, { where: { id: categoryId.toString() } as FindConditions<VideoCategory> })
 
@@ -555,4 +577,35 @@ async function prepareVideoCategory(categoryId: number, db: DatabaseManager): Pr
   }
 
   return category
+}
+
+function convertMetadataToObject<T extends Object>(metadata: jspb.Message): T {
+  const metaAsObject = metadata.toObject()
+  const result = {} as T
+
+  for (const key in metaAsObject) {
+    const funcNameBase = key.charAt(0).toUpperCase() + key.slice(1)
+    const hasFuncName = 'has' + funcNameBase
+    const isSet = funcNameBase == 'PersonsList' // there is no `VideoMetadata.hasPersonsList` method from unkown reason -> create exception
+      ? true
+      : metadata[hasFuncName]()
+
+    if (!isSet) {
+      continue
+    }
+
+
+    const getFuncName = 'get' + funcNameBase
+    const value = metadata[getFuncName]()
+
+    // TODO: check that recursion trully works
+    if (value instanceof jspb.Message) {
+      result[key] = convertMetadataToObject(value)
+      continue
+    }
+
+    result[key] = metaAsObject[key]
+  }
+
+  return result
 }
