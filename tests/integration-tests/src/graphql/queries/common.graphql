@@ -1,0 +1,14 @@
+fragment BlockFields on Block {
+  number
+  timestamp
+  network
+}
+
+fragment EventFields on Event {
+  inBlock {
+    ...BlockFields
+  }
+  inExtrinsic
+  indexInBlock
+  type
+}

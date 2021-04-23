@@ -1,0 +1,57 @@
+fragment MemberMetadataFields on MemberMetadata {
+  name
+  about
+}
+
+fragment MembershipFields on Membership {
+  id
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+  controllerAccount
+  rootAccount
+  registeredAtBlock {
+    ...BlockFields
+  }
+  registeredAtTime
+  entry
+  isVerified
+  inviteCount
+  invitedBy {
+    id
+  }
+  invitees {
+    id
+  }
+  boundAccounts
+}
+
+query getMemberById ($id: ID!) {
+  membershipByUniqueInput(where: { id: $id }) {
+    ...MembershipFields
+  }
+}
+
+fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
+  snapshotBlock {
+    ...BlockFields
+  }
+  snapshotTime
+  referralCut
+  invitedInitialBalance
+  defaultInviteCount
+  membershipPrice
+}
+
+query getMembershipSystemSnapshotAt ($time: DateTime!) {
+  membershipSystemSnapshots(where: { snapshotTime_eq: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+    ...MembershipSystemSnapshotFields
+  }
+}
+
+query getMembershipSystemSnapshotBefore ($time: DateTime!) {
+  membershipSystemSnapshots(where: { snapshotTime_lt: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+    ...MembershipSystemSnapshotFields
+  }
+}

@@ -10,7 +10,7 @@
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:query-node-types": "graphql-codegen"
+    "generate:graphql-types": "graphql-codegen"
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
@@ -35,8 +35,11 @@
     "prettier": "2.0.2",
     "ts-node": "^8.8.1",
     "typescript": "^3.8.3",
-    "@graphql-codegen/cli": "^1.21.3",
-    "@graphql-codegen/typescript": "^1.21.1"
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11"
   },
   "volta": {
     "extends": "../../package.json"

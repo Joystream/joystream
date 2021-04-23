@@ -1,0 +1,206 @@
+fragment ApplicationBasicFields on WorkingGroupApplication {
+  id
+  runtimeId
+  status {
+    __typename
+    ... on ApplicationStatusCancelled {
+      openingCancelledEventId
+    }
+    ... on ApplicationStatusWithdrawn {
+      applicationWithdrawnEventId
+    }
+    ... on ApplicationStatusAccepted {
+      openingFilledEventId
+    }
+    ... on ApplicationStatusRejected {
+      openingFilledEventId
+    }
+  }
+}
+
+fragment OpeningStatusFields on WorkingGroupOpeningStatus {
+  __typename
+  ... on OpeningStatusFilled {
+    openingFilledEventId
+  }
+  ... on OpeningStatusCancelled {
+    openingCancelledEventId
+  }
+}
+
+fragment ApplicationFormQuestionFields on ApplicationFormQuestion {
+  question
+  type
+  index
+}
+
+fragment OpeningMetadataFields on WorkingGroupOpeningMetadata {
+  shortDescription
+  description
+  hiringLimit
+  expectedEnding
+  applicationDetails
+  applicationFormQuestions {
+    ...ApplicationFormQuestionFields
+  }
+}
+
+fragment WorkerFields on Worker {
+  id
+  runtimeId
+  group {
+    name
+  }
+  membership {
+    id
+  }
+  roleAccount
+  rewardAccount
+  stakeAccount
+  status {
+    __typename
+  }
+  isLead
+  stake
+  payouts {
+    id
+  }
+  hiredAtBlock {
+    ...BlockFields
+  }
+  hiredAtTime
+  application {
+    ...ApplicationBasicFields
+  }
+  storage
+}
+
+fragment WorkingGroupMetadataFields on WorkingGroupMetadata {
+  id
+  status
+  statusMessage
+  about
+  description
+  setAtBlock {
+    ...BlockFields
+  }
+}
+
+# TODO: Don't query group leader here?
+fragment OpeningFields on WorkingGroupOpening {
+  id
+  runtimeId
+  group {
+    name
+    leader {
+      runtimeId
+    }
+  }
+  applications {
+    ...ApplicationBasicFields
+  }
+  type
+  status {
+    ...OpeningStatusFields
+  }
+  metadata {
+    ...OpeningMetadataFields
+  }
+  stakeAmount
+  unstakingPeriod
+  rewardPerBlock
+  createdAtBlock {
+    ...BlockFields
+  }
+  createdAt
+}
+
+query getOpeningById ($openingId: ID!) {
+  workingGroupOpeningByUniqueInput(where: { id: $openingId }) {
+    ...OpeningFields
+  }
+}
+
+fragment ApplicationFields on WorkingGroupApplication {
+  ...ApplicationBasicFields
+  createdAtBlock {
+    ...BlockFields
+  }
+  createdAt
+  opening {
+    id
+    runtimeId
+  }
+  applicant {
+    id
+  }
+  roleAccount
+  rewardAccount
+  stakingAccount
+  answers {
+    question {
+      question
+    }
+    answer
+  }
+  stake
+}
+
+query getApplicationById ($applicationId: ID!) {
+  workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
+    ...ApplicationFields
+  }
+}
+
+fragment WorkingGroupFields on WorkingGroup {
+  id
+  name
+  metadata {
+    ...WorkingGroupMetadataFields
+  }
+  leader {
+    id
+  }
+  budget
+}
+
+query getWorkingGroupByName ($name: String!) {
+  workingGroupByUniqueInput(where: { name: $name }) {
+    ...WorkingGroupFields
+  }
+}
+
+fragment UpcomingOpeningFields on UpcomingWorkingGroupOpening {
+  id
+  group {
+    name
+  }
+  metadata {
+    ...OpeningMetadataFields
+  }
+  expectedStart
+  stakeAmount
+  rewardPerBlock
+  createdAtBlock {
+    ...BlockFields
+  }
+  createdAt
+}
+
+query getUpcomingOpeningByCreatedInEventId ($createdInEventId: ID!) {
+  upcomingWorkingGroupOpenings(where: { createdInEventId_eq: $createdInEventId }) {
+    ...UpcomingOpeningFields
+  }
+}
+
+query getWorkingGroupMetadataSnapshotAt ($groupId: ID!, $timestamp: DateTime!) {
+  workingGroupMetadata(where: { createdAt_eq: $timestamp, groupId_eq: $groupId }, orderBy: createdAt_DESC, limit: 1) {
+    ...WorkingGroupMetadataFields
+  }
+}
+
+query getWorkingGroupMetadataSnapshotBefore ($groupId: ID!, $timestamp: DateTime!) {
+  workingGroupMetadata(where: { createdAt_lt: $timestamp, groupId_eq: $groupId }, orderBy: createdAt_DESC, limit: 1) {
+    ...WorkingGroupMetadataFields
+  }
+}

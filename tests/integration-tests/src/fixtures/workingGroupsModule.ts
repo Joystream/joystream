@@ -4,24 +4,7 @@ import { assert } from 'chai'
 import { BaseFixture } from '../Fixture'
 import Debugger from 'debug'
 import { QueryNodeApi } from '../QueryNodeApi'
-import {
-  ApplicationFormQuestionType,
-  AppliedOnOpeningEvent,
-  EventType,
-  OpeningAddedEvent,
-  OpeningFilledEvent,
-  WorkingGroupApplication,
-  WorkingGroupOpening,
-  WorkingGroupOpeningType,
-  Worker,
-  ApplicationWithdrawnEvent,
-  OpeningCanceledEvent,
-  StatusTextChangedEvent,
-  UpcomingWorkingGroupOpening,
-  WorkingGroupOpeningMetadata,
-  WorkingGroup,
-  WorkingGroupMetadata as QWorkingGroupMetadata,
-} from '../QueryNodeApiSchema.generated'
+import { ApplicationFormQuestionType, EventType, WorkingGroupOpeningType } from '../graphql/generated/schema'
 import {
   AddUpcomingOpening,
   ApplicationMetadata,
@@ -47,6 +30,22 @@ import _ from 'lodash'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { JoyBTreeSet } from '@joystream/types/common'
 import { registry } from '@joystream/types'
+import {
+  OpeningFieldsFragment,
+  OpeningMetadataFieldsFragment,
+  OpeningAddedEventFieldsFragment,
+  ApplicationFieldsFragment,
+  AppliedOnOpeningEventFieldsFragment,
+  OpeningFilledEventFieldsFragment,
+  WorkerFieldsFragment,
+  ApplicationWithdrawnEventFieldsFragment,
+  OpeningCanceledEventFieldsFragment,
+  StatusTextChangedEventFieldsFragment,
+  UpcomingOpeningFieldsFragment,
+  WorkingGroupMetadataFieldsFragment,
+  WorkingGroupFieldsFragment,
+  ApplicationBasicFieldsFragment,
+} from '../graphql/generated/queries'
 
 // TODO: Fetch from runtime when possible!
 const MIN_APPLICATION_STAKE = new BN(2000)
@@ -124,7 +123,7 @@ abstract class BaseCreateOpeningFixture extends BaseFixture {
     return metadata
   }
 
-  protected assertQueriedOpeningMetadataIsValid(qOpeningMeta: WorkingGroupOpeningMetadata) {
+  protected assertQueriedOpeningMetadataIsValid(qOpeningMeta: OpeningMetadataFieldsFragment) {
     assert.equal(qOpeningMeta.shortDescription, this.openingParams.metadata.shortDescription)
     assert.equal(qOpeningMeta.description, this.openingParams.metadata.description)
     assert.equal(new Date(qOpeningMeta.expectedEnding).getTime(), this.openingParams.metadata.expectedEndingTimestamp)
@@ -171,7 +170,7 @@ export class CreateOpeningFixture extends BaseCreateOpeningFixture {
 
   private assertOpeningMatchQueriedResult(
     eventDetails: OpeningAddedEventDetails,
-    qOpening?: WorkingGroupOpening | null
+    qOpening: OpeningFieldsFragment | null
   ) {
     if (!qOpening) {
       throw new Error('Query node: Opening not found')
@@ -191,7 +190,7 @@ export class CreateOpeningFixture extends BaseCreateOpeningFixture {
   private assertQueriedOpeningAddedEventIsValid(
     eventDetails: OpeningAddedEventDetails,
     txHash: string,
-    qEvent?: OpeningAddedEvent
+    qEvent: OpeningAddedEventFieldsFragment | null
   ) {
     if (!qEvent) {
       throw new Error('Query node: OpeningAdded event not found')
@@ -230,7 +229,7 @@ export class CreateOpeningFixture extends BaseCreateOpeningFixture {
     // Query the opening
     await this.query.tryQueryWithTimeout(
       () => this.query.getOpeningById(eventDetails.openingId, this.group),
-      (r) => this.assertOpeningMatchQueriedResult(eventDetails, r.data.workingGroupOpeningByUniqueInput)
+      (qOpening) => this.assertOpeningMatchQueriedResult(eventDetails, qOpening)
     )
     // Query the event
     const qOpeningAddedEvent = await this.query.getOpeningAddedEvent(
@@ -290,7 +289,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
 
   private assertApplicationMatchQueriedResult(
     eventDetails: AppliedOnOpeningEventDetails,
-    qApplication?: WorkingGroupApplication | null
+    qApplication: ApplicationFieldsFragment | null
   ) {
     if (!qApplication) {
       throw new Error('Application not found')
@@ -318,7 +317,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
   private assertQueriedOpeningAddedEventIsValid(
     eventDetails: AppliedOnOpeningEventDetails,
     txHash: string,
-    qEvent?: AppliedOnOpeningEvent
+    qEvent: AppliedOnOpeningEventFieldsFragment | null
   ) {
     if (!qEvent) {
       throw new Error('Query node: AppliedOnOpening event not found')
@@ -362,7 +361,7 @@ export class ApplyOnOpeningHappyCaseFixture extends BaseFixture {
     // Query the application
     await this.query.tryQueryWithTimeout(
       () => this.query.getApplicationById(eventDetails.applicationId, this.group),
-      (r) => this.assertApplicationMatchQueriedResult(eventDetails, r.data.workingGroupApplicationByUniqueInput)
+      (qApplication) => this.assertApplicationMatchQueriedResult(eventDetails, qApplication)
     )
     // Query the event
     const qAppliedOnOpeningEvent = await this.query.getAppliedOnOpeningEvent(
@@ -423,7 +422,7 @@ export class SudoFillLeadOpeningFixture extends BaseFixture {
   private assertQueriedOpeningFilledEventIsValid(
     eventDetails: OpeningFilledEventDetails,
     txHash: string,
-    qEvent?: OpeningFilledEvent
+    qEvent: OpeningFilledEventFieldsFragment | null
   ) {
     if (!qEvent) {
       throw new Error('Query node: OpeningFilledEvent not found')
@@ -461,7 +460,7 @@ export class SudoFillLeadOpeningFixture extends BaseFixture {
     applicationId: ApplicationId,
     application: Application,
     applicationStake: BN,
-    qWorker: Worker
+    qWorker: WorkerFieldsFragment
   ) {
     assert.equal(qWorker.group.name, this.group)
     assert.equal(qWorker.membership.id, application.member_id.toString())
@@ -483,12 +482,10 @@ export class SudoFillLeadOpeningFixture extends BaseFixture {
     const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getOpeningFilledEvent(eventDetails.blockNumber, eventDetails.indexInBlock),
       (qEvent) => this.assertQueriedOpeningFilledEventIsValid(eventDetails, tx.hash.toString(), qEvent)
-    )) as OpeningFilledEvent
+    )) as OpeningFilledEventFieldsFragment
 
     // Check opening status
-    const {
-      data: { workingGroupOpeningByUniqueInput: qOpening },
-    } = await this.query.getOpeningById(this.openingId, this.group)
+    const qOpening = await this.query.getOpeningById(this.openingId, this.group)
     if (!qOpening) {
       throw new Error(`Query node: Opening ${this.openingId.toString()} not found!`)
     }
@@ -565,7 +562,7 @@ export class WithdrawApplicationsFixture extends BaseFixture {
   private assertQueriedApplicationWithdrawnEventIsValid(
     applicationId: ApplicationId,
     txHash: string,
-    qEvent?: ApplicationWithdrawnEvent
+    qEvent: ApplicationWithdrawnEventFieldsFragment | null
   ) {
     if (!qEvent) {
       throw new Error('Query node: ApplicationWithdrawnEvent not found!')
@@ -577,8 +574,8 @@ export class WithdrawApplicationsFixture extends BaseFixture {
   }
 
   private assertApplicationStatusIsValid(
-    qEvent: ApplicationWithdrawnEvent,
-    qApplication?: WorkingGroupApplication | null
+    qEvent: ApplicationWithdrawnEventFieldsFragment,
+    qApplication: ApplicationFieldsFragment | null
   ) {
     if (!qApplication) {
       throw new Error('Query node: Application not found!')
@@ -605,14 +602,12 @@ export class WithdrawApplicationsFixture extends BaseFixture {
             )
         )
       )
-    )) as ApplicationWithdrawnEvent[]
+    )) as ApplicationWithdrawnEventFieldsFragment[]
 
     // Check application statuses
     await Promise.all(
       this.applicationIds.map(async (id, i) => {
-        const {
-          data: { workingGroupApplicationByUniqueInput: qApplication },
-        } = await this.query.getApplicationById(id, this.group)
+        const qApplication = await this.query.getApplicationById(id, this.group)
         this.assertApplicationStatusIsValid(qEvents[i], qApplication)
       })
     )
@@ -645,7 +640,10 @@ export class CancelOpeningFixture extends BaseFixture {
     this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'OpeningCanceled')
   }
 
-  private assertQueriedOpeningIsValid(qEvent: OpeningCanceledEvent, qOpening?: WorkingGroupOpening | null) {
+  private assertQueriedOpeningIsValid(
+    qEvent: OpeningCanceledEventFieldsFragment,
+    qOpening: OpeningFieldsFragment | null
+  ) {
     if (!qOpening) {
       throw new Error('Query node: Opening not found!')
     }
@@ -656,7 +654,10 @@ export class CancelOpeningFixture extends BaseFixture {
     qOpening.applications.forEach((a) => this.assertApplicationStatusIsValid(qEvent, a))
   }
 
-  private assertApplicationStatusIsValid(qEvent: OpeningCanceledEvent, qApplication: WorkingGroupApplication) {
+  private assertApplicationStatusIsValid(
+    qEvent: OpeningCanceledEventFieldsFragment,
+    qApplication: ApplicationBasicFieldsFragment
+  ) {
     // It's possible that some of the applications have been withdrawn
     assert.oneOf(qApplication.status.__typename, ['ApplicationStatusWithdrawn', 'ApplicationStatusCancelled'])
     if (qApplication.status.__typename === 'ApplicationStatusCancelled') {
@@ -664,7 +665,7 @@ export class CancelOpeningFixture extends BaseFixture {
     }
   }
 
-  private assertQueriedOpeningCancelledEventIsValid(txHash: string, qEvent?: OpeningCanceledEvent) {
+  private assertQueriedOpeningCancelledEventIsValid(txHash: string, qEvent: OpeningCanceledEventFieldsFragment | null) {
     if (!qEvent) {
       throw new Error('Query node: OpeningCancelledEvent not found!')
     }
@@ -681,10 +682,8 @@ export class CancelOpeningFixture extends BaseFixture {
     const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getOpeningCancelledEvent(event.blockNumber, event.indexInBlock),
       (qEvent) => this.assertQueriedOpeningCancelledEventIsValid(tx.hash.toString(), qEvent)
-    )) as OpeningCanceledEvent
-    const {
-      data: { workingGroupOpeningByUniqueInput: qOpening },
-    } = await this.query.getOpeningById(this.openingId, this.group)
+    )) as OpeningCanceledEventFieldsFragment
+    const qOpening = await this.query.getOpeningById(this.openingId, this.group)
     this.assertQueriedOpeningIsValid(qEvent, qOpening)
   }
 }
@@ -743,7 +742,7 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
 
   private assertQueriedUpcomingOpeningIsValid(
     eventDetails: EventDetails,
-    qUpcomingOpening?: UpcomingWorkingGroupOpening | null
+    qUpcomingOpening: UpcomingOpeningFieldsFragment | null
   ) {
     if (!qUpcomingOpening) {
       throw new Error('Query node: Upcoming opening not found!')
@@ -756,7 +755,10 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
     this.assertQueriedOpeningMetadataIsValid(qUpcomingOpening.metadata)
   }
 
-  private assertQueriedStatusTextChangedEventIsValid(txHash: string, qEvent?: StatusTextChangedEvent) {
+  private assertQueriedStatusTextChangedEventIsValid(
+    txHash: string,
+    qEvent: StatusTextChangedEventFieldsFragment | null
+  ) {
     if (!qEvent) {
       throw new Error('Query node: StatusTextChangedEvent not found!')
     }
@@ -778,7 +780,7 @@ export class CreateUpcomingOpeningFixture extends BaseCreateOpeningFixture {
     const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
       (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
-    )) as StatusTextChangedEvent
+    )) as StatusTextChangedEventFieldsFragment
     // Query the opening
     const qUpcomingOpening = await this.query.getUpcomingOpeningByCreatedInEventId(qEvent.id)
     this.assertQueriedUpcomingOpeningIsValid(event, qUpcomingOpening)
@@ -824,7 +826,10 @@ export class RemoveUpcomingOpeningFixture extends BaseFixture {
     this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
   }
 
-  private assertQueriedStatusTextChangedEventIsValid(txHash: string, qEvent?: StatusTextChangedEvent) {
+  private assertQueriedStatusTextChangedEventIsValid(
+    txHash: string,
+    qEvent: StatusTextChangedEventFieldsFragment | null
+  ) {
     if (!qEvent) {
       throw new Error('Query node: StatusTextChangedEvent not found!')
     }
@@ -849,11 +854,11 @@ export class RemoveUpcomingOpeningFixture extends BaseFixture {
     const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
       (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
-    )) as StatusTextChangedEvent
+    )) as StatusTextChangedEventFieldsFragment
     // Query the opening and make sure it doesn't exist
     if (qEvent.result && qEvent.result.__typename === 'UpcomingOpeningRemoved') {
       const qUpcomingOpening = await this.query.getUpcomingOpeningByCreatedInEventId(qEvent.result.upcomingOpeningId)
-      assert.isUndefined(qUpcomingOpening)
+      assert.isNull(qUpcomingOpening)
     }
   }
 }
@@ -905,7 +910,10 @@ export class UpdateGroupStatusFixture extends BaseFixture {
     this.event = await this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
   }
 
-  private assertQueriedStatusTextChangedEventIsValid(txHash: string, qEvent?: StatusTextChangedEvent) {
+  private assertQueriedStatusTextChangedEventIsValid(
+    txHash: string,
+    qEvent: StatusTextChangedEventFieldsFragment | null
+  ) {
     if (!qEvent) {
       throw new Error('Query node: StatusTextChangedEvent not found!')
     }
@@ -919,10 +927,7 @@ export class UpdateGroupStatusFixture extends BaseFixture {
     assert.equal(qEvent.result.__typename, 'WorkingGroupMetadataSet')
   }
 
-  private assertQueriedGroupIsValid(qGroup: WorkingGroup | undefined, qMeta: QWorkingGroupMetadata) {
-    if (!qGroup) {
-      throw new Error(`Query node: Group ${this.group} not found!`)
-    }
+  private assertQueriedGroupIsValid(qGroup: WorkingGroupFieldsFragment, qMeta: WorkingGroupMetadataFieldsFragment) {
     if (!qGroup.metadata) {
       throw new Error(`Query node: Group metadata is empty!`)
     }
@@ -931,13 +936,13 @@ export class UpdateGroupStatusFixture extends BaseFixture {
 
   private assertQueriedMetadataSnapshotsAreValid(
     eventDetails: EventDetails,
-    beforeSnapshot?: QWorkingGroupMetadata,
-    afterSnapshot?: QWorkingGroupMetadata
+    beforeSnapshot: WorkingGroupMetadataFieldsFragment | null,
+    afterSnapshot: WorkingGroupMetadataFieldsFragment | null
   ) {
     if (!afterSnapshot) {
       throw new Error('Query node: WorkingGroupMetadata snapshot not found!')
     }
-    const expectedMeta = _.merge(this.metadata, beforeSnapshot)
+    const expectedMeta = _.merge(beforeSnapshot, this.metadata)
     assert.equal(afterSnapshot.status, expectedMeta.status)
     assert.equal(afterSnapshot.statusMessage, expectedMeta.statusMessage)
     assert.equal(afterSnapshot.description, expectedMeta.description)
@@ -953,15 +958,20 @@ export class UpdateGroupStatusFixture extends BaseFixture {
     const qEvent = (await this.query.tryQueryWithTimeout(
       () => this.query.getStatusTextChangedEvent(event.blockNumber, event.indexInBlock),
       (qEvent) => this.assertQueriedStatusTextChangedEventIsValid(tx.hash.toString(), qEvent)
-    )) as StatusTextChangedEvent
+    )) as StatusTextChangedEventFieldsFragment
+
+    // Query the group
+    const qGroup = await this.query.getWorkingGroup(this.group)
+    if (!qGroup) {
+      throw new Error('Query node: Working group not found!')
+    }
 
     // Query & check the metadata snapshots
-    const beforeSnapshot = await this.query.getGroupMetaSnapshot(event.blockTimestamp, 'lt')
-    const afterSnapshot = await this.query.getGroupMetaSnapshot(event.blockTimestamp, 'eq')
+    const beforeSnapshot = await this.query.getGroupMetaSnapshotBefore(qGroup.id, event.blockTimestamp)
+    const afterSnapshot = await this.query.getGroupMetaSnapshotAt(qGroup.id, event.blockTimestamp)
     this.assertQueriedMetadataSnapshotsAreValid(event, beforeSnapshot, afterSnapshot)
 
-    // Query & check the group
-    const qGroup = await this.query.getWorkingGroup(this.group)
+    // Check the group
     this.assertQueriedGroupIsValid(qGroup, afterSnapshot!)
 
     // Check event relation

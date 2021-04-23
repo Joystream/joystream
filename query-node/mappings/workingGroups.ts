@@ -282,19 +282,22 @@ async function handleRemoveUpcomingOpeningAction(
 async function handleSetWorkingGroupMetadataAction(
   db: DatabaseManager,
   event_: SubstrateEvent,
+  statusChangedEvent: StatusTextChangedEvent,
   action: SetGroupMetadata
 ): Promise<WorkingGroupMetadataSet> {
   const { newMetadata } = action.toObject()
   const group = await getWorkingGroup(db, event_, ['metadata'])
-  const groupMetadata = group.metadata!
+  const groupMetadata = group.metadata
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const newGroupMetadata = new WorkingGroupMetadata({
-    ...groupMetadata,
-    ...newMetadata,
+    ..._.merge(groupMetadata, newMetadata),
+    id: undefined,
     createdAt: eventTime,
     updatedAt: eventTime,
     setAtBlock: await getOrCreateBlock(db, event_),
+    setInEvent: statusChangedEvent,
+    group,
   })
   await db.save<WorkingGroupMetadata>(newGroupMetadata)
 
@@ -322,7 +325,7 @@ async function handleWorkingGroupMetadataAction(
       return handleRemoveUpcomingOpeningAction(db, action.getRemoveUpcomingOpening()!)
     }
     case WorkingGroupMetadataAction.ActionCase.SET_GROUP_METADATA: {
-      return handleSetWorkingGroupMetadataAction(db, event_, action.getSetGroupMetadata()!)
+      return handleSetWorkingGroupMetadataAction(db, event_, statusChangedEvent, action.getSetGroupMetadata()!)
     }
   }
   const result = new InvalidActionMetadata()

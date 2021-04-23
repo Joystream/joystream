@@ -2,14 +2,14 @@ import { MemberId } from '@joystream/types/common'
 import { ApplicationId, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@joystream/types/working-group'
 import { Event } from '@polkadot/types/interfaces/system'
 import { BTreeMap } from '@polkadot/types'
-import { Event as GenericEventData } from './QueryNodeApiSchema.generated'
+import { EventFieldsFragment } from './graphql/generated/queries'
 
 export type MemberContext = {
   account: string
   memberId: MemberId
 }
 
-export type AnyQueryNodeEvent = { event: GenericEventData }
+export type AnyQueryNodeEvent = { event: EventFieldsFragment }
 
 export interface EventDetails {
   event: Event

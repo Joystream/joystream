@@ -1,0 +1,138 @@
+fragment AppliedOnOpeningEventFields on AppliedOnOpeningEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  opening {
+    id
+    runtimeId
+  }
+  application {
+    id
+    runtimeId
+  }
+}
+
+query getAppliedOnOpeningEventsByEventId ($eventId: ID!) {
+  appliedOnOpeningEvents(where: { eventId_eq: $eventId }) {
+    ...AppliedOnOpeningEventFields
+  }
+}
+
+fragment OpeningAddedEventFields on OpeningAddedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  opening {
+    id
+    runtimeId
+  }
+}
+
+query getOpeningAddedEventsByEventId ($eventId: ID!) {
+  openingAddedEvents(where: { eventId_eq: $eventId }) {
+    ...OpeningAddedEventFields
+  }
+}
+
+fragment OpeningFilledEventFields on OpeningFilledEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  opening {
+    id
+    runtimeId
+  }
+  workersHired {
+    ...WorkerFields
+    }
+}
+
+query getOpeningFilledEventsByEventId ($eventId: ID!) {
+  openingFilledEvents(where: { eventId_eq: $eventId }) {
+    ...OpeningFilledEventFields
+  }
+}
+
+fragment ApplicationWithdrawnEventFields on ApplicationWithdrawnEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  application {
+    id
+    runtimeId
+  }
+}
+
+query getApplicationWithdrawnEventsByEventId ($eventId: ID!) {
+  applicationWithdrawnEvents(where: { eventId_eq: $eventId }) {
+    ...ApplicationWithdrawnEventFields
+  }
+}
+
+fragment OpeningCanceledEventFields on OpeningCanceledEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  opening {
+    id
+    runtimeId
+  }
+}
+
+query getOpeningCancelledEventsByEventId ($eventId: ID!) {
+  openingCanceledEvents(where: { eventId_eq: $eventId }) {
+    ...OpeningCanceledEventFields
+  }
+}
+
+fragment StatusTextChangedEventFields on  StatusTextChangedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  metadata
+  result {
+    __typename
+    ... on UpcomingOpeningAdded {
+      upcomingOpeningId
+    }
+    ... on UpcomingOpeningRemoved {
+      upcomingOpeningId
+    }
+    ... on WorkingGroupMetadataSet {
+      metadataId
+    }
+    ... on InvalidActionMetadata {
+      reason
+    }
+  }
+}
+
+query getStatusTextChangedEventsByEventId ($eventId: ID!) {
+  statusTextChangedEvents(where: { eventId_eq: $eventId }) {
+    ...StatusTextChangedEventFields
+  }
+}

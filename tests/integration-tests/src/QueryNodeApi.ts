@@ -1,40 +1,118 @@
-import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
+import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
 import { MemberId } from '@joystream/types/common'
-import {
-  ApplicationWithdrawnEvent,
-  AppliedOnOpeningEvent,
-  InitialInvitationBalanceUpdatedEvent,
-  InitialInvitationCountUpdatedEvent,
-  MembershipPriceUpdatedEvent,
-  MembershipSystemSnapshot,
-  OpeningAddedEvent,
-  OpeningCanceledEvent,
-  OpeningFilledEvent,
-  Query,
-  ReferralCutUpdatedEvent,
-  StatusTextChangedEvent,
-  UpcomingWorkingGroupOpening,
-  WorkingGroup,
-  WorkingGroupMetadata,
-} from './QueryNodeApiSchema.generated'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
 import { WorkingGroupModuleName } from './types'
-
-const EVENT_GENERIC_FIELDS = `
-  id
-  event {
-    inBlock {
-      number
-      timestamp
-      network
-    }
-    inExtrinsic
-    indexInBlock
-    type
-  }
-`
-
+import {
+  GetMemberByIdQuery,
+  GetMemberByIdQueryVariables,
+  GetMemberById,
+  GetMembershipBoughtEventsByMemberIdQuery,
+  GetMembershipBoughtEventsByMemberIdQueryVariables,
+  GetMembershipBoughtEventsByMemberId,
+  GetMemberProfileUpdatedEventsByMemberIdQuery,
+  GetMemberProfileUpdatedEventsByMemberIdQueryVariables,
+  GetMemberProfileUpdatedEventsByMemberId,
+  GetMemberAccountsUpdatedEventsByMemberIdQuery,
+  GetMemberAccountsUpdatedEventsByMemberIdQueryVariables,
+  GetMemberAccountsUpdatedEventsByMemberId,
+  GetMemberInvitedEventsByNewMemberIdQuery,
+  GetMemberInvitedEventsByNewMemberIdQueryVariables,
+  GetMemberInvitedEventsByNewMemberId,
+  GetInvitesTransferredEventsBySourceMemberIdQuery,
+  GetInvitesTransferredEventsBySourceMemberIdQueryVariables,
+  GetInvitesTransferredEventsBySourceMemberId,
+  GetStakingAccountAddedEventsByMemberIdQuery,
+  GetStakingAccountAddedEventsByMemberIdQueryVariables,
+  GetStakingAccountAddedEventsByMemberId,
+  GetStakingAccountConfirmedEventsByMemberIdQuery,
+  GetStakingAccountConfirmedEventsByMemberIdQueryVariables,
+  GetStakingAccountConfirmedEventsByMemberId,
+  GetStakingAccountRemovedEventsByMemberIdQuery,
+  GetStakingAccountRemovedEventsByMemberIdQueryVariables,
+  GetStakingAccountRemovedEventsByMemberId,
+  GetMembershipSystemSnapshotAtQuery,
+  GetMembershipSystemSnapshotAtQueryVariables,
+  GetMembershipSystemSnapshotAt,
+  GetMembershipSystemSnapshotBeforeQuery,
+  GetMembershipSystemSnapshotBeforeQueryVariables,
+  GetMembershipSystemSnapshotBefore,
+  GetReferralCutUpdatedEventsByEventIdQuery,
+  GetReferralCutUpdatedEventsByEventIdQueryVariables,
+  GetReferralCutUpdatedEventsByEventId,
+  GetMembershipPriceUpdatedEventsByEventIdQuery,
+  GetMembershipPriceUpdatedEventsByEventIdQueryVariables,
+  GetMembershipPriceUpdatedEventsByEventId,
+  GetInitialInvitationBalanceUpdatedEventsByEventIdQuery,
+  GetInitialInvitationBalanceUpdatedEventsByEventIdQueryVariables,
+  GetInitialInvitationBalanceUpdatedEventsByEventId,
+  GetInitialInvitationCountUpdatedEventsByEventIdQuery,
+  GetInitialInvitationCountUpdatedEventsByEventIdQueryVariables,
+  GetInitialInvitationCountUpdatedEventsByEventId,
+  GetOpeningByIdQuery,
+  GetOpeningByIdQueryVariables,
+  GetOpeningById,
+  GetApplicationByIdQuery,
+  GetApplicationByIdQueryVariables,
+  GetApplicationById,
+  GetAppliedOnOpeningEventsByEventIdQuery,
+  GetAppliedOnOpeningEventsByEventIdQueryVariables,
+  GetAppliedOnOpeningEventsByEventId,
+  GetOpeningAddedEventsByEventIdQuery,
+  GetOpeningAddedEventsByEventIdQueryVariables,
+  GetOpeningAddedEventsByEventId,
+  GetOpeningFilledEventsByEventIdQuery,
+  GetOpeningFilledEventsByEventIdQueryVariables,
+  GetOpeningFilledEventsByEventId,
+  GetApplicationWithdrawnEventsByEventIdQuery,
+  GetApplicationWithdrawnEventsByEventIdQueryVariables,
+  GetApplicationWithdrawnEventsByEventId,
+  GetOpeningCancelledEventsByEventIdQuery,
+  GetOpeningCancelledEventsByEventIdQueryVariables,
+  GetOpeningCancelledEventsByEventId,
+  GetStatusTextChangedEventsByEventIdQuery,
+  GetStatusTextChangedEventsByEventIdQueryVariables,
+  GetStatusTextChangedEventsByEventId,
+  GetUpcomingOpeningByCreatedInEventIdQuery,
+  GetUpcomingOpeningByCreatedInEventIdQueryVariables,
+  GetUpcomingOpeningByCreatedInEventId,
+  GetWorkingGroupByNameQuery,
+  GetWorkingGroupByNameQueryVariables,
+  GetWorkingGroupByName,
+  GetWorkingGroupMetadataSnapshotAtQuery,
+  GetWorkingGroupMetadataSnapshotAtQueryVariables,
+  GetWorkingGroupMetadataSnapshotAt,
+  GetWorkingGroupMetadataSnapshotBeforeQuery,
+  GetWorkingGroupMetadataSnapshotBeforeQueryVariables,
+  GetWorkingGroupMetadataSnapshotBefore,
+  MembershipFieldsFragment,
+  MembershipBoughtEventFieldsFragment,
+  MemberProfileUpdatedEventFieldsFragment,
+  MemberAccountsUpdatedEventFieldsFragment,
+  MemberInvitedEventFieldsFragment,
+  InvitesTransferredEventFieldsFragment,
+  StakingAccountAddedEventFieldsFragment,
+  StakingAccountConfirmedEventFieldsFragment,
+  StakingAccountRemovedEventFieldsFragment,
+  MembershipSystemSnapshotFieldsFragment,
+  ReferralCutUpdatedEventFieldsFragment,
+  MembershipPriceUpdatedEventFieldsFragment,
+  InitialInvitationBalanceUpdatedEventFieldsFragment,
+  InitialInvitationCountUpdatedEventFieldsFragment,
+  OpeningFieldsFragment,
+  ApplicationFieldsFragment,
+  AppliedOnOpeningEventFieldsFragment,
+  OpeningAddedEventFieldsFragment,
+  OpeningFilledEventFieldsFragment,
+  ApplicationWithdrawnEventFieldsFragment,
+  OpeningCanceledEventFieldsFragment,
+  StatusTextChangedEventFieldsFragment,
+  UpcomingOpeningFieldsFragment,
+  WorkingGroupFieldsFragment,
+  WorkingGroupMetadataFieldsFragment,
+} from './graphql/generated/queries'
+import { Maybe } from './graphql/generated/schema'
+import { OperationDefinitionNode } from 'graphql'
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -91,848 +169,326 @@ export class QueryNodeApi {
     })
   }
 
-  public async getMemberById(id: MemberId): Promise<ApolloQueryResult<Pick<Query, 'membershipByUniqueInput'>>> {
-    const MEMBER_BY_ID_QUERY = gql`
-      query($id: ID!) {
-        membershipByUniqueInput(where: { id: $id }) {
-          id
-          handle
-          metadata {
-            name
-            about
-          }
-          controllerAccount
-          rootAccount
-          registeredAtBlock {
-            number
-            timestamp
-            network
-          }
-          registeredAtTime
-          entry
-          isVerified
-          inviteCount
-          invitedBy {
-            id
-          }
-          invitees {
-            id
-          }
-          boundAccounts
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getMemberById(${id.toString()}) query`)
-
-    return this.queryNodeProvider.query({ query: MEMBER_BY_ID_QUERY, variables: { id: id.toNumber() } })
+  private debugQuery(query: DocumentNode, args: Record<string, unknown>): void {
+    const queryDef = query.definitions.find((d) => d.kind === 'OperationDefinition') as OperationDefinitionNode
+    this.queryDebug(`${queryDef.name!.value}(${JSON.stringify(args)})`)
   }
 
-  public async getMembershipBoughtEvents(
-    memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'membershipBoughtEvents'>>> {
-    const MEMBERTSHIP_BOUGHT_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          newMember {
-            id
-          }
-          rootAccount
-          controllerAccount
-          handle
-          metadata {
-            name
-            about
-          }
-          referrer {
-            id
-          }
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getMembershipBoughtEvents(${memberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: MEMBERTSHIP_BOUGHT_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  // Query entity by unique input
+  private async uniqueEntityQuery<
+    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<Required<QueryT>[keyof QueryT] | null> {
+    this.debugQuery(query, variables)
+    return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
   }
 
-  public async getMemberProfileUpdatedEvents(
-    memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'memberProfileUpdatedEvents'>>> {
-    const MEMBER_PROFILE_UPDATED_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          member {
-            id
-          }
-          newHandle
-          newMetadata {
-            name
-            about
-          }
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getMemberProfileUpdatedEvents(${memberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: MEMBER_PROFILE_UPDATED_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  // Query entities by "non-unique" input and return first result
+  private async firstEntityQuery<QueryT extends { [k: string]: unknown[] }, VariablesT extends Record<string, unknown>>(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<QueryT[keyof QueryT][number] | null> {
+    this.debugQuery(query, variables)
+    return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
   }
 
-  public async getMemberAccountsUpdatedEvents(
-    memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'memberAccountsUpdatedEvents'>>> {
-    const MEMBER_ACCOUNTS_UPDATED_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          member {
-            id
-          }
-          newRootAccount
-          newControllerAccount
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getMemberAccountsUpdatedEvents(${memberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: MEMBER_ACCOUNTS_UPDATED_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  // Query multiple entities
+  private async multipleEntitiesQuery<
+    QueryT extends { [k: string]: unknown[] },
+    VariablesT extends Record<string, unknown>
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT]> {
+    this.debugQuery(query, variables)
+    return (await this.queryNodeProvider.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
   }
 
-  public async getMemberInvitedEvents(
-    memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'memberInvitedEvents'>>> {
-    const MEMBER_INVITED_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        memberInvitedEvents(where: { newMemberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          invitingMember {
-            id
-          }
-          newMember {
-            id
-          }
-          rootAccount
-          controllerAccount
-          handle
-          metadata {
-            name
-            about
-          }
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getMemberInvitedEvents(${memberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: MEMBER_INVITED_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  public getQueryNodeEventId(blockNumber: number, indexInBlock: number): string {
+    return `${blockNumber}-${indexInBlock}`
   }
 
-  public async getInvitesTransferredEvents(
-    fromMemberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'invitesTransferredEvents'>>> {
-    const INVITES_TRANSFERRED_BY_MEMBER_ID = gql`
-      query($from: ID!) {
-        invitesTransferredEvents(where: { sourceMemberId_eq: $from }) {
-          ${EVENT_GENERIC_FIELDS}
-          sourceMember {
-            id
-          }
-          targetMember {
-            id
-          }
-          numberOfInvites
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getInvitesTransferredEvents(${fromMemberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: INVITES_TRANSFERRED_BY_MEMBER_ID,
-      variables: { from: fromMemberId.toNumber() },
-    })
+  public async getMemberById(id: MemberId): Promise<MembershipFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetMemberByIdQuery, GetMemberByIdQueryVariables>(
+      GetMemberById,
+      { id: id.toString() },
+      'membershipByUniqueInput'
+    )
   }
 
-  public async getStakingAccountAddedEvents(
-    memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'stakingAccountAddedEvents'>>> {
-    const STAKING_ACCOUNT_ADDED_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          member {
-            id
-          }
-          account
-        }
-      }
-    `
+  public async getMembershipBoughtEvent(memberId: MemberId): Promise<MembershipBoughtEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetMembershipBoughtEventsByMemberIdQuery,
+      GetMembershipBoughtEventsByMemberIdQueryVariables
+    >(GetMembershipBoughtEventsByMemberId, { memberId: memberId.toString() }, 'membershipBoughtEvents')
+  }
 
-    this.queryDebug(`Executing getStakingAccountAddedEvents(${memberId.toString()})`)
+  public async getMemberProfileUpdatedEvents(memberId: MemberId): Promise<MemberProfileUpdatedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetMemberProfileUpdatedEventsByMemberIdQuery,
+      GetMemberProfileUpdatedEventsByMemberIdQueryVariables
+    >(GetMemberProfileUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberProfileUpdatedEvents')
+  }
 
-    return this.queryNodeProvider.query({
-      query: STAKING_ACCOUNT_ADDED_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  public async getMemberAccountsUpdatedEvents(memberId: MemberId): Promise<MemberAccountsUpdatedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetMemberAccountsUpdatedEventsByMemberIdQuery,
+      GetMemberAccountsUpdatedEventsByMemberIdQueryVariables
+    >(GetMemberAccountsUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberAccountsUpdatedEvents')
+  }
+
+  public async getMemberInvitedEvent(memberId: MemberId): Promise<MemberInvitedEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetMemberInvitedEventsByNewMemberIdQuery,
+      GetMemberInvitedEventsByNewMemberIdQueryVariables
+    >(GetMemberInvitedEventsByNewMemberId, { newMemberId: memberId.toString() }, 'memberInvitedEvents')
+  }
+
+  // TODO: Use event id
+  public async getInvitesTransferredEvent(
+    sourceMemberId: MemberId
+  ): Promise<InvitesTransferredEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetInvitesTransferredEventsBySourceMemberIdQuery,
+      GetInvitesTransferredEventsBySourceMemberIdQueryVariables
+    >(
+      GetInvitesTransferredEventsBySourceMemberId,
+      { sourceMemberId: sourceMemberId.toString() },
+      'invitesTransferredEvents'
+    )
+  }
+
+  public async getStakingAccountAddedEvents(memberId: MemberId): Promise<StakingAccountAddedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetStakingAccountAddedEventsByMemberIdQuery,
+      GetStakingAccountAddedEventsByMemberIdQueryVariables
+    >(GetStakingAccountAddedEventsByMemberId, { memberId: memberId.toString() }, 'stakingAccountAddedEvents')
   }
 
   public async getStakingAccountConfirmedEvents(
     memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'stakingAccountConfirmedEvents'>>> {
-    const STAKING_ACCOUNT_CONFIRMED_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          member {
-            id
-          }
-          account
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getStakingAccountConfirmedEvents(${memberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: STAKING_ACCOUNT_CONFIRMED_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  ): Promise<StakingAccountConfirmedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetStakingAccountConfirmedEventsByMemberIdQuery,
+      GetStakingAccountConfirmedEventsByMemberIdQueryVariables
+    >(GetStakingAccountConfirmedEventsByMemberId, { memberId: memberId.toString() }, 'stakingAccountConfirmedEvents')
   }
 
-  public async getStakingAccountRemovedEvents(
-    memberId: MemberId
-  ): Promise<ApolloQueryResult<Pick<Query, 'stakingAccountRemovedEvents'>>> {
-    const STAKING_ACCOUNT_REMOVED_BY_MEMBER_ID = gql`
-      query($memberId: ID!) {
-        stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
-          ${EVENT_GENERIC_FIELDS}
-          member {
-            id
-          }
-          account
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getStakingAccountRemovedEvents(${memberId.toString()})`)
-
-    return this.queryNodeProvider.query({
-      query: STAKING_ACCOUNT_REMOVED_BY_MEMBER_ID,
-      variables: { memberId: memberId.toNumber() },
-    })
+  public async getStakingAccountRemovedEvents(memberId: MemberId): Promise<StakingAccountRemovedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetStakingAccountRemovedEventsByMemberIdQuery,
+      GetStakingAccountRemovedEventsByMemberIdQueryVariables
+    >(GetStakingAccountRemovedEventsByMemberId, { memberId: memberId.toString() }, 'stakingAccountRemovedEvents')
   }
 
   // FIXME: Cross-filtering is not enabled yet, so we have to use timestamp workaround
-  public async getMembershipSystemSnapshot(
-    timestamp: number,
-    matchType: 'eq' | 'lt' | 'lte' | 'gt' | 'gte' = 'eq'
-  ): Promise<MembershipSystemSnapshot | undefined> {
-    const MEMBERSHIP_SYSTEM_SNAPSHOT_QUERY = gql`
-      query($time: DateTime!) {
-        membershipSystemSnapshots(where: { snapshotTime_${matchType}: $time }, orderBy: snapshotTime_DESC, limit: 1) {
-          snapshotBlock {
-            timestamp
-            network
-            number
-          }
-          snapshotTime
-          referralCut
-          invitedInitialBalance
-          defaultInviteCount
-          membershipPrice
-        }
-      }
-    `
+  public async getMembershipSystemSnapshotAt(
+    timestamp: number
+  ): Promise<MembershipSystemSnapshotFieldsFragment | null> {
+    return this.firstEntityQuery<GetMembershipSystemSnapshotAtQuery, GetMembershipSystemSnapshotAtQueryVariables>(
+      GetMembershipSystemSnapshotAt,
+      { time: new Date(timestamp) },
+      'membershipSystemSnapshots'
+    )
+  }
 
-    this.queryDebug(`Executing getMembershipSystemSnapshot(${matchType} ${timestamp})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'membershipSystemSnapshots'>>({
-        query: MEMBERSHIP_SYSTEM_SNAPSHOT_QUERY,
-        variables: { time: new Date(timestamp) },
-      })
-    ).data.membershipSystemSnapshots[0]
+  public async getMembershipSystemSnapshotBefore(
+    timestamp: number
+  ): Promise<MembershipSystemSnapshotFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetMembershipSystemSnapshotBeforeQuery,
+      GetMembershipSystemSnapshotBeforeQueryVariables
+    >(GetMembershipSystemSnapshotBefore, { time: new Date(timestamp) }, 'membershipSystemSnapshots')
   }
 
   public async getReferralCutUpdatedEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<ReferralCutUpdatedEvent | undefined> {
-    const REFERRAL_CUT_UPDATED_BY_ID = gql`
-      query($eventId: ID!) {
-        referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          newValue
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getReferralCutUpdatedEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'referralCutUpdatedEvents'>>({
-        query: REFERRAL_CUT_UPDATED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.referralCutUpdatedEvents[0]
+  ): Promise<ReferralCutUpdatedEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetReferralCutUpdatedEventsByEventIdQuery,
+      GetReferralCutUpdatedEventsByEventIdQueryVariables
+    >(
+      GetReferralCutUpdatedEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'referralCutUpdatedEvents'
+    )
   }
 
   public async getMembershipPriceUpdatedEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<MembershipPriceUpdatedEvent | undefined> {
-    const MEMBERSHIP_PRICE_UPDATED_BY_ID = gql`
-      query($eventId: ID!) {
-        membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          newPrice
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getMembershipPriceUpdatedEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'membershipPriceUpdatedEvents'>>({
-        query: MEMBERSHIP_PRICE_UPDATED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.membershipPriceUpdatedEvents[0]
+  ): Promise<MembershipPriceUpdatedEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetMembershipPriceUpdatedEventsByEventIdQuery,
+      GetMembershipPriceUpdatedEventsByEventIdQueryVariables
+    >(
+      GetMembershipPriceUpdatedEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'membershipPriceUpdatedEvents'
+    )
   }
 
   public async getInitialInvitationBalanceUpdatedEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<InitialInvitationBalanceUpdatedEvent | undefined> {
-    const INITIAL_INVITATION_BALANCE_UPDATED_BY_ID = gql`
-      query($eventId: ID!) {
-        initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          newInitialBalance
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getInitialInvitationBalanceUpdatedEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'initialInvitationBalanceUpdatedEvents'>>({
-        query: INITIAL_INVITATION_BALANCE_UPDATED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.initialInvitationBalanceUpdatedEvents[0]
+  ): Promise<InitialInvitationBalanceUpdatedEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetInitialInvitationBalanceUpdatedEventsByEventIdQuery,
+      GetInitialInvitationBalanceUpdatedEventsByEventIdQueryVariables
+    >(
+      GetInitialInvitationBalanceUpdatedEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'initialInvitationBalanceUpdatedEvents'
+    )
   }
 
   public async getInitialInvitationCountUpdatedEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<InitialInvitationCountUpdatedEvent | undefined> {
-    const INITIAL_INVITATION_COUNT_UPDATED_BY_ID = gql`
-      query($eventId: ID!) {
-        initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          newInitialInvitationCount
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getInitialInvitationCountUpdatedEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'initialInvitationCountUpdatedEvents'>>({
-        query: INITIAL_INVITATION_COUNT_UPDATED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.initialInvitationCountUpdatedEvents[0]
+  ): Promise<InitialInvitationCountUpdatedEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetInitialInvitationCountUpdatedEventsByEventIdQuery,
+      GetInitialInvitationCountUpdatedEventsByEventIdQueryVariables
+    >(
+      GetInitialInvitationCountUpdatedEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'initialInvitationCountUpdatedEvents'
+    )
   }
 
-  public async getOpeningById(
-    id: OpeningId,
-    group: WorkingGroupModuleName
-  ): Promise<ApolloQueryResult<Pick<Query, 'workingGroupOpeningByUniqueInput'>>> {
-    const OPENING_BY_ID = gql`
-      query($openingId: ID!) {
-        workingGroupOpeningByUniqueInput(where: { id: $openingId }) {
-          id
-          runtimeId
-          group {
-            name
-            leader {
-              runtimeId
-            }
-          }
-          applications {
-            id
-            runtimeId
-            status {
-              __typename
-              ... on ApplicationStatusCancelled {
-                openingCancelledEventId
-              }
-              ... on ApplicationStatusWithdrawn {
-                applicationWithdrawnEventId
-              }
-              ... on ApplicationStatusAccepted {
-                openingFilledEventId
-              }
-              ... on ApplicationStatusRejected {
-                openingFilledEventId
-              }
-            }
-          }
-          type
-          status {
-            __typename
-            ... on OpeningStatusFilled {
-              openingFilledEventId
-            }
-            ... on OpeningStatusCancelled {
-              openingCancelledEventId
-            }
-          }
-          metadata {
-            shortDescription
-            description
-            hiringLimit
-            expectedEnding
-            applicationDetails
-            applicationFormQuestions {
-              question
-              type
-              index
-            }
-          }
-          stakeAmount
-          unstakingPeriod
-          rewardPerBlock
-          createdAtBlock {
-            number
-            timestamp
-            network
-          }
-          createdAt
-        }
-      }
-    `
-
-    const openingId = `${group}-${id.toString()}`
-    this.queryDebug(`Executing getOpeningById(${openingId})`)
-
-    return this.queryNodeProvider.query<Pick<Query, 'workingGroupOpeningByUniqueInput'>>({
-      query: OPENING_BY_ID,
-      variables: { openingId },
-    })
+  public async getOpeningById(id: OpeningId, group: WorkingGroupModuleName): Promise<OpeningFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetOpeningByIdQuery, GetOpeningByIdQueryVariables>(
+      GetOpeningById,
+      { openingId: `${group}-${id.toString()}` },
+      'workingGroupOpeningByUniqueInput'
+    )
   }
 
   public async getApplicationById(
     id: ApplicationId,
     group: WorkingGroupModuleName
-  ): Promise<ApolloQueryResult<Pick<Query, 'workingGroupApplicationByUniqueInput'>>> {
-    const APPLICATION_BY_ID = gql`
-      query($applicationId: ID!) {
-        workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
-          id
-          runtimeId
-          createdAtBlock {
-            number
-            timestamp
-            network
-          }
-          createdAt
-          opening {
-            id
-            runtimeId
-          }
-          applicant {
-            id
-          }
-          roleAccount
-          rewardAccount
-          stakingAccount
-          status {
-            __typename
-            ... on ApplicationStatusCancelled {
-              openingCancelledEventId
-            }
-            ... on ApplicationStatusWithdrawn {
-              applicationWithdrawnEventId
-            }
-            ... on ApplicationStatusAccepted {
-              openingFilledEventId
-            }
-            ... on ApplicationStatusRejected {
-              openingFilledEventId
-            }
-          }
-          answers {
-            question {
-              question
-            }
-            answer
-          }
-          stake
-        }
-      }
-    `
-
-    const applicationId = `${group}-${id.toString()}`
-    this.queryDebug(`Executing getApplicationById(${applicationId})`)
-
-    return this.queryNodeProvider.query<Pick<Query, 'workingGroupApplicationByUniqueInput'>>({
-      query: APPLICATION_BY_ID,
-      variables: { applicationId },
-    })
+  ): Promise<ApplicationFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetApplicationByIdQuery, GetApplicationByIdQueryVariables>(
+      GetApplicationById,
+      { applicationId: `${group}-${id.toString()}` },
+      'workingGroupApplicationByUniqueInput'
+    )
   }
 
   public async getAppliedOnOpeningEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<AppliedOnOpeningEvent | undefined> {
-    const APPLIED_ON_OPENING_BY_ID = gql`
-      query($eventId: ID!) {
-        appliedOnOpeningEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          group {
-            name
-          }
-          opening {
-            id
-            runtimeId
-          }
-          application {
-            id
-            runtimeId
-          }
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getAppliedOnOpeningEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'appliedOnOpeningEvents'>>({
-        query: APPLIED_ON_OPENING_BY_ID,
-        variables: { eventId },
-      })
-    ).data.appliedOnOpeningEvents[0]
+  ): Promise<AppliedOnOpeningEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetAppliedOnOpeningEventsByEventIdQuery,
+      GetAppliedOnOpeningEventsByEventIdQueryVariables
+    >(
+      GetAppliedOnOpeningEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'appliedOnOpeningEvents'
+    )
   }
 
-  public async getOpeningAddedEvent(blockNumber: number, indexInBlock: number): Promise<OpeningAddedEvent | undefined> {
-    const OPENING_ADDED_BY_ID = gql`
-      query($eventId: ID!) {
-        openingAddedEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          group {
-            name
-          }
-          opening {
-            id
-            runtimeId
-          }
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getOpeningAddedEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'openingAddedEvents'>>({
-        query: OPENING_ADDED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.openingAddedEvents[0]
+  public async getOpeningAddedEvent(
+    blockNumber: number,
+    indexInBlock: number
+  ): Promise<OpeningAddedEventFieldsFragment | null> {
+    return this.firstEntityQuery<GetOpeningAddedEventsByEventIdQuery, GetOpeningAddedEventsByEventIdQueryVariables>(
+      GetOpeningAddedEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'openingAddedEvents'
+    )
   }
 
   public async getOpeningFilledEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<OpeningFilledEvent | undefined> {
-    const OPENING_FILLED_BY_ID = gql`
-      query($eventId: ID!) {
-        openingFilledEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          group {
-            name
-          }
-          opening {
-            id
-            runtimeId
-          }
-          workersHired {
-            id
-            runtimeId
-            group {
-              name
-            }
-            membership {
-              id
-            }
-            roleAccount
-            rewardAccount
-            stakeAccount
-            status {
-              __typename
-            }
-            isLead
-            stake
-            payouts {
-              id
-            }
-            hiredAtBlock {
-              number
-              timestamp
-              network
-            }
-            hiredAtTime
-            application {
-              id
-              runtimeId
-            }
-            storage
-          }
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getOpeningFilledEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'openingFilledEvents'>>({
-        query: OPENING_FILLED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.openingFilledEvents[0]
+  ): Promise<OpeningFilledEventFieldsFragment | null> {
+    return this.firstEntityQuery<GetOpeningFilledEventsByEventIdQuery, GetOpeningFilledEventsByEventIdQueryVariables>(
+      GetOpeningFilledEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'openingFilledEvents'
+    )
   }
 
   public async getApplicationWithdrawnEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<ApplicationWithdrawnEvent | undefined> {
-    const APPLICATION_WITHDRAWN_BY_ID = gql`
-      query($eventId: ID!) {
-        applicationWithdrawnEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          group {
-            name
-          }
-          application {
-            id
-            runtimeId
-          }
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getApplicationWithdrawnEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'applicationWithdrawnEvents'>>({
-        query: APPLICATION_WITHDRAWN_BY_ID,
-        variables: { eventId },
-      })
-    ).data.applicationWithdrawnEvents[0]
+  ): Promise<ApplicationWithdrawnEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetApplicationWithdrawnEventsByEventIdQuery,
+      GetApplicationWithdrawnEventsByEventIdQueryVariables
+    >(
+      GetApplicationWithdrawnEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'applicationWithdrawnEvents'
+    )
   }
 
   public async getOpeningCancelledEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<OpeningCanceledEvent | undefined> {
-    const OPENING_CANCELLED_BY_ID = gql`
-      query($eventId: ID!) {
-        openingCanceledEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          group {
-            name
-          }
-          opening {
-            id
-            runtimeId
-          }
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getOpeningCancelledEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'openingCanceledEvents'>>({
-        query: OPENING_CANCELLED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.openingCanceledEvents[0]
+  ): Promise<OpeningCanceledEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetOpeningCancelledEventsByEventIdQuery,
+      GetOpeningCancelledEventsByEventIdQueryVariables
+    >(
+      GetOpeningCancelledEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'openingCanceledEvents'
+    )
   }
 
   public async getStatusTextChangedEvent(
     blockNumber: number,
     indexInBlock: number
-  ): Promise<StatusTextChangedEvent | undefined> {
-    const STATUS_TEXT_CHANGED_BY_ID = gql`
-      query($eventId: ID!) {
-        statusTextChangedEvents(where: { eventId_eq: $eventId }) {
-          ${EVENT_GENERIC_FIELDS}
-          group {
-            name
-          }
-          metadata
-          result {
-            ... on UpcomingOpeningAdded {
-              upcomingOpeningId
-            }
-            ... on UpcomingOpeningRemoved {
-              upcomingOpeningId
-            }
-            ... on WorkingGroupMetadataSet {
-              metadataId
-            }
-            ... on InvalidActionMetadata {
-              reason
-            }
-          }
-        }
-      }
-    `
-
-    const eventId = `${blockNumber}-${indexInBlock}`
-    this.queryDebug(`Executing getStatusTextChangedEvent(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'statusTextChangedEvents'>>({
-        query: STATUS_TEXT_CHANGED_BY_ID,
-        variables: { eventId },
-      })
-    ).data.statusTextChangedEvents[0]
+  ): Promise<StatusTextChangedEventFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetStatusTextChangedEventsByEventIdQuery,
+      GetStatusTextChangedEventsByEventIdQueryVariables
+    >(
+      GetStatusTextChangedEventsByEventId,
+      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
+      'statusTextChangedEvents'
+    )
   }
 
-  public async getUpcomingOpeningByCreatedInEventId(eventId: string): Promise<UpcomingWorkingGroupOpening | undefined> {
-    const UPCOMING_OPENING_BY_ID = gql`
-      query($eventId: ID!) {
-        upcomingWorkingGroupOpenings(where: { createdInEventId_eq: $eventId }) {
-          id
-          group {
-            name
-          }
-          metadata {
-            shortDescription
-            description
-            hiringLimit
-            expectedEnding
-            applicationDetails
-            applicationFormQuestions {
-              question
-              type
-              index
-            }
-          }
-          expectedStart
-          stakeAmount
-          rewardPerBlock
-          createdAtBlock {
-            number
-            timestamp
-            network
-          }
-          createdAt
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getUpcomingOpeningByCreatedInEventId(${eventId})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'upcomingWorkingGroupOpenings'>>({
-        query: UPCOMING_OPENING_BY_ID,
-        variables: { eventId },
-      })
-    ).data.upcomingWorkingGroupOpenings[0]
+  public async getUpcomingOpeningByCreatedInEventId(eventId: string): Promise<UpcomingOpeningFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetUpcomingOpeningByCreatedInEventIdQuery,
+      GetUpcomingOpeningByCreatedInEventIdQueryVariables
+    >(GetUpcomingOpeningByCreatedInEventId, { createdInEventId: eventId }, 'upcomingWorkingGroupOpenings')
   }
 
-  public async getWorkingGroup(name: WorkingGroupModuleName): Promise<WorkingGroup | undefined> {
-    const GROUP_BY_NAME = gql`
-      query($name: String!) {
-        workingGroupByUniqueInput(where: { name: $name }) {
-          name
-          metadata {
-            id
-            status
-            statusMessage
-            about
-            description
-            setAtBlock {
-              number
-            }
-          }
-          leader {
-            id
-          }
-          budget
-        }
-      }
-    `
-
-    this.queryDebug(`Executing getWorkingGroup(${name})`)
-
-    return (
-      (
-        await this.queryNodeProvider.query<Pick<Query, 'workingGroupByUniqueInput'>>({
-          query: GROUP_BY_NAME,
-          variables: { name },
-        })
-      ).data.workingGroupByUniqueInput || undefined
+  public async getWorkingGroup(name: WorkingGroupModuleName): Promise<WorkingGroupFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetWorkingGroupByNameQuery, GetWorkingGroupByNameQueryVariables>(
+      GetWorkingGroupByName,
+      { name },
+      'workingGroupByUniqueInput'
     )
   }
 
   // FIXME: Use blockheights once possible
-  public async getGroupMetaSnapshot(
-    timestamp: number,
-    matchType: 'eq' | 'lt' | 'lte' | 'gt' | 'gte' = 'eq'
-  ): Promise<WorkingGroupMetadata | undefined> {
-    const GROUP_META_SNAPSHOT_BY_TIMESTAMP = gql`
-      query($timestamp: DateTime!) {
-        workingGroupMetadata(where: { createdAt_${matchType}: $timestamp, createdAt_lte: $toTime }, orderBy: createdAt_DESC, limit: 1) {
-          id
-          status
-          statusMessage
-          about
-          description
-          setAtBlock {
-            number
-          }
-        }
-      }
-    `
+  public async getGroupMetaSnapshotAt(
+    groupId: string,
+    timestamp: number
+  ): Promise<WorkingGroupMetadataFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetWorkingGroupMetadataSnapshotAtQuery,
+      GetWorkingGroupMetadataSnapshotAtQueryVariables
+    >(GetWorkingGroupMetadataSnapshotAt, { groupId, timestamp: new Date(timestamp) }, 'workingGroupMetadata')
+  }
 
-    this.queryDebug(`Executing getGroupMetaSnapshot(${timestamp}, ${matchType})`)
-
-    return (
-      await this.queryNodeProvider.query<Pick<Query, 'workingGroupMetadata'>>({
-        query: GROUP_META_SNAPSHOT_BY_TIMESTAMP,
-        variables: { timestamp: new Date(timestamp) },
-      })
-    ).data.workingGroupMetadata[0]
+  public async getGroupMetaSnapshotBefore(
+    groupId: string,
+    timestamp: number
+  ): Promise<WorkingGroupMetadataFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetWorkingGroupMetadataSnapshotBeforeQuery,
+      GetWorkingGroupMetadataSnapshotBeforeQueryVariables
+    >(GetWorkingGroupMetadataSnapshotBefore, { groupId, timestamp: new Date(timestamp) }, 'workingGroupMetadata')
   }
 }

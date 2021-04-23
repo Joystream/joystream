@@ -87,6 +87,12 @@ type WorkingGroupMetadata @entity {
 
   "Block the metadata was set at"
   setAtBlock: Block!
+
+  "Event the working group metadata was set in"
+  setInEvent: StatusTextChangedEvent!
+
+  "Related group"
+  group: WorkingGroup!
 }
 
 type WorkingGroup @entity {

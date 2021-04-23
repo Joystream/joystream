@@ -1,0 +1,218 @@
+
+# TODO: Always query events by eventId instead of memberid?
+
+fragment MembershipBoughtEventFields on MembershipBoughtEvent {
+  id
+  event {
+    ...EventFields
+  }
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+  referrer {
+    id
+  }
+}
+# FIXME: Can this be a unique result?
+query getMembershipBoughtEventsByMemberId ($memberId: ID!) {
+  membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
+    ...MembershipBoughtEventFields
+  }
+}
+
+fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  member {
+    id
+  }
+  newHandle
+  newMetadata {
+    name
+    about
+  }
+}
+
+query getMemberProfileUpdatedEventsByMemberId ($memberId: ID!) {
+  memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
+    ...MemberProfileUpdatedEventFields
+  }
+}
+
+fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  member {
+    id
+  }
+  newRootAccount
+  newControllerAccount
+}
+
+query getMemberAccountsUpdatedEventsByMemberId ($memberId: ID!) {
+  memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
+    ...MemberAccountsUpdatedEventFields
+  }
+}
+
+fragment MemberInvitedEventFields on MemberInvitedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  invitingMember {
+    id
+  }
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+}
+
+query getMemberInvitedEventsByNewMemberId ($newMemberId: ID!) {
+  memberInvitedEvents(where: { newMemberId_eq: $newMemberId }) {
+    ...MemberInvitedEventFields
+  }
+}
+
+fragment InvitesTransferredEventFields on InvitesTransferredEvent {
+  id
+  event {
+    ...EventFields
+  }
+  sourceMember {
+    id
+  }
+  targetMember {
+    id
+  }
+  numberOfInvites
+}
+
+query getInvitesTransferredEventsBySourceMemberId ($sourceMemberId: ID!) {
+  invitesTransferredEvents(where: { sourceMemberId_eq: $sourceMemberId }) {
+    ...InvitesTransferredEventFields
+  }
+}
+
+fragment StakingAccountAddedEventFields on StakingAccountAddedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  member {
+    id
+  }
+  account
+}
+
+query getStakingAccountAddedEventsByMemberId ($memberId: ID!) {
+  stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
+    ...StakingAccountAddedEventFields
+  }
+}
+
+fragment StakingAccountConfirmedEventFields on StakingAccountConfirmedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  member {
+    id
+  }
+  account
+}
+
+query getStakingAccountConfirmedEventsByMemberId ($memberId: ID!) {
+  stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
+    ...StakingAccountConfirmedEventFields
+  }
+}
+
+fragment StakingAccountRemovedEventFields on StakingAccountRemovedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  member {
+    id
+  }
+  account
+}
+
+query getStakingAccountRemovedEventsByMemberId ($memberId: ID!) {
+  stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
+    ...StakingAccountRemovedEventFields
+  }
+}
+
+fragment ReferralCutUpdatedEventFields on ReferralCutUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  newValue
+}
+
+query getReferralCutUpdatedEventsByEventId ($eventId: ID!) {
+  referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
+    ...ReferralCutUpdatedEventFields
+  }
+}
+
+fragment MembershipPriceUpdatedEventFields on MembershipPriceUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  newPrice
+}
+
+query getMembershipPriceUpdatedEventsByEventId ($eventId: ID!) {
+  membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
+    ...MembershipPriceUpdatedEventFields
+  }
+}
+
+fragment InitialInvitationBalanceUpdatedEventFields on InitialInvitationBalanceUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  newInitialBalance
+}
+
+query getInitialInvitationBalanceUpdatedEventsByEventId ($eventId: ID!) {
+  initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
+    ...InitialInvitationBalanceUpdatedEventFields
+  }
+}
+
+fragment InitialInvitationCountUpdatedEventFields on InitialInvitationCountUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  newInitialInvitationCount
+}
+
+query getInitialInvitationCountUpdatedEventsByEventId ($eventId: ID!) {
+  initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
+    ...InitialInvitationCountUpdatedEventFields
+  }
+}

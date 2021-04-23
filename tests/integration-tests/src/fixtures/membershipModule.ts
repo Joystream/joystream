@@ -6,20 +6,7 @@ import { MemberId } from '@joystream/types/common'
 import Debugger from 'debug'
 import { QueryNodeApi } from '../QueryNodeApi'
 import { BuyMembershipParameters, Membership } from '@joystream/types/members'
-import {
-  Membership as QueryNodeMembership,
-  MembershipEntryMethod,
-  MembershipBoughtEvent,
-  EventType,
-  MemberProfileUpdatedEvent,
-  MemberAccountsUpdatedEvent,
-  MemberInvitedEvent,
-  InvitesTransferredEvent,
-  StakingAccountAddedEvent,
-  StakingAccountConfirmedEvent,
-  StakingAccountRemovedEvent,
-  MembershipSystemSnapshot,
-} from '../QueryNodeApiSchema.generated'
+import { EventType, MembershipEntryMethod } from '../graphql/generated/schema'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { CreateInterface, createType } from '@joystream/types'
@@ -32,6 +19,18 @@ import {
   MembershipBoughtEventDetails,
   MembershipEventName,
 } from '../types'
+import {
+  InvitesTransferredEventFieldsFragment,
+  MemberAccountsUpdatedEventFieldsFragment,
+  MemberInvitedEventFieldsFragment,
+  MemberProfileUpdatedEventFieldsFragment,
+  MembershipBoughtEventFieldsFragment,
+  MembershipFieldsFragment,
+  MembershipSystemSnapshotFieldsFragment,
+  StakingAccountAddedEventFieldsFragment,
+  StakingAccountConfirmedEventFieldsFragment,
+  StakingAccountRemovedEventFieldsFragment,
+} from '../graphql/generated/queries'
 
 // FIXME: Retrieve from runtime when possible!
 const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
@@ -95,8 +94,10 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     return this.memberIds.slice()
   }
 
-  private assertMemberMatchQueriedResult(member: Membership, qMember?: QueryNodeMembership | null) {
-    assert.isOk(qMember, 'Membership query result is empty')
+  private assertMemberMatchQueriedResult(member: Membership, qMember: MembershipFieldsFragment | null) {
+    if (!qMember) {
+      throw new Error('Query node: Membership not found!')
+    }
     const {
       handle,
       rootAccount,
@@ -104,7 +105,7 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
       metadata: { name, about },
       isVerified,
       entry,
-    } = qMember as QueryNodeMembership
+    } = qMember
     const txParams = this.generateParamsFromAccountId(rootAccount)
     const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
     assert.equal(blake2AsHex(handle), member.handle_hash.toString())
@@ -122,10 +123,11 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
     eventDetails: MembershipBoughtEventDetails,
     account: string,
     txHash: string,
-    qEvents: MembershipBoughtEvent[]
+    qEvent: MembershipBoughtEventFieldsFragment | null
   ) {
-    assert.equal(qEvents.length, 1, `Invalid number of MembershipBoughtEvents recieved`)
-    const [qEvent] = qEvents
+    if (!qEvent) {
+      throw new Error('Query node: MembershipBought event not found!')
+    }
     const txParams = this.generateParamsFromAccountId(account)
     const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
     assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
@@ -178,16 +180,11 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
         const memberId = this.memberIds[i]
         await this.query.tryQueryWithTimeout(
           () => this.query.getMemberById(memberId),
-          (r) => this.assertMemberMatchQueriedResult(member, r.data.membershipByUniqueInput)
+          (qMember) => this.assertMemberMatchQueriedResult(member, qMember)
         )
         // Ensure the query node event is valid
-        const res = await this.query.getMembershipBoughtEvents(memberId)
-        this.assertEventMatchQueriedResult(
-          this.events[i],
-          this.accounts[i],
-          this.extrinsics[i].hash.toString(),
-          res.data.membershipBoughtEvents
-        )
+        const qEvent = await this.query.getMembershipBoughtEvent(memberId)
+        this.assertEventMatchQueriedResult(this.events[i], this.accounts[i], this.extrinsics[i].hash.toString(), qEvent)
       })
     )
   }
@@ -252,12 +249,14 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
     this.memberContext = memberContext
   }
 
-  private assertProfileUpdateSuccesful(qMember?: QueryNodeMembership | null) {
-    assert.isOk(qMember, 'Membership query result is empty')
+  private assertProfileUpdateSuccesful(qMember: MembershipFieldsFragment | null) {
+    if (!qMember) {
+      throw new Error('Query node: Membership not found!')
+    }
     const {
       handle,
       metadata: { name, about },
-    } = qMember as QueryNodeMembership
+    } = qMember
     assert.equal(name, this.newName)
     assert.equal(handle, this.newHandle)
     // TODO: avatar
@@ -267,7 +266,7 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
   private assertQueryNodeEventIsValid(
     eventDetails: EventDetails,
     txHash: string,
-    qEvents: MemberProfileUpdatedEvent[]
+    qEvents: MemberProfileUpdatedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     const {
@@ -305,10 +304,10 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
     await super.runQueryNodeChecks()
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(this.memberContext.memberId),
-      (res) => this.assertProfileUpdateSuccesful(res.data.membershipByUniqueInput)
+      (qMember) => this.assertProfileUpdateSuccesful(qMember)
     )
-    const res = await this.query.getMemberProfileUpdatedEvents(this.memberContext.memberId)
-    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), res.data.memberProfileUpdatedEvents)
+    const qEvents = await this.query.getMemberProfileUpdatedEvents(this.memberContext.memberId)
+    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), qEvents)
   }
 }
 
@@ -336,9 +335,11 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
     this.newControllerAccount = newControllerAccount
   }
 
-  private assertAccountsUpdateSuccesful(qMember?: QueryNodeMembership | null) {
-    assert.isOk(qMember, 'Membership query result is empty')
-    const { rootAccount, controllerAccount } = qMember as QueryNodeMembership
+  private assertAccountsUpdateSuccesful(qMember: MembershipFieldsFragment | null) {
+    if (!qMember) {
+      throw new Error('Query node: Membership not found!')
+    }
+    const { rootAccount, controllerAccount } = qMember
     assert.equal(rootAccount, this.newRootAccount)
     assert.equal(controllerAccount, this.newControllerAccount)
   }
@@ -346,7 +347,7 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
   private assertQueryNodeEventIsValid(
     eventDetails: EventDetails,
     txHash: string,
-    qEvents: MemberAccountsUpdatedEvent[]
+    qEvents: MemberAccountsUpdatedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     const {
@@ -378,10 +379,10 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
     await super.runQueryNodeChecks()
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(this.memberContext.memberId),
-      (res) => this.assertAccountsUpdateSuccesful(res.data.membershipByUniqueInput)
+      (qMember) => this.assertAccountsUpdateSuccesful(qMember)
     )
-    const res = await this.query.getMemberAccountsUpdatedEvents(this.memberContext.memberId)
-    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), res.data.memberAccountsUpdatedEvents)
+    const qEvents = await this.query.getMemberAccountsUpdatedEvents(this.memberContext.memberId)
+    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), qEvents)
   }
 }
 
@@ -401,8 +402,10 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     this.accounts = accounts
   }
 
-  private assertMemberCorrectlyInvited(account: string, qMember?: QueryNodeMembership | null) {
-    assert.isOk(qMember, 'Membership query result is empty')
+  private assertMemberCorrectlyInvited(account: string, qMember: MembershipFieldsFragment | null) {
+    if (!qMember) {
+      throw new Error('Query node: Membership not found!')
+    }
     const {
       handle,
       rootAccount,
@@ -411,7 +414,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
       isVerified,
       entry,
       invitedBy,
-    } = qMember as QueryNodeMembership
+    } = qMember
     const txParams = this.generateParamsFromAccountId(account)
     const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
     assert.equal(handle, txParams.handle)
@@ -430,11 +433,11 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
     eventDetails: MemberInvitedEventDetails,
     account: string,
     txHash: string,
-    qEvents: MemberInvitedEvent[]
+    qEvent: MemberInvitedEventFieldsFragment | null
   ) {
-    assert.isNotEmpty(qEvents)
-    assert.equal(qEvents.length, 1, 'Unexpected number of MemberInvited events returned by query node')
-    const [qEvent] = qEvents
+    if (!qEvent) {
+      throw new Error('Query node: MemberInvitedEvent not found!')
+    }
     const txParams = this.generateParamsFromAccountId(account)
     const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
     assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
@@ -478,23 +481,18 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
         const memberId = invitedMembersIds[i]
         await this.query.tryQueryWithTimeout(
           () => this.query.getMemberById(memberId),
-          (res) => this.assertMemberCorrectlyInvited(account, res.data.membershipByUniqueInput)
+          (qMember) => this.assertMemberCorrectlyInvited(account, qMember)
         )
-        const res = await this.query.getMemberInvitedEvents(memberId)
-        this.aseertQueryNodeEventIsValid(
-          this.events[i],
-          account,
-          this.extrinsics[i].hash.toString(),
-          res.data.memberInvitedEvents
-        )
+        const qEvent = await this.query.getMemberInvitedEvent(memberId)
+        this.aseertQueryNodeEventIsValid(this.events[i], account, this.extrinsics[i].hash.toString(), qEvent)
       })
     )
 
-    const {
-      data: { membershipByUniqueInput: inviter },
-    } = await this.query.getMemberById(this.inviterContext.memberId)
-    assert.isOk(inviter)
-    const { inviteCount, invitees } = inviter as QueryNodeMembership
+    const qInviter = await this.query.getMemberById(this.inviterContext.memberId)
+    if (!qInviter) {
+      throw new Error('Query node: Inviter member not found!')
+    }
+    const { inviteCount, invitees } = qInviter
     // Assert that inviteCount was correctly updated
     assert.equal(inviteCount, this.initialInvitesCount! - this.accounts.length)
     // Assert that all invited members are part of "invetees" field
@@ -531,8 +529,14 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
     this.invitesToTransfer = invitesToTransfer
   }
 
-  private assertQueryNodeEventIsValid(eventDetails: EventDetails, txHash: string, qEvents: InvitesTransferredEvent[]) {
-    const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
+  private assertQueryNodeEventIsValid(
+    eventDetails: EventDetails,
+    txHash: string,
+    qEvent: InvitesTransferredEventFieldsFragment | null
+  ) {
+    if (!qEvent) {
+      throw new Error('Query node: InvitesTransferredEvent not found!')
+    }
     const {
       event: { inExtrinsic, type },
       sourceMember,
@@ -571,29 +575,25 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
     // Check "from" member
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(fromContext.memberId),
-      ({ data: { membershipByUniqueInput: queriedFromMember } }) => {
-        if (!queriedFromMember) {
-          throw new Error('Source member not found')
+      (qSourceMember) => {
+        if (!qSourceMember) {
+          throw new Error('Query node: Source member not found')
         }
-        assert.equal(queriedFromMember.inviteCount, this.fromMemberInitialInvites! - invitesToTransfer)
+        assert.equal(qSourceMember.inviteCount, this.fromMemberInitialInvites! - invitesToTransfer)
       }
     )
 
     // Check "to" member
-    const {
-      data: { membershipByUniqueInput: queriedToMember },
-    } = await this.query.getMemberById(toContext.memberId)
-    if (!queriedToMember) {
-      throw new Error('Target member not found')
+    const qTargetMember = await this.query.getMemberById(toContext.memberId)
+    if (!qTargetMember) {
+      throw new Error('Query node: Target member not found')
     }
-    assert.equal(queriedToMember.inviteCount, this.toMemberInitialInvites! + invitesToTransfer)
+    assert.equal(qTargetMember.inviteCount, this.toMemberInitialInvites! + invitesToTransfer)
 
     // Check event
-    const {
-      data: { invitesTransferredEvents },
-    } = await this.query.getInvitesTransferredEvents(fromContext.memberId)
+    const qEvent = await this.query.getInvitesTransferredEvent(fromContext.memberId)
 
-    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), invitesTransferredEvents)
+    this.assertQueryNodeEventIsValid(this.event!, this.tx!.hash.toString(), qEvent)
   }
 }
 
@@ -618,7 +618,7 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
     eventDetails: EventDetails,
     account: string,
     txHash: string,
-    qEvents: StakingAccountAddedEvent[]
+    qEvents: StakingAccountAddedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     assert.equal(qEvent.event.inExtrinsic, txHash)
@@ -631,7 +631,7 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
     eventDetails: EventDetails,
     account: string,
     txHash: string,
-    qEvents: StakingAccountConfirmedEvent[]
+    qEvents: StakingAccountConfirmedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     assert.equal(qEvent.event.inExtrinsic, txHash)
@@ -669,34 +669,25 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
     const { memberContext, accounts, addEvents, confirmEvents, addExtrinsics, confirmExtrinsics } = this
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(memberContext.memberId),
-      ({ data: { membershipByUniqueInput: membership } }) => {
-        if (!membership) {
-          throw new Error('Member not found')
+      (qMember) => {
+        if (!qMember) {
+          throw new Error('Query node: Member not found')
         }
-        assert.isNotEmpty(membership.boundAccounts)
-        assert.includeMembers(membership.boundAccounts, accounts)
+        assert.isNotEmpty(qMember.boundAccounts)
+        assert.includeMembers(qMember.boundAccounts, accounts)
       }
     )
 
     // Check events
-    const {
-      data: { stakingAccountAddedEvents },
-    } = await this.query.getStakingAccountAddedEvents(memberContext.memberId)
-    const {
-      data: { stakingAccountConfirmedEvents },
-    } = await this.query.getStakingAccountConfirmedEvents(memberContext.memberId)
+    const qAddedEvents = await this.query.getStakingAccountAddedEvents(memberContext.memberId)
+    const qConfirmedEvents = await this.query.getStakingAccountConfirmedEvents(memberContext.memberId)
     accounts.forEach(async (account, i) => {
-      this.assertQueryNodeAddAccountEventIsValid(
-        addEvents[i],
-        account,
-        addExtrinsics[i].hash.toString(),
-        stakingAccountAddedEvents
-      )
+      this.assertQueryNodeAddAccountEventIsValid(addEvents[i], account, addExtrinsics[i].hash.toString(), qAddedEvents)
       this.assertQueryNodeConfirmAccountEventIsValid(
         confirmEvents[i],
         account,
         confirmExtrinsics[i].hash.toString(),
-        stakingAccountConfirmedEvents
+        qConfirmedEvents
       )
     })
   }
@@ -721,7 +712,7 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
     eventDetails: EventDetails,
     account: string,
     txHash: string,
-    qEvents: StakingAccountRemovedEvent[]
+    qEvents: StakingAccountRemovedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     assert.equal(qEvent.event.inExtrinsic, txHash)
@@ -750,26 +741,19 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
     // Check member
     await this.query.tryQueryWithTimeout(
       () => this.query.getMemberById(memberContext.memberId),
-      ({ data: { membershipByUniqueInput: membership } }) => {
-        if (!membership) {
-          throw new Error('Membership not found!')
+      (qMember) => {
+        if (!qMember) {
+          throw new Error('Query node: Membership not found!')
         }
-        accounts.forEach((a) => assert.notInclude(membership.boundAccounts, a))
+        accounts.forEach((a) => assert.notInclude(qMember.boundAccounts, a))
       }
     )
 
     // Check events
-    const {
-      data: { stakingAccountRemovedEvents },
-    } = await this.query.getStakingAccountRemovedEvents(memberContext.memberId)
+    const qEvents = await this.query.getStakingAccountRemovedEvents(memberContext.memberId)
     await Promise.all(
       accounts.map(async (account, i) => {
-        this.assertQueryNodeRemoveAccountEventIsValid(
-          events[i],
-          account,
-          extrinsics[i].hash.toString(),
-          stakingAccountRemovedEvents
-        )
+        this.assertQueryNodeRemoveAccountEventIsValid(events[i], account, extrinsics[i].hash.toString(), qEvents)
       })
     )
   }
@@ -806,7 +790,7 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
     }
   }
 
-  private async assertBeforeSnapshotIsValid(beforeSnapshot: MembershipSystemSnapshot) {
+  private async assertBeforeSnapshotIsValid(beforeSnapshot: MembershipSystemSnapshotFieldsFragment) {
     assert.isNumber(beforeSnapshot.snapshotBlock.number)
     const chainValues = await this.getMembershipSystemValuesAt(beforeSnapshot.snapshotBlock.number)
     assert.equal(beforeSnapshot.referralCut, chainValues.referralCut)
@@ -816,8 +800,8 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
   }
 
   private assertAfterSnapshotIsValid(
-    beforeSnapshot: MembershipSystemSnapshot,
-    afterSnapshot: MembershipSystemSnapshot
+    beforeSnapshot: MembershipSystemSnapshotFieldsFragment,
+    afterSnapshot: MembershipSystemSnapshotFieldsFragment
   ) {
     const { newValues } = this
     const expectedValue = (field: keyof MembershipSystemValues) => {
@@ -830,7 +814,7 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
     assert.equal(afterSnapshot.defaultInviteCount, expectedValue('defaultInviteCount'))
   }
 
-  private checkEvent<T extends AnyQueryNodeEvent>(qEvent: T | undefined, txHash: string): T {
+  private checkEvent<T extends AnyQueryNodeEvent>(qEvent: T | null, txHash: string): T {
     if (!qEvent) {
       throw new Error('Missing query-node event')
     }
@@ -873,23 +857,18 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     const { events, extrinsics, eventNames } = this
-    const beforeSnapshotMaxBlockTimestamp = (
-      await this.api.query.timestamp.now.at(
-        await this.api.getBlockHash(Math.min(...events.map((e) => e.blockNumber)) - 1)
-      )
-    ).toNumber()
     const afterSnapshotBlockTimestamp = Math.max(...events.map((e) => e.blockTimestamp))
 
     // Fetch "afterSnapshot" first to make sure query node has progressed enough
     const afterSnapshot = (await this.query.tryQueryWithTimeout(
-      () => this.query.getMembershipSystemSnapshot(afterSnapshotBlockTimestamp),
+      () => this.query.getMembershipSystemSnapshotAt(afterSnapshotBlockTimestamp),
       (snapshot) => assert.isOk(snapshot)
-    )) as MembershipSystemSnapshot
+    )) as MembershipSystemSnapshotFieldsFragment
 
-    const beforeSnapshot = await this.query.getMembershipSystemSnapshot(beforeSnapshotMaxBlockTimestamp, 'lte')
+    const beforeSnapshot = await this.query.getMembershipSystemSnapshotBefore(afterSnapshotBlockTimestamp)
 
     if (!beforeSnapshot) {
-      throw new Error(`MembershipSystemSnapshot before timestamp ${beforeSnapshotMaxBlockTimestamp} not found!`)
+      throw new Error(`Query node: MembershipSystemSnapshot before timestamp ${afterSnapshotBlockTimestamp} not found!`)
     }
 
     // Validate snapshots

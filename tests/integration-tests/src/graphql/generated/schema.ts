@@ -18,7 +18,6 @@ export type Scalars = {
 }
 
 export type ApplicationFormQuestion = BaseGraphQlObject & {
-  __typename?: 'ApplicationFormQuestion'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -39,7 +38,6 @@ export type ApplicationFormQuestion = BaseGraphQlObject & {
 }
 
 export type ApplicationFormQuestionAnswer = BaseGraphQlObject & {
-  __typename?: 'ApplicationFormQuestionAnswer'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -57,7 +55,6 @@ export type ApplicationFormQuestionAnswer = BaseGraphQlObject & {
 }
 
 export type ApplicationFormQuestionAnswerConnection = {
-  __typename?: 'ApplicationFormQuestionAnswerConnection'
   totalCount: Scalars['Int']
   edges: Array<ApplicationFormQuestionAnswerEdge>
   pageInfo: PageInfo
@@ -70,7 +67,6 @@ export type ApplicationFormQuestionAnswerCreateInput = {
 }
 
 export type ApplicationFormQuestionAnswerEdge = {
-  __typename?: 'ApplicationFormQuestionAnswerEdge'
   node: ApplicationFormQuestionAnswer
   cursor: Scalars['String']
 }
@@ -137,7 +133,6 @@ export type ApplicationFormQuestionAnswerWhereUniqueInput = {
 }
 
 export type ApplicationFormQuestionConnection = {
-  __typename?: 'ApplicationFormQuestionConnection'
   totalCount: Scalars['Int']
   edges: Array<ApplicationFormQuestionEdge>
   pageInfo: PageInfo
@@ -151,7 +146,6 @@ export type ApplicationFormQuestionCreateInput = {
 }
 
 export type ApplicationFormQuestionEdge = {
-  __typename?: 'ApplicationFormQuestionEdge'
   node: ApplicationFormQuestion
   cursor: Scalars['String']
 }
@@ -232,7 +226,6 @@ export type ApplicationFormQuestionWhereUniqueInput = {
 }
 
 export type ApplicationStatusAccepted = {
-  __typename?: 'ApplicationStatusAccepted'
   openingFilledEventId: Scalars['String']
 }
 
@@ -281,7 +274,6 @@ export type ApplicationStatusAcceptedWhereUniqueInput = {
 }
 
 export type ApplicationStatusCancelled = {
-  __typename?: 'ApplicationStatusCancelled'
   openingCancelledEventId: Scalars['String']
 }
 
@@ -330,7 +322,6 @@ export type ApplicationStatusCancelledWhereUniqueInput = {
 }
 
 export type ApplicationStatusPending = {
-  __typename?: 'ApplicationStatusPending'
   phantom?: Maybe<Scalars['Int']>
 }
 
@@ -380,7 +371,6 @@ export type ApplicationStatusPendingWhereUniqueInput = {
 }
 
 export type ApplicationStatusRejected = {
-  __typename?: 'ApplicationStatusRejected'
   openingFilledEventId: Scalars['String']
 }
 
@@ -429,7 +419,6 @@ export type ApplicationStatusRejectedWhereUniqueInput = {
 }
 
 export type ApplicationStatusWithdrawn = {
-  __typename?: 'ApplicationStatusWithdrawn'
   applicationWithdrawnEventId: Scalars['String']
 }
 
@@ -478,7 +467,6 @@ export type ApplicationStatusWithdrawnWhereUniqueInput = {
 }
 
 export type ApplicationWithdrawnEvent = BaseGraphQlObject & {
-  __typename?: 'ApplicationWithdrawnEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -496,7 +484,6 @@ export type ApplicationWithdrawnEvent = BaseGraphQlObject & {
 }
 
 export type ApplicationWithdrawnEventConnection = {
-  __typename?: 'ApplicationWithdrawnEventConnection'
   totalCount: Scalars['Int']
   edges: Array<ApplicationWithdrawnEventEdge>
   pageInfo: PageInfo
@@ -509,7 +496,6 @@ export type ApplicationWithdrawnEventCreateInput = {
 }
 
 export type ApplicationWithdrawnEventEdge = {
-  __typename?: 'ApplicationWithdrawnEventEdge'
   node: ApplicationWithdrawnEvent
   cursor: Scalars['String']
 }
@@ -573,7 +559,6 @@ export type ApplicationWithdrawnEventWhereUniqueInput = {
 }
 
 export type AppliedOnOpeningEvent = BaseGraphQlObject & {
-  __typename?: 'AppliedOnOpeningEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -593,7 +578,6 @@ export type AppliedOnOpeningEvent = BaseGraphQlObject & {
 }
 
 export type AppliedOnOpeningEventConnection = {
-  __typename?: 'AppliedOnOpeningEventConnection'
   totalCount: Scalars['Int']
   edges: Array<AppliedOnOpeningEventEdge>
   pageInfo: PageInfo
@@ -607,7 +591,6 @@ export type AppliedOnOpeningEventCreateInput = {
 }
 
 export type AppliedOnOpeningEventEdge = {
-  __typename?: 'AppliedOnOpeningEventEdge'
   node: AppliedOnOpeningEvent
   cursor: Scalars['String']
 }
@@ -687,7 +670,6 @@ export type BaseGraphQlObject = {
 }
 
 export type BaseModel = BaseGraphQlObject & {
-  __typename?: 'BaseModel'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -699,7 +681,6 @@ export type BaseModel = BaseGraphQlObject & {
 }
 
 export type BaseModelUuid = BaseGraphQlObject & {
-  __typename?: 'BaseModelUUID'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -735,7 +716,6 @@ export type BaseWhereInput = {
 }
 
 export type Block = BaseGraphQlObject & {
-  __typename?: 'Block'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -761,7 +741,6 @@ export type Block = BaseGraphQlObject & {
 }
 
 export type BlockConnection = {
-  __typename?: 'BlockConnection'
   totalCount: Scalars['Int']
   edges: Array<BlockEdge>
   pageInfo: PageInfo
@@ -774,7 +753,6 @@ export type BlockCreateInput = {
 }
 
 export type BlockEdge = {
-  __typename?: 'BlockEdge'
   node: Block
   cursor: Scalars['String']
 }
@@ -846,7 +824,6 @@ export type BlockWhereUniqueInput = {
 }
 
 export type BudgetSetEvent = BaseGraphQlObject & {
-  __typename?: 'BudgetSetEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -864,7 +841,6 @@ export type BudgetSetEvent = BaseGraphQlObject & {
 }
 
 export type BudgetSetEventConnection = {
-  __typename?: 'BudgetSetEventConnection'
   totalCount: Scalars['Int']
   edges: Array<BudgetSetEventEdge>
   pageInfo: PageInfo
@@ -877,7 +853,6 @@ export type BudgetSetEventCreateInput = {
 }
 
 export type BudgetSetEventEdge = {
-  __typename?: 'BudgetSetEventEdge'
   node: BudgetSetEvent
   cursor: Scalars['String']
 }
@@ -945,7 +920,6 @@ export type BudgetSetEventWhereUniqueInput = {
 }
 
 export type BudgetSpendingEvent = BaseGraphQlObject & {
-  __typename?: 'BudgetSpendingEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -967,7 +941,6 @@ export type BudgetSpendingEvent = BaseGraphQlObject & {
 }
 
 export type BudgetSpendingEventConnection = {
-  __typename?: 'BudgetSpendingEventConnection'
   totalCount: Scalars['Int']
   edges: Array<BudgetSpendingEventEdge>
   pageInfo: PageInfo
@@ -982,7 +955,6 @@ export type BudgetSpendingEventCreateInput = {
 }
 
 export type BudgetSpendingEventEdge = {
-  __typename?: 'BudgetSpendingEventEdge'
   node: BudgetSpendingEvent
   cursor: Scalars['String']
 }
@@ -1067,7 +1039,6 @@ export type BudgetSpendingEventWhereUniqueInput = {
 
 /** Manages content ids, type and storage provider decision about it */
 export type DataObject = BaseGraphQlObject & {
-  __typename?: 'DataObject'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1096,7 +1067,6 @@ export type DataObject = BaseGraphQlObject & {
 }
 
 export type DataObjectConnection = {
-  __typename?: 'DataObjectConnection'
   totalCount: Scalars['Int']
   edges: Array<DataObjectEdge>
   pageInfo: PageInfo
@@ -1114,7 +1084,6 @@ export type DataObjectCreateInput = {
 }
 
 export type DataObjectEdge = {
-  __typename?: 'DataObjectEdge'
   node: DataObject
   cursor: Scalars['String']
 }
@@ -1150,7 +1119,6 @@ export type DataObjectOwner =
   | DataObjectOwnerWorkingGroup
 
 export type DataObjectOwnerChannel = {
-  __typename?: 'DataObjectOwnerChannel'
   /** Channel identifier */
   channel: Scalars['BigInt']
   /** Variant needs to have at least one property. This value is not used. */
@@ -1211,7 +1179,6 @@ export type DataObjectOwnerChannelWhereUniqueInput = {
 }
 
 export type DataObjectOwnerCouncil = {
-  __typename?: 'DataObjectOwnerCouncil'
   /** Variant needs to have at least one property. This value is not used. */
   dummy?: Maybe<Scalars['Int']>
 }
@@ -1262,7 +1229,6 @@ export type DataObjectOwnerCouncilWhereUniqueInput = {
 }
 
 export type DataObjectOwnerDao = {
-  __typename?: 'DataObjectOwnerDao'
   /** DAO identifier */
   dao: Scalars['BigInt']
 }
@@ -1313,7 +1279,6 @@ export type DataObjectOwnerDaoWhereUniqueInput = {
 }
 
 export type DataObjectOwnerMember = {
-  __typename?: 'DataObjectOwnerMember'
   /** Member identifier */
   member: Scalars['BigInt']
   /** Variant needs to have at least one property. This value is not used. */
@@ -1374,7 +1339,6 @@ export type DataObjectOwnerMemberWhereUniqueInput = {
 }
 
 export type DataObjectOwnerWorkingGroup = {
-  __typename?: 'DataObjectOwnerWorkingGroup'
   /** Variant needs to have at least one property. This value is not used. */
   dummy?: Maybe<Scalars['Int']>
 }
@@ -1508,7 +1472,6 @@ export type DeleteResponse = {
 }
 
 export type Event = BaseGraphQlObject & {
-  __typename?: 'Event'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1563,7 +1526,6 @@ export type Event = BaseGraphQlObject & {
 }
 
 export type EventConnection = {
-  __typename?: 'EventConnection'
   totalCount: Scalars['Int']
   edges: Array<EventEdge>
   pageInfo: PageInfo
@@ -1577,7 +1539,6 @@ export type EventCreateInput = {
 }
 
 export type EventEdge = {
-  __typename?: 'EventEdge'
   node: Event
   cursor: Scalars['String']
 }
@@ -1692,7 +1653,6 @@ export type EventWhereUniqueInput = {
 }
 
 export type InitialInvitationBalanceUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'InitialInvitationBalanceUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1708,7 +1668,6 @@ export type InitialInvitationBalanceUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type InitialInvitationBalanceUpdatedEventConnection = {
-  __typename?: 'InitialInvitationBalanceUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<InitialInvitationBalanceUpdatedEventEdge>
   pageInfo: PageInfo
@@ -1720,7 +1679,6 @@ export type InitialInvitationBalanceUpdatedEventCreateInput = {
 }
 
 export type InitialInvitationBalanceUpdatedEventEdge = {
-  __typename?: 'InitialInvitationBalanceUpdatedEventEdge'
   node: InitialInvitationBalanceUpdatedEvent
   cursor: Scalars['String']
 }
@@ -1783,7 +1741,6 @@ export type InitialInvitationBalanceUpdatedEventWhereUniqueInput = {
 }
 
 export type InitialInvitationCountUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'InitialInvitationCountUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1799,7 +1756,6 @@ export type InitialInvitationCountUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type InitialInvitationCountUpdatedEventConnection = {
-  __typename?: 'InitialInvitationCountUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<InitialInvitationCountUpdatedEventEdge>
   pageInfo: PageInfo
@@ -1811,7 +1767,6 @@ export type InitialInvitationCountUpdatedEventCreateInput = {
 }
 
 export type InitialInvitationCountUpdatedEventEdge = {
-  __typename?: 'InitialInvitationCountUpdatedEventEdge'
   node: InitialInvitationCountUpdatedEvent
   cursor: Scalars['String']
 }
@@ -1874,7 +1829,6 @@ export type InitialInvitationCountUpdatedEventWhereUniqueInput = {
 }
 
 export type InvalidActionMetadata = {
-  __typename?: 'InvalidActionMetadata'
   /** Reason why the action metadata was considered invalid */
   reason: Scalars['String']
 }
@@ -1924,7 +1878,6 @@ export type InvalidActionMetadataWhereUniqueInput = {
 }
 
 export type InvitesTransferredEvent = BaseGraphQlObject & {
-  __typename?: 'InvitesTransferredEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1944,7 +1897,6 @@ export type InvitesTransferredEvent = BaseGraphQlObject & {
 }
 
 export type InvitesTransferredEventConnection = {
-  __typename?: 'InvitesTransferredEventConnection'
   totalCount: Scalars['Int']
   edges: Array<InvitesTransferredEventEdge>
   pageInfo: PageInfo
@@ -1958,7 +1910,6 @@ export type InvitesTransferredEventCreateInput = {
 }
 
 export type InvitesTransferredEventEdge = {
-  __typename?: 'InvitesTransferredEventEdge'
   node: InvitesTransferredEvent
   cursor: Scalars['String']
 }
@@ -2031,7 +1982,6 @@ export type InvitesTransferredEventWhereUniqueInput = {
 }
 
 export type LeaderInvitationQuotaUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'LeaderInvitationQuotaUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2047,7 +1997,6 @@ export type LeaderInvitationQuotaUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type LeaderInvitationQuotaUpdatedEventConnection = {
-  __typename?: 'LeaderInvitationQuotaUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<LeaderInvitationQuotaUpdatedEventEdge>
   pageInfo: PageInfo
@@ -2059,7 +2008,6 @@ export type LeaderInvitationQuotaUpdatedEventCreateInput = {
 }
 
 export type LeaderInvitationQuotaUpdatedEventEdge = {
-  __typename?: 'LeaderInvitationQuotaUpdatedEventEdge'
   node: LeaderInvitationQuotaUpdatedEvent
   cursor: Scalars['String']
 }
@@ -2122,7 +2070,6 @@ export type LeaderInvitationQuotaUpdatedEventWhereUniqueInput = {
 }
 
 export type LeaderSetEvent = BaseGraphQlObject & {
-  __typename?: 'LeaderSetEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2140,7 +2087,6 @@ export type LeaderSetEvent = BaseGraphQlObject & {
 }
 
 export type LeaderSetEventConnection = {
-  __typename?: 'LeaderSetEventConnection'
   totalCount: Scalars['Int']
   edges: Array<LeaderSetEventEdge>
   pageInfo: PageInfo
@@ -2153,7 +2099,6 @@ export type LeaderSetEventCreateInput = {
 }
 
 export type LeaderSetEventEdge = {
-  __typename?: 'LeaderSetEventEdge'
   node: LeaderSetEvent
   cursor: Scalars['String']
 }
@@ -2217,7 +2162,6 @@ export type LeaderSetEventWhereUniqueInput = {
 }
 
 export type LeaderUnsetEvent = BaseGraphQlObject & {
-  __typename?: 'LeaderUnsetEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2233,7 +2177,6 @@ export type LeaderUnsetEvent = BaseGraphQlObject & {
 }
 
 export type LeaderUnsetEventConnection = {
-  __typename?: 'LeaderUnsetEventConnection'
   totalCount: Scalars['Int']
   edges: Array<LeaderUnsetEventEdge>
   pageInfo: PageInfo
@@ -2245,7 +2188,6 @@ export type LeaderUnsetEventCreateInput = {
 }
 
 export type LeaderUnsetEventEdge = {
-  __typename?: 'LeaderUnsetEventEdge'
   node: LeaderUnsetEvent
   cursor: Scalars['String']
 }
@@ -2310,7 +2252,6 @@ export enum LiaisonJudgement {
 }
 
 export type MemberAccountsUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'MemberAccountsUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2330,7 +2271,6 @@ export type MemberAccountsUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type MemberAccountsUpdatedEventConnection = {
-  __typename?: 'MemberAccountsUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<MemberAccountsUpdatedEventEdge>
   pageInfo: PageInfo
@@ -2344,7 +2284,6 @@ export type MemberAccountsUpdatedEventCreateInput = {
 }
 
 export type MemberAccountsUpdatedEventEdge = {
-  __typename?: 'MemberAccountsUpdatedEventEdge'
   node: MemberAccountsUpdatedEvent
   cursor: Scalars['String']
 }
@@ -2419,7 +2358,6 @@ export type MemberAccountsUpdatedEventWhereUniqueInput = {
 }
 
 export type MemberInvitedEvent = BaseGraphQlObject & {
-  __typename?: 'MemberInvitedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2445,7 +2383,6 @@ export type MemberInvitedEvent = BaseGraphQlObject & {
 }
 
 export type MemberInvitedEventConnection = {
-  __typename?: 'MemberInvitedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<MemberInvitedEventEdge>
   pageInfo: PageInfo
@@ -2462,7 +2399,6 @@ export type MemberInvitedEventCreateInput = {
 }
 
 export type MemberInvitedEventEdge = {
-  __typename?: 'MemberInvitedEventEdge'
   node: MemberInvitedEvent
   cursor: Scalars['String']
 }
@@ -2555,7 +2491,6 @@ export type MemberInvitedEventWhereUniqueInput = {
 }
 
 export type MemberMetadata = BaseGraphQlObject & {
-  __typename?: 'MemberMetadata'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2577,7 +2512,6 @@ export type MemberMetadata = BaseGraphQlObject & {
 }
 
 export type MemberMetadataConnection = {
-  __typename?: 'MemberMetadataConnection'
   totalCount: Scalars['Int']
   edges: Array<MemberMetadataEdge>
   pageInfo: PageInfo
@@ -2590,7 +2524,6 @@ export type MemberMetadataCreateInput = {
 }
 
 export type MemberMetadataEdge = {
-  __typename?: 'MemberMetadataEdge'
   node: MemberMetadata
   cursor: Scalars['String']
 }
@@ -2660,7 +2593,6 @@ export type MemberMetadataWhereUniqueInput = {
 }
 
 export type MemberProfileUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'MemberProfileUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2680,7 +2612,6 @@ export type MemberProfileUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type MemberProfileUpdatedEventConnection = {
-  __typename?: 'MemberProfileUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<MemberProfileUpdatedEventEdge>
   pageInfo: PageInfo
@@ -2694,7 +2625,6 @@ export type MemberProfileUpdatedEventCreateInput = {
 }
 
 export type MemberProfileUpdatedEventEdge = {
-  __typename?: 'MemberProfileUpdatedEventEdge'
   node: MemberProfileUpdatedEvent
   cursor: Scalars['String']
 }
@@ -2766,7 +2696,6 @@ export type MemberProfileUpdatedEventWhereUniqueInput = {
 }
 
 export type MembersByHandleFtsOutput = {
-  __typename?: 'MembersByHandleFTSOutput'
   item: MembersByHandleSearchResult
   rank: Scalars['Float']
   isTypeOf: Scalars['String']
@@ -2777,7 +2706,6 @@ export type MembersByHandleSearchResult = Membership
 
 /** Stored information about a registered user */
 export type Membership = BaseGraphQlObject & {
-  __typename?: 'Membership'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2831,7 +2759,6 @@ export type Membership = BaseGraphQlObject & {
 }
 
 export type MembershipBoughtEvent = BaseGraphQlObject & {
-  __typename?: 'MembershipBoughtEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -2857,7 +2784,6 @@ export type MembershipBoughtEvent = BaseGraphQlObject & {
 }
 
 export type MembershipBoughtEventConnection = {
-  __typename?: 'MembershipBoughtEventConnection'
   totalCount: Scalars['Int']
   edges: Array<MembershipBoughtEventEdge>
   pageInfo: PageInfo
@@ -2874,7 +2800,6 @@ export type MembershipBoughtEventCreateInput = {
 }
 
 export type MembershipBoughtEventEdge = {
-  __typename?: 'MembershipBoughtEventEdge'
   node: MembershipBoughtEvent
   cursor: Scalars['String']
 }
@@ -2967,7 +2892,6 @@ export type MembershipBoughtEventWhereUniqueInput = {
 }
 
 export type MembershipConnection = {
-  __typename?: 'MembershipConnection'
   totalCount: Scalars['Int']
   edges: Array<MembershipEdge>
   pageInfo: PageInfo
@@ -2990,7 +2914,6 @@ export type MembershipCreateInput = {
 }
 
 export type MembershipEdge = {
-  __typename?: 'MembershipEdge'
   node: Membership
   cursor: Scalars['String']
 }
@@ -3035,7 +2958,6 @@ export enum MembershipOrderByInput {
 }
 
 export type MembershipPriceUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'MembershipPriceUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -3051,7 +2973,6 @@ export type MembershipPriceUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type MembershipPriceUpdatedEventConnection = {
-  __typename?: 'MembershipPriceUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<MembershipPriceUpdatedEventEdge>
   pageInfo: PageInfo
@@ -3063,7 +2984,6 @@ export type MembershipPriceUpdatedEventCreateInput = {
 }
 
 export type MembershipPriceUpdatedEventEdge = {
-  __typename?: 'MembershipPriceUpdatedEventEdge'
   node: MembershipPriceUpdatedEvent
   cursor: Scalars['String']
 }
@@ -3126,7 +3046,6 @@ export type MembershipPriceUpdatedEventWhereUniqueInput = {
 }
 
 export type MembershipSystemSnapshot = BaseGraphQlObject & {
-  __typename?: 'MembershipSystemSnapshot'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -3150,7 +3069,6 @@ export type MembershipSystemSnapshot = BaseGraphQlObject & {
 }
 
 export type MembershipSystemSnapshotConnection = {
-  __typename?: 'MembershipSystemSnapshotConnection'
   totalCount: Scalars['Int']
   edges: Array<MembershipSystemSnapshotEdge>
   pageInfo: PageInfo
@@ -3166,7 +3084,6 @@ export type MembershipSystemSnapshotCreateInput = {
 }
 
 export type MembershipSystemSnapshotEdge = {
-  __typename?: 'MembershipSystemSnapshotEdge'
   node: MembershipSystemSnapshot
   cursor: Scalars['String']
 }
@@ -3352,7 +3269,6 @@ export type MembershipWhereUniqueInput = {
 }
 
 export type MemberVerificationStatusUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'MemberVerificationStatusUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -3372,7 +3288,6 @@ export type MemberVerificationStatusUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type MemberVerificationStatusUpdatedEventConnection = {
-  __typename?: 'MemberVerificationStatusUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<MemberVerificationStatusUpdatedEventEdge>
   pageInfo: PageInfo
@@ -3386,7 +3301,6 @@ export type MemberVerificationStatusUpdatedEventCreateInput = {
 }
 
 export type MemberVerificationStatusUpdatedEventEdge = {
-  __typename?: 'MemberVerificationStatusUpdatedEventEdge'
   node: MemberVerificationStatusUpdatedEvent
   cursor: Scalars['String']
 }
@@ -3462,7 +3376,6 @@ export enum Network {
 }
 
 export type OpeningAddedEvent = BaseGraphQlObject & {
-  __typename?: 'OpeningAddedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -3480,7 +3393,6 @@ export type OpeningAddedEvent = BaseGraphQlObject & {
 }
 
 export type OpeningAddedEventConnection = {
-  __typename?: 'OpeningAddedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<OpeningAddedEventEdge>
   pageInfo: PageInfo
@@ -3493,7 +3405,6 @@ export type OpeningAddedEventCreateInput = {
 }
 
 export type OpeningAddedEventEdge = {
-  __typename?: 'OpeningAddedEventEdge'
   node: OpeningAddedEvent
   cursor: Scalars['String']
 }
@@ -3557,7 +3468,6 @@ export type OpeningAddedEventWhereUniqueInput = {
 }
 
 export type OpeningCanceledEvent = BaseGraphQlObject & {
-  __typename?: 'OpeningCanceledEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -3575,7 +3485,6 @@ export type OpeningCanceledEvent = BaseGraphQlObject & {
 }
 
 export type OpeningCanceledEventConnection = {
-  __typename?: 'OpeningCanceledEventConnection'
   totalCount: Scalars['Int']
   edges: Array<OpeningCanceledEventEdge>
   pageInfo: PageInfo
@@ -3588,7 +3497,6 @@ export type OpeningCanceledEventCreateInput = {
 }
 
 export type OpeningCanceledEventEdge = {
-  __typename?: 'OpeningCanceledEventEdge'
   node: OpeningCanceledEvent
   cursor: Scalars['String']
 }
@@ -3652,7 +3560,6 @@ export type OpeningCanceledEventWhereUniqueInput = {
 }
 
 export type OpeningFilledEvent = BaseGraphQlObject & {
-  __typename?: 'OpeningFilledEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -3671,7 +3578,6 @@ export type OpeningFilledEvent = BaseGraphQlObject & {
 }
 
 export type OpeningFilledEventConnection = {
-  __typename?: 'OpeningFilledEventConnection'
   totalCount: Scalars['Int']
   edges: Array<OpeningFilledEventEdge>
   pageInfo: PageInfo
@@ -3684,7 +3590,6 @@ export type OpeningFilledEventCreateInput = {
 }
 
 export type OpeningFilledEventEdge = {
-  __typename?: 'OpeningFilledEventEdge'
   node: OpeningFilledEvent
   cursor: Scalars['String']
 }
@@ -3748,7 +3653,6 @@ export type OpeningFilledEventWhereUniqueInput = {
 }
 
 export type OpeningStatusCancelled = {
-  __typename?: 'OpeningStatusCancelled'
   openingCancelledEventId: Scalars['String']
 }
 
@@ -3797,7 +3701,6 @@ export type OpeningStatusCancelledWhereUniqueInput = {
 }
 
 export type OpeningStatusFilled = {
-  __typename?: 'OpeningStatusFilled'
   openingFilledEventId: Scalars['String']
 }
 
@@ -3846,7 +3749,6 @@ export type OpeningStatusFilledWhereUniqueInput = {
 }
 
 export type OpeningStatusOpen = {
-  __typename?: 'OpeningStatusOpen'
   phantom?: Maybe<Scalars['Int']>
 }
 
@@ -3896,7 +3798,6 @@ export type OpeningStatusOpenWhereUniqueInput = {
 }
 
 export type PageInfo = {
-  __typename?: 'PageInfo'
   hasNextPage: Scalars['Boolean']
   hasPreviousPage: Scalars['Boolean']
   startCursor?: Maybe<Scalars['String']>
@@ -3904,7 +3805,6 @@ export type PageInfo = {
 }
 
 export type ProcessorState = {
-  __typename?: 'ProcessorState'
   lastCompleteBlock: Scalars['Float']
   lastProcessedEvent: Scalars['String']
   indexerHead: Scalars['Float']
@@ -3912,7 +3812,6 @@ export type ProcessorState = {
 }
 
 export type Query = {
-  __typename?: 'Query'
   applicationFormQuestionAnswers: Array<ApplicationFormQuestionAnswer>
   applicationFormQuestionAnswerByUniqueInput?: Maybe<ApplicationFormQuestionAnswer>
   applicationFormQuestionAnswersConnection: ApplicationFormQuestionAnswerConnection
@@ -5074,7 +4973,6 @@ export type QueryWorkingGroupsConnectionArgs = {
 }
 
 export type ReferralCutUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'ReferralCutUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5090,7 +4988,6 @@ export type ReferralCutUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type ReferralCutUpdatedEventConnection = {
-  __typename?: 'ReferralCutUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<ReferralCutUpdatedEventEdge>
   pageInfo: PageInfo
@@ -5102,7 +4999,6 @@ export type ReferralCutUpdatedEventCreateInput = {
 }
 
 export type ReferralCutUpdatedEventEdge = {
-  __typename?: 'ReferralCutUpdatedEventEdge'
   node: ReferralCutUpdatedEvent
   cursor: Scalars['String']
 }
@@ -5165,7 +5061,6 @@ export type ReferralCutUpdatedEventWhereUniqueInput = {
 }
 
 export type RewardPaidEvent = BaseGraphQlObject & {
-  __typename?: 'RewardPaidEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5187,7 +5082,6 @@ export type RewardPaidEvent = BaseGraphQlObject & {
 }
 
 export type RewardPaidEventConnection = {
-  __typename?: 'RewardPaidEventConnection'
   totalCount: Scalars['Int']
   edges: Array<RewardPaidEventEdge>
   pageInfo: PageInfo
@@ -5202,7 +5096,6 @@ export type RewardPaidEventCreateInput = {
 }
 
 export type RewardPaidEventEdge = {
-  __typename?: 'RewardPaidEventEdge'
   node: RewardPaidEvent
   cursor: Scalars['String']
 }
@@ -5283,7 +5176,6 @@ export type RewardPaidEventWhereUniqueInput = {
 }
 
 export type StakeDecreasedEvent = BaseGraphQlObject & {
-  __typename?: 'StakeDecreasedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5303,7 +5195,6 @@ export type StakeDecreasedEvent = BaseGraphQlObject & {
 }
 
 export type StakeDecreasedEventConnection = {
-  __typename?: 'StakeDecreasedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StakeDecreasedEventEdge>
   pageInfo: PageInfo
@@ -5317,7 +5208,6 @@ export type StakeDecreasedEventCreateInput = {
 }
 
 export type StakeDecreasedEventEdge = {
-  __typename?: 'StakeDecreasedEventEdge'
   node: StakeDecreasedEvent
   cursor: Scalars['String']
 }
@@ -5390,7 +5280,6 @@ export type StakeDecreasedEventWhereUniqueInput = {
 }
 
 export type StakeIncreasedEvent = BaseGraphQlObject & {
-  __typename?: 'StakeIncreasedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5410,7 +5299,6 @@ export type StakeIncreasedEvent = BaseGraphQlObject & {
 }
 
 export type StakeIncreasedEventConnection = {
-  __typename?: 'StakeIncreasedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StakeIncreasedEventEdge>
   pageInfo: PageInfo
@@ -5424,7 +5312,6 @@ export type StakeIncreasedEventCreateInput = {
 }
 
 export type StakeIncreasedEventEdge = {
-  __typename?: 'StakeIncreasedEventEdge'
   node: StakeIncreasedEvent
   cursor: Scalars['String']
 }
@@ -5497,7 +5384,6 @@ export type StakeIncreasedEventWhereUniqueInput = {
 }
 
 export type StakeSlashedEvent = BaseGraphQlObject & {
-  __typename?: 'StakeSlashedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5521,7 +5407,6 @@ export type StakeSlashedEvent = BaseGraphQlObject & {
 }
 
 export type StakeSlashedEventConnection = {
-  __typename?: 'StakeSlashedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StakeSlashedEventEdge>
   pageInfo: PageInfo
@@ -5537,7 +5422,6 @@ export type StakeSlashedEventCreateInput = {
 }
 
 export type StakeSlashedEventEdge = {
-  __typename?: 'StakeSlashedEventEdge'
   node: StakeSlashedEvent
   cursor: Scalars['String']
 }
@@ -5627,7 +5511,6 @@ export type StakeSlashedEventWhereUniqueInput = {
 }
 
 export type StakingAccountAddedEvent = BaseGraphQlObject & {
-  __typename?: 'StakingAccountAddedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5645,7 +5528,6 @@ export type StakingAccountAddedEvent = BaseGraphQlObject & {
 }
 
 export type StakingAccountAddedEventConnection = {
-  __typename?: 'StakingAccountAddedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StakingAccountAddedEventEdge>
   pageInfo: PageInfo
@@ -5658,7 +5540,6 @@ export type StakingAccountAddedEventCreateInput = {
 }
 
 export type StakingAccountAddedEventEdge = {
-  __typename?: 'StakingAccountAddedEventEdge'
   node: StakingAccountAddedEvent
   cursor: Scalars['String']
 }
@@ -5725,7 +5606,6 @@ export type StakingAccountAddedEventWhereUniqueInput = {
 }
 
 export type StakingAccountConfirmedEvent = BaseGraphQlObject & {
-  __typename?: 'StakingAccountConfirmedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5743,7 +5623,6 @@ export type StakingAccountConfirmedEvent = BaseGraphQlObject & {
 }
 
 export type StakingAccountConfirmedEventConnection = {
-  __typename?: 'StakingAccountConfirmedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StakingAccountConfirmedEventEdge>
   pageInfo: PageInfo
@@ -5756,7 +5635,6 @@ export type StakingAccountConfirmedEventCreateInput = {
 }
 
 export type StakingAccountConfirmedEventEdge = {
-  __typename?: 'StakingAccountConfirmedEventEdge'
   node: StakingAccountConfirmedEvent
   cursor: Scalars['String']
 }
@@ -5823,7 +5701,6 @@ export type StakingAccountConfirmedEventWhereUniqueInput = {
 }
 
 export type StakingAccountRemovedEvent = BaseGraphQlObject & {
-  __typename?: 'StakingAccountRemovedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5841,7 +5718,6 @@ export type StakingAccountRemovedEvent = BaseGraphQlObject & {
 }
 
 export type StakingAccountRemovedEventConnection = {
-  __typename?: 'StakingAccountRemovedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StakingAccountRemovedEventEdge>
   pageInfo: PageInfo
@@ -5854,7 +5730,6 @@ export type StakingAccountRemovedEventCreateInput = {
 }
 
 export type StakingAccountRemovedEventEdge = {
-  __typename?: 'StakingAccountRemovedEventEdge'
   node: StakingAccountRemovedEvent
   cursor: Scalars['String']
 }
@@ -5921,12 +5796,10 @@ export type StakingAccountRemovedEventWhereUniqueInput = {
 }
 
 export type StandardDeleteResponse = {
-  __typename?: 'StandardDeleteResponse'
   id: Scalars['ID']
 }
 
 export type StatusTextChangedEvent = BaseGraphQlObject & {
-  __typename?: 'StatusTextChangedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -5941,13 +5814,13 @@ export type StatusTextChangedEvent = BaseGraphQlObject & {
   groupId: Scalars['String']
   /** Original action metadata as hex string */
   metadata?: Maybe<Scalars['String']>
-  /** Event result depeding on metadata action type */
-  result?: Maybe<WorkingGroupMetadataActionResult>
+  /** Event result depeding on the metadata action type */
+  result: WorkingGroupMetadataActionResult
   upcomingworkinggroupopeningcreatedInEvent?: Maybe<Array<UpcomingWorkingGroupOpening>>
+  workinggroupmetadatasetInEvent?: Maybe<Array<WorkingGroupMetadata>>
 }
 
 export type StatusTextChangedEventConnection = {
-  __typename?: 'StatusTextChangedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<StatusTextChangedEventEdge>
   pageInfo: PageInfo
@@ -5961,7 +5834,6 @@ export type StatusTextChangedEventCreateInput = {
 }
 
 export type StatusTextChangedEventEdge = {
-  __typename?: 'StatusTextChangedEventEdge'
   node: StatusTextChangedEvent
   cursor: Scalars['String']
 }
@@ -6030,12 +5902,10 @@ export type StatusTextChangedEventWhereUniqueInput = {
 }
 
 export type Subscription = {
-  __typename?: 'Subscription'
   stateSubscription: ProcessorState
 }
 
 export type TerminatedLeaderEvent = BaseGraphQlObject & {
-  __typename?: 'TerminatedLeaderEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6057,7 +5927,6 @@ export type TerminatedLeaderEvent = BaseGraphQlObject & {
 }
 
 export type TerminatedLeaderEventConnection = {
-  __typename?: 'TerminatedLeaderEventConnection'
   totalCount: Scalars['Int']
   edges: Array<TerminatedLeaderEventEdge>
   pageInfo: PageInfo
@@ -6072,7 +5941,6 @@ export type TerminatedLeaderEventCreateInput = {
 }
 
 export type TerminatedLeaderEventEdge = {
-  __typename?: 'TerminatedLeaderEventEdge'
   node: TerminatedLeaderEvent
   cursor: Scalars['String']
 }
@@ -6153,7 +6021,6 @@ export type TerminatedLeaderEventWhereUniqueInput = {
 }
 
 export type TerminatedWorkerEvent = BaseGraphQlObject & {
-  __typename?: 'TerminatedWorkerEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6175,7 +6042,6 @@ export type TerminatedWorkerEvent = BaseGraphQlObject & {
 }
 
 export type TerminatedWorkerEventConnection = {
-  __typename?: 'TerminatedWorkerEventConnection'
   totalCount: Scalars['Int']
   edges: Array<TerminatedWorkerEventEdge>
   pageInfo: PageInfo
@@ -6190,7 +6056,6 @@ export type TerminatedWorkerEventCreateInput = {
 }
 
 export type TerminatedWorkerEventEdge = {
-  __typename?: 'TerminatedWorkerEventEdge'
   node: TerminatedWorkerEvent
   cursor: Scalars['String']
 }
@@ -6271,7 +6136,6 @@ export type TerminatedWorkerEventWhereUniqueInput = {
 }
 
 export type UpcomingOpeningAdded = {
-  __typename?: 'UpcomingOpeningAdded'
   upcomingOpeningId: Scalars['String']
 }
 
@@ -6320,7 +6184,6 @@ export type UpcomingOpeningAddedWhereUniqueInput = {
 }
 
 export type UpcomingOpeningRemoved = {
-  __typename?: 'UpcomingOpeningRemoved'
   upcomingOpeningId: Scalars['String']
 }
 
@@ -6369,7 +6232,6 @@ export type UpcomingOpeningRemovedWhereUniqueInput = {
 }
 
 export type UpcomingWorkingGroupOpening = BaseGraphQlObject & {
-  __typename?: 'UpcomingWorkingGroupOpening'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6395,7 +6257,6 @@ export type UpcomingWorkingGroupOpening = BaseGraphQlObject & {
 }
 
 export type UpcomingWorkingGroupOpeningConnection = {
-  __typename?: 'UpcomingWorkingGroupOpeningConnection'
   totalCount: Scalars['Int']
   edges: Array<UpcomingWorkingGroupOpeningEdge>
   pageInfo: PageInfo
@@ -6412,7 +6273,6 @@ export type UpcomingWorkingGroupOpeningCreateInput = {
 }
 
 export type UpcomingWorkingGroupOpeningEdge = {
-  __typename?: 'UpcomingWorkingGroupOpeningEdge'
   node: UpcomingWorkingGroupOpening
   cursor: Scalars['String']
 }
@@ -6507,7 +6367,6 @@ export type UpcomingWorkingGroupOpeningWhereUniqueInput = {
 }
 
 export type Worker = BaseGraphQlObject & {
-  __typename?: 'Worker'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6561,7 +6420,6 @@ export type Worker = BaseGraphQlObject & {
 }
 
 export type WorkerConnection = {
-  __typename?: 'WorkerConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkerEdge>
   pageInfo: PageInfo
@@ -6585,13 +6443,11 @@ export type WorkerCreateInput = {
 }
 
 export type WorkerEdge = {
-  __typename?: 'WorkerEdge'
   node: Worker
   cursor: Scalars['String']
 }
 
 export type WorkerExitedEvent = BaseGraphQlObject & {
-  __typename?: 'WorkerExitedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6609,7 +6465,6 @@ export type WorkerExitedEvent = BaseGraphQlObject & {
 }
 
 export type WorkerExitedEventConnection = {
-  __typename?: 'WorkerExitedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkerExitedEventEdge>
   pageInfo: PageInfo
@@ -6622,7 +6477,6 @@ export type WorkerExitedEventCreateInput = {
 }
 
 export type WorkerExitedEventEdge = {
-  __typename?: 'WorkerExitedEventEdge'
   node: WorkerExitedEvent
   cursor: Scalars['String']
 }
@@ -6721,7 +6575,6 @@ export enum WorkerOrderByInput {
 }
 
 export type WorkerRewardAccountUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'WorkerRewardAccountUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6741,7 +6594,6 @@ export type WorkerRewardAccountUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type WorkerRewardAccountUpdatedEventConnection = {
-  __typename?: 'WorkerRewardAccountUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkerRewardAccountUpdatedEventEdge>
   pageInfo: PageInfo
@@ -6755,7 +6607,6 @@ export type WorkerRewardAccountUpdatedEventCreateInput = {
 }
 
 export type WorkerRewardAccountUpdatedEventEdge = {
-  __typename?: 'WorkerRewardAccountUpdatedEventEdge'
   node: WorkerRewardAccountUpdatedEvent
   cursor: Scalars['String']
 }
@@ -6827,7 +6678,6 @@ export type WorkerRewardAccountUpdatedEventWhereUniqueInput = {
 }
 
 export type WorkerRewardAmountUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'WorkerRewardAmountUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6847,7 +6697,6 @@ export type WorkerRewardAmountUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type WorkerRewardAmountUpdatedEventConnection = {
-  __typename?: 'WorkerRewardAmountUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkerRewardAmountUpdatedEventEdge>
   pageInfo: PageInfo
@@ -6861,7 +6710,6 @@ export type WorkerRewardAmountUpdatedEventCreateInput = {
 }
 
 export type WorkerRewardAmountUpdatedEventEdge = {
-  __typename?: 'WorkerRewardAmountUpdatedEventEdge'
   node: WorkerRewardAmountUpdatedEvent
   cursor: Scalars['String']
 }
@@ -6934,7 +6782,6 @@ export type WorkerRewardAmountUpdatedEventWhereUniqueInput = {
 }
 
 export type WorkerRoleAccountUpdatedEvent = BaseGraphQlObject & {
-  __typename?: 'WorkerRoleAccountUpdatedEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -6954,7 +6801,6 @@ export type WorkerRoleAccountUpdatedEvent = BaseGraphQlObject & {
 }
 
 export type WorkerRoleAccountUpdatedEventConnection = {
-  __typename?: 'WorkerRoleAccountUpdatedEventConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkerRoleAccountUpdatedEventEdge>
   pageInfo: PageInfo
@@ -6968,7 +6814,6 @@ export type WorkerRoleAccountUpdatedEventCreateInput = {
 }
 
 export type WorkerRoleAccountUpdatedEventEdge = {
-  __typename?: 'WorkerRoleAccountUpdatedEventEdge'
   node: WorkerRoleAccountUpdatedEvent
   cursor: Scalars['String']
 }
@@ -7040,7 +6885,6 @@ export type WorkerRoleAccountUpdatedEventWhereUniqueInput = {
 }
 
 export type WorkerStartedLeavingEvent = BaseGraphQlObject & {
-  __typename?: 'WorkerStartedLeavingEvent'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -7060,7 +6904,6 @@ export type WorkerStartedLeavingEvent = BaseGraphQlObject & {
 }
 
 export type WorkerStartedLeavingEventConnection = {
-  __typename?: 'WorkerStartedLeavingEventConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkerStartedLeavingEventEdge>
   pageInfo: PageInfo
@@ -7074,7 +6917,6 @@ export type WorkerStartedLeavingEventCreateInput = {
 }
 
 export type WorkerStartedLeavingEventEdge = {
-  __typename?: 'WorkerStartedLeavingEventEdge'
   node: WorkerStartedLeavingEvent
   cursor: Scalars['String']
 }
@@ -7148,7 +6990,6 @@ export type WorkerStartedLeavingEventWhereUniqueInput = {
 export type WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
 
 export type WorkerStatusActive = {
-  __typename?: 'WorkerStatusActive'
   phantom?: Maybe<Scalars['Int']>
 }
 
@@ -7198,7 +7039,6 @@ export type WorkerStatusActiveWhereUniqueInput = {
 }
 
 export type WorkerStatusLeft = {
-  __typename?: 'WorkerStatusLeft'
   workerStartedLeavingEventId: Scalars['String']
   workerExitedEventId?: Maybe<Scalars['String']>
 }
@@ -7255,7 +7095,6 @@ export type WorkerStatusLeftWhereUniqueInput = {
 }
 
 export type WorkerStatusTerminated = {
-  __typename?: 'WorkerStatusTerminated'
   terminatedWorkerEventId: Scalars['String']
   workerExitedEventId?: Maybe<Scalars['String']>
 }
@@ -7410,7 +7249,6 @@ export type WorkerWhereUniqueInput = {
 }
 
 export type WorkingGroup = BaseGraphQlObject & {
-  __typename?: 'WorkingGroup'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -7451,10 +7289,10 @@ export type WorkingGroup = BaseGraphQlObject & {
   workerrewardamountupdatedeventgroup?: Maybe<Array<WorkerRewardAmountUpdatedEvent>>
   workerroleaccountupdatedeventgroup?: Maybe<Array<WorkerRoleAccountUpdatedEvent>>
   workerstartedleavingeventgroup?: Maybe<Array<WorkerStartedLeavingEvent>>
+  workinggroupmetadatagroup?: Maybe<Array<WorkingGroupMetadata>>
 }
 
 export type WorkingGroupApplication = BaseGraphQlObject & {
-  __typename?: 'WorkingGroupApplication'
   id: Scalars['ID']
   /** Time of application creation */
   createdAt: Scalars['DateTime']
@@ -7489,7 +7327,6 @@ export type WorkingGroupApplication = BaseGraphQlObject & {
 }
 
 export type WorkingGroupApplicationConnection = {
-  __typename?: 'WorkingGroupApplicationConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkingGroupApplicationEdge>
   pageInfo: PageInfo
@@ -7509,7 +7346,6 @@ export type WorkingGroupApplicationCreateInput = {
 }
 
 export type WorkingGroupApplicationEdge = {
-  __typename?: 'WorkingGroupApplicationEdge'
   node: WorkingGroupApplication
   cursor: Scalars['String']
 }
@@ -7625,7 +7461,6 @@ export type WorkingGroupApplicationWhereUniqueInput = {
 }
 
 export type WorkingGroupConnection = {
-  __typename?: 'WorkingGroupConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkingGroupEdge>
   pageInfo: PageInfo
@@ -7639,13 +7474,11 @@ export type WorkingGroupCreateInput = {
 }
 
 export type WorkingGroupEdge = {
-  __typename?: 'WorkingGroupEdge'
   node: WorkingGroup
   cursor: Scalars['String']
 }
 
 export type WorkingGroupMetadata = BaseGraphQlObject & {
-  __typename?: 'WorkingGroupMetadata'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -7664,6 +7497,10 @@ export type WorkingGroupMetadata = BaseGraphQlObject & {
   description?: Maybe<Scalars['String']>
   setAtBlock: Block
   setAtBlockId: Scalars['String']
+  setInEvent: StatusTextChangedEvent
+  setInEventId: Scalars['String']
+  group: WorkingGroup
+  groupId: Scalars['String']
   workinggroupmetadata?: Maybe<Array<WorkingGroup>>
 }
 
@@ -7674,7 +7511,6 @@ export type WorkingGroupMetadataActionResult =
   | InvalidActionMetadata
 
 export type WorkingGroupMetadataConnection = {
-  __typename?: 'WorkingGroupMetadataConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkingGroupMetadataEdge>
   pageInfo: PageInfo
@@ -7686,10 +7522,11 @@ export type WorkingGroupMetadataCreateInput = {
   about?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   setAtBlockId: Scalars['ID']
+  setInEventId: Scalars['ID']
+  groupId: Scalars['ID']
 }
 
 export type WorkingGroupMetadataEdge = {
-  __typename?: 'WorkingGroupMetadataEdge'
   node: WorkingGroupMetadata
   cursor: Scalars['String']
 }
@@ -7711,10 +7548,13 @@ export enum WorkingGroupMetadataOrderByInput {
   DescriptionDesc = 'description_DESC',
   SetAtBlockIdAsc = 'setAtBlockId_ASC',
   SetAtBlockIdDesc = 'setAtBlockId_DESC',
+  SetInEventIdAsc = 'setInEventId_ASC',
+  SetInEventIdDesc = 'setInEventId_DESC',
+  GroupIdAsc = 'groupId_ASC',
+  GroupIdDesc = 'groupId_DESC',
 }
 
 export type WorkingGroupMetadataSet = {
-  __typename?: 'WorkingGroupMetadataSet'
   metadataId: Scalars['String']
 }
 
@@ -7768,6 +7608,8 @@ export type WorkingGroupMetadataUpdateInput = {
   about?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   setAtBlockId?: Maybe<Scalars['ID']>
+  setInEventId?: Maybe<Scalars['ID']>
+  groupId?: Maybe<Scalars['ID']>
 }
 
 export type WorkingGroupMetadataWhereInput = {
@@ -7817,6 +7659,10 @@ export type WorkingGroupMetadataWhereInput = {
   description_in?: Maybe<Array<Scalars['String']>>
   setAtBlockId_eq?: Maybe<Scalars['ID']>
   setAtBlockId_in?: Maybe<Array<Scalars['ID']>>
+  setInEventId_eq?: Maybe<Scalars['ID']>
+  setInEventId_in?: Maybe<Array<Scalars['ID']>>
+  groupId_eq?: Maybe<Scalars['ID']>
+  groupId_in?: Maybe<Array<Scalars['ID']>>
 }
 
 export type WorkingGroupMetadataWhereUniqueInput = {
@@ -7824,7 +7670,6 @@ export type WorkingGroupMetadataWhereUniqueInput = {
 }
 
 export type WorkingGroupOpening = BaseGraphQlObject & {
-  __typename?: 'WorkingGroupOpening'
   id: Scalars['ID']
   /** Time of opening creation */
   createdAt: Scalars['DateTime']
@@ -7860,7 +7705,6 @@ export type WorkingGroupOpening = BaseGraphQlObject & {
 }
 
 export type WorkingGroupOpeningConnection = {
-  __typename?: 'WorkingGroupOpeningConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkingGroupOpeningEdge>
   pageInfo: PageInfo
@@ -7880,13 +7724,11 @@ export type WorkingGroupOpeningCreateInput = {
 }
 
 export type WorkingGroupOpeningEdge = {
-  __typename?: 'WorkingGroupOpeningEdge'
   node: WorkingGroupOpening
   cursor: Scalars['String']
 }
 
 export type WorkingGroupOpeningMetadata = BaseGraphQlObject & {
-  __typename?: 'WorkingGroupOpeningMetadata'
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -7913,7 +7755,6 @@ export type WorkingGroupOpeningMetadata = BaseGraphQlObject & {
 }
 
 export type WorkingGroupOpeningMetadataConnection = {
-  __typename?: 'WorkingGroupOpeningMetadataConnection'
   totalCount: Scalars['Int']
   edges: Array<WorkingGroupOpeningMetadataEdge>
   pageInfo: PageInfo
@@ -7929,7 +7770,6 @@ export type WorkingGroupOpeningMetadataCreateInput = {
 }
 
 export type WorkingGroupOpeningMetadataEdge = {
-  __typename?: 'WorkingGroupOpeningMetadataEdge'
   node: WorkingGroupOpeningMetadata
   cursor: Scalars['String']
 }
