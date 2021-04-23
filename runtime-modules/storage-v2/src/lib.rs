@@ -5,8 +5,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
-// TODO: add static-dynamic bag abstraction (BagManager)
-// TODO: Add alias for StaticBag
+// TODO: add dynamic bag creation policy.
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
 // TODO: add benchmarks
@@ -447,14 +446,16 @@ pub struct DynamicBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Storage {
-        // === Static bags
-
         /// Council bag.
         pub CouncilBag get(fn council_bag): StaticBag<T>;
 
         /// Working group bag storage map.
         pub WorkingGroupBags get(fn working_group_bag): map hasher(blake2_128_concat)
             WorkingGroup => StaticBag<T>;
+
+        /// Dynamic bag storage map.
+        pub DynamicBags get (fn dynamic_bag_by_id): map hasher(blake2_128_concat)
+            DynamicBagId<T> => DynamicBag<T>;
 
         /// Storage bucket id counter. Starts at zero.
         pub NextStorageBucketId get(fn next_storage_bucket_id): T::StorageBucketId;
@@ -604,6 +605,8 @@ decl_module! {
                 origin,
                 member_id,
             )?;
+
+            // TODO: Validate actor on bag basis.
 
             //TODO: is is so?  "a `can_upload` extrinsic is likely going to be needed"
 
@@ -1001,13 +1004,13 @@ impl<T: Trait> Module<T> {
     }
 
     // Get dynamic bag by its ID from the storage.
-    pub(crate) fn dynamic_bag(_bag_id: &DynamicBagId<T>) -> DynamicBag<T> {
-        unimplemented!();
+    pub(crate) fn dynamic_bag(bag_id: &DynamicBagId<T>) -> DynamicBag<T> {
+        Self::dynamic_bag_by_id(bag_id)
     }
 
     // Save a dynamic bag to the storage.
-    fn save_dynamic_bag(_bag_id: &DynamicBagId<T>, _bag: DynamicBag<T>) {
-        unimplemented!();
+    fn save_dynamic_bag(bag_id: &DynamicBagId<T>, bag: DynamicBag<T>) {
+        <DynamicBags<T>>::insert(bag_id, bag);
     }
 }
 
