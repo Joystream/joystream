@@ -1019,50 +1019,36 @@ struct BagManager<T> {
 impl<T: Trait> BagManager<T> {
     // Accept data objects for a bag.
     fn accept_data_objects(bag_id: &BagId<T>, data_object_id: &T::DataObjectId) {
-        match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
-                let mut bag = Module::<T>::static_bag(&static_bag_id);
-
+        Self::mutate(
+            &bag_id,
+            |bag| {
                 let data_object = bag.objects.get_mut(data_object_id);
 
                 if let Some(data_object) = data_object {
                     data_object.accepted = true;
                 }
-
-                Module::<T>::save_static_bag(static_bag_id, bag);
-            }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
-                let mut bag = Module::<T>::dynamic_bag(dynamic_bag_id);
-
+            },
+            |bag| {
                 let data_object = bag.objects.get_mut(data_object_id);
 
                 if let Some(data_object) = data_object {
                     data_object.accepted = true;
                 }
-
-                Module::<T>::save_dynamic_bag(dynamic_bag_id, bag);
-            }
-        };
+            },
+        );
     }
 
     // Adds data object to bag.
-    fn append_data_objects(bag_id: &BagId<T>, mut data: DataObjectCandidates<T>) {
-        match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
-                let mut bag = Module::<T>::static_bag(&static_bag_id);
-
-                bag.objects.append(&mut data.data_objects_map);
-
-                Module::<T>::save_static_bag(&static_bag_id, bag);
-            }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
-                let mut bag = Module::<T>::dynamic_bag(dynamic_bag_id);
-
-                bag.objects.append(&mut data.data_objects_map);
-
-                Module::<T>::save_dynamic_bag(dynamic_bag_id, bag);
-            }
-        };
+    fn append_data_objects(bag_id: &BagId<T>, data: DataObjectCandidates<T>) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.objects.append(&mut data.data_objects_map.clone());
+            },
+            |bag| {
+                bag.objects.append(&mut data.data_objects_map.clone());
+            },
+        );
     }
 
     // Check the data object existence inside a bag.
@@ -1070,40 +1056,73 @@ impl<T: Trait> BagManager<T> {
         bag_id: &BagId<T>,
         data_object_id: &T::DataObjectId,
     ) -> DispatchResult {
-        match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
-                let bag = Module::<T>::static_bag(static_bag_id);
+        let object_exists = Self::query(
+            bag_id,
+            |bag| bag.objects.contains_key(data_object_id),
+            |bag| bag.objects.contains_key(data_object_id),
+        );
 
-                ensure!(
-                    bag.objects.contains_key(data_object_id),
-                    Error::<T>::DataObjectDoesntExist
-                );
-            }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
-                let bag = Module::<T>::dynamic_bag(dynamic_bag_id);
-
-                ensure!(
-                    bag.objects.contains_key(data_object_id),
-                    Error::<T>::DataObjectDoesntExist
-                );
-            }
-        };
+        ensure!(object_exists, Error::<T>::DataObjectDoesntExist);
 
         Ok(())
     }
 
     // Gets data object number from the bag container.
     fn get_data_objects_number(bag_id: &BagId<T>) -> u64 {
+        Self::query(
+            bag_id,
+            |bag| bag.objects.len().saturated_into(),
+            |bag| bag.objects.len().saturated_into(),
+        )
+    }
+
+    // Abstract bag query function. Accepts two closures that should have similar result type.
+    fn query<
+        Res,
+        StaticBagQuery: Fn(StaticBag<T>) -> Res,
+        DynamicBagQuery: Fn(DynamicBag<T>) -> Res,
+    >(
+        bag_id: &BagId<T>,
+        static_bag_query: StaticBagQuery,
+        dynamic_bag_query: DynamicBagQuery,
+    ) -> Res {
         match bag_id {
             BagId::<T>::StaticBag(static_bag_id) => {
                 let bag = Module::<T>::static_bag(&static_bag_id);
 
-                bag.objects.len().saturated_into()
+                static_bag_query(bag)
             }
             BagId::<T>::DynamicBag(dynamic_bag_id) => {
                 let bag = Module::<T>::dynamic_bag(dynamic_bag_id);
 
-                bag.objects.len().saturated_into()
+                dynamic_bag_query(bag)
+            }
+        }
+    }
+
+    // Abstract bag mutation function. Accept a closure for each static and dynamic bag types.
+    fn mutate<
+        StaticBagMutation: Fn(&mut StaticBag<T>),
+        DynamicBagMutation: Fn(&mut DynamicBag<T>),
+    >(
+        bag_id: &BagId<T>,
+        static_bag_mutation: StaticBagMutation,
+        dynamic_bag_mutation: DynamicBagMutation,
+    ) {
+        match bag_id {
+            BagId::<T>::StaticBag(static_bag_id) => {
+                let mut bag = Module::<T>::static_bag(&static_bag_id);
+
+                static_bag_mutation(&mut bag);
+
+                Module::<T>::save_static_bag(&static_bag_id, bag);
+            }
+            BagId::<T>::DynamicBag(dynamic_bag_id) => {
+                let mut bag = Module::<T>::dynamic_bag(dynamic_bag_id);
+
+                dynamic_bag_mutation(&mut bag);
+
+                Module::<T>::save_dynamic_bag(dynamic_bag_id, bag);
             }
         }
     }
