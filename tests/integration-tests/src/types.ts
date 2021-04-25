@@ -82,10 +82,3 @@ export type WorkingGroupModuleName =
   | 'contentDirectoryWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
-
-export const workingGroups: WorkingGroupModuleName[] = [
-  'storageWorkingGroup',
-  'contentDirectoryWorkingGroup',
-  'forumWorkingGroup',
-  'membershipWorkingGroup',
-]
