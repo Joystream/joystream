@@ -4,14 +4,13 @@ import {
   CancelOpeningsFixture,
   CreateOpeningsFixture,
   WithdrawApplicationsFixture,
-  LEADER_OPENING_STAKE,
   ApplicantDetails,
-} from '../../fixtures/workingGroupsModule'
+} from '../../fixtures/workingGroups'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
-import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
-import { workingGroups } from '../../types'
+import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
+import { workingGroups, LEADER_OPENING_STAKE } from '../../consts'
 import { assert } from 'chai'
 
 export default async function openingAndApplicationStatusFlow({ api, query, env }: FlowProps): Promise<void> {

@@ -3,7 +3,7 @@ import {
   AddStakingAccountsHappyCaseFixture,
   BuyMembershipHappyCaseFixture,
   RemoveStakingAccountsHappyCaseFixture,
-} from '../../fixtures/membershipModule'
+} from '../../fixtures/membership'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'

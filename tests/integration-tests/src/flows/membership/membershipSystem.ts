@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import { SudoUpdateMembershipSystem } from '../../fixtures/membershipModule'
+import { SudoUpdateMembershipSystem } from '../../fixtures/membership'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'

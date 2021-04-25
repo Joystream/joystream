@@ -1,9 +1,9 @@
 import { FlowProps } from '../../Flow'
-import { UpdateGroupStatusFixture } from '../../fixtures/workingGroupsModule'
+import { UpdateGroupStatusFixture } from '../../fixtures/workingGroups'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
-import { workingGroups } from '../../types'
+import { workingGroups } from '../../consts'
 import { WorkingGroupMetadata } from '@joystream/metadata-protobuf'
 import _ from 'lodash'
 

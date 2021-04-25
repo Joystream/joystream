@@ -4,12 +4,12 @@ import {
   CreateOpeningsFixture,
   FillOpeningsFixture,
   ApplicantDetails,
-} from '../../fixtures/workingGroupsModule'
+} from '../../fixtures/workingGroups'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
-import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
-import { workingGroups } from '../../types'
+import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
+import { workingGroups } from '../../consts'
 
 export default async function leadOpening({ api, query, env }: FlowProps): Promise<void> {
   await Promise.all(
