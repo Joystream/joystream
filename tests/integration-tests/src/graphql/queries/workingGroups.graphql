@@ -84,17 +84,18 @@ fragment WorkingGroupMetadataFields on WorkingGroupMetadata {
   setAtBlock {
     ...BlockFields
   }
+  setInEvent {
+    event {
+      ...EventFields
+    }
+  }
 }
 
-# TODO: Don't query group leader here?
 fragment OpeningFields on WorkingGroupOpening {
   id
   runtimeId
   group {
     name
-    leader {
-      runtimeId
-    }
   }
   applications {
     ...ApplicationBasicFields
@@ -117,6 +118,12 @@ fragment OpeningFields on WorkingGroupOpening {
 
 query getOpeningById ($openingId: ID!) {
   workingGroupOpeningByUniqueInput(where: { id: $openingId }) {
+    ...OpeningFields
+  }
+}
+
+query getOpeningsByIds ($openingIds: [ID!]) {
+  workingGroupOpenings(where: { id_in: $openingIds }) {
     ...OpeningFields
   }
 }
@@ -152,6 +159,12 @@ query getApplicationById ($applicationId: ID!) {
   }
 }
 
+query getApplicationsByIds ($applicationIds: [ID!]) {
+  workingGroupApplications(where: { id_in: $applicationIds }) {
+    ...ApplicationFields
+  }
+}
+
 fragment WorkingGroupFields on WorkingGroup {
   id
   name
@@ -160,6 +173,7 @@ fragment WorkingGroupFields on WorkingGroup {
   }
   leader {
     id
+    runtimeId
   }
   budget
 }
@@ -184,23 +198,26 @@ fragment UpcomingOpeningFields on UpcomingWorkingGroupOpening {
   createdAtBlock {
     ...BlockFields
   }
+  createdInEvent {
+    id
+  }
   createdAt
 }
 
-query getUpcomingOpeningByCreatedInEventId ($createdInEventId: ID!) {
-  upcomingWorkingGroupOpenings(where: { createdInEventId_eq: $createdInEventId }) {
+query getUpcomingOpeningById ($id: ID!) {
+  upcomingWorkingGroupOpeningByUniqueInput(where: { id: $id }) {
     ...UpcomingOpeningFields
   }
 }
 
-query getWorkingGroupMetadataSnapshotAt ($groupId: ID!, $timestamp: DateTime!) {
-  workingGroupMetadata(where: { createdAt_eq: $timestamp, groupId_eq: $groupId }, orderBy: createdAt_DESC, limit: 1) {
-    ...WorkingGroupMetadataFields
+query getUpcomingOpeningsByCreatedInEventIds ($createdInEventIds: [ID!]) {
+  upcomingWorkingGroupOpenings(where: { createdInEventId_in: $createdInEventIds }) {
+    ...UpcomingOpeningFields
   }
 }
 
-query getWorkingGroupMetadataSnapshotBefore ($groupId: ID!, $timestamp: DateTime!) {
-  workingGroupMetadata(where: { createdAt_lt: $timestamp, groupId_eq: $groupId }, orderBy: createdAt_DESC, limit: 1) {
+query getWorkingGroupMetadataSnapshotsByTimeAsc ($groupId: ID!) {
+  workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC ) {
     ...WorkingGroupMetadataFields
   }
 }

@@ -16,8 +16,8 @@ fragment AppliedOnOpeningEventFields on AppliedOnOpeningEvent {
   }
 }
 
-query getAppliedOnOpeningEventsByEventId ($eventId: ID!) {
-  appliedOnOpeningEvents(where: { eventId_eq: $eventId }) {
+query getAppliedOnOpeningEventsByEventIds ($eventIds: [ID!]) {
+  appliedOnOpeningEvents(where: { eventId_in: $eventIds }) {
     ...AppliedOnOpeningEventFields
   }
 }
@@ -36,8 +36,8 @@ fragment OpeningAddedEventFields on OpeningAddedEvent {
   }
 }
 
-query getOpeningAddedEventsByEventId ($eventId: ID!) {
-  openingAddedEvents(where: { eventId_eq: $eventId }) {
+query getOpeningAddedEventsByEventIds ($eventIds: [ID!]) {
+  openingAddedEvents(where: { eventId_in: $eventIds }) {
     ...OpeningAddedEventFields
   }
 }
@@ -59,8 +59,8 @@ fragment OpeningFilledEventFields on OpeningFilledEvent {
     }
 }
 
-query getOpeningFilledEventsByEventId ($eventId: ID!) {
-  openingFilledEvents(where: { eventId_eq: $eventId }) {
+query getOpeningFilledEventsByEventIds ($eventIds: [ID!]) {
+  openingFilledEvents(where: { eventId_in: $eventIds }) {
     ...OpeningFilledEventFields
   }
 }
@@ -79,8 +79,8 @@ fragment ApplicationWithdrawnEventFields on ApplicationWithdrawnEvent {
   }
 }
 
-query getApplicationWithdrawnEventsByEventId ($eventId: ID!) {
-  applicationWithdrawnEvents(where: { eventId_eq: $eventId }) {
+query getApplicationWithdrawnEventsByEventIds ($eventIds: [ID!]) {
+  applicationWithdrawnEvents(where: { eventId_in: $eventIds }) {
     ...ApplicationWithdrawnEventFields
   }
 }
@@ -99,8 +99,8 @@ fragment OpeningCanceledEventFields on OpeningCanceledEvent {
   }
 }
 
-query getOpeningCancelledEventsByEventId ($eventId: ID!) {
-  openingCanceledEvents(where: { eventId_eq: $eventId }) {
+query getOpeningCancelledEventsByEventIds ($eventIds: [ID!]) {
+  openingCanceledEvents(where: { eventId_in: $eventIds }) {
     ...OpeningCanceledEventFields
   }
 }
@@ -131,8 +131,8 @@ fragment StatusTextChangedEventFields on  StatusTextChangedEvent {
   }
 }
 
-query getStatusTextChangedEventsByEventId ($eventId: ID!) {
-  statusTextChangedEvents(where: { eventId_eq: $eventId }) {
+query getStatusTextChangedEventsByEventIds ($eventIds: [ID!]) {
+  statusTextChangedEvents(where: { eventId_in: $eventIds }) {
     ...StatusTextChangedEventFields
   }
 }

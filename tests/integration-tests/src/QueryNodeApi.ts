@@ -2,7 +2,7 @@ import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/clien
 import { MemberId } from '@joystream/types/common'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId } from '@joystream/types/working-group'
-import { WorkingGroupModuleName } from './types'
+import { EventDetails, WorkingGroupModuleName } from './types'
 import {
   GetMemberByIdQuery,
   GetMemberByIdQueryVariables,
@@ -55,36 +55,33 @@ import {
   GetApplicationByIdQuery,
   GetApplicationByIdQueryVariables,
   GetApplicationById,
-  GetAppliedOnOpeningEventsByEventIdQuery,
-  GetAppliedOnOpeningEventsByEventIdQueryVariables,
-  GetAppliedOnOpeningEventsByEventId,
-  GetOpeningAddedEventsByEventIdQuery,
-  GetOpeningAddedEventsByEventIdQueryVariables,
-  GetOpeningAddedEventsByEventId,
-  GetOpeningFilledEventsByEventIdQuery,
-  GetOpeningFilledEventsByEventIdQueryVariables,
-  GetOpeningFilledEventsByEventId,
-  GetApplicationWithdrawnEventsByEventIdQuery,
-  GetApplicationWithdrawnEventsByEventIdQueryVariables,
-  GetApplicationWithdrawnEventsByEventId,
-  GetOpeningCancelledEventsByEventIdQuery,
-  GetOpeningCancelledEventsByEventIdQueryVariables,
-  GetOpeningCancelledEventsByEventId,
-  GetStatusTextChangedEventsByEventIdQuery,
-  GetStatusTextChangedEventsByEventIdQueryVariables,
-  GetStatusTextChangedEventsByEventId,
-  GetUpcomingOpeningByCreatedInEventIdQuery,
-  GetUpcomingOpeningByCreatedInEventIdQueryVariables,
-  GetUpcomingOpeningByCreatedInEventId,
+  GetAppliedOnOpeningEventsByEventIdsQuery,
+  GetAppliedOnOpeningEventsByEventIdsQueryVariables,
+  GetAppliedOnOpeningEventsByEventIds,
+  GetOpeningAddedEventsByEventIdsQuery,
+  GetOpeningAddedEventsByEventIdsQueryVariables,
+  GetOpeningAddedEventsByEventIds,
+  GetOpeningFilledEventsByEventIdsQuery,
+  GetOpeningFilledEventsByEventIdsQueryVariables,
+  GetOpeningFilledEventsByEventIds,
+  GetApplicationWithdrawnEventsByEventIdsQuery,
+  GetApplicationWithdrawnEventsByEventIdsQueryVariables,
+  GetApplicationWithdrawnEventsByEventIds,
+  GetOpeningCancelledEventsByEventIdsQuery,
+  GetOpeningCancelledEventsByEventIdsQueryVariables,
+  GetOpeningCancelledEventsByEventIds,
+  GetStatusTextChangedEventsByEventIdsQuery,
+  GetStatusTextChangedEventsByEventIdsQueryVariables,
+  GetStatusTextChangedEventsByEventIds,
+  GetUpcomingOpeningsByCreatedInEventIdsQuery,
+  GetUpcomingOpeningsByCreatedInEventIdsQueryVariables,
+  GetUpcomingOpeningsByCreatedInEventIds,
   GetWorkingGroupByNameQuery,
   GetWorkingGroupByNameQueryVariables,
   GetWorkingGroupByName,
-  GetWorkingGroupMetadataSnapshotAtQuery,
-  GetWorkingGroupMetadataSnapshotAtQueryVariables,
-  GetWorkingGroupMetadataSnapshotAt,
-  GetWorkingGroupMetadataSnapshotBeforeQuery,
-  GetWorkingGroupMetadataSnapshotBeforeQueryVariables,
-  GetWorkingGroupMetadataSnapshotBefore,
+  GetWorkingGroupMetadataSnapshotsByTimeAsc,
+  GetWorkingGroupMetadataSnapshotsByTimeAscQuery,
+  GetWorkingGroupMetadataSnapshotsByTimeAscQueryVariables,
   MembershipFieldsFragment,
   MembershipBoughtEventFieldsFragment,
   MemberProfileUpdatedEventFieldsFragment,
@@ -110,6 +107,15 @@ import {
   UpcomingOpeningFieldsFragment,
   WorkingGroupFieldsFragment,
   WorkingGroupMetadataFieldsFragment,
+  GetUpcomingOpeningByIdQuery,
+  GetUpcomingOpeningByIdQueryVariables,
+  GetUpcomingOpeningById,
+  GetOpeningsByIdsQuery,
+  GetOpeningsByIdsQueryVariables,
+  GetOpeningsByIds,
+  GetApplicationsByIdsQuery,
+  GetApplicationsByIdsQueryVariables,
+  GetApplicationsByIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -367,6 +373,15 @@ export class QueryNodeApi {
     )
   }
 
+  public async getOpeningsByIds(ids: OpeningId[], group: WorkingGroupModuleName): Promise<OpeningFieldsFragment[]> {
+    const openingIds = ids.map((id) => `${group}-${id.toString()}`)
+    return this.multipleEntitiesQuery<GetOpeningsByIdsQuery, GetOpeningsByIdsQueryVariables>(
+      GetOpeningsByIds,
+      { openingIds },
+      'workingGroupOpenings'
+    )
+  }
+
   public async getApplicationById(
     id: ApplicationId,
     group: WorkingGroupModuleName
@@ -378,89 +393,81 @@ export class QueryNodeApi {
     )
   }
 
-  public async getAppliedOnOpeningEvent(
-    blockNumber: number,
-    indexInBlock: number
-  ): Promise<AppliedOnOpeningEventFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetAppliedOnOpeningEventsByEventIdQuery,
-      GetAppliedOnOpeningEventsByEventIdQueryVariables
-    >(
-      GetAppliedOnOpeningEventsByEventId,
-      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
-      'appliedOnOpeningEvents'
+  public async getApplicationsByIds(
+    ids: ApplicationId[],
+    group: WorkingGroupModuleName
+  ): Promise<ApplicationFieldsFragment[]> {
+    const applicationIds = ids.map((id) => `${group}-${id.toString()}`)
+    return this.multipleEntitiesQuery<GetApplicationsByIdsQuery, GetApplicationsByIdsQueryVariables>(
+      GetApplicationsByIds,
+      { applicationIds },
+      'workingGroupApplications'
     )
   }
 
-  public async getOpeningAddedEvent(
-    blockNumber: number,
-    indexInBlock: number
-  ): Promise<OpeningAddedEventFieldsFragment | null> {
-    return this.firstEntityQuery<GetOpeningAddedEventsByEventIdQuery, GetOpeningAddedEventsByEventIdQueryVariables>(
-      GetOpeningAddedEventsByEventId,
-      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
-      'openingAddedEvents'
+  public async getAppliedOnOpeningEvents(events: EventDetails[]): Promise<AppliedOnOpeningEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetAppliedOnOpeningEventsByEventIdsQuery,
+      GetAppliedOnOpeningEventsByEventIdsQueryVariables
+    >(GetAppliedOnOpeningEventsByEventIds, { eventIds }, 'appliedOnOpeningEvents')
+  }
+
+  public async getOpeningAddedEvents(events: EventDetails[]): Promise<OpeningAddedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetOpeningAddedEventsByEventIdsQuery,
+      GetOpeningAddedEventsByEventIdsQueryVariables
+    >(GetOpeningAddedEventsByEventIds, { eventIds }, 'openingAddedEvents')
+  }
+
+  public async getOpeningFilledEvents(events: EventDetails[]): Promise<OpeningFilledEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetOpeningFilledEventsByEventIdsQuery,
+      GetOpeningFilledEventsByEventIdsQueryVariables
+    >(GetOpeningFilledEventsByEventIds, { eventIds }, 'openingFilledEvents')
+  }
+
+  public async getApplicationWithdrawnEvents(
+    events: EventDetails[]
+  ): Promise<ApplicationWithdrawnEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetApplicationWithdrawnEventsByEventIdsQuery,
+      GetApplicationWithdrawnEventsByEventIdsQueryVariables
+    >(GetApplicationWithdrawnEventsByEventIds, { eventIds }, 'applicationWithdrawnEvents')
+  }
+
+  public async getOpeningCancelledEvents(events: EventDetails[]): Promise<OpeningCanceledEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetOpeningCancelledEventsByEventIdsQuery,
+      GetOpeningCancelledEventsByEventIdsQueryVariables
+    >(GetOpeningCancelledEventsByEventIds, { eventIds }, 'openingCanceledEvents')
+  }
+
+  public async getStatusTextChangedEvents(events: EventDetails[]): Promise<StatusTextChangedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetStatusTextChangedEventsByEventIdsQuery,
+      GetStatusTextChangedEventsByEventIdsQueryVariables
+    >(GetStatusTextChangedEventsByEventIds, { eventIds }, 'statusTextChangedEvents')
+  }
+
+  public async getUpcomingOpeningById(id: string): Promise<UpcomingOpeningFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetUpcomingOpeningByIdQuery, GetUpcomingOpeningByIdQueryVariables>(
+      GetUpcomingOpeningById,
+      { id },
+      'upcomingWorkingGroupOpeningByUniqueInput'
     )
   }
 
-  public async getOpeningFilledEvent(
-    blockNumber: number,
-    indexInBlock: number
-  ): Promise<OpeningFilledEventFieldsFragment | null> {
-    return this.firstEntityQuery<GetOpeningFilledEventsByEventIdQuery, GetOpeningFilledEventsByEventIdQueryVariables>(
-      GetOpeningFilledEventsByEventId,
-      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
-      'openingFilledEvents'
-    )
-  }
-
-  public async getApplicationWithdrawnEvent(
-    blockNumber: number,
-    indexInBlock: number
-  ): Promise<ApplicationWithdrawnEventFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetApplicationWithdrawnEventsByEventIdQuery,
-      GetApplicationWithdrawnEventsByEventIdQueryVariables
-    >(
-      GetApplicationWithdrawnEventsByEventId,
-      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
-      'applicationWithdrawnEvents'
-    )
-  }
-
-  public async getOpeningCancelledEvent(
-    blockNumber: number,
-    indexInBlock: number
-  ): Promise<OpeningCanceledEventFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetOpeningCancelledEventsByEventIdQuery,
-      GetOpeningCancelledEventsByEventIdQueryVariables
-    >(
-      GetOpeningCancelledEventsByEventId,
-      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
-      'openingCanceledEvents'
-    )
-  }
-
-  public async getStatusTextChangedEvent(
-    blockNumber: number,
-    indexInBlock: number
-  ): Promise<StatusTextChangedEventFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetStatusTextChangedEventsByEventIdQuery,
-      GetStatusTextChangedEventsByEventIdQueryVariables
-    >(
-      GetStatusTextChangedEventsByEventId,
-      { eventId: this.getQueryNodeEventId(blockNumber, indexInBlock) },
-      'statusTextChangedEvents'
-    )
-  }
-
-  public async getUpcomingOpeningByCreatedInEventId(eventId: string): Promise<UpcomingOpeningFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetUpcomingOpeningByCreatedInEventIdQuery,
-      GetUpcomingOpeningByCreatedInEventIdQueryVariables
-    >(GetUpcomingOpeningByCreatedInEventId, { createdInEventId: eventId }, 'upcomingWorkingGroupOpenings')
+  public async getUpcomingOpeningsByCreatedInEventIds(eventIds: string[]): Promise<UpcomingOpeningFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetUpcomingOpeningsByCreatedInEventIdsQuery,
+      GetUpcomingOpeningsByCreatedInEventIdsQueryVariables
+    >(GetUpcomingOpeningsByCreatedInEventIds, { createdInEventIds: eventIds }, 'upcomingWorkingGroupOpenings')
   }
 
   public async getWorkingGroup(name: WorkingGroupModuleName): Promise<WorkingGroupFieldsFragment | null> {
@@ -471,24 +478,10 @@ export class QueryNodeApi {
     )
   }
 
-  // FIXME: Use blockheights once possible
-  public async getGroupMetaSnapshotAt(
-    groupId: string,
-    timestamp: number
-  ): Promise<WorkingGroupMetadataFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetWorkingGroupMetadataSnapshotAtQuery,
-      GetWorkingGroupMetadataSnapshotAtQueryVariables
-    >(GetWorkingGroupMetadataSnapshotAt, { groupId, timestamp: new Date(timestamp) }, 'workingGroupMetadata')
-  }
-
-  public async getGroupMetaSnapshotBefore(
-    groupId: string,
-    timestamp: number
-  ): Promise<WorkingGroupMetadataFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetWorkingGroupMetadataSnapshotBeforeQuery,
-      GetWorkingGroupMetadataSnapshotBeforeQueryVariables
-    >(GetWorkingGroupMetadataSnapshotBefore, { groupId, timestamp: new Date(timestamp) }, 'workingGroupMetadata')
+  public async getGroupMetaSnapshotsByTimeAsc(groupId: string): Promise<WorkingGroupMetadataFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetWorkingGroupMetadataSnapshotsByTimeAscQuery,
+      GetWorkingGroupMetadataSnapshotsByTimeAscQueryVariables
+    >(GetWorkingGroupMetadataSnapshotsByTimeAsc, { groupId }, 'workingGroupMetadata')
   }
 }

@@ -39,12 +39,8 @@ export default async function upcomingOpenings({ api, query, env }: FlowProps): 
       debug('Started')
       api.enableDebugTxLogs()
 
-      // Run fixtures one-by-one (otherwise the checks may break)
-      // FIXME
-      for (const update of updates) {
-        const updateGroupStatusFixture = new UpdateGroupStatusFixture(api, query, group, update)
-        await new FixtureRunner(updateGroupStatusFixture).runWithQueryNodeChecks()
-      }
+      const updateGroupStatusFixture = new UpdateGroupStatusFixture(api, query, group, updates)
+      await new FixtureRunner(updateGroupStatusFixture).runWithQueryNodeChecks()
 
       debug('Done')
     })

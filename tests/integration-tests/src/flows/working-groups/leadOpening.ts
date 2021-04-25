@@ -1,8 +1,9 @@
 import { FlowProps } from '../../Flow'
 import {
-  ApplyOnOpeningHappyCaseFixture,
-  CreateOpeningFixture,
-  SudoFillLeadOpeningFixture,
+  ApplyOnOpeningsHappyCaseFixture,
+  CreateOpeningsFixture,
+  FillOpeningsFixture,
+  ApplicantDetails,
 } from '../../fixtures/workingGroupsModule'
 
 import Debugger from 'debug'
@@ -17,45 +18,48 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
       debug('Started')
       api.enableDebugTxLogs()
 
-      const sudoLeadOpeningFixture = new CreateOpeningFixture(api, query, group, undefined, true)
-      const openingRunner = new FixtureRunner(sudoLeadOpeningFixture)
+      const createOpeningFixture = new CreateOpeningsFixture(api, query, group, undefined, true)
+      const openingRunner = new FixtureRunner(createOpeningFixture)
       await openingRunner.run()
-      const openingId = sudoLeadOpeningFixture.getCreatedOpeningId()
-      const openingParams = sudoLeadOpeningFixture.getDefaultOpeningParams()
+      const [openingId] = createOpeningFixture.getCreatedOpeningIds()
+      const { stake: openingStake, metadata: openingMetadata } = createOpeningFixture.getDefaultOpeningParams()
 
-      const [applicantAcc, stakingAcc] = (await api.createKeyPairs(2)).map((kp) => kp.address)
-      const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [applicantAcc])
+      const [roleAccount, stakingAccount, rewardAccount] = (await api.createKeyPairs(3)).map((kp) => kp.address)
+      const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])
       await new FixtureRunner(buyMembershipFixture).run()
-      const [applicantMemberId] = buyMembershipFixture.getCreatedMembers()
+      const [memberId] = buyMembershipFixture.getCreatedMembers()
 
-      const applicantContext = {
-        account: applicantAcc,
-        memberId: applicantMemberId,
+      const applicantContext = { account: roleAccount, memberId }
+
+      const addStakingAccFixture = new AddStakingAccountsHappyCaseFixture(api, query, applicantContext, [
+        stakingAccount,
+      ])
+      await new FixtureRunner(addStakingAccFixture).run()
+      await api.treasuryTransferBalance(stakingAccount, openingStake)
+
+      const applicantDetails: ApplicantDetails = {
+        memberId,
+        roleAccount,
+        rewardAccount,
+        stakingAccount,
       }
 
-      const addStakingAccFixture = new AddStakingAccountsHappyCaseFixture(api, query, applicantContext, [stakingAcc])
-      await new FixtureRunner(addStakingAccFixture).run()
-
-      await api.treasuryTransferBalance(stakingAcc, openingParams.stake)
-
-      const applyOnOpeningFixture = new ApplyOnOpeningHappyCaseFixture(
-        api,
-        query,
-        group,
-        applicantContext,
-        stakingAcc,
-        openingId,
-        openingParams.metadata
-      )
+      const applyOnOpeningFixture = new ApplyOnOpeningsHappyCaseFixture(api, query, group, [
+        {
+          openingId,
+          openingMetadata,
+          applicants: [applicantDetails],
+        },
+      ])
       const applicationRunner = new FixtureRunner(applyOnOpeningFixture)
       await applicationRunner.run()
-      const applicationId = applyOnOpeningFixture.getCreatedApplicationId()
+      const [applicationId] = applyOnOpeningFixture.getCreatedApplicationsByOpeningId(openingId)
 
       // Run query node checks once this part of the flow is done
       await Promise.all([openingRunner.runQueryNodeChecks(), applicationRunner.runQueryNodeChecks()])
 
       // Fill opening
-      const fillOpeningFixture = new SudoFillLeadOpeningFixture(api, query, group, openingId, [applicationId])
+      const fillOpeningFixture = new FillOpeningsFixture(api, query, group, [openingId], [[applicationId]], true)
       await new FixtureRunner(fillOpeningFixture).runWithQueryNodeChecks()
 
       debug('Done')

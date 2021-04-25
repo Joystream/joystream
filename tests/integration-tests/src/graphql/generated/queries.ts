@@ -4,6 +4,7 @@ import gql from 'graphql-tag'
 export type BlockFieldsFragment = { number: number; timestamp: any; network: Types.Network }
 
 export type EventFieldsFragment = {
+  id: string
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
   type: Types.EventType
@@ -307,6 +308,7 @@ export type WorkingGroupMetadataFieldsFragment = {
   about?: Types.Maybe<string>
   description?: Types.Maybe<string>
   setAtBlock: BlockFieldsFragment
+  setInEvent: { event: EventFieldsFragment }
 }
 
 export type OpeningFieldsFragment = {
@@ -317,7 +319,7 @@ export type OpeningFieldsFragment = {
   unstakingPeriod: number
   rewardPerBlock: any
   createdAt: any
-  group: { name: string; leader?: Types.Maybe<{ runtimeId: number }> }
+  group: { name: string }
   applications: Array<ApplicationBasicFieldsFragment>
   status:
     | OpeningStatusFields_OpeningStatusOpen_Fragment
@@ -332,6 +334,12 @@ export type GetOpeningByIdQueryVariables = Types.Exact<{
 }>
 
 export type GetOpeningByIdQuery = { workingGroupOpeningByUniqueInput?: Types.Maybe<OpeningFieldsFragment> }
+
+export type GetOpeningsByIdsQueryVariables = Types.Exact<{
+  openingIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetOpeningsByIdsQuery = { workingGroupOpenings: Array<OpeningFieldsFragment> }
 
 export type ApplicationFieldsFragment = {
   createdAt: any
@@ -351,12 +359,18 @@ export type GetApplicationByIdQueryVariables = Types.Exact<{
 
 export type GetApplicationByIdQuery = { workingGroupApplicationByUniqueInput?: Types.Maybe<ApplicationFieldsFragment> }
 
+export type GetApplicationsByIdsQueryVariables = Types.Exact<{
+  applicationIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetApplicationsByIdsQuery = { workingGroupApplications: Array<ApplicationFieldsFragment> }
+
 export type WorkingGroupFieldsFragment = {
   id: string
   name: string
   budget: any
   metadata?: Types.Maybe<WorkingGroupMetadataFieldsFragment>
-  leader?: Types.Maybe<{ id: string }>
+  leader?: Types.Maybe<{ id: string; runtimeId: number }>
 }
 
 export type GetWorkingGroupByNameQueryVariables = Types.Exact<{
@@ -374,29 +388,30 @@ export type UpcomingOpeningFieldsFragment = {
   group: { name: string }
   metadata: OpeningMetadataFieldsFragment
   createdAtBlock: BlockFieldsFragment
+  createdInEvent: { id: string }
 }
 
-export type GetUpcomingOpeningByCreatedInEventIdQueryVariables = Types.Exact<{
-  createdInEventId: Types.Scalars['ID']
+export type GetUpcomingOpeningByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
 }>
 
-export type GetUpcomingOpeningByCreatedInEventIdQuery = {
+export type GetUpcomingOpeningByIdQuery = {
+  upcomingWorkingGroupOpeningByUniqueInput?: Types.Maybe<UpcomingOpeningFieldsFragment>
+}
+
+export type GetUpcomingOpeningsByCreatedInEventIdsQueryVariables = Types.Exact<{
+  createdInEventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetUpcomingOpeningsByCreatedInEventIdsQuery = {
   upcomingWorkingGroupOpenings: Array<UpcomingOpeningFieldsFragment>
 }
 
-export type GetWorkingGroupMetadataSnapshotAtQueryVariables = Types.Exact<{
+export type GetWorkingGroupMetadataSnapshotsByTimeAscQueryVariables = Types.Exact<{
   groupId: Types.Scalars['ID']
-  timestamp: Types.Scalars['DateTime']
 }>
 
-export type GetWorkingGroupMetadataSnapshotAtQuery = { workingGroupMetadata: Array<WorkingGroupMetadataFieldsFragment> }
-
-export type GetWorkingGroupMetadataSnapshotBeforeQueryVariables = Types.Exact<{
-  groupId: Types.Scalars['ID']
-  timestamp: Types.Scalars['DateTime']
-}>
-
-export type GetWorkingGroupMetadataSnapshotBeforeQuery = {
+export type GetWorkingGroupMetadataSnapshotsByTimeAscQuery = {
   workingGroupMetadata: Array<WorkingGroupMetadataFieldsFragment>
 }
 
@@ -408,11 +423,11 @@ export type AppliedOnOpeningEventFieldsFragment = {
   application: { id: string; runtimeId: number }
 }
 
-export type GetAppliedOnOpeningEventsByEventIdQueryVariables = Types.Exact<{
-  eventId: Types.Scalars['ID']
+export type GetAppliedOnOpeningEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetAppliedOnOpeningEventsByEventIdQuery = {
+export type GetAppliedOnOpeningEventsByEventIdsQuery = {
   appliedOnOpeningEvents: Array<AppliedOnOpeningEventFieldsFragment>
 }
 
@@ -423,11 +438,11 @@ export type OpeningAddedEventFieldsFragment = {
   opening: { id: string; runtimeId: number }
 }
 
-export type GetOpeningAddedEventsByEventIdQueryVariables = Types.Exact<{
-  eventId: Types.Scalars['ID']
+export type GetOpeningAddedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetOpeningAddedEventsByEventIdQuery = { openingAddedEvents: Array<OpeningAddedEventFieldsFragment> }
+export type GetOpeningAddedEventsByEventIdsQuery = { openingAddedEvents: Array<OpeningAddedEventFieldsFragment> }
 
 export type OpeningFilledEventFieldsFragment = {
   id: string
@@ -437,11 +452,11 @@ export type OpeningFilledEventFieldsFragment = {
   workersHired: Array<WorkerFieldsFragment>
 }
 
-export type GetOpeningFilledEventsByEventIdQueryVariables = Types.Exact<{
-  eventId: Types.Scalars['ID']
+export type GetOpeningFilledEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetOpeningFilledEventsByEventIdQuery = { openingFilledEvents: Array<OpeningFilledEventFieldsFragment> }
+export type GetOpeningFilledEventsByEventIdsQuery = { openingFilledEvents: Array<OpeningFilledEventFieldsFragment> }
 
 export type ApplicationWithdrawnEventFieldsFragment = {
   id: string
@@ -450,11 +465,11 @@ export type ApplicationWithdrawnEventFieldsFragment = {
   application: { id: string; runtimeId: number }
 }
 
-export type GetApplicationWithdrawnEventsByEventIdQueryVariables = Types.Exact<{
-  eventId: Types.Scalars['ID']
+export type GetApplicationWithdrawnEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetApplicationWithdrawnEventsByEventIdQuery = {
+export type GetApplicationWithdrawnEventsByEventIdsQuery = {
   applicationWithdrawnEvents: Array<ApplicationWithdrawnEventFieldsFragment>
 }
 
@@ -465,11 +480,11 @@ export type OpeningCanceledEventFieldsFragment = {
   opening: { id: string; runtimeId: number }
 }
 
-export type GetOpeningCancelledEventsByEventIdQueryVariables = Types.Exact<{
-  eventId: Types.Scalars['ID']
+export type GetOpeningCancelledEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetOpeningCancelledEventsByEventIdQuery = {
+export type GetOpeningCancelledEventsByEventIdsQuery = {
   openingCanceledEvents: Array<OpeningCanceledEventFieldsFragment>
 }
 
@@ -485,11 +500,11 @@ export type StatusTextChangedEventFieldsFragment = {
     | { __typename: 'InvalidActionMetadata'; reason: string }
 }
 
-export type GetStatusTextChangedEventsByEventIdQueryVariables = Types.Exact<{
-  eventId: Types.Scalars['ID']
+export type GetStatusTextChangedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetStatusTextChangedEventsByEventIdQuery = {
+export type GetStatusTextChangedEventsByEventIdsQuery = {
   statusTextChangedEvents: Array<StatusTextChangedEventFieldsFragment>
 }
 
@@ -548,6 +563,7 @@ export const MembershipSystemSnapshotFields = gql`
 `
 export const EventFields = gql`
   fragment EventFields on Event {
+    id
     inBlock {
       ...BlockFields
     }
@@ -785,9 +801,6 @@ export const OpeningFields = gql`
     runtimeId
     group {
       name
-      leader {
-        runtimeId
-      }
     }
     applications {
       ...ApplicationBasicFields
@@ -850,8 +863,14 @@ export const WorkingGroupMetadataFields = gql`
     setAtBlock {
       ...BlockFields
     }
+    setInEvent {
+      event {
+        ...EventFields
+      }
+    }
   }
   ${BlockFields}
+  ${EventFields}
 `
 export const WorkingGroupFields = gql`
   fragment WorkingGroupFields on WorkingGroup {
@@ -862,6 +881,7 @@ export const WorkingGroupFields = gql`
     }
     leader {
       id
+      runtimeId
     }
     budget
   }
@@ -881,6 +901,9 @@ export const UpcomingOpeningFields = gql`
     rewardPerBlock
     createdAtBlock {
       ...BlockFields
+    }
+    createdInEvent {
+      id
     }
     createdAt
   }
@@ -1164,9 +1187,25 @@ export const GetOpeningById = gql`
   }
   ${OpeningFields}
 `
+export const GetOpeningsByIds = gql`
+  query getOpeningsByIds($openingIds: [ID!]) {
+    workingGroupOpenings(where: { id_in: $openingIds }) {
+      ...OpeningFields
+    }
+  }
+  ${OpeningFields}
+`
 export const GetApplicationById = gql`
   query getApplicationById($applicationId: ID!) {
     workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
+      ...ApplicationFields
+    }
+  }
+  ${ApplicationFields}
+`
+export const GetApplicationsByIds = gql`
+  query getApplicationsByIds($applicationIds: [ID!]) {
+    workingGroupApplications(where: { id_in: $applicationIds }) {
       ...ApplicationFields
     }
   }
@@ -1180,73 +1219,73 @@ export const GetWorkingGroupByName = gql`
   }
   ${WorkingGroupFields}
 `
-export const GetUpcomingOpeningByCreatedInEventId = gql`
-  query getUpcomingOpeningByCreatedInEventId($createdInEventId: ID!) {
-    upcomingWorkingGroupOpenings(where: { createdInEventId_eq: $createdInEventId }) {
+export const GetUpcomingOpeningById = gql`
+  query getUpcomingOpeningById($id: ID!) {
+    upcomingWorkingGroupOpeningByUniqueInput(where: { id: $id }) {
       ...UpcomingOpeningFields
     }
   }
   ${UpcomingOpeningFields}
 `
-export const GetWorkingGroupMetadataSnapshotAt = gql`
-  query getWorkingGroupMetadataSnapshotAt($groupId: ID!, $timestamp: DateTime!) {
-    workingGroupMetadata(where: { createdAt_eq: $timestamp, groupId_eq: $groupId }, orderBy: createdAt_DESC, limit: 1) {
+export const GetUpcomingOpeningsByCreatedInEventIds = gql`
+  query getUpcomingOpeningsByCreatedInEventIds($createdInEventIds: [ID!]) {
+    upcomingWorkingGroupOpenings(where: { createdInEventId_in: $createdInEventIds }) {
+      ...UpcomingOpeningFields
+    }
+  }
+  ${UpcomingOpeningFields}
+`
+export const GetWorkingGroupMetadataSnapshotsByTimeAsc = gql`
+  query getWorkingGroupMetadataSnapshotsByTimeAsc($groupId: ID!) {
+    workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC) {
       ...WorkingGroupMetadataFields
     }
   }
   ${WorkingGroupMetadataFields}
 `
-export const GetWorkingGroupMetadataSnapshotBefore = gql`
-  query getWorkingGroupMetadataSnapshotBefore($groupId: ID!, $timestamp: DateTime!) {
-    workingGroupMetadata(where: { createdAt_lt: $timestamp, groupId_eq: $groupId }, orderBy: createdAt_DESC, limit: 1) {
-      ...WorkingGroupMetadataFields
-    }
-  }
-  ${WorkingGroupMetadataFields}
-`
-export const GetAppliedOnOpeningEventsByEventId = gql`
-  query getAppliedOnOpeningEventsByEventId($eventId: ID!) {
-    appliedOnOpeningEvents(where: { eventId_eq: $eventId }) {
+export const GetAppliedOnOpeningEventsByEventIds = gql`
+  query getAppliedOnOpeningEventsByEventIds($eventIds: [ID!]) {
+    appliedOnOpeningEvents(where: { eventId_in: $eventIds }) {
       ...AppliedOnOpeningEventFields
     }
   }
   ${AppliedOnOpeningEventFields}
 `
-export const GetOpeningAddedEventsByEventId = gql`
-  query getOpeningAddedEventsByEventId($eventId: ID!) {
-    openingAddedEvents(where: { eventId_eq: $eventId }) {
+export const GetOpeningAddedEventsByEventIds = gql`
+  query getOpeningAddedEventsByEventIds($eventIds: [ID!]) {
+    openingAddedEvents(where: { eventId_in: $eventIds }) {
       ...OpeningAddedEventFields
     }
   }
   ${OpeningAddedEventFields}
 `
-export const GetOpeningFilledEventsByEventId = gql`
-  query getOpeningFilledEventsByEventId($eventId: ID!) {
-    openingFilledEvents(where: { eventId_eq: $eventId }) {
+export const GetOpeningFilledEventsByEventIds = gql`
+  query getOpeningFilledEventsByEventIds($eventIds: [ID!]) {
+    openingFilledEvents(where: { eventId_in: $eventIds }) {
       ...OpeningFilledEventFields
     }
   }
   ${OpeningFilledEventFields}
 `
-export const GetApplicationWithdrawnEventsByEventId = gql`
-  query getApplicationWithdrawnEventsByEventId($eventId: ID!) {
-    applicationWithdrawnEvents(where: { eventId_eq: $eventId }) {
+export const GetApplicationWithdrawnEventsByEventIds = gql`
+  query getApplicationWithdrawnEventsByEventIds($eventIds: [ID!]) {
+    applicationWithdrawnEvents(where: { eventId_in: $eventIds }) {
       ...ApplicationWithdrawnEventFields
     }
   }
   ${ApplicationWithdrawnEventFields}
 `
-export const GetOpeningCancelledEventsByEventId = gql`
-  query getOpeningCancelledEventsByEventId($eventId: ID!) {
-    openingCanceledEvents(where: { eventId_eq: $eventId }) {
+export const GetOpeningCancelledEventsByEventIds = gql`
+  query getOpeningCancelledEventsByEventIds($eventIds: [ID!]) {
+    openingCanceledEvents(where: { eventId_in: $eventIds }) {
       ...OpeningCanceledEventFields
     }
   }
   ${OpeningCanceledEventFields}
 `
-export const GetStatusTextChangedEventsByEventId = gql`
-  query getStatusTextChangedEventsByEventId($eventId: ID!) {
-    statusTextChangedEvents(where: { eventId_eq: $eventId }) {
+export const GetStatusTextChangedEventsByEventIds = gql`
+  query getStatusTextChangedEventsByEventIds($eventIds: [ID!]) {
+    statusTextChangedEvents(where: { eventId_in: $eventIds }) {
       ...StatusTextChangedEventFields
     }
   }

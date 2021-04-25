@@ -130,6 +130,27 @@ export class Api {
     return this.sender.signAndSend(tx, sender)
   }
 
+  public async sendExtrinsicsAndGetEvents<EventDetailsType extends EventDetails>(
+    txs: SubmittableExtrinsic<'promise'>[],
+    sender: AccountId | string | AccountId[] | string[],
+    getEvent: (result: ISubmittableResult) => Promise<EventDetailsType>,
+    preserveOrder = false
+  ): Promise<EventDetailsType[]> {
+    let results: ISubmittableResult[] = []
+    if (preserveOrder) {
+      for (const i in txs) {
+        const tx = txs[i]
+        const result = await this.sender.signAndSend(tx, Array.isArray(sender) ? sender[i] : sender)
+        results.push(result)
+      }
+    } else {
+      results = await Promise.all(
+        txs.map((tx, i) => this.sender.signAndSend(tx, Array.isArray(sender) ? sender[i] : sender))
+      )
+    }
+    return Promise.all(results.map((result) => getEvent(result)))
+  }
+
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
     const sudo = await this.api.query.sudo.key()
     return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
@@ -233,6 +254,26 @@ export class Api {
     return Promise.all(
       destinations.map((account) => this.transferBalance({ from: this.treasuryAccount, to: account, amount }))
     )
+  }
+
+  public async prepareAccountsForFeeExpenses(
+    accountOrAccounts: string | string[],
+    extrinsics: SubmittableExtrinsic<'promise'>[]
+  ): Promise<void> {
+    const fees = await Promise.all(
+      extrinsics.map((tx, i) =>
+        this.estimateTxFee(tx, Array.isArray(accountOrAccounts) ? accountOrAccounts[i] : accountOrAccounts)
+      )
+    )
+
+    if (Array.isArray(accountOrAccounts)) {
+      await Promise.all(fees.map((fee, i) => this.treasuryTransferBalance(accountOrAccounts[i], fee)))
+    } else {
+      await this.treasuryTransferBalance(
+        accountOrAccounts,
+        fees.reduce((a, b) => a.add(b), new BN(0))
+      )
+    }
   }
 
   public async getMembershipFee(): Promise<BN> {

@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import { CreateUpcomingOpeningFixture, RemoveUpcomingOpeningFixture } from '../../fixtures/workingGroupsModule'
+import { CreateUpcomingOpeningsFixture, RemoveUpcomingOpeningsFixture } from '../../fixtures/workingGroupsModule'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
@@ -12,11 +12,13 @@ export default async function upcomingOpenings({ api, query, env }: FlowProps): 
       debug('Started')
       api.enableDebugTxLogs()
 
-      const createUpcomingOpeningFixture = new CreateUpcomingOpeningFixture(api, query, group)
+      const createUpcomingOpeningFixture = new CreateUpcomingOpeningsFixture(api, query, group)
       await new FixtureRunner(createUpcomingOpeningFixture).runWithQueryNodeChecks()
-      const createdUpcomingOpeningId = createUpcomingOpeningFixture.getCreatedUpcomingOpeningId()
+      const [createdUpcomingOpeningId] = createUpcomingOpeningFixture.getCreatedUpcomingOpeningIds()
 
-      const removeUpcomingOpeningFixture = new RemoveUpcomingOpeningFixture(api, query, group, createdUpcomingOpeningId)
+      const removeUpcomingOpeningFixture = new RemoveUpcomingOpeningsFixture(api, query, group, [
+        createdUpcomingOpeningId,
+      ])
       await new FixtureRunner(removeUpcomingOpeningFixture).runWithQueryNodeChecks()
 
       debug('Done')

@@ -5,6 +5,7 @@ fragment BlockFields on Block {
 }
 
 fragment EventFields on Event {
+  id
   inBlock {
     ...BlockFields
   }

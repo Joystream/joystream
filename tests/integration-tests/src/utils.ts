@@ -51,4 +51,10 @@ export class Utils {
   public static metadataToBytes(meta: { serializeBinary(): Uint8Array }): Bytes {
     return createType('Bytes', '0x' + Buffer.from(meta.serializeBinary()).toString('hex'))
   }
+
+  public static assert(condition: any, msg?: string): asserts condition {
+    if (!condition) {
+      throw new Error(msg || 'Assertion failed')
+    }
+  }
 }

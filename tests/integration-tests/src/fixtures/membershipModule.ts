@@ -1,9 +1,8 @@
 import { Api } from '../Api'
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { BaseFixture } from '../Fixture'
+import { BaseQueryNodeFixture } from '../Fixture'
 import { MemberId } from '@joystream/types/common'
-import Debugger from 'debug'
 import { QueryNodeApi } from '../QueryNodeApi'
 import { BuyMembershipParameters, Membership } from '@joystream/types/members'
 import { EventType, MembershipEntryMethod } from '../graphql/generated/schema'
@@ -36,7 +35,8 @@ import {
 const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
 
 // common code for fixtures
-abstract class MembershipFixture extends BaseFixture {
+// TODO: Refactor to use StandardizedFixture?
+abstract class BaseMembershipFixture extends BaseQueryNodeFixture {
   generateParamsFromAccountId(accountId: string): CreateInterface<BuyMembershipParameters> {
     const metadata = new MembershipMetadata()
     metadata.setName(`name${accountId.substring(0, 14)}`)
@@ -49,45 +49,23 @@ abstract class MembershipFixture extends BaseFixture {
       metadata: createType('Bytes', '0x' + Buffer.from(metadata.serializeBinary()).toString('hex')),
     }
   }
-
-  generateBuyMembershipTx(accountId: string): SubmittableExtrinsic<'promise'> {
-    return this.api.tx.members.buyMembership(this.generateParamsFromAccountId(accountId))
-  }
-
-  generateInviteMemberTx(memberId: MemberId, inviteeAccountId: string): SubmittableExtrinsic<'promise'> {
-    return this.api.tx.members.inviteMember({
-      ...this.generateParamsFromAccountId(inviteeAccountId),
-      inviting_member_id: memberId,
-    })
-  }
-
-  findMatchingQueryNodeEvent<T extends AnyQueryNodeEvent>(eventToFind: EventDetails, queryNodeEvents: T[]) {
-    const { blockNumber, indexInBlock } = eventToFind
-    const qEvent = queryNodeEvents.find(
-      (e) => e.event.inBlock.number === blockNumber && e.event.indexInBlock === indexInBlock
-    )
-    if (!qEvent) {
-      throw new Error(`Could not find matching query-node event (expected ${blockNumber}:${indexInBlock})!`)
-    }
-    return qEvent
-  }
 }
 
-export class BuyMembershipHappyCaseFixture extends MembershipFixture implements BaseFixture {
+export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
   private accounts: string[]
-  private debug: Debugger.Debugger
   private memberIds: MemberId[] = []
-  private query: QueryNodeApi
 
   private extrinsics: SubmittableExtrinsic<'promise'>[] = []
   private events: MembershipBoughtEventDetails[] = []
   private members: Membership[] = []
 
   public constructor(api: Api, query: QueryNodeApi, accounts: string[]) {
-    super(api)
+    super(api, query)
     this.accounts = accounts
-    this.query = query
-    this.debug = Debugger('fixture:BuyMembershipHappyCaseFixture')
+  }
+
+  private generateBuyMembershipTx(accountId: string): SubmittableExtrinsic<'promise'> {
+    return this.api.tx.members.buyMembership(this.generateParamsFromAccountId(accountId))
   }
 
   public getCreatedMembers(): MemberId[] {
@@ -190,12 +168,16 @@ export class BuyMembershipHappyCaseFixture extends MembershipFixture implements 
   }
 }
 
-export class BuyMembershipWithInsufficienFundsFixture extends MembershipFixture implements BaseFixture {
+export class BuyMembershipWithInsufficienFundsFixture extends BaseMembershipFixture {
   private account: string
 
-  public constructor(api: Api, account: string) {
-    super(api)
+  public constructor(api: Api, query: QueryNodeApi, account: string) {
+    super(api, query)
     this.account = account
+  }
+
+  private generateBuyMembershipTx(accountId: string): SubmittableExtrinsic<'promise'> {
+    return this.api.tx.members.buyMembership(this.generateParamsFromAccountId(accountId))
   }
 
   async execute(): Promise<void> {
@@ -232,8 +214,7 @@ export class BuyMembershipWithInsufficienFundsFixture extends MembershipFixture 
 }
 
 // TODO: Add partial update to make sure it works too
-export class UpdateProfileHappyCaseFixture extends MembershipFixture {
-  private query: QueryNodeApi
+export class UpdateProfileHappyCaseFixture extends BaseMembershipFixture {
   private memberContext: MemberContext
   // Update data
   private newName = 'New name'
@@ -244,8 +225,7 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
   private tx?: SubmittableExtrinsic<'promise'>
 
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.memberContext = memberContext
   }
 
@@ -311,8 +291,7 @@ export class UpdateProfileHappyCaseFixture extends MembershipFixture {
   }
 }
 
-export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
-  private query: QueryNodeApi
+export class UpdateAccountsHappyCaseFixture extends BaseMembershipFixture {
   private memberContext: MemberContext
   // Update data
   private newRootAccount: string
@@ -328,8 +307,7 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
     newRootAccount: string,
     newControllerAccount: string
   ) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.memberContext = memberContext
     this.newRootAccount = newRootAccount
     this.newControllerAccount = newControllerAccount
@@ -386,8 +364,7 @@ export class UpdateAccountsHappyCaseFixture extends MembershipFixture {
   }
 }
 
-export class InviteMembersHappyCaseFixture extends MembershipFixture {
-  private query: QueryNodeApi
+export class InviteMembersHappyCaseFixture extends BaseMembershipFixture {
   private inviterContext: MemberContext
   private accounts: string[]
 
@@ -396,10 +373,16 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
   private events: MemberInvitedEventDetails[] = []
 
   public constructor(api: Api, query: QueryNodeApi, inviterContext: MemberContext, accounts: string[]) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.inviterContext = inviterContext
     this.accounts = accounts
+  }
+
+  generateInviteMemberTx(memberId: MemberId, inviteeAccountId: string): SubmittableExtrinsic<'promise'> {
+    return this.api.tx.members.inviteMember({
+      ...this.generateParamsFromAccountId(inviteeAccountId),
+      inviting_member_id: memberId,
+    })
   }
 
   private assertMemberCorrectlyInvited(account: string, qMember: MembershipFieldsFragment | null) {
@@ -504,8 +487,7 @@ export class InviteMembersHappyCaseFixture extends MembershipFixture {
   }
 }
 
-export class TransferInvitesHappyCaseFixture extends MembershipFixture {
-  private query: QueryNodeApi
+export class TransferInvitesHappyCaseFixture extends BaseMembershipFixture {
   private fromContext: MemberContext
   private toContext: MemberContext
   private invitesToTransfer: number
@@ -522,8 +504,7 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
     toContext: MemberContext,
     invitesToTransfer = 2
   ) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.fromContext = fromContext
     this.toContext = toContext
     this.invitesToTransfer = invitesToTransfer
@@ -597,8 +578,7 @@ export class TransferInvitesHappyCaseFixture extends MembershipFixture {
   }
 }
 
-export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
-  private query: QueryNodeApi
+export class AddStakingAccountsHappyCaseFixture extends BaseMembershipFixture {
   private memberContext: MemberContext
   private accounts: string[]
 
@@ -608,8 +588,7 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
   private confirmEvents: EventDetails[] = []
 
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext, accounts: string[]) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.memberContext = memberContext
     this.accounts = accounts
   }
@@ -693,8 +672,7 @@ export class AddStakingAccountsHappyCaseFixture extends MembershipFixture {
   }
 }
 
-export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
-  private query: QueryNodeApi
+export class RemoveStakingAccountsHappyCaseFixture extends BaseMembershipFixture {
   private memberContext: MemberContext
   private accounts: string[]
 
@@ -702,8 +680,7 @@ export class RemoveStakingAccountsHappyCaseFixture extends MembershipFixture {
   private extrinsics: SubmittableExtrinsic<'promise'>[] = []
 
   public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext, accounts: string[]) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.memberContext = memberContext
     this.accounts = accounts
   }
@@ -766,8 +743,7 @@ type MembershipSystemValues = {
   invitedInitialBalance: BN
 }
 
-export class SudoUpdateMembershipSystem extends MembershipFixture {
-  private query: QueryNodeApi
+export class SudoUpdateMembershipSystem extends BaseMembershipFixture {
   private newValues: Partial<MembershipSystemValues>
 
   private events: EventDetails[] = []
@@ -775,8 +751,7 @@ export class SudoUpdateMembershipSystem extends MembershipFixture {
   private extrinsics: SubmittableExtrinsic<'promise'>[] = []
 
   public constructor(api: Api, query: QueryNodeApi, newValues: Partial<MembershipSystemValues>) {
-    super(api)
-    this.query = query
+    super(api, query)
     this.newValues = newValues
   }
 

@@ -2,6 +2,10 @@ import { Api } from './Api'
 import { assert } from 'chai'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchResult } from '@polkadot/types/interfaces/system'
+import { QueryNodeApi } from './QueryNodeApi'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import Debugger from 'debug'
+import { AnyQueryNodeEvent, EventDetails } from './types'
 
 export abstract class BaseFixture {
   protected readonly api: Api
@@ -20,14 +24,6 @@ export abstract class BaseFixture {
   }
 
   abstract execute(): Promise<void>
-
-  // Not abstract for backward compatibility
-  public async runQueryNodeChecks(): Promise<void> {
-    if (!this.executed) {
-      throw new Error('Cannot run query node checks before Fixture is executed')
-    }
-    // Implement in child class!
-  }
 
   // Used by execution implementation to signal failure
   protected error(err: Error): void {
@@ -91,6 +87,70 @@ export abstract class BaseFixture {
   }
 }
 
+export abstract class BaseQueryNodeFixture extends BaseFixture {
+  protected readonly query: QueryNodeApi
+  protected debug: Debugger.Debugger
+
+  constructor(api: Api, query: QueryNodeApi) {
+    super(api)
+    this.query = query
+    this.debug = Debugger(`fixture:${this.constructor.name}`)
+  }
+
+  public async runQueryNodeChecks(): Promise<void> {
+    if (!this.executed) {
+      throw new Error('Cannot run query node checks before Fixture is executed')
+    }
+    // Implement in child class!
+  }
+
+  protected findMatchingQueryNodeEvent<T extends AnyQueryNodeEvent>(
+    eventToFind: EventDetails,
+    queryNodeEvents: T[]
+  ): T {
+    const { blockNumber, indexInBlock } = eventToFind
+    const qEvent = queryNodeEvents.find(
+      (e) => e.event.inBlock.number === blockNumber && e.event.indexInBlock === indexInBlock
+    )
+    if (!qEvent) {
+      throw new Error(`Could not find matching query-node event (expected ${blockNumber}:${indexInBlock})!`)
+    }
+    return qEvent
+  }
+}
+
+export abstract class StandardizedFixture extends BaseQueryNodeFixture {
+  protected extrinsics: SubmittableExtrinsic<'promise'>[] = []
+  protected events: EventDetails[] = []
+  protected areExtrinsicsOrderSensitive = false
+
+  protected abstract getSignerAccountOrAccounts(): Promise<string | string[]>
+  protected abstract getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]>
+  protected abstract getEventFromResult(result: ISubmittableResult): Promise<EventDetails>
+  protected abstract assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void
+
+  protected assertQueryNodeEventsAreValid(qEvents: AnyQueryNodeEvent[]): void {
+    this.events.forEach((e, i) => {
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
+      assert.equal(qEvent.event.inExtrinsic, this.extrinsics[i].hash.toString())
+      assert.equal(qEvent.event.inBlock.timestamp, e.blockTimestamp)
+      this.assertQueryNodeEventIsValid(qEvent, i)
+    })
+  }
+
+  public async execute(): Promise<void> {
+    const accountOrAccounts = await this.getSignerAccountOrAccounts()
+    this.extrinsics = await this.getExtrinsics()
+    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics)
+    this.events = await this.api.sendExtrinsicsAndGetEvents(
+      this.extrinsics,
+      accountOrAccounts,
+      (r) => this.getEventFromResult(r),
+      this.areExtrinsicsOrderSensitive
+    )
+  }
+}
+
 // Runs a fixture and measures how long it took to run
 // Ensures fixture only runs once, and asserts that it doesn't fail
 export class FixtureRunner {
@@ -118,6 +178,9 @@ export class FixtureRunner {
   }
 
   public async runQueryNodeChecks(): Promise<void> {
+    if (!(this.fixture instanceof BaseQueryNodeFixture)) {
+      throw new Error('Tried to run query node checks for non-query-node fixture!')
+    }
     if (this.queryNodeChecksRan) {
       throw new Error('Fixture query node checks already ran')
     }
