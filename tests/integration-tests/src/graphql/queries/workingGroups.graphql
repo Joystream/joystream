@@ -116,13 +116,13 @@ fragment OpeningFields on WorkingGroupOpening {
   createdAt
 }
 
-query getOpeningById ($openingId: ID!) {
+query getOpeningById($openingId: ID!) {
   workingGroupOpeningByUniqueInput(where: { id: $openingId }) {
     ...OpeningFields
   }
 }
 
-query getOpeningsByIds ($openingIds: [ID!]) {
+query getOpeningsByIds($openingIds: [ID!]) {
   workingGroupOpenings(where: { id_in: $openingIds }) {
     ...OpeningFields
   }
@@ -153,13 +153,13 @@ fragment ApplicationFields on WorkingGroupApplication {
   stake
 }
 
-query getApplicationById ($applicationId: ID!) {
+query getApplicationById($applicationId: ID!) {
   workingGroupApplicationByUniqueInput(where: { id: $applicationId }) {
     ...ApplicationFields
   }
 }
 
-query getApplicationsByIds ($applicationIds: [ID!]) {
+query getApplicationsByIds($applicationIds: [ID!]) {
   workingGroupApplications(where: { id_in: $applicationIds }) {
     ...ApplicationFields
   }
@@ -178,7 +178,7 @@ fragment WorkingGroupFields on WorkingGroup {
   budget
 }
 
-query getWorkingGroupByName ($name: String!) {
+query getWorkingGroupByName($name: String!) {
   workingGroupByUniqueInput(where: { name: $name }) {
     ...WorkingGroupFields
   }
@@ -204,20 +204,20 @@ fragment UpcomingOpeningFields on UpcomingWorkingGroupOpening {
   createdAt
 }
 
-query getUpcomingOpeningById ($id: ID!) {
+query getUpcomingOpeningById($id: ID!) {
   upcomingWorkingGroupOpeningByUniqueInput(where: { id: $id }) {
     ...UpcomingOpeningFields
   }
 }
 
-query getUpcomingOpeningsByCreatedInEventIds ($createdInEventIds: [ID!]) {
+query getUpcomingOpeningsByCreatedInEventIds($createdInEventIds: [ID!]) {
   upcomingWorkingGroupOpenings(where: { createdInEventId_in: $createdInEventIds }) {
     ...UpcomingOpeningFields
   }
 }
 
-query getWorkingGroupMetadataSnapshotsByTimeAsc ($groupId: ID!) {
-  workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC ) {
+query getWorkingGroupMetadataSnapshotsByTimeAsc($groupId: ID!) {
+  workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC) {
     ...WorkingGroupMetadataFields
   }
 }
