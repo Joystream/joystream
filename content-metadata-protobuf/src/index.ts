@@ -1,6 +1,6 @@
-// Some helpers for constructing known licences
-import licences from './licenses'
-export { licences }
+// Some helpers for constructing known licenses
+import licenses from './licenses'
+export { licenses }
 
 // protobuf message constructors
 export * from '../compiled/proto/Video_pb'
