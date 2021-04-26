@@ -1,5 +1,5 @@
 import { JoyStructDecorated, MemberId, Hash, PostId } from './common'
-import { Text, Option, u64 } from '@polkadot/types'
+import { Text, Option, u64, bool } from '@polkadot/types'
 
 export class ParticipantId extends MemberId {}
 export class Title extends Text {}
@@ -13,6 +13,12 @@ export class Reply extends JoyStructDecorated({
   parent_id: PostId,
 }) {}
 
+export class ReplyToDelete extends JoyStructDecorated({
+  post_id: PostId,
+  reply_id: ReplyId,
+  hide: bool,
+}) {}
+
 export default {
   ParticipantId,
   Title,
@@ -20,4 +26,5 @@ export default {
   UpdatedBody,
   ReplyId,
   Reply,
+  ReplyToDelete,
 }

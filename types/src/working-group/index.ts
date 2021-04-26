@@ -169,6 +169,12 @@ export class Opening
   })
   implements IOpening {}
 
+// Reward payment type enum.
+export class RewardPaymentType extends JoyEnum({
+  MissedReward: Null,
+  RegularReward: Null,
+}) {}
+
 export const workingGroupTypes: RegistryTypes = {
   ApplicationId,
   Application,
@@ -186,6 +192,7 @@ export const workingGroupTypes: RegistryTypes = {
   OpeningType,
   ApplyOnOpeningParameters,
   Penalty,
+  RewardPaymentType,
 }
 
 export default workingGroupTypes
