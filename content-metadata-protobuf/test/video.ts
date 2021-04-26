@@ -78,7 +78,7 @@ describe('Video Metadata', () => {
     })
   })
 
-  it('Message: Licence', () => {
+  it('Message: License', () => {
     const license = new License()
 
     const code = 1000

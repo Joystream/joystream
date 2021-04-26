@@ -169,7 +169,7 @@ export class PersonActor extends JoyEnum({
   Curator: CuratorId,
 }) {}
 
-export const contentDirectoryTypes = {
+export const contentTypes = {
   CuratorId,
   CuratorGroupId,
   CuratorGroup,
@@ -213,4 +213,4 @@ export const contentDirectoryTypes = {
   IsCensored,
 }
 
-export default contentDirectoryTypes
+export default contentTypes
