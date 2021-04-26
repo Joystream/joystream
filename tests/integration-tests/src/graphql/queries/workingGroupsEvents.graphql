@@ -136,3 +136,66 @@ query getStatusTextChangedEventsByEventIds($eventIds: [ID!]) {
     ...StatusTextChangedEventFields
   }
 }
+
+fragment WorkerRoleAccountUpdatedEventFields on WorkerRoleAccountUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  newRoleAccount
+}
+
+query getWorkerRoleAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
+  workerRoleAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    ...WorkerRoleAccountUpdatedEventFields
+  }
+}
+
+fragment WorkerRewardAccountUpdatedEventFields on WorkerRewardAccountUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  newRewardAccount
+}
+
+query getWorkerRewardAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
+  workerRewardAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    ...WorkerRewardAccountUpdatedEventFields
+  }
+}
+
+fragment StakeIncreasedEventFields on StakeIncreasedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  amount
+}
+
+query getStakeIncreasedEventsByEventIds($eventIds: [ID!]) {
+  stakeIncreasedEvents(where: { eventId_in: $eventIds }) {
+    ...StakeIncreasedEventFields
+  }
+}

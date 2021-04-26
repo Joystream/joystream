@@ -1,7 +1,7 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
 import { MemberId } from '@joystream/types/common'
 import Debugger from 'debug'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
 import {
   GetMemberByIdQuery,
@@ -116,6 +116,22 @@ import {
   GetApplicationsByIdsQuery,
   GetApplicationsByIdsQueryVariables,
   GetApplicationsByIds,
+  GetWorkerRoleAccountUpdatedEventsByEventIdsQuery,
+  GetWorkerRoleAccountUpdatedEventsByEventIdsQueryVariables,
+  WorkerRoleAccountUpdatedEventFieldsFragment,
+  GetWorkerRoleAccountUpdatedEventsByEventIds,
+  GetWorkerRewardAccountUpdatedEventsByEventIdsQuery,
+  GetWorkerRewardAccountUpdatedEventsByEventIdsQueryVariables,
+  WorkerRewardAccountUpdatedEventFieldsFragment,
+  GetWorkerRewardAccountUpdatedEventsByEventIds,
+  StakeIncreasedEventFieldsFragment,
+  GetStakeIncreasedEventsByEventIdsQuery,
+  GetStakeIncreasedEventsByEventIdsQueryVariables,
+  GetStakeIncreasedEventsByEventIds,
+  WorkerFieldsFragment,
+  GetWorkersByRuntimeIdsQuery,
+  GetWorkersByRuntimeIdsQueryVariables,
+  GetWorkersByRuntimeIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -483,5 +499,41 @@ export class QueryNodeApi {
       GetWorkingGroupMetadataSnapshotsByTimeAscQuery,
       GetWorkingGroupMetadataSnapshotsByTimeAscQueryVariables
     >(GetWorkingGroupMetadataSnapshotsByTimeAsc, { groupId }, 'workingGroupMetadata')
+  }
+
+  public async getWorkerRoleAccountUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<WorkerRoleAccountUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetWorkerRoleAccountUpdatedEventsByEventIdsQuery,
+      GetWorkerRoleAccountUpdatedEventsByEventIdsQueryVariables
+    >(GetWorkerRoleAccountUpdatedEventsByEventIds, { eventIds }, 'workerRoleAccountUpdatedEvents')
+  }
+
+  public async getWorkerRewardAccountUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<WorkerRewardAccountUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetWorkerRewardAccountUpdatedEventsByEventIdsQuery,
+      GetWorkerRewardAccountUpdatedEventsByEventIdsQueryVariables
+    >(GetWorkerRewardAccountUpdatedEventsByEventIds, { eventIds }, 'workerRewardAccountUpdatedEvents')
+  }
+
+  public async getStakeIncreasedEvents(events: EventDetails[]): Promise<StakeIncreasedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetStakeIncreasedEventsByEventIdsQuery,
+      GetStakeIncreasedEventsByEventIdsQueryVariables
+    >(GetStakeIncreasedEventsByEventIds, { eventIds }, 'stakeIncreasedEvents')
+  }
+
+  public async getWorkersByIds(ids: WorkerId[], group: WorkingGroupModuleName): Promise<WorkerFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetWorkersByRuntimeIdsQuery, GetWorkersByRuntimeIdsQueryVariables>(
+      GetWorkersByRuntimeIds,
+      { workerIds: ids.map((id) => id.toNumber()), groupId: group },
+      'workers'
+    )
   }
 }

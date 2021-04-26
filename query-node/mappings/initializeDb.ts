@@ -34,6 +34,7 @@ async function initWorkingGroups(api: ApiPromise, db: DatabaseManager) {
     groupNames.map(async (groupName) => {
       const budget = await api.query[groupName].budget.at<BalanceOf>(api.genesisHash)
       return new WorkingGroup({
+        id: groupName,
         name: groupName,
         workers: [],
         openings: [],

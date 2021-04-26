@@ -96,6 +96,9 @@ type WorkingGroupMetadata @entity {
 }
 
 type WorkingGroup @entity {
+  "Working group id (currently === name)"
+  id: ID!
+
   "Working group name"
   name: String! @unique
 

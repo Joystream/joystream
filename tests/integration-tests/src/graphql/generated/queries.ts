@@ -415,6 +415,13 @@ export type GetWorkingGroupMetadataSnapshotsByTimeAscQuery = {
   workingGroupMetadata: Array<WorkingGroupMetadataFieldsFragment>
 }
 
+export type GetWorkersByRuntimeIdsQueryVariables = Types.Exact<{
+  workerIds?: Types.Maybe<Array<Types.Scalars['Int']> | Types.Scalars['Int']>
+  groupId: Types.Scalars['ID']
+}>
+
+export type GetWorkersByRuntimeIdsQuery = { workers: Array<WorkerFieldsFragment> }
+
 export type AppliedOnOpeningEventFieldsFragment = {
   id: string
   event: EventFieldsFragment
@@ -507,6 +514,52 @@ export type GetStatusTextChangedEventsByEventIdsQueryVariables = Types.Exact<{
 export type GetStatusTextChangedEventsByEventIdsQuery = {
   statusTextChangedEvents: Array<StatusTextChangedEventFieldsFragment>
 }
+
+export type WorkerRoleAccountUpdatedEventFieldsFragment = {
+  id: string
+  newRoleAccount: string
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetWorkerRoleAccountUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetWorkerRoleAccountUpdatedEventsByEventIdsQuery = {
+  workerRoleAccountUpdatedEvents: Array<WorkerRoleAccountUpdatedEventFieldsFragment>
+}
+
+export type WorkerRewardAccountUpdatedEventFieldsFragment = {
+  id: string
+  newRewardAccount: string
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetWorkerRewardAccountUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetWorkerRewardAccountUpdatedEventsByEventIdsQuery = {
+  workerRewardAccountUpdatedEvents: Array<WorkerRewardAccountUpdatedEventFieldsFragment>
+}
+
+export type StakeIncreasedEventFieldsFragment = {
+  id: string
+  amount: any
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetStakeIncreasedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetStakeIncreasedEventsByEventIdsQuery = { stakeIncreasedEvents: Array<StakeIncreasedEventFieldsFragment> }
 
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
@@ -1059,6 +1112,57 @@ export const StatusTextChangedEventFields = gql`
   }
   ${EventFields}
 `
+export const WorkerRoleAccountUpdatedEventFields = gql`
+  fragment WorkerRoleAccountUpdatedEventFields on WorkerRoleAccountUpdatedEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    newRoleAccount
+  }
+  ${EventFields}
+`
+export const WorkerRewardAccountUpdatedEventFields = gql`
+  fragment WorkerRewardAccountUpdatedEventFields on WorkerRewardAccountUpdatedEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    newRewardAccount
+  }
+  ${EventFields}
+`
+export const StakeIncreasedEventFields = gql`
+  fragment StakeIncreasedEventFields on StakeIncreasedEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    amount
+  }
+  ${EventFields}
+`
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {
     membershipByUniqueInput(where: { id: $id }) {
@@ -1243,6 +1347,14 @@ export const GetWorkingGroupMetadataSnapshotsByTimeAsc = gql`
   }
   ${WorkingGroupMetadataFields}
 `
+export const GetWorkersByRuntimeIds = gql`
+  query getWorkersByRuntimeIds($workerIds: [Int!], $groupId: ID!) {
+    workers(where: { runtimeId_in: $workerIds, groupId_eq: $groupId }) {
+      ...WorkerFields
+    }
+  }
+  ${WorkerFields}
+`
 export const GetAppliedOnOpeningEventsByEventIds = gql`
   query getAppliedOnOpeningEventsByEventIds($eventIds: [ID!]) {
     appliedOnOpeningEvents(where: { eventId_in: $eventIds }) {
@@ -1290,4 +1402,28 @@ export const GetStatusTextChangedEventsByEventIds = gql`
     }
   }
   ${StatusTextChangedEventFields}
+`
+export const GetWorkerRoleAccountUpdatedEventsByEventIds = gql`
+  query getWorkerRoleAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
+    workerRoleAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+      ...WorkerRoleAccountUpdatedEventFields
+    }
+  }
+  ${WorkerRoleAccountUpdatedEventFields}
+`
+export const GetWorkerRewardAccountUpdatedEventsByEventIds = gql`
+  query getWorkerRewardAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
+    workerRewardAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+      ...WorkerRewardAccountUpdatedEventFields
+    }
+  }
+  ${WorkerRewardAccountUpdatedEventFields}
+`
+export const GetStakeIncreasedEventsByEventIds = gql`
+  query getStakeIncreasedEventsByEventIds($eventIds: [ID!]) {
+    stakeIncreasedEvents(where: { eventId_in: $eventIds }) {
+      ...StakeIncreasedEventFields
+    }
+  }
+  ${StakeIncreasedEventFields}
 `

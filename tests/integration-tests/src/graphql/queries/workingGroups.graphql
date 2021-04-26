@@ -221,3 +221,9 @@ query getWorkingGroupMetadataSnapshotsByTimeAsc($groupId: ID!) {
     ...WorkingGroupMetadataFields
   }
 }
+
+query getWorkersByRuntimeIds($workerIds: [Int!], $groupId: ID!) {
+  workers(where: { runtimeId_in: $workerIds, groupId_eq: $groupId }) {
+    ...WorkerFields
+  }
+}

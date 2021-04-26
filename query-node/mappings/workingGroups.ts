@@ -50,6 +50,9 @@ import {
   InvalidActionMetadata,
   WorkingGroupMetadataActionResult,
   UpcomingOpeningAdded,
+  WorkerRoleAccountUpdatedEvent,
+  WorkerRewardAccountUpdatedEvent,
+  StakeIncreasedEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -93,6 +96,15 @@ async function getApplication(db: DatabaseManager, applicationDbId: string): Pro
   }
 
   return application
+}
+
+async function getWorker(db: DatabaseManager, workerDbId: string): Promise<Worker> {
+  const worker = await db.get(Worker, { where: { id: workerDbId } })
+  if (!worker) {
+    throw new Error(`Worker not found by id ${workerDbId}`)
+  }
+
+  return worker
 }
 
 async function getApplicationFormQuestions(
@@ -665,8 +677,80 @@ export async function workingGroups_WorkerRoleAccountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  // TBD
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, accountId } = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.WorkerRoleAccountUpdated),
+    worker,
+    newRoleAccount: accountId.toString(),
+  })
+
+  await db.save<WorkerRoleAccountUpdatedEvent>(workerRoleAccountUpdatedEvent)
+
+  worker.roleAccount = accountId.toString()
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
 }
+
+export async function workingGroups_WorkerRewardAccountUpdated(
+  db: DatabaseManager,
+  event_: SubstrateEvent
+): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, accountId } = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.WorkerRewardAccountUpdated),
+    worker,
+    newRewardAccount: accountId.toString(),
+  })
+
+  await db.save<WorkerRoleAccountUpdatedEvent>(workerRewardAccountUpdatedEvent)
+
+  worker.rewardAccount = accountId.toString()
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
+export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, balance: increaseAmount } = new WorkingGroups.StakeIncreasedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const stakeIncreasedEvent = new StakeIncreasedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.StakeIncreased),
+    worker,
+    amount: increaseAmount,
+  })
+
+  await db.save<StakeIncreasedEvent>(stakeIncreasedEvent)
+
+  worker.stake = worker.stake.add(increaseAmount)
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
 export async function workingGroups_LeaderUnset(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }
@@ -685,16 +769,7 @@ export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: Su
 export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }
-export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
 export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
-export async function workingGroups_WorkerRewardAccountUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
-): Promise<void> {
   // TBD
 }
 export async function workingGroups_WorkerRewardAmountUpdated(

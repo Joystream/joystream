@@ -4,7 +4,7 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { OpeningFilledEventDetails, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
-import { Application, ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { Application, ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
@@ -24,9 +24,9 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
 
   protected openingIds: OpeningId[]
   protected acceptedApplicationsIdsArrays: ApplicationId[][]
-
   protected acceptedApplicationsArrays: Application[][] = []
   protected applicationStakesArrays: BN[][] = []
+  protected createdWorkerIdsByOpeningId: Map<number, WorkerId[]> = new Map<number, WorkerId[]>()
 
   public constructor(
     api: Api,
@@ -40,6 +40,12 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     this.openingIds = openingIds
     this.acceptedApplicationsIdsArrays = acceptedApplicationsIdsArrays
     this.asSudo = asSudo
+  }
+
+  public getCreatedWorkerIdsByOpeningId(openingId: OpeningId): WorkerId[] {
+    const workerIds = this.createdWorkerIdsByOpeningId.get(openingId.toNumber())
+    Utils.assert(workerIds, `No created worker ids for opening id ${openingId.toString()} were found!`)
+    return workerIds
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
@@ -80,6 +86,12 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   async execute(): Promise<void> {
     await this.loadApplicationsData()
     await super.execute()
+    this.events.forEach((e, i) => {
+      this.createdWorkerIdsByOpeningId.set(
+        this.openingIds[i].toNumber(),
+        Array.from(e.applicationIdToWorkerIdMap.values())
+      )
+    })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: OpeningFilledEventFieldsFragment, i: number): void {
