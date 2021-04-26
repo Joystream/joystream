@@ -90,7 +90,7 @@ type DataObject @entity {
   size: Int!
 
   "Storage provider id of the liaison"
-  liaisonId: Int # liaison is unset until storage provider accepts or rejects the content
+  liaison: StorageProvider # liaison is unset until storage provider accepts or rejects the content
 
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
@@ -400,4 +400,6 @@ type StorageProvider @entity {
 
   "Custom metadata set by provider"
   metadata: String
+
+  dataObjects: [DataObject!]! @derivedFrom(field: "liaison")
 }

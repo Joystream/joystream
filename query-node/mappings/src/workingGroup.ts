@@ -1,6 +1,7 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
+import { Bytes } from '@polkadot/types'
 
 import {
   inconsistentState,
@@ -37,7 +38,7 @@ export async function storageWorkingGroup_WorkerStorageUpdated(db: DatabaseManag
   const {workerId: storageProviderId, bytes: newMetadata} = new StorageWorkingGroup.WorkerStorageUpdatedEvent(event).data
 
   // call generic processing
-  await workingGroup_WorkerStorageUpdated(db, storageProviderId, newMetadata.toString())
+  await workingGroup_WorkerStorageUpdated(db, storageProviderId, newMetadata)
 }
 
 export async function storageWorkingGroup_TerminatedWorker(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -71,7 +72,7 @@ export async function gatewayWorkingGroup_WorkerStorageUpdated(db: DatabaseManag
   const {workerId: storageProviderId, bytes: newMetadata} = new GatewayWorkingGroup.WorkerStorageUpdatedEvent(event).data
 
   // call generic processing
-  await workingGroup_WorkerStorageUpdated(db, storageProviderId, newMetadata.toString())
+  await workingGroup_WorkerStorageUpdated(db, storageProviderId, newMetadata)
 }
 
 export async function gatewayWorkingGroup_TerminatedWorker(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -97,13 +98,13 @@ export async function workingGroup_OpeningFilled(
   storageProviderType: StorageProviderType,
   applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap
 ): Promise<void> {
-  const storageProviderIds = [...applicationIdToWorkerIdMap.values()].map(item => item[1])
+  const storageProviderIds = [...applicationIdToWorkerIdMap.values()]
 
   for (const storageProviderId of storageProviderIds) {
-    const storageProvider = {
+    const storageProvider = new StorageProvider({
       id: storageProviderId.toString(),
       type: storageProviderType,
-    }
+    })
 
     await db.save<StorageProvider>(storageProvider)
   }
@@ -112,7 +113,7 @@ export async function workingGroup_OpeningFilled(
   logger.info("Storage provider has beed created", {ids: storageProviderIds.map(item => item.toString())})
 }
 
-export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, storageProviderId: WorkerId, newMetadata: string): Promise<void> {
+export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, storageProviderId: WorkerId, newMetadata: Bytes): Promise<void> {
   // load storage provider
   const storageProvider = await db.get(StorageProvider, { where: { id: storageProviderId.toString() } as FindConditions<StorageProvider> })
 
@@ -121,7 +122,7 @@ export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, sto
     return inconsistentState('Non-existing storage provider update requested', storageProviderId)
   }
 
-  storageProvider.metadata = newMetadata
+  storageProvider.metadata = newMetadata.toString()
 
   await db.save<StorageProvider>(storageProvider)
 

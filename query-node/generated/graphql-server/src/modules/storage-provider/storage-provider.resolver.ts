@@ -30,6 +30,9 @@ import {
 import { StorageProvider } from './storage-provider.model';
 import { StorageProviderService } from './storage-provider.service';
 
+import { DataObject } from '../data-object/data-object.model';
+import { getConnection } from 'typeorm';
+
 @ObjectType()
 export class StorageProviderEdge {
   @Field(() => StorageProvider, { nullable: false })
@@ -124,5 +127,16 @@ export class StorageProviderResolver {
     }
 
     return result as Promise<StorageProviderConnection>;
+  }
+
+  @FieldResolver(() => DataObject)
+  async dataObjects(@Root() r: StorageProvider): Promise<DataObject[] | null> {
+    const result = await getConnection()
+      .getRepository(StorageProvider)
+      .findOne(r.id, { relations: ['dataObjects'] });
+    if (result && result.dataObjects !== undefined) {
+      return result.dataObjects;
+    }
+    return null;
   }
 }

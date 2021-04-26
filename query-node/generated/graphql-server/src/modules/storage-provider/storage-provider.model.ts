@@ -1,4 +1,6 @@
-import { BaseModel, Model, EnumField, StringField } from 'warthog';
+import { BaseModel, Model, OneToMany, EnumField, StringField } from 'warthog';
+
+import { DataObject } from '../data-object/data-object.model';
 
 import { StorageProviderType } from '../enums/enums';
 export { StorageProviderType };
@@ -13,6 +15,9 @@ export class StorageProvider extends BaseModel {
     description: `Custom metadata set by provider`,
   })
   metadata?: string;
+
+  @OneToMany(() => DataObject, (param: DataObject) => param.liaison)
+  dataObjects?: DataObject[];
 
   constructor(init?: Partial<StorageProvider>) {
     super();
