@@ -13,9 +13,10 @@ services:
     container_name: joystream-node
     volumes:
       - /data
-    command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all --log runtime --base-path /data
+    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
     ports:
       - "127.0.0.1:9944:9944"
+      - "127.0.0.1:9933:9933"
 
   ipfs:
     image: ipfs/go-ipfs:latest
@@ -66,7 +67,7 @@ services:
   graphql-server:
     image: joystream/apps
     restart: unless-stopped
-    build: 
+    build:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
@@ -77,14 +78,14 @@ services:
       - DB_NAME=${DB_NAME}
     ports:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
-    depends_on: 
+    depends_on:
       - db
     command: ["workspace", "query-node-root", "query-node:start:prod"]
 
   processor:
     image: joystream/apps
     restart: unless-stopped
-    build: 
+    build:
       context: .
       dockerfile: apps.Dockerfile
     env_file:

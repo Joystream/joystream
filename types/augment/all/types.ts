@@ -1,11 +1,9 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import { ITuple } from '@polkadot/types/types';
-import { BTreeMap, BTreeSet, Enum, Option, Struct, U8aFixed, Vec } from '@polkadot/types/codec';
-import { GenericAccountId } from '@polkadot/types/generic';
-import { Bytes, Null, Text, bool, u128, u16, u32, u64 } from '@polkadot/types/primitive';
-import { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, U8aFixed, Vec, bool, u128, u16, u32, u64 } from '@polkadot/types';
+import type { ITuple } from '@polkadot/types/types';
+import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
 /** @name AcceptingApplications */
 export interface AcceptingApplications extends Struct {

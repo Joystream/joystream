@@ -3,7 +3,7 @@ import BN from 'bn.js'
 import { assert } from 'chai'
 import { BaseFixture } from '../Fixture'
 import { PaidTermId, MemberId } from '@joystream/types/members'
-import Debugger from 'debug'
+import { Debugger, extendDebug } from '../Debugger'
 
 export class BuyMembershipHappyCaseFixture extends BaseFixture {
   private accounts: string[]
@@ -15,7 +15,7 @@ export class BuyMembershipHappyCaseFixture extends BaseFixture {
     super(api)
     this.accounts = accounts
     this.paidTerms = paidTerms
-    this.debug = Debugger('fixture:BuyMembershipHappyCaseFixture')
+    this.debug = extendDebug('fixture:BuyMembershipHappyCaseFixture')
   }
 
   public getCreatedMembers(): MemberId[] {

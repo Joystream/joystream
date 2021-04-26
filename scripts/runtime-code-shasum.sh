@@ -13,7 +13,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 # sort/owner/group/mtime arguments only work with gnu version of tar!
-${TAR} -c --sort=name --owner=root:0 --group=root:0 --mtime='UTC 2020-01-01' \
+${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020-01-01' \
     Cargo.lock \
     Cargo.toml \
     runtime \

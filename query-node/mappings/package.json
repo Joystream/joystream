@@ -10,8 +10,8 @@
     "clean": "rm -rf lib"
   },
   "dependencies": {
-    "@dzlzv/hydra-common": "0.0.3",
-    "@polkadot/types": "~2.10.2-7",
+    "@dzlzv/hydra-common": "2.0.1-beta.9",
+    "@polkadot/types": "4.2.1",
     "warthog": "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
   },
   "devDependencies": {

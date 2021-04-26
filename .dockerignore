@@ -5,7 +5,5 @@ target/
 query-node/generated
 query-node/**/dist
 query-node/lib
-# rm -f during image build instead of ignoring
-# pioneer/
 cli/
 tests/

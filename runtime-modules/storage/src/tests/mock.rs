@@ -267,6 +267,7 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
+#[allow(dead_code)]
 pub struct ExtBuilder {
     voucher_objects_limit_upper_bound: u64,
     voucher_size_limit_upper_bound: u64,

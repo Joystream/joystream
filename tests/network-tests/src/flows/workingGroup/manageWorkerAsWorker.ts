@@ -13,7 +13,7 @@ import { OpeningId } from '@joystream/types/hiring'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 
 export default {
   storage: async function ({ api, env }: FlowProps): Promise<void> {
@@ -26,7 +26,7 @@ export default {
 
 // Manage worker as worker
 async function manageWorkerAsWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
-  const debug = Debugger(`flow:manageWorkerAsWorker:${group}`)
+  const debug = extendDebug(`flow:manageWorkerAsWorker:${group}`)
   debug('Started')
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

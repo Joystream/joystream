@@ -2,7 +2,7 @@ import { u64, u128, Option, u32 } from '@polkadot/types'
 import { Balance, BlockNumber } from '@polkadot/types/interfaces'
 import { MintId } from '../mint'
 import { JoyStructDecorated } from '../common'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class RecipientId extends u64 {}

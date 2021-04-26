@@ -79,6 +79,7 @@ jobs:
           path: joystream-node-docker-image.tar.gz
 
   basic_runtime_with_upgrade:
+    if: ${{ false }}  # Antioch will be a new chain
     name: Integration Tests (Runtime Upgrade)
     needs: build_images
     runs-on: ubuntu-latest
@@ -102,7 +103,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: RUNTIME=babylon tests/network-tests/run-tests.sh full
+        run: RUNTIME=antioch tests/network-tests/run-tests.sh full
 
   basic_runtime:
     name: Integration Tests (New Chain)

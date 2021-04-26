@@ -619,7 +619,7 @@ fn set_election_parameters_proposal_execution_succeeds() {
             announcing_period: 14400,
             voting_period: 14400,
             revealing_period: 14400,
-            council_size: 4,
+            council_size: 6,
             candidacy_limit: 50,
             new_term_duration: 14400,
             min_council_stake: 1,

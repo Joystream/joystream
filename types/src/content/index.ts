@@ -3,7 +3,7 @@ import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
 import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url } from '../common'
 import { ContentParameters } from '../storage'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}

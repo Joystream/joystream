@@ -5,7 +5,7 @@
 import { EraRewardPoints } from '@polkadot/types/interfaces';
 
 import React, { useEffect, useState } from 'react';
-import { HeaderExtended } from '@polkadot/api-derive';
+import { HeaderExtended } from '@polkadot/api-derive/type/types';
 import { useApi, useCall } from '@polkadot/react-hooks';
 import { formatNumber } from '@polkadot/util';
 
