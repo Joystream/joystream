@@ -866,6 +866,19 @@ export interface Reply extends Struct {
 /** @name ReplyId */
 export interface ReplyId extends u64 {}
 
+/** @name ReplyToDelete */
+export interface ReplyToDelete extends Struct {
+  readonly post_id: PostId;
+  readonly reply_id: ReplyId;
+  readonly hide: bool;
+}
+
+/** @name RewardPaymentType */
+export interface RewardPaymentType extends Enum {
+  readonly isMissedReward: boolean;
+  readonly isRegularReward: boolean;
+}
+
 /** @name SameController */
 export interface SameController extends bool {}
 
