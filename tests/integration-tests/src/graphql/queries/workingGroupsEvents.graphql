@@ -199,3 +199,135 @@ query getStakeIncreasedEventsByEventIds($eventIds: [ID!]) {
     ...StakeIncreasedEventFields
   }
 }
+
+fragment WorkerStartedLeavingEventFields on WorkerStartedLeavingEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  rationale
+}
+
+query getWorkerStartedLeavingEventsByEventIds($eventIds: [ID!]) {
+  workerStartedLeavingEvents(where: { eventId_in: $eventIds }) {
+    ...WorkerStartedLeavingEventFields
+  }
+}
+
+fragment WorkerRewardAmountUpdatedEventFields on WorkerRewardAmountUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  newRewardPerBlock
+}
+
+query getWorkerRewardAmountUpdatedEventsByEventIds($eventIds: [ID!]) {
+  workerRewardAmountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    ...WorkerRewardAmountUpdatedEventFields
+  }
+}
+
+fragment StakeSlashedEventFields on StakeSlashedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  requestedAmount
+  slashedAmount
+  rationale
+}
+
+query getStakeSlashedEventsByEventIds($eventIds: [ID!]) {
+  stakeSlashedEvents(where: { eventId_in: $eventIds }) {
+    ...StakeSlashedEventFields
+  }
+}
+
+fragment StakeDecreasedEventFields on StakeDecreasedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  amount
+}
+
+query getStakeDecreasedEventsByEventIds($eventIds: [ID!]) {
+  stakeDecreasedEvents(where: { eventId_in: $eventIds }) {
+    ...StakeDecreasedEventFields
+  }
+}
+
+fragment TerminatedWorkerEventFields on TerminatedWorkerEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  penalty
+  rationale
+}
+
+query getTerminatedWorkerEventsByEventIds($eventIds: [ID!]) {
+  terminatedWorkerEvents(where: { eventId_in: $eventIds }) {
+    ...TerminatedWorkerEventFields
+  }
+}
+
+fragment TerminatedLeaderEventFields on TerminatedLeaderEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+  penalty
+  rationale
+}
+
+query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
+  terminatedLeaderEvents(where: { eventId_in: $eventIds }) {
+    ...TerminatedLeaderEventFields
+  }
+}
+
+# TODO: LeaderUnset?

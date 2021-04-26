@@ -33,6 +33,7 @@ typegen:
     - storageWorkingGroup.LeaderSet
     - storageWorkingGroup.WorkerRoleAccountUpdated
     - storageWorkingGroup.LeaderUnset
+    - storageWorkingGroup.WorkerStartedLeaving
     - storageWorkingGroup.WorkerExited
     - storageWorkingGroup.TerminatedWorker
     - storageWorkingGroup.TerminatedLeader
@@ -138,6 +139,8 @@ mappings:
       handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
+    - event: storageWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving(DatabaseManager, SubstrateEvent)
     # Forum working group
     - event: forumWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
@@ -181,6 +184,8 @@ mappings:
       handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
     - event: forumWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving(DatabaseManager, SubstrateEvent)
     # Membership working group
     - event: membershipWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
@@ -224,6 +229,8 @@ mappings:
       handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
     - event: membershipWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving(DatabaseManager, SubstrateEvent)
     # Content directory working group
     - event: contentDirectoryWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
@@ -267,6 +274,8 @@ mappings:
       handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
     - event: contentDirectoryWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

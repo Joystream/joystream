@@ -4,7 +4,7 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { OpeningFilledEventDetails, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
-import { Application, ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
+import { Application, ApplicationId, Opening, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
@@ -22,6 +22,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   protected events: OpeningFilledEventDetails[] = []
   protected asSudo: boolean
 
+  protected openings: Opening[] = []
   protected openingIds: OpeningId[]
   protected acceptedApplicationsIdsArrays: ApplicationId[][]
   protected acceptedApplicationsArrays: Application[][] = []
@@ -83,8 +84,13 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     )
   }
 
+  protected async loadOpeningsData(): Promise<void> {
+    this.openings = await this.api.query[this.group].openingById.multi(this.openingIds)
+  }
+
   async execute(): Promise<void> {
     await this.loadApplicationsData()
+    await this.loadOpeningsData()
     await super.execute()
     this.events.forEach((e, i) => {
       this.createdWorkerIdsByOpeningId.set(
@@ -116,6 +122,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
         this.acceptedApplicationsIdsArrays[i][j],
         this.acceptedApplicationsArrays[i][j],
         this.applicationStakesArrays[i][j],
+        this.openings[i],
         qWorker
       )
     })
@@ -126,6 +133,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     applicationId: ApplicationId,
     application: Application,
     applicationStake: BN,
+    opening: Opening,
     qWorker: WorkerFieldsFragment
   ): void {
     assert.equal(qWorker.group.name, this.group)
@@ -138,6 +146,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     assert.equal(qWorker.stake, applicationStake.toString())
     assert.equal(qWorker.hiredAtBlock.number, eventDetails.blockNumber)
     assert.equal(qWorker.application.runtimeId, applicationId.toNumber())
+    assert.equal(qWorker.rewardPerBlock, opening.reward_per_block.toString())
   }
 
   protected assertOpeningsStatusesAreValid(

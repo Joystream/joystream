@@ -290,13 +290,15 @@ export type WorkerFieldsFragment = {
   stake: any
   hiredAtTime: any
   storage?: Types.Maybe<string>
+  rewardPerBlock: any
   group: { name: string }
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
-    | { __typename: 'WorkerStatusLeft' }
-    | { __typename: 'WorkerStatusTerminated' }
+    | { __typename: 'WorkerStatusLeft'; workerStartedLeavingEventId: string; workerExitedEventId?: Types.Maybe<string> }
+    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEventId: string }
   payouts: Array<{ id: string }>
+  slashes: Array<{ id: string }>
   hiredAtBlock: BlockFieldsFragment
   application: ApplicationBasicFieldsFragment
 }
@@ -560,6 +562,102 @@ export type GetStakeIncreasedEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetStakeIncreasedEventsByEventIdsQuery = { stakeIncreasedEvents: Array<StakeIncreasedEventFieldsFragment> }
+
+export type WorkerStartedLeavingEventFieldsFragment = {
+  id: string
+  rationale?: Types.Maybe<string>
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetWorkerStartedLeavingEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetWorkerStartedLeavingEventsByEventIdsQuery = {
+  workerStartedLeavingEvents: Array<WorkerStartedLeavingEventFieldsFragment>
+}
+
+export type WorkerRewardAmountUpdatedEventFieldsFragment = {
+  id: string
+  newRewardPerBlock: any
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetWorkerRewardAmountUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetWorkerRewardAmountUpdatedEventsByEventIdsQuery = {
+  workerRewardAmountUpdatedEvents: Array<WorkerRewardAmountUpdatedEventFieldsFragment>
+}
+
+export type StakeSlashedEventFieldsFragment = {
+  id: string
+  requestedAmount: any
+  slashedAmount: any
+  rationale?: Types.Maybe<string>
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetStakeSlashedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetStakeSlashedEventsByEventIdsQuery = { stakeSlashedEvents: Array<StakeSlashedEventFieldsFragment> }
+
+export type StakeDecreasedEventFieldsFragment = {
+  id: string
+  amount: any
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetStakeDecreasedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetStakeDecreasedEventsByEventIdsQuery = { stakeDecreasedEvents: Array<StakeDecreasedEventFieldsFragment> }
+
+export type TerminatedWorkerEventFieldsFragment = {
+  id: string
+  penalty?: Types.Maybe<any>
+  rationale?: Types.Maybe<string>
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetTerminatedWorkerEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetTerminatedWorkerEventsByEventIdsQuery = {
+  terminatedWorkerEvents: Array<TerminatedWorkerEventFieldsFragment>
+}
+
+export type TerminatedLeaderEventFieldsFragment = {
+  id: string
+  penalty?: Types.Maybe<any>
+  rationale?: Types.Maybe<string>
+  event: EventFieldsFragment
+  group: { name: string }
+  worker: { id: string; runtimeId: number }
+}
+
+export type GetTerminatedLeaderEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetTerminatedLeaderEventsByEventIdsQuery = {
+  terminatedLeaderEvents: Array<TerminatedLeaderEventFieldsFragment>
+}
 
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
@@ -1014,10 +1112,20 @@ export const WorkerFields = gql`
     stakeAccount
     status {
       __typename
+      ... on WorkerStatusLeft {
+        workerStartedLeavingEventId
+        workerExitedEventId
+      }
+      ... on WorkerStatusTerminated {
+        terminatedWorkerEventId
+      }
     }
     isLead
     stake
     payouts {
+      id
+    }
+    slashes {
       id
     }
     hiredAtBlock {
@@ -1028,6 +1136,7 @@ export const WorkerFields = gql`
       ...ApplicationBasicFields
     }
     storage
+    rewardPerBlock
   }
   ${BlockFields}
   ${ApplicationBasicFields}
@@ -1160,6 +1269,112 @@ export const StakeIncreasedEventFields = gql`
       runtimeId
     }
     amount
+  }
+  ${EventFields}
+`
+export const WorkerStartedLeavingEventFields = gql`
+  fragment WorkerStartedLeavingEventFields on WorkerStartedLeavingEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    rationale
+  }
+  ${EventFields}
+`
+export const WorkerRewardAmountUpdatedEventFields = gql`
+  fragment WorkerRewardAmountUpdatedEventFields on WorkerRewardAmountUpdatedEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    newRewardPerBlock
+  }
+  ${EventFields}
+`
+export const StakeSlashedEventFields = gql`
+  fragment StakeSlashedEventFields on StakeSlashedEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    requestedAmount
+    slashedAmount
+    rationale
+  }
+  ${EventFields}
+`
+export const StakeDecreasedEventFields = gql`
+  fragment StakeDecreasedEventFields on StakeDecreasedEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    amount
+  }
+  ${EventFields}
+`
+export const TerminatedWorkerEventFields = gql`
+  fragment TerminatedWorkerEventFields on TerminatedWorkerEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    penalty
+    rationale
+  }
+  ${EventFields}
+`
+export const TerminatedLeaderEventFields = gql`
+  fragment TerminatedLeaderEventFields on TerminatedLeaderEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+    penalty
+    rationale
   }
   ${EventFields}
 `
@@ -1426,4 +1641,52 @@ export const GetStakeIncreasedEventsByEventIds = gql`
     }
   }
   ${StakeIncreasedEventFields}
+`
+export const GetWorkerStartedLeavingEventsByEventIds = gql`
+  query getWorkerStartedLeavingEventsByEventIds($eventIds: [ID!]) {
+    workerStartedLeavingEvents(where: { eventId_in: $eventIds }) {
+      ...WorkerStartedLeavingEventFields
+    }
+  }
+  ${WorkerStartedLeavingEventFields}
+`
+export const GetWorkerRewardAmountUpdatedEventsByEventIds = gql`
+  query getWorkerRewardAmountUpdatedEventsByEventIds($eventIds: [ID!]) {
+    workerRewardAmountUpdatedEvents(where: { eventId_in: $eventIds }) {
+      ...WorkerRewardAmountUpdatedEventFields
+    }
+  }
+  ${WorkerRewardAmountUpdatedEventFields}
+`
+export const GetStakeSlashedEventsByEventIds = gql`
+  query getStakeSlashedEventsByEventIds($eventIds: [ID!]) {
+    stakeSlashedEvents(where: { eventId_in: $eventIds }) {
+      ...StakeSlashedEventFields
+    }
+  }
+  ${StakeSlashedEventFields}
+`
+export const GetStakeDecreasedEventsByEventIds = gql`
+  query getStakeDecreasedEventsByEventIds($eventIds: [ID!]) {
+    stakeDecreasedEvents(where: { eventId_in: $eventIds }) {
+      ...StakeDecreasedEventFields
+    }
+  }
+  ${StakeDecreasedEventFields}
+`
+export const GetTerminatedWorkerEventsByEventIds = gql`
+  query getTerminatedWorkerEventsByEventIds($eventIds: [ID!]) {
+    terminatedWorkerEvents(where: { eventId_in: $eventIds }) {
+      ...TerminatedWorkerEventFields
+    }
+  }
+  ${TerminatedWorkerEventFields}
+`
+export const GetTerminatedLeaderEventsByEventIds = gql`
+  query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
+    terminatedLeaderEvents(where: { eventId_in: $eventIds }) {
+      ...TerminatedLeaderEventFields
+    }
+  }
+  ${TerminatedLeaderEventFields}
 `

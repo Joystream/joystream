@@ -14,9 +14,6 @@ type WorkerStatusLeft @variant {
 type WorkerStatusTerminated @variant {
   # TODO: Variant relationship
   terminatedWorkerEventId: ID!
-
-  # Set when the unstaking period is finished
-  workerExitedEventId: ID
 }
 
 union WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
@@ -53,8 +50,14 @@ type Worker @entity {
   "Current role stake (in JOY)"
   stake: BigInt!
 
+  "Current reward per block"
+  rewardPerBlock: BigInt!
+
   "All related reward payouts"
   payouts: [RewardPaidEvent!] @derivedFrom(field: "worker")
+
+  "All related stake slashes"
+  slashes: [StakeSlashedEvent!] @derivedFrom(field: "worker")
 
   "Block the worker was hired at"
   hiredAtBlock: Block!

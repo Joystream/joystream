@@ -59,10 +59,20 @@ fragment WorkerFields on Worker {
   stakeAccount
   status {
     __typename
+    ... on WorkerStatusLeft {
+      workerStartedLeavingEventId
+      workerExitedEventId
+    }
+    ... on WorkerStatusTerminated {
+      terminatedWorkerEventId
+    }
   }
   isLead
   stake
   payouts {
+    id
+  }
+  slashes {
     id
   }
   hiredAtBlock {
@@ -73,6 +83,7 @@ fragment WorkerFields on Worker {
     ...ApplicationBasicFields
   }
   storage
+  rewardPerBlock
 }
 
 fragment WorkingGroupMetadataFields on WorkingGroupMetadata {

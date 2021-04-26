@@ -76,6 +76,9 @@ export type WorkingGroupsEventName =
   | 'WorkerRewardAmountUpdated'
   | 'StatusTextChanged'
   | 'BudgetSpending'
+  | 'WorkerStartedLeaving'
+  | 'RewardPaid'
+  | 'NewMissedRewardLevelReached'
 
 export type WorkingGroupModuleName =
   | 'storageWorkingGroup'

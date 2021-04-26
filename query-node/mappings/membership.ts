@@ -8,7 +8,7 @@ import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { createEvent, getOrCreateBlock } from './common'
+import { bytesToString, createEvent, getOrCreateBlock } from './common'
 import {
   Membership,
   EventType,
@@ -63,10 +63,6 @@ async function getOrCreateMembershipSnapshot(db: DatabaseManager, event_: Substr
         snapshotBlock: await getOrCreateBlock(db, event_),
         snapshotTime: new Date(new BN(event_.blockTimestamp).toNumber()),
       })
-}
-
-function bytesToString(b: Bytes): string {
-  return Buffer.from(b.toU8a(true)).toString()
 }
 
 function deserializeMemberMeta(metadataBytes: Bytes): MembershipMetadata | null {

@@ -58,3 +58,7 @@ export async function getOrCreateBlock(
 
   return block
 }
+
+export function bytesToString(b: Bytes): string {
+  return Buffer.from(b.toU8a(true)).toString()
+}

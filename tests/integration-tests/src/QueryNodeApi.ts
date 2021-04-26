@@ -132,6 +132,30 @@ import {
   GetWorkersByRuntimeIdsQuery,
   GetWorkersByRuntimeIdsQueryVariables,
   GetWorkersByRuntimeIds,
+  GetWorkerStartedLeavingEventsByEventIdsQuery,
+  GetWorkerStartedLeavingEventsByEventIdsQueryVariables,
+  GetWorkerStartedLeavingEventsByEventIds,
+  WorkerStartedLeavingEventFieldsFragment,
+  TerminatedWorkerEventFieldsFragment,
+  GetTerminatedWorkerEventsByEventIdsQuery,
+  GetTerminatedWorkerEventsByEventIdsQueryVariables,
+  GetTerminatedWorkerEventsByEventIds,
+  TerminatedLeaderEventFieldsFragment,
+  GetTerminatedLeaderEventsByEventIdsQuery,
+  GetTerminatedLeaderEventsByEventIdsQueryVariables,
+  GetTerminatedLeaderEventsByEventIds,
+  WorkerRewardAmountUpdatedEventFieldsFragment,
+  GetWorkerRewardAmountUpdatedEventsByEventIdsQuery,
+  GetWorkerRewardAmountUpdatedEventsByEventIdsQueryVariables,
+  GetWorkerRewardAmountUpdatedEventsByEventIds,
+  StakeSlashedEventFieldsFragment,
+  GetStakeSlashedEventsByEventIdsQuery,
+  GetStakeSlashedEventsByEventIdsQueryVariables,
+  GetStakeSlashedEventsByEventIds,
+  StakeDecreasedEventFieldsFragment,
+  GetStakeDecreasedEventsByEventIdsQuery,
+  GetStakeDecreasedEventsByEventIdsQueryVariables,
+  GetStakeDecreasedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -535,5 +559,57 @@ export class QueryNodeApi {
       { workerIds: ids.map((id) => id.toNumber()), groupId: group },
       'workers'
     )
+  }
+
+  public async getWorkerStartedLeavingEvents(
+    events: EventDetails[]
+  ): Promise<WorkerStartedLeavingEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetWorkerStartedLeavingEventsByEventIdsQuery,
+      GetWorkerStartedLeavingEventsByEventIdsQueryVariables
+    >(GetWorkerStartedLeavingEventsByEventIds, { eventIds }, 'workerStartedLeavingEvents')
+  }
+
+  public async getTerminatedWorkerEvents(events: EventDetails[]): Promise<TerminatedWorkerEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetTerminatedWorkerEventsByEventIdsQuery,
+      GetTerminatedWorkerEventsByEventIdsQueryVariables
+    >(GetTerminatedWorkerEventsByEventIds, { eventIds }, 'terminatedWorkerEvents')
+  }
+
+  public async getTerminatedLeaderEvents(events: EventDetails[]): Promise<TerminatedLeaderEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetTerminatedLeaderEventsByEventIdsQuery,
+      GetTerminatedLeaderEventsByEventIdsQueryVariables
+    >(GetTerminatedLeaderEventsByEventIds, { eventIds }, 'terminatedLeaderEvents')
+  }
+
+  public async getWorkerRewardAmountUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<WorkerRewardAmountUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetWorkerRewardAmountUpdatedEventsByEventIdsQuery,
+      GetWorkerRewardAmountUpdatedEventsByEventIdsQueryVariables
+    >(GetWorkerRewardAmountUpdatedEventsByEventIds, { eventIds }, 'workerRewardAmountUpdatedEvents')
+  }
+
+  public async getStakeSlashedEvents(events: EventDetails[]): Promise<StakeSlashedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetStakeSlashedEventsByEventIdsQuery,
+      GetStakeSlashedEventsByEventIdsQueryVariables
+    >(GetStakeSlashedEventsByEventIds, { eventIds }, 'stakeSlashedEvents')
+  }
+
+  public async getStakeDecreasedEvents(events: EventDetails[]): Promise<StakeDecreasedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetStakeDecreasedEventsByEventIdsQuery,
+      GetStakeDecreasedEventsByEventIdsQueryVariables
+    >(GetStakeDecreasedEventsByEventIds, { eventIds }, 'stakeDecreasedEvents')
   }
 }

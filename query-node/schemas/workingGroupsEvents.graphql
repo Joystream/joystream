@@ -324,7 +324,7 @@ type RewardPaidEvent @entity {
   type: RewardPaymentType!
 }
 
-type NewMissedRewardLevelReached @entity {
+type NewMissedRewardLevelReachedEvent @entity {
   "Generic event data"
   event: Event!
 

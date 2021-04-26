@@ -13,7 +13,7 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { createEvent, deserializeMetadata, getOrCreateBlock } from './common'
+import { createEvent, deserializeMetadata, getOrCreateBlock, bytesToString } from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -55,7 +55,17 @@ import {
   StakeIncreasedEvent,
   RewardPaidEvent,
   RewardPaymentType,
-  NewMissedRewardLevelReached,
+  NewMissedRewardLevelReachedEvent,
+  WorkerExitedEvent,
+  WorkerStatusLeft,
+  WorkerStatusTerminated,
+  TerminatedWorkerEvent,
+  LeaderUnsetEvent,
+  TerminatedLeaderEvent,
+  WorkerRewardAmountUpdatedEvent,
+  StakeSlashedEvent,
+  StakeDecreasedEvent,
+  WorkerStartedLeavingEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -348,6 +358,38 @@ async function handleWorkingGroupMetadataAction(
   return result
 }
 
+async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, balance: optPenalty, optBytes: optRationale } = new WorkingGroups.TerminatedWorkerEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
+  const eventType = worker.isLead ? EventType.TerminatedLeader : EventType.TerminatedWorker
+
+  const terminatedEvent = new EventConstructor({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, eventType),
+    worker,
+    penalty: optPenalty.unwrapOr(undefined),
+    rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+  })
+
+  await db.save(terminatedEvent)
+
+  const status = new WorkerStatusTerminated()
+  status.terminatedWorkerEventId = terminatedEvent.id
+  worker.status = status
+  worker.stake = new BN(0)
+  worker.rewardPerBlock = new BN(0)
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
 // Mapping functions
 export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
@@ -514,6 +556,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
             payouts: [],
             status: new WorkerStatusActive(),
             entry: openingFilledEvent,
+            rewardPerBlock: opening.rewardPerBlock,
           })
           await db.save<Worker>(worker)
           hiredWorkers.push(worker)
@@ -792,7 +835,7 @@ export async function workingGroups_NewMissedRewardLevelReached(
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
-  const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReached({
+  const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
     createdAt: eventTime,
     updatedAt: eventTime,
     group,
@@ -801,36 +844,171 @@ export async function workingGroups_NewMissedRewardLevelReached(
     newMissedRewardAmount: newMissedRewardAmountOpt.unwrapOr(new BN(0)),
   })
 
-  await db.save<NewMissedRewardLevelReached>(newMissedRewardLevelReachedEvent)
+  await db.save<NewMissedRewardLevelReachedEvent>(newMissedRewardLevelReachedEvent)
+}
+
+export async function workingGroups_WorkerExited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId } = new WorkingGroups.WorkerExitedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerExitedEvent = new WorkerExitedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.WorkerExited),
+    worker,
+  })
+
+  await db.save<WorkerExitedEvent>(workerExitedEvent)
+  ;(worker.status as WorkerStatusLeft).workerExitedEventId = workerExitedEvent.id
+  worker.stake = new BN(0)
+  worker.rewardPerBlock = new BN(0)
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
 }
 
 export async function workingGroups_LeaderUnset(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const group = await getWorkingGroup(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const leaderUnsetEvent = new LeaderUnsetEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.LeaderUnset),
+  })
+
+  await db.save<LeaderUnsetEvent>(leaderUnsetEvent)
+
+  group.leader = undefined
+  group.updatedAt = eventTime
+
+  await db.save<WorkingGroup>(group)
 }
-export async function workingGroups_WorkerExited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
+
 export async function workingGroups_TerminatedWorker(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+  await handleTerminatedWorker(db, event_)
 }
 export async function workingGroups_TerminatedLeader(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+  await handleTerminatedWorker(db, event_)
 }
-export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
-export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
-export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
-}
+
 export async function workingGroups_WorkerRewardAmountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, balance: newRewardPerBlockOpt } = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.WorkerRewardAmountUpdated),
+    worker,
+    newRewardPerBlock: newRewardPerBlockOpt.unwrapOr(new BN(0)),
+  })
+
+  await db.save<WorkerRewardAmountUpdatedEvent>(workerRewardAmountUpdatedEvent)
+
+  worker.rewardPerBlock = newRewardPerBlockOpt.unwrapOr(new BN(0))
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
+export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const {
+    workerId,
+    balances: { 0: slashedAmount, 1: requestedAmount },
+    optBytes: optRationale,
+  } = new WorkingGroups.StakeSlashedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerStakeSlashedEvent = new StakeSlashedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.StakeSlashed),
+    worker,
+    requestedAmount,
+    slashedAmount,
+    rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+  })
+
+  await db.save<StakeSlashedEvent>(workerStakeSlashedEvent)
+
+  worker.stake = worker.stake.sub(slashedAmount)
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
+export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, balance: amount } = new WorkingGroups.StakeDecreasedEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerStakeDecreasedEvent = new StakeDecreasedEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.StakeDecreased),
+    worker,
+    amount,
+  })
+
+  await db.save<StakeDecreasedEvent>(workerStakeDecreasedEvent)
+
+  worker.stake = worker.stake.sub(amount)
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
+export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, optBytes: optRationale } = new WorkingGroups.WorkerStartedLeavingEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.WorkerStartedLeaving),
+    worker,
+    rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+  })
+
+  await db.save<WorkerStartedLeavingEvent>(workerStartedLeavingEvent)
+
+  const status = new WorkerStatusLeft()
+  status.workerStartedLeavingEventId = workerStartedLeavingEvent.id
+  worker.status = status
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
+}
+
+export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }
+
 export async function workingGroups_BudgetSpending(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TBD
 }
