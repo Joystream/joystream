@@ -46,6 +46,8 @@ typegen:
     - storageWorkingGroup.WorkerRewardAmountUpdated
     - storageWorkingGroup.StatusTextChanged
     - storageWorkingGroup.BudgetSpending
+    - storageWorkingGroup.RewardPaid
+    - storageWorkingGroup.NewMissedRewardLevelReached
   calls:
     - members.updateProfile
     - members.updateAccounts
@@ -132,6 +134,10 @@ mappings:
       handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    - event: storageWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
+    - event: storageWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
     # Forum working group
     - event: forumWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
@@ -171,6 +177,10 @@ mappings:
       handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
     - event: forumWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
+    - event: forumWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
     # Membership working group
     - event: membershipWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
@@ -210,6 +220,10 @@ mappings:
       handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
     - event: membershipWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
+    - event: membershipWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
     # Content directory working group
     - event: contentDirectoryWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded(DatabaseManager, SubstrateEvent)
@@ -249,6 +263,10 @@ mappings:
       handler: workingGroups_StatusTextChanged(DatabaseManager, SubstrateEvent)
     - event: contentDirectoryWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid(DatabaseManager, SubstrateEvent)
+    - event: contentDirectoryWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

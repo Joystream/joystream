@@ -53,6 +53,9 @@ import {
   WorkerRoleAccountUpdatedEvent,
   WorkerRewardAccountUpdatedEvent,
   StakeIncreasedEvent,
+  RewardPaidEvent,
+  RewardPaymentType,
+  NewMissedRewardLevelReached,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -749,6 +752,56 @@ export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: 
   worker.updatedAt = eventTime
 
   await db.save<Worker>(worker)
+}
+
+export async function workingGroups_RewardPaid(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const {
+    workerId,
+    accountId: rewardAccountId,
+    balance: amount,
+    rewardPaymentType,
+  } = new WorkingGroups.RewardPaidEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const rewardPaidEvent = new RewardPaidEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.RewardPaid),
+    worker,
+    amount,
+    rewardAccount: rewardAccountId.toString(),
+    type: rewardPaymentType.isRegularReward ? RewardPaymentType.REGULAR : RewardPaymentType.MISSED,
+  })
+
+  await db.save<RewardPaidEvent>(rewardPaidEvent)
+}
+
+export async function workingGroups_NewMissedRewardLevelReached(
+  db: DatabaseManager,
+  event_: SubstrateEvent
+): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { workerId, balance: newMissedRewardAmountOpt } = new WorkingGroups.NewMissedRewardLevelReachedEvent(
+    event_
+  ).data
+  const group = await getWorkingGroup(db, event_)
+  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReached({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.NewMissedRewardLevelReached),
+    worker,
+    newMissedRewardAmount: newMissedRewardAmountOpt.unwrapOr(new BN(0)),
+  })
+
+  await db.save<NewMissedRewardLevelReached>(newMissedRewardLevelReachedEvent)
 }
 
 export async function workingGroups_LeaderUnset(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {

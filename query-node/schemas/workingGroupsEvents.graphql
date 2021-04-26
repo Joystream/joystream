@@ -297,14 +297,13 @@ type BudgetSpendingEvent @entity {
   rationale: String
 }
 
-enum PayoutType {
-  "Standard reward payout"
-  STANDARD_REWARD
-  "Return of the previously missed reward"
-  RETURN_MISSED
+enum RewardPaymentType {
+  "Regular reward payout"
+  REGULAR
+  "Payout of previously missed reward"
+  MISSED
 }
 
-# TODO: This will be either based on the actual runtime event or be just a custom query-node event generated of preBlock/postBlock
 type RewardPaidEvent @entity {
   "Generic event data"
   event: Event!
@@ -320,4 +319,21 @@ type RewardPaidEvent @entity {
 
   "Amount recieved"
   amount: BigInt!
+
+  "Type of the payment (REGULAR/MISSED)"
+  type: RewardPaymentType!
+}
+
+type NewMissedRewardLevelReached @entity {
+  "Generic event data"
+  event: Event!
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Related worker"
+  worker: Worker!
+
+  "New missed reward amount"
+  newMissedRewardAmount: BigInt!
 }
