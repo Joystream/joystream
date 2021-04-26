@@ -1,7 +1,7 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::{StorageMap, StorageValue};
+use frame_system::{EventRecord, Phase, RawOrigin};
 use std::collections::BTreeSet;
-use system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::{
     Balances, Membership, System, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,

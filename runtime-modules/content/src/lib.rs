@@ -19,6 +19,7 @@ use codec::{Decode, Encode};
 use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
+use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -26,7 +27,6 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::ensure_signed;
 
 pub use common::storage::{
     ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
@@ -76,7 +76,7 @@ impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    system::Trait
+    frame_system::Trait
     + ContentActorAuthenticator
     + Clone
     + StorageOwnership
@@ -84,7 +84,7 @@ pub trait Trait:
     + GovernanceCurrency
 {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
@@ -113,7 +113,7 @@ pub trait Trait:
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
-    // Type that handles asset uploads to storage system
+    // Type that handles asset uploads to storage frame_system
     type StorageSystem: StorageSystem<Self>;
 }
 
@@ -122,7 +122,7 @@ pub trait Trait:
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NewAsset<ContentParameters> {
-    /// Upload to the storage system
+    /// Upload to the storage frame_system
     Upload(ContentParameters),
     /// Multiple url strings pointing at an asset
     Urls(Vec<Url>),
@@ -210,7 +210,7 @@ pub type Channel<T> = ChannelRecord<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
@@ -240,7 +240,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     BalanceOf<T>,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Information about channel being created.
@@ -646,7 +646,7 @@ decl_module! {
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
             let channel_id = NextChannelId::<T>::get();
@@ -697,7 +697,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let new_assets = if let Some(assets) = &params.assets {
                 let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
 
@@ -867,9 +867,9 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn request_channel_transfer(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            request: ChannelOwnershipTransferRequest<T>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _request: ChannelOwnershipTransferRequest<T>,
         ) {
             // requester must be new_owner
             Self::not_implemented()?;
@@ -877,8 +877,8 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_channel_transfer_request(
-            origin,
-            request_id: T::ChannelOwnershipTransferRequestId,
+            _origin,
+            _request_id: T::ChannelOwnershipTransferRequestId,
         ) {
             // origin must be original requester (ie. proposed new channel owner)
             Self::not_implemented()?;
@@ -886,9 +886,9 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            request_id: T::ChannelOwnershipTransferRequestId,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _request_id: T::ChannelOwnershipTransferRequestId,
         ) {
             // only current owner of channel can approve
             Self::not_implemented()?;
@@ -910,7 +910,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
             let video_id = NextVideoId::<T>::get();
@@ -967,7 +967,7 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage system
+            // Pick out the assets to be uploaded to storage frame_system
             let new_assets = if let Some(assets) = &params.assets {
                 let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
 
@@ -1042,30 +1042,30 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: PlaylistCreationParameters,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _params: PlaylistCreationParameters,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            playlist: T::PlaylistId,
-            params: PlaylistUpdateParameters,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _playlist: T::PlaylistId,
+            _params: PlaylistUpdateParameters,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_playlist(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            playlist: T::PlaylistId,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _playlist: T::PlaylistId,
         ) {
             Self::not_implemented()?;
         }
@@ -1150,47 +1150,47 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            params: PersonCreationParameters<ContentParameters<T>>,
+            _origin,
+            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _params: PersonCreationParameters<ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            person: T::PersonId,
-            params: PersonUpdateParameters<ContentParameters<T>>,
+            _origin,
+            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _person: T::PersonId,
+            _params: PersonUpdateParameters<ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_person(
-            origin,
-            actor: PersonActor<T::MemberId, T::CuratorId>,
-            person: T::PersonId,
+            _origin,
+            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _person: T::PersonId,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_person_to_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            person: T::PersonId
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _video_id: T::VideoId,
+            _person: T::PersonId
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_person_from_video(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _video_id: T::VideoId
         ) {
             Self::not_implemented()?;
         }
@@ -1233,29 +1233,29 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_series(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: SeriesParameters<T::VideoId, ContentParameters<T>>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_series(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            params: SeriesParameters<T::VideoId, ContentParameters<T>>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_series(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            series: T::SeriesId,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _series: T::SeriesId,
         ) {
             Self::not_implemented()?;
         }
@@ -1400,7 +1400,7 @@ decl_event!(
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         ContentParameters = ContentParameters<T>,
-        AccountId = <T as system::Trait>::AccountId,
+        AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
     {

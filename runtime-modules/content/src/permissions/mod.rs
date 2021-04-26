@@ -12,10 +12,10 @@ use frame_support::{ensure, Parameter};
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
-// use system::ensure_root;
+// use frame_system::ensure_root;
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: system::Trait + MembershipTypes {
+pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
     /// Curator identifier
     type CuratorId: Parameter
         + Member

@@ -17,15 +17,15 @@ use proposals_engine::{
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_support::{StorageMap, StorageValue};
+use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
-use system::RawOrigin;
 
 use super::initial_test_ext;
 
 use crate::CouncilManager;
 
 pub type Balances = pallet_balances::Module<Runtime>;
-pub type System = system::Module<Runtime>;
+pub type System = frame_system::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type Council = governance::council::Module<Runtime>;
@@ -33,7 +33,7 @@ pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
 
 fn setup_members(count: u8) {
-    let authority_account_id = <Runtime as system::Trait>::AccountId::default();
+    let authority_account_id = <Runtime as frame_system::Trait>::AccountId::default();
     Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id.clone())
         .unwrap();
 
@@ -59,7 +59,7 @@ fn setup_council() {
     let councilor4: [u8; 32] = [4; 32];
     let councilor5: [u8; 32] = [5; 32];
     assert!(Council::set_council(
-        system::RawOrigin::Root.into(),
+        frame_system::RawOrigin::Root.into(),
         vec![
             councilor0,
             councilor1.into(),
@@ -133,7 +133,7 @@ impl VoteGenerator {
         }
 
         ProposalsEngine::vote(
-            system::RawOrigin::Signed(self.current_account_id.clone()).into(),
+            frame_system::RawOrigin::Signed(self.current_account_id.clone()).into(),
             self.current_voter_id,
             self.proposal_id,
             vote_kind,
@@ -169,7 +169,7 @@ impl Default for DummyProposalFixture {
                 grace_period: 0,
                 required_stake: None,
             },
-            account_id: <Runtime as system::Trait>::AccountId::default(),
+            account_id: <Runtime as frame_system::Trait>::AccountId::default(),
             proposer_id: 0,
             proposal_code: dummy_proposal.encode(),
             title,
@@ -236,7 +236,7 @@ struct CancelProposalFixture {
 
 impl CancelProposalFixture {
     fn new(proposal_id: u32) -> Self {
-        let account_id = <Runtime as system::Trait>::AccountId::default();
+        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
         CancelProposalFixture {
             proposal_id,
             origin: RawOrigin::Signed(account_id),
@@ -268,7 +268,7 @@ impl CancelProposalFixture {
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
-        let account_id = <Runtime as system::Trait>::AccountId::default();
+        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
 
         setup_members(2);
         let member_id = 0; // newly created member_id

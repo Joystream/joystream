@@ -58,7 +58,7 @@
 //!
 //! ```
 //! use frame_support::{decl_module, print};
-//! use system::ensure_signed;
+//! use frame_system::ensure_signed;
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters};
 //!
@@ -134,9 +134,9 @@ use frame_support::traits::{Currency, Get};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
+use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
-use system::{ensure_root, RawOrigin};
 
 use common::origin::ActorOriginValidator;
 
@@ -144,10 +144,10 @@ type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:
-    system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
+    frame_system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: ActorOriginValidator<
@@ -193,8 +193,8 @@ decl_event!(
     where
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
-        <T as system::Trait>::BlockNumber,
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::BlockNumber,
+        <T as frame_system::Trait>::AccountId,
         <T as stake::Trait>::StakeId,
     {
         /// Emits on proposal creation.
@@ -587,9 +587,9 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    // Wrapper-function over system::block_number()
+    // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <system::Module<T>>::block_number()
+        <frame_system::Module<T>>::block_number()
     }
 
     // Enumerates through active proposals. Tally Voting results.
@@ -819,28 +819,28 @@ impl<T: Trait> Module<T> {
 // Simplification of the 'FinalizedProposalData' type
 type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 // Simplification of the 'ApprovedProposalData' type
 type ApprovedProposal<T> = ApprovedProposalData<
     <T as Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 // Simplification of the 'Proposal' type
 type ProposalOf<T> = Proposal<
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,
     <T as stake::Trait>::StakeId,
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
 >;

@@ -1,6 +1,6 @@
 //! # Data directory module
 //! Data directory module for the Joystream platform manages IPFS content id, storage providers,
-//! owners of the content. It allows to add and accept or reject the content in the system.
+//! owners of the content. It allows to add and accept or reject the content in the frame_system.
 //!
 //! ## Comments
 //!
@@ -9,7 +9,7 @@
 //! ## Supported extrinsics
 //!
 //! ### Public extrinsic
-//! - [add_content](./struct.Module.html#method.add_content) - Adds the content to the system.
+//! - [add_content](./struct.Module.html#method.add_content) - Adds the content to the frame_system.
 //!
 //! ### Private extrinsics
 //! - accept_content - Storage provider accepts a content.
@@ -24,9 +24,9 @@
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
+use frame_system::ensure_root;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
-use system::ensure_root;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -43,7 +43,7 @@ use crate::*;
 pub const DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND: u64 = 54_000_000_000;
 /// The default maximum number of objects that lead can set on the voucher of an owner
 pub const DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND: u64 = 10_000;
-/// The default system global storage limits
+/// The default frame_system global storage limits
 pub const DEFAULT_GLOBAL_VOUCHER: Voucher = Voucher::new(1_100_000_000_000, 1_000_000);
 /// The default initial owner voucher
 pub const DEFAULT_VOUCHER: Voucher = Voucher::new(5_400_000_000, 1_000);
@@ -53,7 +53,7 @@ pub const DEFAULT_UPLOADING_BLOCKED_STATUS: bool = false;
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
-    + system::Trait
+    + frame_system::Trait
     + data_object_type_registry::Trait
     + membership::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
@@ -61,7 +61,7 @@ pub trait Trait:
     + common::StorageOwnership
 {
     /// _Data directory_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Active data object type validator.
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
@@ -136,7 +136,7 @@ pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
     ChannelId<T>,
     DAOId<T>,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     DataObjectTypeId<T>,
     StorageProviderId<T>,
@@ -412,7 +412,7 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
-        /// Adds the content to the system. The created DataObject
+        /// Adds the content to the frame_system. The created DataObject
         /// awaits liaison to accept it.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
@@ -446,7 +446,7 @@ decl_module! {
             Self::deposit_event(RawEvent::ContentAdded(content, owner));
         }
 
-        /// Remove the content from the system.
+        /// Remove the content from the frame_system.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_content(
             origin,

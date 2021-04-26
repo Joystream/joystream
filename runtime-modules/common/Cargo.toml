@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-common'
-version = '3.0.0'
+version = '3.1.1'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -8,13 +8,13 @@ edition = '2018'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 strum = {version = "0.19", optional = true}
 strum_macros = {version = "0.19", optional = true}
-codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
 
 [features]
 default = ['std']
@@ -27,6 +27,6 @@ std = [
 	'sp-arithmetic/std',
 	'sp-std/std',
 	'frame-support/std',
-	'system/std',
+	'frame-system/std',
 	'pallet-timestamp/std',
 ]

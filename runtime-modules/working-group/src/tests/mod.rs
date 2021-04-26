@@ -4,13 +4,13 @@ mod mock;
 
 use frame_support::dispatch::DispatchError;
 use frame_support::storage::{StorageMap, StorageValue};
+use frame_system::RawOrigin;
 use std::collections::BTreeMap;
-use system::RawOrigin;
 
 use crate::default_storage_size_constraint;
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
-use crate::{Error, RawEvent, Worker};
+use crate::{Error, RawEvent, Worker, WorkerId};
 use common::constraints::InputValidationLengthConstraint;
 use fixtures::*;
 use mock::{
@@ -2264,7 +2264,7 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 fn get_regular_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
         let worker_ids = TestWorkingGroup::get_regular_worker_ids();
-        assert_eq!(worker_ids, Vec::new());
+        assert_eq!(worker_ids, Vec::<WorkerId<Test>>::new());
 
         let leader_worker_id = HireLeadFixture::default().hire_lead();
 
@@ -2290,7 +2290,7 @@ fn get_regular_worker_ids_succeeds() {
 fn get_all_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
         let worker_ids = TestWorkingGroup::get_all_worker_ids();
-        assert_eq!(worker_ids, Vec::new());
+        assert_eq!(worker_ids, Vec::<WorkerId<Test>>::new());
 
         let leader_worker_id = HireLeadFixture::default().hire_lead();
 

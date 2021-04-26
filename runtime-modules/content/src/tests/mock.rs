@@ -58,7 +58,7 @@ mod content {
 impl_outer_event! {
     pub enum MetaEvent for Test {
         content<T>,
-        system<T>,
+        frame_system<T>,
         balances<T>,
     }
 }
@@ -74,7 +74,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -95,16 +95,18 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl common::MembershipTypes for Test {
@@ -129,6 +131,8 @@ impl balances::Trait for Test {
     type Event = MetaEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -231,11 +235,11 @@ impl Trait for Test {
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
 
-    // Type that handles asset uploads to storage system
+    // Type that handles asset uploads to storage frame_system
     type StorageSystem = MockStorageSystem;
 }
 
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
 // #[derive (Default)]
 pub struct ExtBuilder {
@@ -268,7 +272,7 @@ impl Default for ExtBuilder {
 
 impl ExtBuilder {
     pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 

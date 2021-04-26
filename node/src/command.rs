@@ -16,41 +16,45 @@
 
 use crate::cli::{Cli, Subcommand};
 use crate::node_executor;
-use crate::node_rpc;
 use crate::{chain_spec, service};
 
+use crate::service::{new_full_base, new_partial, NewFullBase};
 use node_executor::Executor;
 use node_runtime::{opaque::Block, RuntimeApi};
-use sc_cli::{Result, SubstrateCli};
-use sc_finality_grandpa::{self as grandpa};
+use sc_cli::{ChainSpec, Result, Role, RuntimeVersion, SubstrateCli};
+use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
-    fn impl_name() -> &'static str {
-        "Joystream Node"
+    fn impl_name() -> String {
+        "Joystream Node".into()
     }
 
-    fn support_url() -> &'static str {
-        "https://www.joystream.org/"
+    fn support_url() -> String {
+        "https://www.joystream.org/".into()
     }
 
     fn copyright_start_year() -> i32 {
         2019
     }
 
-    fn executable_name() -> &'static str {
-        "joystream-node"
+    fn executable_name() -> String {
+        "joystream-node".into()
     }
 
-    fn impl_version() -> &'static str {
-        env!("SUBSTRATE_CLI_IMPL_VERSION")
+    fn impl_version() -> String {
+        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
     }
 
-    fn description() -> &'static str {
-        env!("CARGO_PKG_DESCRIPTION")
+    fn description() -> String {
+        env!("CARGO_PKG_DESCRIPTION").into()
     }
 
-    fn author() -> &'static str {
-        env!("CARGO_PKG_AUTHORS")
+    fn author() -> String {
+        env!("CARGO_PKG_AUTHORS").into()
+    }
+
+    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
+        &node_runtime::VERSION
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
@@ -71,7 +75,10 @@ pub fn run() -> Result<()> {
     match &cli.subcommand {
         None => {
             let runner = cli.create_runner(&cli.run)?;
-            runner.run_node(service::new_light, service::new_full, node_runtime::VERSION)
+            runner.run_node_until_exit(|config| match config.role {
+                Role::Light => service::new_light(config),
+                _ => service::new_full(config),
+            })
         }
         Some(Subcommand::Inspect(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -84,17 +91,98 @@ pub fn run() -> Result<()> {
 
                 runner.sync_run(|config| cmd.run::<Block, Executor>(config))
             } else {
-                println!(
-                    "Benchmarking wasn't enabled when building the node. \
+                Err("Benchmarking wasn't enabled when building the node. \
 				You can enable it with `--features runtime-benchmarks`."
-                );
-                Ok(())
+                    .into())
             }
         }
-        Some(Subcommand::Base(subcommand)) => {
-            let runner = cli.create_runner(subcommand)?;
+        Some(Subcommand::Key(cmd)) => cmd.run(),
+        Some(Subcommand::Sign(cmd)) => cmd.run(),
+        Some(Subcommand::Verify(cmd)) => cmd.run(),
+        Some(Subcommand::Vanity(cmd)) => cmd.run(),
+        Some(Subcommand::BuildSpec(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
+        }
+        Some(Subcommand::BuildSyncSpec(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|config| {
+                let chain_spec = config.chain_spec.cloned_box();
+                let network_config = config.network.clone();
+                let NewFullBase {
+                    task_manager,
+                    client,
+                    network_status_sinks,
+                    ..
+                } = new_full_base(config, |_, _| ())?;
 
-            runner.run_subcommand(subcommand, |config| Ok(new_full_start!(config).0))
+                Ok((
+                    cmd.run(chain_spec, network_config, client, network_status_sinks),
+                    task_manager,
+                ))
+            })
+        }
+        Some(Subcommand::CheckBlock(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    import_queue,
+                    ..
+                } = new_partial(&config)?;
+                Ok((cmd.run(client, import_queue), task_manager))
+            })
+        }
+        Some(Subcommand::ExportBlocks(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    ..
+                } = new_partial(&config)?;
+                Ok((cmd.run(client, config.database), task_manager))
+            })
+        }
+        Some(Subcommand::ExportState(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    ..
+                } = new_partial(&config)?;
+                Ok((cmd.run(client, config.chain_spec), task_manager))
+            })
+        }
+        Some(Subcommand::ImportBlocks(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    import_queue,
+                    ..
+                } = new_partial(&config)?;
+                Ok((cmd.run(client, import_queue), task_manager))
+            })
+        }
+        Some(Subcommand::PurgeChain(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.sync_run(|config| cmd.run(config.database))
+        }
+        Some(Subcommand::Revert(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    backend,
+                    ..
+                } = new_partial(&config)?;
+                Ok((cmd.run(client, backend), task_manager))
+            })
         }
     }
 }

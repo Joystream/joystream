@@ -56,11 +56,11 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, print, StorageValue};
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{Bounded, One, Zero};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::{ensure_root, ensure_signed};
 
 use crate::types::ExitInitiationOrigin;
 use common::constraints::InputValidationLengthConstraint;
@@ -89,18 +89,19 @@ pub type ApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime reward
 pub type BalanceOfMint<T> =
-    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Negative imbalance of runtime.
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 /// Alias for the worker application id to the worker id dictionary
 pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>;
@@ -114,7 +115,7 @@ pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 // Type simplification
 type OpeningInfo<T> = (
     OpeningOf<T>,
-    hiring::Opening<BalanceOf<T>, <T as system::Trait>::BlockNumber, HiringApplicationId<T>>,
+    hiring::Opening<BalanceOf<T>, <T as frame_system::Trait>::BlockNumber, HiringApplicationId<T>>,
 );
 
 // Type simplification
@@ -123,33 +124,37 @@ type ApplicationInfo<T> = (ApplicationOf<T>, ApplicationId<T>, OpeningOf<T>);
 // Type simplification
 type RewardSettings<T> = (
     <T as minting::Trait>::MintId,
-    RewardPolicy<BalanceOfMint<T>, <T as system::Trait>::BlockNumber>,
+    RewardPolicy<BalanceOfMint<T>, <T as frame_system::Trait>::BlockNumber>,
 );
 
 // Type simplification
 type WorkerOf<T> = Worker<
-    <T as system::Trait>::AccountId,
+    <T as frame_system::Trait>::AccountId,
     <T as recurringrewards::Trait>::RewardRelationshipId,
     <T as stake::Trait>::StakeId,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
 >;
 
 // Type simplification
 type OpeningOf<T> = Opening<
     <T as hiring::Trait>::OpeningId,
-    <T as system::Trait>::BlockNumber,
+    <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
     ApplicationId<T>,
 >;
 
 // Type simplification
-type ApplicationOf<T> =
-    Application<<T as system::Trait>::AccountId, OpeningId<T>, MemberId<T>, HiringApplicationId<T>>;
+type ApplicationOf<T> = Application<
+    <T as frame_system::Trait>::AccountId,
+    OpeningId<T>,
+    MemberId<T>,
+    HiringApplicationId<T>,
+>;
 
 /// The _Working group_ main _Trait_
 pub trait Trait<I: Instance>:
-    system::Trait
+    frame_system::Trait
     + membership::Trait
     + hiring::Trait
     + minting::Trait
@@ -157,7 +162,7 @@ pub trait Trait<I: Instance>:
     + recurringrewards::Trait
 {
     /// _Working group_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Defines max workers number in the working group.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -168,7 +173,7 @@ decl_event!(
     pub enum Event<T, I>
     where
         WorkerId = WorkerId<T>,
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
         OpeningId = OpeningId<T>,
         ApplicationId = ApplicationId<T>,
         ApplicationIdToWorkerIdMap = ApplicationIdToWorkerIdMap<T>,
@@ -647,7 +652,7 @@ decl_module! {
             // Ensure origin which will server as the source account for staked funds is signed
             let source_account = ensure_signed(origin)?;
 
-            // In absence of a more general key delegation system which allows an account with some funds to
+            // In absence of a more general key delegation frame_system which allows an account with some funds to
             // grant another account permission to stake from its funds, the origin of this call must have the funds
             // and cannot specify another arbitrary account as the source account.
             // Ensure the source_account is either the controller or root account of member with given id
@@ -855,7 +860,7 @@ decl_module! {
                 let mint_id = Self::mint();
 
                 // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
+                ensure!(policy.next_payment_at_block > <frame_system::Module<T>>::block_number(),
                     Error::<T, I>::FillOpeningInvalidNextPaymentBlock);
 
                 // The verified reward settings to use
@@ -1626,17 +1631,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     hiring::ApplicationById::<T>::get(successful_application.hiring_application_id);
 
                 // Staking profile for worker
-                let stake_profile = if let Some(ref stake_id) = application.active_role_staking_id {
-                    Some(RoleStakeProfile::new(
+                let stake_profile = application.active_role_staking_id.as_ref().map(|stake_id| {
+                    RoleStakeProfile::new(
                         stake_id,
                         &opening
                             .policy_commitment
                             .terminate_role_stake_unstaking_period,
                         &opening.policy_commitment.exit_role_stake_unstaking_period,
-                    ))
-                } else {
-                    None
-                };
+                    )
+                });
 
                 // Get worker id
                 let new_worker_id = <NextWorkerId<T, I>>::get();
