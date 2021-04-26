@@ -59,3 +59,23 @@ The simplest way to run an indexer locally is to run `docker-compose-indexer.yml
 - If non-standard types are being used by the Substrate runtime, map type definitions in the json format as an external volume
 
 Follow the links for more information about the [indexer](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer/README.md) service and [indexer-api-gateway](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer-gateway/README.md).
+
+
+
+# Tmp command order
+TODO: remove after integration tests are finished and query node runs without any issues
+```
+# build everything
+yarn
+yarn build
+
+```
+
+running the processor:
+```
+cp types/augment/all/defs.json query-node/mappings/lib/generated/types/typedefs.json
+docker-compose up -d db
+yarn workspace query-node-root db:create
+yarn workspace query-node-root db:migrate
+
+```

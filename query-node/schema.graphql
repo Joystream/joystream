@@ -31,16 +31,13 @@ type Membership @entity {
   rootAccount: String!
 
   "Blocknumber when member was registered"
-  registeredAtBlock: BigInt!
-
-  "Timestamp when member was registered"
-  registeredAtTime: DateTime!
+  createdInBlock: Int!
 
   "How the member was registered"
   entry: MembershipEntryMethod!
 
   "The type of subscription the member has purchased if any."
-  subscription: BigInt
+  subscription: Int
 
   channels: [Channel!]! @derivedFrom(field: "ownerMember")
 }
@@ -54,7 +51,7 @@ type ChannelCategory @entity {
 
   channels: [Channel!]! @derivedFrom(field: "category")
 
-  happenedIn: BigInt!
+  createdInBlock: Int!
 }
 
 "Asset availability representation"
@@ -65,7 +62,7 @@ enum AssetAvailability {
   "Asset is being uploaded to storage"
   PENDING,
 
-  "Anvalid storage (meta)data used"
+  "Invalid storage (meta)data used"
   INVALID,
 }
 
@@ -76,9 +73,6 @@ enum LiaisonJudgement {
 
   "Content accepted"
   ACCEPTED,
-
-  "Content rejected"
-  REJECTED,
 }
 
 "Manages content ids, type and storage provider decision about it"
@@ -87,16 +81,16 @@ type DataObject @entity {
   owner: DataObjectOwner!
 
   "Content added at"
-  addedAt: BigInt!
+  createdInBlock: Int!
 
   "Content type id"
   typeId: Int!
 
   "Content size in bytes"
-  size: BigInt!
+  size: Int!
 
   "Storage provider id of the liaison"
-  liaisonId: BigInt!
+  liaisonId: Int # liaison is unset until storage provider accepts or rejects the content
 
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
@@ -117,38 +111,45 @@ union DataObjectOwner = DataObjectOwnerMember
 
 "Asset owned by a member"
 type DataObjectOwnerMember @variant {
+  # use `Int` instead of `Membership` before variant relations are featured in Hydra
+  # TODO: setup proper relations
+  #"Member identifier"
+  #memberId: Membership!
   "Member identifier"
-  memberId: Membership!
+  member: Int!
 
   "Variant needs to have at least one property. This value is not used."
-  dummy: Int!
+  dummy: Int
 }
 
 "Asset owned by a channel"
 type DataObjectOwnerChannel @variant {
+  # use `Int` instead of `Channel` before variant relations are featured in Hydra
+  #"Channel identifier"
+  #channel: Channel!
   "Channel identifier"
-  channel: Channel!
+  channel: Int!
 
   "Variant needs to have at least one property. This value is not used."
-  dummy: Int!
+  dummy: Int
 }
 
 "Asset owned by a DAO"
 type DataObjectOwnerDao @variant {
   "DAO identifier"
-  daoId: BigInt!
+  dao: Int!
 }
 
 "Asset owned by the Council"
 type DataObjectOwnerCouncil @variant {
   "Variant needs to have at least one property. This value is not used."
-  dummy: Int!
+  dummy: Int
 }
 
 "Asset owned by a WorkingGroup"
 type DataObjectOwnerWorkingGroup @variant {
   "Working group identifier"
-  workingGroupId: BigInt!
+  workingGroup: Int!
 }
 
 #### High Level Derivative Entities ####
@@ -160,7 +161,7 @@ type Language @entity {
   "Language identifier ISO 639-1"
   iso: String!
 
-  happenedIn: BigInt!
+  createdInBlock: Int!
 }
 
 type Channel @entity {
@@ -202,13 +203,13 @@ type Channel @entity {
   # Channel's avatar photo.
 
   "Asset's data object"
-  avatarDataObject: DataObject
+  avatarPhotoDataObject: DataObject
 
   "URLs where the asset content can be accessed (if any)"
-  avatarUrls: [String!]
+  avatarPhotoUrls: [String!]
 
   "Availability meta information"
-  avatarAvailability: AssetAvailability!
+  avatarPhotoAvailability: AssetAvailability!
 
   ##########################
 
@@ -223,7 +224,7 @@ type Channel @entity {
 
   videos: [Video!]! @derivedFrom(field: "channel")
 
-  happenedIn: BigInt!
+  createdInBlock: Int!
 }
 
 type CuratorGroup @entity {
@@ -231,7 +232,7 @@ type CuratorGroup @entity {
   id: ID!
 
   "Curators belonging to this group"
-  curatorIds: [BigInt!]!
+  curatorIds: [Int!]!
 
   "Is group active or not"
   isActive: Boolean!
@@ -248,7 +249,7 @@ type VideoCategory @entity {
 
   videos: [Video!]! @derivedFrom(field: "category")
 
-  happenedIn: BigInt!
+  createdInBlock: Int!
 }
 
 type Video @entity {
@@ -256,7 +257,7 @@ type Video @entity {
   id: ID!
 
   "Reference to member's channel"
-  channel: Channel!
+  channel: Channel
 
   "Reference to a video category"
   category: VideoCategory
@@ -275,13 +276,13 @@ type Video @entity {
   # Video thumbnail (recommended ratio: 16:9)
 
   "Asset's data object"
-  thumbnailDataObject: DataObject
+  thumbnailPhotoDataObject: DataObject
 
   "URLs where the asset content can be accessed (if any)"
-  thumbnailUrls: [String!]
+  thumbnailPhotoUrls: [String!]
 
   "Availability meta information"
-  thumbnailAvailability: AssetAvailability!
+  thumbnailPhotoAvailability: AssetAvailability!
 
   ##########################
 
@@ -324,7 +325,7 @@ type Video @entity {
   "Video file metadata"
   mediaMetadata: VideoMediaMetadata
 
-  happenedIn: BigInt!
+  createdInBlock: Int!
 
   "Is video featured or not"
   isFeatured: Boolean!
@@ -350,7 +351,7 @@ type VideoMediaMetadata @entity {
 
   video: Video @derivedFrom(field: "mediaMetadata")
 
-  happenedIn: BigInt!
+  createdInBlock: Int!
 }
 
 type VideoMediaEncoding @entity {

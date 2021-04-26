@@ -15,6 +15,7 @@ export class PersonId extends u64 {}
 export class SeriesId extends u64 {}
 export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
+export class IsCensored extends bool {}
 
 export class NewAsset extends JoyEnum({
   Upload: ContentParameters,
@@ -209,6 +210,7 @@ export const contentDirectoryTypes = {
   SeasonParameters,
   EpisodeParemters,
   MaxNumber,
+  IsCensored,
 }
 
 export default contentDirectoryTypes
