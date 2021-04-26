@@ -386,3 +386,18 @@ type FeaturedVideo @entity {
   "Reference to a video"
   video: Video!
 }
+
+enum StorageProviderType {
+  GATEWAY
+  STORAGE
+}
+
+type StorageProvider @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  type: StorageProviderType!
+
+  "Custom metadata set by provider"
+  metadata: String
+}

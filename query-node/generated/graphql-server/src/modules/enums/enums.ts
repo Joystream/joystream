@@ -17,3 +17,7 @@ export enum LiaisonJudgement {
   PENDING = 'PENDING',
   ACCEPTED = 'ACCEPTED',
 }
+export enum StorageProviderType {
+  GATEWAY = 'GATEWAY',
+  STORAGE = 'STORAGE',
+}
