@@ -50,9 +50,9 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
+    OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
-use types::{ApplicationInfo, RewardPaymentType, WorkerInfo};
+use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
@@ -263,15 +263,11 @@ decl_event!(
 
         /// Emits on paying the reward.
         /// Params:
+        /// - Id of the worker.
         /// - Receiver Account Id.
         /// - Reward
-        RewardPaid(AccountId, Balance),
-
-        /// Emits on paying the missed reward.
-        /// Params:
-        /// - Receiver Account Id.
-        /// - Missed reward
-        MissedRewardPaid(AccountId, Balance),
+        /// - Payment type (missed reward or regular one)
+        RewardPaid(WorkerId, AccountId, Balance, RewardPaymentType),
 
         /// Emits on reaching new missed reward.
         /// Params:
@@ -1322,6 +1318,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             // Check whether the budget is not zero.
             if actual_reward > Zero::zero() {
                 Self::pay_reward(
+                    worker_id,
                     &worker.reward_account_id,
                     actual_reward,
                     RewardPaymentType::RegularReward,
@@ -1350,20 +1347,18 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Helper-function joining the reward payment with the event.
     fn pay_reward(
+        worker_id: &WorkerId<T>,
         account_id: &T::AccountId,
         amount: BalanceOf<T>,
         reward_payment_type: RewardPaymentType,
     ) {
         Self::pay_from_budget(account_id, amount);
-
-        let event = match reward_payment_type {
-            RewardPaymentType::MissedReward => {
-                RawEvent::MissedRewardPaid(account_id.clone(), amount)
-            }
-            RewardPaymentType::RegularReward => RawEvent::RewardPaid(account_id.clone(), amount),
-        };
-
-        Self::deposit_event(event);
+        Self::deposit_event(RawEvent::RewardPaid(
+            *worker_id,
+            account_id.clone(),
+            amount,
+            reward_payment_type,
+        ));
     }
 
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
@@ -1375,6 +1370,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             // Checks if the budget allows any payment.
             if could_be_paid_reward > Zero::zero() {
                 Self::pay_reward(
+                    worker_id,
                     &worker.reward_account_id,
                     could_be_paid_reward,
                     RewardPaymentType::MissedReward,
