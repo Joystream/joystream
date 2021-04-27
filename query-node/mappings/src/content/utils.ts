@@ -262,12 +262,16 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     }
 
     // prepare media meta information if needed
-    if ('mediaType' in metaAsObject) {
+    if ('mediaType' in metaAsObject || 'mediaPixelWidth' in metaAsObject || 'mediaPixelHeight' in metaAsObject) {
       // prepare video file size if poosible
       const videoSize = await extractVideoSize(parameters.assets, metaAsObject.video)
 
       result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber)
+
+      // remove extra values
       delete metaAsObject.mediaType
+      delete metaAsObject.mediaPixelWidth
+      delete metaAsObject.mediaPixelHeight
     }
 
     // prepare license if needed
@@ -607,6 +611,9 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
 }
 
 async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): Promise<VideoMediaMetadata> {
+  // TODO: handle situations when only some metadata are set (e.g. pixelWidth and mediaType is defined, but pixelHeight is missing)
+  // TODO: handle update of VideoMediaEncoding and VideoMediaMetadata
+  //       right now when only some of mediaType(mb partial), mediaPixelWidth, or mediaPixelHeight is set, the update discards previous values
   // create new encoding info
   const encoding = new VideoMediaEncoding({
     ...videoProtobuf.mediaType,
