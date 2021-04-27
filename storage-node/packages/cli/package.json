@@ -46,7 +46,7 @@
   "dependencies": {
     "@joystream/storage-runtime-api": "^0.1.0",
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.16.0",
+    "@joystream/types": "^0.16.1",
     "axios": "^0.21.1",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",

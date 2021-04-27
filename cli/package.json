@@ -10,7 +10,7 @@
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
-    "@joystream/types": "^0.16.0",
+    "@joystream/types": "^0.16.1",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",

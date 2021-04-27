@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "description": "Types for Joystream Substrate Runtime - Sumer release",
   "main": "index.js",
   "types": "index.d.ts",
