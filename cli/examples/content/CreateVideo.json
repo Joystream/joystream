@@ -1,0 +1,20 @@
+{
+  "title": "Example Joystream Video",
+  "description": "This is an awesome example video!",
+  "videoPath": "./video.mp4",
+  "thumbnailPhotoPath": "./avatar-photo-1.png",
+  "language": "en",
+  "hasMarketing": false,
+  "isPublic": true,
+  "isExplicit": false,
+  "personsList": [],
+  "category": 1,
+  "license": {
+    "code": 1001,
+    "attribution": "by Joystream Contributors"
+  },
+  "publishedBeforeJoystream": {
+    "isPublished": true,
+    "date": "2020-01-01"
+  }
+}

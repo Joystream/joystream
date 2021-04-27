@@ -30,7 +30,7 @@ import {
 } from '../../../generated/types'
 
 import {
-  inconsistentState,
+  invalidMetadata,
   logger,
   prepareDataObject,
 } from '../common'
@@ -265,7 +265,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure member exists
     if (!member) {
-      inconsistentState(`Actor is non-existing member`, memberId)
+      invalidMetadata(`Actor is non-existing member`, memberId)
       return {
         // this will clear fields
         ownerMember: undefined,
@@ -285,7 +285,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure curator group exists
     if (!curatorGroup) {
-      inconsistentState('Actor is non-existing curator group', curatorGroupId)
+      invalidMetadata('Actor is non-existing curator group', curatorGroupId)
       return {
         // this will clear fields
         ownerMember: undefined,
@@ -389,7 +389,7 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetS
 
   // ensure asset index is valid
   if (parameters.assetIndex >= parameters.assets.length) {
-    inconsistentState(`Non-existing asset extraction requested`, {
+    invalidMetadata(`Non-existing asset extraction requested`, {
       assetsProvided: parameters.assets.length,
       assetIndex: parameters.assetIndex,
     })
@@ -455,7 +455,7 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
 
   // ensure asset index is valid
   if (assetIndex > assets.length) {
-    inconsistentState(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
+    invalidMetadata(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
     return undefined
   }
 
@@ -487,7 +487,7 @@ async function prepareLanguage(languageIso: string | undefined, db: DatabaseMana
 
   // ensure language string is valid
   if (!isValidIso) {
-    inconsistentState(`Invalid language ISO-639-1 provided`, languageIso)
+    invalidMetadata(`Invalid language ISO-639-1 provided`, languageIso)
     return undefined
   }
 
@@ -574,7 +574,7 @@ async function prepareVideoCategory(categoryId: number | undefined, db: Database
 
   // ensure video category exists
   if (!category) {
-    inconsistentState('Non-existing video category association with video requested', categoryId)
+    invalidMetadata('Non-existing video category association with video requested', categoryId)
     return undefined
   }
 
