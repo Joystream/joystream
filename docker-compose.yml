@@ -98,8 +98,9 @@ services:
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
-    volumes:
-      - ${TYPES_JSON}:/joystream/query-node/mappings/lib/generated/types/typedefs.json
+    # No need for volume the defs.json is copied during build process
+    # volumes:
+    #   - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
       - graphql-server
       - hydra-indexer-gateway
@@ -118,12 +119,11 @@ services:
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
-      - TYPES_JSON=types.json
     depends_on:
       - db
       - redis
     volumes:
-      - ${TYPES_JSON}:/home/hydra/packages/hydra-indexer/types.json
+      - ./types/augment/all/defs.json:/home/hydra/packages/hydra-indexer/types.json
     command: >
       sh -c "yarn db:bootstrap && yarn start:prod"
 
