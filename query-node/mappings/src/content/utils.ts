@@ -217,7 +217,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         blockNumber: parameters.blockNumber,
         contentOwner: parameters.contentOwner,
       })
-      integrateAsset('thumbnail', result, asset) // changes `result` inline!
+      integrateAsset('thumbnailPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.thumbnailPhoto
     }
 
