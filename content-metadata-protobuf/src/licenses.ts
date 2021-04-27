@@ -1,4 +1,4 @@
-// Helper methods to handle joystream defined licence types
+// Helper methods to handle joystream defined license types
 // This should be factored out into a separate package
 
 import LICENSES from './KnownLicenses.json'
