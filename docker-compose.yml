@@ -66,7 +66,7 @@ services:
   graphql-server:
     image: joystream/apps
     restart: unless-stopped
-    build: 
+    build:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
@@ -77,27 +77,30 @@ services:
       - DB_NAME=${DB_NAME}
     ports:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
-    depends_on: 
+    depends_on:
       - db
     command: ["workspace", "query-node-root", "query-node:start:prod"]
 
   processor:
     image: joystream/apps
     restart: unless-stopped
-    build: 
+    build:
       context: .
       dockerfile: apps.Dockerfile
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:${WARTHOG_APP_PORT}/graphql
+      - INDEXER_ENDPOINT_URL=http://hydra-indexer-gateway:${WARTHOG_APP_PORT}/graphql
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
+    volumes:
+      - ${TYPES_JSON}:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
+      - graphql-server
       - hydra-indexer-gateway
     command: ["workspace", "query-node-root", "processor:start"]
 
