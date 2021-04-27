@@ -21,6 +21,7 @@
     "db:processor:migrate": "hydra-processor migrate --env ../.env",
     "db:migrate": "yarn db:schema:migrate && yarn db:processor:migrate",
     "db:bootstrap": "yarn db:create && yarn db:prepare && yarn db:migrate",
+    "db:reset": "yarn db:drop && yarn db:prepare && yarn db:migrate",
     "bootstrap": "yarn codegen && yarn db:drop && yarn db:bootstrap",
     "codegen": "hydra-cli codegen",
     "codegen:noinstall": "hydra-cli codegen --no-install",

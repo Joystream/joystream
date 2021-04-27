@@ -29,6 +29,16 @@ export function inconsistentState(extraInfo: string, data?: unknown): void {
 }
 
 /*
+  Reports that metadata inserted by the user are not entirely valid, but the problem can be overcome.
+*/
+export function invalidMetadata(extraInfo: string, data?: unknown): void {
+  const errorMessage = 'Invalid metadata: ' + extraInfo
+
+  // log error
+  logger.info(errorMessage, data)
+}
+
+/*
   Prepares data object from content parameters.
 */
 export async function prepareDataObject(
