@@ -53,6 +53,9 @@ type Worker @entity {
   "Current reward per block"
   rewardPerBlock: BigInt!
 
+  "The reward amount the worker is currently missing (due to empty working group budget)"
+  missingRewardAmount: BigInt
+
   "All related reward payouts"
   payouts: [RewardPaidEvent!] @derivedFrom(field: "worker")
 

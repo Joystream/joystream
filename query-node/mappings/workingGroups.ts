@@ -66,6 +66,8 @@ import {
   StakeSlashedEvent,
   StakeDecreasedEvent,
   WorkerStartedLeavingEvent,
+  BudgetSetEvent,
+  BudgetSpendingEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -821,6 +823,12 @@ export async function workingGroups_RewardPaid(db: DatabaseManager, event_: Subs
   })
 
   await db.save<RewardPaidEvent>(rewardPaidEvent)
+
+  // Update group budget
+  group.budget = group.budget.sub(amount)
+  group.updatedAt = eventTime
+
+  await db.save<WorkingGroup>(group)
 }
 
 export async function workingGroups_NewMissedRewardLevelReached(
@@ -845,6 +853,12 @@ export async function workingGroups_NewMissedRewardLevelReached(
   })
 
   await db.save<NewMissedRewardLevelReachedEvent>(newMissedRewardLevelReachedEvent)
+
+  // Update worker
+  worker.missingRewardAmount = newMissedRewardAmountOpt.unwrapOr(undefined)
+  worker.updatedAt = eventTime
+
+  await db.save<Worker>(worker)
 }
 
 export async function workingGroups_WorkerExited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -1006,9 +1020,49 @@ export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, ev
 }
 
 export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { balance: newBudget } = new WorkingGroups.BudgetSetEvent(event_).data
+  const group = await getWorkingGroup(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const budgetSetEvent = new BudgetSetEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.BudgetSet),
+    newBudget,
+  })
+
+  await db.save<BudgetSetEvent>(budgetSetEvent)
+
+  group.budget = newBudget
+  group.updatedAt = eventTime
+
+  await db.save<WorkingGroup>(group)
 }
 
 export async function workingGroups_BudgetSpending(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TBD
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const { accountId: reciever, balance: amount, optBytes: optRationale } = new WorkingGroups.BudgetSpendingEvent(
+    event_
+  ).data
+  const group = await getWorkingGroup(db, event_)
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+
+  const budgetSpendingEvent = new BudgetSpendingEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    group,
+    event: await createEvent(db, event_, EventType.BudgetSpending),
+    amount,
+    reciever: reciever.toString(),
+    rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+  })
+
+  await db.save<BudgetSpendingEvent>(budgetSpendingEvent)
+
+  group.budget = group.budget.sub(amount)
+  group.updatedAt = eventTime
+
+  await db.save<WorkingGroup>(group)
 }

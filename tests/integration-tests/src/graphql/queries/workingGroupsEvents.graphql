@@ -331,3 +331,39 @@ query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
 }
 
 # TODO: LeaderUnset?
+
+fragment BudgetSetEventFields on BudgetSetEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  newBudget
+}
+
+query getBudgetSetEventsByEventIds($eventIds: [ID!]) {
+  budgetSetEvents(where: { eventId_in: $eventIds }) {
+    ...BudgetSetEventFields
+  }
+}
+
+fragment BudgetSpendingEventFields on BudgetSpendingEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  reciever
+  amount
+  rationale
+}
+
+query getBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
+  budgetSpendingEvents(where: { eventId_in: $eventIds }) {
+    ...BudgetSpendingEventFields
+  }
+}

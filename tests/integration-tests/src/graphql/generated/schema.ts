@@ -6536,6 +6536,8 @@ export type Worker = BaseGraphQlObject & {
   stake: Scalars['BigInt']
   /** Current reward per block */
   rewardPerBlock: Scalars['BigInt']
+  /** The reward amount the worker is currently missing (due to empty working group budget) */
+  missingRewardAmount?: Maybe<Scalars['BigInt']>
   payouts: Array<RewardPaidEvent>
   slashes: Array<StakeSlashedEvent>
   hiredAtBlock: Block
@@ -6580,6 +6582,7 @@ export type WorkerCreateInput = {
   isLead: Scalars['Boolean']
   stake: Scalars['BigInt']
   rewardPerBlock: Scalars['BigInt']
+  missingRewardAmount?: Maybe<Scalars['BigInt']>
   hiredAtBlockId: Scalars['ID']
   hiredAtTime: Scalars['DateTime']
   entryId: Scalars['ID']
@@ -6709,6 +6712,8 @@ export enum WorkerOrderByInput {
   StakeDesc = 'stake_DESC',
   RewardPerBlockAsc = 'rewardPerBlock_ASC',
   RewardPerBlockDesc = 'rewardPerBlock_DESC',
+  MissingRewardAmountAsc = 'missingRewardAmount_ASC',
+  MissingRewardAmountDesc = 'missingRewardAmount_DESC',
   HiredAtBlockIdAsc = 'hiredAtBlockId_ASC',
   HiredAtBlockIdDesc = 'hiredAtBlockId_DESC',
   HiredAtTimeAsc = 'hiredAtTime_ASC',
@@ -7300,6 +7305,7 @@ export type WorkerUpdateInput = {
   isLead?: Maybe<Scalars['Boolean']>
   stake?: Maybe<Scalars['BigInt']>
   rewardPerBlock?: Maybe<Scalars['BigInt']>
+  missingRewardAmount?: Maybe<Scalars['BigInt']>
   hiredAtBlockId?: Maybe<Scalars['ID']>
   hiredAtTime?: Maybe<Scalars['DateTime']>
   entryId?: Maybe<Scalars['ID']>
@@ -7372,6 +7378,12 @@ export type WorkerWhereInput = {
   rewardPerBlock_lt?: Maybe<Scalars['BigInt']>
   rewardPerBlock_lte?: Maybe<Scalars['BigInt']>
   rewardPerBlock_in?: Maybe<Array<Scalars['BigInt']>>
+  missingRewardAmount_eq?: Maybe<Scalars['BigInt']>
+  missingRewardAmount_gt?: Maybe<Scalars['BigInt']>
+  missingRewardAmount_gte?: Maybe<Scalars['BigInt']>
+  missingRewardAmount_lt?: Maybe<Scalars['BigInt']>
+  missingRewardAmount_lte?: Maybe<Scalars['BigInt']>
+  missingRewardAmount_in?: Maybe<Array<Scalars['BigInt']>>
   hiredAtBlockId_eq?: Maybe<Scalars['ID']>
   hiredAtBlockId_in?: Maybe<Array<Scalars['ID']>>
   hiredAtTime_eq?: Maybe<Scalars['DateTime']>

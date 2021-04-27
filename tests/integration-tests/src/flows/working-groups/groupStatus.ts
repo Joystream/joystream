@@ -7,7 +7,7 @@ import { workingGroups } from '../../consts'
 import { WorkingGroupMetadata } from '@joystream/metadata-protobuf'
 import _ from 'lodash'
 
-export default async function upcomingOpenings({ api, query, env }: FlowProps): Promise<void> {
+export default async function groupStatus({ api, query, env }: FlowProps): Promise<void> {
   await Promise.all(
     workingGroups.map(async (group) => {
       const updates: WorkingGroupMetadata.AsObject[] = [

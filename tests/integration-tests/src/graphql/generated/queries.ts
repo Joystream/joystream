@@ -291,6 +291,7 @@ export type WorkerFieldsFragment = {
   hiredAtTime: any
   storage?: Types.Maybe<string>
   rewardPerBlock: any
+  missingRewardAmount?: Types.Maybe<any>
   group: { name: string }
   membership: { id: string }
   status:
@@ -658,6 +659,34 @@ export type GetTerminatedLeaderEventsByEventIdsQueryVariables = Types.Exact<{
 export type GetTerminatedLeaderEventsByEventIdsQuery = {
   terminatedLeaderEvents: Array<TerminatedLeaderEventFieldsFragment>
 }
+
+export type BudgetSetEventFieldsFragment = {
+  id: string
+  newBudget: any
+  event: EventFieldsFragment
+  group: { name: string }
+}
+
+export type GetBudgetSetEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetSetEventsByEventIdsQuery = { budgetSetEvents: Array<BudgetSetEventFieldsFragment> }
+
+export type BudgetSpendingEventFieldsFragment = {
+  id: string
+  reciever: string
+  amount: any
+  rationale?: Types.Maybe<string>
+  event: EventFieldsFragment
+  group: { name: string }
+}
+
+export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
@@ -1137,6 +1166,7 @@ export const WorkerFields = gql`
     }
     storage
     rewardPerBlock
+    missingRewardAmount
   }
   ${BlockFields}
   ${ApplicationBasicFields}
@@ -1374,6 +1404,34 @@ export const TerminatedLeaderEventFields = gql`
       runtimeId
     }
     penalty
+    rationale
+  }
+  ${EventFields}
+`
+export const BudgetSetEventFields = gql`
+  fragment BudgetSetEventFields on BudgetSetEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    newBudget
+  }
+  ${EventFields}
+`
+export const BudgetSpendingEventFields = gql`
+  fragment BudgetSpendingEventFields on BudgetSpendingEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    reciever
+    amount
     rationale
   }
   ${EventFields}
@@ -1689,4 +1747,20 @@ export const GetTerminatedLeaderEventsByEventIds = gql`
     }
   }
   ${TerminatedLeaderEventFields}
+`
+export const GetBudgetSetEventsByEventIds = gql`
+  query getBudgetSetEventsByEventIds($eventIds: [ID!]) {
+    budgetSetEvents(where: { eventId_in: $eventIds }) {
+      ...BudgetSetEventFields
+    }
+  }
+  ${BudgetSetEventFields}
+`
+export const GetBudgetSpendingEventsByEventIds = gql`
+  query getBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
+    budgetSpendingEvents(where: { eventId_in: $eventIds }) {
+      ...BudgetSpendingEventFields
+    }
+  }
+  ${BudgetSpendingEventFields}
 `

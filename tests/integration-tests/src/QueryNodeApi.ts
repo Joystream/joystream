@@ -156,6 +156,14 @@ import {
   GetStakeDecreasedEventsByEventIdsQuery,
   GetStakeDecreasedEventsByEventIdsQueryVariables,
   GetStakeDecreasedEventsByEventIds,
+  BudgetSetEventFieldsFragment,
+  GetBudgetSetEventsByEventIdsQuery,
+  GetBudgetSetEventsByEventIdsQueryVariables,
+  GetBudgetSetEventsByEventIds,
+  BudgetSpendingEventFieldsFragment,
+  GetBudgetSpendingEventsByEventIdsQuery,
+  GetBudgetSpendingEventsByEventIdsQueryVariables,
+  GetBudgetSpendingEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -611,5 +619,22 @@ export class QueryNodeApi {
       GetStakeDecreasedEventsByEventIdsQuery,
       GetStakeDecreasedEventsByEventIdsQueryVariables
     >(GetStakeDecreasedEventsByEventIds, { eventIds }, 'stakeDecreasedEvents')
+  }
+
+  public async getBudgetSetEvents(events: EventDetails[]): Promise<BudgetSetEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetBudgetSetEventsByEventIdsQuery, GetBudgetSetEventsByEventIdsQueryVariables>(
+      GetBudgetSetEventsByEventIds,
+      { eventIds },
+      'budgetSetEvents'
+    )
+  }
+
+  public async getBudgetSpendingEvents(events: EventDetails[]): Promise<BudgetSpendingEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetBudgetSpendingEventsByEventIdsQuery,
+      GetBudgetSpendingEventsByEventIdsQueryVariables
+    >(GetBudgetSpendingEventsByEventIds, { eventIds }, 'budgetSpendingEvents')
   }
 }

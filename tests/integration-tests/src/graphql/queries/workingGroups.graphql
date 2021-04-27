@@ -84,6 +84,7 @@ fragment WorkerFields on Worker {
   }
   storage
   rewardPerBlock
+  missingRewardAmount
 }
 
 fragment WorkingGroupMetadataFields on WorkingGroupMetadata {
