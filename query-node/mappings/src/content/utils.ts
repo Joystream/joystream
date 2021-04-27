@@ -9,10 +9,10 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { Bytes } from '@polkadot/types'
-import ISO6391 from 'iso-639-1';
-import { u64 } from '@polkadot/types/primitive';
+import ISO6391 from 'iso-639-1'
+import { u64 } from '@polkadot/types/primitive'
 import { FindConditions } from 'typeorm'
-import * as jspb from "google-protobuf";
+import * as jspb from "google-protobuf"
 
 // protobuf definitions
 import {
@@ -100,6 +100,69 @@ export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments
 }
 
 /*
+  This class represents one of 3 possible states when changing property read from metadata.
+  NoChange - don't change anything (used when invalid metadata are encountered)
+  Unset - unset the value (used when the unset is requested in runtime)
+  Change - set the new value
+*/
+export class PropertyChange<T> {
+
+  static newUnset<T>() {
+    return new PropertyChange<T>('unset')
+  }
+
+  static newNoChange<T>() {
+    return new PropertyChange<T>('nochange')
+  }
+
+  static newChange<T>(value: T) {
+    return new PropertyChange<T>('change', value)
+  }
+
+  private type: string
+  private value?: T
+
+  private constructor(type: 'change' | 'nochange' | 'unset', value?: T) {
+    this.type = type
+    this.value = value
+  }
+
+  public isUnset(): boolean {
+    return this.type == 'unset'
+  }
+
+  public isNoChange(): boolean {
+    return this.type == 'nochange'
+  }
+
+  public isValue(): boolean {
+    return this.type == 'change'
+  }
+
+  public getValue(): T | undefined {
+    return this.type == 'change'
+      ? this.value
+      : undefined
+  }
+
+  /*
+    Integrates the value into the given dictionary.
+  */
+  public integrateInto(object: Object, key: string): void {
+    if (this.isNoChange()) {
+      return
+    }
+
+    if (this.isUnset()) {
+      delete object[key]
+      return
+    }
+
+    object[key] = this.value
+  }
+}
+
+/*
   Reads information from the event and protobuf metadata and constructs changeset that's fit to be used when saving to db.
 */
 export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
@@ -107,7 +170,7 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   parameters: IReadProtobufArguments,
 ): Promise<Partial<T>> {
   // true option here is crucial, it indicates that we want just the underlying bytes (by default it will also include bytes encoding the length)
-  const metaU8a = parameters.metadata.toU8a(true);
+  const metaU8a = parameters.metadata.toU8a(true)
 
   // process channel category
   if (type instanceof ChannelCategory) {
@@ -140,7 +203,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   parameters: IReadProtobufArgumentsWithAssets,
 ): Promise<Partial<T>> {
   // true option here is crucial, it indicates that we want just the underlying bytes (by default it will also include bytes encoding the length)
-  const metaU8a = parameters.metadata.toU8a(true);
+  const metaU8a = parameters.metadata.toU8a(true)
 
   // process channel
   if (type instanceof Channel) {
@@ -177,7 +240,9 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare language if needed
     if ('language' in metaAsObject) {
-      result.language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
+      const language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
+      delete metaAsObject.language // make sure temporary value will not interfere
+      language.integrateInto(result, 'language')
     }
 
     return result as Partial<T>
@@ -191,7 +256,9 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare video category if needed
     if ('category' in metaAsObject) {
-      result.category = await prepareVideoCategory(metaAsObject.category, parameters.db)
+      const category = await prepareVideoCategory(metaAsObject.category, parameters.db)
+      delete metaAsObject.category // make sure temporary value will not interfere
+      category.integrateInto(result, 'category')
     }
 
     // prepare media meta information if needed
@@ -236,7 +303,9 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare language if needed
     if ('language' in metaAsObject) {
-      result.language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
+      const language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
+      delete metaAsObject.language // make sure temporary value will not interfere
+      language.integrateInto(result, 'language')
     }
 
     // prepare information about media published somewhere else before Joystream if needed.
@@ -266,11 +335,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
     // ensure member exists
     if (!member) {
       invalidMetadata(`Actor is non-existing member`, memberId)
-      return {
-        // this will clear fields
-        ownerMember: undefined,
-        ownerCuratorGroup: undefined,
-      }
+      return {} // this will keep fields unchanged
     }
 
     return {
@@ -286,11 +351,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
     // ensure curator group exists
     if (!curatorGroup) {
       invalidMetadata('Actor is non-existing curator group', curatorGroupId)
-      return {
-        // this will clear fields
-        ownerMember: undefined,
-        ownerCuratorGroup: undefined,
-      }
+      return {} // this will keep fields unchanged
     }
 
     return {
@@ -381,10 +442,10 @@ interface IExtractAssetParameters {
 /*
   Selects asset from provided set of assets and prepares asset data fit to be saved to db.
 */
-async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetStorageOrUrls | undefined> {
+async function extractAsset(parameters: IExtractAssetParameters): Promise<PropertyChange<AssetStorageOrUrls>> {
   // is asset being unset?
   if (parameters.assetIndex === undefined) {
-    return undefined
+    return PropertyChange.newUnset()
   }
 
   // ensure asset index is valid
@@ -393,16 +454,18 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetS
       assetsProvided: parameters.assets.length,
       assetIndex: parameters.assetIndex,
     })
-    return undefined
+    return PropertyChange.newNoChange()
   }
 
   // convert asset to data object record
-  return convertAsset({
+  const asset = await convertAsset({
     rawAsset: parameters.assets[parameters.assetIndex],
     db: parameters.db,
     blockNumber: parameters.blockNumber,
     contentOwner: parameters.contentOwner,
   })
+
+  return PropertyChange.newChange(asset)
 }
 
 /*
@@ -411,29 +474,37 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<AssetS
 
   Changes `result` argument!
 */
-function integrateAsset<T>(propertyName: string, result: Object, asset: AssetStorageOrUrls | undefined) {
+function integrateAsset<T>(propertyName: string, result: Object, asset: PropertyChange<AssetStorageOrUrls>): void {
   // helpers - property names
   const nameUrl = propertyName + 'Urls'
   const nameDataObject = propertyName + 'DataObject'
   const nameAvailability = propertyName + 'Availability'
 
-  if (asset === undefined) {
+  if (asset.isNoChange()) {
+    return
+  }
+
+  if (asset.isUnset()) {
     result[nameUrl] = []
     result[nameAvailability] = AssetAvailability.INVALID
     result[nameDataObject] = undefined // plan deletion (will have effect when saved to db)
 
-    return result
+    return
   }
 
-  // is asset saved in storage?
-  if (!isAssetInStorage(asset)) {
+  const newValue = asset.getValue() as AssetStorageOrUrls
+
+  // is asset available on external URL(s)
+  if (!isAssetInStorage(newValue)) {
     // (un)set asset's properties
-    result[nameUrl] = asset
+    result[nameUrl] = newValue
     result[nameAvailability] = AssetAvailability.ACCEPTED
     result[nameDataObject] = undefined // plan deletion (will have effect when saved to db)
 
-    return result
+    return
   }
+
+  // asset saved in storage
 
   // prepare conversion table between liaison judgment and asset availability
   const conversionTable = {
@@ -443,8 +514,8 @@ function integrateAsset<T>(propertyName: string, result: Object, asset: AssetSto
 
   // (un)set asset's properties
   result[nameUrl] = [] // plan deletion (will have effect when saved to db)
-  result[nameAvailability] = conversionTable[asset.liaisonJudgement]
-  result[nameDataObject] = asset
+  result[nameAvailability] = conversionTable[newValue.liaisonJudgement]
+  result[nameDataObject] = newValue
 }
 
 async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<number | undefined> {
@@ -476,19 +547,19 @@ async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefin
   return videoSize
 }
 
-async function prepareLanguage(languageIso: string | undefined, db: DatabaseManager, blockNumber: number): Promise<Language | undefined> {
+async function prepareLanguage(languageIso: string | undefined, db: DatabaseManager, blockNumber: number): Promise<PropertyChange<Language>> {
   // is language being unset?
   if (languageIso === undefined) {
-    return undefined
+    return PropertyChange.newUnset()
   }
 
   // validate language string
-  const isValidIso = ISO6391.validate(languageIso);
+  const isValidIso = ISO6391.validate(languageIso)
 
   // ensure language string is valid
   if (!isValidIso) {
     invalidMetadata(`Invalid language ISO-639-1 provided`, languageIso)
-    return undefined
+    return PropertyChange.newNoChange()
   }
 
   // load language
@@ -496,7 +567,7 @@ async function prepareLanguage(languageIso: string | undefined, db: DatabaseMana
 
   // return existing language if any
   if (language) {
-    return language;
+    return PropertyChange.newChange(language)
   }
 
 
@@ -512,7 +583,7 @@ async function prepareLanguage(languageIso: string | undefined, db: DatabaseMana
 
   await db.save<Language>(newLanguage)
 
-  return newLanguage
+  return PropertyChange.newChange(newLanguage)
 }
 
 async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefined): Promise<License | undefined> {
@@ -563,10 +634,10 @@ async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, video
   return videoMeta
 }
 
-async function prepareVideoCategory(categoryId: number | undefined, db: DatabaseManager): Promise<VideoCategory | undefined> {
+async function prepareVideoCategory(categoryId: number | undefined, db: DatabaseManager): Promise<PropertyChange<VideoCategory>> {
   // is category being unset?
   if (categoryId === undefined) {
-    return undefined
+    return PropertyChange.newUnset()
   }
 
   // load video category
@@ -575,10 +646,10 @@ async function prepareVideoCategory(categoryId: number | undefined, db: Database
   // ensure video category exists
   if (!category) {
     invalidMetadata('Non-existing video category association with video requested', categoryId)
-    return undefined
+    return PropertyChange.newNoChange()
   }
 
-  return category
+  return PropertyChange.newChange(category)
 }
 
 function convertMetadataToObject<T extends Object>(metadata: jspb.Message): T {
