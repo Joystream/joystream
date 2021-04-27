@@ -79,7 +79,7 @@ jobs:
           path: joystream-node-docker-image.tar.gz
 
   basic_runtime_with_upgrade:
-    if: ${{ false }}  # Antioch will be a new chain
+    # if: ${{ false }}
     name: Integration Tests (Runtime Upgrade)
     needs: build_images
     runs-on: ubuntu-latest
@@ -130,32 +130,6 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         run: tests/network-tests/run-tests.sh full
-
-  content_dir_init:
-    name: Content Directory Initialization
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-      - name: Install packages and dependencies
-        run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-      - name: Start chain
-        run: docker-compose up -d joystream-node
-      - name: Initialize the content directory
-        run: yarn workspace api-scripts initialize-content-lead
 
   query_node:
     name: Query Node Integration Tests
