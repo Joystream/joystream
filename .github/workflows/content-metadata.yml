@@ -23,6 +23,6 @@ jobs:
         # sudo apt-get install -y golang-go
         # go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
         yarn install --frozen-lockfile
-        # yarn workspace @joystream/content-metadata-protobuf build
+        yarn workspace @joystream/content-metadata-protobuf build:ts
         yarn workspace @joystream/content-metadata-protobuf checks --quiet
         yarn workspace @joystream/content-metadata-protobuf test
