@@ -98,9 +98,8 @@ services:
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
-    # No need for volume the defs.json is copied during build process
-    # volumes:
-    #   - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
+    volumes:
+      - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
       - graphql-server
       - hydra-indexer-gateway
