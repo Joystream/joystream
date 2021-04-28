@@ -54,7 +54,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -68,9 +68,9 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl proposals::Trait for Test {}
+impl proposals::Config for Test {}
 
-impl stake::Trait for Test {
+impl stake::Config for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = BalanceManagerStakingEventsHandler;
@@ -90,7 +90,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
@@ -99,7 +99,7 @@ impl membership::Trait for Test {
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
-impl crate::Trait for Test {
+impl crate::Config for Test {
     type Event = TestEvent;
     type ProposerOriginValidator = ();
     type VoterOriginValidator = ();
@@ -145,7 +145,7 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -173,7 +173,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

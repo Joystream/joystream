@@ -33,7 +33,7 @@ pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
 
 fn setup_members(count: u8) {
-    let authority_account_id = <Runtime as frame_system::Trait>::AccountId::default();
+    let authority_account_id = <Runtime as frame_system::Config>::AccountId::default();
     Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id.clone())
         .unwrap();
 
@@ -79,7 +79,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     type Balances = pallet_balances::Module<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
-        let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+        let _ = <Runtime as stake::Config>::Currency::deposit_creating(&account_id, balance);
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
@@ -169,7 +169,7 @@ impl Default for DummyProposalFixture {
                 grace_period: 0,
                 required_stake: None,
             },
-            account_id: <Runtime as frame_system::Trait>::AccountId::default(),
+            account_id: <Runtime as frame_system::Config>::AccountId::default(),
             proposer_id: 0,
             proposal_code: dummy_proposal.encode(),
             title,
@@ -236,7 +236,7 @@ struct CancelProposalFixture {
 
 impl CancelProposalFixture {
     fn new(proposal_id: u32) -> Self {
-        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
+        let account_id = <Runtime as frame_system::Config>::AccountId::default();
         CancelProposalFixture {
             proposal_id,
             origin: RawOrigin::Signed(account_id),
@@ -268,7 +268,7 @@ impl CancelProposalFixture {
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
-        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
+        let account_id = <Runtime as frame_system::Config>::AccountId::default();
 
         setup_members(2);
         let member_id = 0; // newly created member_id
@@ -291,19 +291,19 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         let account_top_up = 500000;
         let account_starting_balance =
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id);
+            <Runtime as stake::Config>::Currency::total_balance(&account_id);
 
         let _imbalance =
-            <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_top_up);
+            <Runtime as stake::Config>::Currency::deposit_creating(&account_id, account_top_up);
 
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id),
+            <Runtime as stake::Config>::Currency::total_balance(&account_id),
             account_starting_balance + account_top_up
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id),
+            <Runtime as stake::Config>::Currency::total_balance(&account_id),
             account_starting_balance + account_top_up - stake_amount
         );
 
@@ -342,7 +342,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         let cancellation_fee = ProposalCancellationFee::get() as u128;
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id),
+            <Runtime as stake::Config>::Currency::total_balance(&account_id),
             account_starting_balance + account_top_up - cancellation_fee
         );
     });
@@ -388,7 +388,7 @@ fn proposal_reset_succeeds() {
         );
 
         // Check proposals CouncilElected hook just trigger the election hook (empty council).
-        //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
+        //<Runtime as governance::election::Config>::CouncilElected::council_elected(Vec::new(), 10);
 
         elect_single_councilor();
 

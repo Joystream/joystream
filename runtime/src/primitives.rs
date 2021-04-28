@@ -72,7 +72,7 @@ pub type ChannelOwnershipTransferRequestId = u64;
 
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
-/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
+/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Config) and
 /// used in state storage and dispatchable method's argument types,
 /// and are therefore part of the public API/metadata of the runtime.
 /// In the current version the polkadot-js/api that is used and is compatible with the runtime,

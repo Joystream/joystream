@@ -59,7 +59,7 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -77,7 +77,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
@@ -86,7 +86,7 @@ impl membership::Trait for Test {
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
-impl crate::Trait for Test {
+impl crate::Config for Test {
     type Event = TestEvent;
     type PostAuthorOriginValidator = ();
     type ThreadId = u64;
@@ -111,7 +111,7 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -139,7 +139,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

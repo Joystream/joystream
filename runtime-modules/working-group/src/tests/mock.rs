@@ -10,7 +10,7 @@ use sp_runtime::{
 };
 use std::marker::PhantomData;
 
-use crate::{BalanceOf, Module, NegativeImbalance, Trait};
+use crate::{BalanceOf, Module, NegativeImbalance, Config};
 use common::constraints::InputValidationLengthConstraint;
 
 impl_outer_origin! {
@@ -49,7 +49,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -77,19 +77,19 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl hiring::Trait for Test {
+impl hiring::Config for Test {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = ();
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
-impl minting::Trait for Test {
+impl minting::Config for Test {
     type Currency = Balances;
     type MintId = u64;
 }
 
-impl stake::Trait for Test {
+impl stake::Config for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = StakingEventsHandler<Test>;
@@ -101,7 +101,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
@@ -114,14 +114,14 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = Balances;
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -131,7 +131,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl recurringrewards::Trait for Test {
+impl recurringrewards::Config for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
@@ -144,7 +144,7 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
 }
 
-impl Trait<TestWorkingGroupInstance> for Test {
+impl Config<TestWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -190,12 +190,12 @@ pub struct StakingEventsHandler<T> {
     pub marker: PhantomData<T>,
 }
 
-impl<T: stake::Trait + crate::Trait<TestWorkingGroupInstance>> stake::StakingEventsHandler<T>
+impl<T: stake::Config + crate::Config<TestWorkingGroupInstance>> stake::StakingEventsHandler<T>
     for StakingEventsHandler<T>
 {
     /// Unstake remaining sum back to the source_account_id
     fn unstaked(
-        stake_id: &<T as stake::Trait>::StakeId,
+        stake_id: &<T as stake::Config>::StakeId,
         _unstaked_amount: BalanceOf<T>,
         remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
@@ -220,8 +220,8 @@ impl<T: stake::Trait + crate::Trait<TestWorkingGroupInstance>> stake::StakingEve
 
     /// Empty handler for slashing
     fn slashed(
-        _: &<T as stake::Trait>::StakeId,
-        _: Option<<T as stake::Trait>::SlashId>,
+        _: &<T as stake::Config>::StakeId,
+        _: Option<<T as stake::Config>::SlashId>,
         _: BalanceOf<T>,
         _: BalanceOf<T>,
         remaining_imbalance: NegativeImbalance<T>,

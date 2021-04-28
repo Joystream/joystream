@@ -12,7 +12,7 @@ use sp_std::rc::Rc;
 use std::panic;
 
 use crate::hiring::ApplicationDeactivationCause;
-use crate::{Module, Trait};
+use crate::{Module, Config};
 use balances;
 use stake;
 
@@ -31,7 +31,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -64,7 +64,7 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();
@@ -74,14 +74,14 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = TestApplicationDeactivatedHandler;
     type StakeHandlerProvider = TestStakeHandlerProvider;
 }
 
-impl stake::Trait for Test {
+impl stake::Config for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ();
@@ -165,13 +165,13 @@ pub(crate) fn handle_mock<F: std::panic::RefUnwindSafe + Fn()>(func: F) {
 //
 thread_local! {
     pub static LAST_DEACTIVATED_APPLICATION:
-        Cell<Option<(<Test as Trait>::ApplicationId, ApplicationDeactivationCause)>> = Cell::new(None);
+        Cell<Option<(<Test as Config>::ApplicationId, ApplicationDeactivationCause)>> = Cell::new(None);
 }
 
 pub struct TestApplicationDeactivatedHandler;
 impl crate::ApplicationDeactivatedHandler<Test> for TestApplicationDeactivatedHandler {
     fn deactivated(
-        application_id: &<Test as Trait>::ApplicationId,
+        application_id: &<Test as Config>::ApplicationId,
         cause: ApplicationDeactivationCause,
     ) {
         LAST_DEACTIVATED_APPLICATION.with(|f| {
@@ -182,7 +182,7 @@ impl crate::ApplicationDeactivatedHandler<Test> for TestApplicationDeactivatedHa
 
 impl TestApplicationDeactivatedHandler {
     pub(crate) fn assert_deactivated_application(
-        expected_application_id: <Test as Trait>::ApplicationId,
+        expected_application_id: <Test as Config>::ApplicationId,
         expected_cause: ApplicationDeactivationCause,
     ) {
         let mut actual_deactivated_application = None;
@@ -198,4 +198,4 @@ impl TestApplicationDeactivatedHandler {
 }
 
 // Test fixtures starting block.
-pub(crate) static FIRST_BLOCK_HEIGHT: <Test as frame_system::Trait>::BlockNumber = 0;
+pub(crate) static FIRST_BLOCK_HEIGHT: <Test as frame_system::Config>::BlockNumber = 0;

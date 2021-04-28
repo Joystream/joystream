@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::{Module, Trait};
+use crate::{Module, Config};
 
 use balances;
 use frame_support::{impl_outer_origin, parameter_types};
@@ -30,7 +30,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -62,7 +62,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();
@@ -72,13 +72,13 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
     type PayoutStatusHandler = MockStatusHandler;
     type RecipientId = u64;
     type RewardRelationshipId = u64;
 }
 
-impl minting::Trait for Test {
+impl minting::Config for Test {
     type Currency = Balances;
     type MintId = u64;
 }

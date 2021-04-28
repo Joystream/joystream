@@ -41,7 +41,7 @@
 //! to create a proposal: they should be members of the Joystream.
 //! - [StakeHandlerProvider](./trait.StakeHandlerProvider.html) - defines an interface for the staking.
 //!
-//! A full list of the abstractions can be found [here](./trait.Trait.html).
+//! A full list of the abstractions can be found [here](./trait.Config.html).
 //!
 //! ### Supported extrinsics
 //! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
@@ -62,10 +62,10 @@
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters};
 //!
-//! pub trait Trait: engine::Trait + membership::Trait {}
+//! pub trait Config: engine::Config + membership::Config {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
@@ -140,14 +140,14 @@ use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
 
-type MemberId<T> = <T as membership::Trait>::MemberId;
+type MemberId<T> = <T as membership::Config>::MemberId;
 
 /// Proposals engine trait.
-pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
+pub trait Config:
+    frame_system::Config + pallet_timestamp::Config + stake::Config + membership::Config
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: ActorOriginValidator<
@@ -191,11 +191,11 @@ decl_event!(
     /// Proposals engine events
     pub enum Event<T>
     where
-        <T as Trait>::ProposalId,
+        <T as Config>::ProposalId,
         MemberId = MemberId<T>,
-        <T as frame_system::Trait>::BlockNumber,
-        <T as frame_system::Trait>::AccountId,
-        <T as stake::Trait>::StakeId,
+        <T as frame_system::Config>::BlockNumber,
+        <T as frame_system::Config>::AccountId,
+        <T as stake::Config>::StakeId,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -220,7 +220,7 @@ decl_event!(
 
 decl_error! {
     /// Engine module predefined errors
-    pub enum Error for Module<T: Trait>{
+    pub enum Error for Module<T: Config>{
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
 
@@ -270,7 +270,7 @@ decl_error! {
 
 // Storage for the proposals engine module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalEngine{
+    pub trait Store for Module<T: Config> as ProposalEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map hasher(blake2_128_concat)
             T::ProposalId => ProposalOf<T>;
@@ -305,7 +305,7 @@ decl_storage! {
 
 decl_module! {
     /// 'Proposal engine' substrate module
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -418,7 +418,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
         account_id: T::AccountId,
@@ -586,7 +586,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
@@ -659,7 +659,7 @@ impl<T: Trait> Module<T> {
                     ApprovedProposalStatus::Executed
                 }
             }
-            Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
+            Err(error) => ApprovedProposalStatus::failed_execution("Error during proposal decoding occured.")
         };
 
         let proposal_execution_status = approved_proposal
@@ -804,43 +804,42 @@ impl<T: Trait> Module<T> {
     // Parse dispatchable execution result.
     fn parse_dispatch_error(error: DispatchError) -> &'static str {
         match error {
-            DispatchError::BadOrigin => error.into(),
             DispatchError::Other(msg) => msg,
-            DispatchError::CannotLookup => error.into(),
             DispatchError::Module {
                 index: _,
                 error: _,
                 message: msg,
             } => msg.unwrap_or("Dispatch error."),
+            _ => error.into(),
         }
     }
 }
 
 // Simplification of the 'FinalizedProposalData' type
 type FinalizedProposal<T> = FinalizedProposalData<
-    <T as Trait>::ProposalId,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as Config>::ProposalId,
+    <T as frame_system::Config>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,
-    <T as stake::Trait>::StakeId,
-    <T as frame_system::Trait>::AccountId,
+    <T as stake::Config>::StakeId,
+    <T as frame_system::Config>::AccountId,
 >;
 
 // Simplification of the 'ApprovedProposalData' type
 type ApprovedProposal<T> = ApprovedProposalData<
-    <T as Trait>::ProposalId,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as Config>::ProposalId,
+    <T as frame_system::Config>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,
-    <T as stake::Trait>::StakeId,
-    <T as frame_system::Trait>::AccountId,
+    <T as stake::Config>::StakeId,
+    <T as frame_system::Config>::AccountId,
 >;
 
 // Simplification of the 'Proposal' type
 type ProposalOf<T> = Proposal<
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     MemberId<T>,
     types::BalanceOf<T>,
-    <T as stake::Trait>::StakeId,
-    <T as frame_system::Trait>::AccountId,
+    <T as stake::Config>::StakeId,
+    <T as frame_system::Config>::AccountId,
 >;

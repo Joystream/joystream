@@ -61,7 +61,7 @@ mod proposal_types;
 #[cfg(test)]
 mod tests;
 
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchResult, DispatchErrorWithPostInfo};
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
@@ -121,7 +121,7 @@ const ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MAX_VALUE: u32 = 100_000_u32;
 
 // Data container struct to fix linter warning 'too many arguments for the function' for the
 // create_proposal() function.
-struct CreateProposalParameters<T: Trait> {
+struct CreateProposalParameters<T: Config> {
     pub origin: T::Origin,
     pub member_id: MemberId<T>,
     pub title: Vec<u8>,
@@ -132,15 +132,15 @@ struct CreateProposalParameters<T: Trait> {
     pub proposal_details: ProposalDetailsOf<T>,
 }
 
-/// 'Proposals codex' substrate module Trait
-pub trait Trait:
-    frame_system::Trait
-    + proposals_engine::Trait
-    + proposals_discussion::Trait
-    + membership::Trait
-    + governance::election::Trait
-    + hiring::Trait
-    + staking::Trait
+/// 'Proposals codex' substrate module Config
+pub trait Config:
+    frame_system::Config
+    + proposals_engine::Config
+    + proposals_discussion::Config
+    + membership::Config
+    + governance::election::Config
+    + hiring::Config
+    + staking::Config
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -161,31 +161,31 @@ pub trait Trait:
 
 /// Balance alias for `stake` module
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+    <<T as stake::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// Currency alias for `stake` module
-pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
+pub type CurrencyOf<T> = <T as stake::Config>::Currency;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Config>::AccountId,
     >>::Balance;
 
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
-    <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+    <<T as minting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// Negative imbalance alias for staking
-pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
-    <T as frame_system::Trait>::AccountId,
+pub type NegativeImbalance<T> = <<T as stake::Config>::Currency as Currency<
+    <T as frame_system::Config>::AccountId,
 >>::NegativeImbalance;
 
-type MemberId<T> = <T as membership::Trait>::MemberId;
+type MemberId<T> = <T as membership::Config>::MemberId;
 
 decl_error! {
     /// Codex module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// The size of the provided text for text proposal exceeded the limit
         TextProposalSizeExceeded,
 
@@ -250,7 +250,7 @@ decl_error! {
 
 // Storage for the proposals codex module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalCodex{
+    pub trait Store for Module<T: Config> as ProposalCodex{
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
@@ -356,7 +356,7 @@ decl_storage! {
 
 decl_module! {
     /// Proposal codex substrate module Call
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -799,7 +799,7 @@ decl_module! {
         pub fn execute_runtime_upgrade_proposal(
             origin,
             wasm: Vec<u8>,
-        ) {
+        ) -> Result<(), DispatchErrorWithPostInfo> {
             let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
             ensure_root(cloned_origin1)?;
 
@@ -808,11 +808,12 @@ decl_module! {
             <frame_system::Module<T>>::set_code(cloned_origin2, wasm)?;
 
             print("Runtime upgrade proposal execution finished.");
+            Ok(())
         }
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Generic template proposal builder
     fn create_proposal(params: CreateProposalParameters<T>) -> DispatchResult {
         let account_id =

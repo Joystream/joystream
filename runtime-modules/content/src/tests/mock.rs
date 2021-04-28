@@ -12,7 +12,7 @@ use sp_runtime::{
 };
 
 use crate::ContentActorAuthenticator;
-use crate::Trait;
+use crate::Config;
 use common::currency::GovernanceCurrency;
 use common::storage::StorageSystem;
 
@@ -74,7 +74,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -102,7 +102,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -125,7 +125,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = MetaEvent;
@@ -204,7 +204,7 @@ parameter_types! {
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
 }
 
-impl Trait for Test {
+impl Config for Test {
     /// The overarching event type.
     type Event = MetaEvent;
 

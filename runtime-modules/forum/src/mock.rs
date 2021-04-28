@@ -23,23 +23,23 @@ pub mod registry {
     }
 
     decl_storage! {
-        trait Store for Module<T: Trait> as MockForumUserRegistry {
+        trait Store for Module<T: Config> as MockForumUserRegistry {
             pub ForumUserById get(fn forum_user_by_id) config(): map hasher(blake2_128_concat)
                 T::AccountId => Member<T::AccountId>;
         }
     }
 
     decl_module! {
-        pub struct Module<T: Trait> for enum Call where origin: T::Origin {}
+        pub struct Module<T: Config> for enum Call where origin: T::Origin {}
     }
 
-    impl<T: Trait> Module<T> {
+    impl<T: Config> Module<T> {
         pub fn add_member(member: &Member<T::AccountId>) {
             <ForumUserById<T>>::insert(member.id.clone(), member.clone());
         }
     }
 
-    impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
+    impl<T: Config> ForumUserRegistry<T::AccountId> for Module<T> {
         fn get_forum_user(id: &T::AccountId) -> Option<ForumUser<T::AccountId>> {
             if <ForumUserById<T>>::contains_key(id) {
                 let m = <ForumUserById<T>>::get(id);
@@ -69,7 +69,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -97,14 +97,14 @@ impl frame_system::Trait for Runtime {
     type PalletInfo = ();
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
-impl Trait for Runtime {
+impl Config for Runtime {
     type Event = ();
     type MembershipRegistry = registry::TestMembershipRegistryModule;
     type ThreadId = u64;
@@ -113,7 +113,7 @@ impl Trait for Runtime {
 
 #[derive(Clone)]
 pub enum OriginType {
-    Signed(<Runtime as frame_system::Trait>::AccountId),
+    Signed(<Runtime as frame_system::Config>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root,
 }
@@ -457,30 +457,30 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
 pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
 pub type RuntimeCategory = Category<
-    <Runtime as frame_system::Trait>::BlockNumber,
-    <Runtime as pallet_timestamp::Trait>::Moment,
-    <Runtime as frame_system::Trait>::AccountId,
+    <Runtime as frame_system::Config>::BlockNumber,
+    <Runtime as pallet_timestamp::Config>::Moment,
+    <Runtime as frame_system::Config>::AccountId,
 >;
 pub type RuntimeThread = Thread<
-    <Runtime as frame_system::Trait>::BlockNumber,
-    <Runtime as pallet_timestamp::Trait>::Moment,
-    <Runtime as frame_system::Trait>::AccountId,
+    <Runtime as frame_system::Config>::BlockNumber,
+    <Runtime as pallet_timestamp::Config>::Moment,
+    <Runtime as frame_system::Config>::AccountId,
     RuntimeThreadId,
 >;
 pub type RuntimePost = Post<
-    <Runtime as frame_system::Trait>::BlockNumber,
-    <Runtime as pallet_timestamp::Trait>::Moment,
-    <Runtime as frame_system::Trait>::AccountId,
+    <Runtime as frame_system::Config>::BlockNumber,
+    <Runtime as pallet_timestamp::Config>::Moment,
+    <Runtime as frame_system::Config>::AccountId,
     RuntimeThreadId,
     RuntimePostId,
 >;
 pub type RuntimeBlockchainTimestamp = BlockAndTime<
-    <Runtime as frame_system::Trait>::BlockNumber,
-    <Runtime as pallet_timestamp::Trait>::Moment,
+    <Runtime as frame_system::Config>::BlockNumber,
+    <Runtime as pallet_timestamp::Config>::Moment,
 >;
 
-pub type RuntimeThreadId = <Runtime as Trait>::ThreadId;
-pub type RuntimePostId = <Runtime as Trait>::PostId;
+pub type RuntimeThreadId = <Runtime as Config>::ThreadId;
+pub type RuntimePostId = <Runtime as Config>::PostId;
 
 pub fn genesis_config(
     category_by_id: &RuntimeMap<CategoryId, RuntimeCategory>,
@@ -489,7 +489,7 @@ pub fn genesis_config(
     next_thread_id: u64,
     post_by_id: &RuntimeMap<RuntimePostId, RuntimePost>,
     next_post_id: u64,
-    forum_sudo: <Runtime as frame_system::Trait>::AccountId,
+    forum_sudo: <Runtime as frame_system::Config>::AccountId,
     category_title_constraint: &InputValidationLengthConstraint,
     category_description_constraint: &InputValidationLengthConstraint,
     thread_title_constraint: &InputValidationLengthConstraint,

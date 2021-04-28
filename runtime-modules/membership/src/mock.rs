@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Trait, DEFAULT_PAID_TERM_ID};
+pub use crate::{GenesisConfig, Config, DEFAULT_PAID_TERM_ID};
 
 pub use frame_support::traits::Currency;
 use frame_support::{impl_outer_origin, parameter_types};
@@ -29,7 +29,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -57,7 +57,7 @@ impl frame_system::Trait for Test {
     type PalletInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -68,7 +68,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();
@@ -86,7 +86,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl Trait for Test {
+impl Config for Test {
     type Event = ();
     type MemberId = u64;
     type PaidTermId = u32;
@@ -95,12 +95,12 @@ impl Trait for Test {
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
-pub struct TestExternalitiesBuilder<T: Trait> {
+pub struct TestExternalitiesBuilder<T: Config> {
     system_config: Option<frame_system::GenesisConfig>,
     membership_config: Option<GenesisConfig<T>>,
 }
 
-impl<T: Trait> Default for TestExternalitiesBuilder<T> {
+impl<T: Config> Default for TestExternalitiesBuilder<T> {
     fn default() -> Self {
         Self {
             system_config: None,
@@ -109,7 +109,7 @@ impl<T: Trait> Default for TestExternalitiesBuilder<T> {
     }
 }
 
-impl<T: Trait> TestExternalitiesBuilder<T> {
+impl<T: Config> TestExternalitiesBuilder<T> {
     pub fn set_membership_config(mut self, membership_config: GenesisConfig<T>) -> Self {
         self.membership_config = Some(membership_config);
         self

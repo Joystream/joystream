@@ -27,7 +27,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -55,18 +55,18 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
-impl council::Trait for Test {
+impl council::Config for Test {
     type Event = ();
 
     type CouncilTermEnded = (Election,);
 }
-impl election::Trait for Test {
+impl election::Config for Test {
     type Event = ();
 
     type CouncilElected = (Council,);
@@ -76,7 +76,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = ();
     type MemberId = u64;
     type SubscriptionId = u32;
@@ -84,11 +84,11 @@ impl membership::Trait for Test {
     type ActorId = u32;
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
-impl minting::Trait for Test {
+impl minting::Config for Test {
     type Currency = Balances;
     type MintId = u64;
 }
-impl recurringrewards::Trait for Test {
+impl recurringrewards::Config for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
@@ -97,7 +97,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();

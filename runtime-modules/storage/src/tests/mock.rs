@@ -85,7 +85,7 @@ pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
 
 pub struct AnyDataObjectTypeIsActive {}
-impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
+impl<T: data_object_type_registry::Config> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
     fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
         true
     }
@@ -129,7 +129,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -157,7 +157,7 @@ impl frame_system::Trait for Test {
     type PalletInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -181,7 +181,7 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = MetaEvent;
@@ -199,16 +199,16 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
 }
 
-impl working_group::Trait<StorageWorkingGroupInstance> for Test {
+impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl data_object_type_registry::Trait for Test {
+impl data_object_type_registry::Config for Test {
     type Event = MetaEvent;
 }
 
-impl data_directory::Trait for Test {
+impl data_directory::Config for Test {
     type Event = MetaEvent;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
@@ -222,7 +222,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl data_object_storage_registry::Trait for Test {
+impl data_object_storage_registry::Config for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = MockContent;
@@ -232,7 +232,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = MetaEvent;
     type MemberId = u64;
     type SubscriptionId = u32;
@@ -241,7 +241,7 @@ impl membership::Trait for Test {
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
-impl stake::Trait for Test {
+impl stake::Config for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ();
@@ -249,18 +249,18 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-impl minting::Trait for Test {
+impl minting::Config for Test {
     type Currency = Balances;
     type MintId = u64;
 }
 
-impl recurringrewards::Trait for Test {
+impl recurringrewards::Config for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
 }
 
-impl hiring::Trait for Test {
+impl hiring::Config for Test {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = ();

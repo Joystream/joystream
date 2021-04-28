@@ -50,7 +50,7 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = ();
     type MemberId = u64;
     type PaidTermId = u64;
@@ -63,7 +63,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();
@@ -73,7 +73,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl stake::Trait for Test {
+impl stake::Config for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ();
@@ -89,7 +89,7 @@ parameter_types! {
     pub const MaxActiveProposalLimit: u32 = 100;
 }
 
-impl proposals_engine::Trait for Test {
+impl proposals_engine::Config for Test {
     type Event = ();
     type ProposerOriginValidator = ();
     type VoterOriginValidator = ();
@@ -110,12 +110,12 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl minting::Trait for Test {
+impl minting::Config for Test {
     type Currency = Balances;
     type MintId = u64;
 }
 
-impl governance::council::Trait for Test {
+impl governance::council::Config for Test {
     type Event = ();
     type CouncilTermEnded = ();
 }
@@ -135,7 +135,7 @@ parameter_types! {
     pub const PostLengthLimit: u32 = 2000;
 }
 
-impl proposals_discussion::Trait for Test {
+impl proposals_discussion::Config for Test {
     type Event = ();
     type PostAuthorOriginValidator = ();
     type ThreadId = u64;
@@ -158,7 +158,7 @@ parameter_types! {
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 20_000;
 }
 
-impl governance::election::Trait for Test {
+impl governance::election::Config for Test {
     type Event = ();
     type CouncilElected = ();
 }
@@ -173,23 +173,23 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
 
-impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
+impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<StorageWorkingGroupInstance> for Test {
+impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl recurring_rewards::Trait for Test {
+impl recurring_rewards::Config for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
     type RewardRelationshipId = u64;
 }
 
-impl hiring::Trait for Test {
+impl hiring::Config for Test {
     type OpeningId = u64;
     type ApplicationId = u64;
     type ApplicationDeactivatedHandler = ();
@@ -212,7 +212,7 @@ parameter_types! {
     pub const BondingDuration: staking::EraIndex = 3;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &I_NPOS;
 }
-impl staking::Trait for Test {
+impl staking::Config for Test {
     type Currency = Balances;
     type UnixTime = Timestamp;
     type CurrencyToVote = ();
@@ -260,7 +260,7 @@ impl staking::SessionInterface<u64> for Test {
     }
 }
 
-impl crate::Trait for Test {
+impl crate::Config for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
@@ -273,7 +273,7 @@ impl ProposalEncoder<Test> for () {
     }
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = Call;
@@ -301,7 +301,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

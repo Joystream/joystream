@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
-use crate::{Module, Trait};
+use crate::{Module, Config};
 use balances;
 use frame_support::{impl_outer_origin, parameter_types};
 use sp_core::H256;
@@ -25,7 +25,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -58,7 +58,7 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();
@@ -68,7 +68,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
     type Currency = Balances;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = ();
@@ -92,7 +92,7 @@ pub type StakePool = Module<Test>;
 pub mod fixtures {
     use super::*;
     pub type OngoingSlashes = BTreeMap<
-        <Test as Trait>::SlashId,
-        Slash<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>>,
+        <Test as Config>::SlashId,
+        Slash<<Test as frame_system::Config>::BlockNumber, BalanceOf<Test>>,
     >;
 }
