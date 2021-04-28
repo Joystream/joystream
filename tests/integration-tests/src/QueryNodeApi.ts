@@ -265,7 +265,7 @@ export class QueryNodeApi {
   }
 
   public getQueryNodeEventId(blockNumber: number, indexInBlock: number): string {
-    return `${blockNumber}-${indexInBlock}`
+    return `OLYMPIA-${blockNumber}-${indexInBlock}`
   }
 
   public async getMemberById(id: MemberId): Promise<MembershipFieldsFragment | null> {
