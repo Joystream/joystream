@@ -1,4 +1,4 @@
-import { ApplicationMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
+import { ApplicationMetadata, IOpeningMetadata } from '@joystream/metadata-protobuf'
 import { assert } from 'chai'
 import { Api } from '../../Api'
 import { ApplicationFieldsFragment, AppliedOnOpeningEventFieldsFragment } from '../../graphql/generated/queries'
@@ -22,13 +22,13 @@ export type ApplicantDetails = {
 
 export type OpeningApplications = {
   openingId: OpeningId
-  openingMetadata: OpeningMetadata.AsObject
+  openingMetadata: IOpeningMetadata
   applicants: ApplicantDetails[]
 }
 
 export type OpeningApplicationsFlattened = {
   openingId: OpeningId
-  openingMetadata: OpeningMetadata.AsObject
+  openingMetadata: IOpeningMetadata
   applicant: ApplicantDetails
 }[]
 
@@ -73,7 +73,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
       const opening = openings[openingIndex]
       return this.api.tx[this.group].applyOnOpening({
         member_id: a.applicant.memberId,
-        description: Utils.metadataToBytes(this.getApplicationMetadata(a.openingMetadata, i)),
+        description: Utils.metadataToBytes(ApplicationMetadata, this.getApplicationMetadata(a.openingMetadata, i)),
         opening_id: a.openingId,
         reward_account_id: a.applicant.rewardAccount,
         role_account_id: a.applicant.roleAccount,
@@ -107,10 +107,10 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
     return applicationIds
   }
 
-  protected getApplicationMetadata(openingMetadata: OpeningMetadata.AsObject, i: number): ApplicationMetadata {
-    const metadata = new ApplicationMetadata()
-    openingMetadata.applicationFormQuestionsList.forEach((question, j) => {
-      metadata.addAnswers(`Answer to question ${j} by applicant number ${i}`)
+  protected getApplicationMetadata(openingMetadata: IOpeningMetadata, i: number): ApplicationMetadata {
+    const metadata = new ApplicationMetadata({ answers: [] })
+    ;(openingMetadata.applicationFormQuestions || []).forEach((question, j) => {
+      metadata.answers.push(`Answer to question ${j} by applicant number ${i}`)
     })
     return metadata
   }
@@ -133,9 +133,9 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
       const applicationMetadata = this.getApplicationMetadata(applicationDetails.openingMetadata, i)
       assert.deepEqual(
         qApplication.answers.map(({ question: { question }, answer }) => ({ question, answer })),
-        applicationDetails.openingMetadata.applicationFormQuestionsList.map(({ question }, index) => ({
+        (applicationDetails.openingMetadata.applicationFormQuestions || []).map(({ question }, index) => ({
           question,
-          answer: applicationMetadata.getAnswersList()[index],
+          answer: applicationMetadata.answers[index],
         }))
       )
     })

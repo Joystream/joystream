@@ -4,6 +4,7 @@ import { CreateUpcomingOpeningsFixture, RemoveUpcomingOpeningsFixture } from '..
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
+import { UpcomingOpeningParams } from '../../fixtures/workingGroups/BaseCreateOpeningFixture'
 
 export default async function upcomingOpenings({ api, query, env }: FlowProps): Promise<void> {
   await Promise.all(
@@ -12,7 +13,27 @@ export default async function upcomingOpenings({ api, query, env }: FlowProps): 
       debug('Started')
       api.enableDebugTxLogs()
 
-      const createUpcomingOpeningFixture = new CreateUpcomingOpeningsFixture(api, query, group)
+      const upcomingOpeningsParams: Partial<UpcomingOpeningParams>[] = [
+        // All defaults case:
+        {},
+        // Invalid metadata case:
+        {
+          metadata: '0xff',
+          expectMetadataFailue: true,
+        },
+        // Edge-case valid metadata:
+        {
+          metadata: {
+            shortDescription: '',
+            description: '',
+            expectedEndingTimestamp: 0,
+            hiringLimit: 0,
+            applicationDetails: '',
+            applicationFormQuestions: [],
+          },
+        },
+      ]
+      const createUpcomingOpeningFixture = new CreateUpcomingOpeningsFixture(api, query, group, upcomingOpeningsParams)
       await new FixtureRunner(createUpcomingOpeningFixture).runWithQueryNodeChecks()
       const [createdUpcomingOpeningId] = createUpcomingOpeningFixture.getCreatedUpcomingOpeningIds()
 

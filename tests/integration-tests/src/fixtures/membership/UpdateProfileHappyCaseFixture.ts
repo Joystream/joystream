@@ -7,6 +7,7 @@ import { MemberContext, EventDetails } from '../../types'
 import { MembershipFieldsFragment, MemberProfileUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { EventType } from '../../graphql/generated/schema'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
+import { Utils } from '../../utils'
 
 // TODO: Add partial update to make sure it works too
 export class UpdateProfileHappyCaseFixture extends BaseMembershipFixture {
@@ -60,14 +61,15 @@ export class UpdateProfileHappyCaseFixture extends BaseMembershipFixture {
   }
 
   async execute(): Promise<void> {
-    const metadata = new MembershipMetadata()
-    metadata.setName(this.newName)
-    metadata.setAbout(this.newAbout)
+    const metadata = new MembershipMetadata({
+      name: this.newName,
+      about: this.newAbout,
+    })
     // TODO: avatar
     this.tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
       this.newHandle,
-      '0x' + Buffer.from(metadata.serializeBinary()).toString('hex')
+      Utils.metadataToBytes(MembershipMetadata, metadata)
     )
     const txFee = await this.api.estimateTxFee(this.tx, this.memberContext.account)
     await this.api.treasuryTransferBalance(this.memberContext.account, txFee)

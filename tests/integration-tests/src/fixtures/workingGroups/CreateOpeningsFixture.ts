@@ -39,7 +39,7 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.openingsParams.map((params) =>
       this.api.tx[this.group].addOpening(
-        Utils.metadataToBytes(this.getMetadata(params)),
+        this.getMetadataBytes(params),
         this.asSudo ? 'Leader' : 'Regular',
         { stake_amount: params.stake, leaving_unstaking_period: params.unstakingPeriod },
         params.reward
@@ -67,7 +67,11 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
       assert.equal(qOpening.stakeAmount, openingParams.stake.toString())
       assert.equal(qOpening.unstakingPeriod, openingParams.unstakingPeriod)
       // Metadata
-      this.assertQueriedOpeningMetadataIsValid(openingParams, qOpening.metadata)
+      if (openingParams.expectMetadataFailue) {
+        this.assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getDefaultQueryNodeMetadata(this.asSudo))
+      } else {
+        this.assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getMetadata(openingParams))
+      }
     })
   }
 

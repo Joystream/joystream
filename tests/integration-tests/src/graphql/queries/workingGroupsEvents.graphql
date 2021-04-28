@@ -330,7 +330,25 @@ query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-# TODO: LeaderUnset?
+fragment LeaderUnsetEventFields on LeaderUnsetEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  leader {
+    id
+    runtimeId
+  }
+}
+
+query getLeaderUnsetEventsByEventIds($eventIds: [ID!]) {
+  leaderUnsetEvents(where: { eventId_in: $eventIds }) {
+    ...LeaderUnsetEventFields
+  }
+}
 
 fragment BudgetSetEventFields on BudgetSetEvent {
   id

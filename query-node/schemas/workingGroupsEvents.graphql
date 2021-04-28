@@ -72,6 +72,9 @@ type LeaderUnsetEvent @entity {
 
   "Related group"
   group: WorkingGroup!
+
+  "A leader that was unset"
+  leader: Worker!
 }
 
 type WorkerExitedEvent @entity {

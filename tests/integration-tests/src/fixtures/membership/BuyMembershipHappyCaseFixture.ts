@@ -11,6 +11,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { MembershipBoughtEventDetails } from '../../types'
 import { MembershipBoughtEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
+import { Utils } from '../../utils'
 
 export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
   private accounts: string[]
@@ -46,13 +47,13 @@ export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
       entry,
     } = qMember
     const txParams = this.generateParamsFromAccountId(rootAccount)
-    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
+    const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
     assert.equal(blake2AsHex(handle), member.handle_hash.toString())
     assert.equal(handle, txParams.handle)
     assert.equal(rootAccount, member.root_account.toString())
     assert.equal(controllerAccount, member.controller_account.toString())
-    assert.equal(name, metadata.getName())
-    assert.equal(about, metadata.getAbout())
+    assert.equal(name, metadata.name)
+    assert.equal(about, metadata.about)
     // TODO: avatar
     assert.equal(isVerified, false)
     assert.equal(entry, MembershipEntryMethod.Paid)
@@ -68,7 +69,7 @@ export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
       throw new Error('Query node: MembershipBought event not found!')
     }
     const txParams = this.generateParamsFromAccountId(account)
-    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
+    const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
     assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
@@ -77,8 +78,8 @@ export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account.toString())
     assert.equal(qEvent.controllerAccount, txParams.controller_account.toString())
-    assert.equal(qEvent.metadata.name, metadata.getName())
-    assert.equal(qEvent.metadata.about, metadata.getAbout())
+    assert.equal(qEvent.metadata.name, metadata.name)
+    assert.equal(qEvent.metadata.about, metadata.about)
     // TODO: avatar
   }
 

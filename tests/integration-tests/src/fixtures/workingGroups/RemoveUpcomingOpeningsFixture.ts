@@ -8,7 +8,8 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { StatusTextChangedEventFieldsFragment } from '../../graphql/generated/queries'
 import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
-import { RemoveUpcomingOpening, WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
+import { WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
+import { Bytes } from '@polkadot/types'
 
 export class RemoveUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
   protected upcomingOpeningIds: string[]
@@ -24,8 +25,7 @@ export class RemoveUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.upcomingOpeningIds.map((id) => {
-      const metaBytes = Utils.metadataToBytes(this.getActionMetadata(id))
-      return this.api.tx[this.group].setStatusText(metaBytes)
+      return this.api.tx[this.group].setStatusText(this.getActionMetadataBytes(id))
     })
   }
 
@@ -33,19 +33,18 @@ export class RemoveUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
     return this.api.retrieveWorkingGroupsEventDetails(result, this.group, 'StatusTextChanged')
   }
 
-  protected getActionMetadata(upcomingOpeningId: string): WorkingGroupMetadataAction {
-    const actionMeta = new WorkingGroupMetadataAction()
-    const removeUpcomingOpeningMeta = new RemoveUpcomingOpening()
-    removeUpcomingOpeningMeta.setId(upcomingOpeningId)
-    actionMeta.setRemoveUpcomingOpening(removeUpcomingOpeningMeta)
-
-    return actionMeta
+  protected getActionMetadataBytes(upcomingOpeningId: string): Bytes {
+    return Utils.metadataToBytes(WorkingGroupMetadataAction, {
+      removeUpcomingOpening: {
+        id: upcomingOpeningId,
+      },
+    })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StatusTextChangedEventFieldsFragment, i: number): void {
     assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.metadata, Utils.metadataToBytes(this.getActionMetadata(this.upcomingOpeningIds[i])).toString())
+    assert.equal(qEvent.metadata, this.getActionMetadataBytes(this.upcomingOpeningIds[i]).toString())
     Utils.assert(qEvent.result.__typename === 'UpcomingOpeningRemoved', 'Unexpected StatuxTextChangedEvent result type')
     assert.equal(qEvent.result.upcomingOpeningId, this.upcomingOpeningIds[i])
   }

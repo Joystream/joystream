@@ -4,7 +4,7 @@ message OpeningMetadata {
   required string short_description = 1; // Short description of the opening
   required string description = 2; // Full description of the opening
   optional uint32 hiring_limit = 3; // Expected number of hired applicants
-  optional uint64 expected_ending_timestamp = 4; // Expected time when the opening will close (Unix timestamp)
+  optional uint32 expected_ending_timestamp = 4; // Expected time when the opening will close (Unix timestamp)
   required string application_details = 5; // Md-formatted text explaining the application process
   message ApplicationFormQuestion {
     required string question = 1; // The question itself (ie. "What is your name?"")
@@ -18,7 +18,7 @@ message OpeningMetadata {
 }
 
 message UpcomingOpeningMetadata {
-  required uint64 expected_start = 1; // Expected opening start (timestamp)
+  required uint32 expected_start = 1; // Expected opening start (timestamp)
   required uint64 reward_per_block = 2; // Expected reward per block
   required uint64 min_application_stake = 3; // Expected min. application stake
   required OpeningMetadata metadata = 4; // Opening metadata

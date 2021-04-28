@@ -8,6 +8,7 @@ import { MemberInvitedEventFieldsFragment, MembershipFieldsFragment } from '../.
 import { EventType, MembershipEntryMethod } from '../../graphql/generated/schema'
 import { MemberId } from '@joystream/types/common'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
+import { Utils } from '../../utils'
 
 export class InviteMembersHappyCaseFixture extends BaseMembershipFixture {
   private inviterContext: MemberContext
@@ -44,17 +45,17 @@ export class InviteMembersHappyCaseFixture extends BaseMembershipFixture {
       invitedBy,
     } = qMember
     const txParams = this.generateParamsFromAccountId(account)
-    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
+    const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
     assert.equal(handle, txParams.handle)
     assert.equal(rootAccount, txParams.root_account)
     assert.equal(controllerAccount, txParams.controller_account)
-    assert.equal(name, metadata.getName())
-    assert.equal(about, metadata.getAbout())
+    assert.equal(name, metadata.name)
+    assert.equal(about, metadata.about)
     // TODO: avatar
     assert.equal(isVerified, false)
     assert.equal(entry, MembershipEntryMethod.Invited)
-    assert.isOk(invitedBy)
-    assert.equal(invitedBy!.id, this.inviterContext.memberId.toString())
+    Utils.assert(invitedBy, 'invitedBy cannot be empty')
+    assert.equal(invitedBy.id, this.inviterContext.memberId.toString())
   }
 
   private aseertQueryNodeEventIsValid(
@@ -67,7 +68,7 @@ export class InviteMembersHappyCaseFixture extends BaseMembershipFixture {
       throw new Error('Query node: MemberInvitedEvent not found!')
     }
     const txParams = this.generateParamsFromAccountId(account)
-    const metadata = MembershipMetadata.deserializeBinary(txParams.metadata.toU8a(true))
+    const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
     assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
     assert.equal(qEvent.event.inExtrinsic, txHash)
     assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
@@ -76,8 +77,8 @@ export class InviteMembersHappyCaseFixture extends BaseMembershipFixture {
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account)
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
-    assert.equal(qEvent.metadata.name, metadata.getName())
-    assert.equal(qEvent.metadata.about, metadata.getAbout())
+    assert.equal(qEvent.metadata.name, metadata.name)
+    assert.equal(qEvent.metadata.about, metadata.about)
     // TODO: avatar
   }
 

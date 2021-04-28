@@ -33,6 +33,8 @@ import {
   ApplyOnOpeningParameters,
   Worker,
 } from '@joystream/types/working-group'
+import { DeriveAllSections } from '@polkadot/api/util/decorate'
+import { ExactDerive } from '@polkadot/api-derive'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -119,7 +121,7 @@ export class Api {
     return this.api.consts
   }
 
-  public get derive() {
+  public get derive(): DeriveAllSections<'promise', ExactDerive> {
     return this.api.derive
   }
 
@@ -130,12 +132,11 @@ export class Api {
     return this.sender.signAndSend(tx, sender)
   }
 
-  public async sendExtrinsicsAndGetEvents<EventDetailsType extends EventDetails>(
+  public async sendExtrinsicsAndGetResults(
     txs: SubmittableExtrinsic<'promise'>[],
     sender: AccountId | string | AccountId[] | string[],
-    getEvent: (result: ISubmittableResult) => Promise<EventDetailsType>,
     preserveOrder = false
-  ): Promise<EventDetailsType[]> {
+  ): Promise<ISubmittableResult[]> {
     let results: ISubmittableResult[] = []
     if (preserveOrder) {
       for (const i in txs) {
@@ -148,7 +149,7 @@ export class Api {
         txs.map((tx, i) => this.sender.signAndSend(tx, Array.isArray(sender) ? sender[i] : sender))
       )
     }
-    return Promise.all(results.map((result) => getEvent(result)))
+    return results
   }
 
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {

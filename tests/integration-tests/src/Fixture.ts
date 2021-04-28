@@ -121,6 +121,7 @@ export abstract class BaseQueryNodeFixture extends BaseFixture {
 
 export abstract class StandardizedFixture extends BaseQueryNodeFixture {
   protected extrinsics: SubmittableExtrinsic<'promise'>[] = []
+  protected results: ISubmittableResult[] = []
   protected events: EventDetails[] = []
   protected areExtrinsicsOrderSensitive = false
 
@@ -142,12 +143,12 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     this.extrinsics = await this.getExtrinsics()
     await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics)
-    this.events = await this.api.sendExtrinsicsAndGetEvents(
+    this.results = await this.api.sendExtrinsicsAndGetResults(
       this.extrinsics,
       accountOrAccounts,
-      (r) => this.getEventFromResult(r),
       this.areExtrinsicsOrderSensitive
     )
+    this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
   }
 }
 

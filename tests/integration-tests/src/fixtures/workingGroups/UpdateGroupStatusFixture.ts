@@ -7,24 +7,20 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
 import { EventType } from '../../graphql/generated/schema'
-import { SetGroupMetadata, WorkingGroupMetadata, WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
+import { IWorkingGroupMetadata, WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
 import {
   StatusTextChangedEventFieldsFragment,
   WorkingGroupFieldsFragment,
   WorkingGroupMetadataFieldsFragment,
 } from '../../graphql/generated/queries'
 import _ from 'lodash'
+import { Bytes } from '@polkadot/types'
 
 export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
-  protected updates: WorkingGroupMetadata.AsObject[]
+  protected updates: IWorkingGroupMetadata[]
   protected areExtrinsicsOrderSensitive = true
 
-  public constructor(
-    api: Api,
-    query: QueryNodeApi,
-    group: WorkingGroupModuleName,
-    updates: WorkingGroupMetadata.AsObject[]
-  ) {
+  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, updates: IWorkingGroupMetadata[]) {
     super(api, query, group)
     this.updates = updates
   }
@@ -35,8 +31,7 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.updates.map((update) => {
-      const metaBytes = Utils.metadataToBytes(this.getActionMetadata(update))
-      return this.api.tx[this.group].setStatusText(metaBytes)
+      return this.api.tx[this.group].setStatusText(this.getActionMetadataBytes(update))
     })
   }
 
@@ -44,26 +39,18 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
     return this.api.retrieveWorkingGroupsEventDetails(r, this.group, 'StatusTextChanged')
   }
 
-  protected getActionMetadata(update: WorkingGroupMetadata.AsObject): WorkingGroupMetadataAction {
-    const actionMeta = new WorkingGroupMetadataAction()
-    const setGroupMeta = new SetGroupMetadata()
-    const newGroupMeta = new WorkingGroupMetadata()
-
-    newGroupMeta.setAbout(update.about!)
-    newGroupMeta.setDescription(update.description!)
-    newGroupMeta.setStatus(update.status!)
-    newGroupMeta.setStatusMessage(update.statusMessage!)
-
-    setGroupMeta.setNewMetadata(newGroupMeta)
-    actionMeta.setSetGroupMetadata(setGroupMeta)
-
-    return actionMeta
+  protected getActionMetadataBytes(update: IWorkingGroupMetadata): Bytes {
+    return Utils.metadataToBytes(WorkingGroupMetadataAction, {
+      setGroupMetadata: {
+        newMetadata: update,
+      },
+    })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StatusTextChangedEventFieldsFragment, i: number): void {
     assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.metadata, Utils.metadataToBytes(this.getActionMetadata(this.updates[i])).toString())
+    assert.equal(qEvent.metadata, this.getActionMetadataBytes(this.updates[i]).toString())
     assert.equal(qEvent.result.__typename, 'WorkingGroupMetadataSet')
   }
 
@@ -81,7 +68,7 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
     eventDetails: EventDetails,
     preUpdateSnapshot: WorkingGroupMetadataFieldsFragment | null,
     postUpdateSnapshot: WorkingGroupMetadataFieldsFragment | null,
-    update: WorkingGroupMetadata.AsObject
+    update: IWorkingGroupMetadata
   ): asserts postUpdateSnapshot is WorkingGroupMetadataFieldsFragment {
     if (!postUpdateSnapshot) {
       throw new Error('Query node: WorkingGroupMetadata snapshot not found!')

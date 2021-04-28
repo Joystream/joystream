@@ -660,6 +660,19 @@ export type GetTerminatedLeaderEventsByEventIdsQuery = {
   terminatedLeaderEvents: Array<TerminatedLeaderEventFieldsFragment>
 }
 
+export type LeaderUnsetEventFieldsFragment = {
+  id: string
+  event: EventFieldsFragment
+  group: { name: string }
+  leader: { id: string; runtimeId: number }
+}
+
+export type GetLeaderUnsetEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetLeaderUnsetEventsByEventIdsQuery = { leaderUnsetEvents: Array<LeaderUnsetEventFieldsFragment> }
+
 export type BudgetSetEventFieldsFragment = {
   id: string
   newBudget: any
@@ -1408,6 +1421,22 @@ export const TerminatedLeaderEventFields = gql`
   }
   ${EventFields}
 `
+export const LeaderUnsetEventFields = gql`
+  fragment LeaderUnsetEventFields on LeaderUnsetEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    leader {
+      id
+      runtimeId
+    }
+  }
+  ${EventFields}
+`
 export const BudgetSetEventFields = gql`
   fragment BudgetSetEventFields on BudgetSetEvent {
     id
@@ -1747,6 +1776,14 @@ export const GetTerminatedLeaderEventsByEventIds = gql`
     }
   }
   ${TerminatedLeaderEventFields}
+`
+export const GetLeaderUnsetEventsByEventIds = gql`
+  query getLeaderUnsetEventsByEventIds($eventIds: [ID!]) {
+    leaderUnsetEvents(where: { eventId_in: $eventIds }) {
+      ...LeaderUnsetEventFields
+    }
+  }
+  ${LeaderUnsetEventFields}
 `
 export const GetBudgetSetEventsByEventIds = gql`
   query getBudgetSetEventsByEventIds($eventIds: [ID!]) {

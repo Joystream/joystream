@@ -5,10 +5,9 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { Members } from './generated/types'
 import BN from 'bn.js'
-import { Bytes } from '@polkadot/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { bytesToString, createEvent, getOrCreateBlock } from './common'
+import { bytesToString, createEvent, deserializeMetadata, getOrCreateBlock } from './common'
 import {
   Membership,
   EventType,
@@ -65,15 +64,6 @@ async function getOrCreateMembershipSnapshot(db: DatabaseManager, event_: Substr
       })
 }
 
-function deserializeMemberMeta(metadataBytes: Bytes): MembershipMetadata | null {
-  try {
-    return MembershipMetadata.deserializeBinary(metadataBytes.toU8a(true))
-  } catch (e) {
-    console.error(`Invalid membership metadata! (${metadataBytes.toHex()})`)
-    return null
-  }
-}
-
 async function newMembershipFromParams(
   db: DatabaseManager,
   event_: SubstrateEvent,
@@ -83,14 +73,14 @@ async function newMembershipFromParams(
 ): Promise<Membership> {
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(db)
   const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
-  const metadata = deserializeMemberMeta(metatadaBytes)
+  const metadata = deserializeMetadata(MembershipMetadata, metatadaBytes)
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   const metadataEntity = new MemberMetadata({
     createdAt: eventTime,
     updatedAt: eventTime,
-    name: metadata?.getName(),
-    about: metadata?.getAbout(),
+    name: typeof metadata?.name === 'string' ? metadata.name : undefined,
+    about: typeof metadata?.about === 'string' ? metadata.about : undefined,
     // TODO: avatar
   })
 
@@ -162,16 +152,18 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { memberId } = new Members.MemberProfileUpdatedEvent(event_).data
   const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event_).args
-  const metadata = metadataBytesOpt.isSome ? deserializeMemberMeta(metadataBytesOpt.unwrap()) : undefined
+  const metadata = metadataBytesOpt.isSome
+    ? deserializeMetadata(MembershipMetadata, metadataBytesOpt.unwrap())
+    : undefined
   const member = await getMemberById(db, memberId)
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
-  if (metadata?.hasName()) {
-    member.metadata.name = metadata.getName()
+  if (typeof metadata?.name === 'string') {
+    member.metadata.name = metadata.name
     member.metadata.updatedAt = eventTime
   }
-  if (metadata?.hasAbout()) {
-    member.metadata.about = metadata.getAbout()
+  if (typeof metadata?.about === 'string') {
+    member.metadata.about = metadata.about
     member.metadata.updatedAt = eventTime
   }
   // TODO: avatar

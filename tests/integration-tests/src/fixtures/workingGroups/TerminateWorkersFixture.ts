@@ -11,6 +11,7 @@ import { Utils } from '../../utils'
 import { EventType } from '../../graphql/generated/schema'
 import { lockIdByWorkingGroup } from '../../consts'
 import {
+  LeaderUnsetEventFieldsFragment,
   TerminatedLeaderEventFieldsFragment,
   TerminatedWorkerEventFieldsFragment,
   WorkerFieldsFragment,
@@ -103,6 +104,19 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
     })
   }
 
+  protected assertQueriedLeaderUnsetEventIsValid(
+    eventDetails: EventDetails,
+    qEvent: LeaderUnsetEventFieldsFragment | null
+  ): void {
+    Utils.assert(qEvent, 'Query node: LeaderUnsetEvent not found!')
+    assert.equal(qEvent.event.inExtrinsic, this.extrinsics[0].hash.toString())
+    assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
+    assert.equal(qEvent.event.inBlock.timestamp, eventDetails.blockTimestamp)
+    assert.equal(qEvent.group.name, this.group)
+    assert.equal(qEvent.event.type, EventType.LeaderUnset)
+    assert.equal(qEvent.leader.runtimeId, this.workerIds[0].toNumber())
+  }
+
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
 
@@ -118,5 +132,16 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
     // Check workers
     const qWorkers = await this.query.getWorkersByIds(this.workerIds, this.group)
     this.assertQueriedWorkersAreValid(qEvents, qWorkers)
+
+    // If lead - check LeaderUnset event
+    if (this.asSudo) {
+      const leaderUnsetEvent = await this.api.retrieveWorkingGroupsEventDetails(
+        this.results[0],
+        this.group,
+        'LeaderUnset'
+      )
+      const qEvent = await this.query.getLeaderUnsetEvent(leaderUnsetEvent)
+      this.assertQueriedLeaderUnsetEventIsValid(leaderUnsetEvent, qEvent)
+    }
   }
 }

@@ -2175,6 +2175,8 @@ export type LeaderUnsetEvent = BaseGraphQlObject & {
   eventId: Scalars['String']
   group: WorkingGroup
   groupId: Scalars['String']
+  leader: Worker
+  leaderId: Scalars['String']
 }
 
 export type LeaderUnsetEventConnection = {
@@ -2186,6 +2188,7 @@ export type LeaderUnsetEventConnection = {
 export type LeaderUnsetEventCreateInput = {
   eventId: Scalars['ID']
   groupId: Scalars['ID']
+  leaderId: Scalars['ID']
 }
 
 export type LeaderUnsetEventEdge = {
@@ -2204,11 +2207,14 @@ export enum LeaderUnsetEventOrderByInput {
   EventIdDesc = 'eventId_DESC',
   GroupIdAsc = 'groupId_ASC',
   GroupIdDesc = 'groupId_DESC',
+  LeaderIdAsc = 'leaderId_ASC',
+  LeaderIdDesc = 'leaderId_DESC',
 }
 
 export type LeaderUnsetEventUpdateInput = {
   eventId?: Maybe<Scalars['ID']>
   groupId?: Maybe<Scalars['ID']>
+  leaderId?: Maybe<Scalars['ID']>
 }
 
 export type LeaderUnsetEventWhereInput = {
@@ -2240,6 +2246,8 @@ export type LeaderUnsetEventWhereInput = {
   eventId_in?: Maybe<Array<Scalars['ID']>>
   groupId_eq?: Maybe<Scalars['ID']>
   groupId_in?: Maybe<Array<Scalars['ID']>>
+  leaderId_eq?: Maybe<Scalars['ID']>
+  leaderId_in?: Maybe<Array<Scalars['ID']>>
 }
 
 export type LeaderUnsetEventWhereUniqueInput = {
@@ -6551,6 +6559,7 @@ export type Worker = BaseGraphQlObject & {
   /** Worker's storage data */
   storage?: Maybe<Scalars['String']>
   leaderseteventworker?: Maybe<Array<LeaderSetEvent>>
+  leaderunseteventleader?: Maybe<Array<LeaderUnsetEvent>>
   memberverificationstatusupdatedeventworker?: Maybe<Array<MemberVerificationStatusUpdatedEvent>>
   newmissedrewardlevelreachedeventworker?: Maybe<Array<NewMissedRewardLevelReachedEvent>>
   stakedecreasedeventworker?: Maybe<Array<StakeDecreasedEvent>>

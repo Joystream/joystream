@@ -25,14 +25,21 @@ export async function createEvent(
   return event
 }
 
-type MetadataClass<T> = {
-  deserializeBinary: (bytes: Uint8Array) => T
-  name: string
+type AnyMessage<T> = T & {
+  toJSON(): Record<string, unknown>
 }
 
-export function deserializeMetadata<T>(metadataType: MetadataClass<T>, metadataBytes: Bytes): T | null {
+type AnyMetadataClass<T> = {
+  name: string
+  decode(binary: Uint8Array): AnyMessage<T>
+  encode(obj: T): { finish(): Uint8Array }
+  toObject(obj: AnyMessage<T>): Record<string, unknown>
+}
+
+export function deserializeMetadata<T>(metadataType: AnyMetadataClass<T>, metadataBytes: Bytes): T | null {
   try {
-    return metadataType.deserializeBinary(metadataBytes.toU8a(true))
+    // We use `toObject()` to get rid of .prototype defaults for optional fields
+    return metadataType.toObject(metadataType.decode(metadataBytes.toU8a(true))) as T
   } catch (e) {
     console.error(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
