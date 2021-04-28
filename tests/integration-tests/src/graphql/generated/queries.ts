@@ -272,11 +272,11 @@ export type ApplicationFormQuestionFieldsFragment = {
 }
 
 export type OpeningMetadataFieldsFragment = {
-  shortDescription: string
-  description: string
+  shortDescription?: Types.Maybe<string>
+  description?: Types.Maybe<string>
   hiringLimit?: Types.Maybe<number>
   expectedEnding?: Types.Maybe<any>
-  applicationDetails: string
+  applicationDetails?: Types.Maybe<string>
   applicationFormQuestions: Array<ApplicationFormQuestionFieldsFragment>
 }
 
@@ -384,9 +384,9 @@ export type GetWorkingGroupByNameQuery = { workingGroupByUniqueInput?: Types.May
 
 export type UpcomingOpeningFieldsFragment = {
   id: string
-  expectedStart: any
-  stakeAmount: any
-  rewardPerBlock: any
+  expectedStart?: Types.Maybe<any>
+  stakeAmount?: Types.Maybe<any>
+  rewardPerBlock?: Types.Maybe<any>
   createdAt: any
   group: { name: string }
   metadata: OpeningMetadataFieldsFragment

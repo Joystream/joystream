@@ -79,8 +79,8 @@ async function newMembershipFromParams(
   const metadataEntity = new MemberMetadata({
     createdAt: eventTime,
     updatedAt: eventTime,
-    name: typeof metadata?.name === 'string' ? metadata.name : undefined,
-    about: typeof metadata?.about === 'string' ? metadata.about : undefined,
+    name: metadata?.name || undefined,
+    about: metadata?.about || undefined,
     // TODO: avatar
   })
 
@@ -159,11 +159,11 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
   const eventTime = new Date(event_.blockTimestamp.toNumber())
 
   if (typeof metadata?.name === 'string') {
-    member.metadata.name = metadata.name
+    member.metadata.name = metadata.name || undefined
     member.metadata.updatedAt = eventTime
   }
   if (typeof metadata?.about === 'string') {
-    member.metadata.about = metadata.about
+    member.metadata.about = metadata.about || undefined
     member.metadata.updatedAt = eventTime
   }
   // TODO: avatar

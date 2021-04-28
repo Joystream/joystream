@@ -78,8 +78,8 @@ export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account.toString())
     assert.equal(qEvent.controllerAccount, txParams.controller_account.toString())
-    assert.equal(qEvent.metadata.name, metadata.name)
-    assert.equal(qEvent.metadata.about, metadata.about)
+    assert.equal(qEvent.metadata.name, metadata.name || null)
+    assert.equal(qEvent.metadata.about, metadata.about || null)
     // TODO: avatar
   }
 

@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { BaseCreateOpeningFixture, OpeningParams } from './BaseCreateOpeningFixture'
+import { BaseCreateOpeningFixture } from './BaseCreateOpeningFixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { OpeningAddedEventDetails, WorkingGroupModuleName } from '../../types'
 import { OpeningId } from '@joystream/types/working-group'
@@ -9,19 +9,53 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { OpeningAddedEventFieldsFragment, OpeningFieldsFragment } from '../../graphql/generated/queries'
 import { EventType, WorkingGroupOpeningType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
+import { MIN_APPLICATION_STAKE, MIN_UNSTANKING_PERIOD } from '../../consts'
+import moment from 'moment'
+import BN from 'bn.js'
+import { IOpeningMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
+import { createType } from '@joystream/types'
+import { Bytes } from '@polkadot/types'
+
+export type OpeningParams = {
+  stake: BN
+  unstakingPeriod: number
+  reward: BN
+  metadata: IOpeningMetadata | string
+  expectMetadataFailure?: boolean
+}
+
+export const DEFAULT_OPENING_PARAMS: Omit<OpeningParams, 'metadata'> & { metadata: IOpeningMetadata } = {
+  stake: MIN_APPLICATION_STAKE,
+  unstakingPeriod: MIN_UNSTANKING_PERIOD,
+  reward: new BN(10),
+  metadata: {
+    shortDescription: 'Test opening',
+    description: '# Test opening',
+    expectedEndingTimestamp: moment().unix() + 60,
+    hiringLimit: 1,
+    applicationDetails: '- This is automatically created opening, do not apply!',
+    applicationFormQuestions: [
+      { question: 'Question 1?', type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXT },
+      { question: 'Question 2?', type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA },
+    ],
+  },
+}
 
 export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
   protected asSudo: boolean
   protected events: OpeningAddedEventDetails[] = []
 
+  protected openingsParams: OpeningParams[]
+
   public constructor(
     api: Api,
     query: QueryNodeApi,
     group: WorkingGroupModuleName,
-    openingsParams?: Partial<OpeningParams>[],
+    openingsParams?: OpeningParams[],
     asSudo = false
   ) {
-    super(api, query, group, openingsParams)
+    super(api, query, group)
+    this.openingsParams = openingsParams || [DEFAULT_OPENING_PARAMS]
     this.asSudo = asSudo
   }
 
@@ -36,10 +70,32 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
     return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
   }
 
+  protected getOpeningMetadata(params: OpeningParams): IOpeningMetadata | null {
+    if (typeof params.metadata === 'string') {
+      try {
+        return Utils.metadataFromBytes(OpeningMetadata, createType('Bytes', params.metadata))
+      } catch (e) {
+        if (!params.expectMetadataFailure) {
+          throw e
+        }
+        return null
+      }
+    }
+
+    return params.metadata
+  }
+
+  protected getOpeningMetadataBytes(params: { metadata: IOpeningMetadata | string }): Bytes {
+    const { metadata } = params
+    return typeof metadata === 'string'
+      ? createType('Bytes', metadata)
+      : Utils.metadataToBytes(OpeningMetadata, metadata)
+  }
+
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.openingsParams.map((params) =>
       this.api.tx[this.group].addOpening(
-        this.getMetadataBytes(params),
+        this.getOpeningMetadataBytes(params),
         this.asSudo ? 'Leader' : 'Regular',
         { stake_amount: params.stake, leaving_unstaking_period: params.unstakingPeriod },
         params.reward
@@ -67,11 +123,7 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
       assert.equal(qOpening.stakeAmount, openingParams.stake.toString())
       assert.equal(qOpening.unstakingPeriod, openingParams.unstakingPeriod)
       // Metadata
-      if (openingParams.expectMetadataFailue) {
-        this.assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getDefaultQueryNodeMetadata(this.asSudo))
-      } else {
-        this.assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getMetadata(openingParams))
-      }
+      this.assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getOpeningMetadata(openingParams))
     })
   }
 

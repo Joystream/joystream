@@ -4,6 +4,7 @@ import {
   CreateOpeningsFixture,
   FillOpeningsFixture,
   ApplicantDetails,
+  DEFAULT_OPENING_PARAMS,
 } from '../../fixtures/workingGroups'
 
 import Debugger from 'debug'
@@ -22,7 +23,7 @@ export default async function leadOpening({ api, query, env }: FlowProps): Promi
       const openingRunner = new FixtureRunner(createOpeningFixture)
       await openingRunner.run()
       const [openingId] = createOpeningFixture.getCreatedOpeningIds()
-      const { stake: openingStake, metadata: openingMetadata } = createOpeningFixture.getDefaultOpeningParams()
+      const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
 
       const [roleAccount, stakingAccount, rewardAccount] = (await api.createKeyPairs(3)).map((kp) => kp.address)
       const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])

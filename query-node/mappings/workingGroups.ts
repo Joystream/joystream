@@ -10,6 +10,7 @@ import {
   IOpeningMetadata,
   IRemoveUpcomingOpening,
   ISetGroupMetadata,
+  IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
   OpeningMetadata,
   WorkingGroupMetadataAction,
@@ -135,46 +136,28 @@ async function getApplicationFormQuestions(
   return openingWithQuestions.metadata.applicationFormQuestions
 }
 
-function parseQuestionInputType(type: OpeningMetadata.ApplicationFormQuestion.InputType) {
-  if (type === OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA) {
-    return ApplicationFormQuestionType.TEXTAREA
-  }
-
-  return ApplicationFormQuestionType.TEXT
+const InputTypeToApplicationFormQuestionType = {
+  [OpeningMetadata.ApplicationFormQuestion.InputType.TEXT]: ApplicationFormQuestionType.TEXT,
+  [OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA]: ApplicationFormQuestionType.TEXTAREA,
 }
 
-function getDefaultOpeningMetadata(group: WorkingGroup, openingType: WorkingGroupOpeningType): OpeningMetadata {
-  const metadata = new OpeningMetadata({
-    shortDescription: `${_.startCase(group.name)} ${
-      openingType === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
-    } opening`,
-    description: `Apply to this opening in order to be considered for ${_.startCase(group.name)} ${
-      openingType === WorkingGroupOpeningType.REGULAR ? 'worker' : 'leader'
-    } role!`,
-    applicationDetails: `- Fill the application form`,
-    applicationFormQuestions: [
-      {
-        question: 'What makes you a good candidate?',
-        type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA,
-      },
-    ],
-  })
-
-  return metadata
+function parseQuestionInputType(
+  type?: OpeningMetadata.ApplicationFormQuestion.InputType | null
+): ApplicationFormQuestionType {
+  const validType: OpeningMetadata.ApplicationFormQuestion.InputType = type || 0
+  return InputTypeToApplicationFormQuestionType[validType]
 }
 
 async function createOpeningMeta(
   db: DatabaseManager,
   event_: SubstrateEvent,
-  group: WorkingGroup,
-  openingType: WorkingGroupOpeningType,
   originalMeta: Bytes | IOpeningMetadata
 ): Promise<WorkingGroupOpeningMetadata> {
   let originallyValid: boolean
   let metadata: IOpeningMetadata
   if (originalMeta instanceof Bytes) {
     const deserializedMetadata = await deserializeMetadata(OpeningMetadata, originalMeta)
-    metadata = deserializedMetadata || (await getDefaultOpeningMetadata(group, openingType))
+    metadata = deserializedMetadata || {}
     originallyValid = !!deserializedMetadata
   } else {
     metadata = originalMeta
@@ -195,10 +178,10 @@ async function createOpeningMeta(
     createdAt: eventTime,
     updatedAt: eventTime,
     originallyValid,
-    applicationDetails,
-    description,
-    shortDescription,
-    hiringLimit: typeof hiringLimit === 'number' ? hiringLimit : undefined,
+    applicationDetails: applicationDetails || undefined,
+    description: description || undefined,
+    shortDescription: shortDescription || undefined,
+    hiringLimit: hiringLimit || undefined,
     expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp) : undefined,
     applicationFormQuestions: [],
   })
@@ -210,7 +193,7 @@ async function createOpeningMeta(
       const applicationFormQuestion = new ApplicationFormQuestion({
         createdAt: eventTime,
         updatedAt: eventTime,
-        question,
+        question: question || undefined,
         type: parseQuestionInputType(type),
         index,
         openingMetadata,
@@ -256,24 +239,19 @@ async function handleAddUpcomingOpeningAction(
   statusChangedEvent: StatusTextChangedEvent,
   action: IAddUpcomingOpening
 ): Promise<UpcomingOpeningAdded | InvalidActionMetadata> {
-  const upcomingOpeningMeta = action.metadata
+  const upcomingOpeningMeta = action.metadata || {}
   const group = await getWorkingGroup(db, event_)
   const eventTime = new Date(event_.blockTimestamp.toNumber())
-  const openingMeta = await createOpeningMeta(
-    db,
-    event_,
-    group,
-    WorkingGroupOpeningType.REGULAR,
-    action.metadata.metadata
-  )
+  const openingMeta = await createOpeningMeta(db, event_, upcomingOpeningMeta.metadata || {})
+  const { rewardPerBlock, expectedStart, minApplicationStake } = upcomingOpeningMeta
   const upcomingOpening = new UpcomingWorkingGroupOpening({
     createdAt: eventTime,
     updatedAt: eventTime,
     metadata: openingMeta,
     group,
-    rewardPerBlock: new BN(upcomingOpeningMeta.rewardPerBlock.toString()),
-    expectedStart: new Date(upcomingOpeningMeta.expectedStart),
-    stakeAmount: new BN(upcomingOpeningMeta.minApplicationStake.toString()),
+    rewardPerBlock: rewardPerBlock?.toNumber() ? new BN(rewardPerBlock.toString()) : undefined,
+    expectedStart: expectedStart ? new Date(expectedStart) : undefined,
+    stakeAmount: minApplicationStake?.toNumber() ? new BN(minApplicationStake.toString()) : undefined,
     createdInEvent: statusChangedEvent,
     createdAtBlock: await getOrCreateBlock(db, event_),
   })
@@ -313,17 +291,21 @@ async function handleSetWorkingGroupMetadataAction(
 ): Promise<WorkingGroupMetadataSet> {
   const { newMetadata } = action
   const group = await getWorkingGroup(db, event_, ['metadata'])
-  const groupMetadata = group.metadata
+  const oldMetadata = group.metadata
   const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const setNewOptionalString = (field: keyof IWorkingGroupMetadata) =>
+    typeof newMetadata?.[field] === 'string' ? newMetadata[field] || undefined : oldMetadata?.[field]
 
   const newGroupMetadata = new WorkingGroupMetadata({
-    ..._.merge(groupMetadata, newMetadata),
-    id: undefined,
     createdAt: eventTime,
     updatedAt: eventTime,
     setAtBlock: await getOrCreateBlock(db, event_),
     setInEvent: statusChangedEvent,
     group,
+    status: setNewOptionalString('status'),
+    statusMessage: setNewOptionalString('statusMessage'),
+    about: setNewOptionalString('about'),
+    description: setNewOptionalString('description'),
   })
   await db.save<WorkingGroupMetadata>(newGroupMetadata)
 
@@ -351,7 +333,7 @@ async function handleWorkingGroupMetadataAction(
     return handleSetWorkingGroupMetadataAction(db, event_, statusChangedEvent, action.setGroupMetadata)
   } else {
     const result = new InvalidActionMetadata()
-    result.reason = 'Unexpected action type'
+    result.reason = 'No known action was provided'
     return result
   }
 }
@@ -416,7 +398,7 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
 
-  const metadata = await createOpeningMeta(db, event_, group, opening.type, metadataBytes)
+  const metadata = await createOpeningMeta(db, event_, metadataBytes)
   opening.metadata = metadata
 
   await db.save<WorkingGroupOpening>(opening)

@@ -6396,11 +6396,11 @@ export type UpcomingWorkingGroupOpening = BaseGraphQlObject & {
   group: WorkingGroup
   groupId: Scalars['String']
   /** Expected opening start time */
-  expectedStart: Scalars['DateTime']
+  expectedStart?: Maybe<Scalars['DateTime']>
   /** Expected min. application/role stake amount */
-  stakeAmount: Scalars['BigInt']
+  stakeAmount?: Maybe<Scalars['BigInt']>
   /** Expected reward per block */
-  rewardPerBlock: Scalars['BigInt']
+  rewardPerBlock?: Maybe<Scalars['BigInt']>
   metadata: WorkingGroupOpeningMetadata
   metadataId: Scalars['String']
 }
@@ -6415,9 +6415,9 @@ export type UpcomingWorkingGroupOpeningCreateInput = {
   createdInEventId: Scalars['ID']
   createdAtBlockId: Scalars['ID']
   groupId: Scalars['ID']
-  expectedStart: Scalars['DateTime']
-  stakeAmount: Scalars['BigInt']
-  rewardPerBlock: Scalars['BigInt']
+  expectedStart?: Maybe<Scalars['DateTime']>
+  stakeAmount?: Maybe<Scalars['BigInt']>
+  rewardPerBlock?: Maybe<Scalars['BigInt']>
   metadataId: Scalars['ID']
 }
 
@@ -7908,15 +7908,15 @@ export type WorkingGroupOpeningMetadata = BaseGraphQlObject & {
   /** Whether the originally provided metadata was valid */
   originallyValid: Scalars['Boolean']
   /** Opening short description */
-  shortDescription: Scalars['String']
+  shortDescription?: Maybe<Scalars['String']>
   /** Opening description (md-formatted) */
-  description: Scalars['String']
+  description?: Maybe<Scalars['String']>
   /** Expected max. number of applicants that will be hired */
   hiringLimit?: Maybe<Scalars['Int']>
   /** Expected time when the opening will close */
   expectedEnding?: Maybe<Scalars['DateTime']>
   /** Md-formatted text explaining the application process */
-  applicationDetails: Scalars['String']
+  applicationDetails?: Maybe<Scalars['String']>
   applicationFormQuestions: Array<ApplicationFormQuestion>
   upcomingworkinggroupopeningmetadata?: Maybe<Array<UpcomingWorkingGroupOpening>>
   workinggroupopeningmetadata?: Maybe<Array<WorkingGroupOpening>>
@@ -7930,11 +7930,11 @@ export type WorkingGroupOpeningMetadataConnection = {
 
 export type WorkingGroupOpeningMetadataCreateInput = {
   originallyValid: Scalars['Boolean']
-  shortDescription: Scalars['String']
-  description: Scalars['String']
+  shortDescription?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
   hiringLimit?: Maybe<Scalars['Float']>
   expectedEnding?: Maybe<Scalars['DateTime']>
-  applicationDetails: Scalars['String']
+  applicationDetails?: Maybe<Scalars['String']>
 }
 
 export type WorkingGroupOpeningMetadataEdge = {

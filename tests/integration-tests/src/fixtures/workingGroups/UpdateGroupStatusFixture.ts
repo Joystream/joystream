@@ -73,11 +73,13 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
     if (!postUpdateSnapshot) {
       throw new Error('Query node: WorkingGroupMetadata snapshot not found!')
     }
-    const expectedMeta = _.merge(preUpdateSnapshot, update)
-    assert.equal(postUpdateSnapshot.status, expectedMeta.status)
-    assert.equal(postUpdateSnapshot.statusMessage, expectedMeta.statusMessage)
-    assert.equal(postUpdateSnapshot.description, expectedMeta.description)
-    assert.equal(postUpdateSnapshot.about, expectedMeta.about)
+    const expectedMeta = _.mergeWith(preUpdateSnapshot, update, (destValue, sourceValue) =>
+      sourceValue === null || sourceValue === undefined ? destValue : sourceValue
+    )
+    assert.equal(postUpdateSnapshot.status, expectedMeta.status || null)
+    assert.equal(postUpdateSnapshot.statusMessage, expectedMeta.statusMessage || null)
+    assert.equal(postUpdateSnapshot.description, expectedMeta.description || null)
+    assert.equal(postUpdateSnapshot.about, expectedMeta.about || null)
     assert.equal(postUpdateSnapshot.setAtBlock.number, eventDetails.blockNumber)
   }
 

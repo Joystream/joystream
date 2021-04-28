@@ -5,6 +5,8 @@ import {
   CreateOpeningsFixture,
   WithdrawApplicationsFixture,
   ApplicantDetails,
+  DEFAULT_OPENING_PARAMS,
+  OpeningParams,
 } from '../../fixtures/workingGroups'
 
 import Debugger from 'debug'
@@ -13,7 +15,52 @@ import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } fro
 import { workingGroups, LEADER_OPENING_STAKE } from '../../consts'
 import { assert } from 'chai'
 
-export default async function openingAndApplicationStatusFlow({ api, query, env }: FlowProps): Promise<void> {
+const openingsToCreate: OpeningParams[] = [
+  // All defaults case:
+  DEFAULT_OPENING_PARAMS,
+  // Invalid metadata case:
+  {
+    ...DEFAULT_OPENING_PARAMS,
+    metadata: '0xff',
+    expectMetadataFailure: true,
+  },
+  // Valid metadata edge-cases:
+  {
+    ...DEFAULT_OPENING_PARAMS,
+    metadata: {
+      shortDescription: '',
+      description: '',
+      expectedEndingTimestamp: 0,
+      hiringLimit: 0,
+      applicationDetails: '',
+      applicationFormQuestions: [],
+    },
+  },
+  {
+    ...DEFAULT_OPENING_PARAMS,
+    metadata: {
+      shortDescription: null,
+      description: null,
+      expectedEndingTimestamp: null,
+      hiringLimit: null,
+      applicationDetails: null,
+      applicationFormQuestions: null,
+    },
+  },
+  {
+    ...DEFAULT_OPENING_PARAMS,
+    metadata: {},
+  },
+  {
+    ...DEFAULT_OPENING_PARAMS,
+    metadata: {
+      hiringLimit: 1,
+      applicationFormQuestions: [{}],
+    },
+  },
+]
+
+export default async function openingsAndApplications({ api, query, env }: FlowProps): Promise<void> {
   const APPLICATION_CREATE_N = parseInt(env.APPLICATION_STATUS_CREATE_N || '')
   const APPLICATION_WITHDRAW_N = parseInt(env.APPLICATION_STATUS_WITHDRAW_N || '')
   assert.isAbove(APPLICATION_CREATE_N, 0)
@@ -22,20 +69,20 @@ export default async function openingAndApplicationStatusFlow({ api, query, env 
 
   await Promise.all(
     workingGroups.map(async (group) => {
-      const debug = Debugger(`flow:opening-and-application-status:${group}`)
+      const debug = Debugger(`flow:openings-and-applications:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 
       // Transfer funds to leader staking acc to cover opening stake
       const leaderStakingAcc = await api.getLeaderStakingKey(group)
-      await api.treasuryTransferBalance(leaderStakingAcc, LEADER_OPENING_STAKE)
+      await api.treasuryTransferBalance(leaderStakingAcc, LEADER_OPENING_STAKE.muln(openingsToCreate.length))
 
       // Create an opening
-      const createOpeningFixture = new CreateOpeningsFixture(api, query, group)
-      const openingRunner = new FixtureRunner(createOpeningFixture)
-      await openingRunner.run()
-      const [openingId] = createOpeningFixture.getCreatedOpeningIds()
-      const { stake: openingStake, metadata: openingMetadata } = createOpeningFixture.getDefaultOpeningParams()
+      const createOpeningsFixture = new CreateOpeningsFixture(api, query, group, openingsToCreate)
+      const openingsRunner = new FixtureRunner(createOpeningsFixture)
+      await openingsRunner.run()
+      const [openingId] = createOpeningsFixture.getCreatedOpeningIds()
+      const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
 
       // Create some applications
       const roleAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map((kp) => kp.address)

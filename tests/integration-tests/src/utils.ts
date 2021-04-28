@@ -7,11 +7,11 @@ import { decodeAddress } from '@polkadot/keyring'
 import { Bytes } from '@polkadot/types'
 import { createType } from '@joystream/types'
 
-type AnyMessage<T> = T & {
+export type AnyMessage<T> = T & {
   toJSON(): Record<string, unknown>
 }
 
-type AnyMetadataClass<T> = {
+export type AnyMetadataClass<T> = {
   decode(binary: Uint8Array): AnyMessage<T>
   encode(obj: T): { finish(): Uint8Array }
   toObject(obj: AnyMessage<T>): Record<string, unknown>

@@ -518,11 +518,11 @@ $root.OpeningMetadata = (function() {
      * Properties of an OpeningMetadata.
      * @exports IOpeningMetadata
      * @interface IOpeningMetadata
-     * @property {string} shortDescription OpeningMetadata shortDescription
-     * @property {string} description OpeningMetadata description
+     * @property {string|null} [shortDescription] OpeningMetadata shortDescription
+     * @property {string|null} [description] OpeningMetadata description
      * @property {number|null} [hiringLimit] OpeningMetadata hiringLimit
      * @property {number|null} [expectedEndingTimestamp] OpeningMetadata expectedEndingTimestamp
-     * @property {string} applicationDetails OpeningMetadata applicationDetails
+     * @property {string|null} [applicationDetails] OpeningMetadata applicationDetails
      * @property {Array.<OpeningMetadata.IApplicationFormQuestion>|null} [applicationFormQuestions] OpeningMetadata applicationFormQuestions
      */
 
@@ -614,13 +614,16 @@ $root.OpeningMetadata = (function() {
     OpeningMetadata.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        writer.uint32(/* id 1, wireType 2 =*/10).string(message.shortDescription);
-        writer.uint32(/* id 2, wireType 2 =*/18).string(message.description);
+        if (message.shortDescription != null && Object.hasOwnProperty.call(message, "shortDescription"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.shortDescription);
+        if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.description);
         if (message.hiringLimit != null && Object.hasOwnProperty.call(message, "hiringLimit"))
             writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.hiringLimit);
         if (message.expectedEndingTimestamp != null && Object.hasOwnProperty.call(message, "expectedEndingTimestamp"))
             writer.uint32(/* id 4, wireType 0 =*/32).uint32(message.expectedEndingTimestamp);
-        writer.uint32(/* id 5, wireType 2 =*/42).string(message.applicationDetails);
+        if (message.applicationDetails != null && Object.hasOwnProperty.call(message, "applicationDetails"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.applicationDetails);
         if (message.applicationFormQuestions != null && message.applicationFormQuestions.length)
             for (var i = 0; i < message.applicationFormQuestions.length; ++i)
                 $root.OpeningMetadata.ApplicationFormQuestion.encode(message.applicationFormQuestions[i], writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
@@ -683,12 +686,6 @@ $root.OpeningMetadata = (function() {
                 break;
             }
         }
-        if (!message.hasOwnProperty("shortDescription"))
-            throw $util.ProtocolError("missing required 'shortDescription'", { instance: message });
-        if (!message.hasOwnProperty("description"))
-            throw $util.ProtocolError("missing required 'description'", { instance: message });
-        if (!message.hasOwnProperty("applicationDetails"))
-            throw $util.ProtocolError("missing required 'applicationDetails'", { instance: message });
         return message;
     };
 
@@ -719,18 +716,21 @@ $root.OpeningMetadata = (function() {
     OpeningMetadata.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (!$util.isString(message.shortDescription))
-            return "shortDescription: string expected";
-        if (!$util.isString(message.description))
-            return "description: string expected";
+        if (message.shortDescription != null && message.hasOwnProperty("shortDescription"))
+            if (!$util.isString(message.shortDescription))
+                return "shortDescription: string expected";
+        if (message.description != null && message.hasOwnProperty("description"))
+            if (!$util.isString(message.description))
+                return "description: string expected";
         if (message.hiringLimit != null && message.hasOwnProperty("hiringLimit"))
             if (!$util.isInteger(message.hiringLimit))
                 return "hiringLimit: integer expected";
         if (message.expectedEndingTimestamp != null && message.hasOwnProperty("expectedEndingTimestamp"))
             if (!$util.isInteger(message.expectedEndingTimestamp))
                 return "expectedEndingTimestamp: integer expected";
-        if (!$util.isString(message.applicationDetails))
-            return "applicationDetails: string expected";
+        if (message.applicationDetails != null && message.hasOwnProperty("applicationDetails"))
+            if (!$util.isString(message.applicationDetails))
+                return "applicationDetails: string expected";
         if (message.applicationFormQuestions != null && message.hasOwnProperty("applicationFormQuestions")) {
             if (!Array.isArray(message.applicationFormQuestions))
                 return "applicationFormQuestions: array expected";
@@ -835,8 +835,8 @@ $root.OpeningMetadata = (function() {
          * Properties of an ApplicationFormQuestion.
          * @memberof OpeningMetadata
          * @interface IApplicationFormQuestion
-         * @property {string} question ApplicationFormQuestion question
-         * @property {OpeningMetadata.ApplicationFormQuestion.InputType} type ApplicationFormQuestion type
+         * @property {string|null} [question] ApplicationFormQuestion question
+         * @property {OpeningMetadata.ApplicationFormQuestion.InputType|null} [type] ApplicationFormQuestion type
          */
 
         /**
@@ -868,7 +868,7 @@ $root.OpeningMetadata = (function() {
          * @memberof OpeningMetadata.ApplicationFormQuestion
          * @instance
          */
-        ApplicationFormQuestion.prototype.type = 1;
+        ApplicationFormQuestion.prototype.type = 0;
 
         /**
          * Creates a new ApplicationFormQuestion instance using the specified properties.
@@ -894,8 +894,10 @@ $root.OpeningMetadata = (function() {
         ApplicationFormQuestion.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.question);
-            writer.uint32(/* id 2, wireType 0 =*/16).int32(message.type);
+            if (message.question != null && Object.hasOwnProperty.call(message, "question"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.question);
+            if (message.type != null && Object.hasOwnProperty.call(message, "type"))
+                writer.uint32(/* id 2, wireType 0 =*/16).int32(message.type);
             return writer;
         };
 
@@ -941,10 +943,6 @@ $root.OpeningMetadata = (function() {
                     break;
                 }
             }
-            if (!message.hasOwnProperty("question"))
-                throw $util.ProtocolError("missing required 'question'", { instance: message });
-            if (!message.hasOwnProperty("type"))
-                throw $util.ProtocolError("missing required 'type'", { instance: message });
             return message;
         };
 
@@ -975,15 +973,17 @@ $root.OpeningMetadata = (function() {
         ApplicationFormQuestion.verify = function verify(message) {
             if (typeof message !== "object" || message === null)
                 return "object expected";
-            if (!$util.isString(message.question))
-                return "question: string expected";
-            switch (message.type) {
-            default:
-                return "type: enum value expected";
-            case 1:
-            case 2:
-                break;
-            }
+            if (message.question != null && message.hasOwnProperty("question"))
+                if (!$util.isString(message.question))
+                    return "question: string expected";
+            if (message.type != null && message.hasOwnProperty("type"))
+                switch (message.type) {
+                default:
+                    return "type: enum value expected";
+                case 0:
+                case 1:
+                    break;
+                }
             return null;
         };
 
@@ -1003,12 +1003,12 @@ $root.OpeningMetadata = (function() {
                 message.question = String(object.question);
             switch (object.type) {
             case "TEXT":
-            case 1:
-                message.type = 1;
+            case 0:
+                message.type = 0;
                 break;
             case "TEXTAREA":
-            case 2:
-                message.type = 2;
+            case 1:
+                message.type = 1;
                 break;
             }
             return message;
@@ -1029,7 +1029,7 @@ $root.OpeningMetadata = (function() {
             var object = {};
             if (options.defaults) {
                 object.question = "";
-                object.type = options.enums === String ? "TEXT" : 1;
+                object.type = options.enums === String ? "TEXT" : 0;
             }
             if (message.question != null && message.hasOwnProperty("question"))
                 object.question = message.question;
@@ -1053,13 +1053,13 @@ $root.OpeningMetadata = (function() {
          * InputType enum.
          * @name OpeningMetadata.ApplicationFormQuestion.InputType
          * @enum {number}
-         * @property {number} TEXT=1 TEXT value
-         * @property {number} TEXTAREA=2 TEXTAREA value
+         * @property {number} TEXT=0 TEXT value
+         * @property {number} TEXTAREA=1 TEXTAREA value
          */
         ApplicationFormQuestion.InputType = (function() {
             var valuesById = {}, values = Object.create(valuesById);
-            values[valuesById[1] = "TEXT"] = 1;
-            values[valuesById[2] = "TEXTAREA"] = 2;
+            values[valuesById[0] = "TEXT"] = 0;
+            values[valuesById[1] = "TEXTAREA"] = 1;
             return values;
         })();
 
@@ -1075,10 +1075,10 @@ $root.UpcomingOpeningMetadata = (function() {
      * Properties of an UpcomingOpeningMetadata.
      * @exports IUpcomingOpeningMetadata
      * @interface IUpcomingOpeningMetadata
-     * @property {number} expectedStart UpcomingOpeningMetadata expectedStart
-     * @property {Long} rewardPerBlock UpcomingOpeningMetadata rewardPerBlock
-     * @property {Long} minApplicationStake UpcomingOpeningMetadata minApplicationStake
-     * @property {IOpeningMetadata} metadata UpcomingOpeningMetadata metadata
+     * @property {number|null} [expectedStart] UpcomingOpeningMetadata expectedStart
+     * @property {Long|null} [rewardPerBlock] UpcomingOpeningMetadata rewardPerBlock
+     * @property {Long|null} [minApplicationStake] UpcomingOpeningMetadata minApplicationStake
+     * @property {IOpeningMetadata|null} [metadata] UpcomingOpeningMetadata metadata
      */
 
     /**
@@ -1122,7 +1122,7 @@ $root.UpcomingOpeningMetadata = (function() {
 
     /**
      * UpcomingOpeningMetadata metadata.
-     * @member {IOpeningMetadata} metadata
+     * @member {IOpeningMetadata|null|undefined} metadata
      * @memberof UpcomingOpeningMetadata
      * @instance
      */
@@ -1152,10 +1152,14 @@ $root.UpcomingOpeningMetadata = (function() {
     UpcomingOpeningMetadata.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.expectedStart);
-        writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.rewardPerBlock);
-        writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.minApplicationStake);
-        $root.OpeningMetadata.encode(message.metadata, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+        if (message.expectedStart != null && Object.hasOwnProperty.call(message, "expectedStart"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.expectedStart);
+        if (message.rewardPerBlock != null && Object.hasOwnProperty.call(message, "rewardPerBlock"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.rewardPerBlock);
+        if (message.minApplicationStake != null && Object.hasOwnProperty.call(message, "minApplicationStake"))
+            writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.minApplicationStake);
+        if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
+            $root.OpeningMetadata.encode(message.metadata, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
         return writer;
     };
 
@@ -1207,14 +1211,6 @@ $root.UpcomingOpeningMetadata = (function() {
                 break;
             }
         }
-        if (!message.hasOwnProperty("expectedStart"))
-            throw $util.ProtocolError("missing required 'expectedStart'", { instance: message });
-        if (!message.hasOwnProperty("rewardPerBlock"))
-            throw $util.ProtocolError("missing required 'rewardPerBlock'", { instance: message });
-        if (!message.hasOwnProperty("minApplicationStake"))
-            throw $util.ProtocolError("missing required 'minApplicationStake'", { instance: message });
-        if (!message.hasOwnProperty("metadata"))
-            throw $util.ProtocolError("missing required 'metadata'", { instance: message });
         return message;
     };
 
@@ -1245,13 +1241,16 @@ $root.UpcomingOpeningMetadata = (function() {
     UpcomingOpeningMetadata.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (!$util.isInteger(message.expectedStart))
-            return "expectedStart: integer expected";
-        if (!$util.isInteger(message.rewardPerBlock) && !(message.rewardPerBlock && $util.isInteger(message.rewardPerBlock.low) && $util.isInteger(message.rewardPerBlock.high)))
-            return "rewardPerBlock: integer|Long expected";
-        if (!$util.isInteger(message.minApplicationStake) && !(message.minApplicationStake && $util.isInteger(message.minApplicationStake.low) && $util.isInteger(message.minApplicationStake.high)))
-            return "minApplicationStake: integer|Long expected";
-        {
+        if (message.expectedStart != null && message.hasOwnProperty("expectedStart"))
+            if (!$util.isInteger(message.expectedStart))
+                return "expectedStart: integer expected";
+        if (message.rewardPerBlock != null && message.hasOwnProperty("rewardPerBlock"))
+            if (!$util.isInteger(message.rewardPerBlock) && !(message.rewardPerBlock && $util.isInteger(message.rewardPerBlock.low) && $util.isInteger(message.rewardPerBlock.high)))
+                return "rewardPerBlock: integer|Long expected";
+        if (message.minApplicationStake != null && message.hasOwnProperty("minApplicationStake"))
+            if (!$util.isInteger(message.minApplicationStake) && !(message.minApplicationStake && $util.isInteger(message.minApplicationStake.low) && $util.isInteger(message.minApplicationStake.high)))
+                return "minApplicationStake: integer|Long expected";
+        if (message.metadata != null && message.hasOwnProperty("metadata")) {
             var error = $root.OpeningMetadata.verify(message.metadata);
             if (error)
                 return "metadata." + error;
@@ -1820,7 +1819,7 @@ $root.SetGroupMetadata = (function() {
      * Properties of a SetGroupMetadata.
      * @exports ISetGroupMetadata
      * @interface ISetGroupMetadata
-     * @property {IWorkingGroupMetadata} newMetadata SetGroupMetadata newMetadata
+     * @property {IWorkingGroupMetadata|null} [newMetadata] SetGroupMetadata newMetadata
      */
 
     /**
@@ -1840,7 +1839,7 @@ $root.SetGroupMetadata = (function() {
 
     /**
      * SetGroupMetadata newMetadata.
-     * @member {IWorkingGroupMetadata} newMetadata
+     * @member {IWorkingGroupMetadata|null|undefined} newMetadata
      * @memberof SetGroupMetadata
      * @instance
      */
@@ -1870,7 +1869,8 @@ $root.SetGroupMetadata = (function() {
     SetGroupMetadata.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        $root.WorkingGroupMetadata.encode(message.newMetadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.newMetadata != null && Object.hasOwnProperty.call(message, "newMetadata"))
+            $root.WorkingGroupMetadata.encode(message.newMetadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
@@ -1913,8 +1913,6 @@ $root.SetGroupMetadata = (function() {
                 break;
             }
         }
-        if (!message.hasOwnProperty("newMetadata"))
-            throw $util.ProtocolError("missing required 'newMetadata'", { instance: message });
         return message;
     };
 
@@ -1945,7 +1943,7 @@ $root.SetGroupMetadata = (function() {
     SetGroupMetadata.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        {
+        if (message.newMetadata != null && message.hasOwnProperty("newMetadata")) {
             var error = $root.WorkingGroupMetadata.verify(message.newMetadata);
             if (error)
                 return "newMetadata." + error;
@@ -2013,7 +2011,7 @@ $root.AddUpcomingOpening = (function() {
      * Properties of an AddUpcomingOpening.
      * @exports IAddUpcomingOpening
      * @interface IAddUpcomingOpening
-     * @property {IUpcomingOpeningMetadata} metadata AddUpcomingOpening metadata
+     * @property {IUpcomingOpeningMetadata|null} [metadata] AddUpcomingOpening metadata
      */
 
     /**
@@ -2033,7 +2031,7 @@ $root.AddUpcomingOpening = (function() {
 
     /**
      * AddUpcomingOpening metadata.
-     * @member {IUpcomingOpeningMetadata} metadata
+     * @member {IUpcomingOpeningMetadata|null|undefined} metadata
      * @memberof AddUpcomingOpening
      * @instance
      */
@@ -2063,7 +2061,8 @@ $root.AddUpcomingOpening = (function() {
     AddUpcomingOpening.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        $root.UpcomingOpeningMetadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
+            $root.UpcomingOpeningMetadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
@@ -2106,8 +2105,6 @@ $root.AddUpcomingOpening = (function() {
                 break;
             }
         }
-        if (!message.hasOwnProperty("metadata"))
-            throw $util.ProtocolError("missing required 'metadata'", { instance: message });
         return message;
     };
 
@@ -2138,7 +2135,7 @@ $root.AddUpcomingOpening = (function() {
     AddUpcomingOpening.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        {
+        if (message.metadata != null && message.hasOwnProperty("metadata")) {
             var error = $root.UpcomingOpeningMetadata.verify(message.metadata);
             if (error)
                 return "metadata." + error;
@@ -2206,7 +2203,7 @@ $root.RemoveUpcomingOpening = (function() {
      * Properties of a RemoveUpcomingOpening.
      * @exports IRemoveUpcomingOpening
      * @interface IRemoveUpcomingOpening
-     * @property {string} id RemoveUpcomingOpening id
+     * @property {string|null} [id] RemoveUpcomingOpening id
      */
 
     /**
@@ -2256,7 +2253,8 @@ $root.RemoveUpcomingOpening = (function() {
     RemoveUpcomingOpening.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
         return writer;
     };
 
@@ -2299,8 +2297,6 @@ $root.RemoveUpcomingOpening = (function() {
                 break;
             }
         }
-        if (!message.hasOwnProperty("id"))
-            throw $util.ProtocolError("missing required 'id'", { instance: message });
         return message;
     };
 
@@ -2331,8 +2327,9 @@ $root.RemoveUpcomingOpening = (function() {
     RemoveUpcomingOpening.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (!$util.isString(message.id))
-            return "id: string expected";
+        if (message.id != null && message.hasOwnProperty("id"))
+            if (!$util.isString(message.id))
+                return "id: string expected";
         return null;
     };
 

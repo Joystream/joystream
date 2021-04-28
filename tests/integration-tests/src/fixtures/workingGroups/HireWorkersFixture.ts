@@ -7,7 +7,7 @@ import { WorkingGroupModuleName } from '../../types'
 import { Utils } from '../../utils'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
 import { ApplicantDetails, ApplyOnOpeningsHappyCaseFixture } from './ApplyOnOpeningsHappyCaseFixture'
-import { CreateOpeningsFixture } from './CreateOpeningsFixture'
+import { CreateOpeningsFixture, DEFAULT_OPENING_PARAMS } from './CreateOpeningsFixture'
 import { FillOpeningsFixture } from './FillOpeningsFixture'
 
 export class HireWorkersFixture extends BaseQueryNodeFixture {
@@ -38,7 +38,7 @@ export class HireWorkersFixture extends BaseQueryNodeFixture {
     const openingRunner = new FixtureRunner(createOpeningFixture)
     await openingRunner.run()
     const [openingId] = createOpeningFixture.getCreatedOpeningIds()
-    const { stake: openingStake, metadata: openingMetadata } = createOpeningFixture.getDefaultOpeningParams()
+    const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
 
     // Create the applications
     const roleAccounts = (await this.api.createKeyPairs(this.workersN)).map((kp) => kp.address)

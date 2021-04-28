@@ -213,10 +213,10 @@ export class MembershipMetadata implements IMembershipMetadata {
 export interface IOpeningMetadata {
 
     /** OpeningMetadata shortDescription */
-    shortDescription: string;
+    shortDescription?: (string|null);
 
     /** OpeningMetadata description */
-    description: string;
+    description?: (string|null);
 
     /** OpeningMetadata hiringLimit */
     hiringLimit?: (number|null);
@@ -225,7 +225,7 @@ export interface IOpeningMetadata {
     expectedEndingTimestamp?: (number|null);
 
     /** OpeningMetadata applicationDetails */
-    applicationDetails: string;
+    applicationDetails?: (string|null);
 
     /** OpeningMetadata applicationFormQuestions */
     applicationFormQuestions?: (OpeningMetadata.IApplicationFormQuestion[]|null);
@@ -335,10 +335,10 @@ export namespace OpeningMetadata {
     interface IApplicationFormQuestion {
 
         /** ApplicationFormQuestion question */
-        question: string;
+        question?: (string|null);
 
         /** ApplicationFormQuestion type */
-        type: OpeningMetadata.ApplicationFormQuestion.InputType;
+        type?: (OpeningMetadata.ApplicationFormQuestion.InputType|null);
     }
 
     /** Represents an ApplicationFormQuestion. */
@@ -431,8 +431,8 @@ export namespace OpeningMetadata {
 
         /** InputType enum. */
         enum InputType {
-            TEXT = 1,
-            TEXTAREA = 2
+            TEXT = 0,
+            TEXTAREA = 1
         }
     }
 }
@@ -441,16 +441,16 @@ export namespace OpeningMetadata {
 export interface IUpcomingOpeningMetadata {
 
     /** UpcomingOpeningMetadata expectedStart */
-    expectedStart: number;
+    expectedStart?: (number|null);
 
     /** UpcomingOpeningMetadata rewardPerBlock */
-    rewardPerBlock: Long;
+    rewardPerBlock?: (Long|null);
 
     /** UpcomingOpeningMetadata minApplicationStake */
-    minApplicationStake: Long;
+    minApplicationStake?: (Long|null);
 
     /** UpcomingOpeningMetadata metadata */
-    metadata: IOpeningMetadata;
+    metadata?: (IOpeningMetadata|null);
 }
 
 /** Represents an UpcomingOpeningMetadata. */
@@ -472,7 +472,7 @@ export class UpcomingOpeningMetadata implements IUpcomingOpeningMetadata {
     public minApplicationStake: Long;
 
     /** UpcomingOpeningMetadata metadata. */
-    public metadata: IOpeningMetadata;
+    public metadata?: (IOpeningMetadata|null);
 
     /**
      * Creates a new UpcomingOpeningMetadata instance using the specified properties.
@@ -747,7 +747,7 @@ export class WorkingGroupMetadata implements IWorkingGroupMetadata {
 export interface ISetGroupMetadata {
 
     /** SetGroupMetadata newMetadata */
-    newMetadata: IWorkingGroupMetadata;
+    newMetadata?: (IWorkingGroupMetadata|null);
 }
 
 /** Represents a SetGroupMetadata. */
@@ -760,7 +760,7 @@ export class SetGroupMetadata implements ISetGroupMetadata {
     constructor(properties?: ISetGroupMetadata);
 
     /** SetGroupMetadata newMetadata. */
-    public newMetadata: IWorkingGroupMetadata;
+    public newMetadata?: (IWorkingGroupMetadata|null);
 
     /**
      * Creates a new SetGroupMetadata instance using the specified properties.
@@ -837,7 +837,7 @@ export class SetGroupMetadata implements ISetGroupMetadata {
 export interface IAddUpcomingOpening {
 
     /** AddUpcomingOpening metadata */
-    metadata: IUpcomingOpeningMetadata;
+    metadata?: (IUpcomingOpeningMetadata|null);
 }
 
 /** Represents an AddUpcomingOpening. */
@@ -850,7 +850,7 @@ export class AddUpcomingOpening implements IAddUpcomingOpening {
     constructor(properties?: IAddUpcomingOpening);
 
     /** AddUpcomingOpening metadata. */
-    public metadata: IUpcomingOpeningMetadata;
+    public metadata?: (IUpcomingOpeningMetadata|null);
 
     /**
      * Creates a new AddUpcomingOpening instance using the specified properties.
@@ -927,7 +927,7 @@ export class AddUpcomingOpening implements IAddUpcomingOpening {
 export interface IRemoveUpcomingOpening {
 
     /** RemoveUpcomingOpening id */
-    id: string;
+    id?: (string|null);
 }
 
 /** Represents a RemoveUpcomingOpening. */

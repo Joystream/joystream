@@ -1,5 +1,5 @@
 import { Api } from '../../Api'
-import { BaseCreateOpeningFixture, UpcomingOpeningParams } from './BaseCreateOpeningFixture'
+import { BaseCreateOpeningFixture } from './BaseCreateOpeningFixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails, WorkingGroupModuleName } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
@@ -8,31 +8,36 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { StatusTextChangedEventFieldsFragment, UpcomingOpeningFieldsFragment } from '../../graphql/generated/queries'
 import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
-import { IOpeningMetadata, WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
-import _ from 'lodash'
+import {
+  IUpcomingOpeningMetadata,
+  UpcomingOpeningMetadata,
+  WorkingGroupMetadataAction,
+} from '@joystream/metadata-protobuf'
 import Long from 'long'
 import { Bytes } from '@polkadot/types'
 import moment from 'moment'
+import { DEFAULT_OPENING_PARAMS } from './CreateOpeningsFixture'
+import { createType } from '@joystream/types'
+
+export const DEFAULT_UPCOMING_OPENING_META: IUpcomingOpeningMetadata = {
+  minApplicationStake: Long.fromString(DEFAULT_OPENING_PARAMS.stake.toString()),
+  rewardPerBlock: Long.fromString(DEFAULT_OPENING_PARAMS.reward.toString()),
+  expectedStart: moment().unix() + 3600,
+  metadata: DEFAULT_OPENING_PARAMS.metadata,
+}
+
+export type UpcomingOpeningParams = {
+  meta: IUpcomingOpeningMetadata | string
+  expectMetadataFailure?: boolean
+}
 
 export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
-  protected openingsParams: UpcomingOpeningParams[]
+  protected upcomingOpeningsParams: UpcomingOpeningParams[]
   protected createdUpcomingOpeningIds: string[] = []
 
-  public getDefaultOpeningParams(): Omit<UpcomingOpeningParams, 'metadata'> & { metadata: IOpeningMetadata } {
-    return {
-      ...super.getDefaultOpeningParams(),
-      expectedStartTs: moment().unix() + 3600,
-    }
-  }
-
-  public constructor(
-    api: Api,
-    query: QueryNodeApi,
-    group: WorkingGroupModuleName,
-    openingsParams?: Partial<UpcomingOpeningParams>[]
-  ) {
-    super(api, query, group, openingsParams)
-    this.openingsParams = (openingsParams || [{}]).map((params) => ({ ...this.getDefaultOpeningParams(), ...params }))
+  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, params?: UpcomingOpeningParams[]) {
+    super(api, query, group)
+    this.upcomingOpeningsParams = params || [{ meta: DEFAULT_UPCOMING_OPENING_META }]
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
@@ -40,7 +45,7 @@ export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.openingsParams.map((params) =>
+    return this.upcomingOpeningsParams.map((params) =>
       this.api.tx[this.group].setStatusText(this.getActionMetadataBytes(params))
     )
   }
@@ -56,21 +61,28 @@ export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
     return this.createdUpcomingOpeningIds
   }
 
-  protected getActionMetadataBytes(openingParams: UpcomingOpeningParams): Bytes {
-    const openingMetadata = this.getMetadata(openingParams)
-    console.log('OpeningMetadata', openingMetadata)
-    if (!openingMetadata) {
-      // Opening metadata is invalid so we just return the provided bytes
-      return this.getMetadataBytes(openingParams)
+  protected getUpcomingOpeningMeta(params: UpcomingOpeningParams): IUpcomingOpeningMetadata | null {
+    if (typeof params.meta === 'string') {
+      try {
+        return Utils.metadataFromBytes(UpcomingOpeningMetadata, createType('Bytes', params.meta))
+      } catch (e) {
+        if (!params.expectMetadataFailure) {
+          throw e
+        }
+        return null
+      }
+    }
+    return params.meta
+  }
+
+  protected getActionMetadataBytes(params: UpcomingOpeningParams): Bytes {
+    const upcomingOpeningMeta = this.getUpcomingOpeningMeta(params)
+    if (!upcomingOpeningMeta) {
+      return createType('Bytes', params.meta)
     }
     return Utils.metadataToBytes(WorkingGroupMetadataAction, {
       addUpcomingOpening: {
-        metadata: {
-          expectedStart: openingParams.expectedStartTs,
-          minApplicationStake: Long.fromString(openingParams.stake.toString()),
-          rewardPerBlock: Long.fromString(openingParams.reward.toString()),
-          metadata: openingMetadata,
-        },
+        metadata: upcomingOpeningMeta,
       },
     })
   }
@@ -80,19 +92,34 @@ export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
     qEvents: StatusTextChangedEventFieldsFragment[]
   ): void {
     this.events.forEach((e, i) => {
-      const openingParams = this.openingsParams[i]
+      const expectedMeta = this.getUpcomingOpeningMeta(this.upcomingOpeningsParams[i])
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const qUpcomingOpening = qUpcomingOpenings.find((o) => o.createdInEvent.id === qEvent.id)
-      if (!openingParams.expectMetadataFailue) {
+      if (expectedMeta) {
         Utils.assert(qUpcomingOpening)
-        assert.equal(new Date(qUpcomingOpening.expectedStart).getTime(), openingParams.expectedStartTs)
+        assert.equal(
+          qUpcomingOpening.expectedStart
+            ? new Date(qUpcomingOpening.expectedStart).getTime()
+            : qUpcomingOpening.expectedStart,
+          expectedMeta.expectedStart || null
+        )
         assert.equal(qUpcomingOpening.group.name, this.group)
-        assert.equal(qUpcomingOpening.rewardPerBlock, openingParams.reward.toString())
-        assert.equal(qUpcomingOpening.stakeAmount, openingParams.stake.toString())
+        assert.equal(
+          qUpcomingOpening.rewardPerBlock,
+          expectedMeta.rewardPerBlock && expectedMeta.rewardPerBlock.toNumber()
+            ? expectedMeta.rewardPerBlock.toString()
+            : null
+        )
+        assert.equal(
+          qUpcomingOpening.stakeAmount,
+          expectedMeta.minApplicationStake && expectedMeta.minApplicationStake.toNumber()
+            ? expectedMeta.minApplicationStake.toString()
+            : null
+        )
         assert.equal(qUpcomingOpening.createdAtBlock.number, e.blockNumber)
         Utils.assert(qEvent.result.__typename === 'UpcomingOpeningAdded')
         assert.equal(qEvent.result.upcomingOpeningId, qUpcomingOpening.id)
-        this.assertQueriedOpeningMetadataIsValid(qUpcomingOpening.metadata, this.getMetadata(openingParams))
+        this.assertQueriedOpeningMetadataIsValid(qUpcomingOpening.metadata, expectedMeta.metadata)
       } else {
         assert.isUndefined(qUpcomingOpening)
       }
@@ -100,13 +127,13 @@ export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StatusTextChangedEventFieldsFragment, i: number): void {
-    const openingParams = this.openingsParams[i]
+    const params = this.upcomingOpeningsParams[i]
     assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.metadata, this.getActionMetadataBytes(openingParams).toString())
+    assert.equal(qEvent.metadata, this.getActionMetadataBytes(params).toString())
     assert.equal(
       qEvent.result.__typename,
-      openingParams.expectMetadataFailue ? 'InvalidActionMetadata' : 'UpcomingOpeningAdded'
+      params.expectMetadataFailure ? 'InvalidActionMetadata' : 'UpcomingOpeningAdded'
     )
   }
 

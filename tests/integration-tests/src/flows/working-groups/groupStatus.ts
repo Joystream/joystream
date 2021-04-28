@@ -36,7 +36,7 @@ export default async function groupStatus({ api, query, env }: FlowProps): Promi
           about: null,
           description: null,
         },
-        // Should change everything to empty strings:
+        // Should unset everything:
         {
           status: '',
           statusMessage: '',
