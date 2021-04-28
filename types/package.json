@@ -61,7 +61,7 @@
   },
   "homepage": "https://github.com/Joystream/joystream",
   "volta": {
-    "node": "12.18.2",
+    "node": "14.16.1",
     "yarn": "1.22.4"
   }
 }

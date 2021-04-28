@@ -44,9 +44,9 @@
     "chalk": "^4.0.0"
   },
   "devDependencies": {
-    "eslint": "^7.6.0",
+    "eslint": "^7.25.0",
     "husky": "^4.2.5",
-    "prettier": "2.0.2"
+    "prettier": "^2.2.1"
   },
   "husky": {
     "hooks": {

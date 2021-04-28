@@ -316,9 +316,9 @@ export class Api {
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
+      (this.api.tx[module].acceptApplications(
+        this.api.createType('OpeningId', 0)
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -351,17 +351,19 @@ export class Api {
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
+      (this.api.tx[module].increaseStake(
+        this.api.createType('WorkerId', 0),
+        0
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
+      (this.api.tx[module].decreaseStake(
+        this.api.createType('WorkerId', 0),
+        0
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -389,9 +391,10 @@ export class Api {
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
+      (this.api.tx[module].slashStake(
+        this.api.createType('WorkerId', 0),
+        0
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -1621,9 +1624,9 @@ export class Api {
   }
 
   public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
-      Application
-    >()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[
+      module
+    ].applicationById.entries<Application>()
     return applicationsAndIds
       .map((applicationWithId) => {
         const application: Application = applicationWithId[1]
