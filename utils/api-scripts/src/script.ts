@@ -23,7 +23,7 @@ async function main() {
 
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
-  const api = await ApiPromise.create({ provider, types: joyTypes })
+  const api = new ApiPromise({ provider, types: joyTypes })
 
   await api.isReady
 

@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "lib": ["dom", "es5", "es6", "es7", "esnext"],
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "keyofStringsOnly": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": false,
+    "strict": true,
+    "strictNullChecks": true,
+    "types": ["isomorphic-fetch", "node"],
+    "esModuleInterop": true,
+    "declaration": true
+  },
+  "include": ["src/**/*", "db/**/*", "model/**/*"],
+  "exclude": ["node_modules/**/*", "generated/**/*", "tools/**/*"]
+}

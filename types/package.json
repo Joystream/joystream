@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "description": "Types for Joystream Substrate Runtime - Sumer release",
   "main": "index.js",
   "types": "index.d.ts",
@@ -22,9 +22,9 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/api": "1.26.1",
-    "@polkadot/types": "1.26.1",
-    "@polkadot/keyring": "^3.0.1",
+    "@polkadot/api": "4.2.1",
+    "@polkadot/types": "4.2.1",
+    "@polkadot/keyring": "^6.0.5",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
@@ -32,7 +32,7 @@
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polkadot/typegen": "1.26.1",
+    "@polkadot/typegen": "4.2.1",
     "ts-node": "^8.6.2",
     "typescript": "^3.7.2",
     "madge": "^3.9.2",

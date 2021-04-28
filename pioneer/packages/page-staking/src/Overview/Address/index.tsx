@@ -73,7 +73,7 @@ function expandInfo ({ exposure, validatorPrefs }: DeriveStakingQuery): StakingS
 function Address ({ address, className = '', filterName, hasQueries, isElected, isFavorite, isMain, lastBlock, nominatedBy, onlineCount, onlineMessage, points, toggleFavorite, withIdentity }: Props): React.ReactElement<Props> | null {
   const { api } = useApi();
   const accountInfo = useCall<DeriveAccountInfo>(api.derive.accounts.info, [address]);
-  const stakingInfo = useCall<DeriveStakingQuery>(api.derive.staking.query, [address]);
+  const stakingInfo = useCall<DeriveStakingQuery>(api.derive.staking.query, [address, { withExposure: true, withPrefs: true }]);
   const [{ commission, nominators, stakeOther, stakeOwn, stakeTotal }, setStakingState] = useState<StakingState>({ nominators: [] });
   const [isVisible, setIsVisible] = useState(true);
 

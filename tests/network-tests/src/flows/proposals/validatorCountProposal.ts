@@ -3,11 +3,11 @@ import { FlowProps } from '../../Flow'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { Resource } from '../../Resources'
 
 export default async function validatorCount({ api, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:validatorCountProposal')
+  const debug = extendDebug('flow:validatorCountProposal')
   debug('Started')
   await lock(Resource.Proposals)
 

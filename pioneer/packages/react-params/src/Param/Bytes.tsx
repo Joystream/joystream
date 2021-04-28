@@ -6,7 +6,7 @@ import { Props } from '../types';
 
 import React, { useCallback, useState } from 'react';
 import styled from 'styled-components';
-import { Compact } from '@polkadot/types';
+import { compactAddLength } from '@polkadot/util';
 import { Toggle } from '@polkadot/react-components';
 
 import { useTranslation } from '../translate';
@@ -24,7 +24,7 @@ function Bytes ({ className = '', defaultValue, isDisabled, isError, label, name
 
       onChange && onChange({
         isValid,
-        value: Compact.addLengthPrefix(value)
+        value: compactAddLength(value)
       });
 
       setIsValid(isValid);

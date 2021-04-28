@@ -11,7 +11,7 @@ import hiring from './hiring'
 import workingGroup from './working-group'
 import storage from './storage'
 import proposals from './proposals'
-import contentDirectory from './content'
+import content from './content'
 import legacy from './legacy'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
@@ -32,7 +32,7 @@ export {
   workingGroup,
   storage,
   proposals,
-  contentDirectory,
+  content,
 }
 
 export const types: RegistryTypes = {
@@ -50,7 +50,7 @@ export const types: RegistryTypes = {
   ...workingGroup,
   ...storage,
   ...proposals,
-  ...contentDirectory,
+  ...content,
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
@@ -90,13 +90,15 @@ type CreateInterface_NoOption<T extends Codec> =
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
 // (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
-type CreateInterface<T extends Codec> =
+export type CreateInterface<T extends Codec> =
   | T
   | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
 
-export function createType<TypeName extends keyof InterfaceTypes>(
-  type: TypeName,
-  value: InterfaceTypes[TypeName] extends Codec ? CreateInterface<InterfaceTypes[TypeName]> : any
-): InterfaceTypes[TypeName] {
+export type AnyTypeName = keyof InterfaceTypes
+
+export function createType<TN extends AnyTypeName, T extends InterfaceTypes[TN] = InterfaceTypes[TN]>(
+  type: TN,
+  value: CreateInterface<T>
+): InterfaceTypes[TN] {
   return registry.createType(type, value)
 }

@@ -6,7 +6,6 @@ export { default as classes } from './classes';
 export { default as getAddressMeta } from './getAddressMeta';
 export { default as getAddressName } from './getAddressName';
 export { default as getAddressTags } from './getAddressTags';
-export { default as getContractAbi } from './getContractAbi';
 export { default as isTreasuryProposalVote } from './isTreasuryProposalVote';
 export { default as timeToString } from './timeToString';
 export { default as toAddress } from './toAddress';

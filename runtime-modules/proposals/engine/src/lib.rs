@@ -1,6 +1,6 @@
 //! # Proposals engine module
 //! Proposals `engine` module for the Joystream platform. Version 2.
-//! The main component of the proposals system. Provides methods and extrinsics to create and
+//! The main component of the proposals frame_system. Provides methods and extrinsics to create and
 //! vote for proposals, inspired by Parity **Democracy module**.
 //!
 //! ## Overview

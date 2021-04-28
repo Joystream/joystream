@@ -117,6 +117,10 @@ export class Transport extends MockTransportBase implements ITransport {
     });
   }
 
+  groupOverview (group: WorkingGroups): Promise<WorkingGroupMembership> {
+    return this.storageGroup();
+  }
+
   currentOpportunities (): Promise<Array<WorkingGroupOpening>> {
     return this.simulateApiResponse<Array<WorkingGroupOpening>>(
       [

@@ -3,7 +3,7 @@ import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
 import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url } from '../common'
 import { ContentParameters } from '../storage'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
@@ -15,6 +15,7 @@ export class PersonId extends u64 {}
 export class SeriesId extends u64 {}
 export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
+export class IsCensored extends bool {}
 
 export class NewAsset extends JoyEnum({
   Upload: ContentParameters,
@@ -168,7 +169,7 @@ export class PersonActor extends JoyEnum({
   Curator: CuratorId,
 }) {}
 
-export const contentDirectoryTypes = {
+export const contentTypes = {
   CuratorId,
   CuratorGroupId,
   CuratorGroup,
@@ -209,6 +210,7 @@ export const contentDirectoryTypes = {
   SeasonParameters,
   EpisodeParemters,
   MaxNumber,
+  IsCensored,
 }
 
-export default contentDirectoryTypes
+export default contentTypes

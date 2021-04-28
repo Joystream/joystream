@@ -64,15 +64,14 @@ class RuntimeApi {
       }
 
       try {
-        this.api = await ApiPromise.create({ provider, types: types })
+        this.api = new ApiPromise({ provider, types })
+        await this.api.isReadyOrError
         break
       } catch (err) {
         debug('Connecting to node failed, will retry..')
       }
       await sleep(5000)
     }
-
-    await this.api.isReady
 
     this.asyncLock = new AsyncLock()
 
