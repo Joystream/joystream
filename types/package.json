@@ -39,7 +39,7 @@
     "json-schema-to-typescript": "^9.1.1"
   },
   "engines": {
-    "node": ">=12.18.0",
+    "node": ">=14.0.0",
     "yarn": "^1.22.0"
   },
   "publishConfig": {

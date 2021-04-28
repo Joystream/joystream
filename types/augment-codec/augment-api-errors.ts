@@ -1041,6 +1041,10 @@ declare module '@polkadot/api/types/errors' {
        **/
       DuplicateOffenceReport: AugmentedError<ApiType>;
       /**
+       * An equivocation proof provided as part of an equivocation report is invalid.
+       **/
+      InvalidEquivocationProof: AugmentedError<ApiType>;
+      /**
        * A key ownership proof provided as part of an equivocation report is invalid.
        **/
       InvalidKeyOwnershipProof: AugmentedError<ApiType>;
@@ -1818,53 +1822,53 @@ declare module '@polkadot/api/types/errors' {
        * Error while building the assignment type from the compact. This can happen if an index
        * is invalid, or if the weights _overflow_.
        **/
-      PhragmenBogusCompact: AugmentedError<ApiType>;
+      OffchainElectionBogusCompact: AugmentedError<ApiType>;
       /**
        * The submitted result has unknown edges that are not among the presented winners.
        **/
-      PhragmenBogusEdge: AugmentedError<ApiType>;
+      OffchainElectionBogusEdge: AugmentedError<ApiType>;
       /**
        * The election size is invalid.
        **/
-      PhragmenBogusElectionSize: AugmentedError<ApiType>;
+      OffchainElectionBogusElectionSize: AugmentedError<ApiType>;
       /**
        * One of the submitted nominators has an edge to which they have not voted on chain.
        **/
-      PhragmenBogusNomination: AugmentedError<ApiType>;
+      OffchainElectionBogusNomination: AugmentedError<ApiType>;
       /**
        * One of the submitted nominators is not an active nominator on chain.
        **/
-      PhragmenBogusNominator: AugmentedError<ApiType>;
+      OffchainElectionBogusNominator: AugmentedError<ApiType>;
       /**
        * The claimed score does not match with the one computed from the data.
        **/
-      PhragmenBogusScore: AugmentedError<ApiType>;
+      OffchainElectionBogusScore: AugmentedError<ApiType>;
       /**
        * A self vote must only be originated from a validator to ONLY themselves.
        **/
-      PhragmenBogusSelfVote: AugmentedError<ApiType>;
+      OffchainElectionBogusSelfVote: AugmentedError<ApiType>;
       /**
        * One of the submitted winners is not an active candidate on chain (index is out of range
        * in snapshot).
        **/
-      PhragmenBogusWinner: AugmentedError<ApiType>;
+      OffchainElectionBogusWinner: AugmentedError<ApiType>;
       /**
        * Incorrect number of winners were presented.
        **/
-      PhragmenBogusWinnerCount: AugmentedError<ApiType>;
+      OffchainElectionBogusWinnerCount: AugmentedError<ApiType>;
       /**
        * The submitted result is received out of the open window.
        **/
-      PhragmenEarlySubmission: AugmentedError<ApiType>;
+      OffchainElectionEarlySubmission: AugmentedError<ApiType>;
       /**
        * One of the submitted nominators has an edge which is submitted before the last non-zero
        * slash of the target.
        **/
-      PhragmenSlashedNomination: AugmentedError<ApiType>;
+      OffchainElectionSlashedNomination: AugmentedError<ApiType>;
       /**
        * The submitted result is not as good as the one stored on chain.
        **/
-      PhragmenWeakSubmission: AugmentedError<ApiType>;
+      OffchainElectionWeakSubmission: AugmentedError<ApiType>;
       /**
        * The snapshot data of the current window is missing.
        **/
