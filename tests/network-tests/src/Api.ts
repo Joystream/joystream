@@ -86,9 +86,9 @@ export class ApiFactory {
     return new Api(this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  public close(): void {
-    this.api.disconnect()
-  }
+  // public close(): void {
+  //   this.api.disconnect()
+  // }
 }
 
 export class Api {
