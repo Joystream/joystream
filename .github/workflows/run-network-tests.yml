@@ -160,7 +160,9 @@ jobs:
       # Bring up hydra query-node development instance, then run content directory
       # integration tests
       - name: Execute Tests
-        run: query-node/run-tests.sh
+        run: |
+          docker-compose up -d joystream-node
+          query-node/run-tests.sh
 
   storage_node:
     name: Storage Node Tests
