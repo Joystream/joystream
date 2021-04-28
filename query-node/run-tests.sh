@@ -8,9 +8,6 @@ set -a
 . ../.env
 set +a
 
-# Clean start
-docker-compose down -v
-
 function cleanup() {
     # Show tail end of logs for the processor and indexer containers to
     # see any possible errors
