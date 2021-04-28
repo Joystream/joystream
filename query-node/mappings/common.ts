@@ -14,7 +14,7 @@ export async function createEvent(
 ): Promise<Event> {
   const { blockNumber, index, extrinsic } = substrateEvent
   const event = new Event({
-    id: `${blockNumber}-${index}`,
+    id: `${CURRENT_NETWORK}-${blockNumber}-${index}`,
     inBlock: await getOrCreateBlock(db, substrateEvent),
     inExtrinsic: extrinsic?.hash,
     indexInBlock: index,
@@ -68,4 +68,17 @@ export async function getOrCreateBlock(
 
 export function bytesToString(b: Bytes): string {
   return Buffer.from(b.toU8a(true)).toString()
+}
+
+export function hasValuesForProperties<
+  T extends Record<string, unknown>,
+  P extends keyof T & string,
+  PA extends readonly P[]
+>(obj: T, props: PA): obj is T & { [K in PA[number]]: NonNullable<K> } {
+  props.forEach((p) => {
+    if (obj[p] === null || obj[p] === undefined) {
+      return false
+    }
+  })
+  return true
 }

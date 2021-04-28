@@ -61,7 +61,7 @@ type Block @entity {
 }
 
 type Event @entity {
-  "{blockNumber}-{indexInBlock}"
+  "(network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
   "Hash of the extrinsic which caused the event to be emitted"
