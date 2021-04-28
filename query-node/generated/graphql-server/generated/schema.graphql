@@ -1446,6 +1446,7 @@ type StorageProvider implements BaseGraphQLObject {
   deletedAt: DateTime
   deletedById: String
   version: Int!
+  isActive: Boolean!
   type: StorageProviderType!
 
   """Custom metadata set by provider"""
@@ -1460,6 +1461,7 @@ type StorageProviderConnection {
 }
 
 input StorageProviderCreateInput {
+  isActive: Boolean!
   type: StorageProviderType!
   metadata: String
 }
@@ -1476,6 +1478,8 @@ enum StorageProviderOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  isActive_ASC
+  isActive_DESC
   type_ASC
   type_DESC
   metadata_ASC
@@ -1488,6 +1492,7 @@ enum StorageProviderType {
 }
 
 input StorageProviderUpdateInput {
+  isActive: Boolean
   type: StorageProviderType
   metadata: String
 }
@@ -1517,6 +1522,8 @@ input StorageProviderWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  isActive_eq: Boolean
+  isActive_in: [Boolean!]
   type_eq: StorageProviderType
   type_in: [StorageProviderType!]
   metadata_eq: String

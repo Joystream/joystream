@@ -101,12 +101,23 @@ export async function workingGroup_OpeningFilled(
   const storageProviderIds = [...applicationIdToWorkerIdMap.values()]
 
   for (const storageProviderId of storageProviderIds) {
-    const storageProvider = new StorageProvider({
+    // load storage provider
+    const storageProvider = await db.get(StorageProvider, { where: { id: storageProviderId.toString() } as FindConditions<StorageProvider> })
+
+    // reactivate storage provider if it already exists
+    if (storageProvider) {
+      await reactivateStorageProvider(db, storageProvider)
+      continue
+    }
+
+    // create new storage provider
+    const newStorageProvider = new StorageProvider({
       id: storageProviderId.toString(),
       type: storageProviderType,
+      isActive: true,
     })
 
-    await db.save<StorageProvider>(storageProvider)
+    await db.save<StorageProvider>(newStorageProvider)
   }
 
   // emit log event
@@ -122,7 +133,7 @@ export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, sto
     return inconsistentState('Non-existing storage provider update requested', storageProviderId)
   }
 
-  storageProvider.metadata = newMetadata.toString()
+  storageProvider.metadata = newMetadata.toUtf8()
 
   await db.save<StorageProvider>(storageProvider)
 
@@ -132,7 +143,7 @@ export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, sto
 
 export async function workingGroup_TerminatedWorker(db: DatabaseManager, storageProviderId: WorkerId): Promise<void> {
   // do removal logic
-  await removeStorageProvider(db, storageProviderId)
+  await deactivateStorageProvider(db, storageProviderId)
 
   // emit log event
   logger.info("Storage provider has beed removed (worker terminated)", {id: storageProviderId})
@@ -140,7 +151,7 @@ export async function workingGroup_TerminatedWorker(db: DatabaseManager, storage
 
 export async function workingGroup_WorkerExited(db: DatabaseManager, storageProviderId: WorkerId): Promise<void> {
   // do removal logic
-  await removeStorageProvider(db, storageProviderId)
+  await deactivateStorageProvider(db, storageProviderId)
 
   // emit log event
   logger.info("Storage provider has beed removed (worker exited)", {id: storageProviderId})
@@ -148,7 +159,13 @@ export async function workingGroup_WorkerExited(db: DatabaseManager, storageProv
 
 /////////////////// Helpers ////////////////////////////////////////////////////
 
-async function removeStorageProvider(db: DatabaseManager, storageProviderId: WorkerId) {
+async function reactivateStorageProvider(db: DatabaseManager, storageProvider: StorageProvider) {
+  storageProvider.isActive = true
+
+  await db.save<StorageProvider>(storageProvider)
+}
+
+async function deactivateStorageProvider(db: DatabaseManager, storageProviderId: WorkerId) {
   // load storage provider
   const storageProvider = await db.get(StorageProvider, { where: { id: storageProviderId.toString() } as FindConditions<StorageProvider> })
 
@@ -157,5 +174,7 @@ async function removeStorageProvider(db: DatabaseManager, storageProviderId: Wor
     return inconsistentState('Non-existing storage provider deletion requested', storageProviderId)
   }
 
-  await db.remove<StorageProvider>(storageProvider)
+  storageProvider.isActive = false
+
+  await db.save<StorageProvider>(storageProvider)
 }

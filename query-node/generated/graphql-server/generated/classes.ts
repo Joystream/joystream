@@ -1332,6 +1332,9 @@ export enum StorageProviderOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
+  isActive_ASC = "isActive_ASC",
+  isActive_DESC = "isActive_DESC",
+
   type_ASC = "type_ASC",
   type_DESC = "type_DESC",
 
@@ -1417,6 +1420,12 @@ export class StorageProviderWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
+  @TypeGraphQLField(() => Boolean, { nullable: true })
+  isActive_eq?: Boolean;
+
+  @TypeGraphQLField(() => [Boolean], { nullable: true })
+  isActive_in?: Boolean[];
+
   @TypeGraphQLField(() => StorageProviderType, { nullable: true })
   type_eq?: StorageProviderType;
 
@@ -1447,6 +1456,9 @@ export class StorageProviderWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class StorageProviderCreateInput {
+  @TypeGraphQLField()
+  isActive!: boolean;
+
   @TypeGraphQLField(() => StorageProviderType)
   type!: StorageProviderType;
 
@@ -1456,6 +1468,9 @@ export class StorageProviderCreateInput {
 
 @TypeGraphQLInputType()
 export class StorageProviderUpdateInput {
+  @TypeGraphQLField({ nullable: true })
+  isActive?: boolean;
+
   @TypeGraphQLField(() => StorageProviderType, { nullable: true })
   type?: StorageProviderType;
 

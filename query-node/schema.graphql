@@ -396,6 +396,8 @@ type StorageProvider @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
+  isActive: Boolean!
+
   type: StorageProviderType!
 
   "Custom metadata set by provider"

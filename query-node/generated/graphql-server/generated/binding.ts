@@ -230,6 +230,8 @@ export type StorageProviderOrderByInput =   'createdAt_ASC' |
   'updatedAt_DESC' |
   'deletedAt_ASC' |
   'deletedAt_DESC' |
+  'isActive_ASC' |
+  'isActive_DESC' |
   'type_ASC' |
   'type_DESC' |
   'metadata_ASC' |
@@ -1126,11 +1128,13 @@ export interface MembershipWhereUniqueInput {
 }
 
 export interface StorageProviderCreateInput {
+  isActive: Boolean
   type: StorageProviderType
   metadata?: String | null
 }
 
 export interface StorageProviderUpdateInput {
+  isActive?: Boolean | null
   type?: StorageProviderType | null
   metadata?: String | null
 }
@@ -1160,6 +1164,8 @@ export interface StorageProviderWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
+  isActive_eq?: Boolean | null
+  isActive_in?: Boolean[] | Boolean | null
   type_eq?: StorageProviderType | null
   type_in?: StorageProviderType[] | StorageProviderType | null
   metadata_eq?: String | null
@@ -1846,6 +1852,7 @@ export interface StorageProvider extends BaseGraphQLObject {
   deletedAt?: DateTime | null
   deletedById?: String | null
   version: Int
+  isActive: Boolean
   type: StorageProviderType
   metadata?: String | null
   dataObjects: Array<DataObject>
