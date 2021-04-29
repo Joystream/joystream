@@ -100,7 +100,6 @@ services:
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
     volumes:
       - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
@@ -122,6 +121,7 @@ services:
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
+      - TYPES_JSON=types.json
     depends_on:
       - db
       - redis
