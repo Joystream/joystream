@@ -31,6 +31,7 @@ import {
 
 import {
   invalidMetadata,
+  inconsistentState,
   logger,
   prepareDataObject,
 } from '../common'
@@ -338,7 +339,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure member exists
     if (!member) {
-      invalidMetadata(`Actor is non-existing member`, memberId)
+      inconsistentState(`Actor is non-existing member`, memberId)
       return {} // this will keep fields unchanged
     }
 
@@ -354,7 +355,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure curator group exists
     if (!curatorGroup) {
-      invalidMetadata('Actor is non-existing curator group', curatorGroupId)
+      inconsistentState('Actor is non-existing curator group', curatorGroupId)
       return {} // this will keep fields unchanged
     }
 
