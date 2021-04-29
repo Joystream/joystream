@@ -504,6 +504,11 @@ pub type OperationsWorkingGroupInstance = working_group::Instance4;
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
+// The service provider working group instance alias.
+// If we end up having more than 1 working group for this prupose this will change name for the
+// specific service
+pub type ServiceProviderWorkingGroupInstance = working_group::Instance6;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
@@ -524,6 +529,11 @@ impl working_group::Trait<OperationsWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<ServiceProviderWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -659,5 +669,6 @@ construct_runtime!(
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
         OperationsWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
+        ServiceProviderWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );

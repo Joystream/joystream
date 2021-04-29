@@ -33,9 +33,9 @@ use node_runtime::{
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
     GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, Moment,
-    OperationsWorkingGroupConfig, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
-    WASM_BINARY,
+    OperationsWorkingGroupConfig, ProposalsCodexConfig, ServiceProviderWorkingGroupConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, DAYS, WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
@@ -333,6 +333,14 @@ pub fn testnet_genesis(
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance5: Some(GatewayWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance6: Some(ServiceProviderWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
