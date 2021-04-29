@@ -108,16 +108,35 @@ export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments
 */
 export class PropertyChange<T> {
 
-  static newUnset<T>() {
+  static newUnset<T>(): PropertyChange<T> {
     return new PropertyChange<T>('unset')
   }
 
-  static newNoChange<T>() {
+  static newNoChange<T>(): PropertyChange<T> {
     return new PropertyChange<T>('nochange')
   }
 
-  static newChange<T>(value: T) {
+  static newChange<T>(value: T): PropertyChange<T> {
     return new PropertyChange<T>('change', value)
+  }
+
+  /*
+    Determines property change from the given object property.
+  */
+  static fromObjectProperty<
+    T,
+    Key extends string,
+    ChangedObject extends {[key in Key]?: T}
+  >(object: ChangedObject, key: Key): PropertyChange<T> {
+    if (!(key in object)) {
+      return PropertyChange.newNoChange<T>()
+    }
+
+    if (object[key] === undefined) {
+      return PropertyChange.newUnset<T>()
+    }
+
+    return PropertyChange.newChange<T>(object[key] as T)
   }
 
   private type: string
@@ -161,6 +180,17 @@ export class PropertyChange<T> {
 
     object[key] = this.value
   }
+}
+
+export interface RawVideoMetadata {
+  encoding: {
+    codecName: PropertyChange<string>
+    container: PropertyChange<string>
+    mimeMediaType: PropertyChange<string>
+  }
+  pixelWidth: PropertyChange<number>
+  pixelHeight: PropertyChange<number>
+  size: PropertyChange<number>
 }
 
 /*
@@ -265,9 +295,11 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     // prepare media meta information if needed
     if ('mediaType' in metaAsObject || 'mediaPixelWidth' in metaAsObject || 'mediaPixelHeight' in metaAsObject) {
       // prepare video file size if poosible
-      const videoSize = await extractVideoSize(parameters.assets, metaAsObject.video)
+      const videoSize = extractVideoSize(parameters.assets, metaAsObject.video)
 
-      result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber)
+      // NOTE: type hack - `RawVideoMetadata` is inserted instead of VideoMediaMetadata - it should be edited in `video.ts`
+      //       see `integrateVideoMetadata()` in `video.ts` for more info
+      result.mediaMetadata = prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber) as unknown as VideoMediaMetadata
 
       // remove extra values
       delete metaAsObject.mediaType
@@ -523,7 +555,7 @@ function integrateAsset<T>(propertyName: string, result: Object, asset: Property
   result[nameDataObject] = newValue
 }
 
-async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<number | undefined> {
+function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): number | undefined {
   // escape if no asset is required
   if (assetIndex === undefined) {
     return undefined
@@ -611,35 +643,21 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
   return license
 }
 
-async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): Promise<VideoMediaMetadata> {
-  // TODO: handle situations when only some metadata are set (e.g. pixelWidth and mediaType is defined, but pixelHeight is missing)
-  // TODO: handle update of VideoMediaEncoding and VideoMediaMetadata
-  //       right now when only some of mediaType(mb partial), mediaPixelWidth, or mediaPixelHeight is set, the update discards previous values
-  // create new encoding info
-  const encoding = new VideoMediaEncoding({
-    ...videoProtobuf.mediaType,
+function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): RawVideoMetadata {
+  const rawMeta = {
+    encoding: {
+      codecName: PropertyChange.fromObjectProperty<string, 'codecName', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'codecName'),
+      container: PropertyChange.fromObjectProperty<string, 'container', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'container'),
+      mimeMediaType: PropertyChange.fromObjectProperty<string, 'mimeMediaType', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'mimeMediaType'),
+    },
+    pixelWidth: PropertyChange.fromObjectProperty<number, 'mediaPixelWidth', VideoMetadata.AsObject>(videoProtobuf, 'mediaPixelWidth'),
+    pixelHeight: PropertyChange.fromObjectProperty<number, 'mediaPixelHeight', VideoMetadata.AsObject>(videoProtobuf, 'mediaPixelHeight'),
+    size: videoSize === undefined
+      ? PropertyChange.newNoChange()
+      : PropertyChange.newChange(videoSize)
+  } as RawVideoMetadata
 
-    createdById: '1',
-    updatedById: '1',
-  })
-
-  // create new video metadata
-  const videoMeta = new VideoMediaMetadata({
-    encoding,
-    pixelWidth: videoProtobuf.mediaPixelWidth,
-    pixelHeight: videoProtobuf.mediaPixelHeight,
-    createdInBlock: blockNumber,
-
-    createdById: '1',
-    updatedById: '1',
-  })
-
-  // fill in video size if provided
-  if (videoSize !== undefined) {
-    videoMeta.size = videoSize
-  }
-
-  return videoMeta
+  return rawMeta
 }
 
 async function prepareVideoCategory(categoryId: number | undefined, db: DatabaseManager): Promise<PropertyChange<VideoCategory>> {
