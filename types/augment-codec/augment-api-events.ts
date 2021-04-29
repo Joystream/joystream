@@ -17,37 +17,38 @@ declare module '@polkadot/api/types/events' {
   export interface AugmentedEvents<ApiType> {
     balances: {
       /**
-       * A balance was set by root (who, free, reserved).
+       * A balance was set by root. \[who, free, reserved\]
        **/
       BalanceSet: AugmentedEvent<ApiType, [AccountId, Balance, Balance]>;
       /**
-       * Some amount was deposited (e.g. for transaction fees).
+       * Some amount was deposited (e.g. for transaction fees). \[who, deposit\]
        **/
       Deposit: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
        * An account was removed whose balance was non-zero but below ExistentialDeposit,
-       * resulting in an outright loss.
+       * resulting in an outright loss. \[account, balance\]
        **/
       DustLost: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
-       * An account was created with some free balance.
+       * An account was created with some free balance. \[account, free_balance\]
        **/
       Endowed: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
-       * Some balance was reserved (moved from free to reserved).
+       * Some balance was reserved (moved from free to reserved). \[who, value\]
        **/
       Reserved: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
        * Some balance was moved from the reserve of the first account to the second account.
        * Final argument indicates the destination balance type.
+       * \[from, to, balance, destination_status\]
        **/
       ReserveRepatriated: AugmentedEvent<ApiType, [AccountId, AccountId, Balance, BalanceStatus]>;
       /**
-       * Transfer succeeded (from, to, value).
+       * Transfer succeeded. \[from, to, value\]
        **/
       Transfer: AugmentedEvent<ApiType, [AccountId, AccountId, Balance]>;
       /**
-       * Some balance was unreserved (moved from reserved to free).
+       * Some balance was unreserved (moved from reserved to free). \[who, value\]
        **/
       Unreserved: AugmentedEvent<ApiType, [AccountId, Balance]>;
     };
@@ -518,7 +519,7 @@ declare module '@polkadot/api/types/events' {
     };
     grandpa: {
       /**
-       * New authority set has been applied.
+       * New authority set has been applied. \[authority_set\]
        **/
       NewAuthorities: AugmentedEvent<ApiType, [AuthorityList]>;
       /**
@@ -536,11 +537,11 @@ declare module '@polkadot/api/types/events' {
        **/
       AllGood: AugmentedEvent<ApiType, []>;
       /**
-       * A new heartbeat was received from `AuthorityId`
+       * A new heartbeat was received from `AuthorityId` \[authority_id\]
        **/
       HeartbeatReceived: AugmentedEvent<ApiType, [AuthorityId]>;
       /**
-       * At the end of the session, at least one validator was found to be offline.
+       * At the end of the session, at least one validator was found to be \[offline\].
        **/
       SomeOffline: AugmentedEvent<ApiType, [Vec<IdentificationTuple>]>;
     };
@@ -559,7 +560,8 @@ declare module '@polkadot/api/types/events' {
       /**
        * There is an offence reported of the given `kind` happened at the `session_index` and
        * (kind-specific) time slot. This event is not deposited for duplicate slashes. last
-       * element indicates of the offence was applied (true) or queued (false).
+       * element indicates of the offence was applied (true) or queued (false)
+       * \[kind, timeslot, applied\].
        **/
       Offence: AugmentedEvent<ApiType, [Kind, OpaqueTimeSlot, bool]>;
     };
@@ -733,14 +735,14 @@ declare module '@polkadot/api/types/events' {
     };
     session: {
       /**
-       * New session has happened. Note that the argument is the session index, not the block
+       * New session has happened. Note that the argument is the \[session_index\], not the block
        * number as the type might suggest.
        **/
       NewSession: AugmentedEvent<ApiType, [SessionIndex]>;
     };
     staking: {
       /**
-       * An account has bonded this amount.
+       * An account has bonded this amount. \[stash, amount\]
        * 
        * NOTE: This event is only emitted when funds are bonded via a dispatchable. Notably,
        * it will not be emitted for staking rewards when they are added to stake.
@@ -749,36 +751,38 @@ declare module '@polkadot/api/types/events' {
       /**
        * The era payout has been set; the first balance is the validator-payout; the second is
        * the remainder from the maximum amount of reward.
+       * \[era_index, validator_payout, remainder\]
        **/
       EraPayout: AugmentedEvent<ApiType, [EraIndex, Balance, Balance]>;
       /**
        * An old slashing report from a prior era was discarded because it could
-       * not be processed.
+       * not be processed. \[session_index\]
        **/
       OldSlashingReportDiscarded: AugmentedEvent<ApiType, [SessionIndex]>;
       /**
-       * The staker has been rewarded by this amount. `AccountId` is the stash account.
+       * The staker has been rewarded by this amount. \[stash, amount\]
        **/
       Reward: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
        * One validator (and its nominators) has been slashed by the given amount.
+       * \[validator, amount\]
        **/
       Slash: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
-       * A new solution for the upcoming election has been stored.
+       * A new solution for the upcoming election has been stored. \[compute\]
        **/
       SolutionStored: AugmentedEvent<ApiType, [ElectionCompute]>;
       /**
-       * A new set of stakers was elected with the given computation method.
+       * A new set of stakers was elected with the given \[compute\].
        **/
       StakingElection: AugmentedEvent<ApiType, [ElectionCompute]>;
       /**
-       * An account has unbonded this amount.
+       * An account has unbonded this amount. \[stash, amount\]
        **/
       Unbonded: AugmentedEvent<ApiType, [AccountId, Balance]>;
       /**
        * An account has called `withdraw_unbonded` and removed unbonding chunks worth `Balance`
-       * from the unlocking queue.
+       * from the unlocking queue. \[stash, amount\]
        **/
       Withdrawn: AugmentedEvent<ApiType, [AccountId, Balance]>;
     };
@@ -914,15 +918,15 @@ declare module '@polkadot/api/types/events' {
     };
     sudo: {
       /**
-       * The sudoer just switched identity; the old key is supplied.
+       * The \[sudoer\] just switched identity; the old key is supplied.
        **/
       KeyChanged: AugmentedEvent<ApiType, [AccountId]>;
       /**
-       * A sudo just took place.
+       * A sudo just took place. \[result\]
        **/
       Sudid: AugmentedEvent<ApiType, [DispatchResult]>;
       /**
-       * A sudo just took place.
+       * A sudo just took place. \[result\]
        **/
       SudoAsDone: AugmentedEvent<ApiType, [bool]>;
     };
@@ -932,19 +936,19 @@ declare module '@polkadot/api/types/events' {
        **/
       CodeUpdated: AugmentedEvent<ApiType, []>;
       /**
-       * An extrinsic failed.
+       * An extrinsic failed. \[error, info\]
        **/
       ExtrinsicFailed: AugmentedEvent<ApiType, [DispatchError, DispatchInfo]>;
       /**
-       * An extrinsic completed successfully.
+       * An extrinsic completed successfully. \[info\]
        **/
       ExtrinsicSuccess: AugmentedEvent<ApiType, [DispatchInfo]>;
       /**
-       * An account was reaped.
+       * An \[account\] was reaped.
        **/
       KilledAccount: AugmentedEvent<ApiType, [AccountId]>;
       /**
-       * A new account was created.
+       * A new \[account\] was created.
        **/
       NewAccount: AugmentedEvent<ApiType, [AccountId]>;
     };
@@ -955,7 +959,7 @@ declare module '@polkadot/api/types/events' {
       BatchCompleted: AugmentedEvent<ApiType, []>;
       /**
        * Batch of dispatches did not complete fully. Index of first failing dispatch given, as
-       * well as the error.
+       * well as the error. \[index, error\]
        **/
       BatchInterrupted: AugmentedEvent<ApiType, [u32, DispatchError]>;
     };

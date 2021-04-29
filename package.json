@@ -40,12 +40,13 @@
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
     "rxjs": "^6.6.2",
-    "typeorm": "^0.2.31"
+    "typeorm": "^0.2.31",
+    "chalk": "^4.0.0"
   },
   "devDependencies": {
-    "eslint": "^7.6.0",
+    "eslint": "^7.25.0",
     "husky": "^4.2.5",
-    "prettier": "2.0.2"
+    "prettier": "^2.2.1"
   },
   "husky": {
     "hooks": {
@@ -54,11 +55,11 @@
     }
   },
   "engines": {
-    "node": ">=12.18.0",
+    "node": ">=14.0.0",
     "yarn": "^1.22.0"
   },
   "volta": {
-    "node": "12.18.2",
+    "node": "14.16.1",
     "yarn": "1.22.4"
   }
 }

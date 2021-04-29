@@ -4,6 +4,7 @@
 import type { Bytes, Compact, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
 import type { AnyNumber } from '@polkadot/types/types';
 import type { ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BalanceOfMint, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, ElectionParameters, FillOpeningParameters, MemberId, MemoText, ObjectOwner, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, RewardPolicy, SeriesId, SeriesParameters, StorageProviderId, TerminateRoleParameters, ThreadId, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
+import type { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import type { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import type { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
 import type { Heartbeat } from '@polkadot/types/interfaces/imOnline';
@@ -20,6 +21,26 @@ declare module '@polkadot/api/types/submittable' {
        * Provide a set of uncles.
        **/
       setUncles: AugmentedSubmittable<(newUncles: Vec<Header> | (Header | { parentHash?: any; number?: any; stateRoot?: any; extrinsicsRoot?: any; digest?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<Header>]>;
+    };
+    babe: {
+      /**
+       * Report authority equivocation/misbehavior. This method will verify
+       * the equivocation proof and validate the given key ownership proof
+       * against the extracted offender. If both are valid, the offence will
+       * be reported.
+       **/
+      reportEquivocation: AugmentedSubmittable<(equivocationProof: BabeEquivocationProof | { offender?: any; slotNumber?: any; firstHeader?: any; secondHeader?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [BabeEquivocationProof, KeyOwnerProof]>;
+      /**
+       * Report authority equivocation/misbehavior. This method will verify
+       * the equivocation proof and validate the given key ownership proof
+       * against the extracted offender. If both are valid, the offence will
+       * be reported.
+       * This extrinsic must be called unsigned and it is expected that only
+       * block authors will call it (validated in `ValidateUnsigned`), as such
+       * if the block author is defined it will be defined as the equivocation
+       * reporter.
+       **/
+      reportEquivocationUnsigned: AugmentedSubmittable<(equivocationProof: BabeEquivocationProof | { offender?: any; slotNumber?: any; firstHeader?: any; secondHeader?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [BabeEquivocationProof, KeyOwnerProof]>;
     };
     balances: {
       /**
@@ -289,12 +310,12 @@ declare module '@polkadot/api/types/submittable' {
        **/
       acceptContent: AugmentedSubmittable<(storageProviderId: StorageProviderId | AnyNumber | Uint8Array, contentId: ContentId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageProviderId, ContentId]>;
       /**
-       * Adds the content to the system. The created DataObject
+       * Adds the content to the frame_system. The created DataObject
        * awaits liaison to accept it.
        **/
       addContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, content: Vec<ContentParameters> | (ContentParameters | { content_id?: any; type_id?: any; ipfs_content_id?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ObjectOwner, Vec<ContentParameters>]>;
       /**
-       * Remove the content from the system.
+       * Remove the content from the frame_system.
        **/
       removeContent: AugmentedSubmittable<(owner: ObjectOwner | { Member: any } | { Channel: any } | { DAO: any } | { Council: any } | { WorkingGroup: any } | string | Uint8Array, contentIds: Vec<ContentId> | (ContentId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ObjectOwner, Vec<ContentId>]>;
       /**
@@ -493,23 +514,40 @@ declare module '@polkadot/api/types/submittable' {
     };
     grandpa: {
       /**
+       * Note that the current authority set of the GRANDPA finality gadget has
+       * stalled. This will trigger a forced authority set change at the beginning
+       * of the next session, to be enacted `delay` blocks after that. The delay
+       * should be high enough to safely assume that the block signalling the
+       * forced change will not be re-orged (e.g. 1000 blocks). The GRANDPA voters
+       * will start the new authority set using the given finalized block as base.
+       * Only callable by root.
+       **/
+      noteStalled: AugmentedSubmittable<(delay: BlockNumber | AnyNumber | Uint8Array, bestFinalizedBlockNumber: BlockNumber | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BlockNumber, BlockNumber]>;
+      /**
+       * Report voter equivocation/misbehavior. This method will verify the
+       * equivocation proof and validate the given key ownership proof
+       * against the extracted offender. If both are valid, the offence
+       * will be reported.
+       **/
+      reportEquivocation: AugmentedSubmittable<(equivocationProof: GrandpaEquivocationProof | { setId?: any; equivocation?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [GrandpaEquivocationProof, KeyOwnerProof]>;
+      /**
        * Report voter equivocation/misbehavior. This method will verify the
        * equivocation proof and validate the given key ownership proof
        * against the extracted offender. If both are valid, the offence
        * will be reported.
        * 
-       * Since the weight of the extrinsic is 0, in order to avoid DoS by
-       * submission of invalid equivocation reports, a mandatory pre-validation of
-       * the extrinsic is implemented in a `SignedExtension`.
+       * This extrinsic must be called unsigned and it is expected that only
+       * block authors will call it (validated in `ValidateUnsigned`), as such
+       * if the block author is defined it will be defined as the equivocation
+       * reporter.
        **/
-      reportEquivocation: AugmentedSubmittable<(equivocationProof: GrandpaEquivocationProof | { setId?: any; equivocation?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [GrandpaEquivocationProof, KeyOwnerProof]>;
+      reportEquivocationUnsigned: AugmentedSubmittable<(equivocationProof: GrandpaEquivocationProof | { setId?: any; equivocation?: any } | string | Uint8Array, keyOwnerProof: KeyOwnerProof | { session?: any; trieNodes?: any; validatorCount?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [GrandpaEquivocationProof, KeyOwnerProof]>;
     };
     imOnline: {
       /**
        * # <weight>
-       * - Complexity: `O(K + E)` where K is length of `Keys` and E is length of
-       * `Heartbeat.network_state.external_address`
-       * 
+       * - Complexity: `O(K + E)` where K is length of `Keys` (heartbeat.validators_len)
+       * and E is length of `heartbeat.network_state.external_address`
        * - `O(K)`: decoding of length `K`
        * - `O(E)`: decoding/encoding of length `E`
        * - DbReads: pallet_session `Validators`, pallet_session `CurrentIndex`, `Keys`,
@@ -788,7 +826,7 @@ declare module '@polkadot/api/types/submittable' {
        * NOTE: Two of the storage writes (`Self::bonded`, `Self::payee`) are _never_ cleaned
        * unless the `origin` falls below _existential deposit_ and gets removed as dust.
        * ------------------
-       * Base Weight: 67.87 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: Bonded, Ledger, [Origin Account], Current Era, History Depth, Locks
        * - Write: Bonded, Payee, [Origin Account], Locks, Ledger
@@ -813,7 +851,6 @@ declare module '@polkadot/api/types/submittable' {
        * - O(1).
        * - One DB entry.
        * ------------
-       * Base Weight: 54.88 µs
        * DB Weight:
        * - Read: Era Election Status, Bonded, Ledger, [Origin Account], Locks
        * - Write: [Origin Account], Locks, Ledger
@@ -831,7 +868,6 @@ declare module '@polkadot/api/types/submittable' {
        * Complexity: O(U + S)
        * with U unapplied slashes weighted with U=1000
        * and S is the number of slash indices to be canceled.
-       * - Base: 5870 + 34.61 * S µs
        * - Read: Unapplied Slashes
        * - Write: Unapplied Slashes
        * # </weight>
@@ -850,7 +886,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains one read.
        * - Writes are limited to the `origin` account key.
        * --------
-       * Base Weight: 16.53 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: EraElectionStatus, Ledger
        * - Write: Validators, Nominators
@@ -865,7 +901,7 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - No arguments.
-       * - Base Weight: 1.959 µs
+       * - Weight: O(1)
        * - Write ForceEra
        * # </weight>
        **/
@@ -876,7 +912,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * - Base Weight: 2.05 µs
+       * - Weight: O(1)
        * - Write: ForceEra
        * # </weight>
        **/
@@ -888,7 +924,7 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - No arguments.
-       * - Base Weight: 1.857 µs
+       * - Weight: O(1)
        * - Write: ForceEra
        * # </weight>
        **/
@@ -900,7 +936,6 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * O(S) where S is the number of slashing spans to be removed
-       * Base Weight: 53.07 + 2.365 * S µs
        * Reads: Bonded, Slashing Spans, Account, Locks
        * Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators, Account, Locks
        * Writes Each: SpanSlash * S
@@ -913,8 +948,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * Base Weight: 1.717 µs
-       * Read/Write: Validator Count
+       * Same as [`set_validator_count`].
        * # </weight>
        **/
       increaseValidatorCount: AugmentedSubmittable<(additional: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<u32>]>;
@@ -932,7 +966,7 @@ declare module '@polkadot/api/types/submittable' {
        * which is capped at CompactAssignments::LIMIT (MAX_NOMINATIONS).
        * - Both the reads and writes follow a similar pattern.
        * ---------
-       * Base Weight: 22.34 + .36 * N µs
+       * Weight: O(N)
        * where N is the number of targets
        * DB Weight:
        * - Reads: Era Election Status, Ledger, Current Era
@@ -957,14 +991,17 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads and writes.
        * -----------
        * N is the Number of payouts for the validator (including the validator)
-       * Base Weight:
-       * - Reward Destination Staked: 110 + 54.2 * N µs (Median Slopes)
-       * - Reward Destination Controller (Creating): 120 + 41.95 * N µs (Median Slopes)
+       * Weight:
+       * - Reward Destination Staked: O(N)
+       * - Reward Destination Controller (Creating): O(N)
        * DB Weight:
        * - Read: EraElectionStatus, CurrentEra, HistoryDepth, ErasValidatorReward,
        * ErasStakersClipped, ErasRewardPoints, ErasValidatorPrefs (8 items)
        * - Read Each: Bonded, Ledger, Payee, Locks, System Account (5 items)
        * - Write Each: System Account, Locks, Ledger (3 items)
+       * 
+       * NOTE: weights are assuming that payouts are made to alive stash account (Staked).
+       * Paying even a dead controller is cheaper weight-wise. We don't do any refunds here.
        * # </weight>
        **/
       payoutStakers: AugmentedSubmittable<(validatorStash: AccountId | string | Uint8Array, era: EraIndex | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId, EraIndex]>;
@@ -979,7 +1016,6 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * Complexity: O(S) where S is the number of slashing spans on the account.
-       * Base Weight: 75.94 + 2.396 * S µs
        * DB Weight:
        * - Reads: Stash Account, Bonded, Slashing Spans, Locks
        * - Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators, Stash Account, Locks
@@ -998,7 +1034,6 @@ declare module '@polkadot/api/types/submittable' {
        * - Bounded by `MAX_UNLOCKING_CHUNKS`.
        * - Storage changes: Can't increase storage, only decrease it.
        * ---------------
-       * - Base Weight: 34.51 µs * .048 L µs
        * - DB Weight:
        * - Reads: EraElectionStatus, Ledger, Locks, [Origin Account]
        * - Writes: [Origin Account], Locks, Ledger
@@ -1011,8 +1046,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * Base Weight: 1.717 µs
-       * Read/Write: Validator Count
+       * Same as [`set_validator_count`].
        * # </weight>
        **/
       scaleValidatorCount: AugmentedSubmittable<(factor: Percent | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Percent]>;
@@ -1028,7 +1062,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads.
        * - Writes are limited to the `origin` account key.
        * ----------
-       * Base Weight: 25.22 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: Bonded, Ledger New Controller, Ledger Old Controller
        * - Write: Bonded, Ledger New Controller, Ledger Old Controller
@@ -1050,7 +1084,7 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - E: Number of history depths removed, i.e. 10 -> 7 = 3
-       * - Base Weight: 29.13 * E µs
+       * - Weight: O(E)
        * - DB Weight:
        * - Reads: Current Era, History Depth
        * - Writes: History Depth
@@ -1066,11 +1100,10 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * # <weight>
        * - O(V)
-       * - Base Weight: 2.208 + .006 * V µs
        * - Write: Invulnerables
        * # </weight>
        **/
-      setInvulnerables: AugmentedSubmittable<(validators: Vec<AccountId> | (AccountId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<AccountId>]>;
+      setInvulnerables: AugmentedSubmittable<(invulnerables: Vec<AccountId> | (AccountId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<AccountId>]>;
       /**
        * (Re-)set the payment target for a controller.
        * 
@@ -1083,7 +1116,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads.
        * - Writes are limited to the `origin` account key.
        * ---------
-       * - Base Weight: 11.33 µs
+       * - Weight: O(1)
        * - DB Weight:
        * - Read: Ledger
        * - Write: Payee
@@ -1096,7 +1129,7 @@ declare module '@polkadot/api/types/submittable' {
        * The dispatch origin must be Root.
        * 
        * # <weight>
-       * Base Weight: 1.717 µs
+       * Weight: O(1)
        * Write: Validator Count
        * # </weight>
        **/
@@ -1147,7 +1180,9 @@ declare module '@polkadot/api/types/submittable' {
        * minimized (to ensure less variance)
        * 
        * # <weight>
-       * See `crate::weight` module.
+       * The transaction is assumed to be the longest path, a better solution.
+       * - Initial solution is almost the same.
+       * - Worse solution is retraced in pre-dispatch-checks which sets its own weight.
        * # </weight>
        **/
       submitElectionSolution: AugmentedSubmittable<(winners: Vec<ValidatorIndex> | (ValidatorIndex | AnyNumber | Uint8Array)[], compact: CompactAssignments | { votes1?: any; votes2?: any; votes3?: any; votes4?: any; votes5?: any; votes6?: any; votes7?: any; votes8?: any; votes9?: any; votes10?: any; votes11?: any; votes12?: any; votes13?: any; votes14?: any; votes15?: any; votes16?: any } | string | Uint8Array, score: ElectionScore, era: EraIndex | AnyNumber | Uint8Array, size: ElectionSize | { validators?: any; nominators?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Vec<ValidatorIndex>, CompactAssignments, ElectionScore, EraIndex, ElectionSize]>;
@@ -1191,10 +1226,10 @@ declare module '@polkadot/api/types/submittable' {
        * `withdraw_unbonded`.
        * - One DB entry.
        * ----------
-       * Base Weight: 50.34 µs
+       * Weight: O(1)
        * DB Weight:
-       * - Read: Era Election Status, Ledger, Current Era, Locks, [Origin Account]
-       * - Write: [Origin Account], Locks, Ledger
+       * - Read: EraElectionStatus, Ledger, CurrentEra, Locks, BalanceOf Stash,
+       * - Write: Locks, Ledger, BalanceOf Stash,
        * </weight>
        **/
       unbond: AugmentedSubmittable<(value: Compact<BalanceOf> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<BalanceOf>]>;
@@ -1211,7 +1246,7 @@ declare module '@polkadot/api/types/submittable' {
        * - Contains a limited number of reads.
        * - Writes are limited to the `origin` account key.
        * -----------
-       * Base Weight: 17.13 µs
+       * Weight: O(1)
        * DB Weight:
        * - Read: Era Election Status, Ledger
        * - Write: Nominators, Validators
@@ -1239,13 +1274,14 @@ declare module '@polkadot/api/types/submittable' {
        * - Writes are limited to the `origin` account key.
        * ---------------
        * Complexity O(S) where S is the number of slashing spans to remove
-       * Base Weight:
-       * Update: 50.52 + .028 * S µs
+       * Update:
        * - Reads: EraElectionStatus, Ledger, Current Era, Locks, [Origin Account]
        * - Writes: [Origin Account], Locks, Ledger
-       * Kill: 79.41 + 2.366 * S µs
-       * - Reads: EraElectionStatus, Ledger, Current Era, Bonded, Slashing Spans, [Origin Account], Locks
-       * - Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators, [Origin Account], Locks
+       * Kill:
+       * - Reads: EraElectionStatus, Ledger, Current Era, Bonded, Slashing Spans, [Origin
+       * Account], Locks, BalanceOf stash
+       * - Writes: Bonded, Slashing Spans (if S > 0), Ledger, Payee, Validators, Nominators,
+       * [Origin Account], Locks, BalanceOf stash.
        * - Writes Each: SpanSlash * S
        * NOTE: Weight annotation is the kill scenario, we refund otherwise.
        * # </weight>
@@ -1516,9 +1552,6 @@ declare module '@polkadot/api/types/submittable' {
        * - `O(T)` where `T` complexity of `on_timestamp_set`
        * - 1 storage read and 1 storage mutation (codec `O(1)`). (because of `DidUpdate::take` in `on_finalize`)
        * - 1 event handler `on_timestamp_set` `O(T)`.
-       * - Benchmark: 7.678 (min squares analysis)
-       * - NOTE: This benchmark was done for a runtime with insignificant `on_timestamp_set` handlers.
-       * New benchmarking is needed when adding new handlers.
        * # </weight>
        **/
       set: AugmentedSubmittable<(now: Compact<Moment> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<Moment>]>;
@@ -1532,31 +1565,14 @@ declare module '@polkadot/api/types/submittable' {
        * 
        * NOTE: If you need to ensure that any account-based filtering is not honored (i.e.
        * because you expect `proxy` to have been used prior in the call stack and you do not want
-       * the call restrictions to apply to any sub-accounts), then use `as_sub` instead.
+       * the call restrictions to apply to any sub-accounts), then use `as_multi_threshold_1`
+       * in the Multisig pallet instead.
+       * 
+       * NOTE: Prior to version *12, this was called `as_limited_sub`.
        * 
        * The dispatch origin for this call must be _Signed_.
-       * 
-       * # <weight>
-       * - Base weight: 2.861 µs
-       * - Plus the weight of the `call`
-       * # </weight>
        **/
-      asLimitedSub: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Call]>;
-      /**
-       * Send a call through an indexed pseudonym of the sender.
-       * 
-       * NOTE: If you need to ensure that any account-based filtering is honored (i.e. because
-       * you expect `proxy` to have been used prior in the call stack and you want it to apply to
-       * any sub-accounts), then use `as_limited_sub` instead.
-       * 
-       * The dispatch origin for this call must be _Signed_.
-       * 
-       * # <weight>
-       * - Base weight: 2.861 µs
-       * - Plus the weight of the `call`
-       * # </weight>
-       **/
-      asSub: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Call]>;
+      asDerivative: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Call]>;
       /**
        * Send a batch of dispatch calls.
        * 

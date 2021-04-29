@@ -38,14 +38,18 @@ services:
     image: joystream/apps
     restart: on-failure
     depends_on:
-      - "joystream-node"
       - "ipfs"
     build:
       context: .
       dockerfile: apps.Dockerfile
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     ports:
       - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ws://joystream-node:9944 --ipfs-host ipfs
+    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
     environment:
       - DEBUG=*
 
@@ -96,7 +100,6 @@ services:
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
     volumes:
       - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
@@ -106,7 +109,7 @@ services:
     command: ["workspace", "query-node-root", "processor:start"]
 
   indexer:
-    image: joystream/hydra-indexer:latest
+    image: joystream/hydra-indexer:2.1.0-beta.5
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
@@ -118,6 +121,7 @@ services:
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
       - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
+      - TYPES_JSON=types.json
     depends_on:
       - db
       - redis
@@ -127,7 +131,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:latest
+    image: joystream/hydra-indexer-gateway:2.1.0-beta.5
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
