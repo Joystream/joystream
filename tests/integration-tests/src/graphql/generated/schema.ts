@@ -29,7 +29,7 @@ export type ApplicationFormQuestion = BaseGraphQlObject & {
   openingMetadata: WorkingGroupOpeningMetadata
   openingMetadataId: Scalars['String']
   /** The question itself */
-  question: Scalars['String']
+  question?: Maybe<Scalars['String']>
   /** Type of the question (UI answer input type) */
   type: ApplicationFormQuestionType
   /** Index of the question */
@@ -140,7 +140,7 @@ export type ApplicationFormQuestionConnection = {
 
 export type ApplicationFormQuestionCreateInput = {
   openingMetadataId: Scalars['ID']
-  question: Scalars['String']
+  question?: Maybe<Scalars['String']>
   type: ApplicationFormQuestionType
   index: Scalars['Float']
 }
@@ -2083,8 +2083,8 @@ export type LeaderSetEvent = BaseGraphQlObject & {
   eventId: Scalars['String']
   group: WorkingGroup
   groupId: Scalars['String']
-  worker: Worker
-  workerId: Scalars['String']
+  worker?: Maybe<Worker>
+  workerId?: Maybe<Scalars['String']>
 }
 
 export type LeaderSetEventConnection = {
@@ -2096,7 +2096,7 @@ export type LeaderSetEventConnection = {
 export type LeaderSetEventCreateInput = {
   eventId: Scalars['ID']
   groupId: Scalars['ID']
-  workerId: Scalars['ID']
+  workerId?: Maybe<Scalars['ID']>
 }
 
 export type LeaderSetEventEdge = {

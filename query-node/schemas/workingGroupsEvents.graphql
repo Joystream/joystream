@@ -48,8 +48,9 @@ type LeaderSetEvent @entity {
   "Related group"
   group: WorkingGroup!
 
+  # The field must be optional, because at the time the event is emitted the worker does not yet exist
   "Related Lead worker"
-  worker: Worker!
+  worker: Worker
 }
 
 type WorkerRoleAccountUpdatedEvent @entity {

@@ -2,7 +2,7 @@ import BN from 'bn.js'
 import { assert } from 'chai'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { OpeningFilledEventDetails, WorkingGroupModuleName } from '../../types'
+import { EventDetails, OpeningFilledEventDetails, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { Application, ApplicationId, Opening, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
@@ -13,6 +13,7 @@ import { JoyBTreeSet } from '@joystream/types/common'
 import { registry } from '@joystream/types'
 import { lockIdByWorkingGroup } from '../../consts'
 import {
+  LeaderSetEventFieldsFragment,
   OpeningFieldsFragment,
   OpeningFilledEventFieldsFragment,
   WorkerFieldsFragment,
@@ -188,6 +189,20 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     })
   }
 
+  protected assertQueryNodeLeaderSetEventIsValid(
+    eventDetails: EventDetails,
+    qEvent: LeaderSetEventFieldsFragment | null,
+    workerRuntimeId: number
+  ): void {
+    Utils.assert(qEvent, 'Query node: LeaderSet not found!')
+    assert.equal(qEvent.event.inBlock.timestamp, eventDetails.blockTimestamp)
+    assert.equal(qEvent.event.inExtrinsic, this.extrinsics[0].hash.toString())
+    assert.equal(qEvent.event.type, EventType.LeaderSet)
+    assert.equal(qEvent.group.name, this.group)
+    Utils.assert(qEvent.worker, 'LeaderSet: Worker is empty')
+    assert.equal(qEvent.worker.runtimeId, workerRuntimeId)
+  }
+
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     // Query the event and check event + hiredWorkers
@@ -204,10 +219,17 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     this.assertApplicationStatusesAreValid(qEvents, qOpenings)
 
     if (this.asSudo) {
+      const leaderId = qEvents[0].workersHired[0].runtimeId
+      assert.isNumber(leaderId)
+
       const qGroup = await this.query.getWorkingGroup(this.group)
       Utils.assert(qGroup, 'Query node: Working group not found!')
       Utils.assert(qGroup.leader, 'Query node: Working group leader not set!')
-      assert.equal(qGroup.leader.runtimeId, qEvents[0].workersHired[0].runtimeId)
+      assert.equal(qGroup.leader.runtimeId, leaderId)
+
+      const leaderSetEvent = await this.api.retrieveWorkingGroupsEventDetails(this.results[0], this.group, 'LeaderSet')
+      const qEvent = await this.query.getLeaderSetEvent(leaderSetEvent)
+      this.assertQueryNodeLeaderSetEventIsValid(leaderSetEvent, qEvent, leaderId)
     }
   }
 }

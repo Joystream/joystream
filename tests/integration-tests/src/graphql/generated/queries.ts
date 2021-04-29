@@ -266,7 +266,7 @@ export type OpeningStatusFieldsFragment =
   | OpeningStatusFields_OpeningStatusCancelled_Fragment
 
 export type ApplicationFormQuestionFieldsFragment = {
-  question: string
+  question?: Types.Maybe<string>
   type: Types.ApplicationFormQuestionType
   index: number
 }
@@ -353,7 +353,7 @@ export type ApplicationFieldsFragment = {
   createdAtBlock: BlockFieldsFragment
   opening: { id: string; runtimeId: number }
   applicant: { id: string }
-  answers: Array<{ answer: string; question: { question: string } }>
+  answers: Array<{ answer: string; question: { question?: Types.Maybe<string> } }>
 } & ApplicationBasicFieldsFragment
 
 export type GetApplicationByIdQueryVariables = Types.Exact<{
@@ -453,6 +453,19 @@ export type GetOpeningAddedEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetOpeningAddedEventsByEventIdsQuery = { openingAddedEvents: Array<OpeningAddedEventFieldsFragment> }
+
+export type LeaderSetEventFieldsFragment = {
+  id: string
+  event: EventFieldsFragment
+  group: { name: string }
+  worker?: Types.Maybe<{ id: string; runtimeId: number }>
+}
+
+export type GetLeaderSetEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetLeaderSetEventsByEventIdsQuery = { leaderSetEvents: Array<LeaderSetEventFieldsFragment> }
 
 export type OpeningFilledEventFieldsFragment = {
   id: string
@@ -1139,6 +1152,22 @@ export const OpeningAddedEventFields = gql`
   }
   ${EventFields}
 `
+export const LeaderSetEventFields = gql`
+  fragment LeaderSetEventFields on LeaderSetEvent {
+    id
+    event {
+      ...EventFields
+    }
+    group {
+      name
+    }
+    worker {
+      id
+      runtimeId
+    }
+  }
+  ${EventFields}
+`
 export const WorkerFields = gql`
   fragment WorkerFields on Worker {
     id
@@ -1672,6 +1701,14 @@ export const GetOpeningAddedEventsByEventIds = gql`
     }
   }
   ${OpeningAddedEventFields}
+`
+export const GetLeaderSetEventsByEventIds = gql`
+  query getLeaderSetEventsByEventIds($eventIds: [ID!]) {
+    leaderSetEvents(where: { eventId_in: $eventIds }) {
+      ...LeaderSetEventFields
+    }
+  }
+  ${LeaderSetEventFields}
 `
 export const GetOpeningFilledEventsByEventIds = gql`
   query getOpeningFilledEventsByEventIds($eventIds: [ID!]) {

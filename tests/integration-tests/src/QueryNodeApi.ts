@@ -168,6 +168,10 @@ import {
   GetLeaderUnsetEventsByEventIdsQuery,
   GetLeaderUnsetEventsByEventIdsQueryVariables,
   GetLeaderUnsetEventsByEventIds,
+  LeaderSetEventFieldsFragment,
+  GetLeaderSetEventsByEventIdsQuery,
+  GetLeaderSetEventsByEventIdsQueryVariables,
+  GetLeaderSetEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -640,6 +644,15 @@ export class QueryNodeApi {
       GetBudgetSpendingEventsByEventIdsQuery,
       GetBudgetSpendingEventsByEventIdsQueryVariables
     >(GetBudgetSpendingEventsByEventIds, { eventIds }, 'budgetSpendingEvents')
+  }
+
+  public async getLeaderSetEvent(event: EventDetails): Promise<LeaderSetEventFieldsFragment | null> {
+    const eventId = this.getQueryNodeEventId(event.blockNumber, event.indexInBlock)
+    return this.firstEntityQuery<GetLeaderSetEventsByEventIdsQuery, GetLeaderSetEventsByEventIdsQueryVariables>(
+      GetLeaderSetEventsByEventIds,
+      { eventIds: [eventId] },
+      'leaderSetEvents'
+    )
   }
 
   public async getLeaderUnsetEvent(event: EventDetails): Promise<LeaderUnsetEventFieldsFragment | null> {

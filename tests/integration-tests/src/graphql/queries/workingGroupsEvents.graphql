@@ -42,6 +42,26 @@ query getOpeningAddedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment LeaderSetEventFields on LeaderSetEvent {
+  id
+  event {
+    ...EventFields
+  }
+  group {
+    name
+  }
+  worker {
+    id
+    runtimeId
+  }
+}
+
+query getLeaderSetEventsByEventIds($eventIds: [ID!]) {
+  leaderSetEvents(where: { eventId_in: $eventIds }) {
+    ...LeaderSetEventFields
+  }
+}
+
 fragment OpeningFilledEventFields on OpeningFilledEvent {
   id
   event {

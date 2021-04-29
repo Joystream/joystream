@@ -71,6 +71,8 @@ import {
   WorkerStartedLeavingEvent,
   BudgetSetEvent,
   BudgetSpendingEvent,
+  LeaderSetEvent,
+  Event,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import _ from 'lodash'
@@ -370,6 +372,17 @@ async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEven
   await db.save<Worker>(worker)
 }
 
+export async function findLeaderSetEventByTxHash(db: DatabaseManager, txHash?: string): Promise<LeaderSetEvent> {
+  const event = await db.get(Event, { where: { inExtrinsic: txHash } })
+  const leaderSetEvent = await db.get(LeaderSetEvent, { where: { event }, relations: ['event'] })
+
+  if (!leaderSetEvent) {
+    throw new Error(`LeaderSet event not found by tx hash: ${txHash}`)
+  }
+
+  return leaderSetEvent
+}
+
 // Mapping functions
 export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
@@ -465,6 +478,22 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
   await db.save<AppliedOnOpeningEvent>(appliedOnOpeningEvent)
 }
 
+export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
+  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const group = await getWorkingGroup(db, event_)
+
+  const event = await createEvent(db, event_, EventType.LeaderSet)
+  const leaderSetEvent = new LeaderSetEvent({
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    event,
+    group,
+  })
+
+  await db.save<LeaderSetEvent>(leaderSetEvent)
+}
+
 export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const eventTime = new Date(event_.blockTimestamp.toNumber())
@@ -494,56 +523,57 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
 
   await db.save<OpeningFilledEvent>(openingFilledEvent)
 
-  const hiredWorkers: Worker[] = []
   // Update applications and create new workers
-  await Promise.all(
-    (opening.applications || [])
-      // Skip withdrawn applications
-      .filter((application) => application.status.isTypeOf !== 'ApplicationStatusWithdrawn')
-      .map(async (application) => {
-        const isAccepted = acceptedApplicationIds.some((runtimeId) => runtimeId.toNumber() === application.runtimeId)
-        const applicationStatus = isAccepted ? new ApplicationStatusAccepted() : new ApplicationStatusRejected()
-        applicationStatus.openingFilledEventId = openingFilledEvent.id
-        application.status = applicationStatus
-        application.updatedAt = eventTime
-        if (isAccepted) {
-          // Cannot use "applicationIdToWorkerIdMap.get" here,
-          // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
-          const [, workerRuntimeId] =
-            Array.from(applicationIdToWorkerIdMap.entries()).find(
-              ([applicationRuntimeId]) => applicationRuntimeId.toNumber() === application.runtimeId
-            ) || []
-          if (!workerRuntimeId) {
-            throw new Error(
-              `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
-            )
+  const hiredWorkers = (
+    await Promise.all(
+      (opening.applications || [])
+        // Skip withdrawn applications
+        .filter((application) => application.status.isTypeOf !== 'ApplicationStatusWithdrawn')
+        .map(async (application) => {
+          const isAccepted = acceptedApplicationIds.some((runtimeId) => runtimeId.toNumber() === application.runtimeId)
+          const applicationStatus = isAccepted ? new ApplicationStatusAccepted() : new ApplicationStatusRejected()
+          applicationStatus.openingFilledEventId = openingFilledEvent.id
+          application.status = applicationStatus
+          application.updatedAt = eventTime
+          await db.save<WorkingGroupApplication>(application)
+          if (isAccepted) {
+            // Cannot use "applicationIdToWorkerIdMap.get" here,
+            // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
+            const [, workerRuntimeId] =
+              Array.from(applicationIdToWorkerIdMap.entries()).find(
+                ([applicationRuntimeId]) => applicationRuntimeId.toNumber() === application.runtimeId
+              ) || []
+            if (!workerRuntimeId) {
+              throw new Error(
+                `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
+              )
+            }
+            const worker = new Worker({
+              createdAt: eventTime,
+              updatedAt: eventTime,
+              id: `${group.name}-${workerRuntimeId.toString()}`,
+              runtimeId: workerRuntimeId.toNumber(),
+              hiredAtBlock: await getOrCreateBlock(db, event_),
+              hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
+              application,
+              group,
+              isLead: opening.type === WorkingGroupOpeningType.LEADER,
+              membership: application.applicant,
+              stake: application.stake,
+              roleAccount: application.roleAccount,
+              rewardAccount: application.rewardAccount,
+              stakeAccount: application.stakingAccount,
+              payouts: [],
+              status: new WorkerStatusActive(),
+              entry: openingFilledEvent,
+              rewardPerBlock: opening.rewardPerBlock,
+            })
+            await db.save<Worker>(worker)
+            return worker
           }
-          const worker = new Worker({
-            createdAt: eventTime,
-            updatedAt: eventTime,
-            id: `${group.name}-${workerRuntimeId.toString()}`,
-            runtimeId: workerRuntimeId.toNumber(),
-            hiredAtBlock: await getOrCreateBlock(db, event_),
-            hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
-            application,
-            group,
-            isLead: opening.type === WorkingGroupOpeningType.LEADER,
-            membership: application.applicant,
-            stake: application.stake,
-            roleAccount: application.roleAccount,
-            rewardAccount: application.rewardAccount,
-            stakeAccount: application.stakingAccount,
-            payouts: [],
-            status: new WorkerStatusActive(),
-            entry: openingFilledEvent,
-            rewardPerBlock: opening.rewardPerBlock,
-          })
-          await db.save<Worker>(worker)
-          hiredWorkers.push(worker)
-        }
-        await db.save<WorkingGroupApplication>(application)
-      })
-  )
+        })
+    )
+  ).filter((w) => w !== undefined) as Worker[]
 
   // Set opening status
   const openingFilled = new OpeningStatusFilled()
@@ -552,37 +582,18 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
   opening.updatedAt = eventTime
   await db.save<WorkingGroupOpening>(opening)
 
-  // Update working group if necessary
+  // Update working group and LeaderSetEvent if necessary
   if (opening.type === WorkingGroupOpeningType.LEADER && hiredWorkers.length) {
     group.leader = hiredWorkers[0]
     group.updatedAt = eventTime
     await db.save<WorkingGroup>(group)
+
+    const leaderSetEvent = await findLeaderSetEventByTxHash(db, openingFilledEvent.event.inExtrinsic)
+    leaderSetEvent.worker = hiredWorkers[0]
+    leaderSetEvent.updatedAt = eventTime
+    await db.save<LeaderSetEvent>(leaderSetEvent)
   }
 }
-
-// FIXME: Currently this event cannot be handled directly, because the worker does not yet exist at the time when it is emitted
-// export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-//   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-//   const { workerId: workerRuntimeId } = new WorkingGroups.LeaderSetEvent(event_).data
-
-//   const group = await getWorkingGroup(db, event_)
-//   const workerDbId = `${group.name}-${workerRuntimeId.toString()}`
-//   const worker = new Worker({ id: workerDbId })
-//   const eventTime = new Date(event_.blockTimestamp.toNumber())
-
-//   // Create and save event
-//   const event = createEvent(event_, EventType.LeaderSet)
-//   const leaderSetEvent = new LeaderSetEvent({
-//     createdAt: eventTime,
-//     updatedAt: eventTime,
-//     event,
-//     group,
-//     worker,
-//   })
-
-//   await db.save<Event>(event)
-//   await db.save<LeaderSetEvent>(leaderSetEvent)
-// }
 
 export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
