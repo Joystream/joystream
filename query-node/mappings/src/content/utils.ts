@@ -345,12 +345,10 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
       language.integrateInto(result, 'language')
     }
 
-    // prepare information about media published somewhere else before Joystream if needed.
-    if (metaAsObject.publishedBeforeJoystream && metaAsObject.publishedBeforeJoystream.isPublished) {
-      // this will change the `channel`!
-      handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream.date)
-    } else {
-      delete metaAsObject.publishedBeforeJoystream // make sure the object is unset
+    if (metaAsObject.publishedBeforeJoystream) {
+      const publishedBeforeJoystream = handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream)
+      delete metaAsObject.publishedBeforeJoystream // make sure temporary value will not interfere
+      publishedBeforeJoystream.integrateInto(result, 'publishedBeforeJoystream')
     }
 
     return result as Partial<T>
@@ -429,16 +427,27 @@ export function convertContentActorToDataObjectOwner(contentActor: ContentActor,
   */
 }
 
-function handlePublishedBeforeJoystream(video: Partial<Video>, publishedAtString?: string) {
-  // published elsewhere before Joystream
-  if (publishedAtString) {
-    video.publishedBeforeJoystream = new Date(publishedAtString)
-
-    return
+function handlePublishedBeforeJoystream(video: Partial<Video>, metadata: PublishedBeforeJoystreamMetadata.AsObject): PropertyChange<Date> {
+  // is publish being unset
+  if ('isPublished' in metadata && !metadata.isPublished) {
+    return PropertyChange.newUnset()
   }
 
-  // unset publish info
-  video.publishedBeforeJoystream = undefined // plan deletion (will have effect when saved to db)
+  // try to parse timestamp from publish date
+  const timestamp = metadata.date
+    ? Date.parse(metadata.date)
+    : NaN
+
+  // ensure date is valid
+  if (isNaN(timestamp)) {
+    invalidMetadata(`Invalid date used for publishedBeforeJoystream`, {
+      timestamp
+    })
+    return PropertyChange.newNoChange()
+  }
+
+  // set new date
+  return PropertyChange.newChange(new Date(timestamp))
 }
 
 interface IConvertAssetParameters {
