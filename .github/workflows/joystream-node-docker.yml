@@ -15,6 +15,16 @@ jobs:
         with:
           version: latest
 
+      # https://github.community/t/worker-running-out-of-disk-space/18245
+      - name: Patch Docker Daemon data-root
+        run: |
+          DOCKER_DATA_ROOT='/mnt/var/lib/docker'
+          DOCKER_DAEMON_JSON='/etc/docker/daemon.json'
+          sudo mkdir -p "${DOCKER_DATA_ROOT}"
+          jq --arg dataroot "${DOCKER_DATA_ROOT}" '. + {"data-root": $dataroot}' "${DOCKER_DAEMON_JSON}" > "/tmp/docker.json.tmp"
+          sudo mv "/tmp/docker.json.tmp" "${DOCKER_DAEMON_JSON}"
+          sudo systemctl restart docker
+
       - id: compute_shasum
         name: Compute runtime code shasum
         run: |
