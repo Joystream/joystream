@@ -26,12 +26,13 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '12.x'
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
       - name: install buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
         with:
           version: latest
-
       # https://github.community/t/worker-running-out-of-disk-space/18245
       - name: Patch Docker Daemon data-root
         run: |
