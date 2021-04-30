@@ -7,6 +7,11 @@ jobs:
     if: github.repository == 'Joystream/joystream'
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+      - name: Check Free space
+        run: df -h
+
       - uses: actions/checkout@v1
 
       - name: Set up QEMU
@@ -34,9 +39,6 @@ jobs:
         with:
           path: ~/docker-images
           key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
-
-      - name: Check Free space
-        run: df -h
 
       - name: Check if we have cached image
         continue-on-error: true
