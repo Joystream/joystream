@@ -90,7 +90,7 @@ type DataObject @entity {
   size: Int!
 
   "Storage provider id of the liaison"
-  liaisonId: Int # liaison is unset until storage provider accepts or rejects the content
+  liaison: StorageProvider # liaison is unset until storage provider accepts or rejects the content
 
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
@@ -385,4 +385,23 @@ type FeaturedVideo @entity {
 
   "Reference to a video"
   video: Video!
+}
+
+enum StorageProviderType {
+  GATEWAY
+  STORAGE
+}
+
+type StorageProvider @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  isActive: Boolean!
+
+  type: StorageProviderType!
+
+  "Custom metadata set by provider"
+  metadata: String
+
+  dataObjects: [DataObject!]! @derivedFrom(field: "liaison")
 }

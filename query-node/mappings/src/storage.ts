@@ -34,6 +34,7 @@ import {
   DataObjectOwnerCouncil,
   DataObjectOwnerWorkingGroup,
   LiaisonJudgement,
+  StorageProvider,
 } from 'query-node'
 
 export async function dataDirectory_ContentAdded(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -87,8 +88,16 @@ export async function dataDirectory_ContentAccepted(db: DatabaseManager, event: 
     return inconsistentState('Non-existing content acceptation requested', encodedContentId)
   }
 
+  // load storage provider
+  const storageProvider = await db.get(StorageProvider, { where: { id: storageProviderId.toString() } as FindConditions<StorageProvider>})
+
+  // ensure object exists
+  if (!storageProvider) {
+    return inconsistentState('Non-existing content acceptation requested', storageProviderId)
+  }
+
   // update object
-  dataObject.liaisonId = storageProviderId.toNumber()
+  dataObject.liaison = storageProvider
   dataObject.liaisonJudgement = LiaisonJudgement.ACCEPTED
 
   // set last update time

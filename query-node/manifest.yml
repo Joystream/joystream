@@ -52,6 +52,17 @@ typegen:
     - data_directory.ContentAccepted
     - data_directory.ContentRejected
     - data_directory.ContentUploadingStatusUpdated
+
+    # working groups
+    - storage_working_group.WorkerStorageUpdated
+    - storage_working_group.OpeningFilled
+    - storage_working_group.TerminatedWorker
+    - storage_working_group.WorkerExited
+
+    - gateway_working_group.WorkerStorageUpdated
+    - gateway_working_group.OpeningFilled
+    - gateway_working_group.TerminatedWorker
+    - gateway_working_group.WorkerExited
   calls:
     # members
     - members.buyMembership
@@ -96,6 +107,16 @@ typegen:
     - data_directory.accept_content
     - data_directory.update_content_uploading_status
 
+    # working groups
+    - storage_working_group.update_role_storage
+    - storage_working_group.fill_opening
+    - storage_working_group.leave_role
+    - storage_working_group.terminate_role
+
+    - gateway_working_group.update_role_storage
+    - gateway_working_group.fill_opening
+    - gateway_working_group.leave_role
+    - gateway_working_group.terminate_role
   outDir: ./generated/types
   customTypes:
     lib: '@joystream/types/augment'
@@ -179,6 +200,27 @@ mappings:
     # not handled at the moment
     #- event: dataDirectory.ContentUploadingStatusUpdated
     #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
+
+    # working groups
+    - event: storageWorkingGroup.WorkerStorageUpdated
+      handler: storageWorkingGroup_WorkerStorageUpdated(DatabaseManager, SubstrateEvent)
+    - event: storageWorkingGroup.OpeningFilled
+      handler: storageWorkingGroup_OpeningFilled(DatabaseManager, SubstrateEvent)
+    - event: storageWorkingGroup.TerminatedWorker
+      handler: storageWorkingGroup_TerminatedWorker(DatabaseManager, SubstrateEvent)
+    - event: storageWorkingGroup.WorkerExited
+      handler: storageWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
+
+
+
+    - event: gatewayWorkingGroup.WorkerStorageUpdated
+      handler: gatewayWorkingGroup_WorkerStorageUpdated(DatabaseManager, SubstrateEvent)
+    - event: gatewayWorkingGroup.OpeningFilled
+      handler: gatewayWorkingGroup_OpeningFilled(DatabaseManager, SubstrateEvent)
+    - event: gatewayWorkingGroup.TerminatedWorker
+      handler: gatewayWorkingGroup_TerminatedWorker(DatabaseManager, SubstrateEvent)
+    - event: gatewayWorkingGroup.WorkerExited
+      handler: gatewayWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
 
   extrinsicHandlers:
     # infer defaults here

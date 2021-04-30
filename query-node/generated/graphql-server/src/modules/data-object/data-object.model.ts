@@ -1,4 +1,4 @@
-import { BaseModel, IntField, Model, OneToMany, EnumField, StringField } from 'warthog';
+import { BaseModel, IntField, Model, ManyToOne, OneToMany, EnumField, StringField } from 'warthog';
 
 import { Column } from 'typeorm';
 import { Field } from 'type-graphql';
@@ -6,6 +6,7 @@ import { WarthogField } from 'warthog';
 
 import { DataObjectOwner } from '../variants/variants.model';
 
+import { StorageProvider } from '../storage-provider/storage-provider.model';
 import { Channel } from '../channel/channel.model';
 import { Video } from '../video/video.model';
 
@@ -36,11 +37,11 @@ export class DataObject extends BaseModel {
   })
   size!: number;
 
-  @IntField({
+  @ManyToOne(() => StorageProvider, (param: StorageProvider) => param.dataObjects, {
+    skipGraphQLField: true,
     nullable: true,
-    description: `Storage provider id of the liaison`,
   })
-  liaisonId?: number;
+  liaison?: StorageProvider;
 
   @EnumField('LiaisonJudgement', LiaisonJudgement, {
     description: `Storage provider as liaison judgment`,

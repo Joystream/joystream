@@ -25,7 +25,7 @@ export { AssetAvailability };
 
 @Model({ api: {} })
 export class Video extends BaseModel {
-  @ManyToOne(() => Channel, (param: Channel) => param.videos, { skipGraphQLField: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => Channel, (param: Channel) => param.videos, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
   channel!: Channel;
 
   @ManyToOne(() => VideoCategory, (param: VideoCategory) => param.videos, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
