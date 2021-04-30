@@ -232,7 +232,7 @@ export async function content_VideoUpdated(
   } = new Content.VideoUpdatedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
+  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video>, relations: ['channel', 'license'] })
 
   // ensure video exists
   if (!video) {
