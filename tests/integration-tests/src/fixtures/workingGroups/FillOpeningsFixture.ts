@@ -55,12 +55,15 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    const extrinsics = this.openingIds.map((openingId, i) =>
-      this.api.tx[this.group].fillOpening(
-        openingId,
-        new (JoyBTreeSet(ApplicationId))(registry, this.acceptedApplicationsIdsArrays[i])
+    const extrinsics = this.openingIds.map((openingId, i) => {
+      const applicationsSet = new (JoyBTreeSet(ApplicationId))(registry, this.acceptedApplicationsIdsArrays[i])
+      this.debug(
+        'Applications to accept:',
+        this.acceptedApplicationsIdsArrays[i].map((id) => id.toNumber())
       )
-    )
+      this.debug('Encoded BTreeSet:', applicationsSet.toHex())
+      return this.api.tx[this.group].fillOpening(openingId, applicationsSet)
+    })
     return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
   }
 
