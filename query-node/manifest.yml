@@ -12,6 +12,7 @@ typegen:
   metadata:
     source: ${TYPEGEN_WS_URI}
   events:
+    # Membership
     - members.MembershipBought
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
@@ -26,7 +27,7 @@ typegen:
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
     - members.LeaderInvitationQuotaUpdated
-    # Use Storage Working Group as a reference group (all groups emit the same events)
+    # Working groups - use Storage Working Group as a reference group (all groups emit the same events)
     - storageWorkingGroup.OpeningAdded
     - storageWorkingGroup.AppliedOnOpening
     - storageWorkingGroup.OpeningFilled
@@ -49,6 +50,25 @@ typegen:
     - storageWorkingGroup.BudgetSpending
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
+  # Forum
+  # FIXME: https://github.com/Joystream/hydra/issues/373
+    # - forum.CategoryCreated
+    # - forum.CategoryUpdated
+    # - forum.CategoryDeleted
+    # - forum.ThreadCreated
+    # - forum.ThreadModerated
+    # - forum.ThreadUpdated
+    # - forum.ThreadTitleUpdated
+    # - forum.ThreadDeleted
+    # - forum.ThreadMoved
+    # - forum.PostAdded
+    # - forum.PostModerated
+    # - forum.PostDeleted
+    # - forum.PostTextUpdated
+    # - forum.PostReacted
+    # - forum.VoteOnPoll
+    # - forum.CategoryStickyThreadUpdate
+    # - forum.CategoryMembershipOfModeratorUpdated
   calls:
     - members.updateProfile
     - members.updateAccounts
@@ -276,6 +296,41 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached(DatabaseManager, SubstrateEvent)
     - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving(DatabaseManager, SubstrateEvent)
+    # Forum
+    - event: forum.CategoryCreated
+      handler: forum_CategoryCreated(DatabaseManager, SubstrateEvent)
+    - event: forum.CategoryUpdated
+      handler: forum_CategoryUpdated(DatabaseManager, SubstrateEvent)
+    - event: forum.CategoryDeleted
+      handler: forum_CategoryDeleted(DatabaseManager, SubstrateEvent)
+    - event: forum.ThreadCreated
+      handler: forum_ThreadCreated(DatabaseManager, SubstrateEvent)
+    - event: forum.ThreadModerated
+      handler: forum_ThreadModerated(DatabaseManager, SubstrateEvent)
+    - event: forum.ThreadUpdated
+      handler: forum_ThreadUpdated(DatabaseManager, SubstrateEvent)
+    - event: forum.ThreadTitleUpdated
+      handler: forum_ThreadTitleUpdated(DatabaseManager, SubstrateEvent)
+    - event: forum.ThreadDeleted
+      handler: forum_ThreadDeleted(DatabaseManager, SubstrateEvent)
+    - event: forum.ThreadMoved
+      handler: forum_ThreadMoved(DatabaseManager, SubstrateEvent)
+    - event: forum.PostAdded
+      handler: forum_PostAdded(DatabaseManager, SubstrateEvent)
+    - event: forum.PostModerated
+      handler: forum_PostModerated(DatabaseManager, SubstrateEvent)
+    - event: forum.PostDeleted
+      handler: forum_PostDeleted(DatabaseManager, SubstrateEvent)
+    - event: forum.PostTextUpdated
+      handler: forum_PostTextUpdated(DatabaseManager, SubstrateEvent)
+    - event: forum.PostReacted
+      handler: forum_PostReacted(DatabaseManager, SubstrateEvent)
+    - event: forum.VoteOnPoll
+      handler: forum_VoteOnPoll(DatabaseManager, SubstrateEvent)
+    - event: forum.CategoryStickyThreadUpdate
+      handler: forum_CategoryStickyThreadUpdate(DatabaseManager, SubstrateEvent)
+    - event: forum.CategoryMembershipOfModeratorUpdated
+      handler: forum_CategoryMembershipOfModeratorUpdated(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

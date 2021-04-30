@@ -1,0 +1,221 @@
+type CategoryCreatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The created category"
+  category: ForumCategory!
+
+  "The moderator (possibly lead) responsible for creating the category"
+  actor: ForumModerator!
+}
+
+type CategoryUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The category beeing updated"
+  category: ForumCategory!
+
+  "The new archival status of the category (true = archived)"
+  newArchivalStatus: Boolean!
+
+  "The moderator (possibly lead) responsible for updating the category"
+  actor: ForumModerator!
+}
+
+type CategoryDeletedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Category beeing deleted"
+  category: ForumCategory!
+
+  "The moderator (possibly lead) responsible for deleting the category"
+  actor: ForumModerator!
+}
+
+type ThreadCreatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The thread that was created"
+  thread: ForumThread!
+
+  # The author is already part of the Thread entity itself and is immutable
+}
+
+type ThreadModeratedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The thread beeing moderated"
+  thread: ForumThread!
+
+  "Rationale behind the moderation"
+  rationale: String!
+
+  "Actor responsible for the moderation"
+  actor: ForumModerator!
+}
+
+# FIXME: Not emitted by the runtime
+# type ThreadUpdatedEvent @entity {
+#   "Generic event data"
+#   event: Event!
+
+#   "The thread beeing updated"
+#   thread: ForumThread!
+
+#   "The new archival status of the thread (true = archived)"
+#   newArchivalStatus: Boolean!
+
+#   "Actor responsible for the update"
+#   actor: ForumModerator!
+# }
+
+type ThreadTitleUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The thread beeing updated"
+  thread: ForumThread!
+
+  "New title of the thread"
+  newTitle: String!
+
+  # Only author can update the thread title, so no actor information required
+}
+
+type ThreadDeletedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The thread beeing deleted"
+  thread: ForumThread!
+
+  # Only author can delete the thread, so no actor information required
+}
+
+type ThreadMovedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The thread beeing moved"
+  thread: ForumThread!
+
+  "Thread's previous category"
+  oldCategory: ForumCategory!
+
+  "Thread's new category"
+  newCategory: ForumCategory!
+
+  "The actor performing the transfer"
+  actor: ForumModerator!
+}
+
+type PostAddedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The post that was added"
+  post: ForumPost!
+
+  "Whether the added post is editable"
+  isEditable: Boolean
+
+  "Post's original text"
+  text: String!
+}
+
+type PostModeratedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The post beeing moderated"
+  post: ForumPost!
+
+  "The rationale behind the moderation"
+  rationale: String!
+
+  "The actor responsible for the moderation"
+  actor: ForumModerator!
+}
+
+type PostDeletedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "List of deleted posts"
+  posts: [ForumPost!] @derivedFrom(field: "deletedInEvent")
+
+  "The actor responsible for the removal"
+  actor: Membership!
+}
+
+type PostTextUpdatedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The post beeing updated"
+  post: ForumPost!
+
+  "New post text"
+  newText: String!
+
+  # Only author can edit the post, so no actor context required
+}
+
+type PostReactedEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The post beeing reacted to"
+  post: ForumPost!
+
+  "The reaction. Overrides the previous reaction. If empty - cancels the previous reaction."
+  reaction: PostReaction
+
+  "The member reacting to the post"
+  reactingMember: Membership!
+}
+
+type VoteOnPollEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "Poll alternative beeing voted on"
+  pollAlternative: ForumPollAlternative!
+
+  "The member that casted the vote"
+  votingMember: Membership!
+}
+
+type CategoryStickyThreadUpdateEvent @entity {
+  "Generic event data"
+  event: Event!
+
+  "The related category"
+  category: ForumCategory!
+
+  "List of the threads beeing made sticky"
+  newStickyThreads: [ForumThread!]
+
+  "The actor responsible for making the threads sticky"
+  actor: ForumModerator!
+}
+
+type CategoryMembershipOfModeratorUpdated @entity {
+  "Generic event data"
+  event: Event!
+
+  "The moderator in question"
+  moderator: ForumModerator!
+
+  "The category in question"
+  category: ForumCategory!
+
+  "The flag indicating whether the permissions to moderate the category are granted or revoked"
+  newCanModerateValue: Boolean!
+
+  # Actor is always lead
+}

@@ -44,6 +44,24 @@ enum EventType {
   BudgetSpending
   RewardPaid
   NewMissedRewardLevelReached
+  # Forum
+  CategoryCreated
+  CategoryUpdated
+  CategoryDeleted
+  ThreadCreated
+  ThreadModerated
+  ThreadUpdated
+  ThreadTitleUpdated
+  ThreadDeleted
+  ThreadMoved
+  PostAdded
+  PostModerated
+  PostDeleted
+  PostTextUpdated
+  PostReacted
+  VoteOnPoll
+  CategoryStickyThreadUpdate
+  CategoryMembershipOfModeratorUpdated
 }
 
 type Block @entity {

@@ -1,0 +1,227 @@
+type ForumModerator @entity {
+  "Moderator worker"
+  worker: Worker!
+
+  "Categories managed by the moderator"
+  categories: [ForumCategory!] @derivedFrom(field: "moderators")
+}
+
+type CategoryStatusActive @variant {
+  # No additional information required
+  _phantom: Int
+}
+
+type CategoryStatusArchived @variant {
+  # TODO: Variant relationship
+  "Id of the event the category was archived in"
+  categoryUpdatedEventId: ID!
+}
+
+type CategoryStatusRemoved @variant {
+  # TODO: Variant relationship
+  "Id of the event the category was deleted in"
+  categoryDeletedEventId: ID!
+}
+
+union CategoryStatus = CategoryStatusActive | CategoryStatusArchived | CategoryStatusRemoved
+
+type ForumCategory @entity {
+  "Runtime category id"
+  id: ID!
+
+  "Parent category (if none - this is a root category)"
+  parent: ForumCategory
+
+  "Category title"
+  title: String!
+
+  "Category description"
+  description: String!
+
+  "List of all threads in the category"
+  threads: [ForumThread!] @derivedFrom(field: "category")
+
+  "List of all moderators managing this category"
+  moderators: [ForumModerator!]
+
+  "The event the category was created in"
+  createdInEvent: CategoryCreatedEvent! @derivedFrom(field: "category")
+
+  "Current category status"
+  status: CategoryStatus!
+}
+
+"The thread is visible and editable"
+type ThreadStatusActive @variant {
+  # No additional information required
+  _phantom: Int
+}
+
+"The thread is visible, but not editable - it was removed by the author from the runtime state, but the `hide` flag was set to FALSE"
+type ThreadStatusLocked @variant {
+  # TODO: Variant relationship
+  # TODO: May become optional if threads can be created as non-editable
+  "Id of the event the thread was deleted (locked) in"
+  threadDeletedEventId: ID!
+}
+
+"The thread is hidden - it was removed by the moderator and the associated stake was slashed"
+type ThreadStatusModerated @variant {
+  # TODO: Variant relationship
+  "Id of the event the thread was moderated in"
+  threadModeratedEventId: ID!
+}
+
+"The thread is hidden - it was removed by the author and the `hide` flag was set to TRUE"
+type ThreadStatusRemoved @variant {
+  # TODO: Variant relationship
+  "Id of the event the thread was removed in"
+  threadDeletedEvent: ID!
+}
+
+union ThreadStatus = ThreadStatusActive | ThreadStatusLocked | ThreadStatusModerated | ThreadStatusRemoved
+
+type ForumThread @entity {
+  "Runtime thread id"
+  id: ID!
+
+  "Author of the forum thread"
+  author: Membership!
+
+  "Category the thread belongs to"
+  category: ForumCategory!
+
+  "Thread title"
+  title: String! @fulltext(query: "threadsByTitle")
+
+  "Thread text (md-formatted)"
+  text: String! @fulltext(query: "threadsByText")
+
+  "All posts in the thread"
+  posts: [ForumPost!] @derivedFrom(field: "thread")
+
+  "Optional poll associated with the thread"
+  poll: ForumPoll @derivedFrom(field: "thread")
+
+  "Whether the thread is sticky in the category"
+  isSticky: Boolean!
+
+  "The event the thread was created in"
+  createdInEvent: ThreadCreatedEvent!
+
+  "Current thread status"
+  status: ThreadStatus!
+
+  # Required to create Many-to-Many relation
+  "The events the thred was made sticky in"
+  madeStickyInEvents: [CategoryStickyThreadUpdateEvent!] @derivedFrom(field: "newStickyThreads")
+
+  "List of events that moved the thread to a different category"
+  movedInEvents: [ThreadMovedEvent!] @derivedFrom(field: "thread")
+}
+
+type ForumPoll @entity {
+  "The thread the poll belongs to"
+  thread: ForumThread!
+
+  "Poll description"
+  description: String!
+
+  "The time at which the poll ends"
+  endTime: DateTime!
+
+  "List of poll alternatives"
+  pollAlternatives: [ForumPollAlternative!] @derivedFrom(field: "poll")
+}
+
+type ForumPollAlternative @entity {
+  "The related poll"
+  poll: ForumPoll!
+
+  "The alternative text"
+  text: String!
+
+  "List of all associated vote events"
+  votes: [VoteOnPollEvent!] @derivedFrom(field: "pollAlternative")
+}
+
+enum PostReaction {
+  LIKE
+  # We may support some other ones in the future...
+}
+
+type ForumPostReaction @entity {
+  "{memberId}-{postId}"
+  id: ID!
+
+  "The member that reacted"
+  member: Membership!
+
+  "The post that has been reacted to"
+  post: ForumPost!
+
+  "The reaction"
+  reaction: PostReaction!
+}
+
+"The post is visible and editable"
+type PostStatusActive @variant {
+  # No additional information required
+  _phantom: Int
+}
+
+"The post is visible but not editable - either it wasn't editable to begin with or it was removed from the runtime state, but with `hide` flag beeing set to FALSE"
+type PostStatusLocked @variant {
+  # TODO: Variant relationship
+  "Post deleted event id in case the post became locked through runtime removal"
+  postDeletedEventId: ID
+}
+
+"The post is hidden - it was removed by the moderator and the associated stake was slashed"
+type PostStatusModerated @variant {
+  # TODO: Variant relationship
+  "Id of the event the post was moderated in"
+  postModeratedEventId: ID!
+}
+
+"The post is hidden - it was removed from the runtime state by the author and the `hide` flag was set to TRUE"
+type PostStatusRemoved @variant {
+  # TODO: Variant relationship
+  "Id of the event the post was removed in"
+  postDeletedEventId: ID!
+}
+
+union PostStatus = PostStatusActive | PostStatusLocked | PostStatusModerated | PostStatusRemoved
+
+type ForumPost @entity {
+  "Runtime post id"
+  id: ID!
+
+  "Author of the forum post"
+  author: Membership!
+
+  "Thread the post was submitted in"
+  thread: ForumThread!
+
+  "Content of the post (md-formatted)"
+  text: String! @fulltext(query: "postsByText")
+
+  "A post that this post replies to (if any)"
+  repliesTo: ForumPost
+
+  "Current post status"
+  status: PostStatus!
+
+  "The event the post was created in"
+  createdInEvent: PostAddedEvent! @derivedFrom(field: "post")
+
+  "List of all text update events (edits)"
+  edits: [PostTextUpdatedEvent!] @derivedFrom(field: "post")
+
+  "List of all current post reactions"
+  reactions: [ForumPostReaction!] @derivedFrom(field: "post")
+
+  # Required for PostDeletedEvent One-to-Many relation
+  "The event the post was deleted in (if any)"
+  deletedInEvent: PostDeletedEvent
+}
