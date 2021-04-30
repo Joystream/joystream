@@ -3,11 +3,10 @@
 
 use codec::Codec;
 use codec::{Decode, Encode};
-use frame_support::sp_runtime::traits::{MaybeSerialize, Member};
-use frame_support::Parameter;
-use frame_support::{decl_event, decl_module, decl_storage, ensure};
-use sp_arithmetic::traits::{BaseArithmetic, Zero};
-use sp_std::vec::Vec;
+use frame_support::sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
+use frame_support::{decl_event, decl_module, decl_storage, Parameter};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, BaseArithmetic, One, Saturating};
+use sp_std::fmt::Debug;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -22,20 +21,31 @@ pub type ServiceProviderWorkingGroup<T> =
 
 type WorkerId<T> = working_group::WorkerId<T>;
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 enum ServiceProviderKind {
     Generic,
 }
 
+impl Default for ServiceProviderKind {
+    fn default() -> Self {
+        Self::Generic
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-struct ServiceProvidderWorkerId<T: membership::Trait> {
-    worker_id: WorkerId<T>,
+pub struct ServiceProviderWorkerId<WorkerId> {
+    worker_id: WorkerId,
     group: ServiceProviderKind,
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-struct ServiceProvider<T: membership::Trait> {
-    service_provider_worker_id: ServiceProvidderWorkerId<T>,
+pub struct ServiceProvider<ServiceProviderWorkerId, Balance, BlockNumber> {
+    service_provider_worker_id: ServiceProviderWorkerId,
+    service_price_per_unit: Balance,
+    refund_period: BlockNumber,
 }
 
 pub trait Trait:
@@ -52,6 +62,14 @@ pub trait Trait:
         + Copy
         + MaybeSerialize
         + PartialEq;
+    type Balance: Parameter
+        + Member
+        + AtLeast32BitUnsigned
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerializeDeserialize
+        + Debug;
 }
 
 decl_storage! {
@@ -61,7 +79,7 @@ decl_storage! {
 
         /// Map between Service Provider Id and Service Provider
         pub ServiceProviderById get(fn service_provider_by_id): map hasher(blake2_128_concat)
-            T::ServiceProviderId => ServiceProvider<T>
+            T::ServiceProviderId => ServiceProvider<ServiceProviderWorkerId<WorkerId<T>>, T::Balance, T::BlockNumber>
     }
 }
 
@@ -78,16 +96,40 @@ decl_module! {
         fn deposit_event() = default;
 
         #[weight = 10_000_000] // TODO: adjust weight
-        fn create_service_provider(origin, worker_id: WorkerId<T>) {
+        fn create_service_provider(
+            origin,
+            worker_id: WorkerId<T>,
+            service_price_per_unit: T::Balance,
+            refund_period: T::BlockNumber
+        ) {
             GatewayWorkingGroup::<T>::ensure_origin_is_active_leader(origin)?;
-            ServiceProviderWorkingGroup::<T>::ensure_worker_exists(worker_id)
-            /*
-            ensure!(!T::Currency::total_balance(&sender).is_zero(), "account must have a balance");
-            ensure!(memo.len() as u32 <= Self::max_memo_length(), "memo too long");
+            ServiceProviderWorkingGroup::<T>::ensure_worker_exists(&worker_id)?;
 
-            <Memo<T>>::insert(&sender, memo);
-            Self::deposit_event(RawEvent::MemoUpdated(sender));
-            */
+            // Mutation
+            let service_provider_id = Self::get_next_service_provider_id();
+            let service_provider_worker_id = ServiceProviderWorkerId {
+                worker_id,
+                group: ServiceProviderKind::Generic,
+            };
+
+            let service_provider = ServiceProvider {
+                service_provider_worker_id,
+                service_price_per_unit,
+                refund_period,
+            };
+
+            <ServiceProviderById<T>>::insert(
+                service_provider_id,
+                service_provider
+            );
         }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    fn get_next_service_provider_id() -> T::ServiceProviderId {
+        <NextServiceProvider<T>>::mutate(|id| {
+            sp_std::mem::replace(id, id.saturating_add(One::one()))
+        })
     }
 }
