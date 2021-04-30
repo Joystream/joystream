@@ -51,7 +51,7 @@ type ForumCategory @entity {
   status: CategoryStatus!
 }
 
-"The thread is visible and editable"
+"The thread is visible and editable (unless belongs to archived category)"
 type ThreadStatusActive @variant {
   # No additional information required
   _phantom: Int
@@ -164,7 +164,7 @@ type ForumPostReaction @entity {
   reaction: PostReaction!
 }
 
-"The post is visible and editable"
+"The post is visible and editable (unless belongs to archived category)"
 type PostStatusActive @variant {
   # No additional information required
   _phantom: Int
