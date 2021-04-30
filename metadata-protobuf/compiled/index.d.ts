@@ -431,8 +431,8 @@ export namespace OpeningMetadata {
 
         /** InputType enum. */
         enum InputType {
-            TEXT = 0,
-            TEXTAREA = 1
+            TEXTAREA = 0,
+            TEXT = 1
         }
     }
 }

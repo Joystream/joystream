@@ -1002,11 +1002,11 @@ $root.OpeningMetadata = (function() {
             if (object.question != null)
                 message.question = String(object.question);
             switch (object.type) {
-            case "TEXT":
+            case "TEXTAREA":
             case 0:
                 message.type = 0;
                 break;
-            case "TEXTAREA":
+            case "TEXT":
             case 1:
                 message.type = 1;
                 break;
@@ -1029,7 +1029,7 @@ $root.OpeningMetadata = (function() {
             var object = {};
             if (options.defaults) {
                 object.question = "";
-                object.type = options.enums === String ? "TEXT" : 0;
+                object.type = options.enums === String ? "TEXTAREA" : 0;
             }
             if (message.question != null && message.hasOwnProperty("question"))
                 object.question = message.question;
@@ -1053,13 +1053,13 @@ $root.OpeningMetadata = (function() {
          * InputType enum.
          * @name OpeningMetadata.ApplicationFormQuestion.InputType
          * @enum {number}
-         * @property {number} TEXT=0 TEXT value
-         * @property {number} TEXTAREA=1 TEXTAREA value
+         * @property {number} TEXTAREA=0 TEXTAREA value
+         * @property {number} TEXT=1 TEXT value
          */
         ApplicationFormQuestion.InputType = (function() {
             var valuesById = {}, values = Object.create(valuesById);
-            values[valuesById[0] = "TEXT"] = 0;
-            values[valuesById[1] = "TEXTAREA"] = 1;
+            values[valuesById[0] = "TEXTAREA"] = 0;
+            values[valuesById[1] = "TEXT"] = 1;
             return values;
         })();
 
