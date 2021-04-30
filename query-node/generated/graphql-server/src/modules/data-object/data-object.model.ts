@@ -33,6 +33,7 @@ export class DataObject extends BaseModel {
   typeId!: number;
 
   @IntField({
+    dataType: 'bigint',
     description: `Content size in bytes`,
   })
   size!: number;
