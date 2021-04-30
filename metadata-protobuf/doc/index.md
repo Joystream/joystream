@@ -222,10 +222,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| description | [string](#string) | optional | Full status description (md-formatted) |
-| about | [string](#string) | optional | Status about text (md-formatted) |
-| status | [string](#string) | optional | The status itself (expected to be 1-3 words) |
-| status_message | [string](#string) | optional | Short status message |
+| description | [string](#string) | optional | Group description text (md-formatted) |
+| about | [string](#string) | optional | Group about text (md-formatted) |
+| status | [string](#string) | optional | Current group status (expected to be 1-3 words) |
+| status_message | [string](#string) | optional | Short status message associated with the status |
 
 
 
