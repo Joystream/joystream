@@ -23,9 +23,12 @@ jobs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
       - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-      - name: Check Free space
-        run: df -h
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          df -h
 
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
