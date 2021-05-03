@@ -5,6 +5,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
+// TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
@@ -378,13 +379,26 @@ pub struct AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId> {
     pub data_object_id: DataObjectId,
 }
 
+/// Type alias for the UpdateStorageBucketForBagsParamsObject.
+pub type UpdateStorageBucketForBagsParams<T> = UpdateStorageBucketForBagsParamsObject<
+    MemberId<T>,
+    <T as Trait>::ChannelId,
+    <T as Trait>::DaoId,
+    <T as Trait>::StorageBucketId,
+>;
+
 /// Data wrapper structure. Helps passing the parameters to the
-/// `update_storage_buckets_for_static_bags` extrinsic.
+/// `update_storage_buckets_for_bags` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct UpdateStorageBucketForStaticBagsParams<StorageBucketId: Ord> {
+pub struct UpdateStorageBucketForBagsParamsObject<
+    MemberId: Ord,
+    ChannelId: Ord,
+    DaoId: Ord,
+    StorageBucketId: Ord,
+> {
     /// Defines new relationship between static bags and storage buckets.
-    pub bags: BTreeMap<StaticBagId, BTreeSet<StorageBucketId>>,
+    pub bags: BTreeMap<BagIdType<MemberId, ChannelId, DaoId>, BTreeSet<StorageBucketId>>,
 }
 
 /// Type alias for the AcceptPendingDataObjectsParamsObject.
@@ -484,8 +498,7 @@ decl_event! {
     where
         <T as Trait>::StorageBucketId,
         WorkerId = WorkerId<T>,
-        UpdateStorageBucketForStaticBagsParams =
-            UpdateStorageBucketForStaticBagsParams<<T as Trait>::StorageBucketId>,
+        UpdateStorageBucketForBagsParams = UpdateStorageBucketForBagsParams<T>,
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
         AcceptPendingDataObjectsParams = AcceptPendingDataObjectsParams<T>,
@@ -504,10 +517,10 @@ decl_event! {
         /// - invited worker ID
         StorageBucketInvitationAccepted(StorageBucketId, WorkerId),
 
-        /// Emits on updating storage buckets for static bags.
+        /// Emits on updating storage buckets for bags.
         /// Params
-        /// - 'static bags-to-storage bucket set' container
-        StorageBucketsUpdatedForStaticBags(UpdateStorageBucketForStaticBagsParams),
+        /// - 'bags-to-storage bucket set' container
+        StorageBucketsUpdatedForBags(UpdateStorageBucketForBagsParams),
 
         /// Emits on uploading data objects.
         /// Params
@@ -551,8 +564,8 @@ decl_error! {
         /// Cannot accept an invitation: another storage provider was invited.
         DifferentStorageProviderInvited,
 
-        /// The parameter structure is empty: UpdateStorageBucketForStaticBagsParams.
-        UpdateStorageBucketForStaticBagsParamsIsEmpty,
+        /// The parameter structure is empty: UpdateStorageBucketForBagsParams.
+        UpdateStorageBucketForBagsParamsIsEmpty,
 
         /// Upload data error: empty content ID provided.
         EmptyContentId,
@@ -685,29 +698,25 @@ decl_module! {
             );
         }
 
-        /// Establishes a connection between static bags and storage buckets.
+        /// Establishes a connection between bags and storage buckets.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_buckets_for_static_bags(
+        pub fn update_storage_buckets_for_bags(
             origin,
-            params: UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>
+            params: UpdateStorageBucketForBagsParams<T>
         ) {
             T::ensure_working_group_leader_origin(origin)?; // TODO: correct authentication?
 
-            Self::validate_update_storage_buckets_for_static_bags_params(&params)?;
+            Self::validate_update_storage_buckets_for_bags_params(&params)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             for (bag_id, buckets) in params.bags.iter() {
-                let mut bag = Self::static_bag(bag_id);
-
-                bag.stored_by = buckets.clone();
-
-                Self::save_static_bag(bag_id, bag);
+                BagManager::<T>::set_storage_buckets(bag_id, buckets.clone());
             }
 
-            Self::deposit_event(RawEvent::StorageBucketsUpdatedForStaticBags(params));
+            Self::deposit_event(RawEvent::StorageBucketsUpdatedForBags(params));
         }
 
         // ===== Storage Operator actions =====
@@ -790,15 +799,6 @@ decl_module! {
             }
 
             Self::deposit_event(RawEvent::PendingDataObjectsAccepted(worker_id, params));
-        }
-
-        /// Update what storage buckets back a dynamic bags.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_buckets_for_dynamic_bags(
-            _origin,
-            //_update: BTreeMap<DynamicBagId, BTreeSet<StorageBucketId>>
-        ) {
-            //TODO: implement
         }
     }
 }
@@ -982,13 +982,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensures validity of the `update_storage_buckets_for_static_bags` extrinsic parameters
-    fn validate_update_storage_buckets_for_static_bags_params(
-        params: &UpdateStorageBucketForStaticBagsParams<T::StorageBucketId>,
+    // Ensures validity of the `update_storage_buckets_for_bags` extrinsic parameters
+    fn validate_update_storage_buckets_for_bags_params(
+        params: &UpdateStorageBucketForBagsParams<T>,
     ) -> DispatchResult {
         ensure!(
             !params.bags.is_empty(),
-            Error::<T>::UpdateStorageBucketForStaticBagsParamsIsEmpty
+            Error::<T>::UpdateStorageBucketForBagsParamsIsEmpty
         );
 
         for buckets in params.bags.values() {
@@ -1054,6 +1054,19 @@ impl<T: Trait> BagManager<T> {
         );
     }
 
+    // Sets storage buckets to bag.
+    fn set_storage_buckets(bag_id: &BagId<T>, buckets: BTreeSet<T::StorageBucketId>) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.stored_by = buckets.clone();
+            },
+            |bag| {
+                bag.stored_by = buckets.clone();
+            },
+        );
+    }
+
     // Check the data object existence inside a bag.
     fn ensure_data_object_existence(
         bag_id: &BagId<T>,
@@ -1082,8 +1095,8 @@ impl<T: Trait> BagManager<T> {
     // Abstract bag query function. Accepts two closures that should have similar result type.
     fn query<
         Res,
-        StaticBagQuery: Fn(StaticBag<T>) -> Res,
-        DynamicBagQuery: Fn(DynamicBag<T>) -> Res,
+        StaticBagQuery: Fn(&StaticBag<T>) -> Res,
+        DynamicBagQuery: Fn(&DynamicBag<T>) -> Res,
     >(
         bag_id: &BagId<T>,
         static_bag_query: StaticBagQuery,
@@ -1093,12 +1106,12 @@ impl<T: Trait> BagManager<T> {
             BagId::<T>::StaticBag(static_bag_id) => {
                 let bag = Module::<T>::static_bag(&static_bag_id);
 
-                static_bag_query(bag)
+                static_bag_query(&bag)
             }
             BagId::<T>::DynamicBag(dynamic_bag_id) => {
                 let bag = Module::<T>::dynamic_bag(dynamic_bag_id);
 
-                dynamic_bag_query(bag)
+                dynamic_bag_query(&bag)
             }
         }
     }

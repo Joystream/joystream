@@ -10,7 +10,7 @@ use super::mocks::{
 use crate::tests::mocks::DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
 use crate::{
     AcceptPendingDataObjectsParams, DataObjectCreationParameters, RawEvent,
-    StorageBucketOperatorStatus, UpdateStorageBucketForStaticBagsParams, UploadParameters, Voucher,
+    StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -35,7 +35,7 @@ impl EventFixture {
         expected_raw_event: RawEvent<
             u64,
             u64,
-            UpdateStorageBucketForStaticBagsParams<u64>,
+            UpdateStorageBucketForBagsParams<Test>,
             u64,
             UploadParameters<Test>,
             AcceptPendingDataObjectsParams<Test>,
@@ -51,7 +51,7 @@ impl EventFixture {
         expected_raw_event: RawEvent<
             u64,
             u64,
-            UpdateStorageBucketForStaticBagsParams<u64>,
+            UpdateStorageBucketForBagsParams<Test>,
             u64,
             UploadParameters<Test>,
             AcceptPendingDataObjectsParams<Test>,
@@ -213,12 +213,12 @@ impl AcceptStorageBucketInvitationFixture {
     }
 }
 
-pub struct UpdateStorageBucketForStaticBagsFixture {
+pub struct UpdateStorageBucketForBagsFixture {
     origin: RawOrigin<u64>,
-    params: UpdateStorageBucketForStaticBagsParams<u64>,
+    params: UpdateStorageBucketForBagsParams<Test>,
 }
 
-impl UpdateStorageBucketForStaticBagsFixture {
+impl UpdateStorageBucketForBagsFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
@@ -230,12 +230,12 @@ impl UpdateStorageBucketForStaticBagsFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_params(self, params: UpdateStorageBucketForStaticBagsParams<u64>) -> Self {
+    pub fn with_params(self, params: UpdateStorageBucketForBagsParams<Test>) -> Self {
         Self { params, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Storage::update_storage_buckets_for_static_bags(
+        let actual_result = Storage::update_storage_buckets_for_bags(
             self.origin.clone().into(),
             self.params.clone(),
         );
