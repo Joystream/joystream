@@ -443,9 +443,9 @@ function integrateVideoMediaMetadata(
   })
 
   // integrate media-related data
-  rawMediaMetadata.pixelWidth.integrateInto(encoding, 'pixelWidth')
-  rawMediaMetadata.pixelHeight.integrateInto(encoding, 'pixelHeight')
-  rawMediaMetadata.size.integrateInto(encoding, 'size')
+  rawMediaMetadata.pixelWidth.integrateInto(mediaMetadata, 'pixelWidth')
+  rawMediaMetadata.pixelHeight.integrateInto(mediaMetadata, 'pixelHeight')
+  rawMediaMetadata.size.integrateInto(mediaMetadata, 'size')
 
   // connect encoding to media metadata object
   mediaMetadata.encoding = encoding
