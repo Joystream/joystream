@@ -545,6 +545,12 @@ decl_event! {
         /// Params
         /// - storage bucket ID
         StorageBucketInvitationCancelled(StorageBucketId),
+
+        /// Emits on the storage bucket operator invitation.
+        /// Params
+        /// - storage bucket ID
+        /// - operator worker ID (storage provider ID)
+        StorageBucketOperatorInvited(StorageBucketId, WorkerId),
     }
 }
 
@@ -560,14 +566,17 @@ decl_error! {
         /// The requested storage bucket doesn't exist.
         StorageBucketDoesntExist,
 
-        /// Cannot accept an invitation: there is no storage bucket invitation.
+        /// Invalid operation with invites: there is no storage bucket invitation.
         NoStorageBucketInvitation,
 
-        /// Cannot accept an invitation: storage provider was already set.
+        /// Invalid operation with invites: storage provider was already set.
         StorageProviderAlreadySet,
 
-        /// Cannot accept an invitation: another storage provider was invited.
+        /// Invalid operation with invites: another storage provider was invited.
         DifferentStorageProviderInvited,
+
+        /// Invalid operation with invites: storage provider was already invited.
+        InvitedStorageProvider,
 
         /// The parameter structure is empty: UpdateStorageBucketForBagsParams.
         UpdateStorageBucketForBagsParamsIsEmpty,
@@ -743,6 +752,35 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::StorageBucketInvitationCancelled(storage_bucket_id)
+            );
+        }
+
+        /// Invite storage bucket operator. Must be missing.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn invite_storage_bucket_operator(
+            origin,
+            storage_bucket_id: T::StorageBucketId,
+            operator_id: WorkerId<T>,
+        ){
+            T::ensure_working_group_leader_origin(origin)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_missing_invitation_status(&bucket)?;
+
+            // TODO: ensure operator_id exists?
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.operator_status =
+                    StorageBucketOperatorStatus::InvitedStorageWorker(operator_id);
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketOperatorInvited(storage_bucket_id, operator_id)
             );
         }
 
@@ -928,6 +966,21 @@ impl<T: Trait> Module<T> {
                 Err(Error::<T>::StorageProviderAlreadySet.into())
             }
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => Ok(()),
+        }
+    }
+
+    // Ensures the missing invitation for the storage bucket and storage provider.
+    fn ensure_bucket_missing_invitation_status(
+        bucket: &StorageBucket<WorkerId<T>>,
+    ) -> DispatchResult {
+        match bucket.operator_status {
+            StorageBucketOperatorStatus::Missing => Ok(()),
+            StorageBucketOperatorStatus::StorageWorker(_) => {
+                Err(Error::<T>::StorageProviderAlreadySet.into())
+            }
+            StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
+                Err(Error::<T>::InvitedStorageProvider.into())
+            }
         }
     }
 
