@@ -507,3 +507,39 @@ impl InviteStorageBucketOperatorFixture {
         }
     }
 }
+pub struct UpdateUploadingBlockedStatusFixture {
+    origin: RawOrigin<u64>,
+    new_status: bool,
+}
+
+impl UpdateUploadingBlockedStatusFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            new_status: false,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_status(self, new_status: bool) -> Self {
+        Self { new_status, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_status = Storage::uploading_blocked();
+
+        let actual_result =
+            Storage::update_uploading_blocked_status(self.origin.clone().into(), self.new_status);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Storage::uploading_blocked(), self.new_status);
+        } else {
+            assert_eq!(old_status, Storage::uploading_blocked());
+        }
+    }
+}

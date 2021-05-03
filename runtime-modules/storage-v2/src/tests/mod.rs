@@ -28,7 +28,7 @@ use fixtures::{
     run_to_block, AcceptPendingDataObjectsFixture, AcceptStorageBucketInvitationFixture,
     CancelStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
     InviteStorageBucketOperatorFixture, SetStorageOperatorMetadataFixture,
-    UpdateStorageBucketForBagsFixture, UploadFixture,
+    UpdateStorageBucketForBagsFixture, UpdateUploadingBlockedStatusFixture, UploadFixture,
 };
 
 #[test]
@@ -618,6 +618,31 @@ fn upload_fails_with_insufficient_balance_for_deletion_prize() {
 }
 
 #[test]
+fn upload_failed_with_blocked_uploading() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        let new_blocking_status = true;
+        UpdateUploadingBlockedStatusFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_status(new_blocking_status)
+            .call_and_assert(Ok(()));
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Err(Error::<Test>::UploadingBlocked.into()));
+    });
+}
+
+#[test]
 fn set_storage_operator_metadata_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -1042,5 +1067,35 @@ fn invite_storage_bucket_operator_fails_with_non_missing_invitation() {
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_storage_bucket_id(bucket_id)
             .call_and_assert(Err(Error::<Test>::InvitedStorageProvider.into()));
+    });
+}
+
+#[test]
+fn update_uploading_blocked_status_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let new_blocking_status = true;
+
+        UpdateUploadingBlockedStatusFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_status(new_blocking_status)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::UploadingBlockStatusUpdated(
+            new_blocking_status,
+        ));
+    });
+}
+
+#[test]
+fn update_uploading_blocked_status_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateUploadingBlockedStatusFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }

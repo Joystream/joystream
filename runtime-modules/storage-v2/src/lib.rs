@@ -5,6 +5,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
+// TODO: use voucher
+// TODO: update number_of_pending_data_objects or remoe it.
 // TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
 // TODO: remove all: #[allow(dead_code)]
@@ -460,6 +462,9 @@ pub struct DynamicBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Storage {
+        /// Defines whether all new uploads blocked
+        pub UploadingBlocked get(fn uploading_blocked): bool;
+
         /// Council bag.
         pub CouncilBag get(fn council_bag): StaticBag<T>;
 
@@ -551,6 +556,11 @@ decl_event! {
         /// - storage bucket ID
         /// - operator worker ID (storage provider ID)
         StorageBucketOperatorInvited(StorageBucketId, WorkerId),
+
+        /// Emits on changing the global uploading block status.
+        /// Params
+        /// - new status
+        UploadingBlockStatusUpdated(bool),
     }
 }
 
@@ -604,6 +614,9 @@ decl_error! {
 
         /// Data object doesn't exist.
         DataObjectDoesntExist,
+
+        /// Uploading of the new object is blocked.
+        UploadingBlocked,
     }
 }
 
@@ -639,6 +652,8 @@ decl_module! {
 
             Self::validate_upload_parameters(&params, account_id)?;
 
+            ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
+
             // TODO: authentication_key
 
             //
@@ -660,6 +675,20 @@ decl_module! {
         }
 
         // ===== Storage Lead actions =====
+
+        /// Update whether uploading is globally blocked.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_uploading_blocked_status(origin, new_status: bool) {
+            T::ensure_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            UploadingBlocked::put(new_status);
+
+            Self::deposit_event(RawEvent::UploadingBlockStatusUpdated(new_status));
+        }
 
         /// Create storage bucket.
         #[weight = 10_000_000] // TODO: adjust weight
