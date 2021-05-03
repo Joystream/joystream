@@ -856,12 +856,12 @@ export interface DataObjectWhereInput {
   typeId_lt?: Int | null
   typeId_lte?: Int | null
   typeId_in?: Int[] | Int | null
-  size_eq?: Int | null
-  size_gt?: Int | null
-  size_gte?: Int | null
-  size_lt?: Int | null
-  size_lte?: Int | null
-  size_in?: Int[] | Int | null
+  size_eq?: Float | null
+  size_gt?: Float | null
+  size_gte?: Float | null
+  size_lt?: Float | null
+  size_lte?: Float | null
+  size_in?: Float[] | Float | null
   liaisonId_eq?: ID_Input | null
   liaisonId_in?: ID_Output[] | ID_Output | null
   liaisonJudgement_eq?: LiaisonJudgement | null
@@ -1368,12 +1368,12 @@ export interface VideoMediaMetadataWhereInput {
   pixelHeight_lt?: Int | null
   pixelHeight_lte?: Int | null
   pixelHeight_in?: Int[] | Int | null
-  size_eq?: Int | null
-  size_gt?: Int | null
-  size_gte?: Int | null
-  size_lt?: Int | null
-  size_lte?: Int | null
-  size_in?: Int[] | Int | null
+  size_eq?: Float | null
+  size_gt?: Float | null
+  size_gte?: Float | null
+  size_lt?: Float | null
+  size_lte?: Float | null
+  size_in?: Float[] | Float | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null
@@ -1655,7 +1655,7 @@ export interface DataObject extends BaseGraphQLObject {
   owner: DataObjectOwner
   createdInBlock: Int
   typeId: Int
-  size: Int
+  size: Float
   liaison?: StorageProvider | null
   liaisonId?: String | null
   liaisonJudgement: LiaisonJudgement
@@ -1991,7 +1991,7 @@ export interface VideoMediaMetadata extends BaseGraphQLObject {
   encodingId?: String | null
   pixelWidth?: Int | null
   pixelHeight?: Int | null
-  size?: Int | null
+  size?: Float | null
   video?: Video | null
   createdInBlock: Int
 }

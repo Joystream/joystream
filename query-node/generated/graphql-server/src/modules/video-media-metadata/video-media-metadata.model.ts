@@ -1,4 +1,4 @@
-import { BaseModel, IntField, Model, ManyToOne, OneToOne, OneToOneJoin, StringField } from 'warthog';
+import { BaseModel, IntField, FloatField, Model, ManyToOne, OneToOne, OneToOneJoin, StringField } from 'warthog';
 
 import { VideoMediaEncoding } from '../video-media-encoding/video-media-encoding.model';
 import { Video } from '../video/video.model';
@@ -24,7 +24,7 @@ export class VideoMediaMetadata extends BaseModel {
   })
   pixelHeight?: number;
 
-  @IntField({
+  @FloatField({
     nullable: true,
     description: `Video media size in bytes`,
   })

@@ -1,4 +1,4 @@
-import { BaseModel, IntField, Model, ManyToOne, OneToMany, EnumField, StringField } from 'warthog';
+import { BaseModel, FloatField, IntField, Model, ManyToOne, OneToMany, EnumField, StringField } from 'warthog';
 
 import { Column } from 'typeorm';
 import { Field } from 'type-graphql';
@@ -32,8 +32,7 @@ export class DataObject extends BaseModel {
   })
   typeId!: number;
 
-  @IntField({
-    dataType: 'bigint',
+  @FloatField({
     description: `Content size in bytes`,
   })
   size!: number;
