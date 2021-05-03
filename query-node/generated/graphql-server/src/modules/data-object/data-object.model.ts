@@ -32,6 +32,10 @@ export class DataObject extends BaseModel {
   })
   typeId!: number;
 
+  // Size is meant to be integer, but since `IntField` represents only 4-bytes long number
+  // (sadly, `dataType: bigint` settings only fixes DB, but GraphQL server still uses 4-bytes)
+  // `NumericField` seems to always return string (when using transform directive number<->string)
+  // `FloatField` field fixes this issue.
   @FloatField({
     description: `Content size in bytes`,
   })
