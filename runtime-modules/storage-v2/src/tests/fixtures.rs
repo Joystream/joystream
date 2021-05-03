@@ -9,7 +9,7 @@ use super::mocks::{
 
 use crate::tests::mocks::{DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID};
 use crate::{
-    AcceptPendingDataObjectsParams, DataObjectCreationParameters, RawEvent,
+    AcceptPendingDataObjectsParams, BagId, DataObjectCreationParameters, RawEvent,
     StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
@@ -39,6 +39,7 @@ impl EventFixture {
             u64,
             UploadParameters<Test>,
             AcceptPendingDataObjectsParams<Test>,
+            BagId<Test>,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -55,6 +56,7 @@ impl EventFixture {
             u64,
             UploadParameters<Test>,
             AcceptPendingDataObjectsParams<Test>,
+            BagId<Test>,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);

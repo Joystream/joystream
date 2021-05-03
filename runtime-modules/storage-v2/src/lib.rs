@@ -28,6 +28,7 @@ use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
@@ -507,6 +508,7 @@ decl_event! {
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
         AcceptPendingDataObjectsParams = AcceptPendingDataObjectsParams<T>,
+        BagId = BagId<T>,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -561,6 +563,13 @@ decl_event! {
         /// Params
         /// - new status
         UploadingBlockStatusUpdated(bool),
+
+        /// Emits on moving data objects between bags.
+        /// Params
+        /// - source bag ID
+        /// - destination bag ID
+        /// - data object IDs
+        DataObjectsMoved(BagId, BagId, BTreeSet<DataObjectId>),
     }
 }
 
@@ -617,6 +626,9 @@ decl_error! {
 
         /// Uploading of the new object is blocked.
         UploadingBlocked,
+
+        /// Data object id collection is empty.
+        DataObjectIdCollectionIsEmpty,
     }
 }
 
@@ -669,9 +681,32 @@ decl_module! {
 
             <NextDataObjectId<T>>::put(data.next_data_object_id);
 
-            BagManager::<T>::append_data_objects(&params.bag_id, data.clone());
+            BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
 
             Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
+        }
+
+        /// Move data objects to a new bag.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn move_objects(
+            origin,
+            src_bag_id: BagId<T>,
+            dest_bag_id: BagId<T>,
+            objects: BTreeSet<T::DataObjectId>,
+        ) {
+            ensure_root(origin)?;
+
+            // TODO: what actor validation should we use here?
+
+            Self::validate_data_objects_existence(&src_bag_id, &objects)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
+
+            Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
         }
 
         // ===== Storage Lead actions =====
@@ -1137,6 +1172,23 @@ impl<T: Trait> Module<T> {
     fn save_dynamic_bag(bag_id: &DynamicBagId<T>, bag: DynamicBag<T>) {
         <DynamicBags<T>>::insert(bag_id, bag);
     }
+
+    // Move data objects between bags.
+    fn validate_data_objects_existence(
+        bag_id: &BagId<T>,
+        object_ids: &BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult {
+        ensure!(
+            !object_ids.is_empty(),
+            Error::<T>::DataObjectIdCollectionIsEmpty
+        );
+
+        for object_id in object_ids.iter() {
+            BagManager::<T>::ensure_data_object_existence(bag_id, object_id)?;
+        }
+
+        Ok(())
+    }
 }
 
 // Static and dynamic bags abstraction.
@@ -1166,15 +1218,63 @@ impl<T: Trait> BagManager<T> {
         );
     }
 
-    // Adds data object to bag.
-    fn append_data_objects(bag_id: &BagId<T>, data: DataObjectCandidates<T>) {
+    // Adds several data objects to bag.
+    fn append_data_objects(
+        bag_id: &BagId<T>,
+        data_objects: &BTreeMap<T::DataObjectId, DataObject<BalanceOf<T>>>,
+    ) {
         Self::mutate(
             &bag_id,
             |bag| {
-                bag.objects.append(&mut data.data_objects_map.clone());
+                bag.objects.append(&mut data_objects.clone());
             },
             |bag| {
-                bag.objects.append(&mut data.data_objects_map.clone());
+                bag.objects.append(&mut data_objects.clone());
+            },
+        );
+    }
+
+    // Insert a single data object to bag.
+    fn insert_data_object(
+        bag_id: &BagId<T>,
+        data_object_id: T::DataObjectId,
+        data_object: &DataObject<BalanceOf<T>>,
+    ) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.objects.insert(data_object_id, data_object.clone());
+            },
+            |bag| {
+                bag.objects.insert(data_object_id, data_object.clone());
+            },
+        );
+    }
+    // Move data objects between bags.
+    fn move_data_objects(
+        src_bag_id: &BagId<T>,
+        dest_bag_id: &BagId<T>,
+        object_ids: &BTreeSet<T::DataObjectId>,
+    ) {
+        Self::mutate(
+            &src_bag_id,
+            |bag| {
+                for object_id in object_ids.iter() {
+                    let data_object = bag.objects.remove(object_id);
+
+                    if let Some(data_object) = data_object {
+                        Self::insert_data_object(dest_bag_id, *object_id, &data_object);
+                    }
+                }
+            },
+            |bag| {
+                for object_id in object_ids.iter() {
+                    let data_object = bag.objects.remove(object_id);
+
+                    if let Some(data_object) = data_object {
+                        Self::insert_data_object(dest_bag_id, *object_id, &data_object);
+                    }
+                }
             },
         );
     }
