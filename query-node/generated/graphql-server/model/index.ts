@@ -14,8 +14,6 @@ import { License } from '../src/modules/license/license.model';
 export { License };
 import { Membership } from '../src/modules/membership/membership.model';
 export { Membership };
-import { StorageProvider } from '../src/modules/storage-provider/storage-provider.model';
-export { StorageProvider };
 import { Video } from '../src/modules/video/video.model';
 export { Video };
 import { VideoCategory } from '../src/modules/video-category/video-category.model';
@@ -24,6 +22,8 @@ import { VideoMediaEncoding } from '../src/modules/video-media-encoding/video-me
 export { VideoMediaEncoding };
 import { VideoMediaMetadata } from '../src/modules/video-media-metadata/video-media-metadata.model';
 export { VideoMediaMetadata };
+import { Worker } from '../src/modules/worker/worker.model';
+export { Worker };
 
 import { Network } from '../src/modules/enums/enums';
 export { Network };
@@ -33,8 +33,8 @@ import { AssetAvailability } from '../src/modules/enums/enums';
 export { AssetAvailability };
 import { LiaisonJudgement } from '../src/modules/enums/enums';
 export { LiaisonJudgement };
-import { StorageProviderType } from '../src/modules/enums/enums';
-export { StorageProviderType };
+import { WorkerType } from '../src/modules/enums/enums';
+export { WorkerType };
 
 import { DataObjectOwnerChannel } from '../src/modules/variants/variants.model';
 export { DataObjectOwnerChannel };

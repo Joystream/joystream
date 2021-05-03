@@ -30,7 +30,7 @@ import {
 import { DataObject } from './data-object.model';
 import { DataObjectService } from './data-object.service';
 
-import { StorageProvider } from '../storage-provider/storage-provider.model';
+import { Worker } from '../worker/worker.model';
 import { Channel } from '../channel/channel.model';
 import { Video } from '../video/video.model';
 import { getConnection } from 'typeorm';
@@ -131,8 +131,8 @@ export class DataObjectResolver {
     return result as Promise<DataObjectConnection>;
   }
 
-  @FieldResolver(() => StorageProvider)
-  async liaison(@Root() r: DataObject): Promise<StorageProvider | null> {
+  @FieldResolver(() => Worker)
+  async liaison(@Root() r: DataObject): Promise<Worker | null> {
     const result = await getConnection()
       .getRepository(DataObject)
       .findOne(r.id, { relations: ['liaison'] });

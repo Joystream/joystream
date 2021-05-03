@@ -18,37 +18,37 @@ import { Min } from 'class-validator';
 import { Fields, StandardDeleteResponse, UserId, PageInfo, RawFields } from 'warthog';
 
 import {
-  StorageProviderCreateInput,
-  StorageProviderCreateManyArgs,
-  StorageProviderUpdateArgs,
-  StorageProviderWhereArgs,
-  StorageProviderWhereInput,
-  StorageProviderWhereUniqueInput,
-  StorageProviderOrderByEnum,
+  WorkerCreateInput,
+  WorkerCreateManyArgs,
+  WorkerUpdateArgs,
+  WorkerWhereArgs,
+  WorkerWhereInput,
+  WorkerWhereUniqueInput,
+  WorkerOrderByEnum,
 } from '../../../generated';
 
-import { StorageProvider } from './storage-provider.model';
-import { StorageProviderService } from './storage-provider.service';
+import { Worker } from './worker.model';
+import { WorkerService } from './worker.service';
 
 import { DataObject } from '../data-object/data-object.model';
 import { getConnection } from 'typeorm';
 
 @ObjectType()
-export class StorageProviderEdge {
-  @Field(() => StorageProvider, { nullable: false })
-  node!: StorageProvider;
+export class WorkerEdge {
+  @Field(() => Worker, { nullable: false })
+  node!: Worker;
 
   @Field(() => String, { nullable: false })
   cursor!: string;
 }
 
 @ObjectType()
-export class StorageProviderConnection {
+export class WorkerConnection {
   @Field(() => Int, { nullable: false })
   totalCount!: number;
 
-  @Field(() => [StorageProviderEdge], { nullable: false })
-  edges!: StorageProviderEdge[];
+  @Field(() => [WorkerEdge], { nullable: false })
+  edges!: WorkerEdge[];
 
   @Field(() => PageInfo, { nullable: false })
   pageInfo!: PageInfo;
@@ -72,40 +72,40 @@ export class ConnectionPageInputOptions {
 }
 
 @ArgsType()
-export class StorageProviderConnectionWhereArgs extends ConnectionPageInputOptions {
-  @Field(() => StorageProviderWhereInput, { nullable: true })
-  where?: StorageProviderWhereInput;
+export class WorkerConnectionWhereArgs extends ConnectionPageInputOptions {
+  @Field(() => WorkerWhereInput, { nullable: true })
+  where?: WorkerWhereInput;
 
-  @Field(() => StorageProviderOrderByEnum, { nullable: true })
-  orderBy?: StorageProviderOrderByEnum;
+  @Field(() => WorkerOrderByEnum, { nullable: true })
+  orderBy?: WorkerOrderByEnum;
 }
 
-@Resolver(StorageProvider)
-export class StorageProviderResolver {
-  constructor(@Inject('StorageProviderService') public readonly service: StorageProviderService) {}
+@Resolver(Worker)
+export class WorkerResolver {
+  constructor(@Inject('WorkerService') public readonly service: WorkerService) {}
 
-  @Query(() => [StorageProvider])
-  async storageProviders(
-    @Args() { where, orderBy, limit, offset }: StorageProviderWhereArgs,
+  @Query(() => [Worker])
+  async workers(
+    @Args() { where, orderBy, limit, offset }: WorkerWhereArgs,
     @Fields() fields: string[]
-  ): Promise<StorageProvider[]> {
-    return this.service.find<StorageProviderWhereInput>(where, orderBy, limit, offset, fields);
+  ): Promise<Worker[]> {
+    return this.service.find<WorkerWhereInput>(where, orderBy, limit, offset, fields);
   }
 
-  @Query(() => StorageProvider, { nullable: true })
-  async storageProviderByUniqueInput(
-    @Arg('where') where: StorageProviderWhereUniqueInput,
+  @Query(() => Worker, { nullable: true })
+  async workerByUniqueInput(
+    @Arg('where') where: WorkerWhereUniqueInput,
     @Fields() fields: string[]
-  ): Promise<StorageProvider | null> {
+  ): Promise<Worker | null> {
     const result = await this.service.find(where, undefined, 1, 0, fields);
     return result && result.length >= 1 ? result[0] : null;
   }
 
-  @Query(() => StorageProviderConnection)
-  async storageProvidersConnection(
-    @Args() { where, orderBy, ...pageOptions }: StorageProviderConnectionWhereArgs,
+  @Query(() => WorkerConnection)
+  async workersConnection(
+    @Args() { where, orderBy, ...pageOptions }: WorkerConnectionWhereArgs,
     @Info() info: any
-  ): Promise<StorageProviderConnection> {
+  ): Promise<WorkerConnection> {
     const rawFields = graphqlFields(info, {}, { excludedFields: ['__typename'] });
 
     let result: any = {
@@ -119,20 +119,20 @@ export class StorageProviderResolver {
     // If the related database table does not have any records then an error is thrown to the client
     // by warthog
     try {
-      result = await this.service.findConnection<StorageProviderWhereInput>(where, orderBy, pageOptions, rawFields);
+      result = await this.service.findConnection<WorkerWhereInput>(where, orderBy, pageOptions, rawFields);
     } catch (err) {
       console.log(err);
       // TODO: should continue to return this on `Error: Items is empty` or throw the error
       if (!(err.message as string).includes('Items is empty')) throw err;
     }
 
-    return result as Promise<StorageProviderConnection>;
+    return result as Promise<WorkerConnection>;
   }
 
   @FieldResolver(() => DataObject)
-  async dataObjects(@Root() r: StorageProvider): Promise<DataObject[] | null> {
+  async dataObjects(@Root() r: Worker): Promise<DataObject[] | null> {
     const result = await getConnection()
-      .getRepository(StorageProvider)
+      .getRepository(Worker)
       .findOne(r.id, { relations: ['dataObjects'] });
     if (result && result.dataObjects !== undefined) {
       return result.dataObjects;
