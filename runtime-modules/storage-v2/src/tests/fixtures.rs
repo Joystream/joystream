@@ -7,7 +7,7 @@ use super::mocks::{
     Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
 };
 
-use crate::tests::mocks::DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
+use crate::tests::mocks::{DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID};
 use crate::{
     AcceptPendingDataObjectsParams, DataObjectCreationParameters, RawEvent,
     StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
@@ -403,5 +403,51 @@ impl AcceptPendingDataObjectsFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct CancelStorageBucketInvitationFixture {
+    origin: RawOrigin<u64>,
+    storage_bucket_id: u64,
+}
+
+impl CancelStorageBucketInvitationFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            storage_bucket_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
+        Self {
+            storage_bucket_id,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+
+        let actual_result = Storage::cancel_storage_bucket_operator_invite(
+            self.origin.clone().into(),
+            self.storage_bucket_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+        if actual_result.is_ok() {
+            assert_eq!(
+                new_bucket.operator_status,
+                StorageBucketOperatorStatus::Missing
+            );
+        } else {
+            assert_eq!(old_bucket, new_bucket);
+        }
     }
 }

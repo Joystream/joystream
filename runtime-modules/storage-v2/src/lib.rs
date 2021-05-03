@@ -540,6 +540,11 @@ decl_event! {
         /// - worker ID (storage provider ID)
         /// - pending data objects
         PendingDataObjectsAccepted(WorkerId, AcceptPendingDataObjectsParams),
+
+        /// Emits on cancelling the storage bucket invitation.
+        /// Params
+        /// - storage bucket ID
+        StorageBucketInvitationCancelled(StorageBucketId),
     }
 }
 
@@ -719,6 +724,28 @@ decl_module! {
             Self::deposit_event(RawEvent::StorageBucketsUpdatedForBags(params));
         }
 
+        /// Cancel pending storage bucket invite. An invitation must be pending.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_storage_bucket_operator_invite(origin, storage_bucket_id: T::StorageBucketId){
+            T::ensure_working_group_leader_origin(origin)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_pending_invitation_status(&bucket)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.operator_status = StorageBucketOperatorStatus::Missing;
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketInvitationCancelled(storage_bucket_id)
+            );
+        }
+
         // ===== Storage Operator actions =====
 
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
@@ -732,7 +759,7 @@ decl_module! {
 
             let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
 
-            Self::ensure_bucket_invitation_status(&bucket, worker_id)?;
+            Self::ensure_bucket_storage_provider_invitation_status(&bucket, worker_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -865,8 +892,9 @@ impl<T: Trait> Module<T> {
         Ok(Self::storage_bucket_by_id(storage_bucket_id))
     }
 
-    // Ensures the correct invitation for the storage bucket and storage provider.
-    fn ensure_bucket_invitation_status(
+    // Ensures the correct invitation for the storage bucket and storage provider. Storage provider
+    // must be invited.
+    fn ensure_bucket_storage_provider_invitation_status(
         bucket: &StorageBucket<WorkerId<T>>,
         worker_id: WorkerId<T>,
     ) -> DispatchResult {
@@ -885,6 +913,21 @@ impl<T: Trait> Module<T> {
 
                 Ok(())
             }
+        }
+    }
+
+    // Ensures the correct invitation for the storage bucket and storage provider. Must be pending.
+    fn ensure_bucket_pending_invitation_status(
+        bucket: &StorageBucket<WorkerId<T>>,
+    ) -> DispatchResult {
+        match bucket.operator_status {
+            StorageBucketOperatorStatus::Missing => {
+                Err(Error::<T>::NoStorageBucketInvitation.into())
+            }
+            StorageBucketOperatorStatus::StorageWorker(_) => {
+                Err(Error::<T>::StorageProviderAlreadySet.into())
+            }
+            StorageBucketOperatorStatus::InvitedStorageWorker(_) => Ok(()),
         }
     }
 
