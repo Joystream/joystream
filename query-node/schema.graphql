@@ -90,7 +90,7 @@ type DataObject @entity {
   size: Int!
 
   "Storage provider id of the liaison"
-  liaisonId: Int # liaison is unset until storage provider accepts or rejects the content
+  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
 
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
@@ -228,7 +228,7 @@ type Channel @entity {
 }
 
 type CuratorGroup @entity {
-  "Runtime entity identifier (EntityId)"
+  "Runtime identifier"
   id: ID!
 
   "Curators belonging to this group"
@@ -241,7 +241,7 @@ type CuratorGroup @entity {
 }
 
 type VideoCategory @entity {
-  "Runtime entity identifier (EntityId)"
+  "Runtime identifier"
   id: ID!
 
   "The name of the category"
@@ -253,7 +253,7 @@ type VideoCategory @entity {
 }
 
 type Video @entity {
-  "Runtime entity identifier (EntityId)"
+  "Runtime identifier"
   id: ID!
 
   "Reference to member's channel"
@@ -334,7 +334,7 @@ type Video @entity {
 }
 
 type VideoMediaMetadata @entity {
-  "Runtime entity identifier (EntityId)"
+  "Unique identifier"
   id: ID!
 
   "Encoding of the video media object"
@@ -366,7 +366,7 @@ type VideoMediaEncoding @entity {
 }
 
 type License @entity {
-  "Runtime entity identifier (EntityId)"
+  "Unique identifier"
   id: ID!
 
   "License code defined by Joystream"
@@ -380,9 +380,33 @@ type License @entity {
 }
 
 type FeaturedVideo @entity {
-  "Runtime entity identifier (EntityId)"
+  "Unique identifier"
   id: ID!
 
   "Reference to a video"
   video: Video!
+}
+
+enum WorkerType {
+  GATEWAY
+  STORAGE
+}
+
+type Worker @entity {
+  "Unique identifier"
+  id: ID!
+
+  "Sign of worker still being active"
+  isActive: Boolean!
+
+  "Runtime identifier"
+  workerId: String!
+
+  "Associated working group"
+  type: WorkerType!
+
+  "Custom metadata set by provider"
+  metadata: String
+
+  dataObjects: [DataObject!]! @derivedFrom(field: "liaison")
 }

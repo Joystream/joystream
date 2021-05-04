@@ -61,9 +61,6 @@ input BaseWhereInput {
   deletedById_eq: String
 }
 
-"""GraphQL representation of BigInt"""
-scalar BigInt
-
 type Channel implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -113,7 +110,7 @@ type Channel implements BaseGraphQLObject {
   language: Language
   languageId: String
   videos: [Video!]!
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type ChannelCategoriesByNameFTSOutput {
@@ -139,7 +136,7 @@ type ChannelCategory implements BaseGraphQLObject {
   """The name of the category"""
   name: String
   channels: [Channel!]!
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type ChannelCategoryConnection {
@@ -150,7 +147,7 @@ type ChannelCategoryConnection {
 
 input ChannelCategoryCreateInput {
   name: String
-  happenedIn: Float!
+  createdInBlock: Float!
 }
 
 type ChannelCategoryEdge {
@@ -167,13 +164,13 @@ enum ChannelCategoryOrderByInput {
   deletedAt_DESC
   name_ASC
   name_DESC
-  happenedIn_ASC
-  happenedIn_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
 }
 
 input ChannelCategoryUpdateInput {
   name: String
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 input ChannelCategoryWhereInput {
@@ -206,12 +203,12 @@ input ChannelCategoryWhereInput {
   name_startsWith: String
   name_endsWith: String
   name_in: [String!]
-  happenedIn_eq: Int
-  happenedIn_gt: Int
-  happenedIn_gte: Int
-  happenedIn_lt: Int
-  happenedIn_lte: Int
-  happenedIn_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
 }
 
 input ChannelCategoryWhereUniqueInput {
@@ -240,7 +237,7 @@ input ChannelCreateInput {
   isPublic: Boolean
   isCensored: Boolean!
   languageId: ID
-  happenedIn: Float!
+  createdInBlock: Float!
 }
 
 type ChannelEdge {
@@ -281,8 +278,8 @@ enum ChannelOrderByInput {
   isCensored_DESC
   languageId_ASC
   languageId_DESC
-  happenedIn_ASC
-  happenedIn_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
 }
 
 input ChannelUpdateInput {
@@ -301,7 +298,7 @@ input ChannelUpdateInput {
   isPublic: Boolean
   isCensored: Boolean
   languageId: ID
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 input ChannelWhereInput {
@@ -364,12 +361,12 @@ input ChannelWhereInput {
   isCensored_in: [Boolean!]
   languageId_eq: ID
   languageId_in: [ID!]
-  happenedIn_eq: Int
-  happenedIn_gt: Int
-  happenedIn_gte: Int
-  happenedIn_lt: Int
-  happenedIn_lte: Int
-  happenedIn_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
 }
 
 input ChannelWhereUniqueInput {
@@ -387,7 +384,7 @@ type CuratorGroup implements BaseGraphQLObject {
   version: Int!
 
   """Curators belonging to this group"""
-  curatorIds: [BigInt!]!
+  curatorIds: [Int!]!
 
   """Is group active or not"""
   isActive: Boolean!
@@ -401,7 +398,7 @@ type CuratorGroupConnection {
 }
 
 input CuratorGroupCreateInput {
-  curatorIds: [BigInt!]!
+  curatorIds: [Int!]!
   isActive: Boolean!
 }
 
@@ -422,7 +419,7 @@ enum CuratorGroupOrderByInput {
 }
 
 input CuratorGroupUpdateInput {
-  curatorIds: [BigInt!]
+  curatorIds: [Int!]
   isActive: Boolean
 }
 
@@ -474,16 +471,15 @@ type DataObject implements BaseGraphQLObject {
   owner: DataObjectOwner!
 
   """Content added at"""
-  addedAt: Int!
+  createdInBlock: Int!
 
   """Content type id"""
   typeId: Int!
 
   """Content size in bytes"""
-  size: BigInt!
-
-  """Storage provider id of the liaison"""
-  liaisonId: BigInt!
+  size: Int!
+  liaison: Worker
+  liaisonId: String
 
   """Storage provider as liaison judgment"""
   liaisonJudgement: LiaisonJudgement!
@@ -507,10 +503,10 @@ type DataObjectConnection {
 
 input DataObjectCreateInput {
   owner: JSONObject!
-  addedAt: Float!
+  createdInBlock: Float!
   typeId: Float!
-  size: BigInt!
-  liaisonId: BigInt!
+  size: Float!
+  liaisonId: ID
   liaisonJudgement: LiaisonJudgement!
   ipfsContentId: String!
   joystreamContentId: String!
@@ -528,8 +524,8 @@ enum DataObjectOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
-  addedAt_ASC
-  addedAt_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
   typeId_ASC
   typeId_DESC
   size_ASC
@@ -548,19 +544,19 @@ union DataObjectOwner = DataObjectOwnerMember | DataObjectOwnerChannel | DataObj
 
 type DataObjectOwnerChannel {
   """Channel identifier"""
-  channel: BigInt!
+  channel: Int!
 
   """Variant needs to have at least one property. This value is not used."""
   dummy: Int
 }
 
 input DataObjectOwnerChannelCreateInput {
-  channel: BigInt!
+  channel: Float!
   dummy: Float
 }
 
 input DataObjectOwnerChannelUpdateInput {
-  channel: BigInt
+  channel: Float
   dummy: Float
 }
 
@@ -589,12 +585,12 @@ input DataObjectOwnerChannelWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  channel_eq: BigInt
-  channel_gt: BigInt
-  channel_gte: BigInt
-  channel_lt: BigInt
-  channel_lte: BigInt
-  channel_in: [BigInt!]
+  channel_eq: Int
+  channel_gt: Int
+  channel_gte: Int
+  channel_lt: Int
+  channel_lte: Int
+  channel_in: [Int!]
   dummy_eq: Int
   dummy_gt: Int
   dummy_gte: Int
@@ -659,15 +655,15 @@ input DataObjectOwnerCouncilWhereUniqueInput {
 
 type DataObjectOwnerDao {
   """DAO identifier"""
-  dao: BigInt!
+  dao: Int!
 }
 
 input DataObjectOwnerDaoCreateInput {
-  dao: BigInt!
+  dao: Float!
 }
 
 input DataObjectOwnerDaoUpdateInput {
-  dao: BigInt
+  dao: Float
 }
 
 input DataObjectOwnerDaoWhereInput {
@@ -695,12 +691,12 @@ input DataObjectOwnerDaoWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  dao_eq: BigInt
-  dao_gt: BigInt
-  dao_gte: BigInt
-  dao_lt: BigInt
-  dao_lte: BigInt
-  dao_in: [BigInt!]
+  dao_eq: Int
+  dao_gt: Int
+  dao_gte: Int
+  dao_lt: Int
+  dao_lte: Int
+  dao_in: [Int!]
 }
 
 input DataObjectOwnerDaoWhereUniqueInput {
@@ -709,19 +705,19 @@ input DataObjectOwnerDaoWhereUniqueInput {
 
 type DataObjectOwnerMember {
   """Member identifier"""
-  member: BigInt!
+  member: Int!
 
   """Variant needs to have at least one property. This value is not used."""
   dummy: Int
 }
 
 input DataObjectOwnerMemberCreateInput {
-  member: BigInt!
+  member: Float!
   dummy: Float
 }
 
 input DataObjectOwnerMemberUpdateInput {
-  member: BigInt
+  member: Float
   dummy: Float
 }
 
@@ -750,12 +746,12 @@ input DataObjectOwnerMemberWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  member_eq: BigInt
-  member_gt: BigInt
-  member_gte: BigInt
-  member_lt: BigInt
-  member_lte: BigInt
-  member_in: [BigInt!]
+  member_eq: Int
+  member_gt: Int
+  member_gte: Int
+  member_lt: Int
+  member_lte: Int
+  member_in: [Int!]
   dummy_eq: Int
   dummy_gt: Int
   dummy_gte: Int
@@ -769,16 +765,16 @@ input DataObjectOwnerMemberWhereUniqueInput {
 }
 
 type DataObjectOwnerWorkingGroup {
-  """Variant needs to have at least one property. This value is not used."""
-  dummy: Int
+  """Working group identifier"""
+  workingGroup: Int!
 }
 
 input DataObjectOwnerWorkingGroupCreateInput {
-  dummy: Float
+  workingGroup: Float!
 }
 
 input DataObjectOwnerWorkingGroupUpdateInput {
-  dummy: Float
+  workingGroup: Float
 }
 
 input DataObjectOwnerWorkingGroupWhereInput {
@@ -806,12 +802,12 @@ input DataObjectOwnerWorkingGroupWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  dummy_eq: Int
-  dummy_gt: Int
-  dummy_gte: Int
-  dummy_lt: Int
-  dummy_lte: Int
-  dummy_in: [Int!]
+  workingGroup_eq: Int
+  workingGroup_gt: Int
+  workingGroup_gte: Int
+  workingGroup_lt: Int
+  workingGroup_lte: Int
+  workingGroup_in: [Int!]
 }
 
 input DataObjectOwnerWorkingGroupWhereUniqueInput {
@@ -820,10 +816,10 @@ input DataObjectOwnerWorkingGroupWhereUniqueInput {
 
 input DataObjectUpdateInput {
   owner: JSONObject
-  addedAt: Float
+  createdInBlock: Float
   typeId: Float
-  size: BigInt
-  liaisonId: BigInt
+  size: Float
+  liaisonId: ID
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
@@ -855,30 +851,26 @@ input DataObjectWhereInput {
   deletedById_eq: ID
   deletedById_in: [ID!]
   owner_json: JSONObject
-  addedAt_eq: Int
-  addedAt_gt: Int
-  addedAt_gte: Int
-  addedAt_lt: Int
-  addedAt_lte: Int
-  addedAt_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
   typeId_eq: Int
   typeId_gt: Int
   typeId_gte: Int
   typeId_lt: Int
   typeId_lte: Int
   typeId_in: [Int!]
-  size_eq: BigInt
-  size_gt: BigInt
-  size_gte: BigInt
-  size_lt: BigInt
-  size_lte: BigInt
-  size_in: [BigInt!]
-  liaisonId_eq: BigInt
-  liaisonId_gt: BigInt
-  liaisonId_gte: BigInt
-  liaisonId_lt: BigInt
-  liaisonId_lte: BigInt
-  liaisonId_in: [BigInt!]
+  size_eq: Int
+  size_gt: Int
+  size_gte: Int
+  size_lt: Int
+  size_lte: Int
+  size_in: [Int!]
+  liaisonId_eq: ID
+  liaisonId_in: [ID!]
   liaisonJudgement_eq: LiaisonJudgement
   liaisonJudgement_in: [LiaisonJudgement!]
   ipfsContentId_eq: String
@@ -999,7 +991,7 @@ type Language implements BaseGraphQLObject {
 
   """Language identifier ISO 639-1"""
   iso: String!
-  happenedIn: Int!
+  createdInBlock: Int!
   channellanguage: [Channel!]
   videolanguage: [Video!]
 }
@@ -1012,7 +1004,7 @@ type LanguageConnection {
 
 input LanguageCreateInput {
   iso: String!
-  happenedIn: Float!
+  createdInBlock: Float!
 }
 
 type LanguageEdge {
@@ -1029,13 +1021,13 @@ enum LanguageOrderByInput {
   deletedAt_DESC
   iso_ASC
   iso_DESC
-  happenedIn_ASC
-  happenedIn_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
 }
 
 input LanguageUpdateInput {
   iso: String
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 input LanguageWhereInput {
@@ -1068,12 +1060,12 @@ input LanguageWhereInput {
   iso_startsWith: String
   iso_endsWith: String
   iso_in: [String!]
-  happenedIn_eq: Int
-  happenedIn_gt: Int
-  happenedIn_gte: Int
-  happenedIn_lt: Int
-  happenedIn_lte: Int
-  happenedIn_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
 }
 
 input LanguageWhereUniqueInput {
@@ -1083,7 +1075,6 @@ input LanguageWhereUniqueInput {
 enum LiaisonJudgement {
   PENDING
   ACCEPTED
-  REJECTED
 }
 
 type License implements BaseGraphQLObject {
@@ -1228,16 +1219,13 @@ type Membership implements BaseGraphQLObject {
   rootAccount: String!
 
   """Blocknumber when member was registered"""
-  registeredAtBlock: Int!
-
-  """Timestamp when member was registered"""
-  registeredAtTime: DateTime!
+  createdInBlock: Int!
 
   """How the member was registered"""
   entry: MembershipEntryMethod!
 
   """The type of subscription the member has purchased if any."""
-  subscription: BigInt
+  subscription: Int
   channels: [Channel!]!
 }
 
@@ -1253,10 +1241,9 @@ input MembershipCreateInput {
   about: String
   controllerAccount: String!
   rootAccount: String!
-  registeredAtBlock: Float!
-  registeredAtTime: DateTime!
+  createdInBlock: Float!
   entry: MembershipEntryMethod!
-  subscription: BigInt
+  subscription: Float
 }
 
 type MembershipEdge {
@@ -1287,10 +1274,8 @@ enum MembershipOrderByInput {
   controllerAccount_DESC
   rootAccount_ASC
   rootAccount_DESC
-  registeredAtBlock_ASC
-  registeredAtBlock_DESC
-  registeredAtTime_ASC
-  registeredAtTime_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
   entry_ASC
   entry_DESC
   subscription_ASC
@@ -1303,10 +1288,9 @@ input MembershipUpdateInput {
   about: String
   controllerAccount: String
   rootAccount: String
-  registeredAtBlock: Float
-  registeredAtTime: DateTime
+  createdInBlock: Float
   entry: MembershipEntryMethod
-  subscription: BigInt
+  subscription: Float
 }
 
 input MembershipWhereInput {
@@ -1359,25 +1343,20 @@ input MembershipWhereInput {
   rootAccount_startsWith: String
   rootAccount_endsWith: String
   rootAccount_in: [String!]
-  registeredAtBlock_eq: Int
-  registeredAtBlock_gt: Int
-  registeredAtBlock_gte: Int
-  registeredAtBlock_lt: Int
-  registeredAtBlock_lte: Int
-  registeredAtBlock_in: [Int!]
-  registeredAtTime_eq: DateTime
-  registeredAtTime_lt: DateTime
-  registeredAtTime_lte: DateTime
-  registeredAtTime_gt: DateTime
-  registeredAtTime_gte: DateTime
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
   entry_eq: MembershipEntryMethod
   entry_in: [MembershipEntryMethod!]
-  subscription_eq: BigInt
-  subscription_gt: BigInt
-  subscription_gte: BigInt
-  subscription_lt: BigInt
-  subscription_lte: BigInt
-  subscription_in: [BigInt!]
+  subscription_eq: Int
+  subscription_gt: Int
+  subscription_gte: Int
+  subscription_lt: Int
+  subscription_lte: Int
+  subscription_in: [Int!]
 }
 
 input MembershipWhereUniqueInput {
@@ -1440,6 +1419,9 @@ type Query {
   videos(offset: Int, limit: Int = 50, where: VideoWhereInput, orderBy: VideoOrderByInput): [Video!]!
   videoByUniqueInput(where: VideoWhereUniqueInput!): Video
   videosConnection(first: Int, after: String, last: Int, before: String, where: VideoWhereInput, orderBy: VideoOrderByInput): VideoConnection!
+  workers(offset: Int, limit: Int = 50, where: WorkerWhereInput, orderBy: WorkerOrderByInput): [Worker!]!
+  workerByUniqueInput(where: WorkerWhereUniqueInput!): Worker
+  workersConnection(first: Int, after: String, last: Int, before: String, where: WorkerWhereInput, orderBy: WorkerOrderByInput): WorkerConnection!
 }
 
 type SearchFTSOutput {
@@ -1468,8 +1450,8 @@ type Video implements BaseGraphQLObject {
   deletedAt: DateTime
   deletedById: String
   version: Int!
-  channel: Channel!
-  channelId: String!
+  channel: Channel
+  channelId: String
   category: VideoCategory
   categoryId: String
 
@@ -1520,7 +1502,7 @@ type Video implements BaseGraphQLObject {
   mediaAvailability: AssetAvailability!
   mediaMetadata: VideoMediaMetadata
   mediaMetadataId: String
-  happenedIn: Int!
+  createdInBlock: Int!
 
   """Is video featured or not"""
   isFeatured: Boolean!
@@ -1549,7 +1531,7 @@ type VideoCategory implements BaseGraphQLObject {
   """The name of the category"""
   name: String
   videos: [Video!]!
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type VideoCategoryConnection {
@@ -1560,7 +1542,7 @@ type VideoCategoryConnection {
 
 input VideoCategoryCreateInput {
   name: String
-  happenedIn: Float!
+  createdInBlock: Float!
 }
 
 type VideoCategoryEdge {
@@ -1577,13 +1559,13 @@ enum VideoCategoryOrderByInput {
   deletedAt_DESC
   name_ASC
   name_DESC
-  happenedIn_ASC
-  happenedIn_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
 }
 
 input VideoCategoryUpdateInput {
   name: String
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 input VideoCategoryWhereInput {
@@ -1616,12 +1598,12 @@ input VideoCategoryWhereInput {
   name_startsWith: String
   name_endsWith: String
   name_in: [String!]
-  happenedIn_eq: Int
-  happenedIn_gt: Int
-  happenedIn_gte: Int
-  happenedIn_lt: Int
-  happenedIn_lte: Int
-  happenedIn_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
 }
 
 input VideoCategoryWhereUniqueInput {
@@ -1635,7 +1617,7 @@ type VideoConnection {
 }
 
 input VideoCreateInput {
-  channelId: ID!
+  channelId: ID
   categoryId: ID
   title: String
   description: String
@@ -1654,7 +1636,7 @@ input VideoCreateInput {
   mediaUrls: [String!]!
   mediaAvailability: AssetAvailability!
   mediaMetadataId: ID
-  happenedIn: Float!
+  createdInBlock: Float!
   isFeatured: Boolean!
 }
 
@@ -1787,9 +1769,9 @@ type VideoMediaMetadata implements BaseGraphQLObject {
   pixelHeight: Int
 
   """Video media size in bytes"""
-  size: BigInt
+  size: Int
   video: Video
-  happenedIn: Int!
+  createdInBlock: Int!
 }
 
 type VideoMediaMetadataConnection {
@@ -1802,8 +1784,8 @@ input VideoMediaMetadataCreateInput {
   encodingId: ID
   pixelWidth: Float
   pixelHeight: Float
-  size: BigInt
-  happenedIn: Float!
+  size: Float
+  createdInBlock: Float!
 }
 
 type VideoMediaMetadataEdge {
@@ -1826,16 +1808,16 @@ enum VideoMediaMetadataOrderByInput {
   pixelHeight_DESC
   size_ASC
   size_DESC
-  happenedIn_ASC
-  happenedIn_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
 }
 
 input VideoMediaMetadataUpdateInput {
   encodingId: ID
   pixelWidth: Float
   pixelHeight: Float
-  size: BigInt
-  happenedIn: Float
+  size: Float
+  createdInBlock: Float
 }
 
 input VideoMediaMetadataWhereInput {
@@ -1877,18 +1859,18 @@ input VideoMediaMetadataWhereInput {
   pixelHeight_lt: Int
   pixelHeight_lte: Int
   pixelHeight_in: [Int!]
-  size_eq: BigInt
-  size_gt: BigInt
-  size_gte: BigInt
-  size_lt: BigInt
-  size_lte: BigInt
-  size_in: [BigInt!]
-  happenedIn_eq: Int
-  happenedIn_gt: Int
-  happenedIn_gte: Int
-  happenedIn_lt: Int
-  happenedIn_lte: Int
-  happenedIn_in: [Int!]
+  size_eq: Int
+  size_gt: Int
+  size_gte: Int
+  size_lt: Int
+  size_lte: Int
+  size_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
 }
 
 input VideoMediaMetadataWhereUniqueInput {
@@ -1936,8 +1918,8 @@ enum VideoOrderByInput {
   mediaAvailability_DESC
   mediaMetadataId_ASC
   mediaMetadataId_DESC
-  happenedIn_ASC
-  happenedIn_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
   isFeatured_ASC
   isFeatured_DESC
 }
@@ -1962,7 +1944,7 @@ input VideoUpdateInput {
   mediaUrls: [String!]
   mediaAvailability: AssetAvailability
   mediaMetadataId: ID
-  happenedIn: Float
+  createdInBlock: Float
   isFeatured: Boolean
 }
 
@@ -2038,16 +2020,132 @@ input VideoWhereInput {
   mediaAvailability_in: [AssetAvailability!]
   mediaMetadataId_eq: ID
   mediaMetadataId_in: [ID!]
-  happenedIn_eq: Int
-  happenedIn_gt: Int
-  happenedIn_gte: Int
-  happenedIn_lt: Int
-  happenedIn_lte: Int
-  happenedIn_in: [Int!]
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
   isFeatured_eq: Boolean
   isFeatured_in: [Boolean!]
 }
 
 input VideoWhereUniqueInput {
+  id: ID!
+}
+
+type Worker implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Sign of worker still being active"""
+  isActive: Boolean!
+
+  """Runtime identifier"""
+  workerId: String!
+
+  """Associated working group"""
+  type: WorkerType!
+
+  """Custom metadata set by provider"""
+  metadata: String
+  dataObjects: [DataObject!]!
+}
+
+type WorkerConnection {
+  totalCount: Int!
+  edges: [WorkerEdge!]!
+  pageInfo: PageInfo!
+}
+
+input WorkerCreateInput {
+  isActive: Boolean!
+  workerId: String!
+  type: WorkerType!
+  metadata: String
+}
+
+type WorkerEdge {
+  node: Worker!
+  cursor: String!
+}
+
+enum WorkerOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  isActive_ASC
+  isActive_DESC
+  workerId_ASC
+  workerId_DESC
+  type_ASC
+  type_DESC
+  metadata_ASC
+  metadata_DESC
+}
+
+enum WorkerType {
+  GATEWAY
+  STORAGE
+}
+
+input WorkerUpdateInput {
+  isActive: Boolean
+  workerId: String
+  type: WorkerType
+  metadata: String
+}
+
+input WorkerWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  isActive_eq: Boolean
+  isActive_in: [Boolean!]
+  workerId_eq: String
+  workerId_contains: String
+  workerId_startsWith: String
+  workerId_endsWith: String
+  workerId_in: [String!]
+  type_eq: WorkerType
+  type_in: [WorkerType!]
+  metadata_eq: String
+  metadata_contains: String
+  metadata_startsWith: String
+  metadata_endsWith: String
+  metadata_in: [String!]
+}
+
+input WorkerWhereUniqueInput {
   id: ID!
 }
