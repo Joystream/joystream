@@ -38,7 +38,7 @@ export async function storageWorkingGroup_WorkerStorageUpdated(db: DatabaseManag
   const {workerId, bytes: newMetadata} = new StorageWorkingGroup.WorkerStorageUpdatedEvent(event).data
 
   // call generic processing
-  await workingGroup_WorkerStorageUpdated(db, workerId, newMetadata)
+  await workingGroup_WorkerStorageUpdated(db, WorkerType.STORAGE, workerId, newMetadata)
 }
 
 export async function storageWorkingGroup_TerminatedWorker(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -46,7 +46,7 @@ export async function storageWorkingGroup_TerminatedWorker(db: DatabaseManager, 
   const {workerId} = new StorageWorkingGroup.TerminatedWorkerEvent(event).data
 
   // call generic processing
-  await workingGroup_TerminatedWorker(db, workerId)
+  await workingGroup_TerminatedWorker(db, WorkerType.STORAGE, workerId)
 }
 
 export async function storageWorkingGroup_WorkerExited(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -54,7 +54,7 @@ export async function storageWorkingGroup_WorkerExited(db: DatabaseManager, even
   const {workerId} = new StorageWorkingGroup.WorkerExitedEvent(event).data
 
   // call generic processing
-  await workingGroup_WorkerExited(db, workerId)
+  await workingGroup_WorkerExited(db, WorkerType.STORAGE, workerId)
 }
 
 /////////////////// Gateway working group //////////////////////////////////////
@@ -72,7 +72,7 @@ export async function gatewayWorkingGroup_WorkerStorageUpdated(db: DatabaseManag
   const {workerId, bytes: newMetadata} = new GatewayWorkingGroup.WorkerStorageUpdatedEvent(event).data
 
   // call generic processing
-  await workingGroup_WorkerStorageUpdated(db, workerId, newMetadata)
+  await workingGroup_WorkerStorageUpdated(db, WorkerType.GATEWAY, workerId, newMetadata)
 }
 
 export async function gatewayWorkingGroup_TerminatedWorker(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -80,7 +80,7 @@ export async function gatewayWorkingGroup_TerminatedWorker(db: DatabaseManager, 
   const {workerId} = new StorageWorkingGroup.TerminatedWorkerEvent(event).data
 
   // call generic processing
-  await workingGroup_TerminatedWorker(db, workerId)
+  await workingGroup_TerminatedWorker(db, WorkerType.GATEWAY, workerId)
 }
 
 export async function gatewayWorkingGroup_WorkerExited(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -88,7 +88,7 @@ export async function gatewayWorkingGroup_WorkerExited(db: DatabaseManager, even
   const {workerId} = new StorageWorkingGroup.WorkerExitedEvent(event).data
 
   // call generic processing
-  await workingGroup_WorkerExited(db, workerId)
+  await workingGroup_WorkerExited(db, WorkerType.GATEWAY, workerId)
 }
 
 /////////////////// Generic working group processing ///////////////////////////
@@ -112,12 +112,17 @@ export async function workingGroup_OpeningFilled(
   }
 
   // emit log event
-  logger.info("Worker has been created", {ids: workerIds.map(item => item.toString())})
+  logger.info("Worker has been created", {ids: workerIds.map(item => item.toString()), workerType})
 }
 
-export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, workerId: WorkerId, newMetadata: Bytes): Promise<void> {
+export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, workerType: WorkerType, workerId: WorkerId, newMetadata: Bytes): Promise<void> {
   // load worker
-  const worker = await db.get(Worker, { where: { id: workerId.toString() } as FindConditions<Worker> })
+  const worker = await db.get(Worker, {
+    where: {
+      workerId: workerId.toString(),
+      type: workerType,
+    } as FindConditions<Worker>
+  })
 
   // ensure worker exists
   if (!worker) {
@@ -129,30 +134,35 @@ export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, wor
   await db.save<Worker>(worker)
 
   // emit log event
-  logger.info("Storage provider has been updated", {id: workerId})
+  logger.info("Storage provider has been updated", {workerId, workerType})
 }
 
-export async function workingGroup_TerminatedWorker(db: DatabaseManager, workerId: WorkerId): Promise<void> {
+export async function workingGroup_TerminatedWorker(db: DatabaseManager, workerType: WorkerType, workerId: WorkerId): Promise<void> {
   // do removal logic
-  await deactivateWorker(db, workerId)
+  await deactivateWorker(db, workerType, workerId)
 
   // emit log event
-  logger.info("Storage provider has beed removed (worker terminated)", {id: workerId})
+  logger.info("Storage provider has beed removed (worker terminated)", {workerId, workerType})
 }
 
-export async function workingGroup_WorkerExited(db: DatabaseManager, workerId: WorkerId): Promise<void> {
+export async function workingGroup_WorkerExited(db: DatabaseManager, workerType: WorkerType, workerId: WorkerId): Promise<void> {
   // do removal logic
-  await deactivateWorker(db, workerId)
+  await deactivateWorker(db, workerType, workerId)
 
   // emit log event
-  logger.info("Storage provider has beed removed (worker exited)", {id: workerId})
+  logger.info("Storage provider has beed removed (worker exited)", {workerId, workerType})
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
 
-async function deactivateWorker(db: DatabaseManager, workerId: WorkerId) {
+async function deactivateWorker(db: DatabaseManager, workerType: WorkerType, workerId: WorkerId) {
   // load worker
-  const worker = await db.get(Worker, { where: { id: workerId.toString() } as FindConditions<Worker> })
+  const worker = await db.get(Worker, {
+    where: {
+      workerId: workerId.toString(),
+      type: workerType,
+    } as FindConditions<Worker>
+  })
 
   // ensure worker exists
   if (!worker) {
