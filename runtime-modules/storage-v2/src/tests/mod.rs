@@ -7,6 +7,7 @@ use frame_support::dispatch::DispatchError;
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter::FromIterator;
 
 use common::working_group::WorkingGroup;
 
@@ -27,7 +28,7 @@ use fixtures::{
     create_data_object_candidates, create_single_data_object, increase_account_balance,
     run_to_block, AcceptPendingDataObjectsFixture, AcceptStorageBucketInvitationFixture,
     CancelStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
-    InviteStorageBucketOperatorFixture, SetStorageOperatorMetadataFixture,
+    InviteStorageBucketOperatorFixture, MoveDataObjectsFixture, SetStorageOperatorMetadataFixture,
     UpdateStorageBucketForBagsFixture, UpdateUploadingBlockedStatusFixture, UploadFixture,
 };
 
@@ -1097,5 +1098,108 @@ fn update_uploading_blocked_status_non_leader_origin() {
         UpdateUploadingBlockedStatusFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn move_data_objects_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let working_group = WorkingGroup::Storage;
+        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: src_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0u64;
+        let ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        assert!(Storage::council_bag().objects.contains_key(&data_object_id));
+        assert!(!Storage::working_group_bag(working_group)
+            .objects
+            .contains_key(&data_object_id));
+
+        MoveDataObjectsFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_src_bag_id(src_bag_id.clone())
+            .with_dest_bag_id(dest_bag_id.clone())
+            .with_data_object_ids(ids.clone())
+            .call_and_assert(Ok(()));
+
+        assert!(!Storage::council_bag().objects.contains_key(&data_object_id));
+        assert!(Storage::working_group_bag(working_group)
+            .objects
+            .contains_key(&data_object_id));
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectsMoved(
+            src_bag_id,
+            dest_bag_id,
+            ids,
+        ));
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        MoveDataObjectsFixture::default()
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_empty_data_collection() {
+    build_test_externalities().execute_with(|| {
+        let dest_bag_id =
+            BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(WorkingGroup::Storage));
+
+        MoveDataObjectsFixture::default()
+            .with_dest_bag_id(dest_bag_id)
+            .call_and_assert(Err(Error::<Test>::DataObjectIdCollectionIsEmpty.into()));
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_non_existent_data() {
+    build_test_externalities().execute_with(|| {
+        let dest_bag_id =
+            BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(WorkingGroup::Storage));
+
+        let data_object_id = 0u64;
+        let ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        MoveDataObjectsFixture::default()
+            .with_dest_bag_id(dest_bag_id)
+            .with_data_object_ids(ids)
+            .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_same_bag() {
+    build_test_externalities().execute_with(|| {
+        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        MoveDataObjectsFixture::default()
+            .with_src_bag_id(src_bag_id)
+            .with_dest_bag_id(dest_bag_id)
+            .call_and_assert(Err(Error::<Test>::SourceAndDestinationBagsAreEqual.into()));
     });
 }

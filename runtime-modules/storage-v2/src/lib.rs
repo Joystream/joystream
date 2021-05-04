@@ -629,6 +629,9 @@ decl_error! {
 
         /// Data object id collection is empty.
         DataObjectIdCollectionIsEmpty,
+
+        /// Cannot move objects within the same bag.
+        SourceAndDestinationBagsAreEqual,
     }
 }
 
@@ -688,7 +691,7 @@ decl_module! {
 
         /// Move data objects to a new bag.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn move_objects(
+        pub fn move_data_objects(
             origin,
             src_bag_id: BagId<T>,
             dest_bag_id: BagId<T>,
@@ -698,7 +701,7 @@ decl_module! {
 
             // TODO: what actor validation should we use here?
 
-            Self::validate_data_objects_existence(&src_bag_id, &objects)?;
+            Self::validate_data_objects_existence(&src_bag_id, &dest_bag_id, &objects)?;
 
             //
             // == MUTATION SAFE ==
@@ -1175,16 +1178,22 @@ impl<T: Trait> Module<T> {
 
     // Move data objects between bags.
     fn validate_data_objects_existence(
-        bag_id: &BagId<T>,
+        src_bag_id: &BagId<T>,
+        dest_bag_id: &BagId<T>,
         object_ids: &BTreeSet<T::DataObjectId>,
     ) -> DispatchResult {
+        ensure!(
+            *src_bag_id != *dest_bag_id,
+            Error::<T>::SourceAndDestinationBagsAreEqual
+        );
+
         ensure!(
             !object_ids.is_empty(),
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
 
         for object_id in object_ids.iter() {
-            BagManager::<T>::ensure_data_object_existence(bag_id, object_id)?;
+            BagManager::<T>::ensure_data_object_existence(src_bag_id, object_id)?;
         }
 
         Ok(())

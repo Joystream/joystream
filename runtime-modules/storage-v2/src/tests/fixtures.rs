@@ -2,14 +2,15 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
     Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
 };
 
-use crate::tests::mocks::{DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID};
 use crate::{
-    AcceptPendingDataObjectsParams, BagId, DataObjectCreationParameters, RawEvent,
+    AcceptPendingDataObjectsParams, BagId, DataObjectCreationParameters, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
@@ -543,5 +544,56 @@ impl UpdateUploadingBlockedStatusFixture {
         } else {
             assert_eq!(old_status, Storage::uploading_blocked());
         }
+    }
+}
+
+pub struct MoveDataObjectsFixture {
+    origin: RawOrigin<u64>,
+    src_bag_id: BagId<Test>,
+    dest_bag_id: BagId<Test>,
+    data_object_ids: BTreeSet<u64>,
+}
+
+impl MoveDataObjectsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            src_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            dest_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            data_object_ids: BTreeSet::new(),
+        }
+    }
+
+    pub fn with_src_bag_id(self, src_bag_id: BagId<Test>) -> Self {
+        Self { src_bag_id, ..self }
+    }
+
+    pub fn with_dest_bag_id(self, dest_bag_id: BagId<Test>) -> Self {
+        Self {
+            dest_bag_id,
+            ..self
+        }
+    }
+
+    pub fn with_data_object_ids(self, data_object_ids: BTreeSet<u64>) -> Self {
+        Self {
+            data_object_ids,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::move_data_objects(
+            self.origin.clone().into(),
+            self.src_bag_id.clone(),
+            self.dest_bag_id.clone(),
+            self.data_object_ids.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }
