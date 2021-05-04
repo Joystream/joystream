@@ -5,6 +5,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
+// TODO: use blacklist
 // TODO: use StorageBucket.accepting_new_bags
 // TODO: use voucher
 // TODO: update number_of_pending_data_objects or remove it.
@@ -168,6 +169,9 @@ impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccoun
 /// Local module account handler.
 pub type StorageTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
 
+/// IPFS hash type alias.
+pub type ContentId = Vec<u8>;
+
 // Alias for the Substrate balances pallet.
 type Balances<T> = balances::Module<T>;
 
@@ -199,7 +203,7 @@ pub struct DataObject<Balance> {
     pub size: u64,
 
     /// Content identifier presented as IPFS hash.
-    pub ipfs_content_id: Vec<u8>,
+    pub ipfs_content_id: ContentId,
 }
 
 /// Type alias for the StaticBagObject.
@@ -491,6 +495,9 @@ decl_storage! {
         /// Storage operator metadata.
         pub StorageOperatorMetadata get (fn storage_operator_metadata): map hasher(blake2_128_concat)
             WorkerId<T> => Vec<u8>;
+
+        /// Blacklisted data object hashes.
+        pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) ContentId => ();
     }
 }
 
@@ -578,6 +585,12 @@ decl_event! {
         /// - worker ID (storage provider ID)
         /// - new status
         StorageBucketStatusUpdated(StorageBucketId, WorkerId, bool),
+
+        /// Emits on updating the blacklist with data hashes.
+        /// Params
+        /// - hashes to remove from the blacklist
+        /// - hashes to add to the blacklist
+        UpdateBlacklist(BTreeSet<ContentId>, BTreeSet<ContentId>),
     }
 }
 
@@ -754,6 +767,30 @@ decl_module! {
             UploadingBlocked::put(new_status);
 
             Self::deposit_event(RawEvent::UploadingBlockStatusUpdated(new_status));
+        }
+
+        /// Add and remove hashes to the current blacklist.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_blacklist(
+            origin,
+            remove_hashes: BTreeSet<ContentId>,
+            add_hashes: BTreeSet<ContentId>
+        ){
+            T::ensure_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            for cid in remove_hashes.iter() {
+                Blacklist::remove(cid);
+            }
+
+            for cid in add_hashes.iter() {
+                Blacklist::insert(cid, ());
+            }
+
+            Self::deposit_event(RawEvent::UpdateBlacklist(remove_hashes, add_hashes));
         }
 
         /// Create storage bucket.

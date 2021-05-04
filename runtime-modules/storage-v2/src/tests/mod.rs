@@ -4,6 +4,7 @@ mod fixtures;
 pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
+use frame_support::StorageMap;
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
@@ -28,7 +29,7 @@ use fixtures::{
     run_to_block, AcceptPendingDataObjectsFixture, AcceptStorageBucketInvitationFixture,
     CancelStorageBucketInvitationFixture, CreateStorageBucketFixture, DeleteDataObjectsFixture,
     EventFixture, InviteStorageBucketOperatorFixture, MoveDataObjectsFixture,
-    SetStorageOperatorMetadataFixture, UpdateStorageBucketForBagsFixture,
+    SetStorageOperatorMetadataFixture, UpdateBlacklistFixture, UpdateStorageBucketForBagsFixture,
     UpdateStorageBucketStatusFixture, UpdateUploadingBlockedStatusFixture, UploadFixture,
 };
 
@@ -1089,7 +1090,7 @@ fn update_uploading_blocked_status_succeeded() {
 }
 
 #[test]
-fn update_uploading_blocked_status_non_leader_origin() {
+fn update_uploading_blocked_status_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
         let non_leader_id = 1;
 
@@ -1408,5 +1409,43 @@ fn update_storage_bucket_status_fails_with_invalid_storage_association() {
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(incorrect_storage_provider_id)
             .call_and_assert(Err(Error::<Test>::InvalidStorageProvider.into()));
+    });
+}
+
+#[test]
+fn update_blacklist_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let cid1 = vec![1];
+        let cid2 = vec![2];
+
+        crate::Blacklist::insert(cid1.clone(), ());
+
+        let remove_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(vec![cid2.clone()]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .with_remove_hashes(remove_hashes.clone())
+            .call_and_assert(Ok(()));
+
+        assert!(!crate::Blacklist::contains_key(&cid1));
+        assert!(crate::Blacklist::contains_key(&cid2));
+
+        EventFixture::assert_last_crate_event(RawEvent::UpdateBlacklist(remove_hashes, add_hashes));
+    });
+}
+
+#[test]
+fn update_blacklist_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }

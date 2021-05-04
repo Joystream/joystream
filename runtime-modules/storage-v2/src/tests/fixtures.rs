@@ -10,7 +10,7 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, DataObjectCreationParameters, ObjectsInBagParams, RawEvent, StaticBagId,
+    BagId, ContentId, DataObjectCreationParameters, ObjectsInBagParams, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
@@ -678,5 +678,46 @@ impl UpdateStorageBucketStatusFixture {
 
             assert_eq!(bucket.accepting_new_bags, self.new_status);
         }
+    }
+}
+
+pub struct UpdateBlacklistFixture {
+    origin: RawOrigin<u64>,
+    remove_hashes: BTreeSet<ContentId>,
+    add_hashes: BTreeSet<ContentId>,
+}
+
+impl UpdateBlacklistFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            remove_hashes: BTreeSet::new(),
+            add_hashes: BTreeSet::new(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_add_hashes(self, add_hashes: BTreeSet<ContentId>) -> Self {
+        Self { add_hashes, ..self }
+    }
+
+    pub fn with_remove_hashes(self, remove_hashes: BTreeSet<ContentId>) -> Self {
+        Self {
+            remove_hashes,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_blacklist(
+            self.origin.clone().into(),
+            self.remove_hashes.clone(),
+            self.add_hashes.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }
