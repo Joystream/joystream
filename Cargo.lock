@@ -1993,7 +1993,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "3.7.2"
+version = "3.7.3"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "7.16.0"
+version = "7.17.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -3551,7 +3551,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "frame-support",
  "frame-system",
