@@ -34,9 +34,6 @@ export interface Query {
     membersByHandle: <T = Array<MembersByHandleFTSOutput>>(args: { whereMembership?: MembershipWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     search: <T = Array<SearchFTSOutput>>(args: { whereVideo?: VideoWhereInput | null, whereChannel?: ChannelWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoCategoriesByName: <T = Array<VideoCategoriesByNameFTSOutput>>(args: { whereVideoCategory?: VideoCategoryWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    storageProviders: <T = Array<StorageProvider>>(args: { offset?: Int | null, limit?: Int | null, where?: StorageProviderWhereInput | null, orderBy?: StorageProviderOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    storageProviderByUniqueInput: <T = StorageProvider | null>(args: { where: StorageProviderWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
-    storageProvidersConnection: <T = StorageProviderConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: StorageProviderWhereInput | null, orderBy?: StorageProviderOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoCategories: <T = Array<VideoCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoCategoryWhereInput | null, orderBy?: VideoCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoCategoryByUniqueInput: <T = VideoCategory | null>(args: { where: VideoCategoryWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     videoCategoriesConnection: <T = VideoCategoryConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoCategoryWhereInput | null, orderBy?: VideoCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
@@ -48,7 +45,10 @@ export interface Query {
     videoMediaMetadataConnection: <T = VideoMediaMetadataConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoMediaMetadataWhereInput | null, orderBy?: VideoMediaMetadataOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videos: <T = Array<Video>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoByUniqueInput: <T = Video | null>(args: { where: VideoWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
-    videosConnection: <T = VideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> 
+    videosConnection: <T = VideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    workers: <T = Array<Worker>>(args: { offset?: Int | null, limit?: Int | null, where?: WorkerWhereInput | null, orderBy?: WorkerOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    workerByUniqueInput: <T = Worker | null>(args: { where: WorkerWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
+    workersConnection: <T = WorkerConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: WorkerWhereInput | null, orderBy?: WorkerOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> 
   }
 
 export interface Mutation {}
@@ -224,22 +224,6 @@ export type MembershipOrderByInput =   'createdAt_ASC' |
   'subscription_ASC' |
   'subscription_DESC'
 
-export type StorageProviderOrderByInput =   'createdAt_ASC' |
-  'createdAt_DESC' |
-  'updatedAt_ASC' |
-  'updatedAt_DESC' |
-  'deletedAt_ASC' |
-  'deletedAt_DESC' |
-  'isActive_ASC' |
-  'isActive_DESC' |
-  'type_ASC' |
-  'type_DESC' |
-  'metadata_ASC' |
-  'metadata_DESC'
-
-export type StorageProviderType =   'GATEWAY' |
-  'STORAGE'
-
 export type VideoCategoryOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
   'updatedAt_ASC' |
@@ -325,6 +309,24 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'createdInBlock_DESC' |
   'isFeatured_ASC' |
   'isFeatured_DESC'
+
+export type WorkerOrderByInput =   'createdAt_ASC' |
+  'createdAt_DESC' |
+  'updatedAt_ASC' |
+  'updatedAt_DESC' |
+  'deletedAt_ASC' |
+  'deletedAt_DESC' |
+  'isActive_ASC' |
+  'isActive_DESC' |
+  'workerId_ASC' |
+  'workerId_DESC' |
+  'type_ASC' |
+  'type_DESC' |
+  'metadata_ASC' |
+  'metadata_DESC'
+
+export type WorkerType =   'GATEWAY' |
+  'STORAGE'
 
 export interface BaseWhereInput {
   id_eq?: String | null
@@ -1127,58 +1129,6 @@ export interface MembershipWhereUniqueInput {
   handle?: String | null
 }
 
-export interface StorageProviderCreateInput {
-  isActive: Boolean
-  type: StorageProviderType
-  metadata?: String | null
-}
-
-export interface StorageProviderUpdateInput {
-  isActive?: Boolean | null
-  type?: StorageProviderType | null
-  metadata?: String | null
-}
-
-export interface StorageProviderWhereInput {
-  id_eq?: ID_Input | null
-  id_in?: ID_Output[] | ID_Output | null
-  createdAt_eq?: DateTime | null
-  createdAt_lt?: DateTime | null
-  createdAt_lte?: DateTime | null
-  createdAt_gt?: DateTime | null
-  createdAt_gte?: DateTime | null
-  createdById_eq?: ID_Input | null
-  createdById_in?: ID_Output[] | ID_Output | null
-  updatedAt_eq?: DateTime | null
-  updatedAt_lt?: DateTime | null
-  updatedAt_lte?: DateTime | null
-  updatedAt_gt?: DateTime | null
-  updatedAt_gte?: DateTime | null
-  updatedById_eq?: ID_Input | null
-  updatedById_in?: ID_Output[] | ID_Output | null
-  deletedAt_all?: Boolean | null
-  deletedAt_eq?: DateTime | null
-  deletedAt_lt?: DateTime | null
-  deletedAt_lte?: DateTime | null
-  deletedAt_gt?: DateTime | null
-  deletedAt_gte?: DateTime | null
-  deletedById_eq?: ID_Input | null
-  deletedById_in?: ID_Output[] | ID_Output | null
-  isActive_eq?: Boolean | null
-  isActive_in?: Boolean[] | Boolean | null
-  type_eq?: StorageProviderType | null
-  type_in?: StorageProviderType[] | StorageProviderType | null
-  metadata_eq?: String | null
-  metadata_contains?: String | null
-  metadata_startsWith?: String | null
-  metadata_endsWith?: String | null
-  metadata_in?: String[] | String | null
-}
-
-export interface StorageProviderWhereUniqueInput {
-  id: ID_Output
-}
-
 export interface VideoCategoryCreateInput {
   name?: String | null
   createdInBlock: Float
@@ -1496,6 +1446,65 @@ export interface VideoWhereUniqueInput {
   id: ID_Output
 }
 
+export interface WorkerCreateInput {
+  isActive: Boolean
+  workerId: String
+  type: WorkerType
+  metadata?: String | null
+}
+
+export interface WorkerUpdateInput {
+  isActive?: Boolean | null
+  workerId?: String | null
+  type?: WorkerType | null
+  metadata?: String | null
+}
+
+export interface WorkerWhereInput {
+  id_eq?: ID_Input | null
+  id_in?: ID_Output[] | ID_Output | null
+  createdAt_eq?: DateTime | null
+  createdAt_lt?: DateTime | null
+  createdAt_lte?: DateTime | null
+  createdAt_gt?: DateTime | null
+  createdAt_gte?: DateTime | null
+  createdById_eq?: ID_Input | null
+  createdById_in?: ID_Output[] | ID_Output | null
+  updatedAt_eq?: DateTime | null
+  updatedAt_lt?: DateTime | null
+  updatedAt_lte?: DateTime | null
+  updatedAt_gt?: DateTime | null
+  updatedAt_gte?: DateTime | null
+  updatedById_eq?: ID_Input | null
+  updatedById_in?: ID_Output[] | ID_Output | null
+  deletedAt_all?: Boolean | null
+  deletedAt_eq?: DateTime | null
+  deletedAt_lt?: DateTime | null
+  deletedAt_lte?: DateTime | null
+  deletedAt_gt?: DateTime | null
+  deletedAt_gte?: DateTime | null
+  deletedById_eq?: ID_Input | null
+  deletedById_in?: ID_Output[] | ID_Output | null
+  isActive_eq?: Boolean | null
+  isActive_in?: Boolean[] | Boolean | null
+  workerId_eq?: String | null
+  workerId_contains?: String | null
+  workerId_startsWith?: String | null
+  workerId_endsWith?: String | null
+  workerId_in?: String[] | String | null
+  type_eq?: WorkerType | null
+  type_in?: WorkerType[] | WorkerType | null
+  metadata_eq?: String | null
+  metadata_contains?: String | null
+  metadata_startsWith?: String | null
+  metadata_endsWith?: String | null
+  metadata_in?: String[] | String | null
+}
+
+export interface WorkerWhereUniqueInput {
+  id: ID_Output
+}
+
 export interface BaseGraphQLObject {
   id: ID_Output
   createdAt: DateTime
@@ -1656,7 +1665,7 @@ export interface DataObject extends BaseGraphQLObject {
   createdInBlock: Int
   typeId: Int
   size: Float
-  liaison?: StorageProvider | null
+  liaison?: Worker | null
   liaisonId?: String | null
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
@@ -1843,32 +1852,6 @@ export interface StandardDeleteResponse {
   id: ID_Output
 }
 
-export interface StorageProvider extends BaseGraphQLObject {
-  id: ID_Output
-  createdAt: DateTime
-  createdById: String
-  updatedAt?: DateTime | null
-  updatedById?: String | null
-  deletedAt?: DateTime | null
-  deletedById?: String | null
-  version: Int
-  isActive: Boolean
-  type: StorageProviderType
-  metadata?: String | null
-  dataObjects: Array<DataObject>
-}
-
-export interface StorageProviderConnection {
-  totalCount: Int
-  edges: Array<StorageProviderEdge>
-  pageInfo: PageInfo
-}
-
-export interface StorageProviderEdge {
-  node: StorageProvider
-  cursor: String
-}
-
 export interface Video extends BaseGraphQLObject {
   id: ID_Output
   createdAt: DateTime
@@ -2004,6 +1987,33 @@ export interface VideoMediaMetadataConnection {
 
 export interface VideoMediaMetadataEdge {
   node: VideoMediaMetadata
+  cursor: String
+}
+
+export interface Worker extends BaseGraphQLObject {
+  id: ID_Output
+  createdAt: DateTime
+  createdById: String
+  updatedAt?: DateTime | null
+  updatedById?: String | null
+  deletedAt?: DateTime | null
+  deletedById?: String | null
+  version: Int
+  isActive: Boolean
+  workerId: String
+  type: WorkerType
+  metadata?: String | null
+  dataObjects: Array<DataObject>
+}
+
+export interface WorkerConnection {
+  totalCount: Int
+  edges: Array<WorkerEdge>
+  pageInfo: PageInfo
+}
+
+export interface WorkerEdge {
+  node: Worker
   cursor: String
 }
 

@@ -6,7 +6,7 @@ import { WarthogField } from 'warthog';
 
 import { DataObjectOwner } from '../variants/variants.model';
 
-import { StorageProvider } from '../storage-provider/storage-provider.model';
+import { Worker } from '../worker/worker.model';
 import { Channel } from '../channel/channel.model';
 import { Video } from '../video/video.model';
 
@@ -41,11 +41,11 @@ export class DataObject extends BaseModel {
   })
   size!: number;
 
-  @ManyToOne(() => StorageProvider, (param: StorageProvider) => param.dataObjects, {
+  @ManyToOne(() => Worker, (param: Worker) => param.dataObjects, {
     skipGraphQLField: true,
     nullable: true,
   })
-  liaison?: StorageProvider;
+  liaison?: Worker;
 
   @EnumField('LiaisonJudgement', LiaisonJudgement, {
     description: `Storage provider as liaison judgment`,

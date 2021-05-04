@@ -17,7 +17,7 @@ export enum LiaisonJudgement {
   PENDING = 'PENDING',
   ACCEPTED = 'ACCEPTED',
 }
-export enum StorageProviderType {
+export enum WorkerType {
   GATEWAY = 'GATEWAY',
   STORAGE = 'STORAGE',
 }
