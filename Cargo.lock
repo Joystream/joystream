@@ -3356,6 +3356,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-gateway"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-working-group",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic 2.0.0-rc4",
+ "sp-std 2.0.0-rc4",
+]
+
+[[package]]
 name = "pallet-governance"
 version = "3.0.0"
 dependencies = [

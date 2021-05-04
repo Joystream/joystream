@@ -24,6 +24,9 @@ macro_rules! wrap_working_group_call {
             WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
             WorkingGroup::Operations => Call::OperationsWorkingGroup($working_group_instance_call),
             WorkingGroup::Gateway => Call::GatewayWorkingGroup($working_group_instance_call),
+            WorkingGroup::ServiceProvider => {
+                Call::ServiceProviderWorkingGroup($working_group_instance_call)
+            }
         }
     }};
 }

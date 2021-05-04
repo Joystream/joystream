@@ -20,4 +20,6 @@ pub enum WorkingGroup {
     Operations,
     /// Gateway working group: working_group::Instance5.
     Gateway,
+    /// Service provider working group: working_group::Instance6.
+    ServiceProvider,
 }
