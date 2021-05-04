@@ -626,3 +626,57 @@ impl DeleteDataObjectsFixture {
         assert_eq!(actual_result, expected_result);
     }
 }
+
+pub struct UpdateStorageBucketStatusFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    storage_bucket_id: u64,
+    new_status: bool,
+}
+
+impl UpdateStorageBucketStatusFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            worker_id: DEFAULT_WORKER_ID,
+            storage_bucket_id: Default::default(),
+            new_status: false,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
+        Self {
+            storage_bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_new_status(self, new_status: bool) -> Self {
+        Self { new_status, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_storage_bucket_status(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.storage_bucket_id,
+            self.new_status,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+
+            assert_eq!(bucket.accepting_new_bags, self.new_status);
+        }
+    }
+}

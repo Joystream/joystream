@@ -5,8 +5,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
+// TODO: use StorageBucket.accepting_new_bags
 // TODO: use voucher
-// TODO: update number_of_pending_data_objects or remoe it.
+// TODO: update number_of_pending_data_objects or remove it.
 // TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
 // TODO: remove all: #[allow(dead_code)]
@@ -364,7 +365,7 @@ pub struct StorageBucket<WorkerId> {
     pub accepting_new_bags: bool,
 
     /// Number of pending (not accepted) data objects.
-    pub number_of_pending_data_objects: u32,
+    pub number_of_pending_data_objects: u32, // TODO: fill or remove
 
     /// Defines limits for a bucket.
     pub voucher: Voucher,
@@ -570,6 +571,13 @@ decl_event! {
         /// Params
         /// - data objects to delete
         DataObjectsDeleted(ObjectsInBagParams),
+
+        /// Emits on storage bucket status update.
+        /// Params
+        /// - storage bucket ID
+        /// - worker ID (storage provider ID)
+        /// - new status
+        StorageBucketStatusUpdated(StorageBucketId, WorkerId, bool),
     }
 }
 
@@ -913,6 +921,8 @@ decl_module! {
 
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
+            //TODO: Why do we need storage_bucket_id?
+
             //TODO: validate metadata?
 
             //
@@ -951,6 +961,37 @@ decl_module! {
             }
 
             Self::deposit_event(RawEvent::PendingDataObjectsAccepted(worker_id, params));
+        }
+
+        /// Update whether new objects are being accepted for storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_bucket_status(
+            origin,
+            worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId,
+            accepting_new_data_objects: bool
+        ) {
+            T::ensure_worker_origin(origin, worker_id)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.accepting_new_bags = accepting_new_data_objects; //TODO: Correct?
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketStatusUpdated(
+                    storage_bucket_id,
+                    worker_id,
+                    accepting_new_data_objects
+                )
+            );
         }
     }
 }
