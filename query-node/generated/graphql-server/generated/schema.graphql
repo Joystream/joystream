@@ -477,7 +477,7 @@ type DataObject implements BaseGraphQLObject {
   typeId: Int!
 
   """Content size in bytes"""
-  size: Int!
+  size: Float!
   liaison: Worker
   liaisonId: String
 
@@ -863,12 +863,12 @@ input DataObjectWhereInput {
   typeId_lt: Int
   typeId_lte: Int
   typeId_in: [Int!]
-  size_eq: Int
-  size_gt: Int
-  size_gte: Int
-  size_lt: Int
-  size_lte: Int
-  size_in: [Int!]
+  size_eq: Float
+  size_gt: Float
+  size_gte: Float
+  size_lt: Float
+  size_lte: Float
+  size_in: [Float!]
   liaisonId_eq: ID
   liaisonId_in: [ID!]
   liaisonJudgement_eq: LiaisonJudgement
@@ -1769,7 +1769,7 @@ type VideoMediaMetadata implements BaseGraphQLObject {
   pixelHeight: Int
 
   """Video media size in bytes"""
-  size: Int
+  size: Float
   video: Video
   createdInBlock: Int!
 }
@@ -1859,12 +1859,12 @@ input VideoMediaMetadataWhereInput {
   pixelHeight_lt: Int
   pixelHeight_lte: Int
   pixelHeight_in: [Int!]
-  size_eq: Int
-  size_gt: Int
-  size_gte: Int
-  size_lt: Int
-  size_lte: Int
-  size_in: [Int!]
+  size_eq: Float
+  size_gt: Float
+  size_gte: Float
+  size_lt: Float
+  size_lte: Float
+  size_in: [Float!]
   createdInBlock_eq: Int
   createdInBlock_gt: Int
   createdInBlock_gte: Int

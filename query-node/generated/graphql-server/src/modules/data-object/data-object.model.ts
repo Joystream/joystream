@@ -1,4 +1,4 @@
-import { BaseModel, IntField, Model, ManyToOne, OneToMany, EnumField, StringField } from 'warthog';
+import { BaseModel, FloatField, IntField, Model, ManyToOne, OneToMany, EnumField, StringField } from 'warthog';
 
 import { Column } from 'typeorm';
 import { Field } from 'type-graphql';
@@ -32,7 +32,11 @@ export class DataObject extends BaseModel {
   })
   typeId!: number;
 
-  @IntField({
+  // Size is meant to be integer, but since `IntField` represents only 4-bytes long number
+  // (sadly, `dataType: bigint` settings only fixes DB, but GraphQL server still uses 4-bytes)
+  // `NumericField` seems to always return string (when using transform directive number<->string)
+  // `FloatField` field fixes this issue.
+  @FloatField({
     description: `Content size in bytes`,
   })
   size!: number;

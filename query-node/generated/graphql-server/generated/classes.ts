@@ -2269,22 +2269,22 @@ export class VideoMediaMetadataWhereInput {
   @TypeGraphQLField(() => [Int], { nullable: true })
   pixelHeight_in?: number[];
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_eq?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_gt?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_gte?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_lt?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_lte?: number;
 
-  @TypeGraphQLField(() => [Int], { nullable: true })
+  @TypeGraphQLField(() => [Float], { nullable: true })
   size_in?: number[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
@@ -3127,22 +3127,22 @@ export class DataObjectWhereInput {
   @TypeGraphQLField(() => [Int], { nullable: true })
   typeId_in?: number[];
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_eq?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_gt?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_gte?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_lt?: number;
 
-  @TypeGraphQLField(() => Int, { nullable: true })
+  @TypeGraphQLField(() => Float, { nullable: true })
   size_lte?: number;
 
-  @TypeGraphQLField(() => [Int], { nullable: true })
+  @TypeGraphQLField(() => [Float], { nullable: true })
   size_in?: number[];
 
   @TypeGraphQLField(() => ID, { nullable: true })

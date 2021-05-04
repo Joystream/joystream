@@ -16,7 +16,8 @@ import {
 import {
   convertContentActorToDataObjectOwner,
   readProtobuf,
-  readProtobufWithAssets
+  readProtobufWithAssets,
+  RawVideoMetadata,
 } from './utils'
 
 // primary entities
@@ -25,6 +26,8 @@ import {
   Channel,
   Video,
   VideoCategory,
+  VideoMediaEncoding,
+  VideoMediaMetadata,
 } from 'query-node'
 
 // secondary entities
@@ -182,6 +185,9 @@ export async function content_VideoCreated(
     inconsistentState('Trying to add video to non-existing channel', channelId)
   }
 
+  // prepare video media metadata (if any)
+  const fixedProtobuf = integrateVideoMediaMetadata(null, protobufContent, event.blockNumber)
+
   // create new video
   const video = new Video({
     // main data
@@ -203,7 +209,7 @@ export async function content_VideoCreated(
     updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     // integrate metadata
-    ...protobufContent
+    ...fixedProtobuf
   })
 
   // save video
@@ -226,7 +232,7 @@ export async function content_VideoUpdated(
   } = new Content.VideoUpdatedEvent(event).data
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
+  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video>, relations: ['channel', 'license'] })
 
   // ensure video exists
   if (!video) {
@@ -249,11 +255,14 @@ export async function content_VideoUpdated(
       }
     )
 
+    // prepare video media metadata (if any)
+    const fixedProtobuf = integrateVideoMediaMetadata(video, protobufContent, event.blockNumber)
+
     // remember original license
     const originalLicense = video.license
 
     // update all fields read from protobuf
-    for (let [key, value] of Object.entries(protobufContent)) {
+    for (let [key, value] of Object.entries(fixedProtobuf)) {
       video[key] = value
     }
 
@@ -391,4 +400,58 @@ export async function content_FeaturedVideosSet(
 
   // emit log event
   logger.info('New featured videos have been set', {videoIds})
+}
+
+/////////////////// Helpers ////////////////////////////////////////////////////
+
+/*
+  Integrates video metadata-related data into existing data (if any) or creates a new record.
+
+  NOTE: type hack - `RawVideoMetadata` is accepted for `metadata` instead of `Partial<Video>`
+        see `prepareVideoMetadata()` in `utils.ts` for more info
+*/
+function integrateVideoMediaMetadata(
+  existingRecord: Video | null,
+  metadata: Partial<Video>,
+  blockNumber: number,
+): Partial<Video> {
+  if (!metadata.mediaMetadata) {
+    return metadata
+  }
+
+  // fix TS type
+  const rawMediaMetadata = metadata.mediaMetadata as unknown as RawVideoMetadata
+
+  // ensure encoding object
+  const encoding = (existingRecord && existingRecord.mediaMetadata && existingRecord.mediaMetadata.encoding)
+    || new VideoMediaEncoding({
+        createdById: '1',
+        updatedById: '1',
+      })
+
+  // integrate media encoding-related data
+  rawMediaMetadata.encoding.codecName.integrateInto(encoding, 'codecName')
+  rawMediaMetadata.encoding.container.integrateInto(encoding, 'container')
+  rawMediaMetadata.encoding.mimeMediaType.integrateInto(encoding, 'mimeMediaType')
+
+  // ensure media metadata object
+  const mediaMetadata = (existingRecord && existingRecord.mediaMetadata) || new VideoMediaMetadata({
+    createdInBlock: blockNumber,
+
+    createdById: '1',
+    updatedById: '1',
+  })
+
+  // integrate media-related data
+  rawMediaMetadata.pixelWidth.integrateInto(mediaMetadata, 'pixelWidth')
+  rawMediaMetadata.pixelHeight.integrateInto(mediaMetadata, 'pixelHeight')
+  rawMediaMetadata.size.integrateInto(mediaMetadata, 'size')
+
+  // connect encoding to media metadata object
+  mediaMetadata.encoding = encoding
+
+  return {
+    ...metadata,
+    mediaMetadata
+  }
 }
