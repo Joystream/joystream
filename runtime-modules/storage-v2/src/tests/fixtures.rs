@@ -10,7 +10,7 @@ use super::mocks::{
 };
 
 use crate::{
-    AcceptPendingDataObjectsParams, BagId, DataObjectCreationParameters, RawEvent, StaticBagId,
+    BagId, DataObjectCreationParameters, ObjectsInBagParams, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
@@ -39,7 +39,7 @@ impl EventFixture {
             UpdateStorageBucketForBagsParams<Test>,
             u64,
             UploadParameters<Test>,
-            AcceptPendingDataObjectsParams<Test>,
+            ObjectsInBagParams<Test>,
             BagId<Test>,
         >,
     ) {
@@ -56,7 +56,7 @@ impl EventFixture {
             UpdateStorageBucketForBagsParams<Test>,
             u64,
             UploadParameters<Test>,
-            AcceptPendingDataObjectsParams<Test>,
+            ObjectsInBagParams<Test>,
             BagId<Test>,
         >,
     ) {
@@ -374,7 +374,7 @@ impl SetStorageOperatorMetadataFixture {
 pub struct AcceptPendingDataObjectsFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
-    params: AcceptPendingDataObjectsParams<Test>,
+    params: ObjectsInBagParams<Test>,
 }
 
 impl AcceptPendingDataObjectsFixture {
@@ -394,7 +394,7 @@ impl AcceptPendingDataObjectsFixture {
         Self { worker_id, ..self }
     }
 
-    pub fn with_params(self, params: AcceptPendingDataObjectsParams<Test>) -> Self {
+    pub fn with_params(self, params: ObjectsInBagParams<Test>) -> Self {
         Self { params, ..self }
     }
 
@@ -593,6 +593,35 @@ impl MoveDataObjectsFixture {
             self.dest_bag_id.clone(),
             self.data_object_ids.clone(),
         );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct DeleteDataObjectsFixture {
+    origin: RawOrigin<u64>,
+    params: ObjectsInBagParams<Test>,
+}
+
+impl DeleteDataObjectsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            params: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_params(self, params: ObjectsInBagParams<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Storage::delete_data_objects(self.origin.clone().into(), self.params.clone());
 
         assert_eq!(actual_result, expected_result);
     }

@@ -404,8 +404,8 @@ pub struct UpdateStorageBucketForBagsParamsObject<
     pub bags: BTreeMap<BagIdType<MemberId, ChannelId, DaoId>, BTreeSet<StorageBucketId>>,
 }
 
-/// Type alias for the AcceptPendingDataObjectsParamsObject.
-pub type AcceptPendingDataObjectsParams<T> = AcceptPendingDataObjectsParamsObject<
+/// Type alias for the ObjectsInBagParamsObject.
+pub type ObjectsInBagParams<T> = ObjectsInBagParamsObject<
     MemberId<T>,
     <T as Trait>::ChannelId,
     <T as Trait>::DaoId,
@@ -416,12 +416,7 @@ pub type AcceptPendingDataObjectsParams<T> = AcceptPendingDataObjectsParamsObjec
 /// `accept_pending_data_objects` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AcceptPendingDataObjectsParamsObject<
-    MemberId: Ord,
-    ChannelId: Ord,
-    DaoId: Ord,
-    DataObjectId: Ord,
-> {
+pub struct ObjectsInBagParamsObject<MemberId: Ord, ChannelId: Ord, DaoId: Ord, DataObjectId: Ord> {
     /// 'Bag' to 'data object' container.
     pub assigned_data_objects:
         BTreeSet<AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId>>,
@@ -507,7 +502,7 @@ decl_event! {
         UpdateStorageBucketForBagsParams = UpdateStorageBucketForBagsParams<T>,
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
-        AcceptPendingDataObjectsParams = AcceptPendingDataObjectsParams<T>,
+        ObjectsInBagParams = ObjectsInBagParams<T>,
         BagId = BagId<T>,
     {
         /// Emits on creating the storage bucket.
@@ -546,7 +541,7 @@ decl_event! {
         /// Params
         /// - worker ID (storage provider ID)
         /// - pending data objects
-        PendingDataObjectsAccepted(WorkerId, AcceptPendingDataObjectsParams),
+        PendingDataObjectsAccepted(WorkerId, ObjectsInBagParams),
 
         /// Emits on cancelling the storage bucket invitation.
         /// Params
@@ -570,6 +565,11 @@ decl_event! {
         /// - destination bag ID
         /// - data object IDs
         DataObjectsMoved(BagId, BagId, BTreeSet<DataObjectId>),
+
+        /// Emits on data objects deletion from bags.
+        /// Params
+        /// - data objects to delete
+        DataObjectsDeleted(ObjectsInBagParams),
     }
 }
 
@@ -618,8 +618,8 @@ decl_error! {
         /// Insufficient balance for an operation.
         InsufficientBalance,
 
-        /// The `accept_pending_data_objects` extrinsic parameters are empty.
-        AcceptPendingDataObjectsParamsAreEmpty,
+        /// The `objects-in-the-bag` extrinsic parameters are empty.
+        ObjectInBagParamsAreEmpty,
 
         /// Data object doesn't exist.
         DataObjectDoesntExist,
@@ -710,6 +710,26 @@ decl_module! {
             BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
 
             Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
+        }
+
+        /// Delete storage objects.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_data_objects(origin, params: ObjectsInBagParams<T>) {
+            ensure_root(origin)?;
+
+            // TODO: what actor validation should we use here?
+
+            Self::validate_objects_in_bags_params(&params)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            for ids in params.assigned_data_objects.iter() {
+                BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
+            }
+
+            Self::deposit_event(RawEvent::DataObjectsDeleted(params));
         }
 
         // ===== Storage Lead actions =====
@@ -911,7 +931,7 @@ decl_module! {
         pub fn accept_pending_data_objects(
             origin,
             worker_id: WorkerId<T>,
-            params: AcceptPendingDataObjectsParams<T>
+            params: ObjectsInBagParams<T>
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
@@ -1128,19 +1148,26 @@ impl<T: Trait> Module<T> {
 
     // Ensures validity of the `accept_pending_data_objects` extrinsic parameters
     fn validate_accept_pending_data_objects_params(
-        params: &AcceptPendingDataObjectsParams<T>,
+        params: &ObjectsInBagParams<T>,
     ) -> DispatchResult {
+        Self::validate_objects_in_bags_params(params)?;
+
+        // TODO: how do we validate that objects are accepted by correct storage provider - that
+        // was invited to the storage bucket?
+
+        Ok(())
+    }
+
+    // Ensures validity of the `ObjectsInBagParams` extrinsic parameters
+    fn validate_objects_in_bags_params(params: &ObjectsInBagParams<T>) -> DispatchResult {
         ensure!(
             !params.assigned_data_objects.is_empty(),
-            Error::<T>::AcceptPendingDataObjectsParamsAreEmpty
+            Error::<T>::ObjectInBagParamsAreEmpty
         );
 
         for ids in params.assigned_data_objects.iter() {
             BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
         }
-
-        // TODO: how do we validate that objects are accepted by correct storage provider - that
-        // was invited to the storage bucket?
 
         Ok(())
     }
@@ -1223,6 +1250,19 @@ impl<T: Trait> BagManager<T> {
                 if let Some(data_object) = data_object {
                     data_object.accepted = true;
                 }
+            },
+        );
+    }
+
+    // Delete data object for a bag.
+    fn delete_data_object(bag_id: &BagId<T>, data_object_id: &T::DataObjectId) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.objects.remove(data_object_id);
+            },
+            |bag| {
+                bag.objects.remove(data_object_id);
             },
         );
     }

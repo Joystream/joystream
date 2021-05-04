@@ -12,10 +12,9 @@ use sp_std::iter::FromIterator;
 use common::working_group::WorkingGroup;
 
 use crate::{
-    AcceptPendingDataObjectsParams, AssignedDataObject, BagId, DataObject,
-    DataObjectCreationParameters, DynamicBagId, Error, ModuleAccount, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, StorageTreasury, UpdateStorageBucketForBagsParams,
-    UploadParameters, Voucher,
+    AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DynamicBagId, Error,
+    ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    StorageTreasury, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
 use mocks::{
@@ -27,9 +26,10 @@ use mocks::{
 use fixtures::{
     create_data_object_candidates, create_single_data_object, increase_account_balance,
     run_to_block, AcceptPendingDataObjectsFixture, AcceptStorageBucketInvitationFixture,
-    CancelStorageBucketInvitationFixture, CreateStorageBucketFixture, EventFixture,
-    InviteStorageBucketOperatorFixture, MoveDataObjectsFixture, SetStorageOperatorMetadataFixture,
-    UpdateStorageBucketForBagsFixture, UpdateUploadingBlockedStatusFixture, UploadFixture,
+    CancelStorageBucketInvitationFixture, CreateStorageBucketFixture, DeleteDataObjectsFixture,
+    EventFixture, InviteStorageBucketOperatorFixture, MoveDataObjectsFixture,
+    SetStorageOperatorMetadataFixture, UpdateStorageBucketForBagsFixture,
+    UpdateUploadingBlockedStatusFixture, UploadFixture,
 };
 
 #[test]
@@ -790,7 +790,7 @@ fn accept_pending_data_objects_succeeded() {
             data_object_id,
         });
 
-        let accept_params = AcceptPendingDataObjectsParams::<Test> {
+        let accept_params = ObjectsInBagParams::<Test> {
             assigned_data_objects: objects,
         };
 
@@ -857,7 +857,7 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
             data_object_id,
         });
 
-        let accept_params = AcceptPendingDataObjectsParams::<Test> {
+        let accept_params = ObjectsInBagParams::<Test> {
             assigned_data_objects: objects,
         };
 
@@ -885,16 +885,14 @@ fn accept_pending_data_objects_fails_with_invalid_origin() {
 #[test]
 fn accept_pending_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
-        let accept_params = AcceptPendingDataObjectsParams::<Test> {
+        let accept_params = ObjectsInBagParams::<Test> {
             assigned_data_objects: BTreeSet::new(),
         };
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_params(accept_params.clone())
-            .call_and_assert(Err(
-                Error::<Test>::AcceptPendingDataObjectsParamsAreEmpty.into()
-            ));
+            .call_and_assert(Err(Error::<Test>::ObjectInBagParamsAreEmpty.into()));
     });
 }
 
@@ -910,7 +908,7 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
             data_object_id,
         });
 
-        let accept_params = AcceptPendingDataObjectsParams::<Test> {
+        let accept_params = ObjectsInBagParams::<Test> {
             assigned_data_objects: objects,
         };
 
@@ -1201,5 +1199,112 @@ fn move_data_objects_fails_with_same_bag() {
             .with_src_bag_id(src_bag_id)
             .with_dest_bag_id(dest_bag_id)
             .call_and_assert(Err(Error::<Test>::SourceAndDestinationBagsAreEqual.into()));
+    });
+}
+
+#[test]
+fn delete_data_objects_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let storage_provider_id = 10;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let upload_params = UploadParameters::<Test> {
+            bag_id: council_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0; // just uploaded data object
+
+        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
+            bag_id: council_bag_id,
+            data_object_id,
+        }]);
+
+        let params = ObjectsInBagParams::<Test> {
+            assigned_data_objects: objects,
+        };
+
+        let bag = Storage::council_bag();
+        assert!(bag.objects.contains_key(&data_object_id));
+
+        DeleteDataObjectsFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_params(params.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::council_bag();
+        assert!(!bag.objects.contains_key(&data_object_id));
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(params));
+    });
+}
+
+#[test]
+fn delete_data_objects_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        DeleteDataObjectsFixture::default()
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn delete_data_objects_fails_with_empty_params() {
+    build_test_externalities().execute_with(|| {
+        let accept_params = ObjectsInBagParams::<Test> {
+            assigned_data_objects: BTreeSet::new(),
+        };
+
+        DeleteDataObjectsFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_params(accept_params.clone())
+            .call_and_assert(Err(Error::<Test>::ObjectInBagParamsAreEmpty.into()));
+    });
+}
+
+#[test]
+fn delete_data_objects_fails_with_non_existing_data_object() {
+    build_test_externalities().execute_with(|| {
+        let data_object_id = 0;
+        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
+            bag_id: council_bag_id,
+            data_object_id,
+        }]);
+
+        let accept_params = ObjectsInBagParams::<Test> {
+            assigned_data_objects: objects,
+        };
+
+        DeleteDataObjectsFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_params(accept_params.clone())
+            .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
     });
 }
