@@ -1,6 +1,6 @@
 import { Bytes, BTreeMap, BTreeSet, Option } from '@polkadot/types'
 import { Null, u32, u128 } from '@polkadot/types/primitive'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { MemberId, ActorId } from '../members'
 import { RewardRelationshipId } from '../recurring-rewards'

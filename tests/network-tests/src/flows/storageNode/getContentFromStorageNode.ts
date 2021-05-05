@@ -5,10 +5,10 @@ import { registry } from '@joystream/types'
 
 import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 
 export default async function getContentFromStorageNode({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:getContentFromStorageNode')
+  const debug = extendDebug('flow:getContentFromStorageNode')
   debug('Started')
 
   const videoTitle = 'Storage node test'

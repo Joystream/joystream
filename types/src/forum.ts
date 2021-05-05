@@ -1,7 +1,7 @@
 import { bool, u32, u64, Text, Option, Vec as Vector } from '@polkadot/types'
 import { BlockAndTime, ThreadId, PostId, JoyStructCustom, JoyStructDecorated } from './common'
 import { RegistryTypes } from '@polkadot/types/types'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export type ModerationActionType = {
   moderated_at: BlockAndTime
@@ -13,9 +13,8 @@ export class ModerationAction extends JoyStructCustom({
   moderated_at: BlockAndTime,
   moderator_id: AccountId,
   rationale: Text,
-})
-// FIXME: Make it JoyStructDecorated compatible
-{
+}) {
+  // FIXME: Make it JoyStructDecorated compatible
   get moderated_at(): BlockAndTime {
     return this.getField('moderated_at')
   }
@@ -37,9 +36,8 @@ export type PostTextChangeType = {
 export class PostTextChange extends JoyStructCustom({
   expired_at: BlockAndTime,
   text: Text,
-})
-// FIXME: Make it JoyStructDecorated compatible
-{
+}) {
+  // FIXME: Make it JoyStructDecorated compatible
   get expired_at(): BlockAndTime {
     return this.getField('expired_at')
   }
@@ -104,9 +102,8 @@ export class Category extends JoyStructCustom({
   num_direct_moderated_threads: u32,
   position_in_parent_category: OptionChildPositionInParentCategory,
   moderator_id: AccountId,
-})
-// FIXME: Make it JoyStructDecorated compatible
-{
+}) {
+  // FIXME: Make it JoyStructDecorated compatible
   get id(): CategoryId {
     return this.getField('id')
   }
@@ -200,9 +197,8 @@ export class Thread extends JoyStructCustom({
   num_moderated_posts: u32,
   created_at: BlockAndTime,
   author_id: AccountId,
-})
-// FIXME: Make it JoyStructDecorated compatible
-{
+}) {
+  // FIXME: Make it JoyStructDecorated compatible
   get id(): ThreadId {
     return this.getField('id')
   }
@@ -269,9 +265,8 @@ export class Post extends JoyStructCustom({
   text_change_history: VecPostTextChange,
   created_at: BlockAndTime,
   author_id: AccountId,
-})
-// FIXME: Make it JoyStructDecorated compatible
-{
+}) {
+  // FIXME: Make it JoyStructDecorated compatible
   get id(): PostId {
     return this.getField('id')
   }
@@ -322,9 +317,8 @@ export class Reply extends JoyStructCustom({
   thread_id: ThreadId,
   text: Text,
   moderation: OptionModerationAction,
-})
-// FIXME: Make it JoyStructDecorated compatible
-{
+}) {
+  // FIXME: Make it JoyStructDecorated compatible
   get owner(): AccountId {
     return this.getField('owner')
   }

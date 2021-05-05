@@ -13,7 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
@@ -31,7 +31,8 @@ import {
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
 import { ContentId, DataObject } from '@joystream/types/storage'
-import Debugger from 'debug'
+import { extendDebug } from './Debugger'
+import { InvertedPromise } from './InvertedPromise'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -49,16 +50,16 @@ export class ApiFactory {
     treasuryAccountUri: string,
     sudoAccountUri: string
   ): Promise<ApiFactory> {
-    const debug = Debugger('api-factory')
+    const debug = extendDebug('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = await ApiPromise.create({ provider, types })
+        const api = new ApiPromise({ provider, types })
 
         // Wait for api to be connected and ready
-        await api.isReady
+        await api.isReadyOrError
 
         // If a node was just started up it might take a few seconds to start producing blocks
         // Give it a few seconds to be ready.
@@ -85,9 +86,9 @@ export class ApiFactory {
     return new Api(this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  public close(): void {
-    this.api.disconnect()
-  }
+  // public close(): void {
+  //   this.api.disconnect()
+  // }
 }
 
 export class Api {
@@ -314,11 +315,7 @@ export class Api {
   }
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)))
   }
 
   public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
@@ -349,19 +346,11 @@ export class Api {
   }
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
@@ -387,11 +376,7 @@ export class Api {
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
@@ -845,32 +830,36 @@ export class Api {
     }
   }
 
-  // Resolves to true when proposal finalized and executed successfully
-  // Resolved to false when proposal finalized and execution fails
-  public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('Executed')
-          ) {
-            unsubscribe()
-            resolve([true, events])
-          } else if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('ExecutionFailed')
-          ) {
-            unsubscribe()
-            resolve([false, events])
-          }
-        })
+  // Subscribe to system events, resolves to an InvertedPromise or rejects if subscription fails.
+  // The inverted promise wraps a promise which resolves when the Proposal with id specified
+  // is executed.
+  // - On successful execution the wrapped promise resolves to `[true, events]`
+  // - On failed execution the wrapper promise resolves to `[false, events]`
+  public async subscribeToProposalExecutionResult(id: ProposalId): Promise<InvertedPromise<[boolean, EventRecord[]]>> {
+    const invertedPromise = new InvertedPromise<[boolean, EventRecord[]]>()
+    const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
+      events.forEach((record) => {
+        if (
+          record.event.method &&
+          record.event.method.toString() === 'ProposalStatusUpdated' &&
+          record.event.data[0].eq(id) &&
+          record.event.data[1].toString().includes('executed')
+        ) {
+          unsubscribe()
+          invertedPromise.resolve([true, events])
+        } else if (
+          record.event.method &&
+          record.event.method.toString() === 'ProposalStatusUpdated' &&
+          record.event.data[0].eq(id) &&
+          record.event.data[1].toString().includes('executionFailed')
+        ) {
+          unsubscribe()
+          invertedPromise.resolve([false, events])
+        }
       })
     })
+
+    return invertedPromise
   }
 
   public findOpeningFilledEvent(
@@ -881,21 +870,6 @@ export class Api {
     if (record) {
       return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
     }
-  }
-
-  // Looks for the first occurance of an expected event, and resolves.
-  // Use this when the event we are expecting is not particular to a specific extrinsic
-  public waitForSystemEvent(eventName: string): Promise<Event> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === eventName) {
-            unsubscribe()
-            resolve(record.event)
-          }
-        })
-      })
-    })
   }
 
   public findApplicationReviewBeganEvent(
@@ -1631,9 +1605,9 @@ export class Api {
   }
 
   public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
-      Application
-    >()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[
+      module
+    ].applicationById.entries<Application>()
     return applicationsAndIds
       .map((applicationWithId) => {
         const application: Application = applicationWithId[1]

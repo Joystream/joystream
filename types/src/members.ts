@@ -1,6 +1,6 @@
 import { Option, Null, bool, u32, u64, u128, Text } from '@polkadot/types'
 import { BlockNumber, Moment } from '@polkadot/types/interfaces'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyEnum, JoyStructDecorated } from './common'
 

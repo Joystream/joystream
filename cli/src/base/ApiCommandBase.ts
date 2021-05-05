@@ -383,7 +383,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 }
                 reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
               } else if (event.method === 'ExtrinsicSuccess') {
-                resolve()
+                resolve(result)
               }
             })
         } else if (result.isError) {

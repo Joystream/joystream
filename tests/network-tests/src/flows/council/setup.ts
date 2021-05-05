@@ -3,13 +3,13 @@ import { PaidTermId } from '@joystream/types/members'
 import { FlowProps } from '../../Flow'
 import { ElectCouncilFixture } from '../../fixtures/councilElectionModule'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { Resource } from '../../Resources'
 
 export default async function councilSetup({ api, env, lock }: FlowProps): Promise<void> {
   const label = 'councilSetup'
-  const debug = Debugger(`flow:${label}`)
+  const debug = extendDebug(`flow:${label}`)
 
   debug('Started')
 

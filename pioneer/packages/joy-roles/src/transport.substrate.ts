@@ -1,11 +1,11 @@
 import { map, switchMap } from 'rxjs/operators';
 
-import ApiPromise from '@polkadot/api/promise';
+import { ApiPromise } from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces';
 import { Option, Vec } from '@polkadot/types';
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
-import keyringOption from '@polkadot/ui-keyring/options';
+import { keyring } from '@polkadot/ui-keyring';
 
 import { APIQueryCache } from '@polkadot/joy-utils/transport/APIQueryCache';
 import { Subscribable } from '@polkadot/joy-utils/react/helpers';
@@ -351,7 +351,7 @@ export class Transport extends BaseTransport implements ITransport {
   }
 
   accounts (): Subscribable<keyPairDetails[]> {
-    return keyringOption.optionsSubject.pipe(
+    return keyring.keyringOption.optionsSubject.pipe(
       map((accounts) => {
         return accounts.all
           .filter((x) => x.value)

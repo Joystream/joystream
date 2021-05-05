@@ -5,7 +5,7 @@ import { u32, u128 } from '@polkadot/types/primitive'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyStructDecorated } from '../JoyStruct'
 import { JoyEnum } from '../JoyEnum'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { Hash } from '../common'
 
 export type ITransferableStake = {

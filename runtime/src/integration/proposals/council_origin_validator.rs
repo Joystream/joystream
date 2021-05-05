@@ -14,15 +14,18 @@ pub struct CouncilManager<T> {
 }
 
 impl<T: governance::council::Trait + membership::Trait>
-    ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
-    for CouncilManager<T>
+    ActorOriginValidator<
+        <T as frame_system::Trait>::Origin,
+        MemberId<T>,
+        <T as frame_system::Trait>::AccountId,
+    > for CouncilManager<T>
 {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module
     fn ensure_actor_origin(
-        origin: <T as system::Trait>::Origin,
+        origin: <T as frame_system::Trait>::Origin,
         actor_id: MemberId<T>,
-    ) -> Result<<T as system::Trait>::AccountId, &'static str> {
+    ) -> Result<<T as frame_system::Trait>::AccountId, &'static str> {
         let account_id = <MembershipOriginValidator<T>>::ensure_actor_origin(origin, actor_id)?;
 
         if <governance::council::Module<T>>::is_councilor(&account_id) {
@@ -45,14 +48,14 @@ mod tests {
     use super::CouncilManager;
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
+    use frame_system::RawOrigin;
     use proposals_engine::VotersParameters;
     use sp_runtime::AccountId32;
-    use system::RawOrigin;
 
     type Council = governance::council::Module<Runtime>;
 
     fn initial_test_ext() -> sp_io::TestExternalities {
-        let t = system::GenesisConfig::default()
+        let t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
 
@@ -83,7 +86,7 @@ mod tests {
             let councilor3: [u8; 32] = [3; 32];
 
             assert!(Council::set_council(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 vec![councilor1, councilor2.into(), councilor3.into()]
             )
             .is_ok());
@@ -188,7 +191,7 @@ mod tests {
             let councilor3: [u8; 32] = [3; 32];
             let councilor4: [u8; 32] = [4; 32];
             assert!(Council::set_council(
-                system::RawOrigin::Root.into(),
+                frame_system::RawOrigin::Root.into(),
                 vec![
                     councilor1,
                     councilor2.into(),

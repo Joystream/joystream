@@ -1,10 +1,10 @@
 //! # Proposals codex module
 //! Proposals `codex` module for the Joystream platform. Version 2.
-//! Component of the proposals system. It contains preset proposal types.
+//! Component of the proposals frame_system. It contains preset proposal types.
 //!
 //! ## Overview
 //!
-//! The proposals codex module serves as a facade and entry point of the proposals system. It uses
+//! The proposals codex module serves as a facade and entry point of the proposals frame_system. It uses
 //! proposals `engine` module to maintain a lifecycle of the proposal and to execute proposals.
 //! During the proposal creation, `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
@@ -64,11 +64,11 @@ mod tests;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
+use frame_system::ensure_root;
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
-use system::ensure_root;
 
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
@@ -83,25 +83,25 @@ pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 // 'Set working group mint capacity' proposal limit
 const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
 // Max allowed value for 'spending' proposal
-const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
+const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
 // Max validator count for the 'set validator count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 300;
 // council_size min value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 4;
+const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 6;
 // council_size max value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE: u32 = 20;
+const ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE: u32 = 40;
 // candidacy_limit min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MIN_VALUE: u32 = 50;
 // candidacy_limit max value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MAX_VALUE: u32 = 100;
+const ELECTION_PARAMETERS_CANDIDACY_LIMIT_MAX_VALUE: u32 = 200;
 // min_voting_stake min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_MIN_STAKE_MIN_VALUE: u32 = 1;
 // min_voting_stake max value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_MIN_STAKE_MAX_VALUE: u32 = 100_000_u32;
 // new_term_duration min value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_NEW_TERM_DURATION_MIN_VALUE: u32 = 14400;
+const ELECTION_PARAMETERS_NEW_TERM_DURATION_MIN_VALUE: u32 = 1;
 // new_term_duration max value for the 'set election parameters' proposal
-const ELECTION_PARAMETERS_NEW_TERM_DURATION_MAX_VALUE: u32 = 432_000;
+const ELECTION_PARAMETERS_NEW_TERM_DURATION_MAX_VALUE: u32 = 144_000;
 // revealing_period min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_REVEALING_PERIOD_MIN_VALUE: u32 = 14400;
 // revealing_period max value for the 'set election parameters' proposal
@@ -134,7 +134,7 @@ struct CreateProposalParameters<T: Trait> {
 
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
-    system::Trait
+    frame_system::Trait
     + proposals_engine::Trait
     + proposals_discussion::Trait
     + membership::Trait
@@ -161,7 +161,7 @@ pub trait Trait:
 
 /// Balance alias for `stake` module
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Currency alias for `stake` module
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
@@ -169,16 +169,17 @@ pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
     >>::Balance;
 
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
-    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as minting::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Negative imbalance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
@@ -804,7 +805,7 @@ decl_module! {
 
             print("Runtime upgrade proposal execution started.");
 
-            <system::Module<T>>::set_code(cloned_origin2, wasm)?;
+            <frame_system::Module<T>>::set_code(cloned_origin2, wasm)?;
 
             print("Runtime upgrade proposal execution finished.");
         }

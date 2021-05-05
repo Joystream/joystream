@@ -127,7 +127,7 @@ pub struct ActiveStake<StakeId, AccountId> {
     pub source_account_id: AccountId,
 }
 
-/// 'Proposal' contains information necessary for the proposal system functioning.
+/// 'Proposal' contains information necessary for the proposal frame_system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
@@ -310,7 +310,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T: system::Trait> {
+pub trait ProposalCodeDecoder<T: frame_system::Trait> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -320,11 +320,12 @@ pub trait ProposalCodeDecoder<T: system::Trait> {
 
 /// Balance alias
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;

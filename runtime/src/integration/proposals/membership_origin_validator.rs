@@ -3,7 +3,7 @@
 use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
-use system::ensure_signed;
+use frame_system::ensure_signed;
 
 /// Member of the Joystream organization
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
@@ -14,15 +14,18 @@ pub struct MembershipOriginValidator<T> {
 }
 
 impl<T: membership::Trait>
-    ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
-    for MembershipOriginValidator<T>
+    ActorOriginValidator<
+        <T as frame_system::Trait>::Origin,
+        MemberId<T>,
+        <T as frame_system::Trait>::AccountId,
+    > for MembershipOriginValidator<T>
 {
     /// Check for valid combination of origin and actor_id. Actor_id should be valid member_id of
     /// the membership module
     fn ensure_actor_origin(
-        origin: <T as system::Trait>::Origin,
+        origin: <T as frame_system::Trait>::Origin,
         actor_id: MemberId<T>,
-    ) -> Result<<T as system::Trait>::AccountId, &'static str> {
+    ) -> Result<<T as frame_system::Trait>::AccountId, &'static str> {
         // check valid signed account_id
         let account_id = ensure_signed(origin)?;
 
@@ -47,13 +50,13 @@ mod tests {
     use super::MembershipOriginValidator;
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
+    use frame_system::RawOrigin;
     use sp_runtime::AccountId32;
-    use system::RawOrigin;
 
     type Membership = membership::Module<Runtime>;
 
     fn initial_test_ext() -> sp_io::TestExternalities {
-        let t = system::GenesisConfig::default()
+        let t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
 

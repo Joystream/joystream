@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use system::{EventRecord, Phase, RawOrigin};
+use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::*;
 

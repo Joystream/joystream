@@ -1,6 +1,7 @@
 use frame_support::storage::StorageMap;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -8,7 +9,6 @@ use sp_runtime::{
     Perbill,
 };
 use std::marker::PhantomData;
-use system;
 
 use crate::{BalanceOf, Module, NegativeImbalance, Trait};
 use common::constraints::InputValidationLengthConstraint;
@@ -31,7 +31,7 @@ impl_outer_event! {
         balances<T>,
         working_group TestWorkingGroupInstance <T>,
         membership_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -49,7 +49,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -70,10 +70,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = ();
+    type SystemWeightInfo = ();
 }
 
 impl hiring::Trait for Test {
@@ -117,6 +118,7 @@ impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl balances::Trait for Test {
@@ -125,6 +127,8 @@ impl balances::Trait for Test {
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl recurringrewards::Trait for Test {
@@ -134,7 +138,7 @@ impl recurringrewards::Trait for Test {
 }
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
@@ -155,7 +159,7 @@ pub(crate) const WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
 pub(crate) const WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 

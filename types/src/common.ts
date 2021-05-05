@@ -1,12 +1,12 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, Compact, UInt } from '@polkadot/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, UInt } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
-import { u8aConcat, u8aToHex } from '@polkadot/util'
+import { u8aConcat, u8aToHex, compactToU8a } from '@polkadot/util'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
@@ -26,7 +26,7 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
       const encoded = new Array<Uint8Array>()
 
       if (!isBare) {
-        encoded.push(Compact.encodeU8a(this.size))
+        encoded.push(compactToU8a(this.size))
       }
 
       const sorted = Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
@@ -98,7 +98,8 @@ export type InputValidationLengthConstraintType = {
   max_min_diff: u16
 }
 
-export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
+export class InputValidationLengthConstraint
+  extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
   implements InputValidationLengthConstraintType {
   get max(): u16 {
     return this.registry.createType('u16', this.min.add(this.max_min_diff))

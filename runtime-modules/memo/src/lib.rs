@@ -3,14 +3,14 @@
 
 use frame_support::traits::Currency;
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use frame_system::ensure_signed;
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
-use system::ensure_signed;
 
 use common::currency::GovernanceCurrency;
 
-pub trait Trait: system::Trait + GovernanceCurrency {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + GovernanceCurrency {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 pub type MemoText = Vec<u8>;
@@ -23,7 +23,7 @@ decl_storage! {
 }
 
 decl_event! {
-    pub enum Event<T> where <T as system::Trait>::AccountId {
+    pub enum Event<T> where <T as frame_system::Trait>::AccountId {
         MemoUpdated(AccountId),
     }
 }

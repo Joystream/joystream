@@ -30,7 +30,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -51,10 +51,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 parameter_types! {
@@ -67,6 +68,8 @@ impl balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl Trait for Test {
@@ -83,14 +86,14 @@ impl minting::Trait for Test {
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     MockStatusHandler::reset();
 
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
     t.into()
 }
 
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Rewards = Module<Test>;
 pub type Minting = minting::Module<Test>;

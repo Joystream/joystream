@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
+export WASM_BUILD_TOOLCHAIN=nightly-2021-03-24
 
 echo 'running clippy (rust linter)'
 # When custom build.rs triggers wasm-build-runner-impl to build we get error:

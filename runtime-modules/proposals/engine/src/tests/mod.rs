@@ -7,9 +7,9 @@ use codec::Encode;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
+use frame_system::RawOrigin;
+use frame_system::{EventRecord, Phase};
 use sp_std::rc::Rc;
-use system::RawOrigin;
-use system::{EventRecord, Phase};
 
 pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let initial_balance = Balances::total_issuance();
@@ -240,7 +240,7 @@ impl VoteGenerator {
         }
 
         ProposalsEngine::vote(
-            system::RawOrigin::Signed(self.current_account_id).into(),
+            frame_system::RawOrigin::Signed(self.current_account_id).into(),
             self.current_voter_id,
             self.proposal_id,
             vote_kind,
@@ -305,7 +305,12 @@ fn vote_succeeds() {
 fn vote_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         assert_eq!(
-            ProposalsEngine::vote(system::RawOrigin::None.into(), 1, 1, VoteKind::Approve),
+            ProposalsEngine::vote(
+                frame_system::RawOrigin::None.into(),
+                1,
+                1,
+                VoteKind::Approve
+            ),
             Err(DispatchError::Other("Bad origin"))
         );
     });

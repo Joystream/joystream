@@ -1,5 +1,5 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
     create_mint, increase_total_balance_issuance_using_account_id, set_mint_id, setup_members,

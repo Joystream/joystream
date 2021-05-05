@@ -18,6 +18,8 @@
 // Disable it because we use such syntax for a code readability.
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
+// Remove after the Antioch release.
+#![allow(clippy::unnecessary_wraps)]
 
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
@@ -29,13 +31,13 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentConfig,
-    ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
-    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
-    GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, Moment,
-    OperationsWorkingGroupConfig, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
-    WASM_BINARY,
+    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    ContentConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    DataDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ElectionParameters, ForumConfig, GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig,
+    MembersConfig, Moment, OperationsWorkingGroupConfig, ProposalsCodexConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -229,8 +231,8 @@ pub fn testnet_genesis(
         node_runtime::working_group::default_storage_size_constraint();
 
     GenesisConfig {
-        system: Some(SystemConfig {
-            code: WASM_BINARY.to_vec(),
+        frame_system: Some(SystemConfig {
+            code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         }),
         pallet_balances: Some(BalancesConfig {
@@ -247,7 +249,7 @@ pub fn testnet_genesis(
                 .collect(),
         }),
         pallet_staking: Some(StakingConfig {
-            validator_count: 20,
+            validator_count: 100,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
                 .iter()
@@ -286,13 +288,13 @@ pub fn testnet_genesis(
         election: Some(CouncilElectionConfig {
             auto_start: true,
             election_parameters: ElectionParameters {
-                announcing_period: 2 * DAYS,
+                announcing_period: 4 * DAYS,
                 voting_period: 1 * DAYS,
                 revealing_period: 1 * DAYS,
-                council_size: 6,
-                candidacy_limit: 25,
+                council_size: 16,
+                candidacy_limit: 50,
                 min_council_stake: 1_000,
-                new_term_duration: 10 * DAYS,
+                new_term_duration: 1 * DAYS,
                 min_voting_stake: 100,
             },
         }),
@@ -407,7 +409,7 @@ pub fn testnet_genesis(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::service::{new_full, new_light};
+    use crate::service::{new_full_base, new_light_base, NewFullBase};
     use sc_service_test;
 
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
@@ -477,8 +479,30 @@ pub(crate) mod tests {
     fn test_connectivity() {
         sc_service_test::connectivity(
             integration_test_config_with_two_authorities(),
-            |config| new_full(config),
-            |config| new_light(config),
+            |config| {
+                let NewFullBase {
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                    ..
+                } = new_full_base(config, |_, _| ())?;
+                Ok(sc_service_test::TestNetComponents::new(
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                ))
+            },
+            |config| {
+                let (keep_alive, _, client, network, transaction_pool) = new_light_base(config)?;
+                Ok(sc_service_test::TestNetComponents::new(
+                    keep_alive,
+                    client,
+                    network,
+                    transaction_pool,
+                ))
+            },
         );
     }
 }

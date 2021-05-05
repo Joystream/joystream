@@ -47,7 +47,7 @@ impl_outer_event! {
         balances<T>,
         members<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -79,9 +79,7 @@ impl SetLeadFixture {
 }
 
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
-pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
 pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
-pub const TEST_FIRST_METADATA_ID: u64 = 4000;
 
 pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
@@ -131,7 +129,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -152,16 +150,18 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl common::MembershipTypes for Test {
@@ -187,6 +187,8 @@ impl balances::Trait for Test {
     type Event = MetaEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -214,7 +216,7 @@ impl data_directory::Trait for Test {
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = system::ensure_signed(origin)?;
+        let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
     }
@@ -265,15 +267,14 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
+#[allow(dead_code)]
 pub struct ExtBuilder {
     voucher_objects_limit_upper_bound: u64,
     voucher_size_limit_upper_bound: u64,
     global_voucher: Voucher,
     default_voucher: Voucher,
     first_data_object_type_id: u64,
-    first_content_id: u64,
     first_relationship_id: u64,
-    first_metadata_id: u64,
     uploading_blocked: bool,
 }
 
@@ -285,9 +286,7 @@ impl Default for ExtBuilder {
             global_voucher: DEFAULT_GLOBAL_VOUCHER,
             default_voucher: DEFAULT_VOUCHER,
             first_data_object_type_id: 1,
-            first_content_id: 2,
             first_relationship_id: 3,
-            first_metadata_id: 4,
             uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
         }
     }
@@ -299,18 +298,8 @@ impl ExtBuilder {
         self
     }
 
-    pub fn first_content_id(mut self, first_content_id: u64) -> Self {
-        self.first_content_id = first_content_id;
-        self
-    }
-
     pub fn first_relationship_id(mut self, first_relationship_id: u64) -> Self {
         self.first_relationship_id = first_relationship_id;
-        self
-    }
-
-    pub fn first_metadata_id(mut self, first_metadata_id: u64) -> Self {
-        self.first_metadata_id = first_metadata_id;
         self
     }
 
@@ -325,7 +314,7 @@ impl ExtBuilder {
     }
 
     pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 
@@ -375,7 +364,7 @@ impl ExtBuilder {
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
@@ -383,9 +372,7 @@ pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Te
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default()
         .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
-        .first_content_id(TEST_FIRST_CONTENT_ID)
         .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
-        .first_metadata_id(TEST_FIRST_METADATA_ID)
         .build()
         .execute_with(|| f())
 }

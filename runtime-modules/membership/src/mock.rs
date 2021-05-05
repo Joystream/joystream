@@ -4,13 +4,13 @@ pub use crate::{GenesisConfig, Trait, DEFAULT_PAID_TERM_ID};
 
 pub use frame_support::traits::Currency;
 use frame_support::{impl_outer_origin, parameter_types};
+pub use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-pub use system;
 
 pub use common::currency::GovernanceCurrency;
 
@@ -29,7 +29,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -50,16 +50,18 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -72,6 +74,8 @@ impl balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -92,7 +96,7 @@ impl Trait for Test {
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {
-    system_config: Option<system::GenesisConfig>,
+    system_config: Option<frame_system::GenesisConfig>,
     membership_config: Option<GenesisConfig<T>>,
 }
 
@@ -111,10 +115,10 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
         self
     }
     pub fn build(self) -> sp_io::TestExternalities {
-        // Add system
+        // Add frame_system
         let mut t = self
             .system_config
-            .unwrap_or(system::GenesisConfig::default())
+            .unwrap_or(frame_system::GenesisConfig::default())
             .build_storage::<T>()
             .unwrap();
 
@@ -130,4 +134,4 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 
 pub type Balances = balances::Module<Test>;
 pub type Members = crate::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;

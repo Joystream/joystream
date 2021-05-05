@@ -19,6 +19,12 @@ import { useTranslation } from './translate';
 import Password from './Password';
 import { extractExternal } from './util';
 
+// Copyright 2017-2021 @polkadot/react-signer authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import type { AccountId, BalanceOf, ProxyDefinition } from '@polkadot/types/interfaces';
+import type { ITuple } from '@polkadot/types/types';
+
 interface Props {
   className?: string;
   currentItem: QueueTx;
@@ -121,8 +127,10 @@ async function queryForMultisig (api: ApiPromise, requestAddress: string, proxyA
 async function queryForProxy (api: ApiPromise, allAccounts: string[], address: string, tx: SubmittableExtrinsic<'promise'>): Promise<ProxyState | null> {
   if (isFunction(api.query.proxy?.proxies)) {
     const { isProxied } = extractExternal(address);
-    const [_proxies] = await api.query.proxy.proxies(address);
-    const proxies = _proxies.map(([accountId, type]): [string, ProxyType] => [accountId.toString(), type]);
+    const [_proxies] = await api.query.proxy.proxies<ITuple<[Vec<ITuple<[AccountId, ProxyType]> | ProxyDefinition>, BalanceOf]>>(address);
+    const proxies = api.tx.proxy.addProxy.meta.args.length === 3
+      ? (_proxies as ProxyDefinition[]).map(({ delegate, proxyType }): [string, ProxyType] => [delegate.toString(), proxyType])
+      : (_proxies as [AccountId, ProxyType][]).map(([delegate, proxyType]): [string, ProxyType] => [delegate.toString(), proxyType]);
     const proxiesFilter = filterProxies(allAccounts, tx, proxies);
 
     if (proxiesFilter.length) {

@@ -12,9 +12,10 @@
     "format": "prettier ./ --write "
   },
   "dependencies": {
+    "@apollo/client": "^3.2.5",
     "@joystream/types": "link:../../types",
-    "@polkadot/api": "1.26.1",
-    "@polkadot/keyring": "3.0.1",
+    "@polkadot/api": "4.2.1",
+    "@polkadot/keyring": "^6.0.5",
     "@types/async-lock": "^1.1.2",
     "@types/bn.js": "^4.11.5",
     "@types/lowdb": "^1.0.9",
@@ -22,15 +23,14 @@
     "bn.js": "^4.11.8",
     "dotenv": "^8.2.0",
     "fs": "^0.0.1-security",
-    "uuid": "^7.0.3",
-    "@apollo/client": "^3.2.5"
+    "uuid": "^7.0.3"
   },
   "devDependencies": {
-    "@polkadot/ts": "^0.3.14",
+    "@polkadot/ts": "^0.3.62",
     "@types/chai": "^4.2.11",
     "@types/uuid": "^7.0.2",
     "chai": "^4.2.0",
-    "prettier": "2.0.2",
+    "prettier": "^2.2.1",
     "ts-node": "^8.8.1",
     "typescript": "^3.8.3"
   },

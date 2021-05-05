@@ -3,7 +3,7 @@ mod mock;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
@@ -349,7 +349,7 @@ fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
         announcing_period: 14400,
         voting_period: 14400,
         revealing_period: 14400,
-        council_size: 4,
+        council_size: 6,
         candidacy_limit: 50,
         new_term_duration: 14400,
         min_council_stake: 1,
@@ -369,7 +369,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
             Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
         );
 
-        election_parameters.council_size = 21;
+        election_parameters.council_size = 41;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
@@ -383,7 +383,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         );
 
         election_parameters = get_valid_election_parameters();
-        election_parameters.candidacy_limit = 122;
+        election_parameters.candidacy_limit = 222;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
@@ -404,7 +404,7 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         );
 
         election_parameters = get_valid_election_parameters();
-        election_parameters.new_term_duration = 10000;
+        election_parameters.new_term_duration = 0;
         assert_failed_election_parameters_call(
             election_parameters,
             Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
@@ -557,7 +557,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 b"title".to_vec(),
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(1250u32)),
-                5000001,
+                50000001,
                 2,
             ),
             Err(Error::<Test>::InvalidSpendingProposalBalance.into())
@@ -621,6 +621,8 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
 #[test]
 fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
     initial_test_ext().execute_with(|| {
+        staking::MinimumValidatorCount::put(10);
+
         assert_eq!(
             ProposalCodex::create_set_validator_count_proposal(
                 RawOrigin::Signed(1).into(),

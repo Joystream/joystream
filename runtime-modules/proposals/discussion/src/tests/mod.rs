@@ -1,8 +1,8 @@
 mod mock;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use system::RawOrigin;
-use system::{EventRecord, Phase};
+use frame_system::RawOrigin;
+use frame_system::{EventRecord, Phase};
 
 use crate::*;
 use mock::*;

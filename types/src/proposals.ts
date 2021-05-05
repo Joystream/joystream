@@ -1,7 +1,7 @@
 import { Text, u32, Tuple, u8, Vec, Option, Null, Bytes } from '@polkadot/types'
 import { bool, u128 } from '@polkadot/types/primitive'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { ThreadId, WorkingGroup, JoyEnum, JoyStructDecorated } from './common'
 import { MemberId } from './members'
 import { RoleParameters } from './roles'
@@ -82,7 +82,8 @@ export type IActiveStake = {
   stake_id: StakeId
   source_account_id: AccountId
 }
-export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
+export class ActiveStake
+  extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({

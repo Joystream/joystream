@@ -4,7 +4,7 @@ use crate::data_directory::Error;
 use common::storage::StorageObjectOwner;
 use frame_support::assert_ok;
 use frame_support::dispatch::DispatchError;
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use super::mock::*;
 
