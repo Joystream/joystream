@@ -1091,7 +1091,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             .with_account_id(account_id)
             .with_stake(required_stake);
 
-        dummy_proposal.create_proposal_and_assert(Err(DispatchError::Other("InsufficientBalance")));
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     });
 }
 
@@ -1296,6 +1296,8 @@ fn finalize_proposal_using_stake_mocks_succeeds() {
 
             let account_id = 1;
 
+            increase_total_balance_issuance_using_account_id(account_id, 1000000);
+
             let stake_amount = 200;
             let parameters_fixture =
                 ProposalParametersFixture::default().with_required_stake(stake_amount);
@@ -1379,6 +1381,8 @@ fn finalize_proposal_using_stake_mocks_failed() {
             set_stake_handler_impl(mock.clone());
 
             let account_id = 1;
+
+            increase_total_balance_issuance_using_account_id(account_id, 1000000);
 
             let stake_amount = 200;
             let parameters_fixture =
