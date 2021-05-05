@@ -639,6 +639,34 @@ fn upload_failed_with_blocked_uploading() {
 }
 
 #[test]
+fn upload_failed_with_blacklisted_data_object() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let object_creation_list = create_single_data_object();
+        let hash = object_creation_list[0].ipfs_content_id.clone();
+        let add_hashes = BTreeSet::from_iter(vec![hash]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes)
+            .call_and_assert(Ok(()));
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list,
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Err(Error::<Test>::DataObjectBlacklisted.into()));
+    });
+}
+
+#[test]
 fn set_storage_operator_metadata_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;

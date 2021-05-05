@@ -650,6 +650,9 @@ decl_error! {
 
         /// Cannot move objects within the same bag.
         SourceAndDestinationBagsAreEqual,
+
+        /// Data object hash is part of the blacklist.
+        DataObjectBlacklisted,
     }
 }
 
@@ -1066,6 +1069,10 @@ impl<T: Trait> Module<T> {
                 Error::<T>::EmptyContentId
             );
             ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+            ensure!(
+                !Blacklist::contains_key(&object_params.ipfs_content_id),
+                Error::<T>::DataObjectBlacklisted,
+            );
         }
 
         let total_deletion_prize: BalanceOf<T> =
