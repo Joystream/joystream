@@ -15,7 +15,6 @@
 // TODO: add module comment
 // TODO: add benchmarks
 // TODO: add constants:
-// Max size of blacklist.
 // Max number of distribution bucket families
 // Max number of distribution buckets per family.
 // Max number of pending invitations per distribution bucket.
@@ -99,6 +98,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Defines a prize for a data object deletion.
     type DataObjectDeletionPrize: Get<BalanceOf<Self>>; //TODO: adjust value
+
+    /// Defines maximum size of the "hash blacklist" collection.
+    type BlacklistSizeLimit: Get<u64>; //TODO: adjust value
 
     /// The module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
@@ -495,6 +497,9 @@ decl_storage! {
 
         /// Blacklisted data object hashes.
         pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) ContentId => ();
+
+        /// Blacklist collection counter.
+        pub CurrentBlacklistSize get (fn current_blacklist_size): u64;
     }
 }
 
@@ -653,6 +658,9 @@ decl_error! {
 
         /// Data object hash is part of the blacklist.
         DataObjectBlacklisted,
+
+        /// Blacklist size limit exceeded.
+        BlacklistSizeLimitExceeded,
     }
 }
 
@@ -673,6 +681,9 @@ decl_module! {
 
         /// Exports const - a prize for a data object deletion.
         const DataObjectDeletionPrize: BalanceOf<T> = T::DataObjectDeletionPrize::get();
+
+        /// Exports const - maximum size of the "hash blacklist" collection.
+        const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
 
         /// Upload new data objects.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -778,17 +789,34 @@ decl_module! {
         ){
             T::ensure_working_group_leader_origin(origin)?;
 
+            // Get only hashes that exist in the blacklist.
+            let verified_remove_hashes = Self::get_existing_hashes(&remove_hashes);
+
+            // Get only hashes that doesn't exist in the blacklist.
+            let verified_add_hashes = Self::get_nonexisting_hashes(&add_hashes);
+
+            let updated_blacklist_size: u64 = Self::current_blacklist_size()
+                .saturating_add(verified_add_hashes.len().saturated_into::<u64>())
+                .saturating_sub(verified_remove_hashes.len().saturated_into::<u64>());
+
+            ensure!(
+                updated_blacklist_size <= T::BlacklistSizeLimit::get(),
+                Error::<T>::BlacklistSizeLimitExceeded
+            );
+
             //
             // == MUTATION SAFE ==
             //
 
-            for cid in remove_hashes.iter() {
+            for cid in verified_remove_hashes.iter() {
                 Blacklist::remove(cid);
             }
 
-            for cid in add_hashes.iter() {
+            for cid in verified_add_hashes.iter() {
                 Blacklist::insert(cid, ());
             }
+
+            CurrentBlacklistSize::put(updated_blacklist_size);
 
             Self::deposit_event(RawEvent::UpdateBlacklist(remove_hashes, add_hashes));
         }
@@ -1029,6 +1057,197 @@ decl_module! {
                     accepting_new_data_objects
                 )
             );
+        }
+    }
+}
+
+// Static and dynamic bags abstraction.
+struct BagManager<T> {
+    trait_marker: PhantomData<T>,
+}
+
+impl<T: Trait> BagManager<T> {
+    // Accept data objects for a bag.
+    fn accept_data_objects(bag_id: &BagId<T>, data_object_id: &T::DataObjectId) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                let data_object = bag.objects.get_mut(data_object_id);
+
+                if let Some(data_object) = data_object {
+                    data_object.accepted = true;
+                }
+            },
+            |bag| {
+                let data_object = bag.objects.get_mut(data_object_id);
+
+                if let Some(data_object) = data_object {
+                    data_object.accepted = true;
+                }
+            },
+        );
+    }
+
+    // Delete data object for a bag.
+    fn delete_data_object(bag_id: &BagId<T>, data_object_id: &T::DataObjectId) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.objects.remove(data_object_id);
+            },
+            |bag| {
+                bag.objects.remove(data_object_id);
+            },
+        );
+    }
+
+    // Adds several data objects to bag.
+    fn append_data_objects(
+        bag_id: &BagId<T>,
+        data_objects: &BTreeMap<T::DataObjectId, DataObject<BalanceOf<T>>>,
+    ) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.objects.append(&mut data_objects.clone());
+            },
+            |bag| {
+                bag.objects.append(&mut data_objects.clone());
+            },
+        );
+    }
+
+    // Insert a single data object to bag.
+    fn insert_data_object(
+        bag_id: &BagId<T>,
+        data_object_id: T::DataObjectId,
+        data_object: &DataObject<BalanceOf<T>>,
+    ) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.objects.insert(data_object_id, data_object.clone());
+            },
+            |bag| {
+                bag.objects.insert(data_object_id, data_object.clone());
+            },
+        );
+    }
+    // Move data objects between bags.
+    fn move_data_objects(
+        src_bag_id: &BagId<T>,
+        dest_bag_id: &BagId<T>,
+        object_ids: &BTreeSet<T::DataObjectId>,
+    ) {
+        Self::mutate(
+            &src_bag_id,
+            |bag| {
+                for object_id in object_ids.iter() {
+                    let data_object = bag.objects.remove(object_id);
+
+                    if let Some(data_object) = data_object {
+                        Self::insert_data_object(dest_bag_id, *object_id, &data_object);
+                    }
+                }
+            },
+            |bag| {
+                for object_id in object_ids.iter() {
+                    let data_object = bag.objects.remove(object_id);
+
+                    if let Some(data_object) = data_object {
+                        Self::insert_data_object(dest_bag_id, *object_id, &data_object);
+                    }
+                }
+            },
+        );
+    }
+
+    // Sets storage buckets to bag.
+    fn set_storage_buckets(bag_id: &BagId<T>, buckets: BTreeSet<T::StorageBucketId>) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.stored_by = buckets.clone();
+            },
+            |bag| {
+                bag.stored_by = buckets.clone();
+            },
+        );
+    }
+
+    // Check the data object existence inside a bag.
+    fn ensure_data_object_existence(
+        bag_id: &BagId<T>,
+        data_object_id: &T::DataObjectId,
+    ) -> DispatchResult {
+        let object_exists = Self::query(
+            bag_id,
+            |bag| bag.objects.contains_key(data_object_id),
+            |bag| bag.objects.contains_key(data_object_id),
+        );
+
+        ensure!(object_exists, Error::<T>::DataObjectDoesntExist);
+
+        Ok(())
+    }
+
+    // Gets data object number from the bag container.
+    fn get_data_objects_number(bag_id: &BagId<T>) -> u64 {
+        Self::query(
+            bag_id,
+            |bag| bag.objects.len().saturated_into(),
+            |bag| bag.objects.len().saturated_into(),
+        )
+    }
+
+    // Abstract bag query function. Accepts two closures that should have similar result type.
+    fn query<
+        Res,
+        StaticBagQuery: Fn(&StaticBag<T>) -> Res,
+        DynamicBagQuery: Fn(&DynamicBag<T>) -> Res,
+    >(
+        bag_id: &BagId<T>,
+        static_bag_query: StaticBagQuery,
+        dynamic_bag_query: DynamicBagQuery,
+    ) -> Res {
+        match bag_id {
+            BagId::<T>::StaticBag(static_bag_id) => {
+                let bag = Module::<T>::static_bag(&static_bag_id);
+
+                static_bag_query(&bag)
+            }
+            BagId::<T>::DynamicBag(dynamic_bag_id) => {
+                let bag = Module::<T>::dynamic_bag(dynamic_bag_id);
+
+                dynamic_bag_query(&bag)
+            }
+        }
+    }
+
+    // Abstract bag mutation function. Accept a closure for each static and dynamic bag types.
+    fn mutate<
+        StaticBagMutation: Fn(&mut StaticBag<T>),
+        DynamicBagMutation: Fn(&mut DynamicBag<T>),
+    >(
+        bag_id: &BagId<T>,
+        static_bag_mutation: StaticBagMutation,
+        dynamic_bag_mutation: DynamicBagMutation,
+    ) {
+        match bag_id {
+            BagId::<T>::StaticBag(static_bag_id) => {
+                let mut bag = Module::<T>::static_bag(&static_bag_id);
+
+                static_bag_mutation(&mut bag);
+
+                Module::<T>::save_static_bag(&static_bag_id, bag);
+            }
+            BagId::<T>::DynamicBag(dynamic_bag_id) => {
+                let mut bag = Module::<T>::dynamic_bag(dynamic_bag_id);
+
+                dynamic_bag_mutation(&mut bag);
+
+                Module::<T>::save_dynamic_bag(dynamic_bag_id, bag);
+            }
         }
     }
 }
@@ -1306,195 +1525,27 @@ impl<T: Trait> Module<T> {
 
         Ok(())
     }
-}
 
-// Static and dynamic bags abstraction.
-struct BagManager<T> {
-    trait_marker: PhantomData<T>,
-}
-
-impl<T: Trait> BagManager<T> {
-    // Accept data objects for a bag.
-    fn accept_data_objects(bag_id: &BagId<T>, data_object_id: &T::DataObjectId) {
-        Self::mutate(
-            &bag_id,
-            |bag| {
-                let data_object = bag.objects.get_mut(data_object_id);
-
-                if let Some(data_object) = data_object {
-                    data_object.accepted = true;
-                }
-            },
-            |bag| {
-                let data_object = bag.objects.get_mut(data_object_id);
-
-                if let Some(data_object) = data_object {
-                    data_object.accepted = true;
-                }
-            },
-        );
+    // Returns only existing hashes in the blacklist from the original collection.
+    #[allow(clippy::redundant_closure)] // doesn't work with Substrate storage functions.
+    fn get_existing_hashes(hashes: &BTreeSet<ContentId>) -> BTreeSet<ContentId> {
+        Self::get_hashes_by_predicate(hashes, |cid| Blacklist::contains_key(cid))
     }
 
-    // Delete data object for a bag.
-    fn delete_data_object(bag_id: &BagId<T>, data_object_id: &T::DataObjectId) {
-        Self::mutate(
-            &bag_id,
-            |bag| {
-                bag.objects.remove(data_object_id);
-            },
-            |bag| {
-                bag.objects.remove(data_object_id);
-            },
-        );
+    // Returns only nonexisting hashes in the blacklist from the original collection.
+    fn get_nonexisting_hashes(hashes: &BTreeSet<ContentId>) -> BTreeSet<ContentId> {
+        Self::get_hashes_by_predicate(hashes, |cid| !Blacklist::contains_key(cid))
     }
 
-    // Adds several data objects to bag.
-    fn append_data_objects(
-        bag_id: &BagId<T>,
-        data_objects: &BTreeMap<T::DataObjectId, DataObject<BalanceOf<T>>>,
-    ) {
-        Self::mutate(
-            &bag_id,
-            |bag| {
-                bag.objects.append(&mut data_objects.clone());
-            },
-            |bag| {
-                bag.objects.append(&mut data_objects.clone());
-            },
-        );
-    }
-
-    // Insert a single data object to bag.
-    fn insert_data_object(
-        bag_id: &BagId<T>,
-        data_object_id: T::DataObjectId,
-        data_object: &DataObject<BalanceOf<T>>,
-    ) {
-        Self::mutate(
-            &bag_id,
-            |bag| {
-                bag.objects.insert(data_object_id, data_object.clone());
-            },
-            |bag| {
-                bag.objects.insert(data_object_id, data_object.clone());
-            },
-        );
-    }
-    // Move data objects between bags.
-    fn move_data_objects(
-        src_bag_id: &BagId<T>,
-        dest_bag_id: &BagId<T>,
-        object_ids: &BTreeSet<T::DataObjectId>,
-    ) {
-        Self::mutate(
-            &src_bag_id,
-            |bag| {
-                for object_id in object_ids.iter() {
-                    let data_object = bag.objects.remove(object_id);
-
-                    if let Some(data_object) = data_object {
-                        Self::insert_data_object(dest_bag_id, *object_id, &data_object);
-                    }
-                }
-            },
-            |bag| {
-                for object_id in object_ids.iter() {
-                    let data_object = bag.objects.remove(object_id);
-
-                    if let Some(data_object) = data_object {
-                        Self::insert_data_object(dest_bag_id, *object_id, &data_object);
-                    }
-                }
-            },
-        );
-    }
-
-    // Sets storage buckets to bag.
-    fn set_storage_buckets(bag_id: &BagId<T>, buckets: BTreeSet<T::StorageBucketId>) {
-        Self::mutate(
-            &bag_id,
-            |bag| {
-                bag.stored_by = buckets.clone();
-            },
-            |bag| {
-                bag.stored_by = buckets.clone();
-            },
-        );
-    }
-
-    // Check the data object existence inside a bag.
-    fn ensure_data_object_existence(
-        bag_id: &BagId<T>,
-        data_object_id: &T::DataObjectId,
-    ) -> DispatchResult {
-        let object_exists = Self::query(
-            bag_id,
-            |bag| bag.objects.contains_key(data_object_id),
-            |bag| bag.objects.contains_key(data_object_id),
-        );
-
-        ensure!(object_exists, Error::<T>::DataObjectDoesntExist);
-
-        Ok(())
-    }
-
-    // Gets data object number from the bag container.
-    fn get_data_objects_number(bag_id: &BagId<T>) -> u64 {
-        Self::query(
-            bag_id,
-            |bag| bag.objects.len().saturated_into(),
-            |bag| bag.objects.len().saturated_into(),
-        )
-    }
-
-    // Abstract bag query function. Accepts two closures that should have similar result type.
-    fn query<
-        Res,
-        StaticBagQuery: Fn(&StaticBag<T>) -> Res,
-        DynamicBagQuery: Fn(&DynamicBag<T>) -> Res,
-    >(
-        bag_id: &BagId<T>,
-        static_bag_query: StaticBagQuery,
-        dynamic_bag_query: DynamicBagQuery,
-    ) -> Res {
-        match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
-                let bag = Module::<T>::static_bag(&static_bag_id);
-
-                static_bag_query(&bag)
-            }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
-                let bag = Module::<T>::dynamic_bag(dynamic_bag_id);
-
-                dynamic_bag_query(&bag)
-            }
-        }
-    }
-
-    // Abstract bag mutation function. Accept a closure for each static and dynamic bag types.
-    fn mutate<
-        StaticBagMutation: Fn(&mut StaticBag<T>),
-        DynamicBagMutation: Fn(&mut DynamicBag<T>),
-    >(
-        bag_id: &BagId<T>,
-        static_bag_mutation: StaticBagMutation,
-        dynamic_bag_mutation: DynamicBagMutation,
-    ) {
-        match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
-                let mut bag = Module::<T>::static_bag(&static_bag_id);
-
-                static_bag_mutation(&mut bag);
-
-                Module::<T>::save_static_bag(&static_bag_id, bag);
-            }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
-                let mut bag = Module::<T>::dynamic_bag(dynamic_bag_id);
-
-                dynamic_bag_mutation(&mut bag);
-
-                Module::<T>::save_dynamic_bag(dynamic_bag_id, bag);
-            }
-        }
+    // Returns hashes from the original collection selected by predicate.
+    fn get_hashes_by_predicate<P: FnMut(&&ContentId) -> bool>(
+        hashes: &BTreeSet<ContentId>,
+        predicate: P,
+    ) -> BTreeSet<ContentId> {
+        hashes
+            .iter()
+            .filter(predicate)
+            .cloned()
+            .collect::<BTreeSet<_>>()
     }
 }

@@ -1443,7 +1443,14 @@ fn update_blacklist_succeeded() {
         let cid1 = vec![1];
         let cid2 = vec![2];
 
-        crate::Blacklist::insert(cid1.clone(), ());
+        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Ok(()));
+
+        assert!(crate::Blacklist::contains_key(&cid1));
+        assert_eq!(Storage::current_blacklist_size(), 1);
 
         let remove_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
         let add_hashes = BTreeSet::from_iter(vec![cid2.clone()]);
@@ -1456,8 +1463,89 @@ fn update_blacklist_succeeded() {
 
         assert!(!crate::Blacklist::contains_key(&cid1));
         assert!(crate::Blacklist::contains_key(&cid2));
+        assert_eq!(Storage::current_blacklist_size(), 1);
 
         EventFixture::assert_last_crate_event(RawEvent::UpdateBlacklist(remove_hashes, add_hashes));
+    });
+}
+
+#[test]
+fn update_blacklist_failed_with_exceeding_size_limit() {
+    build_test_externalities().execute_with(|| {
+        let cid1 = vec![1];
+        let cid2 = vec![2];
+        let cid3 = vec![3];
+
+        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Ok(()));
+
+        let remove_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(vec![cid2.clone(), cid3.clone()]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .with_remove_hashes(remove_hashes.clone())
+            .call_and_assert(Err(Error::<Test>::BlacklistSizeLimitExceeded.into()));
+
+        assert!(crate::Blacklist::contains_key(&cid1));
+        assert!(!crate::Blacklist::contains_key(&cid2));
+        assert!(!crate::Blacklist::contains_key(&cid3));
+    });
+}
+
+#[test]
+fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_hashes() {
+    build_test_externalities().execute_with(|| {
+        let cid1 = vec![1];
+        let cid2 = vec![2];
+        let cid3 = vec![3];
+
+        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Ok(()));
+
+        let remove_hashes = BTreeSet::from_iter(vec![cid3.clone()]);
+        let add_hashes = BTreeSet::from_iter(vec![cid2.clone()]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .with_remove_hashes(remove_hashes.clone())
+            .call_and_assert(Err(Error::<Test>::BlacklistSizeLimitExceeded.into()));
+
+        assert!(crate::Blacklist::contains_key(&cid1));
+        assert!(!crate::Blacklist::contains_key(&cid2));
+        assert!(!crate::Blacklist::contains_key(&cid3));
+    });
+}
+
+#[test]
+fn update_blacklist_succeeds_with_existent_remove_hashes() {
+    build_test_externalities().execute_with(|| {
+        let cid1 = vec![1];
+
+        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Ok(()));
+
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Ok(()));
+
+        assert!(crate::Blacklist::contains_key(&cid1));
+        assert_eq!(Storage::current_blacklist_size(), 1);
     });
 }
 

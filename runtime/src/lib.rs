@@ -677,6 +677,7 @@ parameter_types! {
     pub const MaxStorageBucketNumber: u64 = 20; //TODO: adjust value
     pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
     pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
+    pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
 }
 
@@ -689,6 +690,7 @@ impl storage_v2::Trait for Runtime {
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
 

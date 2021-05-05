@@ -54,6 +54,7 @@ parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const BlacklistSizeLimit: u64 = 1;
 }
 
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -68,6 +69,7 @@ impl crate::Trait for Test {
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = ();
 
