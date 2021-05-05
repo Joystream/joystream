@@ -315,11 +315,7 @@ export class Api {
   }
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(
-        this.api.createType('OpeningId', 0)
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)))
   }
 
   public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
@@ -350,21 +346,11 @@ export class Api {
   }
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(
-        this.api.createType('WorkerId', 0),
-        0
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(
-        this.api.createType('WorkerId', 0),
-        0
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
@@ -390,12 +376,7 @@ export class Api {
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].slashStake(
-        this.api.createType('WorkerId', 0),
-        0
-      ) as unknown) as SubmittableExtrinsic<'promise'>
-    )
+    return this.estimateTxFee(this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
