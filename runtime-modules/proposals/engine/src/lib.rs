@@ -87,7 +87,8 @@
 //!                 &parameters,
 //!                 &title,
 //!                 &description,
-//!                 None
+//!                 None,
+//!                 &account_id,
 //!             )?;
 //!             <engine::Module<T>>::create_proposal(
 //!                 account_id,
@@ -135,7 +136,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
-use sp_arithmetic::traits::Zero;
+use sp_arithmetic::traits::{SaturatedConversion, Zero};
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
@@ -144,7 +145,7 @@ type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
+    frame_system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait + balances::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -265,6 +266,9 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
+
+        /// Insufficient balance for operation.
+        InsufficientBalance,
     }
 }
 
@@ -434,6 +438,7 @@ impl<T: Trait> Module<T> {
             &title,
             &description,
             stake_balance,
+            &account_id,
         )?;
 
         // checks passed
@@ -492,6 +497,7 @@ impl<T: Trait> Module<T> {
         title: &[u8],
         description: &[u8],
         stake_balance: Option<types::BalanceOf<T>>,
+        stake_account_id: &T::AccountId,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
         ensure!(
@@ -533,6 +539,12 @@ impl<T: Trait> Module<T> {
             } else {
                 return Err(Error::<T>::EmptyStake.into());
             }
+
+            ensure!(
+                types::Balances::<T>::usable_balance(stake_account_id).saturated_into::<u128>()
+                    >= required_stake.saturated_into::<u128>(),
+                Error::<T>::InsufficientBalance
+            );
         }
 
         if stake_balance.is_some() && parameters.required_stake.is_none() {
