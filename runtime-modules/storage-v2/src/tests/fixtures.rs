@@ -92,7 +92,7 @@ const DEFAULT_WORKER_ID: u64 = 1;
 pub struct CreateStorageBucketFixture {
     origin: RawOrigin<u64>,
     invite_worker: Option<u64>,
-    accepting_new_data_objects: bool,
+    accepting_new_bags: bool,
     voucher: Voucher,
 }
 
@@ -101,7 +101,7 @@ impl CreateStorageBucketFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             invite_worker: None,
-            accepting_new_data_objects: false,
+            accepting_new_bags: false,
             voucher: Default::default(),
         }
     }
@@ -117,9 +117,9 @@ impl CreateStorageBucketFixture {
         }
     }
 
-    pub fn with_accepting_new_data_objects(self, accepting_new_data_objects: bool) -> Self {
+    pub fn with_accepting_new_bags(self, accepting_new_bags: bool) -> Self {
         Self {
-            accepting_new_data_objects,
+            accepting_new_bags,
             ..self
         }
     }
@@ -134,7 +134,7 @@ impl CreateStorageBucketFixture {
         let actual_result = Storage::create_storage_bucket(
             self.origin.clone().into(),
             self.invite_worker,
-            self.accepting_new_data_objects,
+            self.accepting_new_bags,
             self.voucher.clone(),
         );
 

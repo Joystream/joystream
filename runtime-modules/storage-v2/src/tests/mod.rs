@@ -39,13 +39,13 @@ fn create_storage_bucket_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let accepting_new_data_objects = true;
+        let accepting_new_bags = true;
         let voucher = Voucher::default();
         let invite_worker = None;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_accepting_new_data_objects(accepting_new_data_objects)
+            .with_accepting_new_bags(accepting_new_bags)
             .with_invite_worker(invite_worker)
             .with_voucher(voucher.clone())
             .call_and_assert(Ok(()))
@@ -61,7 +61,7 @@ fn create_storage_bucket_succeeded() {
         EventFixture::assert_last_crate_event(RawEvent::StorageBucketCreated(
             bucket_id,
             invite_worker,
-            accepting_new_data_objects,
+            accepting_new_bags,
             voucher,
         ));
     });
@@ -71,13 +71,13 @@ fn create_storage_bucket_succeeded() {
 fn create_storage_bucket_succeeded_with_invited_member() {
     build_test_externalities().execute_with(|| {
         let invited_worker_id = 10;
-        let accepting_new_data_objects = true;
+        let accepting_new_bags = true;
         let voucher = Voucher::default();
         let invite_worker = Some(invited_worker_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_accepting_new_data_objects(accepting_new_data_objects)
+            .with_accepting_new_bags(accepting_new_bags)
             .with_invite_worker(invite_worker)
             .with_voucher(voucher.clone())
             .call_and_assert(Ok(()))

@@ -519,7 +519,7 @@ decl_event! {
         /// Params
         /// - storage bucket ID
         /// - invited worker
-        /// - flag "accepting_new_data_objects"
+        /// - flag "accepting_new_bags"
         /// - voucher struct
         StorageBucketCreated(StorageBucketId, Option<WorkerId>, bool, Voucher),
 
@@ -826,7 +826,7 @@ decl_module! {
         pub fn create_storage_bucket(
             origin,
             invite_worker: Option<WorkerId<T>>,
-            accepting_new_data_objects: bool,
+            accepting_new_bags: bool,
             voucher: Voucher
         ) {
             T::ensure_working_group_leader_origin(origin)?;
@@ -845,7 +845,7 @@ decl_module! {
 
             let storage_bucket = StorageBucket {
                  operator_status,
-                 accepting_new_bags: accepting_new_data_objects, //TODO: correct?
+                 accepting_new_bags,
                  number_of_pending_data_objects: 0,
                  voucher: voucher.clone(),
             };
@@ -866,7 +866,7 @@ decl_module! {
                 RawEvent::StorageBucketCreated(
                     storage_bucket_id,
                     invite_worker,
-                    accepting_new_data_objects,
+                    accepting_new_bags,
                     voucher,
                 )
             );
@@ -1028,13 +1028,13 @@ decl_module! {
             Self::deposit_event(RawEvent::PendingDataObjectsAccepted(worker_id, params));
         }
 
-        /// Update whether new objects are being accepted for storage.
+        /// Update whether new bags are being accepted for storage.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_bucket_status(
             origin,
             worker_id: WorkerId<T>,
             storage_bucket_id: T::StorageBucketId,
-            accepting_new_data_objects: bool
+            accepting_new_bags: bool
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
@@ -1047,14 +1047,14 @@ decl_module! {
             //
 
             <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
-                bucket.accepting_new_bags = accepting_new_data_objects; //TODO: Correct?
+                bucket.accepting_new_bags = accepting_new_bags; //TODO: Correct?
             });
 
             Self::deposit_event(
                 RawEvent::StorageBucketStatusUpdated(
                     storage_bucket_id,
                     worker_id,
-                    accepting_new_data_objects
+                    accepting_new_bags
                 )
             );
         }
@@ -1480,6 +1480,9 @@ impl<T: Trait> Module<T> {
             !params.bags.is_empty(),
             Error::<T>::UpdateStorageBucketForBagsParamsIsEmpty
         );
+
+        //TODO: Validate dynamic bag existence
+        //TODO: Validate accepting_new_bags for the storage bucket
 
         for buckets in params.bags.values() {
             for bucket_id in buckets.iter() {
