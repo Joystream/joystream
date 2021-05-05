@@ -337,7 +337,7 @@ decl_storage! {
         pub WorkerExitRationaleText get(fn worker_exit_rationale_text) : InputValidationLengthConstraint;
 
         /// Worker storage size upper bound.
-        pub WorkerStorageSize get(fn worker_storage_size) : u16;
+        pub WorkerStorageSize get(fn worker_storage_size) : u16 = default_storage_size_constraint();
 
         /// Map member id by hiring application id.
         /// Required by StakingEventsHandler callback call to refund the balance on unstaking.
@@ -1563,6 +1563,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             worker_application_human_readable_text_constraint,
         );
         <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
+        <WorkerStorageSize<I>>::put(worker_storage_size_constraint);
+    }
+
+    /// Set storage size constraint
+    pub fn set_worker_storage_size_constraint(worker_storage_size_constraint: u16) {
         <WorkerStorageSize<I>>::put(worker_storage_size_constraint);
     }
 
