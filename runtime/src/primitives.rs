@@ -74,9 +74,6 @@ pub type StorageBucketId = u64;
 /// Represent a media channel.
 pub type ChannelId = u64;
 
-/// Represent a DAO.
-pub type DaoId = u64;
-
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
 /// account.

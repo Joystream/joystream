@@ -65,7 +65,6 @@ impl crate::Trait for Test {
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type ChannelId = u64;
-    type DaoId = u64;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;

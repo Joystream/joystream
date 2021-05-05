@@ -80,16 +80,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + MaybeSerialize
         + PartialEq;
 
-    /// DAO ID type (part of the dynamic bag ID).
-    type DaoId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
     /// Defines max allowed storage bucket number.
     type MaxStorageBucketNumber: Get<u64>; //TODO: adjust value
 
@@ -233,20 +223,20 @@ pub struct DataObjectCreationParameters {
 }
 
 /// Type alias for the BagIdType.
-pub type BagId<T> = BagIdType<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DaoId>;
+pub type BagId<T> = BagIdType<MemberId<T>, <T as Trait>::ChannelId>;
 
 /// Identifier for a bag.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum BagIdType<MemberId, ChannelId, DaoId> {
+pub enum BagIdType<MemberId, ChannelId> {
     /// Static bag type.
     StaticBag(StaticBagId),
 
     /// Dynamic bag type.
-    DynamicBag(DynamicBagIdType<MemberId, ChannelId, DaoId>),
+    DynamicBag(DynamicBagIdType<MemberId, ChannelId>),
 }
 
-impl<MemberId, ChannelId, DaoId> Default for BagIdType<MemberId, ChannelId, DaoId> {
+impl<MemberId, ChannelId> Default for BagIdType<MemberId, ChannelId> {
     fn default() -> Self {
         Self::StaticBag(Default::default())
     }
@@ -270,24 +260,20 @@ impl Default for StaticBagId {
 }
 
 /// Type alias for the DynamicBagIdType.
-pub type DynamicBagId<T> =
-    DynamicBagIdType<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DaoId>;
+pub type DynamicBagId<T> = DynamicBagIdType<MemberId<T>, <T as Trait>::ChannelId>;
 
 /// A type for dynamic bags ID.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum DynamicBagIdType<MemberId, ChannelId, DaoId> {
+pub enum DynamicBagIdType<MemberId, ChannelId> {
     /// Dynamic bag assigned to a member.
     Member(MemberId),
 
     /// Dynamic bag assigned to media channel.
     Channel(ChannelId),
-
-    /// Dynamic bag assigned to a DAO.
-    Dao(DaoId),
 }
 
-impl<MemberId: Default, ChannelId, DaoId> Default for DynamicBagIdType<MemberId, ChannelId, DaoId> {
+impl<MemberId: Default, ChannelId> Default for DynamicBagIdType<MemberId, ChannelId> {
     fn default() -> Self {
         Self::Member(Default::default())
     }
@@ -297,19 +283,18 @@ impl<MemberId: Default, ChannelId, DaoId> Default for DynamicBagIdType<MemberId,
 pub type UploadParameters<T> = UploadParametersObject<
     MemberId<T>,
     <T as Trait>::ChannelId,
-    <T as Trait>::DaoId,
     <T as frame_system::Trait>::AccountId,
 >;
 
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct UploadParametersObject<MemberId, ChannelId, DaoId, AccountId> {
+pub struct UploadParametersObject<MemberId, ChannelId, AccountId> {
     /// Public key used authentication in upload to liaison.
     pub authentication_key: Vec<u8>,
 
     /// Static or dynamic bag to upload data.
-    pub bag_id: BagIdType<MemberId, ChannelId, DaoId>,
+    pub bag_id: BagIdType<MemberId, ChannelId>,
 
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
@@ -378,9 +363,9 @@ pub struct StorageBucket<WorkerId> {
 /// Defines a 'bag-to-data object' pair.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub struct AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId> {
+pub struct AssignedDataObject<MemberId, ChannelId, DataObjectId> {
     /// Bag ID.
-    pub bag_id: BagIdType<MemberId, ChannelId, DaoId>,
+    pub bag_id: BagIdType<MemberId, ChannelId>,
 
     /// Data object ID.
     pub data_object_id: DataObjectId,
@@ -390,7 +375,6 @@ pub struct AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId> {
 pub type UpdateStorageBucketForBagsParams<T> = UpdateStorageBucketForBagsParamsObject<
     MemberId<T>,
     <T as Trait>::ChannelId,
-    <T as Trait>::DaoId,
     <T as Trait>::StorageBucketId,
 >;
 
@@ -401,29 +385,23 @@ pub type UpdateStorageBucketForBagsParams<T> = UpdateStorageBucketForBagsParamsO
 pub struct UpdateStorageBucketForBagsParamsObject<
     MemberId: Ord,
     ChannelId: Ord,
-    DaoId: Ord,
     StorageBucketId: Ord,
 > {
     /// Defines new relationship between static bags and storage buckets.
-    pub bags: BTreeMap<BagIdType<MemberId, ChannelId, DaoId>, BTreeSet<StorageBucketId>>,
+    pub bags: BTreeMap<BagIdType<MemberId, ChannelId>, BTreeSet<StorageBucketId>>,
 }
 
 /// Type alias for the ObjectsInBagParamsObject.
-pub type ObjectsInBagParams<T> = ObjectsInBagParamsObject<
-    MemberId<T>,
-    <T as Trait>::ChannelId,
-    <T as Trait>::DaoId,
-    <T as Trait>::DataObjectId,
->;
+pub type ObjectsInBagParams<T> =
+    ObjectsInBagParamsObject<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DataObjectId>;
 
 /// Data wrapper structure. Helps passing the parameters to the
 /// `accept_pending_data_objects` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ObjectsInBagParamsObject<MemberId: Ord, ChannelId: Ord, DaoId: Ord, DataObjectId: Ord> {
+pub struct ObjectsInBagParamsObject<MemberId: Ord, ChannelId: Ord, DataObjectId: Ord> {
     /// 'Bag' to 'data object' container.
-    pub assigned_data_objects:
-        BTreeSet<AssignedDataObject<MemberId, ChannelId, DaoId, DataObjectId>>,
+    pub assigned_data_objects: BTreeSet<AssignedDataObject<MemberId, ChannelId, DataObjectId>>,
 }
 
 // Helper-struct for the data object uploading.

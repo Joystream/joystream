@@ -686,7 +686,6 @@ impl storage_v2::Trait for Runtime {
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type ChannelId = ChannelId;
-    type DaoId = DaoId;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
