@@ -405,10 +405,7 @@ fn upload_succeeded() {
             vec![(
                 &data_object_id,
                 &DataObject {
-                    ipfs_content_id: upload_params.object_creation_list[0]
-                        .clone()
-                        .ipfs_content_id,
-                    size: upload_params.object_creation_list[0].clone().size,
+                    size: upload_params.object_creation_list[0].size,
                     deletion_prize: DataObjectDeletionPrize::get(),
                     accepted: false,
                 }
@@ -460,10 +457,7 @@ fn upload_succeeded_with_dynamic_bag() {
             vec![(
                 &data_object_id,
                 &DataObject {
-                    ipfs_content_id: upload_params.object_creation_list[0]
-                        .clone()
-                        .ipfs_content_id,
-                    size: upload_params.object_creation_list[0].clone().size,
+                    size: upload_params.object_creation_list[0].size,
                     deletion_prize: DataObjectDeletionPrize::get(),
                     accepted: false,
                 }

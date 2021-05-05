@@ -201,9 +201,6 @@ pub struct DataObject<Balance> {
 
     /// Object size in bytes.
     pub size: u64,
-
-    /// Content identifier presented as IPFS hash.
-    pub ipfs_content_id: ContentId,
 }
 
 /// Type alias for the StaticBagObject.
@@ -1198,7 +1195,6 @@ impl<T: Trait> Module<T> {
             accepted: false,
             deletion_prize,
             size: obj.size,
-            ipfs_content_id: obj.ipfs_content_id,
         });
 
         let mut next_data_object_id = Self::next_data_object_id();
