@@ -3251,7 +3251,7 @@
     "@polkadot/util" "6.3.1"
     "@polkadot/util-crypto" "6.3.1"
 
-"@polkadot/metadata@4.2.1":
+"@polkadot/metadata@4.2.1", "@polkadot/metadata@^4.1.1":
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/metadata/-/metadata-4.2.1.tgz#7bff99e44992708469e7b2aa70d0865637d8febe"
   integrity sha512-oXuKOrKTU0wys5pedKd1OVUDWK8/NoBRCrUYN8fxq3Qq/J9Sz6lF4ZbgX3w22C75l1z2+acsebiZBwlpWgKeqw==
@@ -3263,19 +3263,7 @@
     "@polkadot/util-crypto" "^6.0.5"
     bn.js "^4.11.9"
 
-"@polkadot/metadata@^4.1.1":
-  version "4.7.2"
-  resolved "https://registry.yarnpkg.com/@polkadot/metadata/-/metadata-4.7.2.tgz#91076a1c1158494574a1965ec1fe124fb4d1b848"
-  integrity sha512-+YWeD828cpIpD31epoSZfK5kmtJsBcgTTyYsQ4bBO4NBJceLTipmHgyLXs7fXjU4cC6uvSuBnAV0KGJW7L9nDQ==
-  dependencies:
-    "@babel/runtime" "^7.13.17"
-    "@polkadot/types" "4.7.2"
-    "@polkadot/types-known" "4.7.2"
-    "@polkadot/util" "^6.3.1"
-    "@polkadot/util-crypto" "^6.3.1"
-    bn.js "^4.11.9"
-
-"@polkadot/networks@6.3.1", "@polkadot/networks@^6.0.5", "@polkadot/networks@^6.3.1":
+"@polkadot/networks@6.3.1", "@polkadot/networks@^6.0.5":
   version "6.3.1"
   resolved "https://registry.yarnpkg.com/@polkadot/networks/-/networks-6.3.1.tgz#c5063681ea73f8b579f418d57d0eba2d4bb72292"
   integrity sha512-oANup0CLGt75CPbE3gz2HUWUlqQKucImdb1TtStLXMUH+Aj8ZOnQFA2lwixzaRdx+ymPfmEL7GkF36i96OqQVw==
@@ -3365,18 +3353,7 @@
     "@polkadot/util" "^6.0.5"
     bn.js "^4.11.9"
 
-"@polkadot/types-known@4.7.2":
-  version "4.7.2"
-  resolved "https://registry.yarnpkg.com/@polkadot/types-known/-/types-known-4.7.2.tgz#d6b55c75a9461a09490167a679b6ed783eab6350"
-  integrity sha512-vlIMBtBdVYHyjWqonQ39PCdZJ9WeTsA5h5zr2mEpkCSoopby5pZ6eOR8CPqjc1uYbdDHT72Dbtx8Wr9L7z8HXg==
-  dependencies:
-    "@babel/runtime" "^7.13.17"
-    "@polkadot/networks" "^6.3.1"
-    "@polkadot/types" "4.7.2"
-    "@polkadot/util" "^6.3.1"
-    bn.js "^4.11.9"
-
-"@polkadot/types@4.2.1", "@polkadot/types@4.7.2":
+"@polkadot/types@4.2.1":
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-4.2.1.tgz#7be97d3abda4bb3f9031b43602062ed464596696"
   integrity sha512-xl8QnbXiJmSm6MUZH/U/ov3ZSXMN+KgNjsTCCzfz2xR5B3eK9ClYcstYYkNSyF12K90Gut9bnNSGZvaCfT2hNQ==
@@ -3431,7 +3408,7 @@
     "@babel/runtime" "^7.10.5"
     color "^3.1.2"
 
-"@polkadot/util-crypto@6.3.1", "@polkadot/util-crypto@^3.0.1", "@polkadot/util-crypto@^6.0.5", "@polkadot/util-crypto@^6.3.1":
+"@polkadot/util-crypto@6.3.1", "@polkadot/util-crypto@^3.0.1", "@polkadot/util-crypto@^6.0.5":
   version "6.3.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util-crypto/-/util-crypto-6.3.1.tgz#5328da77bdee5064bc41f9dec0a76cc634690b88"
   integrity sha512-fwH4t6EN2XACwJB2Z5xUyNo4mQ1RXJj0MgVaaLua8PbG0qq9tt4eaEbdVzrm7A6igIfsTntDoZISTfVjBcRtkQ==
