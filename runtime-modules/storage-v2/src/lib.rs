@@ -954,29 +954,6 @@ decl_module! {
             );
         }
 
-            /// Move data objects to a new bag.
-    #[weight = 10_000_000] // TODO: adjust weight
-    pub fn move_data_objects(
-        origin,
-        src_bag_id: BagId<T>,
-        dest_bag_id: BagId<T>,
-        objects: BTreeSet<T::DataObjectId>,
-    ) {
-        ensure_root(origin)?;
-
-        // TODO: what actor validation should we use here?
-
-        Self::validate_data_objects_existence(&src_bag_id, &dest_bag_id, &objects)?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
-
-        Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
-    }
-
     /// Delete storage objects.
     #[weight = 10_000_000] // TODO: adjust weight
     pub fn delete_data_objects(origin, params: ObjectsInBagParams<T>) {
@@ -1073,6 +1050,25 @@ impl<T: Trait> Module<T> {
         BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
 
         Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
+
+        Ok(())
+    }
+
+    /// Move data objects to a new bag.
+    pub fn move_data_objects(
+        src_bag_id: BagId<T>,
+        dest_bag_id: BagId<T>,
+        objects: BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult {
+        Self::validate_data_objects_existence(&src_bag_id, &dest_bag_id, &objects)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
+
+        Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
 
         Ok(())
     }

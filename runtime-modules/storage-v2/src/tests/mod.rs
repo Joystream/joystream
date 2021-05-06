@@ -1124,7 +1124,6 @@ fn move_data_objects_succeeded() {
             .contains_key(&data_object_id));
 
         MoveDataObjectsFixture::default()
-            .with_origin(RawOrigin::Root)
             .with_src_bag_id(src_bag_id.clone())
             .with_dest_bag_id(dest_bag_id.clone())
             .with_data_object_ids(ids.clone())
@@ -1140,15 +1139,6 @@ fn move_data_objects_succeeded() {
             dest_bag_id,
             ids,
         ));
-    });
-}
-
-#[test]
-fn move_data_objects_fails_with_bad_origin() {
-    build_test_externalities().execute_with(|| {
-        MoveDataObjectsFixture::default()
-            .with_origin(RawOrigin::None)
-            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 

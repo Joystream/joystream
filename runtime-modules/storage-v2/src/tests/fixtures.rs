@@ -532,7 +532,6 @@ impl UpdateUploadingBlockedStatusFixture {
 }
 
 pub struct MoveDataObjectsFixture {
-    origin: RawOrigin<u64>,
     src_bag_id: BagId<Test>,
     dest_bag_id: BagId<Test>,
     data_object_ids: BTreeSet<u64>,
@@ -541,7 +540,6 @@ pub struct MoveDataObjectsFixture {
 impl MoveDataObjectsFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Root,
             src_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             dest_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             data_object_ids: BTreeSet::new(),
@@ -566,13 +564,8 @@ impl MoveDataObjectsFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::move_data_objects(
-            self.origin.clone().into(),
             self.src_bag_id.clone(),
             self.dest_bag_id.clone(),
             self.data_object_ids.clone(),
