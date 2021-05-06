@@ -663,85 +663,6 @@ decl_module! {
         /// Exports const - maximum size of the "hash blacklist" collection.
         const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
 
-        /// Upload new data objects.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn upload(origin, member_id: T::MemberId, params: UploadParameters<T>) {
-            let account_id = T::MemberOriginValidator::ensure_actor_origin(
-                origin,
-                member_id,
-            )?;
-
-            // TODO: Validate actor on bag basis.
-
-            //TODO: is is so?  "a `can_upload` extrinsic is likely going to be needed"
-
-            Self::validate_upload_parameters(&params, account_id)?;
-
-            ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
-
-            // TODO: authentication_key
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let data = Self::create_data_objects(params.object_creation_list.clone());
-
-            <StorageTreasury<T>>::transfer_to_module_account(
-                &params.deletion_prize_source_account_id,
-                data.total_deletion_prize
-            )?;
-
-            <NextDataObjectId<T>>::put(data.next_data_object_id);
-
-            BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
-
-            Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
-        }
-
-        /// Move data objects to a new bag.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn move_data_objects(
-            origin,
-            src_bag_id: BagId<T>,
-            dest_bag_id: BagId<T>,
-            objects: BTreeSet<T::DataObjectId>,
-        ) {
-            ensure_root(origin)?;
-
-            // TODO: what actor validation should we use here?
-
-            Self::validate_data_objects_existence(&src_bag_id, &dest_bag_id, &objects)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
-
-            Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
-        }
-
-        /// Delete storage objects.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_data_objects(origin, params: ObjectsInBagParams<T>) {
-            ensure_root(origin)?;
-
-            // TODO: what actor validation should we use here?
-
-            Self::validate_objects_in_bags_params(&params)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            for ids in params.assigned_data_objects.iter() {
-                BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
-            }
-
-            Self::deposit_event(RawEvent::DataObjectsDeleted(params));
-        }
-
         // ===== Storage Lead actions =====
 
         /// Update whether uploading is globally blocked.
@@ -1032,6 +953,128 @@ decl_module! {
                 )
             );
         }
+
+            /// Move data objects to a new bag.
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn move_data_objects(
+        origin,
+        src_bag_id: BagId<T>,
+        dest_bag_id: BagId<T>,
+        objects: BTreeSet<T::DataObjectId>,
+    ) {
+        ensure_root(origin)?;
+
+        // TODO: what actor validation should we use here?
+
+        Self::validate_data_objects_existence(&src_bag_id, &dest_bag_id, &objects)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
+
+        Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
+    }
+
+    /// Delete storage objects.
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn delete_data_objects(origin, params: ObjectsInBagParams<T>) {
+        ensure_root(origin)?;
+
+        // TODO: what actor validation should we use here?
+
+        Self::validate_objects_in_bags_params(&params)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        for ids in params.assigned_data_objects.iter() {
+            BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
+        }
+
+        Self::deposit_event(RawEvent::DataObjectsDeleted(params));
+    }
+    }
+}
+
+// Public methods
+impl<T: Trait> Module<T> {
+    /// Validates upload parameters and conditions (like global uploading block).
+    pub fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
+        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
+
+        let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
+
+        let new_objects_number = params.object_creation_list.len();
+
+        let total_possible_data_objects_number: u64 =
+            (new_objects_number as u64) + bag_objects_number;
+
+        ensure!(
+            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
+            Error::<T>::DataObjectsPerBagLimitExceeded
+        );
+
+        ensure!(
+            !params.object_creation_list.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
+
+        for object_params in params.object_creation_list.iter() {
+            ensure!(
+                !object_params.ipfs_content_id.is_empty(),
+                Error::<T>::EmptyContentId
+            );
+            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+            ensure!(
+                !Blacklist::contains_key(&object_params.ipfs_content_id),
+                Error::<T>::DataObjectBlacklisted,
+            );
+        }
+
+        let total_deletion_prize: BalanceOf<T> =
+            new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
+        let usable_balance =
+            Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
+
+        ensure!(
+            usable_balance >= total_deletion_prize,
+            Error::<T>::InsufficientBalance
+        );
+
+        Ok(())
+    }
+
+    /// Upload new data objects.
+    pub fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
+        // TODO: Validate actor on bag basis.
+
+        //TODO: is is so?  "a `can_upload` extrinsic is likely going to be needed"
+
+        Self::can_upload_data_objects(&params)?;
+
+        // TODO: authentication_key
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        let data = Self::create_data_objects(params.object_creation_list.clone());
+
+        <StorageTreasury<T>>::transfer_to_module_account(
+            &params.deletion_prize_source_account_id,
+            data.total_deletion_prize,
+        )?;
+
+        <NextDataObjectId<T>>::put(data.next_data_object_id);
+
+        BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
+
+        Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
+
+        Ok(())
     }
 }
 
@@ -1227,58 +1270,6 @@ impl<T: Trait> BagManager<T> {
 }
 
 impl<T: Trait> Module<T> {
-    // Validates upload parameters.
-    fn validate_upload_parameters(
-        params: &UploadParameters<T>,
-        account_id: T::AccountId,
-    ) -> DispatchResult {
-        let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
-
-        let new_objects_number = params.object_creation_list.len();
-
-        let total_possible_data_objects_number: u64 =
-            (new_objects_number as u64) + bag_objects_number;
-
-        ensure!(
-            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
-            Error::<T>::DataObjectsPerBagLimitExceeded
-        );
-
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
-
-        //TODO: Redundant check. Use Account_id directly.
-        ensure!(
-            params.deletion_prize_source_account_id == account_id,
-            Error::<T>::InvalidDeletionPrizeSourceAccount
-        );
-
-        for object_params in params.object_creation_list.iter() {
-            // TODO: Check for duplicates for CID?
-            ensure!(
-                !object_params.ipfs_content_id.is_empty(),
-                Error::<T>::EmptyContentId
-            );
-            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
-            ensure!(
-                !Blacklist::contains_key(&object_params.ipfs_content_id),
-                Error::<T>::DataObjectBlacklisted,
-            );
-        }
-
-        let total_deletion_prize: BalanceOf<T> =
-            new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
-
-        ensure!(
-            Balances::<T>::usable_balance(account_id) >= total_deletion_prize,
-            Error::<T>::InsufficientBalance
-        );
-
-        Ok(())
-    }
-
     // Ensures the existence of the storage bucket.
     // Returns the StorageBucket object or error.
     fn ensure_storage_bucket_exists(

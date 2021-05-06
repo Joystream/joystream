@@ -499,20 +499,6 @@ fn upload_succeeded_with_non_empty_bag() {
 }
 
 #[test]
-fn upload_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        UploadFixture::default()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(DispatchError::Other("Bad origin")));
-
-        let invalid_member_id = 555;
-        UploadFixture::default()
-            .with_member_id(invalid_member_id)
-            .call_and_assert(Err(DispatchError::Other("Bad origin")));
-    });
-}
-
-#[test]
 fn upload_fails_with_empty_params_object() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test>::default();
@@ -558,23 +544,6 @@ fn upload_fails_with_empty_object_cid() {
         UploadFixture::default()
             .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::EmptyContentId.into()));
-    });
-}
-
-#[test]
-fn upload_fails_with_invalid_deletion_prize_account() {
-    build_test_externalities().execute_with(|| {
-        let invalid_account_id = 13300;
-        let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
-            authentication_key: Vec::new(),
-            deletion_prize_source_account_id: invalid_account_id,
-            object_creation_list: create_single_data_object(),
-        };
-
-        UploadFixture::default()
-            .with_params(upload_params)
-            .call_and_assert(Err(Error::<Test>::InvalidDeletionPrizeSourceAccount.into()));
     });
 }
 

@@ -5,7 +5,7 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
-    Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+    Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
 };
 
@@ -248,26 +248,14 @@ impl UpdateStorageBucketForBagsFixture {
 }
 
 pub struct UploadFixture {
-    origin: RawOrigin<u64>,
-    member_id: u64,
     params: UploadParameters<Test>,
 }
 
 impl UploadFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            member_id: DEFAULT_MEMBER_ID,
             params: Default::default(),
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_member_id(self, member_id: u64) -> Self {
-        Self { member_id, ..self }
     }
 
     pub fn with_params(self, params: UploadParameters<Test>) -> Self {
@@ -276,11 +264,7 @@ impl UploadFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_next_data_object_id = Storage::next_data_object_id();
-        let actual_result = Storage::upload(
-            self.origin.clone().into(),
-            self.member_id,
-            self.params.clone(),
-        );
+        let actual_result = Storage::upload_data_objects(self.params.clone());
 
         assert_eq!(actual_result, expected_result);
 
