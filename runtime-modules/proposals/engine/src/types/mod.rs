@@ -29,6 +29,8 @@ pub(crate) use stakes::DefaultStakeHandler;
 #[cfg(test)]
 pub(crate) use stakes::MockStakeHandler;
 
+pub(crate) type Balances<T> = balances::Module<T>;
+
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]

@@ -1,4 +1,4 @@
-import { BaseModel, IntField, Model, OneToMany, EnumField, StringField } from 'warthog';
+import { BaseModel, FloatField, IntField, Model, ManyToOne, OneToMany, EnumField, StringField } from 'warthog';
 
 import { Column } from 'typeorm';
 import { Field } from 'type-graphql';
@@ -6,6 +6,7 @@ import { WarthogField } from 'warthog';
 
 import { DataObjectOwner } from '../variants/variants.model';
 
+import { Worker } from '../worker/worker.model';
 import { Channel } from '../channel/channel.model';
 import { Video } from '../video/video.model';
 
@@ -31,16 +32,20 @@ export class DataObject extends BaseModel {
   })
   typeId!: number;
 
-  @IntField({
+  // Size is meant to be integer, but since `IntField` represents only 4-bytes long number
+  // (sadly, `dataType: bigint` settings only fixes DB, but GraphQL server still uses 4-bytes)
+  // `NumericField` seems to always return string (when using transform directive number<->string)
+  // `FloatField` field fixes this issue.
+  @FloatField({
     description: `Content size in bytes`,
   })
   size!: number;
 
-  @IntField({
+  @ManyToOne(() => Worker, (param: Worker) => param.dataObjects, {
+    skipGraphQLField: true,
     nullable: true,
-    description: `Storage provider id of the liaison`,
   })
-  liaisonId?: number;
+  liaison?: Worker;
 
   @EnumField('LiaisonJudgement', LiaisonJudgement, {
     description: `Storage provider as liaison judgment`,

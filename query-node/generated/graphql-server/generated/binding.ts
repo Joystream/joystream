@@ -45,7 +45,10 @@ export interface Query {
     videoMediaMetadataConnection: <T = VideoMediaMetadataConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoMediaMetadataWhereInput | null, orderBy?: VideoMediaMetadataOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videos: <T = Array<Video>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoByUniqueInput: <T = Video | null>(args: { where: VideoWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
-    videosConnection: <T = VideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> 
+    videosConnection: <T = VideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    workers: <T = Array<Worker>>(args: { offset?: Int | null, limit?: Int | null, where?: WorkerWhereInput | null, orderBy?: WorkerOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    workerByUniqueInput: <T = Worker | null>(args: { where: WorkerWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
+    workersConnection: <T = WorkerConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: WorkerWhereInput | null, orderBy?: WorkerOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> 
   }
 
 export interface Mutation {}
@@ -90,8 +93,8 @@ export type ChannelCategoryOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'name_ASC' |
   'name_DESC' |
-  'happenedIn_ASC' |
-  'happenedIn_DESC'
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC'
 
 export type ChannelOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -125,8 +128,8 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'isCensored_DESC' |
   'languageId_ASC' |
   'languageId_DESC' |
-  'happenedIn_ASC' |
-  'happenedIn_DESC'
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC'
 
 export type CuratorGroupOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -143,8 +146,8 @@ export type DataObjectOrderByInput =   'createdAt_ASC' |
   'updatedAt_DESC' |
   'deletedAt_ASC' |
   'deletedAt_DESC' |
-  'addedAt_ASC' |
-  'addedAt_DESC' |
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC' |
   'typeId_ASC' |
   'typeId_DESC' |
   'size_ASC' |
@@ -175,12 +178,11 @@ export type LanguageOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'iso_ASC' |
   'iso_DESC' |
-  'happenedIn_ASC' |
-  'happenedIn_DESC'
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC'
 
 export type LiaisonJudgement =   'PENDING' |
-  'ACCEPTED' |
-  'REJECTED'
+  'ACCEPTED'
 
 export type LicenseOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -215,10 +217,8 @@ export type MembershipOrderByInput =   'createdAt_ASC' |
   'controllerAccount_DESC' |
   'rootAccount_ASC' |
   'rootAccount_DESC' |
-  'registeredAtBlock_ASC' |
-  'registeredAtBlock_DESC' |
-  'registeredAtTime_ASC' |
-  'registeredAtTime_DESC' |
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC' |
   'entry_ASC' |
   'entry_DESC' |
   'subscription_ASC' |
@@ -232,8 +232,8 @@ export type VideoCategoryOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'name_ASC' |
   'name_DESC' |
-  'happenedIn_ASC' |
-  'happenedIn_DESC'
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC'
 
 export type VideoMediaEncodingOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -262,8 +262,8 @@ export type VideoMediaMetadataOrderByInput =   'createdAt_ASC' |
   'pixelHeight_DESC' |
   'size_ASC' |
   'size_DESC' |
-  'happenedIn_ASC' |
-  'happenedIn_DESC'
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC'
 
 export type VideoOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -305,10 +305,28 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'mediaAvailability_DESC' |
   'mediaMetadataId_ASC' |
   'mediaMetadataId_DESC' |
-  'happenedIn_ASC' |
-  'happenedIn_DESC' |
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC' |
   'isFeatured_ASC' |
   'isFeatured_DESC'
+
+export type WorkerOrderByInput =   'createdAt_ASC' |
+  'createdAt_DESC' |
+  'updatedAt_ASC' |
+  'updatedAt_DESC' |
+  'deletedAt_ASC' |
+  'deletedAt_DESC' |
+  'isActive_ASC' |
+  'isActive_DESC' |
+  'workerId_ASC' |
+  'workerId_DESC' |
+  'type_ASC' |
+  'type_DESC' |
+  'metadata_ASC' |
+  'metadata_DESC'
+
+export type WorkerType =   'GATEWAY' |
+  'STORAGE'
 
 export interface BaseWhereInput {
   id_eq?: String | null
@@ -336,12 +354,12 @@ export interface BaseWhereInput {
 
 export interface ChannelCategoryCreateInput {
   name?: String | null
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 export interface ChannelCategoryUpdateInput {
   name?: String | null
-  happenedIn?: Float | null
+  createdInBlock?: Float | null
 }
 
 export interface ChannelCategoryWhereInput {
@@ -374,12 +392,12 @@ export interface ChannelCategoryWhereInput {
   name_startsWith?: String | null
   name_endsWith?: String | null
   name_in?: String[] | String | null
-  happenedIn_eq?: Int | null
-  happenedIn_gt?: Int | null
-  happenedIn_gte?: Int | null
-  happenedIn_lt?: Int | null
-  happenedIn_lte?: Int | null
-  happenedIn_in?: Int[] | Int | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
 }
 
 export interface ChannelCategoryWhereUniqueInput {
@@ -402,7 +420,7 @@ export interface ChannelCreateInput {
   isPublic?: Boolean | null
   isCensored: Boolean
   languageId?: ID_Input | null
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 export interface ChannelUpdateInput {
@@ -421,7 +439,7 @@ export interface ChannelUpdateInput {
   isPublic?: Boolean | null
   isCensored?: Boolean | null
   languageId?: ID_Input | null
-  happenedIn?: Float | null
+  createdInBlock?: Float | null
 }
 
 export interface ChannelWhereInput {
@@ -484,12 +502,12 @@ export interface ChannelWhereInput {
   isCensored_in?: Boolean[] | Boolean | null
   languageId_eq?: ID_Input | null
   languageId_in?: ID_Output[] | ID_Output | null
-  happenedIn_eq?: Int | null
-  happenedIn_gt?: Int | null
-  happenedIn_gte?: Int | null
-  happenedIn_lt?: Int | null
-  happenedIn_lte?: Int | null
-  happenedIn_in?: Int[] | Int | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
 }
 
 export interface ChannelWhereUniqueInput {
@@ -497,12 +515,12 @@ export interface ChannelWhereUniqueInput {
 }
 
 export interface CuratorGroupCreateInput {
-  curatorIds: Array<BigInt>
+  curatorIds: Array<Int>
   isActive: Boolean
 }
 
 export interface CuratorGroupUpdateInput {
-  curatorIds?: BigInt[] | BigInt | null
+  curatorIds?: Int[] | Int | null
   isActive?: Boolean | null
 }
 
@@ -541,22 +559,22 @@ export interface CuratorGroupWhereUniqueInput {
 
 export interface DataObjectCreateInput {
   owner: JSONObject
-  addedAt: Float
+  createdInBlock: Float
   typeId: Float
-  size: BigInt
-  liaisonId: BigInt
+  size: Float
+  liaisonId?: ID_Input | null
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
 }
 
 export interface DataObjectOwnerChannelCreateInput {
-  channel: BigInt
+  channel: Float
   dummy?: Float | null
 }
 
 export interface DataObjectOwnerChannelUpdateInput {
-  channel?: BigInt | null
+  channel?: Float | null
   dummy?: Float | null
 }
 
@@ -585,12 +603,12 @@ export interface DataObjectOwnerChannelWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  channel_eq?: BigInt | null
-  channel_gt?: BigInt | null
-  channel_gte?: BigInt | null
-  channel_lt?: BigInt | null
-  channel_lte?: BigInt | null
-  channel_in?: BigInt[] | BigInt | null
+  channel_eq?: Int | null
+  channel_gt?: Int | null
+  channel_gte?: Int | null
+  channel_lt?: Int | null
+  channel_lte?: Int | null
+  channel_in?: Int[] | Int | null
   dummy_eq?: Int | null
   dummy_gt?: Int | null
   dummy_gte?: Int | null
@@ -649,11 +667,11 @@ export interface DataObjectOwnerCouncilWhereUniqueInput {
 }
 
 export interface DataObjectOwnerDaoCreateInput {
-  dao: BigInt
+  dao: Float
 }
 
 export interface DataObjectOwnerDaoUpdateInput {
-  dao?: BigInt | null
+  dao?: Float | null
 }
 
 export interface DataObjectOwnerDaoWhereInput {
@@ -681,12 +699,12 @@ export interface DataObjectOwnerDaoWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  dao_eq?: BigInt | null
-  dao_gt?: BigInt | null
-  dao_gte?: BigInt | null
-  dao_lt?: BigInt | null
-  dao_lte?: BigInt | null
-  dao_in?: BigInt[] | BigInt | null
+  dao_eq?: Int | null
+  dao_gt?: Int | null
+  dao_gte?: Int | null
+  dao_lt?: Int | null
+  dao_lte?: Int | null
+  dao_in?: Int[] | Int | null
 }
 
 export interface DataObjectOwnerDaoWhereUniqueInput {
@@ -694,12 +712,12 @@ export interface DataObjectOwnerDaoWhereUniqueInput {
 }
 
 export interface DataObjectOwnerMemberCreateInput {
-  member: BigInt
+  member: Float
   dummy?: Float | null
 }
 
 export interface DataObjectOwnerMemberUpdateInput {
-  member?: BigInt | null
+  member?: Float | null
   dummy?: Float | null
 }
 
@@ -728,12 +746,12 @@ export interface DataObjectOwnerMemberWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  member_eq?: BigInt | null
-  member_gt?: BigInt | null
-  member_gte?: BigInt | null
-  member_lt?: BigInt | null
-  member_lte?: BigInt | null
-  member_in?: BigInt[] | BigInt | null
+  member_eq?: Int | null
+  member_gt?: Int | null
+  member_gte?: Int | null
+  member_lt?: Int | null
+  member_lte?: Int | null
+  member_in?: Int[] | Int | null
   dummy_eq?: Int | null
   dummy_gt?: Int | null
   dummy_gte?: Int | null
@@ -747,11 +765,11 @@ export interface DataObjectOwnerMemberWhereUniqueInput {
 }
 
 export interface DataObjectOwnerWorkingGroupCreateInput {
-  dummy?: Float | null
+  workingGroup: Float
 }
 
 export interface DataObjectOwnerWorkingGroupUpdateInput {
-  dummy?: Float | null
+  workingGroup?: Float | null
 }
 
 export interface DataObjectOwnerWorkingGroupWhereInput {
@@ -779,12 +797,12 @@ export interface DataObjectOwnerWorkingGroupWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  dummy_eq?: Int | null
-  dummy_gt?: Int | null
-  dummy_gte?: Int | null
-  dummy_lt?: Int | null
-  dummy_lte?: Int | null
-  dummy_in?: Int[] | Int | null
+  workingGroup_eq?: Int | null
+  workingGroup_gt?: Int | null
+  workingGroup_gte?: Int | null
+  workingGroup_lt?: Int | null
+  workingGroup_lte?: Int | null
+  workingGroup_in?: Int[] | Int | null
 }
 
 export interface DataObjectOwnerWorkingGroupWhereUniqueInput {
@@ -793,10 +811,10 @@ export interface DataObjectOwnerWorkingGroupWhereUniqueInput {
 
 export interface DataObjectUpdateInput {
   owner?: JSONObject | null
-  addedAt?: Float | null
+  createdInBlock?: Float | null
   typeId?: Float | null
-  size?: BigInt | null
-  liaisonId?: BigInt | null
+  size?: Float | null
+  liaisonId?: ID_Input | null
   liaisonJudgement?: LiaisonJudgement | null
   ipfsContentId?: String | null
   joystreamContentId?: String | null
@@ -828,30 +846,26 @@ export interface DataObjectWhereInput {
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
   owner_json?: JSONObject | null
-  addedAt_eq?: Int | null
-  addedAt_gt?: Int | null
-  addedAt_gte?: Int | null
-  addedAt_lt?: Int | null
-  addedAt_lte?: Int | null
-  addedAt_in?: Int[] | Int | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
   typeId_eq?: Int | null
   typeId_gt?: Int | null
   typeId_gte?: Int | null
   typeId_lt?: Int | null
   typeId_lte?: Int | null
   typeId_in?: Int[] | Int | null
-  size_eq?: BigInt | null
-  size_gt?: BigInt | null
-  size_gte?: BigInt | null
-  size_lt?: BigInt | null
-  size_lte?: BigInt | null
-  size_in?: BigInt[] | BigInt | null
-  liaisonId_eq?: BigInt | null
-  liaisonId_gt?: BigInt | null
-  liaisonId_gte?: BigInt | null
-  liaisonId_lt?: BigInt | null
-  liaisonId_lte?: BigInt | null
-  liaisonId_in?: BigInt[] | BigInt | null
+  size_eq?: Float | null
+  size_gt?: Float | null
+  size_gte?: Float | null
+  size_lt?: Float | null
+  size_lte?: Float | null
+  size_in?: Float[] | Float | null
+  liaisonId_eq?: ID_Input | null
+  liaisonId_in?: ID_Output[] | ID_Output | null
   liaisonJudgement_eq?: LiaisonJudgement | null
   liaisonJudgement_in?: LiaisonJudgement[] | LiaisonJudgement | null
   ipfsContentId_eq?: String | null
@@ -913,12 +927,12 @@ export interface FeaturedVideoWhereUniqueInput {
 
 export interface LanguageCreateInput {
   iso: String
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 export interface LanguageUpdateInput {
   iso?: String | null
-  happenedIn?: Float | null
+  createdInBlock?: Float | null
 }
 
 export interface LanguageWhereInput {
@@ -951,12 +965,12 @@ export interface LanguageWhereInput {
   iso_startsWith?: String | null
   iso_endsWith?: String | null
   iso_in?: String[] | String | null
-  happenedIn_eq?: Int | null
-  happenedIn_gt?: Int | null
-  happenedIn_gte?: Int | null
-  happenedIn_lt?: Int | null
-  happenedIn_lte?: Int | null
-  happenedIn_in?: Int[] | Int | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
 }
 
 export interface LanguageWhereUniqueInput {
@@ -1028,10 +1042,9 @@ export interface MembershipCreateInput {
   about?: String | null
   controllerAccount: String
   rootAccount: String
-  registeredAtBlock: Float
-  registeredAtTime: DateTime
+  createdInBlock: Float
   entry: MembershipEntryMethod
-  subscription?: BigInt | null
+  subscription?: Float | null
 }
 
 export interface MembershipUpdateInput {
@@ -1040,10 +1053,9 @@ export interface MembershipUpdateInput {
   about?: String | null
   controllerAccount?: String | null
   rootAccount?: String | null
-  registeredAtBlock?: Float | null
-  registeredAtTime?: DateTime | null
+  createdInBlock?: Float | null
   entry?: MembershipEntryMethod | null
-  subscription?: BigInt | null
+  subscription?: Float | null
 }
 
 export interface MembershipWhereInput {
@@ -1096,25 +1108,20 @@ export interface MembershipWhereInput {
   rootAccount_startsWith?: String | null
   rootAccount_endsWith?: String | null
   rootAccount_in?: String[] | String | null
-  registeredAtBlock_eq?: Int | null
-  registeredAtBlock_gt?: Int | null
-  registeredAtBlock_gte?: Int | null
-  registeredAtBlock_lt?: Int | null
-  registeredAtBlock_lte?: Int | null
-  registeredAtBlock_in?: Int[] | Int | null
-  registeredAtTime_eq?: DateTime | null
-  registeredAtTime_lt?: DateTime | null
-  registeredAtTime_lte?: DateTime | null
-  registeredAtTime_gt?: DateTime | null
-  registeredAtTime_gte?: DateTime | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
   entry_eq?: MembershipEntryMethod | null
   entry_in?: MembershipEntryMethod[] | MembershipEntryMethod | null
-  subscription_eq?: BigInt | null
-  subscription_gt?: BigInt | null
-  subscription_gte?: BigInt | null
-  subscription_lt?: BigInt | null
-  subscription_lte?: BigInt | null
-  subscription_in?: BigInt[] | BigInt | null
+  subscription_eq?: Int | null
+  subscription_gt?: Int | null
+  subscription_gte?: Int | null
+  subscription_lt?: Int | null
+  subscription_lte?: Int | null
+  subscription_in?: Int[] | Int | null
 }
 
 export interface MembershipWhereUniqueInput {
@@ -1124,12 +1131,12 @@ export interface MembershipWhereUniqueInput {
 
 export interface VideoCategoryCreateInput {
   name?: String | null
-  happenedIn: Float
+  createdInBlock: Float
 }
 
 export interface VideoCategoryUpdateInput {
   name?: String | null
-  happenedIn?: Float | null
+  createdInBlock?: Float | null
 }
 
 export interface VideoCategoryWhereInput {
@@ -1162,12 +1169,12 @@ export interface VideoCategoryWhereInput {
   name_startsWith?: String | null
   name_endsWith?: String | null
   name_in?: String[] | String | null
-  happenedIn_eq?: Int | null
-  happenedIn_gt?: Int | null
-  happenedIn_gte?: Int | null
-  happenedIn_lt?: Int | null
-  happenedIn_lte?: Int | null
-  happenedIn_in?: Int[] | Int | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
 }
 
 export interface VideoCategoryWhereUniqueInput {
@@ -1175,7 +1182,7 @@ export interface VideoCategoryWhereUniqueInput {
 }
 
 export interface VideoCreateInput {
-  channelId: ID_Output
+  channelId?: ID_Input | null
   categoryId?: ID_Input | null
   title?: String | null
   description?: String | null
@@ -1194,7 +1201,7 @@ export interface VideoCreateInput {
   mediaUrls: Array<String>
   mediaAvailability: AssetAvailability
   mediaMetadataId?: ID_Input | null
-  happenedIn: Float
+  createdInBlock: Float
   isFeatured: Boolean
 }
 
@@ -1260,16 +1267,16 @@ export interface VideoMediaMetadataCreateInput {
   encodingId?: ID_Input | null
   pixelWidth?: Float | null
   pixelHeight?: Float | null
-  size?: BigInt | null
-  happenedIn: Float
+  size?: Float | null
+  createdInBlock: Float
 }
 
 export interface VideoMediaMetadataUpdateInput {
   encodingId?: ID_Input | null
   pixelWidth?: Float | null
   pixelHeight?: Float | null
-  size?: BigInt | null
-  happenedIn?: Float | null
+  size?: Float | null
+  createdInBlock?: Float | null
 }
 
 export interface VideoMediaMetadataWhereInput {
@@ -1311,18 +1318,18 @@ export interface VideoMediaMetadataWhereInput {
   pixelHeight_lt?: Int | null
   pixelHeight_lte?: Int | null
   pixelHeight_in?: Int[] | Int | null
-  size_eq?: BigInt | null
-  size_gt?: BigInt | null
-  size_gte?: BigInt | null
-  size_lt?: BigInt | null
-  size_lte?: BigInt | null
-  size_in?: BigInt[] | BigInt | null
-  happenedIn_eq?: Int | null
-  happenedIn_gt?: Int | null
-  happenedIn_gte?: Int | null
-  happenedIn_lt?: Int | null
-  happenedIn_lte?: Int | null
-  happenedIn_in?: Int[] | Int | null
+  size_eq?: Float | null
+  size_gt?: Float | null
+  size_gte?: Float | null
+  size_lt?: Float | null
+  size_lte?: Float | null
+  size_in?: Float[] | Float | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
 }
 
 export interface VideoMediaMetadataWhereUniqueInput {
@@ -1349,7 +1356,7 @@ export interface VideoUpdateInput {
   mediaUrls?: String[] | String | null
   mediaAvailability?: AssetAvailability | null
   mediaMetadataId?: ID_Input | null
-  happenedIn?: Float | null
+  createdInBlock?: Float | null
   isFeatured?: Boolean | null
 }
 
@@ -1425,17 +1432,76 @@ export interface VideoWhereInput {
   mediaAvailability_in?: AssetAvailability[] | AssetAvailability | null
   mediaMetadataId_eq?: ID_Input | null
   mediaMetadataId_in?: ID_Output[] | ID_Output | null
-  happenedIn_eq?: Int | null
-  happenedIn_gt?: Int | null
-  happenedIn_gte?: Int | null
-  happenedIn_lt?: Int | null
-  happenedIn_lte?: Int | null
-  happenedIn_in?: Int[] | Int | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
   isFeatured_eq?: Boolean | null
   isFeatured_in?: Boolean[] | Boolean | null
 }
 
 export interface VideoWhereUniqueInput {
+  id: ID_Output
+}
+
+export interface WorkerCreateInput {
+  isActive: Boolean
+  workerId: String
+  type: WorkerType
+  metadata?: String | null
+}
+
+export interface WorkerUpdateInput {
+  isActive?: Boolean | null
+  workerId?: String | null
+  type?: WorkerType | null
+  metadata?: String | null
+}
+
+export interface WorkerWhereInput {
+  id_eq?: ID_Input | null
+  id_in?: ID_Output[] | ID_Output | null
+  createdAt_eq?: DateTime | null
+  createdAt_lt?: DateTime | null
+  createdAt_lte?: DateTime | null
+  createdAt_gt?: DateTime | null
+  createdAt_gte?: DateTime | null
+  createdById_eq?: ID_Input | null
+  createdById_in?: ID_Output[] | ID_Output | null
+  updatedAt_eq?: DateTime | null
+  updatedAt_lt?: DateTime | null
+  updatedAt_lte?: DateTime | null
+  updatedAt_gt?: DateTime | null
+  updatedAt_gte?: DateTime | null
+  updatedById_eq?: ID_Input | null
+  updatedById_in?: ID_Output[] | ID_Output | null
+  deletedAt_all?: Boolean | null
+  deletedAt_eq?: DateTime | null
+  deletedAt_lt?: DateTime | null
+  deletedAt_lte?: DateTime | null
+  deletedAt_gt?: DateTime | null
+  deletedAt_gte?: DateTime | null
+  deletedById_eq?: ID_Input | null
+  deletedById_in?: ID_Output[] | ID_Output | null
+  isActive_eq?: Boolean | null
+  isActive_in?: Boolean[] | Boolean | null
+  workerId_eq?: String | null
+  workerId_contains?: String | null
+  workerId_startsWith?: String | null
+  workerId_endsWith?: String | null
+  workerId_in?: String[] | String | null
+  type_eq?: WorkerType | null
+  type_in?: WorkerType[] | WorkerType | null
+  metadata_eq?: String | null
+  metadata_contains?: String | null
+  metadata_startsWith?: String | null
+  metadata_endsWith?: String | null
+  metadata_in?: String[] | String | null
+}
+
+export interface WorkerWhereUniqueInput {
   id: ID_Output
 }
 
@@ -1507,7 +1573,7 @@ export interface Channel extends BaseGraphQLObject {
   language?: Language | null
   languageId?: String | null
   videos: Array<Video>
-  happenedIn: Int
+  createdInBlock: Int
 }
 
 export interface ChannelCategoriesByNameFTSOutput {
@@ -1532,7 +1598,7 @@ export interface ChannelCategory extends BaseGraphQLObject {
   version: Int
   name?: String | null
   channels: Array<Channel>
-  happenedIn: Int
+  createdInBlock: Int
 }
 
 export interface ChannelCategoryConnection {
@@ -1566,7 +1632,7 @@ export interface CuratorGroup extends BaseGraphQLObject {
   deletedAt?: DateTime | null
   deletedById?: String | null
   version: Int
-  curatorIds: Array<BigInt>
+  curatorIds: Array<Int>
   isActive: Boolean
   channels: Array<Channel>
 }
@@ -1596,10 +1662,11 @@ export interface DataObject extends BaseGraphQLObject {
   deletedById?: String | null
   version: Int
   owner: DataObjectOwner
-  addedAt: Int
+  createdInBlock: Int
   typeId: Int
-  size: BigInt
-  liaisonId: BigInt
+  size: Float
+  liaison?: Worker | null
+  liaisonId?: String | null
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
@@ -1621,7 +1688,7 @@ export interface DataObjectEdge {
 }
 
 export interface DataObjectOwnerChannel {
-  channel: BigInt
+  channel: Int
   dummy?: Int | null
 }
 
@@ -1630,16 +1697,16 @@ export interface DataObjectOwnerCouncil {
 }
 
 export interface DataObjectOwnerDao {
-  dao: BigInt
+  dao: Int
 }
 
 export interface DataObjectOwnerMember {
-  member: BigInt
+  member: Int
   dummy?: Int | null
 }
 
 export interface DataObjectOwnerWorkingGroup {
-  dummy?: Int | null
+  workingGroup: Int
 }
 
 export interface FeaturedVideo extends BaseGraphQLObject {
@@ -1676,7 +1743,7 @@ export interface Language extends BaseGraphQLObject {
   deletedById?: String | null
   version: Int
   iso: String
-  happenedIn: Int
+  createdInBlock: Int
   channellanguage?: Array<Channel> | null
   videolanguage?: Array<Video> | null
 }
@@ -1743,10 +1810,9 @@ export interface Membership extends BaseGraphQLObject {
   about?: String | null
   controllerAccount: String
   rootAccount: String
-  registeredAtBlock: Int
-  registeredAtTime: DateTime
+  createdInBlock: Int
   entry: MembershipEntryMethod
-  subscription?: BigInt | null
+  subscription?: Int | null
   channels: Array<Channel>
 }
 
@@ -1795,8 +1861,8 @@ export interface Video extends BaseGraphQLObject {
   deletedAt?: DateTime | null
   deletedById?: String | null
   version: Int
-  channel: Channel
-  channelId: String
+  channel?: Channel | null
+  channelId?: String | null
   category?: VideoCategory | null
   categoryId?: String | null
   title?: String | null
@@ -1821,7 +1887,7 @@ export interface Video extends BaseGraphQLObject {
   mediaAvailability: AssetAvailability
   mediaMetadata?: VideoMediaMetadata | null
   mediaMetadataId?: String | null
-  happenedIn: Int
+  createdInBlock: Int
   isFeatured: Boolean
   featured?: FeaturedVideo | null
 }
@@ -1844,7 +1910,7 @@ export interface VideoCategory extends BaseGraphQLObject {
   version: Int
   name?: String | null
   videos: Array<Video>
-  happenedIn: Int
+  createdInBlock: Int
 }
 
 export interface VideoCategoryConnection {
@@ -1908,9 +1974,9 @@ export interface VideoMediaMetadata extends BaseGraphQLObject {
   encodingId?: String | null
   pixelWidth?: Int | null
   pixelHeight?: Int | null
-  size?: BigInt | null
+  size?: Float | null
   video?: Video | null
-  happenedIn: Int
+  createdInBlock: Int
 }
 
 export interface VideoMediaMetadataConnection {
@@ -1924,10 +1990,32 @@ export interface VideoMediaMetadataEdge {
   cursor: String
 }
 
-/*
-GraphQL representation of BigInt
-*/
-export type BigInt = string
+export interface Worker extends BaseGraphQLObject {
+  id: ID_Output
+  createdAt: DateTime
+  createdById: String
+  updatedAt?: DateTime | null
+  updatedById?: String | null
+  deletedAt?: DateTime | null
+  deletedById?: String | null
+  version: Int
+  isActive: Boolean
+  workerId: String
+  type: WorkerType
+  metadata?: String | null
+  dataObjects: Array<DataObject>
+}
+
+export interface WorkerConnection {
+  totalCount: Int
+  edges: Array<WorkerEdge>
+  pageInfo: PageInfo
+}
+
+export interface WorkerEdge {
+  node: Worker
+  cursor: String
+}
 
 /*
 The `Boolean` scalar type represents `true` or `false`.

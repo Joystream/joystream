@@ -830,6 +830,7 @@ impl<T: Config> Module<T> {
             &params.title,
             &params.description,
             params.stake_balance,
+            &account_id,
         )?;
 
         <proposals_discussion::Module<T>>::ensure_can_create_thread(

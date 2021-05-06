@@ -31,6 +31,7 @@ import {
 
 import {
   invalidMetadata,
+  inconsistentState,
   logger,
   prepareDataObject,
 } from '../common'
@@ -107,16 +108,35 @@ export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments
 */
 export class PropertyChange<T> {
 
-  static newUnset<T>() {
+  static newUnset<T>(): PropertyChange<T> {
     return new PropertyChange<T>('unset')
   }
 
-  static newNoChange<T>() {
+  static newNoChange<T>(): PropertyChange<T> {
     return new PropertyChange<T>('nochange')
   }
 
-  static newChange<T>(value: T) {
+  static newChange<T>(value: T): PropertyChange<T> {
     return new PropertyChange<T>('change', value)
+  }
+
+  /*
+    Determines property change from the given object property.
+  */
+  static fromObjectProperty<
+    T,
+    Key extends string,
+    ChangedObject extends {[key in Key]?: T}
+  >(object: ChangedObject, key: Key): PropertyChange<T> {
+    if (!(key in object)) {
+      return PropertyChange.newNoChange<T>()
+    }
+
+    if (object[key] === undefined) {
+      return PropertyChange.newUnset<T>()
+    }
+
+    return PropertyChange.newChange<T>(object[key] as T)
   }
 
   private type: string
@@ -160,6 +180,17 @@ export class PropertyChange<T> {
 
     object[key] = this.value
   }
+}
+
+export interface RawVideoMetadata {
+  encoding: {
+    codecName: PropertyChange<string>
+    container: PropertyChange<string>
+    mimeMediaType: PropertyChange<string>
+  }
+  pixelWidth: PropertyChange<number>
+  pixelHeight: PropertyChange<number>
+  size: PropertyChange<number>
 }
 
 /*
@@ -264,9 +295,11 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     // prepare media meta information if needed
     if ('mediaType' in metaAsObject || 'mediaPixelWidth' in metaAsObject || 'mediaPixelHeight' in metaAsObject) {
       // prepare video file size if poosible
-      const videoSize = await extractVideoSize(parameters.assets, metaAsObject.video)
+      const videoSize = extractVideoSize(parameters.assets, metaAsObject.video)
 
-      result.mediaMetadata = await prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber)
+      // NOTE: type hack - `RawVideoMetadata` is inserted instead of VideoMediaMetadata - it should be edited in `video.ts`
+      //       see `integrateVideoMetadata()` in `video.ts` for more info
+      result.mediaMetadata = prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber) as unknown as VideoMediaMetadata
 
       // remove extra values
       delete metaAsObject.mediaType
@@ -312,12 +345,10 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
       language.integrateInto(result, 'language')
     }
 
-    // prepare information about media published somewhere else before Joystream if needed.
-    if (metaAsObject.publishedBeforeJoystream && metaAsObject.publishedBeforeJoystream.isPublished) {
-      // this will change the `channel`!
-      handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream.date)
-    } else {
-      delete metaAsObject.publishedBeforeJoystream // make sure the object is unset
+    if (metaAsObject.publishedBeforeJoystream) {
+      const publishedBeforeJoystream = handlePublishedBeforeJoystream(result, metaAsObject.publishedBeforeJoystream)
+      delete metaAsObject.publishedBeforeJoystream // make sure temporary value will not interfere
+      publishedBeforeJoystream.integrateInto(result, 'publishedBeforeJoystream')
     }
 
     return result as Partial<T>
@@ -338,7 +369,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure member exists
     if (!member) {
-      invalidMetadata(`Actor is non-existing member`, memberId)
+      inconsistentState(`Actor is non-existing member`, memberId)
       return {} // this will keep fields unchanged
     }
 
@@ -354,7 +385,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure curator group exists
     if (!curatorGroup) {
-      invalidMetadata('Actor is non-existing curator group', curatorGroupId)
+      inconsistentState('Actor is non-existing curator group', curatorGroupId)
       return {} // this will keep fields unchanged
     }
 
@@ -396,16 +427,27 @@ export function convertContentActorToDataObjectOwner(contentActor: ContentActor,
   */
 }
 
-function handlePublishedBeforeJoystream(video: Partial<Video>, publishedAtString?: string) {
-  // published elsewhere before Joystream
-  if (publishedAtString) {
-    video.publishedBeforeJoystream = new Date(publishedAtString)
-
-    return
+function handlePublishedBeforeJoystream(video: Partial<Video>, metadata: PublishedBeforeJoystreamMetadata.AsObject): PropertyChange<Date> {
+  // is publish being unset
+  if ('isPublished' in metadata && !metadata.isPublished) {
+    return PropertyChange.newUnset()
   }
 
-  // unset publish info
-  video.publishedBeforeJoystream = undefined // plan deletion (will have effect when saved to db)
+  // try to parse timestamp from publish date
+  const timestamp = metadata.date
+    ? Date.parse(metadata.date)
+    : NaN
+
+  // ensure date is valid
+  if (isNaN(timestamp)) {
+    invalidMetadata(`Invalid date used for publishedBeforeJoystream`, {
+      timestamp
+    })
+    return PropertyChange.newNoChange()
+  }
+
+  // set new date
+  return PropertyChange.newChange(new Date(timestamp))
 }
 
 interface IConvertAssetParameters {
@@ -522,7 +564,7 @@ function integrateAsset<T>(propertyName: string, result: Object, asset: Property
   result[nameDataObject] = newValue
 }
 
-async function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): Promise<number | undefined> {
+function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): number | undefined {
   // escape if no asset is required
   if (assetIndex === undefined) {
     return undefined
@@ -610,35 +652,21 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
   return license
 }
 
-async function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): Promise<VideoMediaMetadata> {
-  // TODO: handle situations when only some metadata are set (e.g. pixelWidth and mediaType is defined, but pixelHeight is missing)
-  // TODO: handle update of VideoMediaEncoding and VideoMediaMetadata
-  //       right now when only some of mediaType(mb partial), mediaPixelWidth, or mediaPixelHeight is set, the update discards previous values
-  // create new encoding info
-  const encoding = new VideoMediaEncoding({
-    ...videoProtobuf.mediaType,
+function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): RawVideoMetadata {
+  const rawMeta = {
+    encoding: {
+      codecName: PropertyChange.fromObjectProperty<string, 'codecName', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'codecName'),
+      container: PropertyChange.fromObjectProperty<string, 'container', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'container'),
+      mimeMediaType: PropertyChange.fromObjectProperty<string, 'mimeMediaType', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'mimeMediaType'),
+    },
+    pixelWidth: PropertyChange.fromObjectProperty<number, 'mediaPixelWidth', VideoMetadata.AsObject>(videoProtobuf, 'mediaPixelWidth'),
+    pixelHeight: PropertyChange.fromObjectProperty<number, 'mediaPixelHeight', VideoMetadata.AsObject>(videoProtobuf, 'mediaPixelHeight'),
+    size: videoSize === undefined
+      ? PropertyChange.newNoChange()
+      : PropertyChange.newChange(videoSize)
+  } as RawVideoMetadata
 
-    createdById: '1',
-    updatedById: '1',
-  })
-
-  // create new video metadata
-  const videoMeta = new VideoMediaMetadata({
-    encoding,
-    pixelWidth: videoProtobuf.mediaPixelWidth,
-    pixelHeight: videoProtobuf.mediaPixelHeight,
-    createdInBlock: blockNumber,
-
-    createdById: '1',
-    updatedById: '1',
-  })
-
-  // fill in video size if provided
-  if (videoSize !== undefined) {
-    videoMeta.size = videoSize
-  }
-
-  return videoMeta
+  return rawMeta
 }
 
 async function prepareVideoCategory(categoryId: number | undefined, db: DatabaseManager): Promise<PropertyChange<VideoCategory>> {

@@ -12,3 +12,5 @@ export { typeRegistry };
 export * from "./members";
 export * from "./content";
 export * from "./data-directory";
+export * from "./storage-working-group";
+export * from "./gateway-working-group";

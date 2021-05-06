@@ -32,6 +32,7 @@
     "@polkadot/api": "4.2.1",
     "@polkadot/api-contract": "4.2.1",
     "@polkadot/keyring": "^6.0.5",
+    "@polkadot/metadata": "4.2.1",
     "@polkadot/types": "4.2.1",
     "@polkadot/util": "^6.0.5",
     "@polkadot/util-crypto": "^6.0.5",
@@ -41,6 +42,7 @@
     "bn.js": "^5.1.2",
     "rxjs": "^6.6.2",
     "typeorm": "^0.2.31",
+    "pg": "^8.4.0",
     "chalk": "^4.0.0"
   },
   "devDependencies": {

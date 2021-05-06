@@ -1687,6 +1687,10 @@ declare module '@polkadot/api/types/errors' {
        **/
       EmptyTitleProvided: AugmentedError<ApiType>;
       /**
+       * Insufficient balance for operation.
+       **/
+      InsufficientBalance: AugmentedError<ApiType>;
+      /**
        * Approval threshold cannot be zero
        **/
       InvalidParameterApprovalThreshold: AugmentedError<ApiType>;

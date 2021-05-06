@@ -72,9 +72,16 @@ where
         );
     }
 
+    fn check_for_insufficient_balance(&self) {
+        assert_eq!(
+            (self.successful_call)(),
+            Err(proposals_engine::Error::<Test>::InsufficientBalance.into())
+        );
+    }
+
     fn check_for_successful_call(&self) {
         let account_id = 1;
-        let _imbalance = <Test as stake::Config>::Currency::deposit_creating(&account_id, 150000);
+        let _imbalance = <Test as stake::Config>::Currency::deposit_creating(&account_id, 5_000_000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -95,6 +102,7 @@ where
     pub fn check_all(&self) {
         self.check_call_for_insufficient_rights();
         self.check_for_invalid_stakes();
+        self.check_for_insufficient_balance();
         self.check_for_successful_call();
     }
 }
@@ -102,8 +110,6 @@ where
 #[test]
 fn create_text_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_text_proposal(
@@ -187,8 +193,6 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
 #[test]
 fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 10000000);
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_runtime_upgrade_proposal(
@@ -272,8 +276,6 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
 #[test]
 fn create_set_election_parameters_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 2000000);
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_election_parameters_proposal(
@@ -566,8 +568,6 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
 #[test]
 fn create_set_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1000000);
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_set_validator_count_proposal(
@@ -785,8 +785,6 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
             working_group,
         };
 
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
                 ProposalCodex::create_add_working_group_leader_opening_proposal(
@@ -852,8 +850,6 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
 ) {
     initial_test_ext().execute_with(|| {
         let opening_id = 1; // random opening id.
-
-        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -930,8 +926,6 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             reward_policy: None,
             working_group,
         };
-
-        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {

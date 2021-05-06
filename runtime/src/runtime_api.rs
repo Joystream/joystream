@@ -11,7 +11,10 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
-use crate::{DataDirectory, GatewayWorkingGroupInstance, OperationsWorkingGroupInstance};
+use crate::{
+    ContentDirectoryWorkingGroupInstance, DataDirectory, GatewayWorkingGroupInstance,
+    OperationsWorkingGroupInstance, StorageWorkingGroupInstance,
+};
 
 use crate::constants::PRIMARY_PROBABILITY;
 
@@ -74,6 +77,13 @@ pub(crate) type OperationsWorkingGroup<T> =
 // Alias for the gateway working group
 pub(crate) type GatewayWorkingGroup<T> = working_group::Module<T, GatewayWorkingGroupInstance>;
 
+// Alias for the storage working group
+pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
+
+// Alias for the content working group
+pub(crate) type ContentDirectoryWorkingGroup<T> =
+    working_group::Module<T, ContentDirectoryWorkingGroupInstance>;
+
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
@@ -87,6 +97,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 
         let default_content_working_group_mint_capacity = 0;
 
+        // Initialize new groups
         OperationsWorkingGroup::<Runtime>::initialize_working_group(
             default_text_constraint,
             default_text_constraint,
@@ -112,7 +123,14 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
             data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
         );
 
-        // TODO: storage / data_directory migration or clear all data objects
+        // Initialize existing groups
+        StorageWorkingGroup::<Runtime>::set_worker_storage_size_constraint(
+            default_storage_size_constraint,
+        );
+
+        ContentDirectoryWorkingGroup::<Runtime>::set_worker_storage_size_constraint(
+            default_storage_size_constraint,
+        );
 
         10_000_000 // TODO: adjust weight
     }

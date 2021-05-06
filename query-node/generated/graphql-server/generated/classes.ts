@@ -23,14 +23,17 @@ const { GraphQLJSONObject } = require('graphql-type-json');
 // @ts-ignore
 import { BaseWhereInput, JsonObject, PaginationArgs, DateOnlyString, DateTimeString, BigInt, Bytes } from 'warthog';
 
-import { MembershipEntryMethod } from "../src/modules/membership/membership.model";
+import { WorkerType } from "../src/modules/worker/worker.model";
 import { AssetAvailability } from "../src/modules/video/video.model";
 import { LiaisonJudgement } from "../src/modules/data-object/data-object.model";
+import { MembershipEntryMethod } from "../src/modules/membership/membership.model";
 
 // @ts-ignore
-import { Membership } from "../src/modules/membership/membership.model";
-// @ts-ignore
 import { CuratorGroup } from "../src/modules/curator-group/curator-group.model";
+// @ts-ignore
+import { ChannelCategory } from "../src/modules/channel-category/channel-category.model";
+// @ts-ignore
+import { Worker } from "../src/modules/worker/worker.model";
 // @ts-ignore
 import { VideoCategory } from "../src/modules/video-category/video-category.model";
 // @ts-ignore
@@ -50,346 +53,7 @@ import { DataObject } from "../src/modules/data-object/data-object.model";
 // @ts-ignore
 import { Channel } from "../src/modules/channel/channel.model";
 // @ts-ignore
-import { ChannelCategory } from "../src/modules/channel-category/channel-category.model";
-
-export enum MembershipOrderByEnum {
-  createdAt_ASC = "createdAt_ASC",
-  createdAt_DESC = "createdAt_DESC",
-
-  updatedAt_ASC = "updatedAt_ASC",
-  updatedAt_DESC = "updatedAt_DESC",
-
-  deletedAt_ASC = "deletedAt_ASC",
-  deletedAt_DESC = "deletedAt_DESC",
-
-  handle_ASC = "handle_ASC",
-  handle_DESC = "handle_DESC",
-
-  avatarUri_ASC = "avatarUri_ASC",
-  avatarUri_DESC = "avatarUri_DESC",
-
-  about_ASC = "about_ASC",
-  about_DESC = "about_DESC",
-
-  controllerAccount_ASC = "controllerAccount_ASC",
-  controllerAccount_DESC = "controllerAccount_DESC",
-
-  rootAccount_ASC = "rootAccount_ASC",
-  rootAccount_DESC = "rootAccount_DESC",
-
-  registeredAtBlock_ASC = "registeredAtBlock_ASC",
-  registeredAtBlock_DESC = "registeredAtBlock_DESC",
-
-  registeredAtTime_ASC = "registeredAtTime_ASC",
-  registeredAtTime_DESC = "registeredAtTime_DESC",
-
-  entry_ASC = "entry_ASC",
-  entry_DESC = "entry_DESC",
-
-  subscription_ASC = "subscription_ASC",
-  subscription_DESC = "subscription_DESC"
-}
-
-registerEnumType(MembershipOrderByEnum, {
-  name: "MembershipOrderByInput"
-});
-
-@TypeGraphQLInputType()
-export class MembershipWhereInput {
-  @TypeGraphQLField(() => ID, { nullable: true })
-  id_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  id_in?: string[];
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_eq?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_lt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_lte?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_gt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_gte?: Date;
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  createdById_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  createdById_in?: string[];
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_eq?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_lt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_lte?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_gt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_gte?: Date;
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  updatedById_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  updatedById_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  deletedAt_all?: Boolean;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_eq?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_lt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_lte?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_gt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_gte?: Date;
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  deletedById_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  deletedById_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  handle_eq?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  handle_contains?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  handle_startsWith?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  handle_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  handle_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  avatarUri_eq?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  avatarUri_contains?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  avatarUri_startsWith?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  avatarUri_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  avatarUri_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  about_eq?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  about_contains?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  about_startsWith?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  about_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  about_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_eq?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_contains?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_startsWith?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  controllerAccount_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_eq?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_contains?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_startsWith?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  rootAccount_in?: string[];
-
-  @TypeGraphQLField(() => Int, { nullable: true })
-  registeredAtBlock_eq?: number;
-
-  @TypeGraphQLField(() => Int, { nullable: true })
-  registeredAtBlock_gt?: number;
-
-  @TypeGraphQLField(() => Int, { nullable: true })
-  registeredAtBlock_gte?: number;
-
-  @TypeGraphQLField(() => Int, { nullable: true })
-  registeredAtBlock_lt?: number;
-
-  @TypeGraphQLField(() => Int, { nullable: true })
-  registeredAtBlock_lte?: number;
-
-  @TypeGraphQLField(() => [Int], { nullable: true })
-  registeredAtBlock_in?: number[];
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  registeredAtTime_eq?: DateTimeString;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  registeredAtTime_lt?: DateTimeString;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  registeredAtTime_lte?: DateTimeString;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  registeredAtTime_gt?: DateTimeString;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  registeredAtTime_gte?: DateTimeString;
-
-  @TypeGraphQLField(() => MembershipEntryMethod, { nullable: true })
-  entry_eq?: MembershipEntryMethod;
-
-  @TypeGraphQLField(() => [MembershipEntryMethod], { nullable: true })
-  entry_in?: MembershipEntryMethod[];
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription_eq?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription_gt?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription_gte?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription_lt?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription_lte?: BN;
-
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  subscription_in?: BN[];
-}
-
-@TypeGraphQLInputType()
-export class MembershipWhereUniqueInput {
-  @TypeGraphQLField(() => ID, { nullable: true })
-  id?: string;
-
-  @TypeGraphQLField(() => String, { nullable: true })
-  handle?: string;
-}
-
-@TypeGraphQLInputType()
-export class MembershipCreateInput {
-  @TypeGraphQLField()
-  handle!: string;
-
-  @TypeGraphQLField({ nullable: true })
-  avatarUri?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  about?: string;
-
-  @TypeGraphQLField()
-  controllerAccount!: string;
-
-  @TypeGraphQLField()
-  rootAccount!: string;
-
-  @TypeGraphQLField()
-  registeredAtBlock!: number;
-
-  @TypeGraphQLField(() => DateTime)
-  registeredAtTime!: DateTimeString;
-
-  @TypeGraphQLField(() => MembershipEntryMethod)
-  entry!: MembershipEntryMethod;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription?: BN;
-}
-
-@TypeGraphQLInputType()
-export class MembershipUpdateInput {
-  @TypeGraphQLField({ nullable: true })
-  handle?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  avatarUri?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  about?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  registeredAtBlock?: number;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  registeredAtTime?: DateTimeString;
-
-  @TypeGraphQLField(() => MembershipEntryMethod, { nullable: true })
-  entry?: MembershipEntryMethod;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  subscription?: BN;
-}
-
-@ArgsType()
-export class MembershipWhereArgs extends PaginationArgs {
-  @TypeGraphQLField(() => MembershipWhereInput, { nullable: true })
-  where?: MembershipWhereInput;
-
-  @TypeGraphQLField(() => MembershipOrderByEnum, { nullable: true })
-  orderBy?: MembershipOrderByEnum;
-}
-
-@ArgsType()
-export class MembershipCreateManyArgs {
-  @TypeGraphQLField(() => [MembershipCreateInput])
-  data!: MembershipCreateInput[];
-}
-
-@ArgsType()
-export class MembershipUpdateArgs {
-  @TypeGraphQLField() data!: MembershipUpdateInput;
-  @TypeGraphQLField() where!: MembershipWhereUniqueInput;
-}
+import { Membership } from "../src/modules/membership/membership.model";
 
 export enum CuratorGroupOrderByEnum {
   createdAt_ASC = "createdAt_ASC",
@@ -498,8 +162,8 @@ export class CuratorGroupWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class CuratorGroupCreateInput {
-  @TypeGraphQLField(() => [BigInt])
-  curatorIds!: BN[];
+  @TypeGraphQLField(() => [Int])
+  curatorIds!: number[];
 
   @TypeGraphQLField()
   isActive!: boolean;
@@ -507,8 +171,8 @@ export class CuratorGroupCreateInput {
 
 @TypeGraphQLInputType()
 export class CuratorGroupUpdateInput {
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  curatorIds?: BN[];
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  curatorIds?: number[];
 
   @TypeGraphQLField({ nullable: true })
   isActive?: boolean;
@@ -533,6 +197,180 @@ export class CuratorGroupCreateManyArgs {
 export class CuratorGroupUpdateArgs {
   @TypeGraphQLField() data!: CuratorGroupUpdateInput;
   @TypeGraphQLField() where!: CuratorGroupWhereUniqueInput;
+}
+
+export enum ChannelCategoryOrderByEnum {
+  createdAt_ASC = "createdAt_ASC",
+  createdAt_DESC = "createdAt_DESC",
+
+  updatedAt_ASC = "updatedAt_ASC",
+  updatedAt_DESC = "updatedAt_DESC",
+
+  deletedAt_ASC = "deletedAt_ASC",
+  deletedAt_DESC = "deletedAt_DESC",
+
+  name_ASC = "name_ASC",
+  name_DESC = "name_DESC",
+
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC"
+}
+
+registerEnumType(ChannelCategoryOrderByEnum, {
+  name: "ChannelCategoryOrderByInput"
+});
+
+@TypeGraphQLInputType()
+export class ChannelCategoryWhereInput {
+  @TypeGraphQLField(() => ID, { nullable: true })
+  id_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  id_in?: string[];
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_eq?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_lt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_lte?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_gt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_gte?: Date;
+
+  @TypeGraphQLField(() => ID, { nullable: true })
+  createdById_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  createdById_in?: string[];
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_eq?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_lt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_lte?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_gt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_gte?: Date;
+
+  @TypeGraphQLField(() => ID, { nullable: true })
+  updatedById_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  updatedById_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  deletedAt_all?: Boolean;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_eq?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_lt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_lte?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_gt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_gte?: Date;
+
+  @TypeGraphQLField(() => ID, { nullable: true })
+  deletedById_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  deletedById_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  name_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  name_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  name_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  name_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  name_in?: string[];
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  createdInBlock_eq?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  createdInBlock_gt?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  createdInBlock_gte?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  createdInBlock_lt?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  createdInBlock_lte?: number;
+
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  createdInBlock_in?: number[];
+}
+
+@TypeGraphQLInputType()
+export class ChannelCategoryWhereUniqueInput {
+  @TypeGraphQLField(() => ID)
+  id?: string;
+}
+
+@TypeGraphQLInputType()
+export class ChannelCategoryCreateInput {
+  @TypeGraphQLField({ nullable: true })
+  name?: string;
+
+  @TypeGraphQLField()
+  createdInBlock!: number;
+}
+
+@TypeGraphQLInputType()
+export class ChannelCategoryUpdateInput {
+  @TypeGraphQLField({ nullable: true })
+  name?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  createdInBlock?: number;
+}
+
+@ArgsType()
+export class ChannelCategoryWhereArgs extends PaginationArgs {
+  @TypeGraphQLField(() => ChannelCategoryWhereInput, { nullable: true })
+  where?: ChannelCategoryWhereInput;
+
+  @TypeGraphQLField(() => ChannelCategoryOrderByEnum, { nullable: true })
+  orderBy?: ChannelCategoryOrderByEnum;
+}
+
+@ArgsType()
+export class ChannelCategoryCreateManyArgs {
+  @TypeGraphQLField(() => [ChannelCategoryCreateInput])
+  data!: ChannelCategoryCreateInput[];
+}
+
+@ArgsType()
+export class ChannelCategoryUpdateArgs {
+  @TypeGraphQLField() data!: ChannelCategoryUpdateInput;
+  @TypeGraphQLField() where!: ChannelCategoryWhereUniqueInput;
 }
 
 export enum DataObjectOwnerChannelOrderByEnum {
@@ -630,23 +468,23 @@ export class DataObjectOwnerChannelWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  channel_eq?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  channel_eq?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  channel_gt?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  channel_gt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  channel_gte?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  channel_gte?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  channel_lt?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  channel_lt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  channel_lte?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  channel_lte?: number;
 
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  channel_in?: BN[];
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  channel_in?: number[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
   dummy_eq?: number;
@@ -675,8 +513,8 @@ export class DataObjectOwnerChannelWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerChannelCreateInput {
-  @TypeGraphQLField(() => BigInt)
-  channel!: BN;
+  @TypeGraphQLField()
+  channel!: number;
 
   @TypeGraphQLField({ nullable: true })
   dummy?: number;
@@ -684,8 +522,8 @@ export class DataObjectOwnerChannelCreateInput {
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerChannelUpdateInput {
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  channel?: BN;
+  @TypeGraphQLField({ nullable: true })
+  channel?: number;
 
   @TypeGraphQLField({ nullable: true })
   dummy?: number;
@@ -954,23 +792,23 @@ export class DataObjectOwnerDaoWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  dao_eq?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  dao_eq?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  dao_gt?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  dao_gt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  dao_gte?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  dao_gte?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  dao_lt?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  dao_lt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  dao_lte?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  dao_lte?: number;
 
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  dao_in?: BN[];
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  dao_in?: number[];
 }
 
 @TypeGraphQLInputType()
@@ -981,14 +819,14 @@ export class DataObjectOwnerDaoWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerDaoCreateInput {
-  @TypeGraphQLField(() => BigInt)
-  dao!: BN;
+  @TypeGraphQLField()
+  dao!: number;
 }
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerDaoUpdateInput {
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  dao?: BN;
+  @TypeGraphQLField({ nullable: true })
+  dao?: number;
 }
 
 @ArgsType()
@@ -1107,23 +945,23 @@ export class DataObjectOwnerMemberWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  member_eq?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  member_eq?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  member_gt?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  member_gt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  member_gte?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  member_gte?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  member_lt?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  member_lt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  member_lte?: BN;
+  @TypeGraphQLField(() => Int, { nullable: true })
+  member_lte?: number;
 
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  member_in?: BN[];
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  member_in?: number[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
   dummy_eq?: number;
@@ -1152,8 +990,8 @@ export class DataObjectOwnerMemberWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerMemberCreateInput {
-  @TypeGraphQLField(() => BigInt)
-  member!: BN;
+  @TypeGraphQLField()
+  member!: number;
 
   @TypeGraphQLField({ nullable: true })
   dummy?: number;
@@ -1161,8 +999,8 @@ export class DataObjectOwnerMemberCreateInput {
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerMemberUpdateInput {
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  member?: BN;
+  @TypeGraphQLField({ nullable: true })
+  member?: number;
 
   @TypeGraphQLField({ nullable: true })
   dummy?: number;
@@ -1199,8 +1037,8 @@ export enum DataObjectOwnerWorkingGroupOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
-  dummy_ASC = "dummy_ASC",
-  dummy_DESC = "dummy_DESC"
+  workingGroup_ASC = "workingGroup_ASC",
+  workingGroup_DESC = "workingGroup_DESC"
 }
 
 registerEnumType(DataObjectOwnerWorkingGroupOrderByEnum, {
@@ -1282,22 +1120,22 @@ export class DataObjectOwnerWorkingGroupWhereInput {
   deletedById_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  dummy_eq?: number;
+  workingGroup_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  dummy_gt?: number;
+  workingGroup_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  dummy_gte?: number;
+  workingGroup_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  dummy_lt?: number;
+  workingGroup_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  dummy_lte?: number;
+  workingGroup_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  dummy_in?: number[];
+  workingGroup_in?: number[];
 }
 
 @TypeGraphQLInputType()
@@ -1308,14 +1146,14 @@ export class DataObjectOwnerWorkingGroupWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerWorkingGroupCreateInput {
-  @TypeGraphQLField({ nullable: true })
-  dummy?: number;
+  @TypeGraphQLField()
+  workingGroup!: number;
 }
 
 @TypeGraphQLInputType()
 export class DataObjectOwnerWorkingGroupUpdateInput {
   @TypeGraphQLField({ nullable: true })
-  dummy?: number;
+  workingGroup?: number;
 }
 
 @ArgsType()
@@ -1343,6 +1181,207 @@ export class DataObjectOwnerWorkingGroupUpdateArgs {
   @TypeGraphQLField() where!: DataObjectOwnerWorkingGroupWhereUniqueInput;
 }
 
+export enum WorkerOrderByEnum {
+  createdAt_ASC = "createdAt_ASC",
+  createdAt_DESC = "createdAt_DESC",
+
+  updatedAt_ASC = "updatedAt_ASC",
+  updatedAt_DESC = "updatedAt_DESC",
+
+  deletedAt_ASC = "deletedAt_ASC",
+  deletedAt_DESC = "deletedAt_DESC",
+
+  isActive_ASC = "isActive_ASC",
+  isActive_DESC = "isActive_DESC",
+
+  workerId_ASC = "workerId_ASC",
+  workerId_DESC = "workerId_DESC",
+
+  type_ASC = "type_ASC",
+  type_DESC = "type_DESC",
+
+  metadata_ASC = "metadata_ASC",
+  metadata_DESC = "metadata_DESC"
+}
+
+registerEnumType(WorkerOrderByEnum, {
+  name: "WorkerOrderByInput"
+});
+
+@TypeGraphQLInputType()
+export class WorkerWhereInput {
+  @TypeGraphQLField(() => ID, { nullable: true })
+  id_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  id_in?: string[];
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_eq?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_lt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_lte?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_gt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  createdAt_gte?: Date;
+
+  @TypeGraphQLField(() => ID, { nullable: true })
+  createdById_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  createdById_in?: string[];
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_eq?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_lt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_lte?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_gt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  updatedAt_gte?: Date;
+
+  @TypeGraphQLField(() => ID, { nullable: true })
+  updatedById_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  updatedById_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  deletedAt_all?: Boolean;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_eq?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_lt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_lte?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_gt?: Date;
+
+  @TypeGraphQLField(() => DateTime, { nullable: true })
+  deletedAt_gte?: Date;
+
+  @TypeGraphQLField(() => ID, { nullable: true })
+  deletedById_eq?: string;
+
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  deletedById_in?: string[];
+
+  @TypeGraphQLField(() => Boolean, { nullable: true })
+  isActive_eq?: Boolean;
+
+  @TypeGraphQLField(() => [Boolean], { nullable: true })
+  isActive_in?: Boolean[];
+
+  @TypeGraphQLField({ nullable: true })
+  workerId_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  workerId_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  workerId_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  workerId_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  workerId_in?: string[];
+
+  @TypeGraphQLField(() => WorkerType, { nullable: true })
+  type_eq?: WorkerType;
+
+  @TypeGraphQLField(() => [WorkerType], { nullable: true })
+  type_in?: WorkerType[];
+
+  @TypeGraphQLField({ nullable: true })
+  metadata_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  metadata_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  metadata_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  metadata_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  metadata_in?: string[];
+}
+
+@TypeGraphQLInputType()
+export class WorkerWhereUniqueInput {
+  @TypeGraphQLField(() => ID)
+  id?: string;
+}
+
+@TypeGraphQLInputType()
+export class WorkerCreateInput {
+  @TypeGraphQLField()
+  isActive!: boolean;
+
+  @TypeGraphQLField()
+  workerId!: string;
+
+  @TypeGraphQLField(() => WorkerType)
+  type!: WorkerType;
+
+  @TypeGraphQLField({ nullable: true })
+  metadata?: string;
+}
+
+@TypeGraphQLInputType()
+export class WorkerUpdateInput {
+  @TypeGraphQLField({ nullable: true })
+  isActive?: boolean;
+
+  @TypeGraphQLField({ nullable: true })
+  workerId?: string;
+
+  @TypeGraphQLField(() => WorkerType, { nullable: true })
+  type?: WorkerType;
+
+  @TypeGraphQLField({ nullable: true })
+  metadata?: string;
+}
+
+@ArgsType()
+export class WorkerWhereArgs extends PaginationArgs {
+  @TypeGraphQLField(() => WorkerWhereInput, { nullable: true })
+  where?: WorkerWhereInput;
+
+  @TypeGraphQLField(() => WorkerOrderByEnum, { nullable: true })
+  orderBy?: WorkerOrderByEnum;
+}
+
+@ArgsType()
+export class WorkerCreateManyArgs {
+  @TypeGraphQLField(() => [WorkerCreateInput])
+  data!: WorkerCreateInput[];
+}
+
+@ArgsType()
+export class WorkerUpdateArgs {
+  @TypeGraphQLField() data!: WorkerUpdateInput;
+  @TypeGraphQLField() where!: WorkerWhereUniqueInput;
+}
+
 export enum VideoCategoryOrderByEnum {
   createdAt_ASC = "createdAt_ASC",
   createdAt_DESC = "createdAt_DESC",
@@ -1356,8 +1395,8 @@ export enum VideoCategoryOrderByEnum {
   name_ASC = "name_ASC",
   name_DESC = "name_DESC",
 
-  happenedIn_ASC = "happenedIn_ASC",
-  happenedIn_DESC = "happenedIn_DESC"
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC"
 }
 
 registerEnumType(VideoCategoryOrderByEnum, {
@@ -1454,22 +1493,22 @@ export class VideoCategoryWhereInput {
   name_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_eq?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gt?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gte?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lt?: number;
+  createdInBlock_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lte?: number;
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  happenedIn_in?: number[];
+  createdInBlock_in?: number[];
 }
 
 @TypeGraphQLInputType()
@@ -1484,7 +1523,7 @@ export class VideoCategoryCreateInput {
   name?: string;
 
   @TypeGraphQLField()
-  happenedIn!: number;
+  createdInBlock!: number;
 }
 
 @TypeGraphQLInputType()
@@ -1493,7 +1532,7 @@ export class VideoCategoryUpdateInput {
   name?: string;
 
   @TypeGraphQLField({ nullable: true })
-  happenedIn?: number;
+  createdInBlock?: number;
 }
 
 @ArgsType()
@@ -1530,8 +1569,8 @@ export enum LanguageOrderByEnum {
   iso_ASC = "iso_ASC",
   iso_DESC = "iso_DESC",
 
-  happenedIn_ASC = "happenedIn_ASC",
-  happenedIn_DESC = "happenedIn_DESC"
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC"
 }
 
 registerEnumType(LanguageOrderByEnum, {
@@ -1628,22 +1667,22 @@ export class LanguageWhereInput {
   iso_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_eq?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gt?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gte?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lt?: number;
+  createdInBlock_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lte?: number;
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  happenedIn_in?: number[];
+  createdInBlock_in?: number[];
 }
 
 @TypeGraphQLInputType()
@@ -1658,7 +1697,7 @@ export class LanguageCreateInput {
   iso!: string;
 
   @TypeGraphQLField()
-  happenedIn!: number;
+  createdInBlock!: number;
 }
 
 @TypeGraphQLInputType()
@@ -1667,7 +1706,7 @@ export class LanguageUpdateInput {
   iso?: string;
 
   @TypeGraphQLField({ nullable: true })
-  happenedIn?: number;
+  createdInBlock?: number;
 }
 
 @ArgsType()
@@ -2106,8 +2145,8 @@ export enum VideoMediaMetadataOrderByEnum {
   size_ASC = "size_ASC",
   size_DESC = "size_DESC",
 
-  happenedIn_ASC = "happenedIn_ASC",
-  happenedIn_DESC = "happenedIn_DESC"
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC"
 }
 
 registerEnumType(VideoMediaMetadataOrderByEnum, {
@@ -2230,41 +2269,41 @@ export class VideoMediaMetadataWhereInput {
   @TypeGraphQLField(() => [Int], { nullable: true })
   pixelHeight_in?: number[];
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_eq?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_eq?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_gt?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_gt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_gte?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_gte?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_lt?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_lt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_lte?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_lte?: number;
 
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  size_in?: BN[];
-
-  @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_eq?: number;
+  @TypeGraphQLField(() => [Float], { nullable: true })
+  size_in?: number[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gt?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gte?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lt?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lte?: number;
+  createdInBlock_lt?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  happenedIn_in?: number[];
+  createdInBlock_in?: number[];
 }
 
 @TypeGraphQLInputType()
@@ -2284,11 +2323,11 @@ export class VideoMediaMetadataCreateInput {
   @TypeGraphQLField({ nullable: true })
   pixelHeight?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size?: BN;
+  @TypeGraphQLField({ nullable: true })
+  size?: number;
 
   @TypeGraphQLField()
-  happenedIn!: number;
+  createdInBlock!: number;
 }
 
 @TypeGraphQLInputType()
@@ -2302,11 +2341,11 @@ export class VideoMediaMetadataUpdateInput {
   @TypeGraphQLField({ nullable: true })
   pixelHeight?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size?: BN;
+  @TypeGraphQLField({ nullable: true })
+  size?: number;
 
   @TypeGraphQLField({ nullable: true })
-  happenedIn?: number;
+  createdInBlock?: number;
 }
 
 @ArgsType()
@@ -2529,8 +2568,8 @@ export enum VideoOrderByEnum {
   mediaMetadataId_ASC = "mediaMetadataId_ASC",
   mediaMetadataId_DESC = "mediaMetadataId_DESC",
 
-  happenedIn_ASC = "happenedIn_ASC",
-  happenedIn_DESC = "happenedIn_DESC",
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC",
 
   isFeatured_ASC = "isFeatured_ASC",
   isFeatured_DESC = "isFeatured_DESC"
@@ -2756,22 +2795,22 @@ export class VideoWhereInput {
   mediaMetadataId_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_eq?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gt?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gte?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lt?: number;
+  createdInBlock_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lte?: number;
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  happenedIn_in?: number[];
+  createdInBlock_in?: number[];
 
   @TypeGraphQLField(() => Boolean, { nullable: true })
   isFeatured_eq?: Boolean;
@@ -2788,8 +2827,8 @@ export class VideoWhereUniqueInput {
 
 @TypeGraphQLInputType()
 export class VideoCreateInput {
-  @TypeGraphQLField(() => ID)
-  channelId!: string;
+  @TypeGraphQLField(() => ID, { nullable: true })
+  channelId?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
   categoryId?: string;
@@ -2846,7 +2885,7 @@ export class VideoCreateInput {
   mediaMetadataId?: string;
 
   @TypeGraphQLField()
-  happenedIn!: number;
+  createdInBlock!: number;
 
   @TypeGraphQLField()
   isFeatured!: boolean;
@@ -2912,7 +2951,7 @@ export class VideoUpdateInput {
   mediaMetadataId?: string;
 
   @TypeGraphQLField({ nullable: true })
-  happenedIn?: number;
+  createdInBlock?: number;
 
   @TypeGraphQLField({ nullable: true })
   isFeatured?: boolean;
@@ -2949,8 +2988,8 @@ export enum DataObjectOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
-  addedAt_ASC = "addedAt_ASC",
-  addedAt_DESC = "addedAt_DESC",
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC",
 
   typeId_ASC = "typeId_ASC",
   typeId_DESC = "typeId_DESC",
@@ -3053,22 +3092,22 @@ export class DataObjectWhereInput {
   owner_json?: JsonObject;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  addedAt_eq?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  addedAt_gt?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  addedAt_gte?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  addedAt_lt?: number;
+  createdInBlock_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  addedAt_lte?: number;
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  addedAt_in?: number[];
+  createdInBlock_in?: number[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
   typeId_eq?: number;
@@ -3088,41 +3127,29 @@ export class DataObjectWhereInput {
   @TypeGraphQLField(() => [Int], { nullable: true })
   typeId_in?: number[];
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_eq?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_eq?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_gt?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_gt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_gte?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_gte?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_lt?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_lt?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size_lte?: BN;
+  @TypeGraphQLField(() => Float, { nullable: true })
+  size_lte?: number;
 
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  size_in?: BN[];
+  @TypeGraphQLField(() => [Float], { nullable: true })
+  size_in?: number[];
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  liaisonId_eq?: BN;
+  @TypeGraphQLField(() => ID, { nullable: true })
+  liaisonId_eq?: string;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  liaisonId_gt?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  liaisonId_gte?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  liaisonId_lt?: BN;
-
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  liaisonId_lte?: BN;
-
-  @TypeGraphQLField(() => [BigInt], { nullable: true })
-  liaisonId_in?: BN[];
+  @TypeGraphQLField(() => [ID], { nullable: true })
+  liaisonId_in?: string[];
 
   @TypeGraphQLField(() => LiaisonJudgement, { nullable: true })
   liaisonJudgement_eq?: LiaisonJudgement;
@@ -3173,16 +3200,16 @@ export class DataObjectCreateInput {
   owner!: JsonObject;
 
   @TypeGraphQLField()
-  addedAt!: number;
+  createdInBlock!: number;
 
   @TypeGraphQLField()
   typeId!: number;
 
-  @TypeGraphQLField(() => BigInt)
-  size!: BN;
+  @TypeGraphQLField()
+  size!: number;
 
-  @TypeGraphQLField(() => BigInt)
-  liaisonId!: BN;
+  @TypeGraphQLField(() => ID, { nullable: true })
+  liaisonId?: string;
 
   @TypeGraphQLField(() => LiaisonJudgement)
   liaisonJudgement!: LiaisonJudgement;
@@ -3200,16 +3227,16 @@ export class DataObjectUpdateInput {
   owner?: JsonObject;
 
   @TypeGraphQLField({ nullable: true })
-  addedAt?: number;
+  createdInBlock?: number;
 
   @TypeGraphQLField({ nullable: true })
   typeId?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  size?: BN;
+  @TypeGraphQLField({ nullable: true })
+  size?: number;
 
-  @TypeGraphQLField(() => BigInt, { nullable: true })
-  liaisonId?: BN;
+  @TypeGraphQLField(() => ID, { nullable: true })
+  liaisonId?: string;
 
   @TypeGraphQLField(() => LiaisonJudgement, { nullable: true })
   liaisonJudgement?: LiaisonJudgement;
@@ -3291,8 +3318,8 @@ export enum ChannelOrderByEnum {
   languageId_ASC = "languageId_ASC",
   languageId_DESC = "languageId_DESC",
 
-  happenedIn_ASC = "happenedIn_ASC",
-  happenedIn_DESC = "happenedIn_DESC"
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC"
 }
 
 registerEnumType(ChannelOrderByEnum, {
@@ -3479,22 +3506,22 @@ export class ChannelWhereInput {
   languageId_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_eq?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gt?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gte?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lt?: number;
+  createdInBlock_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lte?: number;
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  happenedIn_in?: number[];
+  createdInBlock_in?: number[];
 }
 
 @TypeGraphQLInputType()
@@ -3551,7 +3578,7 @@ export class ChannelCreateInput {
   languageId?: string;
 
   @TypeGraphQLField()
-  happenedIn!: number;
+  createdInBlock!: number;
 }
 
 @TypeGraphQLInputType()
@@ -3602,7 +3629,7 @@ export class ChannelUpdateInput {
   languageId?: string;
 
   @TypeGraphQLField({ nullable: true })
-  happenedIn?: number;
+  createdInBlock?: number;
 }
 
 @ArgsType()
@@ -3626,7 +3653,7 @@ export class ChannelUpdateArgs {
   @TypeGraphQLField() where!: ChannelWhereUniqueInput;
 }
 
-export enum ChannelCategoryOrderByEnum {
+export enum MembershipOrderByEnum {
   createdAt_ASC = "createdAt_ASC",
   createdAt_DESC = "createdAt_DESC",
 
@@ -3636,19 +3663,37 @@ export enum ChannelCategoryOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
-  name_ASC = "name_ASC",
-  name_DESC = "name_DESC",
+  handle_ASC = "handle_ASC",
+  handle_DESC = "handle_DESC",
 
-  happenedIn_ASC = "happenedIn_ASC",
-  happenedIn_DESC = "happenedIn_DESC"
+  avatarUri_ASC = "avatarUri_ASC",
+  avatarUri_DESC = "avatarUri_DESC",
+
+  about_ASC = "about_ASC",
+  about_DESC = "about_DESC",
+
+  controllerAccount_ASC = "controllerAccount_ASC",
+  controllerAccount_DESC = "controllerAccount_DESC",
+
+  rootAccount_ASC = "rootAccount_ASC",
+  rootAccount_DESC = "rootAccount_DESC",
+
+  createdInBlock_ASC = "createdInBlock_ASC",
+  createdInBlock_DESC = "createdInBlock_DESC",
+
+  entry_ASC = "entry_ASC",
+  entry_DESC = "entry_DESC",
+
+  subscription_ASC = "subscription_ASC",
+  subscription_DESC = "subscription_DESC"
 }
 
-registerEnumType(ChannelCategoryOrderByEnum, {
-  name: "ChannelCategoryOrderByInput"
+registerEnumType(MembershipOrderByEnum, {
+  name: "MembershipOrderByInput"
 });
 
 @TypeGraphQLInputType()
-export class ChannelCategoryWhereInput {
+export class MembershipWhereInput {
   @TypeGraphQLField(() => ID, { nullable: true })
   id_eq?: string;
 
@@ -3722,80 +3767,203 @@ export class ChannelCategoryWhereInput {
   deletedById_in?: string[];
 
   @TypeGraphQLField({ nullable: true })
-  name_eq?: string;
+  handle_eq?: string;
 
   @TypeGraphQLField({ nullable: true })
-  name_contains?: string;
+  handle_contains?: string;
 
   @TypeGraphQLField({ nullable: true })
-  name_startsWith?: string;
+  handle_startsWith?: string;
 
   @TypeGraphQLField({ nullable: true })
-  name_endsWith?: string;
+  handle_endsWith?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
-  name_in?: string[];
+  handle_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  avatarUri_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  avatarUri_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  avatarUri_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  avatarUri_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  avatarUri_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  about_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  about_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  about_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  about_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  about_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  controllerAccount_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  controllerAccount_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  controllerAccount_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  controllerAccount_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  controllerAccount_in?: string[];
+
+  @TypeGraphQLField({ nullable: true })
+  rootAccount_eq?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  rootAccount_contains?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  rootAccount_startsWith?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  rootAccount_endsWith?: string;
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  rootAccount_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_eq?: number;
+  createdInBlock_eq?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gt?: number;
+  createdInBlock_gt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_gte?: number;
+  createdInBlock_gte?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lt?: number;
+  createdInBlock_lt?: number;
 
   @TypeGraphQLField(() => Int, { nullable: true })
-  happenedIn_lte?: number;
+  createdInBlock_lte?: number;
 
   @TypeGraphQLField(() => [Int], { nullable: true })
-  happenedIn_in?: number[];
+  createdInBlock_in?: number[];
+
+  @TypeGraphQLField(() => MembershipEntryMethod, { nullable: true })
+  entry_eq?: MembershipEntryMethod;
+
+  @TypeGraphQLField(() => [MembershipEntryMethod], { nullable: true })
+  entry_in?: MembershipEntryMethod[];
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  subscription_eq?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  subscription_gt?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  subscription_gte?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  subscription_lt?: number;
+
+  @TypeGraphQLField(() => Int, { nullable: true })
+  subscription_lte?: number;
+
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  subscription_in?: number[];
 }
 
 @TypeGraphQLInputType()
-export class ChannelCategoryWhereUniqueInput {
-  @TypeGraphQLField(() => ID)
+export class MembershipWhereUniqueInput {
+  @TypeGraphQLField(() => ID, { nullable: true })
   id?: string;
+
+  @TypeGraphQLField(() => String, { nullable: true })
+  handle?: string;
 }
 
 @TypeGraphQLInputType()
-export class ChannelCategoryCreateInput {
+export class MembershipCreateInput {
+  @TypeGraphQLField()
+  handle!: string;
+
   @TypeGraphQLField({ nullable: true })
-  name?: string;
+  avatarUri?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  about?: string;
 
   @TypeGraphQLField()
-  happenedIn!: number;
+  controllerAccount!: string;
+
+  @TypeGraphQLField()
+  rootAccount!: string;
+
+  @TypeGraphQLField()
+  createdInBlock!: number;
+
+  @TypeGraphQLField(() => MembershipEntryMethod)
+  entry!: MembershipEntryMethod;
+
+  @TypeGraphQLField({ nullable: true })
+  subscription?: number;
 }
 
 @TypeGraphQLInputType()
-export class ChannelCategoryUpdateInput {
+export class MembershipUpdateInput {
   @TypeGraphQLField({ nullable: true })
-  name?: string;
+  handle?: string;
 
   @TypeGraphQLField({ nullable: true })
-  happenedIn?: number;
+  avatarUri?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  about?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  controllerAccount?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  rootAccount?: string;
+
+  @TypeGraphQLField({ nullable: true })
+  createdInBlock?: number;
+
+  @TypeGraphQLField(() => MembershipEntryMethod, { nullable: true })
+  entry?: MembershipEntryMethod;
+
+  @TypeGraphQLField({ nullable: true })
+  subscription?: number;
 }
 
 @ArgsType()
-export class ChannelCategoryWhereArgs extends PaginationArgs {
-  @TypeGraphQLField(() => ChannelCategoryWhereInput, { nullable: true })
-  where?: ChannelCategoryWhereInput;
+export class MembershipWhereArgs extends PaginationArgs {
+  @TypeGraphQLField(() => MembershipWhereInput, { nullable: true })
+  where?: MembershipWhereInput;
 
-  @TypeGraphQLField(() => ChannelCategoryOrderByEnum, { nullable: true })
-  orderBy?: ChannelCategoryOrderByEnum;
+  @TypeGraphQLField(() => MembershipOrderByEnum, { nullable: true })
+  orderBy?: MembershipOrderByEnum;
 }
 
 @ArgsType()
-export class ChannelCategoryCreateManyArgs {
-  @TypeGraphQLField(() => [ChannelCategoryCreateInput])
-  data!: ChannelCategoryCreateInput[];
+export class MembershipCreateManyArgs {
+  @TypeGraphQLField(() => [MembershipCreateInput])
+  data!: MembershipCreateInput[];
 }
 
 @ArgsType()
-export class ChannelCategoryUpdateArgs {
-  @TypeGraphQLField() data!: ChannelCategoryUpdateInput;
-  @TypeGraphQLField() where!: ChannelCategoryWhereUniqueInput;
+export class MembershipUpdateArgs {
+  @TypeGraphQLField() data!: MembershipUpdateInput;
+  @TypeGraphQLField() where!: MembershipWhereUniqueInput;
 }

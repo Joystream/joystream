@@ -3251,7 +3251,7 @@
     "@polkadot/util" "6.3.1"
     "@polkadot/util-crypto" "6.3.1"
 
-"@polkadot/metadata@4.2.1":
+"@polkadot/metadata@4.2.1", "@polkadot/metadata@^4.1.1":
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/metadata/-/metadata-4.2.1.tgz#7bff99e44992708469e7b2aa70d0865637d8febe"
   integrity sha512-oXuKOrKTU0wys5pedKd1OVUDWK8/NoBRCrUYN8fxq3Qq/J9Sz6lF4ZbgX3w22C75l1z2+acsebiZBwlpWgKeqw==
@@ -3263,19 +3263,7 @@
     "@polkadot/util-crypto" "^6.0.5"
     bn.js "^4.11.9"
 
-"@polkadot/metadata@^4.1.1":
-  version "4.7.2"
-  resolved "https://registry.yarnpkg.com/@polkadot/metadata/-/metadata-4.7.2.tgz#91076a1c1158494574a1965ec1fe124fb4d1b848"
-  integrity sha512-+YWeD828cpIpD31epoSZfK5kmtJsBcgTTyYsQ4bBO4NBJceLTipmHgyLXs7fXjU4cC6uvSuBnAV0KGJW7L9nDQ==
-  dependencies:
-    "@babel/runtime" "^7.13.17"
-    "@polkadot/types" "4.7.2"
-    "@polkadot/types-known" "4.7.2"
-    "@polkadot/util" "^6.3.1"
-    "@polkadot/util-crypto" "^6.3.1"
-    bn.js "^4.11.9"
-
-"@polkadot/networks@6.3.1", "@polkadot/networks@^6.0.5", "@polkadot/networks@^6.3.1":
+"@polkadot/networks@6.3.1", "@polkadot/networks@^6.0.5":
   version "6.3.1"
   resolved "https://registry.yarnpkg.com/@polkadot/networks/-/networks-6.3.1.tgz#c5063681ea73f8b579f418d57d0eba2d4bb72292"
   integrity sha512-oANup0CLGt75CPbE3gz2HUWUlqQKucImdb1TtStLXMUH+Aj8ZOnQFA2lwixzaRdx+ymPfmEL7GkF36i96OqQVw==
@@ -3365,18 +3353,7 @@
     "@polkadot/util" "^6.0.5"
     bn.js "^4.11.9"
 
-"@polkadot/types-known@4.7.2":
-  version "4.7.2"
-  resolved "https://registry.yarnpkg.com/@polkadot/types-known/-/types-known-4.7.2.tgz#d6b55c75a9461a09490167a679b6ed783eab6350"
-  integrity sha512-vlIMBtBdVYHyjWqonQ39PCdZJ9WeTsA5h5zr2mEpkCSoopby5pZ6eOR8CPqjc1uYbdDHT72Dbtx8Wr9L7z8HXg==
-  dependencies:
-    "@babel/runtime" "^7.13.17"
-    "@polkadot/networks" "^6.3.1"
-    "@polkadot/types" "4.7.2"
-    "@polkadot/util" "^6.3.1"
-    bn.js "^4.11.9"
-
-"@polkadot/types@4.2.1", "@polkadot/types@4.7.2":
+"@polkadot/types@4.2.1":
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-4.2.1.tgz#7be97d3abda4bb3f9031b43602062ed464596696"
   integrity sha512-xl8QnbXiJmSm6MUZH/U/ov3ZSXMN+KgNjsTCCzfz2xR5B3eK9ClYcstYYkNSyF12K90Gut9bnNSGZvaCfT2hNQ==
@@ -3431,7 +3408,7 @@
     "@babel/runtime" "^7.10.5"
     color "^3.1.2"
 
-"@polkadot/util-crypto@6.3.1", "@polkadot/util-crypto@^3.0.1", "@polkadot/util-crypto@^6.0.5", "@polkadot/util-crypto@^6.3.1":
+"@polkadot/util-crypto@6.3.1", "@polkadot/util-crypto@^3.0.1", "@polkadot/util-crypto@^6.0.5":
   version "6.3.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util-crypto/-/util-crypto-6.3.1.tgz#5328da77bdee5064bc41f9dec0a76cc634690b88"
   integrity sha512-fwH4t6EN2XACwJB2Z5xUyNo4mQ1RXJj0MgVaaLua8PbG0qq9tt4eaEbdVzrm7A6igIfsTntDoZISTfVjBcRtkQ==
@@ -21599,11 +21576,6 @@ performance-now@^2.1.0:
   resolved "https://registry.yarnpkg.com/performance-now/-/performance-now-2.1.0.tgz#6309f4e0e5fa913ec1c69307ae364b4b377c9e7b"
   integrity sha1-Ywn04OX6kT7BxpMHrjZLSzd8nns=
 
-pg-connection-string@0.1.3:
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-0.1.3.tgz#da1847b20940e42ee1492beaf65d49d91b245df7"
-  integrity sha1-2hhHsglA5C7hSSvq9l1J2RskXfc=
-
 pg-connection-string@^2.4.0, pg-connection-string@^2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.5.0.tgz#538cadd0f7e603fc09a12590f3b8a452c2c0cf34"
@@ -21628,16 +21600,6 @@ pg-listen@^1.7.0:
     pg-format "^1.0.4"
     typed-emitter "^0.1.0"
 
-pg-packet-stream@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/pg-packet-stream/-/pg-packet-stream-1.1.0.tgz#e45c3ae678b901a2873af1e17b92d787962ef914"
-  integrity sha512-kRBH0tDIW/8lfnnOyTwKD23ygJ/kexQVXZs7gEyBljw4FYqimZFxnMMx50ndZ8In77QgfGuItS5LLclC2TtjYg==
-
-pg-pool@^2.0.10:
-  version "2.0.10"
-  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-2.0.10.tgz#842ee23b04e86824ce9d786430f8365082d81c4a"
-  integrity sha512-qdwzY92bHf3nwzIUcj+zJ0Qo5lpG/YxchahxIN8+ZVmXqkahKXsnl2aiJPHLYN9o5mB/leG+Xh6XKxtP7e0sjg==
-
 pg-pool@^3.3.0:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-3.3.0.tgz#12d5c7f65ea18a6e99ca9811bd18129071e562fc"
@@ -21659,21 +21621,7 @@ pg-types@^2.1.0, pg-types@^2.2.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg@^7.12.1:
-  version "7.18.2"
-  resolved "https://registry.yarnpkg.com/pg/-/pg-7.18.2.tgz#4e219f05a00aff4db6aab1ba02f28ffa4513b0bb"
-  integrity sha512-Mvt0dGYMwvEADNKy5PMQGlzPudKcKKzJds/VbOeZJpb6f/pI3mmoXX0JksPgI3l3JPP/2Apq7F36O63J7mgveA==
-  dependencies:
-    buffer-writer "2.0.0"
-    packet-reader "1.0.0"
-    pg-connection-string "0.1.3"
-    pg-packet-stream "^1.1.0"
-    pg-pool "^2.0.10"
-    pg-types "^2.1.0"
-    pgpass "1.x"
-    semver "4.3.2"
-
-pg@^8.4.0:
+pg@^7.12.1, pg@^8.4.0:
   version "8.6.0"
   resolved "https://registry.yarnpkg.com/pg/-/pg-8.6.0.tgz#e222296b0b079b280cce106ea991703335487db2"
   integrity sha512-qNS9u61lqljTDFvmk/N66EeGq3n6Ujzj0FFyNMGQr6XuEv4tgNTXvJQTfJdcvGit5p5/DWPu+wj920hAJFI+QQ==
@@ -24660,11 +24608,6 @@ semver-regex@^3.1.2:
   version "5.7.1"
   resolved "https://registry.yarnpkg.com/semver/-/semver-5.7.1.tgz#a954f931aeba508d307bbf069eff0c01c96116f7"
   integrity sha512-sauaDf/PZdVgrLTNYHRtpXa1iRiKcaebiKQ1BJdpQlWH2lCvexQdX55snPFyK7QzpudqbCI0qXFfOasHdyNDGQ==
-
-semver@4.3.2:
-  version "4.3.2"
-  resolved "https://registry.yarnpkg.com/semver/-/semver-4.3.2.tgz#c7a07158a80bedd052355b770d82d6640f803be7"
-  integrity sha1-x6BxWKgL7dBSNVt3DYLWZA+AO+c=
 
 semver@7.0.0:
   version "7.0.0"
