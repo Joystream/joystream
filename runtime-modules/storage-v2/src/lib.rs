@@ -8,8 +8,8 @@
 // TODO:How to create a dynamic bag? -
 //- new methods to be called from another modules: a method create dynamic bag.
 
+// TODO: authentication_key
 // TODO: Check dynamic bag existence.
-// TODO: use blacklist
 // TODO: use StorageBucket.accepting_new_bags
 // TODO: use voucher
 // TODO: update number_of_pending_data_objects or remove it.
@@ -18,10 +18,7 @@
 // TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
 // TODO: add benchmarks
-// TODO: add constants:
-// Max number of distribution bucket families
-// Max number of distribution buckets per family.
-// Max number of pending invitations per distribution bucket.
+// TODO: adjust constants
 
 /// TODO: convert to variable
 pub const MAX_OBJECT_SIZE_LIMIT: u64 = 100;
@@ -89,16 +86,16 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + PartialEq;
 
     /// Defines max allowed storage bucket number.
-    type MaxStorageBucketNumber: Get<u64>; //TODO: adjust value
+    type MaxStorageBucketNumber: Get<u64>;
 
     /// Defines max number of data objects per bag.
-    type MaxNumberOfDataObjectsPerBag: Get<u64>; //TODO: adjust value
+    type MaxNumberOfDataObjectsPerBag: Get<u64>;
 
     /// Defines a prize for a data object deletion.
-    type DataObjectDeletionPrize: Get<BalanceOf<Self>>; //TODO: adjust value
+    type DataObjectDeletionPrize: Get<BalanceOf<Self>>;
 
     /// Defines maximum size of the "hash blacklist" collection.
-    type BlacklistSizeLimit: Get<u64>; //TODO: adjust value
+    type BlacklistSizeLimit: Get<u64>;
 
     /// The module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
@@ -307,7 +304,6 @@ pub struct UploadParametersObject<MemberId, ChannelId, AccountId> {
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
 
-    //TODO: consider removing.
     /// Account for the data object deletion prize.
     pub deletion_prize_source_account_id: AccountId,
 }
@@ -652,6 +648,12 @@ decl_error! {
 
         /// Max object number limit exceeded.
         MaxObjectNumberLimitExceeded,
+
+        /// Object number limit for the storage bucket reached.
+        StorageBucketObjectNumberLimitReached,
+
+        /// Objects total size limit for the storage bucket reached.
+        StorageBucketObjectSizeLimitReached,
     }
 }
 
@@ -744,12 +746,6 @@ decl_module! {
         ) {
             T::ensure_working_group_leader_origin(origin)?;
 
-            let operator_status = invite_worker
-                .map(StorageBucketOperatorStatus::InvitedStorageWorker)
-                .unwrap_or(StorageBucketOperatorStatus::Missing);
-
-            //TODO: validate voucher?
-
             let voucher = Voucher {
                 size_limit,
                 objects_limit,
@@ -761,6 +757,10 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            let operator_status = invite_worker
+                .map(StorageBucketOperatorStatus::InvitedStorageWorker)
+                .unwrap_or(StorageBucketOperatorStatus::Missing);
 
             let storage_bucket = StorageBucket {
                 operator_status,
@@ -927,8 +927,6 @@ decl_module! {
 
             Self::validate_accept_pending_data_objects_params(&params)?;
 
-            // TODO: should I use bucket voucher here to validate the operation?
-
             // TODO: how do we validate that objects are accepted by correct storage provider that
             // was invited to the storage bucket. Should we introduce an additional storage bucket id?
 
@@ -962,7 +960,7 @@ decl_module! {
             //
 
             <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
-                bucket.accepting_new_bags = accepting_new_bags; //TODO: Correct?
+                bucket.accepting_new_bags = accepting_new_bags;
             });
 
             Self::deposit_event(
@@ -980,31 +978,42 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Validates upload parameters and conditions (like global uploading block).
     pub fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
+        // TODO: consider refactoring and splitting the method.
+
+        //TODO: Check dynamic bag existence.
+
+        // Check global uploading block.
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
-        let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
-
-        let new_objects_number = params.object_creation_list.len();
-
-        let total_possible_data_objects_number: u64 =
-            (new_objects_number as u64) + bag_objects_number;
-
-        ensure!(
-            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
-            Error::<T>::DataObjectsPerBagLimitExceeded
-        );
-
+        // Check object creation list validity.
         ensure!(
             !params.object_creation_list.is_empty(),
             Error::<T>::NoObjectsOnUpload
         );
 
+        let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
+
+        let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
+
+        let total_possible_data_objects_number: u64 = new_objects_number + bag_objects_number;
+
+        // Check bag capacity.
+        ensure!(
+            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
+            Error::<T>::DataObjectsPerBagLimitExceeded
+        );
+
+        // Check data objects.
         for object_params in params.object_creation_list.iter() {
+            // Should be non-empty hash.
             ensure!(
                 !object_params.ipfs_content_id.is_empty(),
                 Error::<T>::EmptyContentId
             );
+            // Should be non-zero size.
             ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+
+            // Should not be blacklisted.
             ensure!(
                 !Blacklist::contains_key(&object_params.ipfs_content_id),
                 Error::<T>::DataObjectBlacklisted,
@@ -1016,23 +1025,40 @@ impl<T: Trait> Module<T> {
         let usable_balance =
             Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
 
+        // Check account balance to satisfy deletion prize.
         ensure!(
             usable_balance >= total_deletion_prize,
             Error::<T>::InsufficientBalance
         );
+
+        let new_objects_total_size: u64 =
+            params.object_creation_list.iter().map(|obj| obj.size).sum();
+
+        let bucket_ids = BagManager::<T>::get_storage_bucket_ids(&params.bag_id.clone());
+
+        // Check buckets.
+        for bucket_id in bucket_ids.iter() {
+            let bucket = Self::storage_bucket_by_id(bucket_id);
+
+            // Total object number limit is not exceeded.
+            ensure!(
+                new_objects_number + bucket.voucher.objects_used <= bucket.voucher.objects_limit,
+                Error::<T>::StorageBucketObjectNumberLimitReached
+            );
+
+            // Total object size limit is not exceeded.
+            ensure!(
+                new_objects_total_size + bucket.voucher.objects_used <= bucket.voucher.size_limit,
+                Error::<T>::StorageBucketObjectSizeLimitReached
+            );
+        }
 
         Ok(())
     }
 
     /// Upload new data objects.
     pub fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
-        // TODO: Validate actor on bag basis.
-
-        //TODO: is is so?  "a `can_upload` extrinsic is likely going to be needed"
-
         Self::can_upload_data_objects(&params)?;
-
-        // TODO: authentication_key
 
         //
         // == MUTATION SAFE ==
@@ -1048,6 +1074,8 @@ impl<T: Trait> Module<T> {
         <NextDataObjectId<T>>::put(data.next_data_object_id);
 
         BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
+
+        Self::change_storage_bucket_vouchers_on_upload(&params);
 
         Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
 
@@ -1231,6 +1259,15 @@ impl<T: Trait> BagManager<T> {
             bag_id,
             |bag| bag.objects.len().saturated_into(),
             |bag| bag.objects.len().saturated_into(),
+        )
+    }
+
+    // Gets storage bucket ID set from the bag container.
+    fn get_storage_bucket_ids(bag_id: &BagId<T>) -> BTreeSet<T::StorageBucketId> {
+        Self::query(
+            bag_id,
+            |bag| bag.stored_by.clone(),
+            |bag| bag.stored_by.clone(),
         )
     }
 
@@ -1552,5 +1589,26 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    // Update total objects size and number on the uploading.
+    fn change_storage_bucket_vouchers_on_upload(params: &UploadParameters<T>) {
+        let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
+        let new_objects_total_size: u64 =
+            params.object_creation_list.iter().map(|obj| obj.size).sum();
+
+        let bucket_ids = BagManager::<T>::get_storage_bucket_ids(&params.bag_id.clone());
+
+        for bucket_id in bucket_ids.iter() {
+            <StorageBucketById<T>>::mutate(bucket_id, |bucket| {
+                let new_voucher = Voucher {
+                    objects_used: bucket.voucher.objects_used + new_objects_number,
+                    size_used: bucket.voucher.size_used + new_objects_total_size,
+                    ..bucket.voucher
+                };
+
+                bucket.voucher = new_voucher;
+            });
+        }
     }
 }

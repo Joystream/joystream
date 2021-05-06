@@ -299,7 +299,7 @@ pub fn create_data_object_candidates(
     range
         .into_iter()
         .map(|idx| DataObjectCreationParameters {
-            size: idx as u64,
+            size: 10 * idx as u64,
             ipfs_content_id: vec![idx],
         })
         .collect()
