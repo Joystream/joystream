@@ -17,6 +17,7 @@ sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'ht
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'rococo-v1'}
 sp-offchain = { package = 'sp-offchain', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'rococo-v1'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'rococo-v1'}
+sp-authority-discovery = { package = 'sp-authority-discovery', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1"}
 sp-consensus-babe = { package = 'sp-consensus-babe', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1"}
 sp-transaction-pool = { package = 'sp-transaction-pool', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1"}
 sp-session = { package = 'sp-session', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1"}
@@ -187,5 +188,6 @@ runtime-benchmarks = [
 	"pallet-session-benchmarking",
     "substrate-utility/runtime-benchmarks",
 ]
+standalone = []
 
 

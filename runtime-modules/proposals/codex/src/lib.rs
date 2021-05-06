@@ -133,6 +133,7 @@ struct CreateProposalParameters<T: Config> {
 }
 
 /// 'Proposals codex' substrate module Config
+#[cfg(feature = "standalone")]
 pub trait Config:
     frame_system::Config
     + proposals_engine::Config
@@ -141,6 +142,32 @@ pub trait Config:
     + governance::election::Config
     + hiring::Config
     + staking::Config
+{
+    /// Defines max allowed text proposal length.
+    type TextProposalMaxLength: Get<u32>;
+
+    /// Defines max wasm code length of the runtime upgrade proposal.
+    type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
+
+    /// Validates member id and origin combination
+    type MembershipOriginValidator: ActorOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
+
+    /// Encodes the proposal usint its details
+    type ProposalEncoder: ProposalEncoder<Self>;
+}
+
+#[cfg(not(feature = "standalone"))]
+pub trait Config:
+    frame_system::Config
+    + proposals_engine::Config
+    + proposals_discussion::Config
+    + membership::Config
+    + governance::election::Config
+    + hiring::Config
 {
     /// Defines max allowed text proposal length.
     type TextProposalMaxLength: Get<u32>;
@@ -499,29 +526,8 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             new_validator_count: u32,
         ) {
-            ensure!(
-                new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
-                Error::<T>::InvalidValidatorCount
-            );
-
-            ensure!(
-                new_validator_count <= MAX_VALIDATOR_COUNT,
-                Error::<T>::InvalidValidatorCount
-            );
-
-            let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
-            let params = CreateProposalParameters{
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
-            };
-
-            Self::create_proposal(params)?;
+            #[cfg(feature = "standalone")]
+            try_create_set_validator_count_proposal(origin, member_id, title, description, stake_balance, new_validator_count)?;
         }
 
         /// Create 'Add working group leader opening' proposal type.
@@ -850,6 +856,40 @@ impl<T: Config> Module<T> {
         <ProposalDetailsByProposalId<T>>::insert(proposal_id, params.proposal_details);
 
         Ok(())
+    }
+
+    #[cfg(feature = "standalone")]
+    fn try_create_set_validator_count_proposal(
+        origin: T::Origin,
+        member_id: MemberId<T>,
+        title: Vec<u8>,
+        description: Vec<u8>,
+        stake_balance: Option<BalanceOf<T>>,
+        new_validator_count: u32,
+    ) {
+        ensure!(
+            new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
+            Error::<T>::InvalidValidatorCount
+        );
+
+        ensure!(
+            new_validator_count <= MAX_VALIDATOR_COUNT,
+            Error::<T>::InvalidValidatorCount
+        );
+
+        let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
+        let params = CreateProposalParameters{
+            origin,
+            member_id,
+            title,
+            description,
+            stake_balance,
+            proposal_details: proposal_details.clone(),
+            proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
+            proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+        };
+
+        Self::create_proposal(params)
     }
 
     // validates council election parameters for the 'Set election parameters' proposal
