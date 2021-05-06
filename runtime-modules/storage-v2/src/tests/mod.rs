@@ -1235,7 +1235,6 @@ fn delete_data_objects_succeeded() {
         assert!(bag.objects.contains_key(&data_object_id));
 
         DeleteDataObjectsFixture::default()
-            .with_origin(RawOrigin::Root)
             .with_params(params.clone())
             .call_and_assert(Ok(()));
 
@@ -1247,15 +1246,6 @@ fn delete_data_objects_succeeded() {
 }
 
 #[test]
-fn delete_data_objects_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        DeleteDataObjectsFixture::default()
-            .with_origin(RawOrigin::None)
-            .call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
 fn delete_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
         let accept_params = ObjectsInBagParams::<Test> {
@@ -1263,7 +1253,6 @@ fn delete_data_objects_fails_with_empty_params() {
         };
 
         DeleteDataObjectsFixture::default()
-            .with_origin(RawOrigin::Root)
             .with_params(accept_params.clone())
             .call_and_assert(Err(Error::<Test>::ObjectInBagParamsAreEmpty.into()));
     });
@@ -1285,7 +1274,6 @@ fn delete_data_objects_fails_with_non_existing_data_object() {
         };
 
         DeleteDataObjectsFixture::default()
-            .with_origin(RawOrigin::Root)
             .with_params(accept_params.clone())
             .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
     });

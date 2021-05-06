@@ -29,7 +29,6 @@ use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
-use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
@@ -953,26 +952,6 @@ decl_module! {
                 )
             );
         }
-
-    /// Delete storage objects.
-    #[weight = 10_000_000] // TODO: adjust weight
-    pub fn delete_data_objects(origin, params: ObjectsInBagParams<T>) {
-        ensure_root(origin)?;
-
-        // TODO: what actor validation should we use here?
-
-        Self::validate_objects_in_bags_params(&params)?;
-
-        //
-        // == MUTATION SAFE ==
-        //
-
-        for ids in params.assigned_data_objects.iter() {
-            BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
-        }
-
-        Self::deposit_event(RawEvent::DataObjectsDeleted(params));
-    }
     }
 }
 
@@ -1069,6 +1048,23 @@ impl<T: Trait> Module<T> {
         BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
 
         Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
+
+        Ok(())
+    }
+
+    /// Delete storage objects.
+    pub fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult {
+        Self::validate_objects_in_bags_params(&params)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        for ids in params.assigned_data_objects.iter() {
+            BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
+        }
+
+        Self::deposit_event(RawEvent::DataObjectsDeleted(params));
 
         Ok(())
     }

@@ -576,20 +576,14 @@ impl MoveDataObjectsFixture {
 }
 
 pub struct DeleteDataObjectsFixture {
-    origin: RawOrigin<u64>,
     params: ObjectsInBagParams<Test>,
 }
 
 impl DeleteDataObjectsFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Root,
             params: Default::default(),
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
     }
 
     pub fn with_params(self, params: ObjectsInBagParams<Test>) -> Self {
@@ -597,8 +591,7 @@ impl DeleteDataObjectsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Storage::delete_data_objects(self.origin.clone().into(), self.params.clone());
+        let actual_result = Storage::delete_data_objects(self.params.clone());
 
         assert_eq!(actual_result, expected_result);
     }
