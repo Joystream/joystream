@@ -469,9 +469,9 @@ decl_storage! {
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
 
         // TODO: consider moving it inside the storage bucket
-        /// Storage operator metadata.
-        pub StorageOperatorMetadata get (fn storage_operator_metadata): map hasher(blake2_128_concat)
-            WorkerId<T> => Vec<u8>;
+        /// Storage bucket metadata.
+        pub StorageBucketMetadata get (fn storage_bucket_metadata): map hasher(blake2_128_concat)
+            T::StorageBucketId => Vec<u8>;
 
         /// Blacklisted data object hashes.
         pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) ContentId => ();
@@ -964,15 +964,11 @@ decl_module! {
 
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
-            //TODO: Why do we need storage_bucket_id?
-
-            //TODO: validate metadata?
-
             //
             // == MUTATION SAFE ==
             //
 
-            <StorageOperatorMetadata::<T>>::insert(worker_id, metadata.clone());
+            <StorageBucketMetadata::<T>>::insert(storage_bucket_id, metadata.clone());
 
             Self::deposit_event(
                 RawEvent::StorageOperatorMetadataSet(storage_bucket_id, worker_id, metadata)
