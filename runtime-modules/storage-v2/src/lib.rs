@@ -5,6 +5,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
+// TODO:How to create a dynamic bag? -
+//- new methods to be called from another modules: a method create dynamic bag.
+
 // TODO: use blacklist
 // TODO: use StorageBucket.accepting_new_bags
 // TODO: use voucher
@@ -356,6 +359,9 @@ pub struct StorageBucket<WorkerId> {
 
     /// Defines limits for a bucket.
     pub voucher: Voucher,
+
+    /// Defines storage bucket medata (like current storage provider URL).
+    pub metadata: Vec<u8>,
 }
 
 /// Data wrapper structure. Helps passing parameters to extrinsics.
@@ -466,11 +472,6 @@ decl_storage! {
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
-
-        // TODO: consider moving it inside the storage bucket
-        /// Storage bucket metadata.
-        pub StorageBucketMetadata get (fn storage_bucket_metadata): map hasher(blake2_128_concat)
-            T::StorageBucketId => Vec<u8>;
 
         /// Blacklisted data object hashes.
         pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) ContentId => ();
@@ -742,10 +743,11 @@ decl_module! {
             //TODO: validate voucher?
 
             let storage_bucket = StorageBucket {
-                 operator_status,
-                 accepting_new_bags,
-                 number_of_pending_data_objects: 0,
-                 voucher: voucher.clone(),
+                operator_status,
+                accepting_new_bags,
+                number_of_pending_data_objects: 0,
+                voucher: voucher.clone(),
+                metadata: Vec::new(),
             };
 
             let storage_bucket_id = Self::next_storage_bucket_id();
@@ -888,7 +890,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <StorageBucketMetadata::<T>>::insert(storage_bucket_id, metadata.clone());
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.metadata = metadata.clone();
+            });
 
             Self::deposit_event(
                 RawEvent::StorageOperatorMetadataSet(storage_bucket_id, worker_id, metadata)
