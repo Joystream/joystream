@@ -15,7 +15,7 @@ use common::working_group::WorkingGroup;
 use crate::{
     AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DynamicBagId, Error,
     ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    StorageTreasury, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
+    StorageTreasury, UpdateStorageBucketForBagsParams, UploadParameters,
 };
 
 use mocks::{
@@ -40,14 +40,17 @@ fn create_storage_bucket_succeeded() {
         run_to_block(starting_block);
 
         let accepting_new_bags = true;
-        let voucher = Voucher::default();
+        let size_limit = 20;
+        let objects_limit = 1;
+
         let invite_worker = None;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_accepting_new_bags(accepting_new_bags)
             .with_invite_worker(invite_worker)
-            .with_voucher(voucher.clone())
+            .with_size_limit(size_limit)
+            .with_objects_limit(objects_limit)
             .call_and_assert(Ok(()))
             .unwrap();
 
@@ -62,7 +65,8 @@ fn create_storage_bucket_succeeded() {
             bucket_id,
             invite_worker,
             accepting_new_bags,
-            voucher,
+            size_limit,
+            objects_limit,
         ));
     });
 }
@@ -72,14 +76,12 @@ fn create_storage_bucket_succeeded_with_invited_member() {
     build_test_externalities().execute_with(|| {
         let invited_worker_id = 10;
         let accepting_new_bags = true;
-        let voucher = Voucher::default();
         let invite_worker = Some(invited_worker_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_accepting_new_bags(accepting_new_bags)
             .with_invite_worker(invite_worker)
-            .with_voucher(voucher.clone())
             .call_and_assert(Ok(()))
             .unwrap();
 

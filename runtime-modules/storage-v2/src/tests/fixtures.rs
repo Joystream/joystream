@@ -11,7 +11,7 @@ use super::mocks::{
 
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, ObjectsInBagParams, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
+    StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -93,7 +93,8 @@ pub struct CreateStorageBucketFixture {
     origin: RawOrigin<u64>,
     invite_worker: Option<u64>,
     accepting_new_bags: bool,
-    voucher: Voucher,
+    size_limit: u64,
+    objects_limit: u64,
 }
 
 impl CreateStorageBucketFixture {
@@ -102,7 +103,8 @@ impl CreateStorageBucketFixture {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             invite_worker: None,
             accepting_new_bags: false,
-            voucher: Default::default(),
+            size_limit: 0,
+            objects_limit: 0,
         }
     }
 
@@ -124,8 +126,15 @@ impl CreateStorageBucketFixture {
         }
     }
 
-    pub fn with_voucher(self, voucher: Voucher) -> Self {
-        Self { voucher, ..self }
+    pub fn with_size_limit(self, size_limit: u64) -> Self {
+        Self { size_limit, ..self }
+    }
+
+    pub fn with_objects_limit(self, objects_limit: u64) -> Self {
+        Self {
+            objects_limit,
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
@@ -135,7 +144,8 @@ impl CreateStorageBucketFixture {
             self.origin.clone().into(),
             self.invite_worker,
             self.accepting_new_bags,
-            self.voucher.clone(),
+            self.size_limit,
+            self.objects_limit,
         );
 
         assert_eq!(actual_result, expected_result);

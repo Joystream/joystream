@@ -8,6 +8,7 @@
 // TODO:How to create a dynamic bag? -
 //- new methods to be called from another modules: a method create dynamic bag.
 
+// TODO: Check dynamic bag existence.
 // TODO: use blacklist
 // TODO: use StorageBucket.accepting_new_bags
 // TODO: use voucher
@@ -21,6 +22,11 @@
 // Max number of distribution bucket families
 // Max number of distribution buckets per family.
 // Max number of pending invitations per distribution bucket.
+
+/// TODO: convert to variable
+pub const MAX_OBJECT_SIZE_LIMIT: u64 = 100;
+/// TODO: convert to variable
+pub const MAX_OBJECT_NUMBER_LIMIT: u64 = 1;
 
 #[cfg(test)]
 mod tests;
@@ -498,8 +504,9 @@ decl_event! {
         /// - storage bucket ID
         /// - invited worker
         /// - flag "accepting_new_bags"
-        /// - voucher struct
-        StorageBucketCreated(StorageBucketId, Option<WorkerId>, bool, Voucher),
+        /// - size limit for voucher,
+        /// - objects limit for voucher,
+        StorageBucketCreated(StorageBucketId, Option<WorkerId>, bool, u64, u64),
 
         /// Emits on accepting the storage bucket invitation.
         /// Params
@@ -639,6 +646,12 @@ decl_error! {
 
         /// Blacklist size limit exceeded.
         BlacklistSizeLimitExceeded,
+
+        /// Max object size limit exceeded.
+        MaxObjectSizeLimitExceeded,
+
+        /// Max object number limit exceeded.
+        MaxObjectNumberLimitExceeded,
     }
 }
 
@@ -726,15 +739,10 @@ decl_module! {
             origin,
             invite_worker: Option<WorkerId<T>>,
             accepting_new_bags: bool,
-            voucher: Voucher
+            size_limit: u64,
+            objects_limit: u64,
         ) {
             T::ensure_working_group_leader_origin(origin)?;
-
-            let buckets_number = Self::storage_buckets_number();
-            ensure!(
-                buckets_number < T::MaxStorageBucketNumber::get(),
-                Error::<T>::MaxStorageBucketNumberLimitExceeded
-            );
 
             let operator_status = invite_worker
                 .map(StorageBucketOperatorStatus::InvitedStorageWorker)
@@ -742,21 +750,29 @@ decl_module! {
 
             //TODO: validate voucher?
 
-            let storage_bucket = StorageBucket {
-                operator_status,
-                accepting_new_bags,
-                number_of_pending_data_objects: 0,
-                voucher: voucher.clone(),
-                metadata: Vec::new(),
+            let voucher = Voucher {
+                size_limit,
+                objects_limit,
+                ..Default::default()
             };
 
-            let storage_bucket_id = Self::next_storage_bucket_id();
+            Self::can_create_storage_bucket(&voucher)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            StorageBucketsNumber::put(buckets_number + 1);
+            let storage_bucket = StorageBucket {
+                operator_status,
+                accepting_new_bags,
+                number_of_pending_data_objects: 0,
+                voucher,
+                metadata: Vec::new(),
+            };
+
+            let storage_bucket_id = Self::next_storage_bucket_id();
+
+            StorageBucketsNumber::put(Self::storage_buckets_number() + 1);
 
             <NextStorageBucketId<T>>::put(storage_bucket_id + One::one());
 
@@ -767,7 +783,8 @@ decl_module! {
                     storage_bucket_id,
                     invite_worker,
                     accepting_new_bags,
-                    voucher,
+                    size_limit,
+                    objects_limit,
                 )
             );
         }
@@ -778,7 +795,7 @@ decl_module! {
             origin,
             params: UpdateStorageBucketForBagsParams<T>
         ) {
-            T::ensure_working_group_leader_origin(origin)?; // TODO: correct authentication?
+            T::ensure_working_group_leader_origin(origin)?;
 
             Self::validate_update_storage_buckets_for_bags_params(&params)?;
 
@@ -1049,6 +1066,8 @@ impl<T: Trait> Module<T> {
         // == MUTATION SAFE ==
         //
 
+        //TODO: Check dynamic bag existence.
+
         BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
 
         Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
@@ -1063,6 +1082,8 @@ impl<T: Trait> Module<T> {
         //
         // == MUTATION SAFE ==
         //
+
+        //TODO: Check dynamic bag existence.
 
         for ids in params.assigned_data_objects.iter() {
             BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
@@ -1511,5 +1532,25 @@ impl<T: Trait> Module<T> {
             .filter(predicate)
             .cloned()
             .collect::<BTreeSet<_>>()
+    }
+
+    // Ensure the new bucket could be created. It also validates some parameters.
+    fn can_create_storage_bucket(voucher: &Voucher) -> DispatchResult {
+        ensure!(
+            Self::storage_buckets_number() < T::MaxStorageBucketNumber::get(),
+            Error::<T>::MaxStorageBucketNumberLimitExceeded
+        );
+
+        ensure!(
+            voucher.size_limit <= MAX_OBJECT_SIZE_LIMIT,
+            Error::<T>::MaxObjectSizeLimitExceeded
+        );
+
+        ensure!(
+            voucher.objects_limit <= MAX_OBJECT_NUMBER_LIMIT,
+            Error::<T>::MaxObjectNumberLimitExceeded
+        );
+
+        Ok(())
     }
 }
