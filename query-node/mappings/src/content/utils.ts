@@ -369,8 +369,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure member exists
     if (!member) {
-      inconsistentState(`Actor is non-existing member`, memberId)
-      return {} // this will keep fields unchanged
+      return inconsistentState(`Actor is non-existing member`, memberId)
     }
 
     return {
@@ -385,8 +384,7 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
     // ensure curator group exists
     if (!curatorGroup) {
-      inconsistentState('Actor is non-existing curator group', curatorGroupId)
-      return {} // this will keep fields unchanged
+      return inconsistentState('Actor is non-existing curator group', curatorGroupId)
     }
 
     return {
