@@ -80,12 +80,14 @@ fn create_storage_bucket_fails_with_invalid_voucher_params() {
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_size_limit(size_limit)
-            .call_and_assert(Err(Error::<Test>::MaxObjectSizeLimitExceeded.into()));
+            .call_and_assert(Err(Error::<Test>::VoucherMaxObjectSizeLimitExceeded.into()));
 
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_objects_limit(objects_limit)
-            .call_and_assert(Err(Error::<Test>::MaxObjectNumberLimitExceeded.into()));
+            .call_and_assert(Err(
+                Error::<Test>::VoucherMaxObjectNumberLimitExceeded.into()
+            ));
     });
 }
 
@@ -455,30 +457,17 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 100;
-
         let storage_provider_id = 10;
-        let invite_worker = Some(storage_provider_id);
 
-        let bucket_id = CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(invite_worker)
-            .with_objects_limit(objects_limit)
-            .with_size_limit(size_limit)
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let buckets = BTreeSet::from_iter(vec![bucket_id]);
-
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id.clone(), buckets.clone());
-
-        UpdateStorageBucketForBagsFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
-            .call_and_assert(Ok(()));
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
 
         let object_creation_list = create_single_data_object();
 
@@ -508,30 +497,17 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 100;
-
         let storage_provider_id = 10;
-        let invite_worker = Some(storage_provider_id);
 
-        let bucket_id = CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(invite_worker)
-            .with_objects_limit(objects_limit)
-            .with_size_limit(size_limit)
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let buckets = BTreeSet::from_iter(vec![bucket_id]);
-
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id.clone(), buckets.clone());
-
-        UpdateStorageBucketForBagsFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
-            .call_and_assert(Ok(()));
+        create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
 
         let object_creation_list = create_single_data_object();
 
@@ -561,30 +537,17 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 1;
-
         let storage_provider_id = 10;
-        let invite_worker = Some(storage_provider_id);
 
-        let bucket_id = CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(invite_worker)
-            .with_objects_limit(objects_limit)
-            .with_size_limit(size_limit)
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let buckets = BTreeSet::from_iter(vec![bucket_id]);
-
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id.clone(), buckets.clone());
-
-        UpdateStorageBucketForBagsFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
-            .call_and_assert(Ok(()));
+        create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
 
         let object_creation_list = create_single_data_object();
 
@@ -1318,6 +1281,202 @@ fn move_data_objects_succeeded() {
 }
 
 #[test]
+fn move_data_objects_succeeded_having_voucher() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let working_group = WorkingGroup::Storage;
+        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+
+        let objects_limit = 1;
+        let size_limit = 100;
+
+        let src_storage_provider_id = 10;
+        let dest_storage_provider_id = 11;
+
+        let src_bucket_id = create_storage_bucket_and_assign_to_bag(
+            src_bag_id.clone(),
+            src_storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
+        let dest_bucket_id = create_storage_bucket_and_assign_to_bag(
+            dest_bag_id.clone(),
+            dest_storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let object_creation_list = create_single_data_object();
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: src_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0u64;
+        let ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        let src_bucket = Storage::storage_bucket_by_id(src_bucket_id);
+        let dest_bucket = Storage::storage_bucket_by_id(dest_bucket_id);
+        assert_eq!(dest_bucket.voucher.objects_used, 0);
+        assert_eq!(dest_bucket.voucher.size_used, 0);
+
+        assert_eq!(src_bucket.voucher.objects_used, 1);
+        assert_eq!(src_bucket.voucher.size_used, object_creation_list[0].size);
+
+        MoveDataObjectsFixture::default()
+            .with_src_bag_id(src_bag_id.clone())
+            .with_dest_bag_id(dest_bag_id.clone())
+            .with_data_object_ids(ids.clone())
+            .call_and_assert(Ok(()));
+
+        //// Check vouchers
+        let src_bucket = Storage::storage_bucket_by_id(src_bucket_id);
+        let dest_bucket = Storage::storage_bucket_by_id(dest_bucket_id);
+
+        assert_eq!(src_bucket.voucher.objects_used, 0);
+        assert_eq!(src_bucket.voucher.size_used, 0);
+
+        assert_eq!(dest_bucket.voucher.objects_used, 1);
+        assert_eq!(dest_bucket.voucher.size_used, object_creation_list[0].size);
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let working_group = WorkingGroup::Storage;
+        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+
+        let src_objects_limit = 1;
+        let src_size_limit = 100;
+
+        let dest_objects_limit = 0;
+        let dest_size_limit = 100;
+
+        let src_storage_provider_id = 10;
+        let dest_storage_provider_id = 11;
+
+        create_storage_bucket_and_assign_to_bag(
+            src_bag_id.clone(),
+            src_storage_provider_id,
+            src_objects_limit,
+            src_size_limit,
+        );
+        create_storage_bucket_and_assign_to_bag(
+            dest_bag_id.clone(),
+            dest_storage_provider_id,
+            dest_objects_limit,
+            dest_size_limit,
+        );
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let object_creation_list = create_single_data_object();
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: src_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0u64;
+        let ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        MoveDataObjectsFixture::default()
+            .with_src_bag_id(src_bag_id.clone())
+            .with_dest_bag_id(dest_bag_id.clone())
+            .with_data_object_ids(ids.clone())
+            .call_and_assert(Err(
+                Error::<Test>::StorageBucketObjectNumberLimitReached.into()
+            ));
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let working_group = WorkingGroup::Storage;
+        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+
+        let src_objects_limit = 1;
+        let src_size_limit = 100;
+
+        let dest_objects_limit = 1;
+        let dest_size_limit = 1;
+
+        let src_storage_provider_id = 10;
+        let dest_storage_provider_id = 11;
+
+        create_storage_bucket_and_assign_to_bag(
+            src_bag_id.clone(),
+            src_storage_provider_id,
+            src_objects_limit,
+            src_size_limit,
+        );
+        create_storage_bucket_and_assign_to_bag(
+            dest_bag_id.clone(),
+            dest_storage_provider_id,
+            dest_objects_limit,
+            dest_size_limit,
+        );
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let object_creation_list = create_single_data_object();
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: src_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0u64;
+        let ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        MoveDataObjectsFixture::default()
+            .with_src_bag_id(src_bag_id.clone())
+            .with_dest_bag_id(dest_bag_id.clone())
+            .with_data_object_ids(ids.clone())
+            .call_and_assert(Err(
+                Error::<Test>::StorageBucketObjectSizeLimitReached.into()
+            ));
+    });
+}
+
+#[test]
 fn move_data_objects_fails_with_empty_data_collection() {
     build_test_externalities().execute_with(|| {
         let dest_bag_id =
@@ -1358,6 +1517,98 @@ fn move_data_objects_fails_with_same_bag() {
             .call_and_assert(Err(Error::<Test>::SourceAndDestinationBagsAreEqual.into()));
     });
 }
+
+//TODO: remove
+// #[test]
+// fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exceeding() {
+//     build_test_externalities().execute_with(|| {
+//         let initial_balance = 1000;
+//         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+//
+//         let objects_limit = 1;
+//         let size_limit = 100;
+//
+//         let storage_provider_id = 10;
+//         let invite_worker = Some(storage_provider_id);
+//
+//         let bucket_id = CreateStorageBucketFixture::default()
+//             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+//             .with_invite_worker(invite_worker)
+//             .with_objects_limit(objects_limit)
+//             .with_size_limit(size_limit)
+//             .call_and_assert(Ok(()))
+//             .unwrap();
+//
+//         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+//         let buckets = BTreeSet::from_iter(vec![bucket_id]);
+//
+//         let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
+//         params.bags.insert(bag_id.clone(), buckets.clone());
+//
+//         UpdateStorageBucketForBagsFixture::default()
+//             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+//             .with_params(params.clone())
+//             .call_and_assert(Ok(()));
+//
+//         let object_creation_list = create_single_data_object();
+//
+//         let upload_params = UploadParameters::<Test> {
+//             bag_id,
+//             authentication_key: Vec::new(),
+//             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+//             object_creation_list: object_creation_list.clone(),
+//         };
+//
+//         UploadFixture::default()
+//             .with_params(upload_params.clone())
+//             .call_and_assert(Ok(()));
+//
+//         // Check storage bucket voucher: object number limit.
+//         UploadFixture::default()
+//             .with_params(upload_params.clone())
+//             .call_and_assert(Err(
+//                 Error::<Test>::StorageBucketObjectNumberLimitReached.into()
+//             ));
+//     });
+// }
+//
+//
+// #[test]
+// fn move_data_objects_fails_with_voucher_object_number_limit_exceeding() {
+//     build_test_externalities().execute_with(|| {
+//         let working_group = WorkingGroup::Storage;
+//         let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+//         let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+//
+//         let initial_balance = 1000;
+//         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+//
+//         let upload_params = UploadParameters::<Test> {
+//             bag_id: src_bag_id.clone(),
+//             authentication_key: Vec::new(),
+//             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+//             object_creation_list: create_single_data_object(),
+//         };
+//
+//         UploadFixture::default()
+//             .with_params(upload_params.clone())
+//             .call_and_assert(Ok(()));
+//
+//         let data_object_id = 0u64;
+//         let ids = BTreeSet::from_iter(vec![data_object_id]);
+//
+//         MoveDataObjectsFixture::default()
+//             .with_src_bag_id(src_bag_id.clone())
+//             .with_dest_bag_id(dest_bag_id.clone())
+//             .with_data_object_ids(ids.clone())
+//             .call_and_assert(Ok(()));
+//
+//         assert!(!Storage::council_bag().objects.contains_key(&data_object_id));
+//         assert!(Storage::working_group_bag(working_group)
+//             .objects
+//             .contains_key(&data_object_id));
+//     });
+// }
 
 #[test]
 fn delete_data_objects_succeeded() {
@@ -1680,4 +1931,33 @@ fn update_blacklist_fails_with_non_leader_origin() {
             .with_origin(RawOrigin::Signed(non_leader_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
+}
+
+fn create_storage_bucket_and_assign_to_bag(
+    bag_id: BagId<Test>,
+    storage_provider_id: u64,
+    objects_limit: u64,
+    size_limit: u64,
+) -> u64 {
+    let invite_worker = Some(storage_provider_id);
+
+    let bucket_id = CreateStorageBucketFixture::default()
+        .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+        .with_invite_worker(invite_worker)
+        .with_objects_limit(objects_limit)
+        .with_size_limit(size_limit)
+        .call_and_assert(Ok(()))
+        .unwrap();
+
+    let buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+    let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
+    params.bags.insert(bag_id.clone(), buckets.clone());
+
+    UpdateStorageBucketForBagsFixture::default()
+        .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+        .with_params(params.clone())
+        .call_and_assert(Ok(()));
+
+    bucket_id
 }
