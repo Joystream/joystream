@@ -242,6 +242,9 @@ export async function content_VideoUpdated(
   // prepare changed metadata
   const newMetadata = videoUpdateParameters.new_meta.unwrapOr(null)
 
+  // license must be deleted AFTER video is saved - plan a license deletion by assigning it to this variable
+  let licenseToDelete: License | null = null
+
   // update metadata if it was changed
   if (newMetadata) {
     const protobufContent = await readProtobufWithAssets(
@@ -266,9 +269,9 @@ export async function content_VideoUpdated(
       video[key] = value
     }
 
-    // license has changed - delete old license
+    // license has changed - plan old license delete
     if (originalLicense && video.license != originalLicense) {
-      await db.remove<License>(originalLicense)
+      licenseToDelete = originalLicense
     }
   }
 
@@ -277,6 +280,11 @@ export async function content_VideoUpdated(
 
   // save video
   await db.save<Video>(video)
+
+  // delete old license if it's planned
+  if (licenseToDelete) {
+    await db.remove<License>(licenseToDelete)
+  }
 
   // emit log event
   logger.info('Video has been updated', {id: videoId})
