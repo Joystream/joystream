@@ -860,7 +860,7 @@ decl_module! {
                 let mint_id = Self::mint();
 
                 // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <frame_system::Module<T>>::block_number(),
+                ensure!(policy.next_payment_at_block > <frame_system::Pallet<T>>::block_number(),
                     Error::<T, I>::FillOpeningInvalidNextPaymentBlock);
 
                 // The verified reward settings to use

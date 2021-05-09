@@ -180,7 +180,7 @@ impl<T: Config> Module<T> {
         role_staking_policy: Option<StakingPolicy<BalanceOf<T>, T::BlockNumber>>,
         human_readable_text: Vec<u8>,
     ) -> Result<T::OpeningId, AddOpeningError> {
-        let current_block_height = <frame_system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Pallet<T>>::block_number();
 
         Self::ensure_can_add_opening(
             current_block_height,
@@ -241,7 +241,7 @@ impl<T: Config> Module<T> {
         )?;
 
         //
-        let current_block_height = <frame_system::Module<T>>::block_number(); // move later!
+        let current_block_height = <frame_system::Pallet<T>>::block_number(); // move later!
         let new_active_stage = active_stage.new_stage_on_cancelling(current_block_height)?;
 
         // Ensure unstaking periods are OK.
@@ -317,7 +317,7 @@ impl<T: Config> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let current_block_height = <frame_system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Pallet<T>>::block_number();
 
         // Update state of opening
         let new_opening = opening.clone_with_new_active_opening_stage(
@@ -355,7 +355,7 @@ impl<T: Config> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let current_block_height = <frame_system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Pallet<T>>::block_number();
 
         let new_opening =
             opening.clone_with_new_active_opening_stage(hiring::ActiveOpeningStage::ReviewPeriod {
@@ -495,7 +495,7 @@ impl<T: Config> Module<T> {
         );
 
         // Grab current block height
-        let current_block_height = <frame_system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Pallet<T>>::block_number();
         // Get opening with updated counters
         let opening_needed_for_data = <OpeningById<T>>::get(opening_id);
 
@@ -651,7 +651,7 @@ impl<T: Config> Module<T> {
         );
 
         // Grab current block height
-        let current_block_height = <frame_system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Pallet<T>>::block_number();
 
         // Compute index for this new application
         let application_index_in_opening =
@@ -795,7 +795,7 @@ impl<T: Config> Module<T> {
 
         // Drop stake from stake to application map
         <ApplicationIdByStakingId<T>>::remove(stake_id);
-        let current_block_height = <frame_system::Module<T>>::block_number();
+        let current_block_height = <frame_system::Pallet<T>>::block_number();
 
         // New application computed
         let mut new_application = application.clone();
@@ -1146,7 +1146,7 @@ impl<T: Config> Module<T> {
                 let was_unstaked = application_was_unstaked || role_was_unstaked;
 
                 // Grab current block height
-                let current_block_height = <frame_system::Module<T>>::block_number();
+                let current_block_height = <frame_system::Pallet<T>>::block_number();
 
                 /*
                  * TODO:

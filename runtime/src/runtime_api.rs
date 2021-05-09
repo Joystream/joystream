@@ -1,13 +1,9 @@
-use crate::AccountIndex;
-use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
+use frame_support::traits::{OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
-use pallet_grandpa::fg_primitives;
-use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
@@ -16,10 +12,8 @@ use crate::{
     OperationsWorkingGroupInstance, StorageWorkingGroupInstance,
 };
 
-use crate::constants::PRIMARY_PROBABILITY;
-
 use crate::{
-    content, data_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, Hash, Index,
+    content, data_directory, AccountId, Balance, BlockNumber, Hash, Index,
     RuntimeVersion, Signature, VERSION,
 };
 
@@ -29,7 +23,7 @@ use crate::{
 };
 
 use crate::{
-    AllModules, Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys,
+    Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys,
     System, TransactionPayment,
 };
 use frame_support::weights::Weight;
@@ -56,12 +50,6 @@ pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-
-/// A Block signed with a Justification
-pub type SignedBlock = generic::SignedBlock<Block>;
-
-/// BlockId type as expected by this runtime.
-pub type BlockId = generic::BlockId<Block>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;

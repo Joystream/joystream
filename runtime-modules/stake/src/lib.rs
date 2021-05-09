@@ -745,7 +745,7 @@ impl<T: Config> Module<T> {
 
         <Stakes<T>>::insert(
             &stake_id,
-            Stake::new(<frame_system::Module<T>>::block_number()),
+            Stake::new(<frame_system::Pallet<T>>::block_number()),
         );
 
         stake_id
@@ -1038,7 +1038,7 @@ impl<T: Config> Module<T> {
         let slash_id = stake.initiate_slashing(
             slash_amount,
             slash_period,
-            <frame_system::Module<T>>::block_number(),
+            <frame_system::Pallet<T>>::block_number(),
         )?;
 
         <Stakes<T>>::insert(stake_id, stake);
@@ -1095,7 +1095,7 @@ impl<T: Config> Module<T> {
 
         if let Some(unstaking_period) = unstaking_period {
             stake
-                .initiate_unstaking(unstaking_period, <frame_system::Module<T>>::block_number())?;
+                .initiate_unstaking(unstaking_period, <frame_system::Pallet<T>>::block_number())?;
             <Stakes<T>>::insert(stake_id, stake);
         } else {
             let staked_amount = stake.unstake()?;

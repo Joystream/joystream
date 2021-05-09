@@ -811,7 +811,7 @@ decl_module! {
 
             print("Runtime upgrade proposal execution started.");
 
-            <frame_system::Module<T>>::set_code(cloned_origin2, wasm)?;
+            <frame_system::Pallet<T>>::set_code(cloned_origin2, wasm)?;
 
             print("Runtime upgrade proposal execution finished.");
             Ok(())

@@ -136,7 +136,7 @@ impl<T: Config> Module<T> {
         initial_capacity: BalanceOf<T>,
         adjustment: Option<Adjustment<BalanceOf<T>, T::BlockNumber>>,
     ) -> Result<T::MintId, GeneralError> {
-        let now = <frame_system::Module<T>>::block_number();
+        let now = <frame_system::Pallet<T>>::block_number();
 
         // Ensure the next adjustment if set, is in the future
         if let Some(adjustment) = adjustment {

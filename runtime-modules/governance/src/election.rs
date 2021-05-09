@@ -216,7 +216,7 @@ impl<T: Config> Module<T> {
     }
 
     fn current_block_number_plus(length: T::BlockNumber) -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number() + length
+        <frame_system::Pallet<T>>::block_number() + length
     }
 
     fn can_participate(sender: &T::AccountId) -> bool {
@@ -398,7 +398,7 @@ impl<T: Config> Module<T> {
         T::CouncilElected::council_elected(new_council, Self::new_term_duration());
 
         Self::deposit_event(RawEvent::CouncilElected(
-            <frame_system::Module<T>>::block_number(),
+            <frame_system::Pallet<T>>::block_number(),
         ));
     }
 
@@ -890,21 +890,21 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_stage_announcing(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must end at future block number");
+            ensure!(ends_at > <frame_system::Pallet<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Announcing(ends_at));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_stage_revealing(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must end at future block number");
+            ensure!(ends_at > <frame_system::Pallet<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Revealing(ends_at));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_stage_voting(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must end at future block number");
+            ensure!(ends_at > <frame_system::Pallet<T>>::block_number(), "must end at future block number");
             <Stage<T>>::put(ElectionStage::Voting(ends_at));
         }
 

@@ -108,7 +108,7 @@ pub struct BlockAndTime<BlockNumber, Moment> {
 pub fn current_block_time<T: frame_system::Config + pallet_timestamp::Config>(
 ) -> BlockAndTime<T::BlockNumber, T::Moment> {
     BlockAndTime {
-        block: <frame_system::Module<T>>::block_number(),
-        time: <pallet_timestamp::Module<T>>::now(),
+        block: <frame_system::Pallet<T>>::block_number(),
+        time: <pallet_timestamp::Pallet<T>>::now(),
     }
 }

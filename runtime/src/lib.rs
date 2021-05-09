@@ -50,7 +50,6 @@ mod runtime_api;
 mod tests; // Runtime integration tests
 mod weights;
 
-use codec::{Decode, Encode};
 pub use frame_support::{
     construct_runtime, log, parameter_types,
     traits::{
@@ -65,26 +64,12 @@ pub use frame_support::{
 };
 use frame_system::{
     limits::{BlockLength, BlockWeights},
-    EnsureOneOf, EnsureRoot, RawOrigin,
-};
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use pallet_session::historical as pallet_session_historical;
-use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
-use sp_api::impl_runtime_apis;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_core::{
-    crypto::KeyTypeId,
-    u32_trait::{_1, _2, _3, _4},
-    OpaqueMetadata, H160,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
-        AccountIdConversion, AccountIdLookup, BadOrigin, BlakeTwo256, Block as BlockT,
-        SaturatedConversion, StaticLookup, Zero,
+        AccountIdLookup, BlakeTwo256,
     },
-    transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, DispatchResult, FixedPointNumber, MultiAddress,
 };
 use sp_std::prelude::*;
 

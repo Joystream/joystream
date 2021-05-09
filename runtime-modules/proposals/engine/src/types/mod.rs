@@ -8,7 +8,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::Perbill;
+use sp_runtime::{Perbill, PerThing};
 use sp_std::boxed::Box;
 use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;
@@ -29,7 +29,7 @@ pub(crate) use stakes::DefaultStakeHandler;
 #[cfg(test)]
 pub(crate) use stakes::MockStakeHandler;
 
-pub(crate) type Balances<T> = balances::Module<T>;
+pub(crate) type Balances<T> = balances::Pallet<T>;
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

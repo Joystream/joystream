@@ -331,7 +331,7 @@ impl<T: Config> Module<T> {
 impl<T: Config> Module<T> {
     // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // returns incremented thread counter if last thread author equals with provided parameter

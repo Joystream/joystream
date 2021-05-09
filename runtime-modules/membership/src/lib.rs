@@ -292,8 +292,8 @@ decl_module! {
                 &who,
                 &user_info,
                 EntryMethod::Paid(paid_terms_id),
-                <frame_system::Module<T>>::block_number(),
-                <pallet_timestamp::Module<T>>::now()
+                <frame_system::Pallet<T>>::block_number(),
+                <pallet_timestamp::Pallet<T>>::now()
             )?;
 
             let _ = T::Currency::slash(&who, terms.fee);
@@ -453,7 +453,7 @@ decl_module! {
                 );
 
                 ensure!(
-                    frame_system::Module::<T>::account_nonce(&new_member_account).is_zero(),
+                    frame_system::Pallet::<T>::account_nonce(&new_member_account).is_zero(),
                     Error::<T>::OnlyNewAccountsCanBeUsedForScreenedMembers
                 );
 
@@ -479,8 +479,8 @@ decl_module! {
                 &new_member_account,
                 &user_info,
                 entry_method.clone(),
-                <frame_system::Module<T>>::block_number(),
-                <pallet_timestamp::Module<T>>::now()
+                <frame_system::Pallet<T>>::block_number(),
+                <pallet_timestamp::Pallet<T>>::now()
             )?;
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account, entry_method));

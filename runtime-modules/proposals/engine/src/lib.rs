@@ -601,7 +601,7 @@ impl<T: Config> Module<T> {
 impl<T: Config> Module<T> {
     // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Enumerates through active proposals. Tally Voting results.
@@ -671,7 +671,7 @@ impl<T: Config> Module<T> {
                     ApprovedProposalStatus::Executed
                 }
             }
-            Err(error) => ApprovedProposalStatus::failed_execution("Error during proposal decoding occured.")
+            Err(_) => ApprovedProposalStatus::failed_execution("Error during proposal decoding occured.")
         };
 
         let proposal_execution_status = approved_proposal

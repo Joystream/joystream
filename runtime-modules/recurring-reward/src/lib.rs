@@ -199,7 +199,7 @@ impl<T: Config> Module<T> {
             RewardsError::RecipientNotFound
         );
         ensure!(
-            next_payment_at_block > <frame_system::Module<T>>::block_number(),
+            next_payment_at_block > <frame_system::Pallet<T>>::block_number(),
             RewardsError::NextPaymentNotInFuture
         );
 
@@ -300,7 +300,7 @@ impl<T: Config> Module<T> {
         if let Some(next_payout_at_block) = new_next_payment_at {
             if let Some(blocknumber) = next_payout_at_block {
                 ensure!(
-                    blocknumber > <frame_system::Module<T>>::block_number(),
+                    blocknumber > <frame_system::Pallet<T>>::block_number(),
                     RewardsError::NextPaymentNotInFuture
                 );
             }

@@ -81,7 +81,7 @@ impl<T: Config> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber
     fn council_elected(seats: Seats<T::AccountId, BalanceOf<T>>, term: T::BlockNumber) {
         <ActiveCouncil<T>>::put(seats.clone());
 
-        let next_term_ends_at = <frame_system::Module<T>>::block_number() + term;
+        let next_term_ends_at = <frame_system::Pallet<T>>::block_number() + term;
 
         <TermEndsAt<T>>::put(next_term_ends_at);
 
@@ -95,7 +95,7 @@ impl<T: Config> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber
 
 impl<T: Config> Module<T> {
     pub fn is_term_ended() -> bool {
-        <frame_system::Module<T>>::block_number() >= Self::term_ends_at()
+        <frame_system::Pallet<T>>::block_number() >= Self::term_ends_at()
     }
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
@@ -107,7 +107,7 @@ impl<T: Config> Module<T> {
 
         // When calculating when first payout occurs, add minimum of one block interval to ensure rewards module
         // has a chance to execute its on_finalize routine.
-        let next_payout_at = frame_system::Module::<T>::block_number()
+        let next_payout_at = frame_system::Pallet::<T>::block_number()
             + Self::first_payout_after_reward_created()
             + T::BlockNumber::one();
 
@@ -230,7 +230,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         fn set_term_ends_at(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
-            ensure!(ends_at > <frame_system::Module<T>>::block_number(), "must set future block number");
+            ensure!(ends_at > <frame_system::Pallet<T>>::block_number(), "must set future block number");
             <TermEndsAt<T>>::put(ends_at);
         }
 
