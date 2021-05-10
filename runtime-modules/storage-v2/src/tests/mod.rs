@@ -1518,98 +1518,6 @@ fn move_data_objects_fails_with_same_bag() {
     });
 }
 
-//TODO: remove
-// #[test]
-// fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exceeding() {
-//     build_test_externalities().execute_with(|| {
-//         let initial_balance = 1000;
-//         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
-//
-//         let objects_limit = 1;
-//         let size_limit = 100;
-//
-//         let storage_provider_id = 10;
-//         let invite_worker = Some(storage_provider_id);
-//
-//         let bucket_id = CreateStorageBucketFixture::default()
-//             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-//             .with_invite_worker(invite_worker)
-//             .with_objects_limit(objects_limit)
-//             .with_size_limit(size_limit)
-//             .call_and_assert(Ok(()))
-//             .unwrap();
-//
-//         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-//         let buckets = BTreeSet::from_iter(vec![bucket_id]);
-//
-//         let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-//         params.bags.insert(bag_id.clone(), buckets.clone());
-//
-//         UpdateStorageBucketForBagsFixture::default()
-//             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-//             .with_params(params.clone())
-//             .call_and_assert(Ok(()));
-//
-//         let object_creation_list = create_single_data_object();
-//
-//         let upload_params = UploadParameters::<Test> {
-//             bag_id,
-//             authentication_key: Vec::new(),
-//             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-//             object_creation_list: object_creation_list.clone(),
-//         };
-//
-//         UploadFixture::default()
-//             .with_params(upload_params.clone())
-//             .call_and_assert(Ok(()));
-//
-//         // Check storage bucket voucher: object number limit.
-//         UploadFixture::default()
-//             .with_params(upload_params.clone())
-//             .call_and_assert(Err(
-//                 Error::<Test>::StorageBucketObjectNumberLimitReached.into()
-//             ));
-//     });
-// }
-//
-//
-// #[test]
-// fn move_data_objects_fails_with_voucher_object_number_limit_exceeding() {
-//     build_test_externalities().execute_with(|| {
-//         let working_group = WorkingGroup::Storage;
-//         let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-//         let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
-//
-//         let initial_balance = 1000;
-//         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
-//
-//         let upload_params = UploadParameters::<Test> {
-//             bag_id: src_bag_id.clone(),
-//             authentication_key: Vec::new(),
-//             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-//             object_creation_list: create_single_data_object(),
-//         };
-//
-//         UploadFixture::default()
-//             .with_params(upload_params.clone())
-//             .call_and_assert(Ok(()));
-//
-//         let data_object_id = 0u64;
-//         let ids = BTreeSet::from_iter(vec![data_object_id]);
-//
-//         MoveDataObjectsFixture::default()
-//             .with_src_bag_id(src_bag_id.clone())
-//             .with_dest_bag_id(dest_bag_id.clone())
-//             .with_data_object_ids(ids.clone())
-//             .call_and_assert(Ok(()));
-//
-//         assert!(!Storage::council_bag().objects.contains_key(&data_object_id));
-//         assert!(Storage::working_group_bag(working_group)
-//             .objects
-//             .contains_key(&data_object_id));
-//     });
-// }
-
 #[test]
 fn delete_data_objects_succeeded() {
     build_test_externalities().execute_with(|| {
@@ -1668,6 +1576,70 @@ fn delete_data_objects_succeeded() {
         assert!(!bag.objects.contains_key(&data_object_id));
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(params));
+    });
+}
+
+#[test]
+fn delete_data_objects_succeeded_with_voucher_usage() {
+    build_test_externalities().execute_with(|| {
+        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let objects_limit = 1;
+        let size_limit = 100;
+        let storage_provider_id = 10;
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            council_bag_id.clone(),
+            storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let object_creation_list = create_single_data_object();
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: council_bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0; // just uploaded data object
+
+        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
+            bag_id: council_bag_id,
+            data_object_id,
+        }]);
+
+        let params = ObjectsInBagParams::<Test> {
+            assigned_data_objects: objects,
+        };
+
+        //// Pre-check voucher
+        let bucket = Storage::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(bucket.voucher.objects_used, 1);
+        assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
+
+        DeleteDataObjectsFixture::default()
+            .with_params(params.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::council_bag();
+        assert!(!bag.objects.contains_key(&data_object_id));
+
+        //// Post-check voucher
+        let bucket = Storage::storage_bucket_by_id(bucket_id);
+
+        assert_eq!(bucket.voucher.objects_used, 0);
+        assert_eq!(bucket.voucher.size_used, 0);
     });
 }
 

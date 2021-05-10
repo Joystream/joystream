@@ -338,12 +338,13 @@ enum VoucherOperation {
 }
 
 /// Helper-struct - defines voucher changes.
+#[derive(Clone, PartialEq, Eq, Debug, Copy, Default)]
 pub struct VoucherUpdate {
-    /// Total new objects number.
-    pub new_objects_number: u64,
+    /// Total number.
+    pub objects_number: u64,
 
-    /// Total new objects size sum.
-    pub new_objects_total_size: u64,
+    /// Total objects size sum.
+    pub objects_total_size: u64,
 }
 
 impl VoucherUpdate {
@@ -354,16 +355,12 @@ impl VoucherUpdate {
     ) -> Voucher {
         let (objects_used, size_used) = match voucher_operation {
             VoucherOperation::Increase => (
-                voucher.objects_used.saturating_add(self.new_objects_number),
-                voucher
-                    .size_used
-                    .saturating_add(self.new_objects_total_size),
+                voucher.objects_used.saturating_add(self.objects_number),
+                voucher.size_used.saturating_add(self.objects_total_size),
             ),
             VoucherOperation::Decrease => (
-                voucher.objects_used.saturating_sub(self.new_objects_number),
-                voucher
-                    .size_used
-                    .saturating_sub(self.new_objects_total_size),
+                voucher.objects_used.saturating_sub(self.objects_number),
+                voucher.size_used.saturating_sub(self.objects_total_size),
             ),
         };
 
@@ -372,6 +369,12 @@ impl VoucherUpdate {
             size_used,
             ..voucher.clone()
         }
+    }
+
+    // Adds a single object data to the voucher update (updates objects size and number).
+    fn add_object(&mut self, size: u64) {
+        self.objects_number = self.objects_number.saturating_add(1);
+        self.objects_total_size = self.objects_total_size.saturating_add(size);
     }
 }
 
@@ -1088,8 +1091,8 @@ impl<T: Trait> Module<T> {
             params.object_creation_list.iter().map(|obj| obj.size).sum();
 
         let voucher_update = VoucherUpdate {
-            new_objects_number,
-            new_objects_total_size,
+            objects_number: new_objects_number,
+            objects_total_size: new_objects_total_size,
         };
 
         // Check buckets.
@@ -1111,14 +1114,14 @@ impl<T: Trait> Module<T> {
 
             // Total object number limit is not exceeded.
             ensure!(
-                voucher_update.new_objects_number + bucket.voucher.objects_used
+                voucher_update.objects_number + bucket.voucher.objects_used
                     <= bucket.voucher.objects_limit,
                 Error::<T>::StorageBucketObjectNumberLimitReached
             );
 
             // Total object size limit is not exceeded.
             ensure!(
-                voucher_update.new_objects_total_size + bucket.voucher.objects_used
+                voucher_update.objects_total_size + bucket.voucher.objects_used
                     <= bucket.voucher.size_limit,
                 Error::<T>::StorageBucketObjectSizeLimitReached
             );
@@ -1175,6 +1178,7 @@ impl<T: Trait> Module<T> {
         //TODO: Check dynamic bag existence.
 
         BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
+
         Self::change_storage_bucket_vouchers_for_bag(
             &src_bag_id,
             &voucher_update,
@@ -1191,9 +1195,41 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Validates `delete_data_objects`  parameters.
+    /// Returns voucher updates for affected bogs.
+    pub fn can_delete_data_objects(
+        params: &ObjectsInBagParams<T>,
+    ) -> Result<BTreeMap<BagId<T>, VoucherUpdate>, DispatchError> {
+        ensure!(
+            !params.assigned_data_objects.is_empty(),
+            Error::<T>::ObjectInBagParamsAreEmpty
+        );
+
+        let mut bag_vouchers: BTreeMap<BagId<T>, VoucherUpdate> = BTreeMap::new();
+
+        for ids in params.assigned_data_objects.iter() {
+            let data_object =
+                BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
+
+            if let Some(voucher_update) = bag_vouchers.get_mut(&ids.bag_id) {
+                voucher_update.add_object(data_object.size);
+            } else {
+                bag_vouchers.insert(
+                    ids.bag_id.clone(),
+                    VoucherUpdate {
+                        objects_number: 1,
+                        objects_total_size: data_object.size,
+                    },
+                );
+            }
+        }
+
+        Ok(bag_vouchers)
+    }
+
     /// Delete storage objects.
     pub fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult {
-        Self::validate_objects_in_bags_params(&params)?;
+        let voucher_updates = Self::can_delete_data_objects(&params)?;
 
         //
         // == MUTATION SAFE ==
@@ -1203,6 +1239,14 @@ impl<T: Trait> Module<T> {
 
         for ids in params.assigned_data_objects.iter() {
             BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
+        }
+
+        for (bag_id, voucher_update) in voucher_updates.iter() {
+            Self::change_storage_bucket_vouchers_for_bag(
+                bag_id,
+                voucher_update,
+                VoucherOperation::Decrease,
+            );
         }
 
         Self::deposit_event(RawEvent::DataObjectsDeleted(params));
@@ -1556,16 +1600,6 @@ impl<T: Trait> Module<T> {
     fn validate_accept_pending_data_objects_params(
         params: &ObjectsInBagParams<T>,
     ) -> DispatchResult {
-        Self::validate_objects_in_bags_params(params)?;
-
-        // TODO: how do we validate that objects are accepted by correct storage provider - that
-        // was invited to the storage bucket?
-
-        Ok(())
-    }
-
-    // Ensures validity of the `ObjectsInBagParams` extrinsic parameters
-    fn validate_objects_in_bags_params(params: &ObjectsInBagParams<T>) -> DispatchResult {
         ensure!(
             !params.assigned_data_objects.is_empty(),
             Error::<T>::ObjectInBagParamsAreEmpty
@@ -1574,6 +1608,9 @@ impl<T: Trait> Module<T> {
         for ids in params.assigned_data_objects.iter() {
             BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
         }
+
+        // TODO: how do we validate that objects are accepted by correct storage provider - that
+        // was invited to the storage bucket?
 
         Ok(())
     }
@@ -1628,19 +1665,13 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
 
-        let new_objects_number: u64 = object_ids.len().saturated_into();
-        let mut new_objects_total_size: u64 = 0;
+        let mut voucher_update = VoucherUpdate::default();
 
         for object_id in object_ids.iter() {
             let data_object = BagManager::<T>::ensure_data_object_existence(src_bag_id, object_id)?;
 
-            new_objects_total_size = new_objects_total_size.saturating_add(data_object.size);
+            voucher_update.add_object(data_object.size);
         }
-
-        let voucher_update = VoucherUpdate {
-            new_objects_number,
-            new_objects_total_size,
-        };
 
         Self::check_bag_for_buckets_overflow(dest_bag_id, &voucher_update)?;
 
