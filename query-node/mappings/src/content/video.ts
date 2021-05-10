@@ -182,7 +182,7 @@ export async function content_VideoCreated(
 
   // ensure channel exists
   if (!channel) {
-    inconsistentState('Trying to add video to non-existing channel', channelId)
+    return inconsistentState('Trying to add video to non-existing channel', channelId)
   }
 
   // prepare video media metadata (if any)
@@ -393,7 +393,7 @@ export async function content_FeaturedVideosSet(
   } as FindConditions<Video> })
 
   if (videosToAdd.length != toAdd.length) {
-    inconsistentState('At least one non-existing video featuring requested', toAdd)
+    return inconsistentState('At least one non-existing video featuring requested', toAdd)
   }
 
   // mark previously not-featured videos as featured
