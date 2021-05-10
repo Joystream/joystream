@@ -205,6 +205,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
           'Content-Length': fileSize.toString(),
         },
+        maxBodyLength: fileSize,
       }
       await axios.put(uploadUrl, fileStream, config)
     } catch (e) {
