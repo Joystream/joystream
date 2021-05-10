@@ -52,6 +52,38 @@ use sp_std::vec::Vec;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
+/// Public interface for the storage module.
+pub trait DataObjectStorage<T: Trait> {
+    /// Validates upload parameters and conditions (like global uploading block).
+    /// Validates voucher usage for affected buckets.
+    fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult;
+
+    /// Upload new data objects.
+    fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult;
+
+    /// Validates moving objects parameters.
+    /// Validates voucher usage for affected buckets.
+    fn can_move_data_objects(
+        src_bag_id: &BagId<T>,
+        dest_bag_id: &BagId<T>,
+        objects: &BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult;
+
+    /// Move data objects to a new bag.
+    fn move_data_objects(
+        src_bag_id: BagId<T>,
+        dest_bag_id: BagId<T>,
+        objects: BTreeSet<T::DataObjectId>,
+    ) -> DispatchResult;
+
+    /// Validates `delete_data_objects`  parameters.
+    /// Validates voucher usage for affected buckets.
+    fn can_delete_data_objects(params: &ObjectsInBagParams<T>) -> DispatchResult;
+
+    /// Delete storage objects.
+    fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult;
+}
+
 /// Storage trait.
 pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Storage event type.
@@ -1028,113 +1060,14 @@ decl_module! {
 }
 
 // Public methods
-impl<T: Trait> Module<T> {
-    /// Validates upload parameters and conditions (like global uploading block).
-    /// Returns voucher update parameters for the storage buckets.
-    pub fn can_upload_data_objects(
-        params: &UploadParameters<T>,
-    ) -> Result<VoucherUpdate, DispatchError> {
-        // TODO: consider refactoring and splitting the method.
-
-        //TODO: Check dynamic bag existence.
-
-        // Check global uploading block.
-        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
-
-        // Check object creation list validity.
-        ensure!(
-            !params.object_creation_list.is_empty(),
-            Error::<T>::NoObjectsOnUpload
-        );
-
-        let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
-
-        let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
-
-        let total_possible_data_objects_number: u64 = new_objects_number + bag_objects_number;
-
-        // Check bag capacity.
-        ensure!(
-            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
-            Error::<T>::DataObjectsPerBagLimitExceeded
-        );
-
-        // Check data objects.
-        for object_params in params.object_creation_list.iter() {
-            // Should be non-empty hash.
-            ensure!(
-                !object_params.ipfs_content_id.is_empty(),
-                Error::<T>::EmptyContentId
-            );
-            // Should be non-zero size.
-            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
-
-            // Should not be blacklisted.
-            ensure!(
-                !Blacklist::contains_key(&object_params.ipfs_content_id),
-                Error::<T>::DataObjectBlacklisted,
-            );
-        }
-
-        let total_deletion_prize: BalanceOf<T> =
-            new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
-        let usable_balance =
-            Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
-
-        // Check account balance to satisfy deletion prize.
-        ensure!(
-            usable_balance >= total_deletion_prize,
-            Error::<T>::InsufficientBalance
-        );
-
-        let new_objects_total_size: u64 =
-            params.object_creation_list.iter().map(|obj| obj.size).sum();
-
-        let voucher_update = VoucherUpdate {
-            objects_number: new_objects_number,
-            objects_total_size: new_objects_total_size,
-        };
-
-        // Check buckets.
-        Self::check_bag_for_buckets_overflow(&params.bag_id, &voucher_update)?;
-
-        Ok(voucher_update)
-    }
-
-    // Iterates through buckets in the bag. Verifies voucher parameters to fit the new limits:
-    // objects number and total objects size.
-    fn check_bag_for_buckets_overflow(
-        bag_id: &BagId<T>,
-        voucher_update: &VoucherUpdate,
-    ) -> DispatchResult {
-        let bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
-
-        for bucket_id in bucket_ids.iter() {
-            let bucket = Self::storage_bucket_by_id(bucket_id);
-
-            // Total object number limit is not exceeded.
-            ensure!(
-                voucher_update.objects_number + bucket.voucher.objects_used
-                    <= bucket.voucher.objects_limit,
-                Error::<T>::StorageBucketObjectNumberLimitReached
-            );
-
-            // Total object size limit is not exceeded.
-            ensure!(
-                voucher_update.objects_total_size + bucket.voucher.objects_used
-                    <= bucket.voucher.size_limit,
-                Error::<T>::StorageBucketObjectSizeLimitReached
-            );
-        }
-
-        Ok(())
+impl<T: Trait> DataObjectStorage<T> for Module<T> {
+    fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
+        Self::validate_upload_data_objects_parameters(params).map(|_| ())
     }
 
     // TODO: calculate actual weight!
-
-    /// Upload new data objects.
-    pub fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
-        let voucher_update = Self::can_upload_data_objects(&params)?;
+    fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
+        let voucher_update = Self::validate_upload_data_objects_parameters(&params)?;
 
         //
         // == MUTATION SAFE ==
@@ -1162,8 +1095,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Move data objects to a new bag.
-    pub fn move_data_objects(
+    fn can_move_data_objects(
+        src_bag_id: &BagId<T>,
+        dest_bag_id: &BagId<T>,
+        objects: &BTreeSet<<T as Trait>::DataObjectId>,
+    ) -> DispatchResult {
+        Self::validate_data_objects_on_moving(src_bag_id, dest_bag_id, objects).map(|_| ())
+    }
+
+    fn move_data_objects(
         src_bag_id: BagId<T>,
         dest_bag_id: BagId<T>,
         objects: BTreeSet<T::DataObjectId>,
@@ -1195,41 +1135,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Validates `delete_data_objects`  parameters.
-    /// Returns voucher updates for affected bogs.
-    pub fn can_delete_data_objects(
-        params: &ObjectsInBagParams<T>,
-    ) -> Result<BTreeMap<BagId<T>, VoucherUpdate>, DispatchError> {
-        ensure!(
-            !params.assigned_data_objects.is_empty(),
-            Error::<T>::ObjectInBagParamsAreEmpty
-        );
-
-        let mut bag_vouchers: BTreeMap<BagId<T>, VoucherUpdate> = BTreeMap::new();
-
-        for ids in params.assigned_data_objects.iter() {
-            let data_object =
-                BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
-
-            if let Some(voucher_update) = bag_vouchers.get_mut(&ids.bag_id) {
-                voucher_update.add_object(data_object.size);
-            } else {
-                bag_vouchers.insert(
-                    ids.bag_id.clone(),
-                    VoucherUpdate {
-                        objects_number: 1,
-                        objects_total_size: data_object.size,
-                    },
-                );
-            }
-        }
-
-        Ok(bag_vouchers)
+    fn can_delete_data_objects(params: &ObjectsInBagParams<T>) -> DispatchResult {
+        Self::validate_delete_data_objects(params).map(|_| ())
     }
 
-    /// Delete storage objects.
-    pub fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult {
-        let voucher_updates = Self::can_delete_data_objects(&params)?;
+    fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult {
+        let voucher_updates = Self::validate_delete_data_objects(&params)?;
 
         //
         // == MUTATION SAFE ==
@@ -1735,5 +1646,138 @@ impl<T: Trait> Module<T> {
                     voucher_update.get_updated_voucher(&bucket.voucher, voucher_operation);
             });
         }
+    }
+
+    // Validates `delete_data_objects`  parameters.
+    // Returns voucher updates for affected bogs.
+    fn validate_delete_data_objects(
+        params: &ObjectsInBagParams<T>,
+    ) -> Result<BTreeMap<BagId<T>, VoucherUpdate>, DispatchError> {
+        ensure!(
+            !params.assigned_data_objects.is_empty(),
+            Error::<T>::ObjectInBagParamsAreEmpty
+        );
+
+        let mut bag_vouchers: BTreeMap<BagId<T>, VoucherUpdate> = BTreeMap::new();
+
+        for ids in params.assigned_data_objects.iter() {
+            let data_object =
+                BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
+
+            if let Some(voucher_update) = bag_vouchers.get_mut(&ids.bag_id) {
+                voucher_update.add_object(data_object.size);
+            } else {
+                bag_vouchers.insert(
+                    ids.bag_id.clone(),
+                    VoucherUpdate {
+                        objects_number: 1,
+                        objects_total_size: data_object.size,
+                    },
+                );
+            }
+        }
+
+        Ok(bag_vouchers)
+    }
+
+    // Validates upload parameters and conditions (like global uploading block).
+    // Returns voucher update parameters for the storage buckets.
+    fn validate_upload_data_objects_parameters(
+        params: &UploadParameters<T>,
+    ) -> Result<VoucherUpdate, DispatchError> {
+        // TODO: consider refactoring and splitting the method.
+
+        //TODO: Check dynamic bag existence.
+
+        // Check global uploading block.
+        ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
+
+        // Check object creation list validity.
+        ensure!(
+            !params.object_creation_list.is_empty(),
+            Error::<T>::NoObjectsOnUpload
+        );
+
+        let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
+
+        let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
+
+        let total_possible_data_objects_number: u64 = new_objects_number + bag_objects_number;
+
+        // Check bag capacity.
+        ensure!(
+            total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
+            Error::<T>::DataObjectsPerBagLimitExceeded
+        );
+
+        // Check data objects.
+        for object_params in params.object_creation_list.iter() {
+            // Should be non-empty hash.
+            ensure!(
+                !object_params.ipfs_content_id.is_empty(),
+                Error::<T>::EmptyContentId
+            );
+            // Should be non-zero size.
+            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+
+            // Should not be blacklisted.
+            ensure!(
+                !Blacklist::contains_key(&object_params.ipfs_content_id),
+                Error::<T>::DataObjectBlacklisted,
+            );
+        }
+
+        let total_deletion_prize: BalanceOf<T> =
+            new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
+        let usable_balance =
+            Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
+
+        // Check account balance to satisfy deletion prize.
+        ensure!(
+            usable_balance >= total_deletion_prize,
+            Error::<T>::InsufficientBalance
+        );
+
+        let new_objects_total_size: u64 =
+            params.object_creation_list.iter().map(|obj| obj.size).sum();
+
+        let voucher_update = VoucherUpdate {
+            objects_number: new_objects_number,
+            objects_total_size: new_objects_total_size,
+        };
+
+        // Check buckets.
+        Self::check_bag_for_buckets_overflow(&params.bag_id, &voucher_update)?;
+
+        Ok(voucher_update)
+    }
+
+    // Iterates through buckets in the bag. Verifies voucher parameters to fit the new limits:
+    // objects number and total objects size.
+    fn check_bag_for_buckets_overflow(
+        bag_id: &BagId<T>,
+        voucher_update: &VoucherUpdate,
+    ) -> DispatchResult {
+        let bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
+
+        for bucket_id in bucket_ids.iter() {
+            let bucket = Self::storage_bucket_by_id(bucket_id);
+
+            // Total object number limit is not exceeded.
+            ensure!(
+                voucher_update.objects_number + bucket.voucher.objects_used
+                    <= bucket.voucher.objects_limit,
+                Error::<T>::StorageBucketObjectNumberLimitReached
+            );
+
+            // Total object size limit is not exceeded.
+            ensure!(
+                voucher_update.objects_total_size + bucket.voucher.objects_used
+                    <= bucket.voucher.size_limit,
+                Error::<T>::StorageBucketObjectSizeLimitReached
+            );
+        }
+
+        Ok(())
     }
 }

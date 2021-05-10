@@ -10,8 +10,9 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, ObjectsInBagParams, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams, UploadParameters,
+    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, ObjectsInBagParams,
+    RawEvent, StaticBagId, StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
