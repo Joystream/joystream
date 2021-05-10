@@ -13,6 +13,7 @@ system = { package = 'frame-system', default-features = false, git = 'https://gi
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 serde = {version = '1.0.101', features = ['derive'], optional = true}
 
 [features]

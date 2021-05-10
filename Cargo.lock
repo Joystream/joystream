@@ -3367,6 +3367,7 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-arithmetic 2.0.0-rc4",
+ "sp-runtime",
  "sp-std 2.0.0-rc4",
 ]
 
