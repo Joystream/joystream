@@ -8,7 +8,7 @@ export interface IBootstrapWorkers {
 }
 
 export interface IBootstrapWorker {
-  role_account_id: string
+  id: string
 }
 
 export async function bootWorkers(db: DatabaseManager, workers: IBootstrapWorkers): Promise<void> {
@@ -25,7 +25,7 @@ export async function bootWorkersInGroup(db: DatabaseManager, workers: IBootstra
     // create new membership
     const worker = new Worker({
       // main data
-      workerId: rawWorker.role_account_id,
+      workerId: rawWorker.id,
       type: workerType,
       isActive: true,
     })
@@ -34,6 +34,6 @@ export async function bootWorkersInGroup(db: DatabaseManager, workers: IBootstra
     await db.save<Worker>(worker)
 
     // emit log event
-    logger.info('Worker has been bootstrapped', {id: rawWorker.role_account_id, workerType})
+    logger.info('Worker has been bootstrapped', {id: rawWorker.id, workerType})
   }
 }

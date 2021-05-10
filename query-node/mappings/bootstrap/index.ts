@@ -9,18 +9,24 @@ import { FindConditions } from 'typeorm'
 import fs from 'fs'
 import path from 'path'
 
-
+// run bootstrap
 init()
 
+// bootstrap flow
 async function init() {
+    // prepare database and import data
     const [databaseManager, connection] = await createDatabaseManager()
-    const data = loadData()
 
+    // escape if db is already initialized
     if (await isDbInitialized(databaseManager)) {
         await connection.close()
         return
     }
 
+    // load import data
+    const data = loadData()
+
+    // bootstrap entities
     await bootMembers(databaseManager, data.members)
     await bootWorkers(databaseManager, data.workers)
 
@@ -38,14 +44,13 @@ async function isDbInitialized(db: DatabaseManager): Promise<boolean> {
     return !!membership
 }
 
-
-//async function createDatabaseManager(): Promise<DatabaseManager> {
 async function createDatabaseManager(): Promise<[DatabaseManager, Connection]> {
     // paths in `entities` should be the same as `entities` set in `manifest.yml`
     const entities = [
         'generated/graphql-server/dist/**/*.model.js'
     ]
 
+    // connect to db and create manager
     const connection = await createDBConnection(entities)
     const entityManager = getManager(connection.name)
     const databaseManager = makeDatabaseManager(entityManager)
