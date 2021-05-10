@@ -71,6 +71,9 @@ pub type DataObjectId = u64;
 /// Represent a storage bucket from the storage pallet.
 pub type StorageBucketId = u64;
 
+/// Represent a distribution bucket from the storage pallet.
+pub type DistributionBucketId = u64;
+
 /// Represent a media channel.
 pub type ChannelId = u64;
 

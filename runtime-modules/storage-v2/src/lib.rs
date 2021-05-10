@@ -12,7 +12,7 @@
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
 // TODO: use StorageBucket.accepting_new_bags
-// TODO: use voucher
+// TODO: use voucher for delete_bag
 // TODO: update number_of_pending_data_objects or remove it.
 // TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
@@ -108,6 +108,16 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Storage bucket ID type.
     type StorageBucketId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Distribution bucket ID type.
+    type DistributionBucketId: Parameter
         + Member
         + BaseArithmetic
         + Codec
@@ -221,7 +231,6 @@ pub type WorkerId<T> = <T as membership::Trait>::ActorId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
-//type DistributionBucketId = u64; // TODO: Move to the Trait
 
 /// The fundamental concept in the system, which represents single static binary object in the
 /// system. The main goal of the system is to retain an index of all such objects, including who
@@ -242,19 +251,30 @@ pub struct DataObject<Balance> {
 }
 
 /// Type alias for the StaticBagObject.
-pub type StaticBag<T> =
-    StaticBagObject<<T as Trait>::DataObjectId, <T as Trait>::StorageBucketId, BalanceOf<T>>;
+pub type StaticBag<T> = StaticBagObject<
+    <T as Trait>::DataObjectId,
+    <T as Trait>::StorageBucketId,
+    <T as Trait>::DistributionBucketId,
+    BalanceOf<T>,
+>;
 
 /// Static bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StaticBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
+pub struct StaticBagObject<
+    DataObjectId: Ord,
+    StorageBucketId: Ord,
+    DistributionBucketId: Ord,
+    Balance,
+> {
     /// Associated data objects.
     pub objects: BTreeMap<DataObjectId, DataObject<Balance>>,
 
     /// Associated storage buckets.
     pub stored_by: BTreeSet<StorageBucketId>,
-    //TODO: implement -    pub distributed_by: BTreeSet<DistributionBucketId>,
+
+    /// Associated distribution buckets.
+    pub distributed_by: BTreeSet<DistributionBucketId>,
 }
 
 /// Parameters for the data object creation.
@@ -520,19 +540,31 @@ struct DataObjectCandidates<T: Trait> {
 }
 
 /// Type alias for the DynamicBagObject.
-pub type DynamicBag<T> =
-    DynamicBagObject<<T as Trait>::DataObjectId, <T as Trait>::StorageBucketId, BalanceOf<T>>;
+pub type DynamicBag<T> = DynamicBagObject<
+    <T as Trait>::DataObjectId,
+    <T as Trait>::StorageBucketId,
+    <T as Trait>::DistributionBucketId,
+    BalanceOf<T>,
+>;
 
 /// Dynamic bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DynamicBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
+pub struct DynamicBagObject<
+    DataObjectId: Ord,
+    StorageBucketId: Ord,
+    DistributionBucketId: Ord,
+    Balance,
+> {
     /// Associated data objects.
     pub objects: BTreeMap<DataObjectId, DataObject<Balance>>,
 
     /// Associated storage buckets.
     pub stored_by: BTreeSet<StorageBucketId>,
-    //TODO: implement -  pub distributed_by: BTreeSet<DistributionBucketId>,
+
+    /// Associated distribution buckets.
+    pub distributed_by: BTreeSet<DistributionBucketId>,
+
     /// Dynamic bag deletion prize.
     pub deletion_prize: Balance, //TODO: check usage
 }

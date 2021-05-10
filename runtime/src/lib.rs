@@ -685,6 +685,7 @@ impl storage_v2::Trait for Runtime {
     type Event = Event;
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
+    type DistributionBucketId = DistributionBucketId;
     type ChannelId = ChannelId;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
