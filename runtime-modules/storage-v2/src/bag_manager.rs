@@ -144,6 +144,15 @@ impl<T: Trait> BagManager<T> {
         )
     }
 
+    // Gets data objects total size from the bag container. //TODO: inline as a counter
+    pub(crate) fn get_data_objects_total_size(bag_id: &BagId<T>) -> u64 {
+        Self::query(
+            bag_id,
+            |bag| bag.objects.values().map(|obj| obj.size).sum(),
+            |bag| bag.objects.values().map(|obj| obj.size).sum(),
+        )
+    }
+
     // Gets storage bucket ID set from the bag container.
     pub(crate) fn get_storage_bucket_ids(bag_id: &BagId<T>) -> BTreeSet<T::StorageBucketId> {
         Self::query(

@@ -8,6 +8,7 @@
 // TODO:How to create a dynamic bag? -
 //- new methods to be called from another modules: a method create dynamic bag.
 
+// TODO: Remove old Storage pallet.
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
 // TODO: use StorageBucket.accepting_new_bags
@@ -55,6 +56,8 @@ use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
 use bag_manager::BagManager;
+
+//TODO: Prepare types for moving to common module for the DataObjectStorage.
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -373,9 +376,9 @@ enum VoucherOperation {
     Decrease,
 }
 
-/// Helper-struct - defines voucher changes.
+// Helper-struct - defines voucher changes.
 #[derive(Clone, PartialEq, Eq, Debug, Copy, Default)]
-pub struct VoucherUpdate {
+struct VoucherUpdate {
     /// Total number.
     pub objects_number: u64,
 
@@ -531,7 +534,19 @@ pub struct DynamicBagObject<DataObjectId: Ord, StorageBucketId: Ord, Balance> {
     pub stored_by: BTreeSet<StorageBucketId>,
     //TODO: implement -  pub distributed_by: BTreeSet<DistributionBucketId>,
     /// Dynamic bag deletion prize.
-    pub deletion_prize: Balance,
+    pub deletion_prize: Balance, //TODO: check usage
+}
+
+// Voucher update parameters for a changing bag.
+struct VoucherUpdateForBagChange<StorageBucketId> {
+    // Voucher update parameters.
+    voucher_update: VoucherUpdate,
+
+    // Added buckets for a bag.
+    added_buckets: BTreeSet<StorageBucketId>,
+
+    // Removed buckets for a bag.
+    removed_buckets: BTreeSet<StorageBucketId>,
 }
 
 decl_storage! {
@@ -878,6 +893,9 @@ decl_module! {
             );
         }
 
+        // TODO: consider single bag instead of collection.
+        // TODO: consider splitting the buckets into the two collections: added and removed.
+
         /// Establishes a connection between bags and storage buckets.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_for_bags(
@@ -886,7 +904,7 @@ decl_module! {
         ) {
             T::ensure_working_group_leader_origin(origin)?;
 
-            Self::validate_update_storage_buckets_for_bags_params(&params)?;
+            let voucher_updates = Self::validate_update_storage_buckets_for_bags_params(&params)?;
 
             //
             // == MUTATION SAFE ==
@@ -894,6 +912,20 @@ decl_module! {
 
             for (bag_id, buckets) in params.bags.iter() {
                 BagManager::<T>::set_storage_buckets(bag_id, buckets.clone());
+            }
+
+            // Update vouchers.
+            for (_, voucher_info) in voucher_updates.iter() {
+                Self::change_storage_buckets_vouchers(
+                    &voucher_info.added_buckets,
+                    &voucher_info.voucher_update,
+                    VoucherOperation::Increase
+                );
+                Self::change_storage_buckets_vouchers(
+                    &voucher_info.removed_buckets,
+                    &voucher_info.voucher_update,
+                    VoucherOperation::Decrease
+                );
             }
 
             Self::deposit_event(RawEvent::StorageBucketsUpdatedForBags(params));
@@ -1334,7 +1366,8 @@ impl<T: Trait> Module<T> {
     // Ensures validity of the `update_storage_buckets_for_bags` extrinsic parameters
     fn validate_update_storage_buckets_for_bags_params(
         params: &UpdateStorageBucketForBagsParams<T>,
-    ) -> DispatchResult {
+    ) -> Result<BTreeMap<BagId<T>, VoucherUpdateForBagChange<T::StorageBucketId>>, DispatchError>
+    {
         ensure!(
             !params.bags.is_empty(),
             Error::<T>::UpdateStorageBucketForBagsParamsIsEmpty
@@ -1343,16 +1376,52 @@ impl<T: Trait> Module<T> {
         //TODO: Validate dynamic bag existence
         //TODO: Validate accepting_new_bags for the storage bucket
 
-        for buckets in params.bags.values() {
+        let mut voucher_update_result = BTreeMap::new();
+
+        for (bag_id, buckets) in params.bags.iter() {
+            let mut added_buckets = BTreeSet::new();
+            let mut removed_buckets = BTreeSet::new();
+
+            let storage_bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
+
             for bucket_id in buckets.iter() {
                 ensure!(
                     <StorageBucketById<T>>::contains_key(&bucket_id),
                     Error::<T>::StorageBucketDoesntExist
                 );
+
+                if !storage_bucket_ids.contains(bucket_id) {
+                    added_buckets.insert(*bucket_id);
+                }
             }
+
+            for existing_bucket_id in storage_bucket_ids.iter() {
+                if !buckets.contains(existing_bucket_id) {
+                    removed_buckets.insert(*existing_bucket_id);
+                }
+            }
+
+            let objects_total_size = BagManager::<T>::get_data_objects_total_size(bag_id);
+            let objects_number = BagManager::<T>::get_data_objects_number(bag_id);
+
+            let voucher_update = VoucherUpdate {
+                objects_number,
+                objects_total_size,
+            };
+
+            Self::check_buckets_for_overflow(&added_buckets, &voucher_update)?;
+
+            voucher_update_result.insert(
+                bag_id.clone(),
+                VoucherUpdateForBagChange {
+                    voucher_update,
+                    added_buckets,
+                    removed_buckets,
+                },
+            );
         }
 
-        Ok(())
+        Ok(voucher_update_result)
     }
 
     // Get dynamic bag by its ID from the storage.
@@ -1445,11 +1514,22 @@ impl<T: Trait> Module<T> {
     ) {
         let bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
 
+        Self::change_storage_buckets_vouchers(&bucket_ids, voucher_update, voucher_operation);
+    }
+
+    // Update total objects size and number for provided storage buckets.
+    fn change_storage_buckets_vouchers(
+        bucket_ids: &BTreeSet<T::StorageBucketId>,
+        voucher_update: &VoucherUpdate,
+        voucher_operation: VoucherOperation,
+    ) {
         for bucket_id in bucket_ids.iter() {
             <StorageBucketById<T>>::mutate(bucket_id, |bucket| {
                 bucket.voucher =
                     voucher_update.get_updated_voucher(&bucket.voucher, voucher_operation);
             });
+
+            //TODO: Add voucher updated event.
         }
     }
 
@@ -1565,6 +1645,15 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         let bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
 
+        Self::check_buckets_for_overflow(&bucket_ids, voucher_update)
+    }
+
+    // Iterates through buckets. Verifies voucher parameters to fit the new limits:
+    // objects number and total objects size.
+    fn check_buckets_for_overflow(
+        bucket_ids: &BTreeSet<T::StorageBucketId>,
+        voucher_update: &VoucherUpdate,
+    ) -> DispatchResult {
         for bucket_id in bucket_ids.iter() {
             let bucket = Self::storage_bucket_by_id(bucket_id);
 
@@ -1577,7 +1666,7 @@ impl<T: Trait> Module<T> {
 
             // Total object size limit is not exceeded.
             ensure!(
-                voucher_update.objects_total_size + bucket.voucher.objects_used
+                voucher_update.objects_total_size + bucket.voucher.size_used
                     <= bucket.voucher.size_limit,
                 Error::<T>::StorageBucketObjectSizeLimitReached
             );
