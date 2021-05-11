@@ -1413,9 +1413,11 @@ fn move_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let working_group = WorkingGroup::Storage;
-        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+        let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
+        let src_bag_id = BagId::<Test>::DynamicBag(src_dynamic_bag_id.clone());
+
+        let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
+        let dest_bag_id = BagId::<Test>::DynamicBag(dest_dynamic_bag_id.clone());
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -1434,10 +1436,15 @@ fn move_data_objects_succeeded() {
         let data_object_id = 0u64;
         let ids = BTreeSet::from_iter(vec![data_object_id]);
 
-        assert!(Storage::council_bag().objects.contains_key(&data_object_id));
-        assert!(!Storage::working_group_bag(working_group)
-            .objects
-            .contains_key(&data_object_id));
+        // Pre-checks
+        let src_bag = Storage::dynamic_bag(&src_dynamic_bag_id.clone());
+        let dest_bag = Storage::dynamic_bag(&dest_dynamic_bag_id.clone());
+
+        assert!(src_bag.objects.contains_key(&data_object_id));
+        assert!(!dest_bag.objects.contains_key(&data_object_id));
+
+        assert_eq!(src_bag.deletion_prize, DataObjectDeletionPrize::get());
+        assert_eq!(dest_bag.deletion_prize, 0);
 
         MoveDataObjectsFixture::default()
             .with_src_bag_id(src_bag_id.clone())
@@ -1445,10 +1452,15 @@ fn move_data_objects_succeeded() {
             .with_data_object_ids(ids.clone())
             .call_and_assert(Ok(()));
 
-        assert!(!Storage::council_bag().objects.contains_key(&data_object_id));
-        assert!(Storage::working_group_bag(working_group)
-            .objects
-            .contains_key(&data_object_id));
+        // Post-checks
+        let src_bag = Storage::dynamic_bag(&src_dynamic_bag_id.clone());
+        let dest_bag = Storage::dynamic_bag(&dest_dynamic_bag_id.clone());
+
+        assert!(!src_bag.objects.contains_key(&data_object_id));
+        assert!(dest_bag.objects.contains_key(&data_object_id));
+
+        assert_eq!(src_bag.deletion_prize, 0);
+        assert_eq!(dest_bag.deletion_prize, DataObjectDeletionPrize::get());
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsMoved(
             src_bag_id,
