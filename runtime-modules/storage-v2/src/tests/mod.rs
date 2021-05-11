@@ -16,7 +16,7 @@ use common::working_group::WorkingGroup;
 use crate::{
     AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DynamicBagId, Error,
     ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    StorageTreasury, UpdateStorageBucketForBagsParams, UploadParameters,
+    StorageTreasury, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
 };
 
 use mocks::{
@@ -652,6 +652,54 @@ fn deletion_prize_changed_event_fired() {
         EventFixture::contains_crate_event(RawEvent::DeletionPrizeChanged(
             dynamic_bag,
             DataObjectDeletionPrize::get(),
+        ));
+    });
+}
+
+#[test]
+fn storage_bucket_voucher_changed_event_fired() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag.clone());
+        let objects_limit = 1;
+        let size_limit = 100;
+        let storage_provider_id = 10;
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            storage_provider_id,
+            objects_limit,
+            size_limit,
+        );
+
+        let object_creation_list = create_single_data_object();
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::contains_crate_event(RawEvent::VoucherChanged(
+            bucket_id,
+            Voucher {
+                objects_limit,
+                size_limit,
+                objects_used: 1,
+                size_used: object_creation_list[0].size,
+            },
         ));
     });
 }

@@ -785,6 +785,12 @@ decl_event! {
         /// - dynamic bag ID
         /// - new deletion prize
         DeletionPrizeChanged(DynamicBagId, Balance),
+
+        /// Emits on changing the voucher for a storage bucket.
+        /// Params
+        /// - storage bucket ID
+        /// - new voucher
+        VoucherChanged(StorageBucketId, Voucher),
     }
 }
 
@@ -1773,9 +1779,9 @@ impl<T: Trait> Module<T> {
             <StorageBucketById<T>>::mutate(bucket_id, |bucket| {
                 bucket.voucher =
                     voucher_update.get_updated_voucher(&bucket.voucher, voucher_operation);
-            });
 
-            //TODO: Add voucher updated event.
+                Self::deposit_event(RawEvent::VoucherChanged(*bucket_id, bucket.voucher.clone()));
+            });
         }
     }
 
