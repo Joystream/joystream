@@ -15,7 +15,6 @@
 // TODO: use voucher for delete_bag
 // TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
-// TODO: remove all: #[allow(dead_code)]
 // TODO: add module comment
 // TODO: add benchmarks
 // TODO: adjust constants
@@ -692,6 +691,7 @@ decl_event! {
         BagId = BagId<T>,
         DynamicBagId = DynamicBagId<T>,
         <T as frame_system::Trait>::AccountId,
+        Balance = BalanceOf<T>,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -779,6 +779,12 @@ decl_event! {
         /// - account ID for the deletion prize
         /// - dynamic bags IDs list
         DynamicBagsDeleted(AccountId, BTreeSet<DynamicBagId>),
+
+        /// Emits on changing the deletion prize for a dynamic bag.
+        /// Params
+        /// - dynamic bag ID
+        /// - new deletion prize
+        DeletionPrizeChanged(DynamicBagId, Balance),
     }
 }
 
@@ -1941,6 +1947,11 @@ impl<T: Trait> Module<T> {
             OperationType::Increase => bag.deletion_prize.saturating_add(deletion_prize),
             OperationType::Decrease => bag.deletion_prize.saturating_sub(deletion_prize),
         };
+
+        Self::deposit_event(RawEvent::DeletionPrizeChanged(
+            dynamic_bag_id.clone(),
+            bag.deletion_prize,
+        ));
 
         Self::save_dynamic_bag(dynamic_bag_id, bag);
     }

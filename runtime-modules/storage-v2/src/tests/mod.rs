@@ -628,6 +628,35 @@ fn upload_succeeded() {
 }
 
 #[test]
+fn deletion_prize_changed_event_fired() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::DynamicBag(dynamic_bag.clone()),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::contains_crate_event(RawEvent::DeletionPrizeChanged(
+            dynamic_bag,
+            DataObjectDeletionPrize::get(),
+        ));
+    });
+}
+
+#[test]
 fn upload_succeeded_with_active_storage_bucket_having_voucher() {
     build_test_externalities().execute_with(|| {
         let initial_balance = 1000;

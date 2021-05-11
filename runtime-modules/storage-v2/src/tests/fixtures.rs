@@ -44,6 +44,7 @@ impl EventFixture {
             BagId<Test>,
             DynamicBagId<Test>,
             u64,
+            u64,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -51,7 +52,6 @@ impl EventFixture {
         Self::assert_last_global_event(converted_event)
     }
 
-    #[allow(dead_code)]
     pub fn contains_crate_event(
         expected_raw_event: RawEvent<
             u64,
@@ -62,6 +62,7 @@ impl EventFixture {
             ObjectsInBagParams<Test>,
             BagId<Test>,
             DynamicBagId<Test>,
+            u64,
             u64,
         >,
     ) {
