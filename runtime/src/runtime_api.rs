@@ -13,8 +13,8 @@ use crate::{
 };
 
 use crate::{
-    content, data_directory, AccountId, Balance, BlockNumber, Hash, Index,
-    RuntimeVersion, Signature, VERSION,
+    content, data_directory, AccountId, Balance, BlockNumber, Hash, Index, RuntimeVersion,
+    Signature, VERSION,
 };
 
 #[cfg(feature = "standalone")]
@@ -23,8 +23,8 @@ use crate::{
 };
 
 use crate::{
-    Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys,
-    System, TransactionPayment,
+    Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
+    TransactionPayment,
 };
 use frame_support::weights::Weight;
 

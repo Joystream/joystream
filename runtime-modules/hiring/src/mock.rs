@@ -12,7 +12,7 @@ use sp_std::rc::Rc;
 use std::panic;
 
 use crate::hiring::ApplicationDeactivationCause;
-use crate::{Module, Config};
+use crate::{Config, Module};
 use balances;
 use stake;
 

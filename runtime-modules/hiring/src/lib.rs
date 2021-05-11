@@ -38,7 +38,7 @@ use sp_std::iter::Iterator;
 use sp_std::rc::Rc;
 use sp_std::vec::Vec;
 
-use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Config as StakeTrait};
+use stake::{Config as StakeTrait, InitiateUnstakingError, Stake, StakeActionError, StakingError};
 
 mod hiring;
 #[macro_use]

@@ -61,7 +61,7 @@ mod proposal_types;
 #[cfg(test)]
 mod tests;
 
-use frame_support::dispatch::{DispatchResult, DispatchErrorWithPostInfo};
+use frame_support::dispatch::{DispatchErrorWithPostInfo, DispatchResult};
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use frame_system::ensure_root;
@@ -879,7 +879,7 @@ impl<T: Config> Module<T> {
         );
 
         let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
-        let params = CreateProposalParameters{
+        let params = CreateProposalParameters {
             origin,
             member_id,
             title,
@@ -887,7 +887,7 @@ impl<T: Config> Module<T> {
             stake_balance,
             proposal_details: proposal_details.clone(),
             proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
-            proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
         };
 
         Self::create_proposal(params)

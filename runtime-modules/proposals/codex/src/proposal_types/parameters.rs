@@ -29,7 +29,8 @@ pub(crate) fn runtime_upgrade_proposal<T: crate::Config>(
 }
 
 // Proposal parameters for the text proposal
-pub(crate) fn text_proposal<T: crate::Config>() -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
+pub(crate) fn text_proposal<T: crate::Config>() -> ProposalParameters<T::BlockNumber, BalanceOf<T>>
+{
     ProposalParameters {
         voting_period: <Module<T>>::text_proposal_voting_period(),
         grace_period: <Module<T>>::text_proposal_grace_period(),

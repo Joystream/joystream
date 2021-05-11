@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Config, DEFAULT_PAID_TERM_ID};
+pub use crate::{Config, GenesisConfig, DEFAULT_PAID_TERM_ID};
 
 pub use frame_support::traits::Currency;
 use frame_support::{impl_outer_origin, parameter_types};

@@ -1,6 +1,6 @@
 #![cfg(feature = "std")]
 
-use crate::{GenesisConfig, Config};
+use crate::{Config, GenesisConfig};
 use common::currency::BalanceOf;
 use serde::{Deserialize, Serialize};
 

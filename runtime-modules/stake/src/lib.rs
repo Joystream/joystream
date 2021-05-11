@@ -4,7 +4,7 @@
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
-use frame_support::{decl_module, decl_storage, ensure, Parameter, PalletId};
+use frame_support::{decl_module, decl_storage, ensure, PalletId, Parameter};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
@@ -19,8 +19,9 @@ mod tests;
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-pub type NegativeImbalance<T> =
-    <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as Config>::Currency as Currency<
+    <T as frame_system::Config>::AccountId,
+>>::NegativeImbalance;
 
 pub trait Config: frame_system::Config + Sized {
     /// The currency that is managed by the module

@@ -10,7 +10,7 @@ use sp_runtime::{
 };
 use std::marker::PhantomData;
 
-use crate::{BalanceOf, Module, NegativeImbalance, Config};
+use crate::{BalanceOf, Config, Module, NegativeImbalance};
 use common::constraints::InputValidationLengthConstraint;
 
 impl_outer_origin! {

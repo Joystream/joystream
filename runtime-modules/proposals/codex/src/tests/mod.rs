@@ -81,7 +81,8 @@ where
 
     fn check_for_successful_call(&self) {
         let account_id = 1;
-        let _imbalance = <Test as stake::Config>::Currency::deposit_creating(&account_id, 5_000_000);
+        let _imbalance =
+            <Test as stake::Config>::Currency::deposit_creating(&account_id, 5_000_000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 

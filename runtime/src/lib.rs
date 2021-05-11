@@ -62,14 +62,10 @@ pub use frame_support::{
     },
     StorageValue,
 };
-use frame_system::{
-    limits::{BlockLength, BlockWeights},
-};
+use frame_system::limits::{BlockLength, BlockWeights};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
-    traits::{
-        AccountIdLookup, BlakeTwo256,
-    },
+    traits::{AccountIdLookup, BlakeTwo256},
 };
 use sp_std::prelude::*;
 

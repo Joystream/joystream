@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::Test;
-use crate::{PayoutStatusHandler, Config};
+use crate::{Config, PayoutStatusHandler};
 use std::cell::RefCell;
 
 struct StatusHandlerState<T: Config> {

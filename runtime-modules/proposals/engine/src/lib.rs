@@ -145,7 +145,11 @@ type MemberId<T> = <T as membership::Config>::MemberId;
 
 /// Proposals engine trait.
 pub trait Config:
-    frame_system::Config + pallet_timestamp::Config + stake::Config + membership::Config + balances::Config
+    frame_system::Config
+    + pallet_timestamp::Config
+    + stake::Config
+    + membership::Config
+    + balances::Config
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -671,7 +675,9 @@ impl<T: Config> Module<T> {
                     ApprovedProposalStatus::Executed
                 }
             }
-            Err(_) => ApprovedProposalStatus::failed_execution("Error during proposal decoding occured.")
+            Err(_) => {
+                ApprovedProposalStatus::failed_execution("Error during proposal decoding occured.")
+            }
         };
 
         let proposal_execution_status = approved_proposal

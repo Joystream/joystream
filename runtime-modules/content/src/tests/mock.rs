@@ -11,8 +11,8 @@ use sp_runtime::{
     Perbill,
 };
 
-use crate::ContentActorAuthenticator;
 use crate::Config;
+use crate::ContentActorAuthenticator;
 use common::currency::GovernanceCurrency;
 use common::storage::StorageSystem;
 

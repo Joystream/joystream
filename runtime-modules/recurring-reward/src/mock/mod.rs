@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::{Module, Config};
+use crate::{Config, Module};
 
 use balances;
 use frame_support::{impl_outer_origin, parameter_types};

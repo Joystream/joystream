@@ -29,7 +29,7 @@ use joystream_node::chain_spec::{
 };
 
 use sc_chain_spec::ChainType;
-use sc_keystore::Store as Keystore;
+use sc_keystore::LocalKeystore as Keystore;
 use sc_telemetry::TelemetryEndpoints;
 use sp_core::{
     crypto::{Public, Ss58Codec},
