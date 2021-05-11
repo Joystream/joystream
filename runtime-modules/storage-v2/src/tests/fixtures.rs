@@ -10,9 +10,9 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, ObjectsInBagParams,
-    RawEvent, StaticBagId, StorageBucketOperatorStatus, UpdateStorageBucketForBagsParams,
-    UploadParameters,
+    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
+    ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    UpdateStorageBucketForBagsParams, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -42,6 +42,8 @@ impl EventFixture {
             UploadParameters<Test>,
             ObjectsInBagParams<Test>,
             BagId<Test>,
+            DynamicBagId<Test>,
+            u64,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -59,6 +61,8 @@ impl EventFixture {
             UploadParameters<Test>,
             ObjectsInBagParams<Test>,
             BagId<Test>,
+            DynamicBagId<Test>,
+            u64,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -698,6 +702,38 @@ impl UpdateBlacklistFixture {
             self.remove_hashes.clone(),
             self.add_hashes.clone(),
         );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct DeleteDynamicBagsFixture {
+    bags: BTreeSet<DynamicBagId<Test>>,
+    deletion_account_id: u64,
+}
+
+impl DeleteDynamicBagsFixture {
+    pub fn default() -> Self {
+        Self {
+            bags: BTreeSet::new(),
+            deletion_account_id: DEFAULT_ACCOUNT_ID,
+        }
+    }
+
+    pub fn with_deletion_account_id(self, deletion_account_id: u64) -> Self {
+        Self {
+            deletion_account_id,
+            ..self
+        }
+    }
+
+    pub fn with_bags(self, bags: BTreeSet<DynamicBagId<Test>>) -> Self {
+        Self { bags, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Storage::delete_dynamic_bags(self.deletion_account_id, self.bags.clone());
 
         assert_eq!(actual_result, expected_result);
     }

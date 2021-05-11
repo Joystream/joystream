@@ -1,7 +1,6 @@
 #![warn(missing_docs)]
 
 use frame_support::dispatch::DispatchError;
-use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
@@ -139,8 +138,8 @@ impl<T: Trait> BagManager<T> {
     pub(crate) fn get_data_objects_number(bag_id: &BagId<T>) -> u64 {
         Self::query(
             bag_id,
-            |bag| bag.objects.len().saturated_into(),
-            |bag| bag.objects.len().saturated_into(),
+            |bag| bag.objects_number(),
+            |bag| bag.objects_number(),
         )
     }
 
@@ -148,8 +147,8 @@ impl<T: Trait> BagManager<T> {
     pub(crate) fn get_data_objects_total_size(bag_id: &BagId<T>) -> u64 {
         Self::query(
             bag_id,
-            |bag| bag.objects.values().map(|obj| obj.size).sum(),
-            |bag| bag.objects.values().map(|obj| obj.size).sum(),
+            |bag| bag.objects_total_size(),
+            |bag| bag.objects_total_size(),
         )
     }
 
