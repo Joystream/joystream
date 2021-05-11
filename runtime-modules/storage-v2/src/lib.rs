@@ -8,13 +8,11 @@
 // TODO:How to create a dynamic bag? -
 //- new methods to be called from another modules: a method create dynamic bag.
 
-// TODO: reward delete_data_objects with deletion prize
 // TODO: Remove old Storage pallet.
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
 // TODO: use StorageBucket.accepting_new_bags
 // TODO: use voucher for delete_bag
-// TODO: update number_of_pending_data_objects or remove it.
 // TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
 // TODO: remove all: #[allow(dead_code)]
@@ -489,9 +487,6 @@ pub struct StorageBucket<WorkerId> {
     /// Defines whether the bucket accepts new bags.
     pub accepting_new_bags: bool,
 
-    /// Number of pending (not accepted) data objects.
-    pub number_of_pending_data_objects: u32, // TODO: fill or remove
-
     /// Defines limits for a bucket.
     pub voucher: Voucher,
 
@@ -672,7 +667,6 @@ decl_storage! {
         /// Total number of the storage buckets in the system.
         pub StorageBucketsNumber get(fn storage_buckets_number): u64;
 
-        // TODO: rework back to "Storage bucket (flat) map" - BTreemap?
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
@@ -979,7 +973,6 @@ decl_module! {
             let storage_bucket = StorageBucket {
                 operator_status,
                 accepting_new_bags,
-                number_of_pending_data_objects: 0,
                 voucher,
                 metadata: Vec::new(),
             };
