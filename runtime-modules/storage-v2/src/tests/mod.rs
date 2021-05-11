@@ -29,9 +29,9 @@ use fixtures::{
     create_data_object_candidates, create_single_data_object, increase_account_balance,
     run_to_block, AcceptPendingDataObjectsFixture, AcceptStorageBucketInvitationFixture,
     CancelStorageBucketInvitationFixture, CreateStorageBucketFixture, DeleteDataObjectsFixture,
-    DeleteDynamicBagsFixture, EventFixture, InviteStorageBucketOperatorFixture,
-    MoveDataObjectsFixture, SetStorageOperatorMetadataFixture, UpdateBlacklistFixture,
-    UpdateStorageBucketForBagsFixture, UpdateStorageBucketStatusFixture,
+    DeleteDynamicBagsFixture, DeleteStorageBucketFixture, EventFixture,
+    InviteStorageBucketOperatorFixture, MoveDataObjectsFixture, SetStorageOperatorMetadataFixture,
+    UpdateBlacklistFixture, UpdateStorageBucketForBagsFixture, UpdateStorageBucketStatusFixture,
     UpdateUploadingBlockedStatusFixture, UploadFixture,
 };
 
@@ -305,11 +305,10 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
         let old_bucket_id = create_storage_bucket_and_assign_to_bag(
             bag_id.clone(),
-            storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
@@ -369,14 +368,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
 
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
-        create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            storage_provider_id,
-            objects_limit,
-            size_limit,
-        );
+        create_storage_bucket_and_assign_to_bag(bag_id.clone(), None, objects_limit, size_limit);
 
         let object_creation_list = create_single_data_object();
 
@@ -424,14 +417,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
-        create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            storage_provider_id,
-            objects_limit,
-            size_limit,
-        );
+        create_storage_bucket_and_assign_to_bag(bag_id.clone(), None, objects_limit, size_limit);
 
         let object_creation_list = create_single_data_object();
 
@@ -667,11 +654,10 @@ fn storage_bucket_voucher_changed_event_fired() {
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag.clone());
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
             bag_id.clone(),
-            storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
@@ -713,11 +699,10 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
             bag_id.clone(),
-            storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
@@ -753,14 +738,8 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
-        create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            storage_provider_id,
-            objects_limit,
-            size_limit,
-        );
+        create_storage_bucket_and_assign_to_bag(bag_id.clone(), None, objects_limit, size_limit);
 
         let object_creation_list = create_single_data_object();
 
@@ -793,14 +772,8 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 1;
-        let storage_provider_id = 10;
 
-        create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            storage_provider_id,
-            objects_limit,
-            size_limit,
-        );
+        create_storage_bucket_and_assign_to_bag(bag_id.clone(), None, objects_limit, size_limit);
 
         let object_creation_list = create_single_data_object();
 
@@ -1560,18 +1533,15 @@ fn move_data_objects_succeeded_having_voucher() {
         let objects_limit = 1;
         let size_limit = 100;
 
-        let src_storage_provider_id = 10;
-        let dest_storage_provider_id = 11;
-
         let src_bucket_id = create_storage_bucket_and_assign_to_bag(
             src_bag_id.clone(),
-            src_storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
         let dest_bucket_id = create_storage_bucket_and_assign_to_bag(
             dest_bag_id.clone(),
-            dest_storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
@@ -1637,18 +1607,15 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
         let dest_objects_limit = 0;
         let dest_size_limit = 100;
 
-        let src_storage_provider_id = 10;
-        let dest_storage_provider_id = 11;
-
         create_storage_bucket_and_assign_to_bag(
             src_bag_id.clone(),
-            src_storage_provider_id,
+            None,
             src_objects_limit,
             src_size_limit,
         );
         create_storage_bucket_and_assign_to_bag(
             dest_bag_id.clone(),
-            dest_storage_provider_id,
+            None,
             dest_objects_limit,
             dest_size_limit,
         );
@@ -1698,18 +1665,15 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
         let dest_objects_limit = 1;
         let dest_size_limit = 1;
 
-        let src_storage_provider_id = 10;
-        let dest_storage_provider_id = 11;
-
         create_storage_bucket_and_assign_to_bag(
             src_bag_id.clone(),
-            src_storage_provider_id,
+            None,
             src_objects_limit,
             src_size_limit,
         );
         create_storage_bucket_and_assign_to_bag(
             dest_bag_id.clone(),
-            dest_storage_provider_id,
+            None,
             dest_objects_limit,
             dest_size_limit,
         );
@@ -1929,11 +1893,10 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
             council_bag_id.clone(),
-            storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
@@ -2250,15 +2213,13 @@ fn update_blacklist_fails_with_non_leader_origin() {
 
 fn create_storage_bucket_and_assign_to_bag(
     bag_id: BagId<Test>,
-    storage_provider_id: u64,
+    storage_provider_id: Option<u64>,
     objects_limit: u64,
     size_limit: u64,
 ) -> u64 {
-    let invite_worker = Some(storage_provider_id);
-
     let bucket_id = CreateStorageBucketFixture::default()
         .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-        .with_invite_worker(invite_worker)
+        .with_invite_worker(storage_provider_id)
         .with_objects_limit(objects_limit)
         .with_size_limit(size_limit)
         .call_and_assert(Ok(()))
@@ -2338,14 +2299,13 @@ fn delete_dynamic_bags_succeeded_having_voucher() {
     build_test_externalities().execute_with(|| {
         let objects_limit = 1;
         let size_limit = 100;
-        let storage_provider_id = 10;
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
             bag_id.clone(),
-            storage_provider_id,
+            None,
             objects_limit,
             size_limit,
         );
@@ -2418,5 +2378,101 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
             .with_bags(bags.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
+    });
+}
+
+#[test]
+fn delete_storage_bucket_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        DeleteStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StorageBucketDeleted(bucket_id));
+    });
+}
+
+#[test]
+fn delete_storage_bucket_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        DeleteStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn delete_storage_bucket_fails_with_non_existing_storage_bucket() {
+    build_test_externalities().execute_with(|| {
+        DeleteStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
+    });
+}
+
+#[test]
+fn delete_storage_bucket_fails_with_non_missing_invitation() {
+    build_test_externalities().execute_with(|| {
+        let invited_worker_id = 155;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(Some(invited_worker_id))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        DeleteStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .call_and_assert(Err(Error::<Test>::InvitedStorageProvider.into()));
+    });
+}
+
+#[test]
+fn delete_storage_bucket_fails_with_non_empty_bucket() {
+    build_test_externalities().execute_with(|| {
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let objects_limit = 1;
+        let size_limit = 100;
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            None,
+            objects_limit,
+            size_limit,
+        );
+
+        let object_creation_list = create_single_data_object();
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        DeleteStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .call_and_assert(Err(Error::<Test>::CannotDeleteNonEmptyStorageBucket.into()));
     });
 }

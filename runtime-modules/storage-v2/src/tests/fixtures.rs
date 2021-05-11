@@ -510,6 +510,7 @@ impl InviteStorageBucketOperatorFixture {
         }
     }
 }
+
 pub struct UpdateUploadingBlockedStatusFixture {
     origin: RawOrigin<u64>,
     new_status: bool,
@@ -747,5 +748,43 @@ impl DeleteDynamicBagsFixture {
             Storage::delete_dynamic_bags(self.deletion_account_id, self.bags.clone());
 
         assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct DeleteStorageBucketFixture {
+    origin: RawOrigin<u64>,
+    storage_bucket_id: u64,
+}
+
+impl DeleteStorageBucketFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            storage_bucket_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
+        Self {
+            storage_bucket_id,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Storage::delete_storage_bucket(self.origin.clone().into(), self.storage_bucket_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::StorageBucketById<Test>>::contains_key(
+                self.storage_bucket_id
+            ));
+        }
     }
 }

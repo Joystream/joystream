@@ -791,6 +791,11 @@ decl_event! {
         /// - storage bucket ID
         /// - new voucher
         VoucherChanged(StorageBucketId, Voucher),
+
+        /// Emits on storage bucket deleting.
+        /// Params
+        /// - storage bucket ID
+        StorageBucketDeleted(StorageBucketId),
     }
 }
 
@@ -872,8 +877,11 @@ decl_error! {
         /// Objects total size limit for the storage bucket reached.
         StorageBucketObjectSizeLimitReached,
 
-        /// Insufficient module treasufy balance for an operation.
+        /// Insufficient module treasury balance for an operation.
         InsufficientTreasuryBalance,
+
+        /// Cannot delete a non-empty storage bucket.
+        CannotDeleteNonEmptyStorageBucket,
     }
 }
 
@@ -899,6 +907,34 @@ decl_module! {
         const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
 
         // ===== Storage Lead actions =====
+
+        /// Delete storage bucket. Must be empty. Storage operator must be missing.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_storage_bucket(
+            origin,
+            storage_bucket_id: T::StorageBucketId,
+        ){
+            T::ensure_working_group_leader_origin(origin)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_missing_invitation_status(&bucket)?;
+
+            ensure!(
+                bucket.voucher.objects_used == 0,
+                Error::<T>::CannotDeleteNonEmptyStorageBucket
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::remove(storage_bucket_id);
+
+            Self::deposit_event(
+                RawEvent::StorageBucketDeleted(storage_bucket_id)
+            );
+        }
 
         /// Update whether uploading is globally blocked.
         #[weight = 10_000_000] // TODO: adjust weight
