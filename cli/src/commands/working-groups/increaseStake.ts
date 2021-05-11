@@ -22,7 +22,7 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
       this.error('Cannot increase stake. No associated role stake profile found!', { exit: ExitCodes.InvalidInput })
     }
 
-    this.log(chalk.white('Current stake: ', formatBalance(worker.stake)))
+    this.log(chalk.magentaBright('Current stake: ', formatBalance(worker.stake)))
     const balance = (await this.promptForParam(
       'Balance',
       createParamOptions('amount', undefined, positiveInt())
@@ -34,7 +34,7 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
 
     this.log(
       chalk.green(
-        `Worker ${chalk.white(worker.workerId.toNumber())} stake has been increased by ${chalk.white(
+        `Worker ${chalk.magentaBright(worker.workerId.toNumber())} stake has been increased by ${chalk.magentaBright(
           formatBalance(balance)
         )}`
       )

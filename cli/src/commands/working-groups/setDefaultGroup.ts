@@ -17,6 +17,6 @@ export default class SetDefaultGroupCommand extends WorkingGroupsCommandBase {
 
     await this.setPreservedState({ defaultWorkingGroup: group })
 
-    this.log(chalk.green(`${chalk.white(group)} succesfully set as default working group context`))
+    this.log(chalk.green(`${chalk.magentaBright(group)} succesfully set as default working group context`))
   }
 }

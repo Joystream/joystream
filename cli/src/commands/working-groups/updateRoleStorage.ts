@@ -31,6 +31,6 @@ export default class WorkingGroupsUpdateRoleStorage extends WorkingGroupsCommand
       storage,
     ])
 
-    this.log(chalk.green(`Succesfully updated the associated worker storage to: ${chalk.white(storage)})`))
+    this.log(chalk.green(`Succesfully updated the associated worker storage to: ${chalk.magentaBright(storage)})`))
   }
 }

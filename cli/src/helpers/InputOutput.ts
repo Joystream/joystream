@@ -60,7 +60,7 @@ export function saveOutputJson(outputPath: string | undefined, fileName: string,
     }
     saveOutputJsonToFile(outputFilePath, data)
 
-    console.log(`${chalk.green('Output succesfully saved to:')} ${chalk.white(outputFilePath)}`)
+    console.log(`${chalk.green('Output succesfully saved to:')} ${chalk.magentaBright(outputFilePath)}`)
   }
 }
 

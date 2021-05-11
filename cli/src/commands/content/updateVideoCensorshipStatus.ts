@@ -71,7 +71,7 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
 
     console.log(
       chalk.green(
-        `Video ${chalk.white(id)} censorship status succesfully changed to: ${chalk.white(
+        `Video ${chalk.magentaBright(id)} censorship status succesfully changed to: ${chalk.magentaBright(
           status ? 'Censored' : 'Not censored'
         )}!`
       )

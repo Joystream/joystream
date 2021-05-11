@@ -24,7 +24,7 @@ export default class AccountChoose extends AccountsCommandBase {
     const accounts: NamedKeyringPair[] = this.fetchAccounts(!!address || showSpecial)
     const selectedAccount: NamedKeyringPair | null = this.getSelectedAccount()
 
-    this.log(chalk.white(`Found ${accounts.length} existing accounts...\n`))
+    this.log(chalk.magentaBright(`Found ${accounts.length} existing accounts...\n`))
 
     if (accounts.length === 0) {
       this.warn('No account to choose from. Add accont using account:import or account:create.')
@@ -43,6 +43,6 @@ export default class AccountChoose extends AccountsCommandBase {
     }
 
     await this.setSelectedAccount(choosenAccount)
-    this.log(chalk.greenBright(`\nAccount switched to ${chalk.white(choosenAccount.address)}!`))
+    this.log(chalk.greenBright(`\nAccount switched to ${chalk.magentaBright(choosenAccount.address)}!`))
   }
 }

@@ -155,7 +155,7 @@ export default class ApiInspect extends ApiCommandBase {
   async requestParamsValues(paramTypes: string[]): Promise<ApiMethodArg[]> {
     const result: ApiMethodArg[] = []
     for (const [key, paramType] of Object.entries(paramTypes)) {
-      this.log(chalk.bold.white(`Parameter no. ${parseInt(key) + 1} (${paramType}):`))
+      this.log(chalk.bold.magentaBright(`Parameter no. ${parseInt(key) + 1} (${paramType}):`))
       const paramValue = await this.promptForParam(paramType)
       result.push(paramValue)
     }
@@ -192,7 +192,7 @@ export default class ApiInspect extends ApiCommandBase {
     }
     // Describing a method
     else if (apiType && apiModule && apiMethod) {
-      this.log(chalk.bold.white(`${apiType}.${apiModule}.${apiMethod}`))
+      this.log(chalk.bold.magentaBright(`${apiType}.${apiModule}.${apiMethod}`))
       const description: string = this.getMethodDescription(apiType, apiModule, apiMethod)
       this.log(`\n${description}\n`)
       const typesRows: NameValueObj[] = []
@@ -215,17 +215,17 @@ export default class ApiInspect extends ApiCommandBase {
     }
     // Displaying all available modules
     else if (apiType) {
-      this.log(chalk.bold.white('Available modules:'))
+      this.log(chalk.bold.magentaBright('Available modules:'))
       this.log(
         Object.keys(api[apiType])
-          .map((key) => chalk.white(key))
+          .map((key) => chalk.magentaBright(key))
           .join('\n')
       )
     }
     // Displaying all available types
     else {
-      this.log(chalk.bold.white('Available types:'))
-      this.log(availableTypes.map((type) => chalk.white(type)).join('\n'))
+      this.log(chalk.bold.magentaBright('Available types:'))
+      this.log(availableTypes.map((type) => chalk.magentaBright(type)).join('\n'))
     }
   }
 }
