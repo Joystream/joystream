@@ -1705,17 +1705,94 @@ fn delete_data_objects_succeeded() {
         let storage_provider_id = 10;
         let invite_worker = Some(storage_provider_id);
 
-        let bucket_id = CreateStorageBucketFixture::default()
+        CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_invite_worker(invite_worker)
             .call_and_assert(Ok(()))
             .unwrap();
 
-        AcceptStorageBucketInvitationFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
-            .with_storage_bucket_id(bucket_id)
-            .with_worker_id(storage_provider_id)
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
+
+        let data_object_id = 0; // just uploaded data object
+
+        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
+            bag_id,
+            data_object_id,
+        }]);
+
+        let params = ObjectsInBagParams::<Test> {
+            assigned_data_objects: objects,
+        };
+
+        // pre-checks
+        let bag = Storage::dynamic_bag(&dynamic_bag_id);
+        assert!(bag.objects.contains_key(&data_object_id));
+        assert_eq!(bag.deletion_prize, DataObjectDeletionPrize::get());
+
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance - DataObjectDeletionPrize::get()
+        );
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            DataObjectDeletionPrize::get()
+        );
+
+        DeleteDataObjectsFixture::default()
+            .with_params(params.clone())
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+
+        // post-checks
+        let bag = Storage::dynamic_bag(&dynamic_bag_id);
+        assert!(!bag.objects.contains_key(&data_object_id));
+        assert_eq!(bag.deletion_prize, 0);
+
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance
+        );
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            0
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            params,
+        ));
+    });
+}
+
+#[test]
+fn delete_data_objects_fails_with_invalid_treasury_balance() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let storage_provider_id = 10;
+        let invite_worker = Some(storage_provider_id);
+
+        CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -1743,17 +1820,16 @@ fn delete_data_objects_succeeded() {
             assigned_data_objects: objects,
         };
 
-        let bag = Storage::council_bag();
-        assert!(bag.objects.contains_key(&data_object_id));
+        // Corrupt module balance.
+        let _ = Balances::slash(
+            &<StorageTreasury<Test>>::module_account_id(),
+            <StorageTreasury<Test>>::usable_balance(),
+        );
 
         DeleteDataObjectsFixture::default()
             .with_params(params.clone())
-            .call_and_assert(Ok(()));
-
-        let bag = Storage::council_bag();
-        assert!(!bag.objects.contains_key(&data_object_id));
-
-        EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(params));
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
 }
 
@@ -2252,6 +2328,6 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
         DeleteDynamicBagsFixture::default()
             .with_bags(bags.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
+            .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
 }

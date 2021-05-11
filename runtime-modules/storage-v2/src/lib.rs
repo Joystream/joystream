@@ -87,8 +87,11 @@ pub trait DataObjectStorage<T: Trait> {
     /// Validates voucher usage for affected buckets.
     fn can_delete_data_objects(params: &ObjectsInBagParams<T>) -> DispatchResult;
 
-    /// Delete storage objects.
-    fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult;
+    /// Delete storage objects. Transfer deletion prize to the provided account.
+    fn delete_data_objects(
+        deletion_prize_account_id: T::AccountId,
+        params: ObjectsInBagParams<T>,
+    ) -> DispatchResult;
 
     /// Delete dynamic bags. Updates related storage bucket vouchers.
     fn delete_dynamic_bags(
@@ -408,13 +411,13 @@ pub struct Voucher {
     pub objects_used: u64,
 }
 
-// Defines whether we should increase or decrease voucher parameters.
+// Defines whether we should increase or decrease parameters during some operation.
 #[derive(Clone, PartialEq, Eq, Debug, Copy)]
-enum VoucherOperation {
-    // Increase voucher parameters.
+enum OperationType {
+    // Increase parameters.
     Increase,
 
-    // Decrease voucher parameters.
+    // Decrease parameters.
     Decrease,
 }
 
@@ -429,17 +432,13 @@ struct VoucherUpdate {
 }
 
 impl VoucherUpdate {
-    fn get_updated_voucher(
-        &self,
-        voucher: &Voucher,
-        voucher_operation: VoucherOperation,
-    ) -> Voucher {
+    fn get_updated_voucher(&self, voucher: &Voucher, voucher_operation: OperationType) -> Voucher {
         let (objects_used, size_used) = match voucher_operation {
-            VoucherOperation::Increase => (
+            OperationType::Increase => (
                 voucher.objects_used.saturating_add(self.objects_number),
                 voucher.size_used.saturating_add(self.objects_total_size),
             ),
-            VoucherOperation::Decrease => (
+            OperationType::Decrease => (
                 voucher.objects_used.saturating_sub(self.objects_number),
                 voucher.size_used.saturating_sub(self.objects_total_size),
             ),
@@ -605,6 +604,8 @@ impl<DataObjectId: Ord, StorageBucketId: Ord, DistributionBucketId: Ord, Balance
     }
 }
 
+//TODO: refactor structs!
+
 // Voucher update parameters for a changing bag.
 struct VoucherUpdateForBagChange<StorageBucketId> {
     // Voucher update parameters.
@@ -624,6 +625,26 @@ struct DynamicBagDeletionInfo<T: Trait> {
 
     // Total deletion prize for all bags.
     total_deletion_prize: BalanceOf<T>,
+}
+
+// Helper struct for the object deletion from the dynamic bag.
+struct VoucherUpdateWithDeletionPrize<T: Trait> {
+    // Voucher update for data objects
+    voucher_update: VoucherUpdate,
+
+    // Total deletion prize for data objects.
+    total_deletion_prize: BalanceOf<T>,
+}
+
+impl<T: Trait> VoucherUpdateWithDeletionPrize<T> {
+    // Adds a single object data to the voucher update (updates objects size, number)
+    // and deletion prize.
+    fn add_object(&mut self, size: u64, deletion_prize: BalanceOf<T>) {
+        self.voucher_update.objects_number = self.voucher_update.objects_number.saturating_add(1);
+        self.voucher_update.objects_total_size =
+            self.voucher_update.objects_total_size.saturating_add(size);
+        self.total_deletion_prize = self.total_deletion_prize.saturating_add(deletion_prize);
+    }
 }
 
 decl_storage! {
@@ -742,8 +763,9 @@ decl_event! {
 
         /// Emits on data objects deletion from bags.
         /// Params
+        /// - account ID for the deletion prize
         /// - data objects to delete
-        DataObjectsDeleted(ObjectsInBagParams),
+        DataObjectsDeleted(AccountId, ObjectsInBagParams),
 
         /// Emits on storage bucket status update.
         /// Params
@@ -843,6 +865,9 @@ decl_error! {
 
         /// Objects total size limit for the storage bucket reached.
         StorageBucketObjectSizeLimitReached,
+
+        /// Insufficient module treasufy balance for an operation.
+        InsufficientTreasuryBalance,
     }
 }
 
@@ -1004,12 +1029,12 @@ decl_module! {
                 Self::change_storage_buckets_vouchers(
                     &voucher_info.added_buckets,
                     &voucher_info.voucher_update,
-                    VoucherOperation::Increase
+                    OperationType::Increase
                 );
                 Self::change_storage_buckets_vouchers(
                     &voucher_info.removed_buckets,
                     &voucher_info.voucher_update,
-                    VoucherOperation::Decrease
+                    OperationType::Decrease
                 );
             }
 
@@ -1205,19 +1230,21 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
 
-        // Add deletion prize for the dynamic bag only.
+        let operation_type = OperationType::Increase;
+
+        // Add a deletion prize for the dynamic bag only.
         if let BagId::<T>::DynamicBag(ref dynamic_bag_id) = params.bag_id {
-            let mut bag = Self::dynamic_bag(dynamic_bag_id);
-
-            bag.deletion_prize = bag.deletion_prize.saturating_add(data.total_deletion_prize);
-
-            Self::save_dynamic_bag(dynamic_bag_id, bag);
+            Self::change_deletion_prize_for_dynamic_bag(
+                dynamic_bag_id,
+                data.total_deletion_prize,
+                operation_type,
+            );
         }
 
         Self::change_storage_bucket_vouchers_for_bag(
             &params.bag_id,
             &voucher_update,
-            VoucherOperation::Increase,
+            operation_type,
         );
 
         Self::deposit_event(RawEvent::DataObjectdUploaded(data.data_object_ids, params));
@@ -1245,6 +1272,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
+        //TODO: change deletion prize for dynamic bags.
         //TODO: Check dynamic bag existence.
 
         BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
@@ -1252,12 +1280,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::change_storage_bucket_vouchers_for_bag(
             &src_bag_id,
             &voucher_update,
-            VoucherOperation::Decrease,
+            OperationType::Decrease,
         );
         Self::change_storage_bucket_vouchers_for_bag(
             &dest_bag_id,
             &voucher_update,
-            VoucherOperation::Increase,
+            OperationType::Increase,
         );
 
         Self::deposit_event(RawEvent::DataObjectsMoved(src_bag_id, dest_bag_id, objects));
@@ -1269,28 +1297,55 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::validate_delete_data_objects(params).map(|_| ())
     }
 
-    fn delete_data_objects(params: ObjectsInBagParams<T>) -> DispatchResult {
+    fn delete_data_objects(
+        deletion_prize_account_id: T::AccountId,
+        params: ObjectsInBagParams<T>,
+    ) -> DispatchResult {
         let voucher_updates = Self::validate_delete_data_objects(&params)?;
+
+        let total_deletion_prize_for_all_bags = voucher_updates
+            .values()
+            .map(|v| v.total_deletion_prize)
+            .fold(Zero::zero(), |acc, elem| acc + elem); // sum
 
         //
         // == MUTATION SAFE ==
         //
 
-        //TODO: Check dynamic bag existence.
+        <StorageTreasury<T>>::withdraw(
+            &deletion_prize_account_id,
+            total_deletion_prize_for_all_bags,
+        )?;
+
+        // TODO: Check dynamic bag existence.
 
         for ids in params.assigned_data_objects.iter() {
             BagManager::<T>::delete_data_object(&ids.bag_id, &ids.data_object_id);
         }
 
-        for (bag_id, voucher_update) in voucher_updates.iter() {
+        let operation_type = OperationType::Decrease;
+
+        for (bag_id, voucher_update_with_prize) in voucher_updates.iter() {
             Self::change_storage_bucket_vouchers_for_bag(
                 bag_id,
-                voucher_update,
-                VoucherOperation::Decrease,
+                &voucher_update_with_prize.voucher_update,
+                operation_type,
             );
+
+            // Subtract deletion prize for the dynamic bag only.
+            if let BagId::<T>::DynamicBag(ref dynamic_bag_id) = bag_id {
+                Self::change_deletion_prize_for_dynamic_bag(
+                    dynamic_bag_id,
+                    voucher_update_with_prize.total_deletion_prize,
+                    operation_type,
+                );
+            }
         }
 
-        Self::deposit_event(RawEvent::DataObjectsDeleted(params));
+        Self::deposit_event(RawEvent::DataObjectsDeleted(
+            deletion_prize_account_id,
+            params,
+        ));
 
         Ok(())
     }
@@ -1321,7 +1376,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Self::change_storage_buckets_vouchers(
                 &dynamic_bag.stored_by,
                 voucher_update,
-                VoucherOperation::Decrease,
+                OperationType::Decrease,
             );
 
             Self::delete_dynamic_bag(dynamic_bag_id);
@@ -1359,7 +1414,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             <StorageTreasury<T>>::usable_balance() >= total_deletion_prize,
-            Error::<T>::InsufficientBalance
+            Error::<T>::InsufficientTreasuryBalance
         );
 
         // TODO: check module balance
@@ -1626,6 +1681,8 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
 
+        //TODO: change deletion prize for dynamic bags.
+
         let mut voucher_update = VoucherUpdate::default();
 
         for object_id in object_ids.iter() {
@@ -1686,7 +1743,7 @@ impl<T: Trait> Module<T> {
     fn change_storage_bucket_vouchers_for_bag(
         bag_id: &BagId<T>,
         voucher_update: &VoucherUpdate,
-        voucher_operation: VoucherOperation,
+        voucher_operation: OperationType,
     ) {
         let bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
 
@@ -1697,7 +1754,7 @@ impl<T: Trait> Module<T> {
     fn change_storage_buckets_vouchers(
         bucket_ids: &BTreeSet<T::StorageBucketId>,
         voucher_update: &VoucherUpdate,
-        voucher_operation: VoucherOperation,
+        voucher_operation: OperationType,
     ) {
         for bucket_id in bucket_ids.iter() {
             <StorageBucketById<T>>::mutate(bucket_id, |bucket| {
@@ -1713,30 +1770,43 @@ impl<T: Trait> Module<T> {
     // Returns voucher updates for affected bogs.
     fn validate_delete_data_objects(
         params: &ObjectsInBagParams<T>,
-    ) -> Result<BTreeMap<BagId<T>, VoucherUpdate>, DispatchError> {
+    ) -> Result<BTreeMap<BagId<T>, VoucherUpdateWithDeletionPrize<T>>, DispatchError> {
         ensure!(
             !params.assigned_data_objects.is_empty(),
             Error::<T>::ObjectInBagParamsAreEmpty
         );
 
-        let mut bag_vouchers: BTreeMap<BagId<T>, VoucherUpdate> = BTreeMap::new();
+        let mut bag_vouchers: BTreeMap<BagId<T>, VoucherUpdateWithDeletionPrize<T>> =
+            BTreeMap::new();
 
+        let mut total_prize_for_all_bags: BalanceOf<T> = Zero::zero();
         for ids in params.assigned_data_objects.iter() {
             let data_object =
                 BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
 
             if let Some(voucher_update) = bag_vouchers.get_mut(&ids.bag_id) {
-                voucher_update.add_object(data_object.size);
+                voucher_update.add_object(data_object.size, data_object.deletion_prize);
             } else {
                 bag_vouchers.insert(
                     ids.bag_id.clone(),
-                    VoucherUpdate {
-                        objects_number: 1,
-                        objects_total_size: data_object.size,
+                    VoucherUpdateWithDeletionPrize {
+                        voucher_update: VoucherUpdate {
+                            objects_number: 1,
+                            objects_total_size: data_object.size,
+                        },
+                        total_deletion_prize: data_object.deletion_prize,
                     },
                 );
             }
+
+            total_prize_for_all_bags =
+                total_prize_for_all_bags.saturating_add(data_object.deletion_prize);
         }
+
+        ensure!(
+            <StorageTreasury<T>>::usable_balance() >= total_prize_for_all_bags,
+            Error::<T>::InsufficientTreasuryBalance
+        );
 
         Ok(bag_vouchers)
     }
@@ -1849,5 +1919,21 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    // Increase or decrease a deletion prize for a dynamic bag.
+    fn change_deletion_prize_for_dynamic_bag(
+        dynamic_bag_id: &DynamicBagId<T>,
+        deletion_prize: BalanceOf<T>,
+        operation: OperationType,
+    ) {
+        let mut bag = Self::dynamic_bag(dynamic_bag_id);
+
+        bag.deletion_prize = match operation {
+            OperationType::Increase => bag.deletion_prize.saturating_add(deletion_prize),
+            OperationType::Decrease => bag.deletion_prize.saturating_sub(deletion_prize),
+        };
+
+        Self::save_dynamic_bag(dynamic_bag_id, bag);
     }
 }
