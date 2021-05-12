@@ -18,7 +18,6 @@ import { DataObject } from '../data-object/data-object.model';
 import { Language } from '../language/language.model';
 import { License } from '../license/license.model';
 import { VideoMediaMetadata } from '../video-media-metadata/video-media-metadata.model';
-import { FeaturedVideo } from '../featured-video/featured-video.model';
 
 import { AssetAvailability } from '../enums/enums';
 export { AssetAvailability };
@@ -130,9 +129,6 @@ export class Video extends BaseModel {
     description: `Is video featured or not`,
   })
   isFeatured!: boolean;
-
-  @OneToOne(() => FeaturedVideo, (param: FeaturedVideo) => param.video, { nullable: true, cascade: ["insert", "update"] })
-  featured?: FeaturedVideo;
 
   constructor(init?: Partial<Video>) {
     super();
