@@ -2337,10 +2337,8 @@ fn delete_dynamic_bags_succeeded() {
             DataObjectDeletionPrize::get()
         );
 
-        let bags = BTreeSet::from_iter(vec![dynamic_bag_id]);
-
         DeleteDynamicBagsFixture::default()
-            .with_bags(bags.clone())
+            .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
@@ -2354,9 +2352,9 @@ fn delete_dynamic_bags_succeeded() {
             initial_balance
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::DynamicBagsDeleted(
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(
             DEFAULT_MEMBER_ACCOUNT_ID,
-            bags,
+            dynamic_bag_id,
         ));
     });
 }
@@ -2393,8 +2391,6 @@ fn delete_dynamic_bags_succeeded_having_voucher() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        let bags = BTreeSet::from_iter(vec![dynamic_bag_id]);
-
         // Pre-checks for voucher
         let bucket = Storage::storage_bucket_by_id(bucket_id);
 
@@ -2402,7 +2398,7 @@ fn delete_dynamic_bags_succeeded_having_voucher() {
         assert_eq!(bucket.voucher.objects_used, 1);
 
         DeleteDynamicBagsFixture::default()
-            .with_bags(bags.clone())
+            .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
@@ -2433,8 +2429,6 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        let bags = BTreeSet::from_iter(vec![dynamic_bag_id]);
-
         // Corrupt module balance.
         let _ = Balances::slash(
             &<StorageTreasury<Test>>::module_account_id(),
@@ -2442,7 +2436,7 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
         );
 
         DeleteDynamicBagsFixture::default()
-            .with_bags(bags.clone())
+            .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });

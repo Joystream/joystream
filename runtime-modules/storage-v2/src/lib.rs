@@ -89,14 +89,14 @@ pub trait DataObjectStorage<T: Trait> {
         params: ObjectsInBagParams<T>,
     ) -> DispatchResult;
 
-    /// Delete dynamic bags. Updates related storage bucket vouchers.
-    fn delete_dynamic_bags(
+    /// Delete dynamic bag. Updates related storage bucket vouchers.
+    fn delete_dynamic_bag(
         deletion_prize_account_id: T::AccountId,
-        bags: BTreeSet<DynamicBagId<T>>,
+        bag_id: DynamicBagId<T>,
     ) -> DispatchResult;
 
-    /// Validates `delete_data_objects` parameters and conditions.
-    fn can_delete_dynamic_bags(bags: &BTreeSet<DynamicBagId<T>>) -> DispatchResult;
+    /// Validates `delete_dynamic_bag` parameters and conditions.
+    fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
 }
 
 /// Storage trait.
@@ -611,15 +611,6 @@ struct VoucherUpdateForBagChange<StorageBucketId> {
     removed_buckets: BTreeSet<StorageBucketId>,
 }
 
-// Helper struct for the dynamic bag deletion.
-struct DynamicBagDeletionInfo<T: Trait> {
-    // Voucher updates for bag buckets.
-    bag_voucher_updates: BTreeMap<DynamicBagId<T>, VoucherUpdate>,
-
-    // Total deletion prize for all bags.
-    total_deletion_prize: BalanceOf<T>,
-}
-
 //TODO: rename??
 // Helper struct for the dynamic bag changing.
 #[derive(Clone, PartialEq, Eq, Debug, Copy, Default)]
@@ -774,11 +765,11 @@ decl_event! {
         /// - hashes to add to the blacklist
         UpdateBlacklist(BTreeSet<ContentId>, BTreeSet<ContentId>),
 
-        /// Emits on deleting dynamic bags.
+        /// Emits on deleting a dynamic bag.
         /// Params
         /// - account ID for the deletion prize
-        /// - dynamic bags IDs list
-        DynamicBagsDeleted(AccountId, BTreeSet<DynamicBagId>),
+        /// - dynamic bag ID
+        DynamicBagDeleted(AccountId, DynamicBagId),
 
         /// Emits on changing the deletion prize for a dynamic bag.
         /// Params
@@ -1405,15 +1396,15 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
-    fn can_delete_dynamic_bags(bags: &BTreeSet<DynamicBagId<T>>) -> DispatchResult {
-        Self::validate_delete_dynamic_bags_params(&bags).map(|_| ())
+    fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult {
+        Self::validate_delete_dynamic_bag_params(bag_id).map(|_| ())
     }
 
-    fn delete_dynamic_bags(
+    fn delete_dynamic_bag(
         deletion_prize_account_id: T::AccountId,
-        bags: BTreeSet<DynamicBagId<T>>,
+        bag_id: DynamicBagId<T>,
     ) -> DispatchResult {
-        let deletion_info = Self::validate_delete_dynamic_bags_params(&bags)?;
+        let voucher_update_with_prize = Self::validate_delete_dynamic_bag_params(&bag_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -1421,25 +1412,23 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         <StorageTreasury<T>>::withdraw(
             &deletion_prize_account_id,
-            deletion_info.total_deletion_prize,
+            voucher_update_with_prize.total_deletion_prize,
         )?;
 
-        for (dynamic_bag_id, voucher_update) in deletion_info.bag_voucher_updates.iter() {
-            //TODO: check for existence (skip)
-            let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
+        //TODO: check for existence (skip)
+        let dynamic_bag = Self::dynamic_bag(&bag_id);
 
-            Self::change_storage_buckets_vouchers(
-                &dynamic_bag.stored_by,
-                voucher_update,
-                OperationType::Decrease,
-            );
+        Self::change_storage_buckets_vouchers(
+            &dynamic_bag.stored_by,
+            &voucher_update_with_prize.voucher_update,
+            OperationType::Decrease,
+        );
 
-            Self::delete_dynamic_bag(dynamic_bag_id);
-        }
+        Self::remove_dynamic_bag(&bag_id);
 
-        Self::deposit_event(RawEvent::DynamicBagsDeleted(
+        Self::deposit_event(RawEvent::DynamicBagDeleted(
             deletion_prize_account_id,
-            bags,
+            bag_id,
         ));
 
         Ok(())
@@ -1447,39 +1436,29 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-    // Validates dynamic bags deletion params and conditions.
-    fn validate_delete_dynamic_bags_params(
-        bags: &BTreeSet<DynamicBagId<T>>,
-    ) -> Result<DynamicBagDeletionInfo<T>, DispatchError> {
-        let mut bag_voucher_updates = BTreeMap::new();
+    // Validates dynamic bag deletion params and conditions.
+    fn validate_delete_dynamic_bag_params(
+        bag_id: &DynamicBagId<T>,
+    ) -> Result<VoucherUpdateWithDeletionPrize<BalanceOf<T>>, DispatchError> {
+        //TODO: check for existence (skip)
+        let dynamic_bag = Self::dynamic_bag(bag_id);
 
-        let mut total_deletion_prize: BalanceOf<T> = Zero::zero();
-        for dynamic_bag_id in bags.iter() {
-            //TODO: check for existence (skip)
-            let dynamic_bag = Self::dynamic_bag(dynamic_bag_id);
-            total_deletion_prize += dynamic_bag.deletion_prize;
-
-            let voucher_update = VoucherUpdate {
-                objects_number: dynamic_bag.objects_number(),
-                objects_total_size: dynamic_bag.objects_total_size(),
-            };
-
-            bag_voucher_updates.insert(dynamic_bag_id.clone(), voucher_update);
-        }
+        let voucher_update = VoucherUpdate {
+            objects_number: dynamic_bag.objects_number(),
+            objects_total_size: dynamic_bag.objects_total_size(),
+        };
 
         ensure!(
-            <StorageTreasury<T>>::usable_balance() >= total_deletion_prize,
+            <StorageTreasury<T>>::usable_balance() >= dynamic_bag.deletion_prize,
             Error::<T>::InsufficientTreasuryBalance
         );
 
-        // TODO: check module balance
-
-        let deletion_info = DynamicBagDeletionInfo {
-            bag_voucher_updates,
-            total_deletion_prize,
+        let voucher_update_with_prize = VoucherUpdateWithDeletionPrize {
+            voucher_update,
+            total_deletion_prize: dynamic_bag.deletion_prize,
         };
 
-        Ok(deletion_info)
+        Ok(voucher_update_with_prize)
     }
 
     // Ensures the existence of the storage bucket.
@@ -1715,7 +1694,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Delete a dynamic bag from the storage.
-    fn delete_dynamic_bag(bag_id: &DynamicBagId<T>) {
+    fn remove_dynamic_bag(bag_id: &DynamicBagId<T>) {
         <DynamicBags<T>>::remove(bag_id);
     }
 

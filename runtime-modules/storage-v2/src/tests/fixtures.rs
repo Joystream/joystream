@@ -730,14 +730,14 @@ impl UpdateBlacklistFixture {
 }
 
 pub struct DeleteDynamicBagsFixture {
-    bags: BTreeSet<DynamicBagId<Test>>,
+    bag_id: DynamicBagId<Test>,
     deletion_account_id: u64,
 }
 
 impl DeleteDynamicBagsFixture {
     pub fn default() -> Self {
         Self {
-            bags: BTreeSet::new(),
+            bag_id: Default::default(),
             deletion_account_id: DEFAULT_ACCOUNT_ID,
         }
     }
@@ -749,13 +749,13 @@ impl DeleteDynamicBagsFixture {
         }
     }
 
-    pub fn with_bags(self, bags: BTreeSet<DynamicBagId<Test>>) -> Self {
-        Self { bags, ..self }
+    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
+        Self { bag_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
-            Storage::delete_dynamic_bags(self.deletion_account_id, self.bags.clone());
+            Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
     }
