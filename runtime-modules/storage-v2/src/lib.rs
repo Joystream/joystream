@@ -738,6 +738,11 @@ decl_event! {
         /// - operator worker ID (storage provider ID)
         StorageBucketOperatorInvited(StorageBucketId, WorkerId),
 
+        /// Emits on the storage bucket operator removal.
+        /// Params
+        /// - storage bucket ID
+        StorageBucketOperatorRemoved(StorageBucketId),
+
         /// Emits on changing the global uploading block status.
         /// Params
         /// - new status
@@ -812,6 +817,9 @@ decl_error! {
 
         /// Invalid operation with invites: storage provider was already set.
         StorageProviderAlreadySet,
+
+        /// Storage provider must be set.
+        StorageProviderMustBeSet,
 
         /// Invalid operation with invites: another storage provider was invited.
         DifferentStorageProviderInvited,
@@ -1132,6 +1140,32 @@ decl_module! {
             );
         }
 
+        /// Removes storage bucket operator. Must be invited.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_storage_bucket_operator(
+            origin,
+            storage_bucket_id: T::StorageBucketId,
+        ){
+            T::ensure_working_group_leader_origin(origin)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+
+            Self::ensure_bucket_storage_provider_invitation_status_for_removal(&bucket)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.operator_status =
+                    StorageBucketOperatorStatus::Missing;
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketOperatorRemoved(storage_bucket_id)
+            );
+        }
+
         // ===== Storage Operator actions =====
 
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
@@ -1447,7 +1481,8 @@ impl<T: Trait> Module<T> {
     fn validate_delete_dynamic_bag_params(
         bag_id: &DynamicBagId<T>,
     ) -> Result<VoucherUpdateWithDeletionPrize<BalanceOf<T>>, DispatchError> {
-        //TODO: check for existence (skip)
+        //TODO: check bag for existence
+
         let dynamic_bag = Self::dynamic_bag(bag_id);
 
         let voucher_update = VoucherUpdate {
@@ -1505,6 +1540,18 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Ensures the correct invitation for the storage bucket and storage provider for removal.
+    // Must be invited storage provider.
+    fn ensure_bucket_storage_provider_invitation_status_for_removal(
+        bucket: &StorageBucket<WorkerId<T>>,
+    ) -> DispatchResult {
+        if let StorageBucketOperatorStatus::StorageWorker(_) = bucket.operator_status {
+            Ok(())
+        } else {
+            Err(Error::<T>::StorageProviderMustBeSet.into())
+        }
+    }
+
     // Ensures the correct invitation for the storage bucket and storage provider. Must be pending.
     fn ensure_bucket_pending_invitation_status(
         bucket: &StorageBucket<WorkerId<T>>,
@@ -1541,7 +1588,9 @@ impl<T: Trait> Module<T> {
         worker_id: WorkerId<T>,
     ) -> DispatchResult {
         match bucket.operator_status {
-            StorageBucketOperatorStatus::Missing => Err(Error::<T>::InvalidStorageProvider.into()),
+            StorageBucketOperatorStatus::Missing => {
+                Err(Error::<T>::StorageProviderMustBeSet.into())
+            }
             StorageBucketOperatorStatus::InvitedStorageWorker(_) => {
                 Err(Error::<T>::InvalidStorageProvider.into())
             }
@@ -1625,6 +1674,7 @@ impl<T: Trait> Module<T> {
         }
 
         //TODO: validate bag_to_bucket relation?
+        //TODO: Validate dynamic bag existence?
 
         Ok(())
     }
@@ -1846,7 +1896,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<VoucherUpdate, DispatchError> {
         // TODO: consider refactoring and splitting the method.
 
-        //TODO: Check dynamic bag existence.
+        // TODO: Check dynamic bag existence.
 
         // Check global uploading block.
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
