@@ -44,6 +44,7 @@ use sp_std::iter;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
+use common::constraints::BoundedValueConstraint;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
@@ -162,6 +163,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Validates member id and origin combination.
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
+    /// "Storage buckets per bag" value constraint.
+    type StorageBucketsPerBagValueConstraint: Get<StorageBucketsPerBagValueConstraint>;
+
     /// Demand the working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
@@ -220,6 +224,9 @@ pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
 impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
     type ModuleId = ModId;
 }
+
+/// "Storage buckets per bag" value constraint type.
+pub type StorageBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
 
 /// Local module account handler.
 pub type StorageTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;

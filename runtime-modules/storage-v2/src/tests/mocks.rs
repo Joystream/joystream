@@ -55,6 +55,8 @@ parameter_types! {
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
+    pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
+        crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
 }
 
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -72,6 +74,7 @@ impl crate::Trait for Test {
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = ();
+    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
