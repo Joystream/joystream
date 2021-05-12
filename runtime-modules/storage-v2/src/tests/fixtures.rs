@@ -604,19 +604,28 @@ impl MoveDataObjectsFixture {
 
 pub struct DeleteDataObjectsFixture {
     deletion_prize_account_id: u64,
-    params: ObjectsInBagParams<Test>,
+    bag_id: BagId<Test>,
+    data_object_ids: BTreeSet<u64>,
 }
 
 impl DeleteDataObjectsFixture {
     pub fn default() -> Self {
         Self {
-            params: Default::default(),
+            bag_id: Default::default(),
+            data_object_ids: Default::default(),
             deletion_prize_account_id: DEFAULT_ACCOUNT_ID,
         }
     }
 
-    pub fn with_params(self, params: ObjectsInBagParams<Test>) -> Self {
-        Self { params, ..self }
+    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn with_data_object_ids(self, data_object_ids: BTreeSet<u64>) -> Self {
+        Self {
+            data_object_ids,
+            ..self
+        }
     }
 
     pub fn with_deletion_account_id(self, deletion_prize_account_id: u64) -> Self {
@@ -627,8 +636,11 @@ impl DeleteDataObjectsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Storage::delete_data_objects(self.deletion_prize_account_id, self.params.clone());
+        let actual_result = Storage::delete_data_objects(
+            self.deletion_prize_account_id,
+            self.bag_id.clone(),
+            self.data_object_ids.clone(),
+        );
 
         assert_eq!(actual_result, expected_result);
     }

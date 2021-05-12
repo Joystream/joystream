@@ -1842,14 +1842,7 @@ fn delete_data_objects_succeeded() {
 
         let data_object_id = 0; // just uploaded data object
 
-        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
-            bag_id,
-            data_object_id,
-        }]);
-
-        let params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         // pre-checks
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
@@ -1866,7 +1859,8 @@ fn delete_data_objects_succeeded() {
         );
 
         DeleteDataObjectsFixture::default()
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
@@ -1886,7 +1880,8 @@ fn delete_data_objects_succeeded() {
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
             DEFAULT_MEMBER_ACCOUNT_ID,
-            params,
+            bag_id,
+            data_object_ids,
         ));
     });
 }
@@ -1923,14 +1918,7 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
 
         let data_object_id = 0; // just uploaded data object
 
-        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
-            bag_id: council_bag_id,
-            data_object_id,
-        }]);
-
-        let params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         // Corrupt module balance.
         let _ = Balances::slash(
@@ -1939,7 +1927,8 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
         );
 
         DeleteDataObjectsFixture::default()
-            .with_params(params.clone())
+            .with_bag_id(council_bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
@@ -1978,14 +1967,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         let data_object_id = 0; // just uploaded data object
 
-        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
-            bag_id: council_bag_id,
-            data_object_id,
-        }]);
-
-        let params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         //// Pre-check voucher
         let bucket = Storage::storage_bucket_by_id(bucket_id);
@@ -1994,7 +1976,8 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
 
         DeleteDataObjectsFixture::default()
-            .with_params(params.clone())
+            .with_bag_id(council_bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::council_bag();
@@ -2011,33 +1994,22 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 #[test]
 fn delete_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: BTreeSet::new(),
-        };
-
         DeleteDataObjectsFixture::default()
-            .with_params(accept_params.clone())
-            .call_and_assert(Err(Error::<Test>::ObjectInBagParamsAreEmpty.into()));
+            .call_and_assert(Err(Error::<Test>::DataObjectIdParamsAreEmpty.into()));
     });
 }
 
 #[test]
 fn delete_data_objects_fails_with_non_existing_data_object() {
     build_test_externalities().execute_with(|| {
-        let data_object_id = 0;
         let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let objects = BTreeSet::from_iter(vec![AssignedDataObject {
-            bag_id: council_bag_id,
-            data_object_id,
-        }]);
-
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_id = 0;
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         DeleteDataObjectsFixture::default()
-            .with_params(accept_params.clone())
+            .with_bag_id(council_bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
     });
 }
