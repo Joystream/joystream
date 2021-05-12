@@ -14,9 +14,10 @@ use sp_std::iter::FromIterator;
 use common::working_group::WorkingGroup;
 
 use crate::{
-    AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DynamicBagId, Error,
-    ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    StorageTreasury, UpdateStorageBucketForBagsParams, UploadParameters, Voucher,
+    AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DataObjectStorage,
+    DynamicBagId, Error, ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, StorageTreasury, UpdateStorageBucketForBagsParams,
+    UploadParameters, Voucher,
 };
 
 use mocks::{
@@ -283,7 +284,7 @@ fn update_storage_buckets_for_bags_succeeded() {
             .with_params(params.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         assert_eq!(bag.stored_by, buckets);
 
         EventFixture::assert_last_crate_event(RawEvent::StorageBucketsUpdatedForBags(params));
@@ -338,7 +339,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
             .with_params(params.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         assert_eq!(bag.stored_by, new_buckets);
 
         //// Check vouchers
@@ -576,7 +577,7 @@ fn upload_succeeded() {
 
         // check bag content
         let data_object_id = 0u64;
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         assert_eq!(
             bag.objects.iter().collect::<Vec<_>>(),
             vec![(
@@ -607,18 +608,20 @@ fn upload_succeeded() {
 }
 
 #[test]
-fn deletion_prize_changed_event_fired() {
+fn upload_succeeded_with_data_size_fee() {
     build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let data_size_fee = 100;
+
+        UpdateDataObjectPerMegabyteFeeFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_fee(data_size_fee)
+            .call_and_assert(Ok(()));
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag.clone()),
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -628,57 +631,15 @@ fn deletion_prize_changed_event_fired() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        EventFixture::contains_crate_event(RawEvent::DeletionPrizeChanged(
-            dynamic_bag,
-            DataObjectDeletionPrize::get(),
-        ));
-    });
-}
-
-#[test]
-fn storage_bucket_voucher_changed_event_fired() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag.clone());
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        let bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
+        // check balances
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance - DataObjectDeletionPrize::get() - data_size_fee
         );
-
-        let object_creation_list = create_single_data_object();
-
-        let initial_balance = 1000;
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
-
-        let upload_params = UploadParameters::<Test> {
-            bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
-        };
-
-        UploadFixture::default()
-            .with_params(upload_params.clone())
-            .call_and_assert(Ok(()));
-
-        EventFixture::contains_crate_event(RawEvent::VoucherChanged(
-            bucket_id,
-            Voucher {
-                objects_limit,
-                size_limit,
-                objects_used: 1,
-                size_used: object_creation_list[0].size,
-            },
-        ));
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            DataObjectDeletionPrize::get()
+        );
     });
 }
 
@@ -851,7 +812,7 @@ fn upload_succeeded_with_non_empty_bag() {
             .with_params(upload_params2.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         assert_eq!(bag.objects.len(), 4);
     });
 }
@@ -933,6 +894,34 @@ fn upload_fails_with_insufficient_balance_for_deletion_prize() {
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
         };
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_insufficient_balance_for_data_size_fee() {
+    build_test_externalities().execute_with(|| {
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, DataObjectDeletionPrize::get());
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        // Check that balance is sufficient for the deletion prize.
+        assert_eq!(Storage::can_upload_data_objects(&upload_params), Ok(()));
+
+        let data_size_fee = 1000;
+
+        UpdateDataObjectPerMegabyteFeeFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_fee(data_size_fee)
+            .call_and_assert(Ok(()));
 
         UploadFixture::default()
             .with_params(upload_params)
@@ -1144,7 +1133,7 @@ fn accept_pending_data_objects_succeeded() {
             assigned_data_objects: objects,
         };
 
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         // Check `accepted` flag for the fist data object in the bag.
         assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, false);
 
@@ -1155,7 +1144,7 @@ fn accept_pending_data_objects_succeeded() {
             .with_params(accept_params.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         // Check `accepted` flag for the fist data object in the bag.
         assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
 
@@ -1972,7 +1961,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
             .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::council_bag();
+        let bag = Storage::static_bag(StaticBagId::Council);
         assert!(!bag.objects.contains_key(&data_object_id));
 
         //// Post-check voucher
@@ -2584,5 +2573,139 @@ fn remove_storage_bucket_operator_fails_with_missing_storage_provider() {
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_storage_bucket_id(bucket_id)
             .call_and_assert(Err(Error::<Test>::StorageProviderMustBeSet.into()));
+    });
+}
+
+#[test]
+fn update_data_size_fee_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let new_fee = 1000;
+
+        UpdateDataObjectPerMegabyteFeeFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_fee(new_fee)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectPerMegabyteFeeUpdated(new_fee));
+    });
+}
+
+#[test]
+fn update_data_size_fee_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateDataObjectPerMegabyteFeeFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn data_size_fee_calculation_works_properly() {
+    build_test_externalities().execute_with(|| {
+        const ONE_MB: u64 = 1_048_576;
+
+        // Fee set to zero.
+        assert_eq!(Storage::calculate_data_storage_fee(ONE_MB), 0);
+
+        let data_size_fee = 1000;
+
+        UpdateDataObjectPerMegabyteFeeFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_fee(data_size_fee)
+            .call_and_assert(Ok(()));
+
+        // Fee set.
+        assert_eq!(Storage::calculate_data_storage_fee(ONE_MB), data_size_fee);
+        assert_eq!(
+            Storage::calculate_data_storage_fee(2 * ONE_MB),
+            2 * data_size_fee
+        );
+
+        // Rounding works correctly.
+        assert_eq!(
+            Storage::calculate_data_storage_fee(ONE_MB + 1),
+            2 * data_size_fee
+        );
+    });
+}
+
+#[test]
+fn deletion_prize_changed_event_fired() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::DynamicBag(dynamic_bag.clone()),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::contains_crate_event(RawEvent::DeletionPrizeChanged(
+            dynamic_bag,
+            DataObjectDeletionPrize::get(),
+        ));
+    });
+}
+
+#[test]
+fn storage_bucket_voucher_changed_event_fired() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag.clone());
+        let objects_limit = 1;
+        let size_limit = 100;
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            None,
+            objects_limit,
+            size_limit,
+        );
+
+        let object_creation_list = create_single_data_object();
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: object_creation_list.clone(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::contains_crate_event(RawEvent::VoucherChanged(
+            bucket_id,
+            Voucher {
+                objects_limit,
+                size_limit,
+                objects_used: 1,
+                size_used: object_creation_list[0].size,
+            },
+        ));
     });
 }

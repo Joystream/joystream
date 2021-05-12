@@ -856,3 +856,39 @@ impl RemoveStorageBucketOperatorFixture {
         }
     }
 }
+
+pub struct UpdateDataObjectPerMegabyteFeeFixture {
+    origin: RawOrigin<u64>,
+    new_fee: u64,
+}
+
+impl UpdateDataObjectPerMegabyteFeeFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            new_fee: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_fee(self, new_fee: u64) -> Self {
+        Self { new_fee, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_fee = Storage::data_object_per_mega_byte_fee();
+
+        let actual_result = Storage::update_data_size_fee(self.origin.clone().into(), self.new_fee);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Storage::data_object_per_mega_byte_fee(), self.new_fee);
+        } else {
+            assert_eq!(old_fee, Storage::data_object_per_mega_byte_fee());
+        }
+    }
+}

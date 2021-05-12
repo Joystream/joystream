@@ -5,20 +5,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
-// TODO:How to create a dynamic bag? -
-//- new methods to be called from another modules: a method create dynamic bag.
-
+// TODO: Remove static and dynamic storage helpers.
 // TODO: Remove old Storage pallet.
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
 // TODO: use StorageBucket.accepting_new_bags
-// TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
 // TODO: add module comment
-// TODO: add benchmarks
-// TODO: adjust constants
 // TODO: max storage buckets for bags? do we need that?
 // TODO: make public methods as root extrinsics to enable storage-node dev mode.
+// TODO: make public methods "weight-ready".
 
 /// TODO: convert to variable
 pub const MAX_OBJECT_SIZE_LIMIT: u64 = 100;
@@ -39,7 +35,7 @@ use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member, Saturating};
 use sp_runtime::{ModuleId, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
@@ -640,12 +636,9 @@ decl_storage! {
         /// Defines whether all new uploads blocked
         pub UploadingBlocked get(fn uploading_blocked): bool;
 
-        /// Council bag.
-        pub CouncilBag get(fn council_bag): StaticBag<T>;
-
-        /// Working group bag storage map.
-        pub WorkingGroupBags get(fn working_group_bag): map hasher(blake2_128_concat)
-            WorkingGroup => StaticBag<T>;
+        /// Working groups' and council's bags storage map.
+        pub StaticBags get(fn static_bag): map hasher(blake2_128_concat)
+            StaticBagId => StaticBag<T>;
 
         /// Dynamic bag storage map.
         pub DynamicBags get (fn dynamic_bag_by_id): map hasher(blake2_128_concat)
@@ -669,6 +662,9 @@ decl_storage! {
 
         /// Blacklist collection counter.
         pub CurrentBlacklistSize get (fn current_blacklist_size): u64;
+
+        /// Size based pricing of new objects uploaded.
+        pub DataObjectPerMegabyteFee get (fn data_object_per_mega_byte_fee): BalanceOf<T>;
     }
 }
 
@@ -743,10 +739,15 @@ decl_event! {
         /// - storage bucket ID
         StorageBucketOperatorRemoved(StorageBucketId),
 
-        /// Emits on changing the global uploading block status.
+        /// Emits on changing the size-based pricing of new objects uploaded.
         /// Params
         /// - new status
         UploadingBlockStatusUpdated(bool),
+
+        /// Emits on changing the size-based pricing of new objects uploaded.
+        /// Params
+        /// - new data size fee
+        DataObjectPerMegabyteFeeUpdated(Balance),
 
         /// Emits on moving data objects between bags.
         /// Params
@@ -955,6 +956,20 @@ decl_module! {
             UploadingBlocked::put(new_status);
 
             Self::deposit_event(RawEvent::UploadingBlockStatusUpdated(new_status));
+        }
+
+        /// Updates size-based pricing of new objects uploaded.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_data_size_fee(origin, new_data_size_fee: BalanceOf<T>) {
+            T::ensure_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            DataObjectPerMegabyteFee::<T>::put(new_data_size_fee);
+
+            Self::deposit_event(RawEvent::DataObjectPerMegabyteFeeUpdated(new_data_size_fee));
         }
 
         /// Add and remove hashes to the current blacklist.
@@ -1304,6 +1319,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             data.total_deletion_prize,
         )?;
 
+        Self::slash_data_size_fee(
+            &params.deletion_prize_source_account_id,
+            voucher_update.objects_total_size,
+        );
+
         <NextDataObjectId<T>>::put(data.next_data_object_id);
 
         BagManager::<T>::append_data_objects(&params.bag_id, &data.data_objects_map);
@@ -1605,22 +1625,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Get static bag by its ID from the storage.
-    pub(crate) fn static_bag(bag_id: &StaticBagId) -> StaticBag<T> {
-        match bag_id {
-            StaticBagId::Council => Self::council_bag(),
-            StaticBagId::WorkingGroup(working_group) => Self::working_group_bag(working_group),
-        }
-    }
-
     // Save static bag to the storage.
     fn save_static_bag(bag_id: &StaticBagId, bag: StaticBag<T>) {
-        match bag_id {
-            StaticBagId::Council => CouncilBag::<T>::put(bag),
-            StaticBagId::WorkingGroup(working_group) => {
-                <WorkingGroupBags<T>>::insert(working_group, bag)
-            }
-        }
+        <StaticBags<T>>::insert(bag_id, bag)
     }
 
     // Create data objects from the creation data.
@@ -1936,19 +1943,20 @@ impl<T: Trait> Module<T> {
             );
         }
 
+        let new_objects_total_size: u64 =
+            params.object_creation_list.iter().map(|obj| obj.size).sum();
+
         let total_deletion_prize: BalanceOf<T> =
             new_objects_number.saturated_into::<BalanceOf<T>>() * T::DataObjectDeletionPrize::get();
+
+        let size_fee = Self::calculate_data_storage_fee(new_objects_total_size);
+
         let usable_balance =
             Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
 
-        // Check account balance to satisfy deletion prize.
-        ensure!(
-            usable_balance >= total_deletion_prize,
-            Error::<T>::InsufficientBalance
-        );
-
-        let new_objects_total_size: u64 =
-            params.object_creation_list.iter().map(|obj| obj.size).sum();
+        // Check account balance to satisfy deletion prize and storage fee.
+        let total_fee = total_deletion_prize + size_fee;
+        ensure!(usable_balance >= total_fee, Error::<T>::InsufficientBalance);
 
         let voucher_update = VoucherUpdate {
             objects_number: new_objects_number,
@@ -2029,6 +2037,31 @@ impl<T: Trait> Module<T> {
     ) {
         if let BagId::<T>::DynamicBag(ref dynamic_bag_id) = bag_id {
             Self::change_deletion_prize_for_dynamic_bag(dynamic_bag_id, deletion_prize, operation);
+        }
+    }
+
+    // Calculate data storage fee based on size. Fee-value uses megabytes as measure value.
+    // Data size will be rounded to nearest greater MB integer.
+    pub(crate) fn calculate_data_storage_fee(bytes: u64) -> BalanceOf<T> {
+        let mb_fee = Self::data_object_per_mega_byte_fee();
+
+        const ONE_MB: u64 = 1_048_576;
+
+        let mut megabytes = bytes / ONE_MB;
+
+        if bytes % ONE_MB > 0 {
+            megabytes += 1; // rounding to the nearest greater integer
+        }
+
+        mb_fee.saturating_mul(megabytes.saturated_into())
+    }
+
+    // Slash data size fee if fee value is set to non-zero.
+    fn slash_data_size_fee(account_id: &T::AccountId, bytes: u64) {
+        let fee = Self::calculate_data_storage_fee(bytes);
+
+        if fee != Zero::zero() {
+            let _ = Balances::<T>::slash(account_id, fee);
         }
     }
 }
