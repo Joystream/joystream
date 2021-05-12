@@ -12,7 +12,6 @@
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
 // TODO: use StorageBucket.accepting_new_bags
-// TODO: use voucher for delete_bag
 // TODO: merge council and WG storage bags.
 // TODO: add dynamic bag creation policy.
 // TODO: add module comment
@@ -728,9 +727,10 @@ decl_event! {
 
         /// Emits on accepting pending data objects.
         /// Params
+        /// - storage bucket ID
         /// - worker ID (storage provider ID)
         /// - pending data objects
-        PendingDataObjectsAccepted(WorkerId, ObjectsInBagParams),
+        PendingDataObjectsAccepted(StorageBucketId, WorkerId, ObjectsInBagParams),
 
         /// Emits on cancelling the storage bucket invitation.
         /// Params
@@ -1193,14 +1193,16 @@ decl_module! {
         pub fn accept_pending_data_objects(
             origin,
             worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId,
             params: ObjectsInBagParams<T>
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
-            Self::validate_accept_pending_data_objects_params(&params)?;
+            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
 
-            // TODO: how do we validate that objects are accepted by correct storage provider that
-            // was invited to the storage bucket. Should we introduce an additional storage bucket id?
+            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            Self::validate_accept_pending_data_objects_params(&params)?;
 
             //
             // == MUTATION SAFE ==
@@ -1210,7 +1212,9 @@ decl_module! {
                 BagManager::<T>::accept_data_objects(&ids.bag_id, &ids.data_object_id);
             }
 
-            Self::deposit_event(RawEvent::PendingDataObjectsAccepted(worker_id, params));
+            Self::deposit_event(
+                    RawEvent::PendingDataObjectsAccepted(storage_bucket_id, worker_id, params)
+            );
         }
 
         /// Update whether new bags are being accepted for storage.
@@ -1634,8 +1638,7 @@ impl<T: Trait> Module<T> {
             BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
         }
 
-        // TODO: how do we validate that objects are accepted by correct storage provider - that
-        // was invited to the storage bucket?
+        //TODO: validate bag_to_bucket relation?
 
         Ok(())
     }

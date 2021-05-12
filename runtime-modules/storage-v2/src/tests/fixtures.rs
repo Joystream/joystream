@@ -374,6 +374,7 @@ impl SetStorageOperatorMetadataFixture {
 pub struct AcceptPendingDataObjectsFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
+    storage_bucket_id: u64,
     params: ObjectsInBagParams<Test>,
 }
 
@@ -382,6 +383,7 @@ impl AcceptPendingDataObjectsFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID),
             worker_id: DEFAULT_WORKER_ID,
+            storage_bucket_id: Default::default(),
             params: Default::default(),
         }
     }
@@ -398,10 +400,18 @@ impl AcceptPendingDataObjectsFixture {
         Self { params, ..self }
     }
 
+    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
+        Self {
+            storage_bucket_id,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::accept_pending_data_objects(
             self.origin.clone().into(),
             self.worker_id,
+            self.storage_bucket_id,
             self.params.clone(),
         );
 

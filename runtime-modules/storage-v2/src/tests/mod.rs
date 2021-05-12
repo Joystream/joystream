@@ -1159,6 +1159,7 @@ fn accept_pending_data_objects_succeeded() {
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
             .with_params(accept_params.clone())
             .call_and_assert(Ok(()));
 
@@ -1167,6 +1168,7 @@ fn accept_pending_data_objects_succeeded() {
         assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
 
         EventFixture::assert_last_crate_event(RawEvent::PendingDataObjectsAccepted(
+            bucket_id,
             storage_provider_id,
             accept_params,
         ));
@@ -1243,12 +1245,26 @@ fn accept_pending_data_objects_fails_with_invalid_origin() {
 #[test]
 fn accept_pending_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
+        let storage_provider_id = 110;
+        let objects_limit = 1;
+        let size_limit = 100;
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            Some(storage_provider_id),
+            objects_limit,
+            size_limit,
+        );
+
         let accept_params = ObjectsInBagParams::<Test> {
             assigned_data_objects: BTreeSet::new(),
         };
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
             .with_params(accept_params.clone())
             .call_and_assert(Err(Error::<Test>::ObjectInBagParamsAreEmpty.into()));
     });
@@ -1257,12 +1273,23 @@ fn accept_pending_data_objects_fails_with_empty_params() {
 #[test]
 fn accept_pending_data_objects_fails_with_non_existing_data_object() {
     build_test_externalities().execute_with(|| {
+        let storage_provider_id = 110;
+        let objects_limit = 1;
+        let size_limit = 100;
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            Some(storage_provider_id),
+            objects_limit,
+            size_limit,
+        );
+
         let data_object_id = 0;
-        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
         let mut objects = BTreeSet::new();
         objects.insert(AssignedDataObject {
-            bag_id: council_bag_id,
+            bag_id: bag_id,
             data_object_id,
         });
 
@@ -1273,7 +1300,39 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_params(accept_params.clone())
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
             .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_fails_with_invalid_storage_provider() {
+    build_test_externalities().execute_with(|| {
+        let objects_limit = 1;
+        let size_limit = 100;
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            None,
+            objects_limit,
+            size_limit,
+        );
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStorageProvider.into()));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_fails_with_non_existing_bucket_id() {
+    build_test_externalities().execute_with(|| {
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
     });
 }
 
@@ -2234,6 +2293,14 @@ fn create_storage_bucket_and_assign_to_bag(
         .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
         .with_params(params.clone())
         .call_and_assert(Ok(()));
+
+    if let Some(storage_provider_id) = storage_provider_id {
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+    }
 
     bucket_id
 }
