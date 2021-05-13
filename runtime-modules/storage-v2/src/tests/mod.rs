@@ -2733,3 +2733,148 @@ fn set_update_storage_buckets_per_bag_limit() {
         .with_new_limit(new_limit)
         .call_and_assert(Ok(()))
 }
+
+#[test]
+fn set_storage_bucket_voucher_limits_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let new_objects_size_limit = 1;
+        let new_objects_number_limit = 1;
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_new_objects_number_limit(new_objects_number_limit)
+            .with_new_objects_size_limit(new_objects_size_limit)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StorageBucketVoucherLimitsSet(
+            bucket_id,
+            storage_provider_id,
+            new_objects_size_limit,
+            new_objects_number_limit,
+        ));
+    });
+}
+
+#[test]
+fn set_storage_bucket_voucher_limits_fails_with_invalid_values() {
+    build_test_externalities().execute_with(|| {
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let invalid_objects_size_limit = 1000;
+        let invalid_objects_number_limit = 1000;
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_new_objects_size_limit(invalid_objects_size_limit)
+            .call_and_assert(Err(Error::<Test>::VoucherMaxObjectSizeLimitExceeded.into()));
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_new_objects_number_limit(invalid_objects_number_limit)
+            .call_and_assert(Err(
+                Error::<Test>::VoucherMaxObjectNumberLimitExceeded.into()
+            ));
+    });
+}
+
+#[test]
+fn set_storage_bucket_voucher_limits_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn set_storage_bucket_voucher_limits_fails_with_invalid_storage_bucket() {
+    build_test_externalities().execute_with(|| {
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
+    });
+}
+
+#[test]
+fn set_storage_bucket_voucher_limits_fails_with_invalid_storage_association() {
+    build_test_externalities().execute_with(|| {
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+
+        // Missing invitation
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Err(Error::<Test>::StorageProviderMustBeSet.into()));
+
+        // Not accepted invitation
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStorageProvider.into()));
+
+        // Invitation accepted. Incorrect storage provider.
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let incorrect_storage_provider_id = 888;
+        SetStorageBucketVoucherLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(incorrect_storage_provider_id)
+            .call_and_assert(Err(Error::<Test>::InvalidStorageProvider.into()));
+    });
+}

@@ -695,6 +695,14 @@ decl_event! {
         /// - metadata
         StorageOperatorMetadataSet(StorageBucketId, WorkerId, Vec<u8>),
 
+        /// Emits on setting the storage bucket voucher limits.
+        /// Params
+        /// - storage bucket ID
+        /// - invited worker ID
+        /// - new total objects size limit
+        /// - new total objects number limit
+        StorageBucketVoucherLimitsSet(StorageBucketId, WorkerId, u64, u64),
+
         /// Emits on accepting pending data objects.
         /// Params
         /// - storage bucket ID
@@ -1260,6 +1268,53 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::StorageOperatorMetadataSet(storage_bucket_id, worker_id, metadata)
+            );
+        }
+
+        /// Sets storage bucket voucher limits.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_storage_bucket_voucher_limits(
+            origin,
+            worker_id: WorkerId<T>,
+            storage_bucket_id: T::StorageBucketId,
+            new_objects_size_limit: u64,
+            new_objects_number_limit: u64,
+        ) {
+            T::ensure_worker_origin(origin, worker_id)?;
+
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
+
+            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            ensure!(
+                new_objects_size_limit <= MAX_OBJECT_SIZE_LIMIT,
+                Error::<T>::VoucherMaxObjectSizeLimitExceeded
+            );
+
+            ensure!(
+                new_objects_number_limit <= MAX_OBJECT_NUMBER_LIMIT,
+                Error::<T>::VoucherMaxObjectNumberLimitExceeded
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.voucher = Voucher{
+                    size_limit: new_objects_size_limit,
+                    objects_limit: new_objects_number_limit,
+                    ..bucket.voucher
+                };
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketVoucherLimitsSet(
+                    storage_bucket_id,
+                    worker_id,
+                    new_objects_size_limit,
+                    new_objects_number_limit
+                )
             );
         }
 
