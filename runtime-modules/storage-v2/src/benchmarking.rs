@@ -21,7 +21,7 @@ benchmarks! {
         let account_id: T::AccountId = Default::default();
         //TODO: implement
 
-    }: _ (RawOrigin::Signed(account_id), None, false, Default::default())
+    }: _ (RawOrigin::Signed(account_id), None, false, 0, 0)
     verify {
         let storage_bucket_id: T::StorageBucketId = Default::default();
 

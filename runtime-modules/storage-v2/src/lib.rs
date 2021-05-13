@@ -11,7 +11,6 @@
 // TODO: Check dynamic bag existence.
 // TODO: add dynamic bag creation policy.
 // TODO: add module comment
-// TODO: max storage buckets for bags? do we need that?
 // TODO: make public methods as root extrinsics to enable storage-node dev mode.
 // TODO: make public methods "weight-ready".
 
@@ -1847,8 +1846,6 @@ impl<T: Trait> Module<T> {
             !object_ids.is_empty(),
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
-
-        //TODO: change deletion prize for dynamic bags.
 
         let mut voucher_update_with_prize =
             VoucherUpdateWithDeletionPrize::<BalanceOf<T>>::default();
