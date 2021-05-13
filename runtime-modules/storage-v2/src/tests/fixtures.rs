@@ -892,3 +892,42 @@ impl UpdateDataObjectPerMegabyteFeeFixture {
         }
     }
 }
+
+pub struct UpdateStorageBucketsPerBagLimitFixture {
+    origin: RawOrigin<u64>,
+    new_limit: u64,
+}
+
+impl UpdateStorageBucketsPerBagLimitFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            new_limit: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_limit(self, new_limit: u64) -> Self {
+        Self { new_limit, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_fee = Storage::storage_buckets_per_bag_limit();
+
+        let actual_result = Storage::update_storage_buckets_per_bag_limit(
+            self.origin.clone().into(),
+            self.new_limit,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(Storage::storage_buckets_per_bag_limit(), self.new_limit);
+        } else {
+            assert_eq!(old_fee, Storage::storage_buckets_per_bag_limit());
+        }
+    }
+}

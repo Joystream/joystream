@@ -672,6 +672,9 @@ decl_storage! {
 
         /// Size based pricing of new objects uploaded.
         pub DataObjectPerMegabyteFee get (fn data_object_per_mega_byte_fee): BalanceOf<T>;
+
+        /// "Storage buckets per bag" number limit.
+        pub StorageBucketsPerBagLimit get (fn storage_buckets_per_bag_limit): u64;
     }
 }
 
@@ -755,6 +758,11 @@ decl_event! {
         /// Params
         /// - new data size fee
         DataObjectPerMegabyteFeeUpdated(Balance),
+
+        /// Emits on changing the "Storage buckets per bag" number limit.
+        /// Params
+        /// - new limit
+        StorageBucketsPerBagLimitUpdated(u64),
 
         /// Emits on moving data objects between bags.
         /// Params
@@ -897,6 +905,12 @@ decl_error! {
 
         /// The `data_object_ids` extrinsic parameter collection is empty.
         DataObjectIdParamsAreEmpty,
+
+        /// The new `StorageBucketsPerBagLimit` number is too low.
+        StorageBucketsPerBagLimitTooLow,
+
+        /// The new `StorageBucketsPerBagLimit` number is too high.
+        StorageBucketsPerBagLimitTooHigh,
     }
 }
 
@@ -920,6 +934,10 @@ decl_module! {
 
         /// Exports const - maximum size of the "hash blacklist" collection.
         const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
+
+        /// Exports const - "Storage buckets per bag" value constraint.
+        const StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
+            T::StorageBucketsPerBagValueConstraint::get();
 
         // ===== Storage Lead actions =====
 
@@ -977,6 +995,26 @@ decl_module! {
             DataObjectPerMegabyteFee::<T>::put(new_data_size_fee);
 
             Self::deposit_event(RawEvent::DataObjectPerMegabyteFeeUpdated(new_data_size_fee));
+        }
+
+        /// Updates "Storage buckets per bag" number limit.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
+            T::ensure_working_group_leader_origin(origin)?;
+
+            T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
+                new_limit,
+                Error::<T>::StorageBucketsPerBagLimitTooLow,
+                Error::<T>::StorageBucketsPerBagLimitTooHigh,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            StorageBucketsPerBagLimit::put(new_limit);
+
+            Self::deposit_event(RawEvent::StorageBucketsPerBagLimitUpdated(new_limit));
         }
 
         /// Add and remove hashes to the current blacklist.

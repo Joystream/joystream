@@ -2709,3 +2709,52 @@ fn storage_bucket_voucher_changed_event_fired() {
         ));
     });
 }
+
+#[test]
+fn update_storage_buckets_per_bag_limit_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let new_limit = 4;
+
+        UpdateStorageBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_limit(new_limit)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StorageBucketsPerBagLimitUpdated(
+            new_limit,
+        ));
+    });
+}
+
+#[test]
+fn update_storage_buckets_per_bag_limit_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateStorageBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_storage_buckets_per_bag_limit_fails_with_incorrect_value() {
+    build_test_externalities().execute_with(|| {
+        let new_limit = 0;
+
+        UpdateStorageBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_limit(new_limit)
+            .call_and_assert(Err(Error::<Test>::StorageBucketsPerBagLimitTooLow.into()));
+
+        let new_limit = 100;
+
+        UpdateStorageBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_limit(new_limit)
+            .call_and_assert(Err(Error::<Test>::StorageBucketsPerBagLimitTooHigh.into()));
+    });
+}
