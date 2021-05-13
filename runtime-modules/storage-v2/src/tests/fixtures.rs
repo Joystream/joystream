@@ -11,8 +11,7 @@ use super::mocks::{
 
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
-    ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    UpdateStorageBucketForBagsParams, UploadParameters,
+    ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -37,7 +36,6 @@ impl EventFixture {
         expected_raw_event: RawEvent<
             u64,
             u64,
-            UpdateStorageBucketForBagsParams<Test>,
             u64,
             UploadParameters<Test>,
             ObjectsInBagParams<Test>,
@@ -56,7 +54,6 @@ impl EventFixture {
         expected_raw_event: RawEvent<
             u64,
             u64,
-            UpdateStorageBucketForBagsParams<Test>,
             u64,
             UploadParameters<Test>,
             ObjectsInBagParams<Test>,
@@ -108,7 +105,7 @@ impl CreateStorageBucketFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             invite_worker: None,
-            accepting_new_bags: false,
+            accepting_new_bags: true,
             size_limit: 0,
             objects_limit: 0,
         }
@@ -234,14 +231,18 @@ impl AcceptStorageBucketInvitationFixture {
 
 pub struct UpdateStorageBucketForBagsFixture {
     origin: RawOrigin<u64>,
-    params: UpdateStorageBucketForBagsParams<Test>,
+    bag_id: BagId<Test>,
+    add_bucket_ids: BTreeSet<u64>,
+    remove_bucket_ids: BTreeSet<u64>,
 }
 
 impl UpdateStorageBucketForBagsFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
-            params: Default::default(),
+            bag_id: Default::default(),
+            add_bucket_ids: Default::default(),
+            remove_bucket_ids: Default::default(),
         }
     }
 
@@ -249,14 +250,30 @@ impl UpdateStorageBucketForBagsFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_params(self, params: UpdateStorageBucketForBagsParams<Test>) -> Self {
-        Self { params, ..self }
+    pub fn with_add_bucket_ids(self, add_bucket_ids: BTreeSet<u64>) -> Self {
+        Self {
+            add_bucket_ids,
+            ..self
+        }
+    }
+
+    pub fn with_remove_bucket_ids(self, remove_bucket_ids: BTreeSet<u64>) -> Self {
+        Self {
+            remove_bucket_ids,
+            ..self
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self { bag_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Storage::update_storage_buckets_for_bags(
+        let actual_result = Storage::update_storage_buckets_for_bag(
             self.origin.clone().into(),
-            self.params.clone(),
+            self.bag_id.clone(),
+            self.add_bucket_ids.clone(),
+            self.remove_bucket_ids.clone(),
         );
 
         assert_eq!(actual_result, expected_result);

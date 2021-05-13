@@ -16,14 +16,13 @@ use common::working_group::WorkingGroup;
 use crate::{
     AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DataObjectStorage,
     DynamicBagId, Error, ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, StorageTreasury, UpdateStorageBucketForBagsParams,
-    UploadParameters, Voucher,
+    StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
 };
 
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize, MaxNumberOfDataObjectsPerBag,
     Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID, WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -154,7 +153,7 @@ fn accept_storage_bucket_invitation_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -233,7 +232,7 @@ fn accept_storage_bucket_invitation_fails_with_different_invited_storage_provide
 #[test]
 fn accept_storage_bucket_invitation_fails_with_already_set_storage_provider() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 122;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -261,7 +260,10 @@ fn update_storage_buckets_for_bags_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let static_bag_id = StaticBagId::Council;
+        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -270,24 +272,45 @@ fn update_storage_buckets_for_bags_succeeded() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let mut buckets = BTreeSet::new();
-        buckets.insert(bucket_id);
-
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(
-            BagId::<Test>::StaticBag(StaticBagId::Council),
-            buckets.clone(),
-        );
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::static_bag(StaticBagId::Council);
-        assert_eq!(bag.stored_by, buckets);
+        let bag = Storage::static_bag(static_bag_id);
+        assert_eq!(bag.stored_by, add_buckets);
 
-        EventFixture::assert_last_crate_event(RawEvent::StorageBucketsUpdatedForBags(params));
+        EventFixture::assert_last_crate_event(RawEvent::StorageBucketsUpdatedForBag(
+            bag_id,
+            add_buckets,
+            BTreeSet::new(),
+        ));
+    });
+}
+
+#[test]
+fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
+    build_test_externalities().execute_with(|| {
+        let static_bag_id = StaticBagId::Council;
+        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(None)
+            .with_accepting_new_bags(false)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Err(Error::<Test>::StorageBucketDoesntAcceptNewBags.into()));
     });
 }
 
@@ -296,15 +319,8 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        let old_bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        set_update_storage_buckets_per_bag_limit();
+        let old_bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
 
@@ -322,6 +338,9 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
+        let objects_limit = 1;
+        let size_limit = 100;
+
         let new_bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_objects_limit(objects_limit)
@@ -329,14 +348,17 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
             .call_and_assert(Ok(()))
             .unwrap();
 
+        let old_buckets = BTreeSet::from_iter(vec![old_bucket_id]);
         let new_buckets = BTreeSet::from_iter(vec![new_bucket_id]);
 
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id, new_buckets.clone());
+        let bag = Storage::static_bag(StaticBagId::Council);
+        assert_eq!(bag.stored_by, old_buckets);
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(new_buckets.clone())
+            .with_remove_bucket_ids(old_buckets.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::static_bag(StaticBagId::Council);
@@ -357,12 +379,11 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_number_limit() {
     build_test_externalities().execute_with(|| {
+        set_update_storage_buckets_per_bag_limit();
+
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        create_storage_bucket_and_assign_to_bag(bag_id.clone(), None, objects_limit, size_limit);
+        create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
 
@@ -391,12 +412,10 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
 
         let new_buckets = BTreeSet::from_iter(vec![new_bucket_id]);
 
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id, new_buckets.clone());
-
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(new_buckets.clone())
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectNumberLimitReached.into()
             ));
@@ -408,10 +427,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        create_storage_bucket_and_assign_to_bag(bag_id.clone(), None, objects_limit, size_limit);
+        set_update_storage_buckets_per_bag_limit();
+        create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
 
@@ -440,12 +457,10 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 
         let new_buckets = BTreeSet::from_iter(vec![new_bucket_id]);
 
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id, new_buckets.clone());
-
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(new_buckets.clone())
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectSizeLimitReached.into()
             ));
@@ -455,7 +470,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 #[test]
 fn update_storage_buckets_for_working_group_static_bags_succeeded() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -464,17 +479,15 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let mut buckets = BTreeSet::new();
-        buckets.insert(bucket_id);
+        let buckets = BTreeSet::from_iter(vec![bucket_id]);
 
         let static_bag_id = StaticBagId::WorkingGroup(WorkingGroup::Storage);
         let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id.clone(), buckets.clone());
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(buckets.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::static_bag(&static_bag_id);
@@ -485,7 +498,7 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
 #[test]
 fn update_storage_buckets_for_dynamic_bags_succeeded() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -494,18 +507,16 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let mut buckets = BTreeSet::new();
-        buckets.insert(bucket_id);
+        let buckets = BTreeSet::from_iter(vec![bucket_id]);
 
         let member_id = 10;
         let dynamic_bag_id = DynamicBagId::<Test>::Member(member_id);
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(bag_id.clone(), buckets.clone());
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(buckets.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
@@ -529,9 +540,7 @@ fn update_storage_buckets_for_bags_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::UpdateStorageBucketForBagsParamsIsEmpty.into()
-            ));
+            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
     });
 }
 
@@ -539,18 +548,21 @@ fn update_storage_buckets_for_bags_fails_with_empty_params() {
 fn update_storage_buckets_for_bags_fails_with_non_existing_storage_buckets() {
     build_test_externalities().execute_with(|| {
         let invalid_bucket_id = 11000;
-        let mut buckets = BTreeSet::new();
-        buckets.insert(invalid_bucket_id);
+        let buckets = BTreeSet::from_iter(vec![invalid_bucket_id]);
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-        params.bags.insert(
-            BagId::<Test>::StaticBag(StaticBagId::Council),
-            buckets.clone(),
-        );
-
+        // Invalid added bucket ID.
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_params(params)
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(buckets.clone())
+            .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
+
+        // Invalid removed bucket ID.
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_remove_bucket_ids(buckets.clone())
             .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
     });
 }
@@ -650,15 +662,8 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let objects_limit = 1;
-        let size_limit = 100;
 
-        let bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
 
@@ -988,7 +993,7 @@ fn set_storage_operator_metadata_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -1041,7 +1046,7 @@ fn set_storage_operator_metadata_fails_with_invalid_storage_bucket() {
 #[test]
 fn set_storage_operator_metadata_fails_with_invalid_storage_association() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         // Missing invitation
@@ -1091,7 +1096,7 @@ fn accept_pending_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -1159,7 +1164,7 @@ fn accept_pending_data_objects_succeeded() {
 #[test]
 fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -1226,7 +1231,7 @@ fn accept_pending_data_objects_fails_with_invalid_origin() {
 #[test]
 fn accept_pending_data_objects_fails_with_empty_params() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 110;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let objects_limit = 1;
         let size_limit = 100;
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
@@ -1254,7 +1259,7 @@ fn accept_pending_data_objects_fails_with_empty_params() {
 #[test]
 fn accept_pending_data_objects_fails_with_non_existing_data_object() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 110;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let objects_limit = 1;
         let size_limit = 100;
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
@@ -1290,16 +1295,9 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
 #[test]
 fn accept_pending_data_objects_fails_with_invalid_storage_provider() {
     build_test_externalities().execute_with(|| {
-        let objects_limit = 1;
-        let size_limit = 100;
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
@@ -1323,7 +1321,7 @@ fn cancel_storage_bucket_operator_invite_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -1382,7 +1380,7 @@ fn cancel_storage_bucket_operator_invite_fails_with_non_invited_storage_provider
 #[test]
 fn cancel_storage_bucket_operator_invite_fails_with_already_set_storage_provider() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 122;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -1409,7 +1407,7 @@ fn invite_storage_bucket_operator_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -1570,21 +1568,8 @@ fn move_data_objects_succeeded_having_voucher() {
         let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
 
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        let src_bucket_id = create_storage_bucket_and_assign_to_bag(
-            src_bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
-        let dest_bucket_id = create_storage_bucket_and_assign_to_bag(
-            dest_bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        let src_bucket_id = create_default_storage_bucket_and_assign_to_bag(src_bag_id.clone());
+        let dest_bucket_id = create_default_storage_bucket_and_assign_to_bag(dest_bag_id.clone());
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -1795,7 +1780,7 @@ fn delete_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         CreateStorageBucketFixture::default()
@@ -1873,7 +1858,7 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         CreateStorageBucketFixture::default()
@@ -1920,15 +1905,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
         let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        let bucket_id = create_storage_bucket_and_assign_to_bag(
-            council_bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(council_bag_id.clone());
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -2001,7 +1978,7 @@ fn update_storage_bucket_status_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -2053,7 +2030,7 @@ fn update_storage_bucket_status_fails_with_invalid_storage_bucket() {
 #[test]
 fn update_storage_bucket_status_fails_with_invalid_storage_association() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         // Missing invitation
@@ -2223,6 +2200,13 @@ fn update_blacklist_fails_with_non_leader_origin() {
     });
 }
 
+fn create_default_storage_bucket_and_assign_to_bag(bag_id: BagId<Test>) -> u64 {
+    let objects_limit = 1;
+    let size_limit = 100;
+
+    create_storage_bucket_and_assign_to_bag(bag_id, None, objects_limit, size_limit)
+}
+
 fn create_storage_bucket_and_assign_to_bag(
     bag_id: BagId<Test>,
     storage_provider_id: Option<u64>,
@@ -2239,12 +2223,10 @@ fn create_storage_bucket_and_assign_to_bag(
 
     let buckets = BTreeSet::from_iter(vec![bucket_id]);
 
-    let mut params = UpdateStorageBucketForBagsParams::<Test>::default();
-    params.bags.insert(bag_id.clone(), buckets.clone());
-
     UpdateStorageBucketForBagsFixture::default()
         .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-        .with_params(params.clone())
+        .with_bag_id(bag_id.clone())
+        .with_add_bucket_ids(buckets.clone())
         .call_and_assert(Ok(()));
 
     if let Some(storage_provider_id) = storage_provider_id {
@@ -2315,18 +2297,10 @@ fn delete_dynamic_bags_succeeded() {
 #[test]
 fn delete_dynamic_bags_succeeded_having_voucher() {
     build_test_externalities().execute_with(|| {
-        let objects_limit = 1;
-        let size_limit = 100;
-
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
 
-        let bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -2458,15 +2432,7 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        let objects_limit = 1;
-        let size_limit = 100;
-
-        let bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
-            None,
-            objects_limit,
-            size_limit,
-        );
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
 
@@ -2497,7 +2463,7 @@ fn remove_storage_bucket_operator_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -2544,7 +2510,7 @@ fn remove_storage_bucket_operator_fails_with_non_existing_storage_bucket() {
 #[test]
 fn remove_storage_bucket_operator_fails_with_non_accepted_storage_provider() {
     build_test_externalities().execute_with(|| {
-        let storage_provider_id = 10;
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
@@ -2670,8 +2636,8 @@ fn storage_bucket_voucher_changed_event_fired() {
         run_to_block(starting_block);
 
         let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag.clone());
+
         let objects_limit = 1;
         let size_limit = 100;
 
@@ -2757,4 +2723,13 @@ fn update_storage_buckets_per_bag_limit_fails_with_incorrect_value() {
             .with_new_limit(new_limit)
             .call_and_assert(Err(Error::<Test>::StorageBucketsPerBagLimitTooHigh.into()));
     });
+}
+
+fn set_update_storage_buckets_per_bag_limit() {
+    let new_limit = 7;
+
+    UpdateStorageBucketsPerBagLimitFixture::default()
+        .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+        .with_new_limit(new_limit)
+        .call_and_assert(Ok(()))
 }

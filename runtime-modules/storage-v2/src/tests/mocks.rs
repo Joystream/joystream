@@ -61,6 +61,7 @@ parameter_types! {
 
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
+pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 
 impl crate::Trait for Test {
     type Event = TestEvent;

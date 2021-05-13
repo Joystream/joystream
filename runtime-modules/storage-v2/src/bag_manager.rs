@@ -108,15 +108,32 @@ impl<T: Trait> BagManager<T> {
         );
     }
 
-    // Sets storage buckets to bag.
-    pub(crate) fn set_storage_buckets(bag_id: &BagId<T>, buckets: BTreeSet<T::StorageBucketId>) {
+    // Add storage buckets to a bag.
+    pub(crate) fn add_storage_buckets(bag_id: &BagId<T>, buckets: BTreeSet<T::StorageBucketId>) {
         Self::mutate(
             &bag_id,
             |bag| {
-                bag.stored_by = buckets.clone();
+                bag.stored_by.append(&mut buckets.clone());
             },
             |bag| {
-                bag.stored_by = buckets.clone();
+                bag.stored_by.append(&mut buckets.clone());
+            },
+        );
+    }
+
+    // Remove storage buckets from a bag.
+    pub(crate) fn remove_storage_buckets(bag_id: &BagId<T>, buckets: BTreeSet<T::StorageBucketId>) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                for bucket_id in buckets.iter() {
+                    bag.stored_by.remove(bucket_id);
+                }
+            },
+            |bag| {
+                for bucket_id in buckets.iter() {
+                    bag.stored_by.remove(bucket_id);
+                }
             },
         );
     }

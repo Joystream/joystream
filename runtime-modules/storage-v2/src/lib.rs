@@ -9,7 +9,6 @@
 // TODO: Remove old Storage pallet.
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
-// TODO: use StorageBucket.accepting_new_bags
 // TODO: add dynamic bag creation policy.
 // TODO: add module comment
 // TODO: max storage buckets for bags? do we need that?
@@ -511,26 +510,6 @@ pub struct AssignedDataObject<MemberId, ChannelId, DataObjectId> {
     pub data_object_id: DataObjectId,
 }
 
-/// Type alias for the UpdateStorageBucketForBagsParamsObject.
-pub type UpdateStorageBucketForBagsParams<T> = UpdateStorageBucketForBagsParamsObject<
-    MemberId<T>,
-    <T as Trait>::ChannelId,
-    <T as Trait>::StorageBucketId,
->;
-
-/// Data wrapper structure. Helps passing the parameters to the
-/// `update_storage_buckets_for_bags` extrinsic.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct UpdateStorageBucketForBagsParamsObject<
-    MemberId: Ord,
-    ChannelId: Ord,
-    StorageBucketId: Ord,
-> {
-    /// Defines new relationship between static bags and storage buckets.
-    pub bags: BTreeMap<BagIdType<MemberId, ChannelId>, BTreeSet<StorageBucketId>>,
-}
-
 /// Type alias for the ObjectsInBagParamsObject.
 pub type ObjectsInBagParams<T> =
     ObjectsInBagParamsObject<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DataObjectId>;
@@ -544,6 +523,7 @@ pub struct ObjectsInBagParamsObject<MemberId: Ord, ChannelId: Ord, DataObjectId:
     pub assigned_data_objects: BTreeSet<AssignedDataObject<MemberId, ChannelId, DataObjectId>>,
 }
 
+//TODO: refactor
 // Helper-struct for the data object uploading.
 #[derive(Default, Clone, Debug)]
 struct DataObjectCandidates<T: Trait> {
@@ -605,18 +585,6 @@ impl<DataObjectId: Ord, StorageBucketId: Ord, DistributionBucketId: Ord, Balance
 }
 
 //TODO: refactor structs!
-
-// Voucher update parameters for a changing bag.
-struct VoucherUpdateForBagChange<StorageBucketId> {
-    // Voucher update parameters.
-    voucher_update: VoucherUpdate,
-
-    // Added buckets for a bag.
-    added_buckets: BTreeSet<StorageBucketId>,
-
-    // Removed buckets for a bag.
-    removed_buckets: BTreeSet<StorageBucketId>,
-}
 
 //TODO: rename??
 // Helper struct for the dynamic bag changing.
@@ -684,7 +652,6 @@ decl_event! {
     where
         <T as Trait>::StorageBucketId,
         WorkerId = WorkerId<T>,
-        UpdateStorageBucketForBagsParams = UpdateStorageBucketForBagsParams<T>,
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
         ObjectsInBagParams = ObjectsInBagParams<T>,
@@ -708,10 +675,12 @@ decl_event! {
         /// - invited worker ID
         StorageBucketInvitationAccepted(StorageBucketId, WorkerId),
 
-        /// Emits on updating storage buckets for bags.
+        /// Emits on updating storage buckets for bag.
         /// Params
-        /// - 'bags-to-storage bucket set' container
-        StorageBucketsUpdatedForBags(UpdateStorageBucketForBagsParams),
+        /// - bag ID
+        /// - storage buckets to add ID collection
+        /// - storage buckets to remove ID collection
+        StorageBucketsUpdatedForBag(BagId, BTreeSet<StorageBucketId>, BTreeSet<StorageBucketId>),
 
         /// Emits on uploading data objects.
         /// Params
@@ -843,8 +812,8 @@ decl_error! {
         /// Invalid operation with invites: storage provider was already invited.
         InvitedStorageProvider,
 
-        /// The parameter structure is empty: UpdateStorageBucketForBagsParams.
-        UpdateStorageBucketForBagsParamsIsEmpty,
+        /// Storage bucket id collections are empty.
+        StorageBucketIdCollectionsAreEmpty,
 
         /// Upload data error: empty content ID provided.
         EmptyContentId,
@@ -911,6 +880,12 @@ decl_error! {
 
         /// The new `StorageBucketsPerBagLimit` number is too high.
         StorageBucketsPerBagLimitTooHigh,
+
+        /// `StorageBucketsPerBagLimit` was exceeded for a bag.
+        StorageBucketPerBagLimitExceeded,
+
+        /// The storage bucket doesn't accept new bags.
+        StorageBucketDoesntAcceptNewBags,
     }
 }
 
@@ -949,7 +924,7 @@ decl_module! {
         ){
             T::ensure_working_group_leader_origin(origin)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_missing_invitation_status(&bucket)?;
 
@@ -1111,42 +1086,49 @@ decl_module! {
             );
         }
 
-        // TODO: consider single bag instead of collection.
-        // TODO: consider splitting the buckets into the two collections: added and removed.
-
-        /// Establishes a connection between bags and storage buckets.
+        /// Updates storage buckets for a bag..
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_buckets_for_bags(
+        pub fn update_storage_buckets_for_bag(
             origin,
-            params: UpdateStorageBucketForBagsParams<T>
+            bag_id: BagId<T>,
+            add_buckets: BTreeSet<T::StorageBucketId>,
+            remove_buckets: BTreeSet<T::StorageBucketId>,
         ) {
             T::ensure_working_group_leader_origin(origin)?;
 
-            let voucher_updates = Self::validate_update_storage_buckets_for_bags_params(&params)?;
+            let voucher_update = Self::validate_update_storage_buckets_for_bag_params(
+                &bag_id,
+                &add_buckets,
+                &remove_buckets,
+            )?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            for (bag_id, buckets) in params.bags.iter() {
-                BagManager::<T>::set_storage_buckets(bag_id, buckets.clone());
-            }
-
             // Update vouchers.
-            for (_, voucher_info) in voucher_updates.iter() {
+            if !add_buckets.is_empty() {
+                BagManager::<T>::add_storage_buckets(&bag_id, add_buckets.clone());
+
                 Self::change_storage_buckets_vouchers(
-                    &voucher_info.added_buckets,
-                    &voucher_info.voucher_update,
+                    &add_buckets,
+                    &voucher_update,
                     OperationType::Increase
                 );
+            }
+            if !remove_buckets.is_empty() {
+                BagManager::<T>::remove_storage_buckets(&bag_id, remove_buckets.clone());
+
                 Self::change_storage_buckets_vouchers(
-                    &voucher_info.removed_buckets,
-                    &voucher_info.voucher_update,
+                    &remove_buckets,
+                    &voucher_update,
                     OperationType::Decrease
                 );
             }
 
-            Self::deposit_event(RawEvent::StorageBucketsUpdatedForBags(params));
+            Self::deposit_event(
+                RawEvent::StorageBucketsUpdatedForBag(bag_id, add_buckets, remove_buckets)
+            );
         }
 
         /// Cancel pending storage bucket invite. An invitation must be pending.
@@ -1154,7 +1136,7 @@ decl_module! {
         pub fn cancel_storage_bucket_operator_invite(origin, storage_bucket_id: T::StorageBucketId){
             T::ensure_working_group_leader_origin(origin)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_pending_invitation_status(&bucket)?;
 
@@ -1180,7 +1162,7 @@ decl_module! {
         ){
             T::ensure_working_group_leader_origin(origin)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_missing_invitation_status(&bucket)?;
 
@@ -1208,7 +1190,7 @@ decl_module! {
         ){
             T::ensure_working_group_leader_origin(origin)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_storage_provider_invitation_status_for_removal(&bucket)?;
 
@@ -1237,7 +1219,7 @@ decl_module! {
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_storage_provider_invitation_status(&bucket, worker_id)?;
 
@@ -1264,7 +1246,7 @@ decl_module! {
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
@@ -1291,7 +1273,7 @@ decl_module! {
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
@@ -1320,7 +1302,7 @@ decl_module! {
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
-            let bucket = Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
@@ -1571,7 +1553,7 @@ impl<T: Trait> Module<T> {
     // Ensures the existence of the storage bucket.
     // Returns the StorageBucket object or error.
     fn ensure_storage_bucket_exists(
-        storage_bucket_id: T::StorageBucketId,
+        storage_bucket_id: &T::StorageBucketId,
     ) -> Result<StorageBucket<WorkerId<T>>, Error<T>> {
         ensure!(
             <StorageBucketById<T>>::contains_key(storage_bucket_id),
@@ -1731,65 +1713,53 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensures validity of the `update_storage_buckets_for_bags` extrinsic parameters
-    fn validate_update_storage_buckets_for_bags_params(
-        params: &UpdateStorageBucketForBagsParams<T>,
-    ) -> Result<BTreeMap<BagId<T>, VoucherUpdateForBagChange<T::StorageBucketId>>, DispatchError>
-    {
+    // Ensures validity of the `update_storage_buckets_for_bag` extrinsic parameters
+    fn validate_update_storage_buckets_for_bag_params(
+        bag_id: &BagId<T>,
+        add_buckets: &BTreeSet<T::StorageBucketId>,
+        remove_buckets: &BTreeSet<T::StorageBucketId>,
+    ) -> Result<VoucherUpdate, DispatchError> {
         ensure!(
-            !params.bags.is_empty(),
-            Error::<T>::UpdateStorageBucketForBagsParamsIsEmpty
+            !add_buckets.is_empty() || !remove_buckets.is_empty(),
+            Error::<T>::StorageBucketIdCollectionsAreEmpty
         );
 
         //TODO: Validate dynamic bag existence
-        //TODO: Validate accepting_new_bags for the storage bucket
 
-        let mut voucher_update_result = BTreeMap::new();
-
-        for (bag_id, buckets) in params.bags.iter() {
-            let mut added_buckets = BTreeSet::new();
-            let mut removed_buckets = BTreeSet::new();
-
-            let storage_bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
-
-            for bucket_id in buckets.iter() {
-                ensure!(
-                    <StorageBucketById<T>>::contains_key(&bucket_id),
-                    Error::<T>::StorageBucketDoesntExist
-                );
-
-                if !storage_bucket_ids.contains(bucket_id) {
-                    added_buckets.insert(*bucket_id);
-                }
-            }
-
-            for existing_bucket_id in storage_bucket_ids.iter() {
-                if !buckets.contains(existing_bucket_id) {
-                    removed_buckets.insert(*existing_bucket_id);
-                }
-            }
-
-            let objects_total_size = BagManager::<T>::get_data_objects_total_size(bag_id);
-            let objects_number = BagManager::<T>::get_data_objects_number(bag_id);
-
-            let voucher_update = VoucherUpdate {
-                objects_number,
-                objects_total_size,
-            };
-
-            Self::check_buckets_for_overflow(&added_buckets, &voucher_update)?;
-
-            voucher_update_result.insert(
-                bag_id.clone(),
-                VoucherUpdateForBagChange {
-                    voucher_update,
-                    added_buckets,
-                    removed_buckets,
-                },
+        for bucket_id in remove_buckets.iter() {
+            ensure!(
+                <StorageBucketById<T>>::contains_key(&bucket_id),
+                Error::<T>::StorageBucketDoesntExist
             );
         }
 
-        Ok(voucher_update_result)
+        for bucket_id in add_buckets.iter() {
+            let bucket = Self::ensure_storage_bucket_exists(bucket_id)?;
+
+            ensure!(
+                bucket.accepting_new_bags,
+                Error::<T>::StorageBucketDoesntAcceptNewBags
+            );
+        }
+
+        let storage_bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
+        ensure!(
+            storage_bucket_ids.len().saturated_into::<u64>()
+                <= Self::storage_buckets_per_bag_limit(),
+            Error::<T>::StorageBucketPerBagLimitExceeded
+        );
+
+        let objects_total_size = BagManager::<T>::get_data_objects_total_size(bag_id);
+        let objects_number = BagManager::<T>::get_data_objects_number(bag_id);
+
+        let voucher_update = VoucherUpdate {
+            objects_number,
+            objects_total_size,
+        };
+
+        Self::check_buckets_for_overflow(&add_buckets, &voucher_update)?;
+
+        Ok(voucher_update)
     }
 
     // Get dynamic bag by its ID from the storage.
