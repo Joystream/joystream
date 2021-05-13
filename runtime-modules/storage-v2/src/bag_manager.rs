@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
 
-use frame_support::dispatch::DispatchError;
-use frame_support::StorageMap;
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::{ensure, StorageMap};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
@@ -137,6 +137,21 @@ impl<T: Trait> BagManager<T> {
                 }
             },
         );
+    }
+
+    // Check the bag existence. Static bags always exist.
+    pub(crate) fn ensure_bag_exists(bag_id: &BagId<T>) -> DispatchResult {
+        // Static bags could be auto-created on absence.
+        // We must check only dynamic bags.
+
+        if let BagId::<T>::DynamicBag(dynamic_bag_id) = bag_id {
+            ensure!(
+                <crate::DynamicBags<T>>::contains_key(dynamic_bag_id),
+                Error::<T>::DynamicBagDoesntExist
+            );
+        }
+
+        Ok(())
     }
 
     // Check the data object existence inside a bag.

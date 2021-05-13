@@ -931,6 +931,9 @@ decl_error! {
 
         /// Cannot create the dynamic bag: dynamic bag exists.
         DynamicBagExists,
+
+        /// Dynamic bag doesn't exist.
+        DynamicBagDoesntExist,
     }
 }
 
@@ -1567,8 +1570,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             voucher_update_with_prize.total_deletion_prize,
         )?;
 
-        // TODO: Check dynamic bag existence.
-
         for data_object_id in objects.iter() {
             BagManager::<T>::delete_data_object(&bag_id, &data_object_id);
         }
@@ -1671,7 +1672,7 @@ impl<T: Trait> Module<T> {
     fn validate_delete_dynamic_bag_params(
         bag_id: &DynamicBagId<T>,
     ) -> Result<VoucherUpdateWithDeletionPrize<BalanceOf<T>>, DispatchError> {
-        //TODO: check bag for existence
+        BagManager::<T>::ensure_bag_exists(&BagId::<T>::DynamicBag(bag_id.clone()))?;
 
         let dynamic_bag = Self::dynamic_bag(bag_id);
 
@@ -1842,11 +1843,11 @@ impl<T: Trait> Module<T> {
         );
 
         for ids in params.assigned_data_objects.iter() {
+            BagManager::<T>::ensure_bag_exists(&ids.bag_id)?;
             BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
         }
 
         //TODO: validate bag_to_bucket relation?
-        //TODO: Validate dynamic bag existence?
 
         Ok(())
     }
@@ -1862,7 +1863,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::StorageBucketIdCollectionsAreEmpty
         );
 
-        //TODO: Validate dynamic bag existence
+        BagManager::<T>::ensure_bag_exists(&bag_id)?;
 
         for bucket_id in remove_buckets.iter() {
             ensure!(
@@ -1915,6 +1916,9 @@ impl<T: Trait> Module<T> {
             !object_ids.is_empty(),
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
+
+        BagManager::<T>::ensure_bag_exists(src_bag_id)?;
+        BagManager::<T>::ensure_bag_exists(dest_bag_id)?;
 
         let mut voucher_update_with_prize =
             VoucherUpdateWithDeletionPrize::<BalanceOf<T>>::default();
@@ -2014,6 +2018,8 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataObjectIdParamsAreEmpty
         );
 
+        BagManager::<T>::ensure_bag_exists(bag_id)?;
+
         let mut voucher_update_with_prize = VoucherUpdateWithDeletionPrize::default();
 
         for data_object_id in data_object_ids.iter() {
@@ -2039,8 +2045,6 @@ impl<T: Trait> Module<T> {
     ) -> Result<VoucherUpdate, DispatchError> {
         // TODO: consider refactoring and splitting the method.
 
-        // TODO: Check dynamic bag existence.
-
         // Check global uploading block.
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
@@ -2049,6 +2053,8 @@ impl<T: Trait> Module<T> {
             !params.object_creation_list.is_empty(),
             Error::<T>::NoObjectsOnUpload
         );
+
+        BagManager::<T>::ensure_bag_exists(&params.bag_id)?;
 
         let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
 

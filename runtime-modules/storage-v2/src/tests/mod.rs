@@ -294,6 +294,31 @@ fn update_storage_buckets_for_bags_succeeded() {
 }
 
 #[test]
+fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
+    });
+}
+
+#[test]
 fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
     build_test_externalities().execute_with(|| {
         let static_bag_id = StaticBagId::Council;
@@ -514,6 +539,7 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
         let member_id = 10;
         let dynamic_bag_id = DynamicBagId::<Test>::Member(member_id);
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        create_dynamic_bag(&dynamic_bag_id);
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -760,6 +786,7 @@ fn upload_succeeded_with_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
@@ -789,6 +816,24 @@ fn upload_succeeded_with_dynamic_bag() {
         );
 
         assert_eq!(bag.deletion_prize, DataObjectDeletionPrize::get());
+    });
+}
+
+#[test]
+fn upload_fails_with_non_existent_dynamic_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
 
@@ -1164,6 +1209,51 @@ fn accept_pending_data_objects_succeeded() {
 }
 
 #[test]
+fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
+    build_test_externalities().execute_with(|| {
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+
+        let data_object_id = 0;
+
+        let mut objects = BTreeSet::new();
+        objects.insert(AssignedDataObject {
+            bag_id,
+            data_object_id,
+        });
+
+        let accept_params = ObjectsInBagParams::<Test> {
+            assigned_data_objects: objects,
+        };
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_params(accept_params.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
+    });
+}
+
+#[test]
 fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
@@ -1185,6 +1275,8 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_dynamic_bag(&dynamic_bag_id);
+
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
@@ -1505,9 +1597,11 @@ fn move_data_objects_succeeded() {
 
         let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
         let src_bag_id = BagId::<Test>::DynamicBag(src_dynamic_bag_id.clone());
+        create_dynamic_bag(&src_dynamic_bag_id);
 
         let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
         let dest_bag_id = BagId::<Test>::DynamicBag(dest_dynamic_bag_id.clone());
+        create_dynamic_bag(&dest_dynamic_bag_id);
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -1557,6 +1651,39 @@ fn move_data_objects_succeeded() {
             dest_bag_id,
             ids,
         ));
+    });
+}
+
+#[test]
+fn move_data_objects_fails_with_non_existing_dynamic_bags() {
+    build_test_externalities().execute_with(|| {
+        let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
+        let src_bag_id = BagId::<Test>::DynamicBag(src_dynamic_bag_id.clone());
+
+        let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
+        let dest_bag_id = BagId::<Test>::DynamicBag(dest_dynamic_bag_id.clone());
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let data_object_id = 0u64;
+        let ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        // Neigher src bag nor dest bag exist.
+        MoveDataObjectsFixture::default()
+            .with_src_bag_id(src_bag_id.clone())
+            .with_dest_bag_id(dest_bag_id.clone())
+            .with_data_object_ids(ids.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
+
+        create_dynamic_bag(&src_dynamic_bag_id);
+
+        // Src bag exists, dest doesn't
+        MoveDataObjectsFixture::default()
+            .with_src_bag_id(src_bag_id.clone())
+            .with_dest_bag_id(dest_bag_id.clone())
+            .with_data_object_ids(ids.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
 
@@ -1797,6 +1924,8 @@ fn delete_data_objects_succeeded() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
 
+        create_dynamic_bag(&dynamic_bag_id);
+
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
             authentication_key: Vec::new(),
@@ -1851,6 +1980,27 @@ fn delete_data_objects_succeeded() {
             bag_id,
             data_object_ids,
         ));
+    });
+}
+
+#[test]
+fn delete_data_objects_fails_with_non_existent_dynamic_bag() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+
+        let data_object_id = 0;
+
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        DeleteDataObjectsFixture::default()
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
 
@@ -2254,6 +2404,7 @@ fn delete_dynamic_bags_succeeded() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
@@ -2299,9 +2450,23 @@ fn delete_dynamic_bags_succeeded() {
 }
 
 #[test]
+fn delete_dynamic_bags_fails_with_non_existent_dynamic_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        DeleteDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
+    });
+}
+
+#[test]
 fn delete_dynamic_bags_succeeded_having_voucher() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_dynamic_bag(&dynamic_bag_id);
+
         let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
@@ -2348,6 +2513,7 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
@@ -2613,10 +2779,11 @@ fn deletion_prize_changed_event_fired() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag.clone()),
+            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -2627,7 +2794,7 @@ fn deletion_prize_changed_event_fired() {
             .call_and_assert(Ok(()));
 
         EventFixture::contains_crate_event(RawEvent::DeletionPrizeChanged(
-            dynamic_bag,
+            dynamic_bag_id,
             DataObjectDeletionPrize::get(),
         ));
     });
@@ -2639,8 +2806,9 @@ fn storage_bucket_voucher_changed_event_fired() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let dynamic_bag = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag.clone());
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        create_dynamic_bag(&dynamic_bag_id);
 
         let objects_limit = 1;
         let size_limit = 100;
@@ -2957,4 +3125,10 @@ fn create_dynamic_bag_failed_with_existing_bag() {
             .with_bag_id(dynamic_bag_id.clone())
             .call_and_assert(Err(Error::<Test>::DynamicBagExists.into()));
     });
+}
+
+fn create_dynamic_bag(dynamic_bag_id: &DynamicBagId<Test>) {
+    CreateDynamicBagFixture::default()
+        .with_bag_id(dynamic_bag_id.clone())
+        .call_and_assert(Ok(()));
 }
