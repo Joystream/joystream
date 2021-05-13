@@ -5,7 +5,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
-// TODO: Remove static and dynamic storage helpers.
 // TODO: Remove old Storage pallet.
 // TODO: authentication_key
 // TODO: Check dynamic bag existence.
@@ -611,7 +610,7 @@ decl_storage! {
             StaticBagId => StaticBag<T>;
 
         /// Dynamic bag storage map.
-        pub DynamicBags get (fn dynamic_bag_by_id): map hasher(blake2_128_concat)
+        pub DynamicBags get (fn dynamic_bag): map hasher(blake2_128_concat)
             DynamicBagId<T> => DynamicBag<T>;
 
         /// Storage bucket id counter. Starts at zero.
@@ -1595,7 +1594,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             OperationType::Decrease,
         );
 
-        Self::remove_dynamic_bag(&bag_id);
+        <DynamicBags<T>>::remove(&bag_id);
 
         Self::deposit_event(RawEvent::DynamicBagDeleted(
             deletion_prize_account_id,
@@ -1735,11 +1734,6 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Save static bag to the storage.
-    fn save_static_bag(bag_id: &StaticBagId, bag: StaticBag<T>) {
-        <StaticBags<T>>::insert(bag_id, bag)
-    }
-
     // Create data objects from the creation data.
     fn create_data_objects(
         object_creation_list: Vec<DataObjectCreationParameters>,
@@ -1843,21 +1837,6 @@ impl<T: Trait> Module<T> {
         Self::check_buckets_for_overflow(&add_buckets, &voucher_update)?;
 
         Ok(voucher_update)
-    }
-
-    // Get dynamic bag by its ID from the storage.
-    pub(crate) fn dynamic_bag(bag_id: &DynamicBagId<T>) -> DynamicBag<T> {
-        Self::dynamic_bag_by_id(bag_id)
-    }
-
-    // Save a dynamic bag to the storage.
-    fn save_dynamic_bag(bag_id: &DynamicBagId<T>, bag: DynamicBag<T>) {
-        <DynamicBags<T>>::insert(bag_id, bag);
-    }
-
-    // Delete a dynamic bag from the storage.
-    fn remove_dynamic_bag(bag_id: &DynamicBagId<T>) {
-        <DynamicBags<T>>::remove(bag_id);
     }
 
     // Validate the "Move data objects between bags" operation data.
@@ -2109,19 +2088,17 @@ impl<T: Trait> Module<T> {
         deletion_prize: BalanceOf<T>,
         operation: OperationType,
     ) {
-        let mut bag = Self::dynamic_bag(dynamic_bag_id);
+        <DynamicBags<T>>::mutate(dynamic_bag_id, |bag| {
+            bag.deletion_prize = match operation {
+                OperationType::Increase => bag.deletion_prize.saturating_add(deletion_prize),
+                OperationType::Decrease => bag.deletion_prize.saturating_sub(deletion_prize),
+            };
 
-        bag.deletion_prize = match operation {
-            OperationType::Increase => bag.deletion_prize.saturating_add(deletion_prize),
-            OperationType::Decrease => bag.deletion_prize.saturating_sub(deletion_prize),
-        };
-
-        Self::deposit_event(RawEvent::DeletionPrizeChanged(
-            dynamic_bag_id.clone(),
-            bag.deletion_prize,
-        ));
-
-        Self::save_dynamic_bag(dynamic_bag_id, bag);
+            Self::deposit_event(RawEvent::DeletionPrizeChanged(
+                dynamic_bag_id.clone(),
+                bag.deletion_prize,
+            ));
+        });
     }
 
     // Increase or decrease a deletion prize for a dynamic bag.

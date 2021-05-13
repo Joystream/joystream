@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 
 use frame_support::dispatch::DispatchError;
+use frame_support::StorageMap;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
@@ -215,18 +216,10 @@ impl<T: Trait> BagManager<T> {
     ) {
         match bag_id {
             BagId::<T>::StaticBag(static_bag_id) => {
-                let mut bag = Module::<T>::static_bag(&static_bag_id);
-
-                static_bag_mutation(&mut bag);
-
-                Module::<T>::save_static_bag(&static_bag_id, bag);
+                <crate::StaticBags<T>>::mutate(static_bag_id, static_bag_mutation);
             }
             BagId::<T>::DynamicBag(dynamic_bag_id) => {
-                let mut bag = Module::<T>::dynamic_bag(dynamic_bag_id);
-
-                dynamic_bag_mutation(&mut bag);
-
-                Module::<T>::save_dynamic_bag(dynamic_bag_id, bag);
+                <crate::DynamicBags<T>>::mutate(dynamic_bag_id, dynamic_bag_mutation);
             }
         }
     }
