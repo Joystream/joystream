@@ -31,6 +31,8 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
 
     await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'beginApplicantReview', [openingId])
 
-    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId)} status changed to: ${chalk.magentaBright('In Review')}`))
+    this.log(
+      chalk.green(`Opening ${chalk.magentaBright(openingId)} status changed to: ${chalk.magentaBright('In Review')}`)
+    )
   }
 }

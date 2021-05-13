@@ -263,7 +263,9 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     )
     if (rejectedAssetsOutput.length) {
       this.warn(
-        `Some assets were not uploaded succesfully. Try reuploading them with ${chalk.magentaBright('content:reuploadAssets')}!`
+        `Some assets were not uploaded succesfully. Try reuploading them with ${chalk.magentaBright(
+          'content:reuploadAssets'
+        )}!`
       )
       console.log(rejectedAssetsOutput)
       const outputPath = inputFilePath.replace('.json', `${outputFilePostfix}.json`)
