@@ -61,6 +61,607 @@ input BaseWhereInput {
   deletedById_eq: String
 }
 
+type CuratorGroup implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Curators belonging to this group"""
+  curatorIds: [Int!]!
+
+  """Is group active or not"""
+  isActive: Boolean!
+  channels: [Channel!]!
+}
+
+type CuratorGroupConnection {
+  totalCount: Int!
+  edges: [CuratorGroupEdge!]!
+  pageInfo: PageInfo!
+}
+
+input CuratorGroupCreateInput {
+  curatorIds: [Int!]!
+  isActive: Boolean!
+}
+
+type CuratorGroupEdge {
+  node: CuratorGroup!
+  cursor: String!
+}
+
+enum CuratorGroupOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  isActive_ASC
+  isActive_DESC
+}
+
+input CuratorGroupUpdateInput {
+  curatorIds: [Int!]
+  isActive: Boolean
+}
+
+input CuratorGroupWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  isActive_eq: Boolean
+  isActive_in: [Boolean!]
+}
+
+input CuratorGroupWhereUniqueInput {
+  id: ID!
+}
+
+"""Manages content ids, type and storage provider decision about it"""
+type DataObject implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Content owner"""
+  owner: DataObjectOwner!
+
+  """Content added at"""
+  createdInBlock: Int!
+
+  """Content type id"""
+  typeId: Int!
+
+  """Content size in bytes"""
+  size: Float!
+  liaison: Worker
+  liaisonId: String
+
+  """Storage provider as liaison judgment"""
+  liaisonJudgement: LiaisonJudgement!
+
+  """IPFS content id"""
+  ipfsContentId: String!
+
+  """Joystream runtime content"""
+  joystreamContentId: String!
+  channelcoverPhotoDataObject: [Channel!]
+  channelavatarPhotoDataObject: [Channel!]
+  videothumbnailPhotoDataObject: [Video!]
+  videomediaDataObject: [Video!]
+}
+
+type DataObjectConnection {
+  totalCount: Int!
+  edges: [DataObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+input DataObjectCreateInput {
+  owner: JSONObject!
+  createdInBlock: Float!
+  typeId: Float!
+  size: Float!
+  liaisonId: ID
+  liaisonJudgement: LiaisonJudgement!
+  ipfsContentId: String!
+  joystreamContentId: String!
+}
+
+type DataObjectEdge {
+  node: DataObject!
+  cursor: String!
+}
+
+enum DataObjectOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  createdInBlock_ASC
+  createdInBlock_DESC
+  typeId_ASC
+  typeId_DESC
+  size_ASC
+  size_DESC
+  liaisonId_ASC
+  liaisonId_DESC
+  liaisonJudgement_ASC
+  liaisonJudgement_DESC
+  ipfsContentId_ASC
+  ipfsContentId_DESC
+  joystreamContentId_ASC
+  joystreamContentId_DESC
+}
+
+union DataObjectOwner = DataObjectOwnerMember | DataObjectOwnerChannel | DataObjectOwnerDao | DataObjectOwnerCouncil | DataObjectOwnerWorkingGroup
+
+type DataObjectOwnerCouncil {
+  """Variant needs to have at least one property. This value is not used."""
+  dummy: Int
+}
+
+input DataObjectOwnerCouncilCreateInput {
+  dummy: Float
+}
+
+input DataObjectOwnerCouncilUpdateInput {
+  dummy: Float
+}
+
+input DataObjectOwnerCouncilWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  dummy_eq: Int
+  dummy_gt: Int
+  dummy_gte: Int
+  dummy_lt: Int
+  dummy_lte: Int
+  dummy_in: [Int!]
+}
+
+input DataObjectOwnerCouncilWhereUniqueInput {
+  id: ID!
+}
+
+type DataObjectOwnerDao {
+  """DAO identifier"""
+  dao: Int!
+}
+
+input DataObjectOwnerDaoCreateInput {
+  dao: Float!
+}
+
+input DataObjectOwnerDaoUpdateInput {
+  dao: Float
+}
+
+input DataObjectOwnerDaoWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  dao_eq: Int
+  dao_gt: Int
+  dao_gte: Int
+  dao_lt: Int
+  dao_lte: Int
+  dao_in: [Int!]
+}
+
+input DataObjectOwnerDaoWhereUniqueInput {
+  id: ID!
+}
+
+type DataObjectOwnerChannel {
+  """Channel identifier"""
+  channel: Int!
+
+  """Variant needs to have at least one property. This value is not used."""
+  dummy: Int
+}
+
+input DataObjectOwnerChannelCreateInput {
+  channel: Float!
+  dummy: Float
+}
+
+input DataObjectOwnerChannelUpdateInput {
+  channel: Float
+  dummy: Float
+}
+
+input DataObjectOwnerChannelWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  channel_eq: Int
+  channel_gt: Int
+  channel_gte: Int
+  channel_lt: Int
+  channel_lte: Int
+  channel_in: [Int!]
+  dummy_eq: Int
+  dummy_gt: Int
+  dummy_gte: Int
+  dummy_lt: Int
+  dummy_lte: Int
+  dummy_in: [Int!]
+}
+
+input DataObjectOwnerChannelWhereUniqueInput {
+  id: ID!
+}
+
+type DataObjectOwnerMember {
+  """Member identifier"""
+  member: Int!
+
+  """Variant needs to have at least one property. This value is not used."""
+  dummy: Int
+}
+
+input DataObjectOwnerMemberCreateInput {
+  member: Float!
+  dummy: Float
+}
+
+input DataObjectOwnerMemberUpdateInput {
+  member: Float
+  dummy: Float
+}
+
+input DataObjectOwnerMemberWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  member_eq: Int
+  member_gt: Int
+  member_gte: Int
+  member_lt: Int
+  member_lte: Int
+  member_in: [Int!]
+  dummy_eq: Int
+  dummy_gt: Int
+  dummy_gte: Int
+  dummy_lt: Int
+  dummy_lte: Int
+  dummy_in: [Int!]
+}
+
+input DataObjectOwnerMemberWhereUniqueInput {
+  id: ID!
+}
+
+type DataObjectOwnerWorkingGroup {
+  """Working group identifier"""
+  workingGroup: Int!
+}
+
+input DataObjectOwnerWorkingGroupCreateInput {
+  workingGroup: Float!
+}
+
+input DataObjectOwnerWorkingGroupUpdateInput {
+  workingGroup: Float
+}
+
+input DataObjectOwnerWorkingGroupWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  workingGroup_eq: Int
+  workingGroup_gt: Int
+  workingGroup_gte: Int
+  workingGroup_lt: Int
+  workingGroup_lte: Int
+  workingGroup_in: [Int!]
+}
+
+input DataObjectOwnerWorkingGroupWhereUniqueInput {
+  id: ID!
+}
+
+input DataObjectUpdateInput {
+  owner: JSONObject
+  createdInBlock: Float
+  typeId: Float
+  size: Float
+  liaisonId: ID
+  liaisonJudgement: LiaisonJudgement
+  ipfsContentId: String
+  joystreamContentId: String
+}
+
+input DataObjectWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  owner_json: JSONObject
+  createdInBlock_eq: Int
+  createdInBlock_gt: Int
+  createdInBlock_gte: Int
+  createdInBlock_lt: Int
+  createdInBlock_lte: Int
+  createdInBlock_in: [Int!]
+  typeId_eq: Int
+  typeId_gt: Int
+  typeId_gte: Int
+  typeId_lt: Int
+  typeId_lte: Int
+  typeId_in: [Int!]
+  size_eq: Float
+  size_gt: Float
+  size_gte: Float
+  size_lt: Float
+  size_lte: Float
+  size_in: [Float!]
+  liaisonId_eq: ID
+  liaisonId_in: [ID!]
+  liaisonJudgement_eq: LiaisonJudgement
+  liaisonJudgement_in: [LiaisonJudgement!]
+  ipfsContentId_eq: String
+  ipfsContentId_contains: String
+  ipfsContentId_startsWith: String
+  ipfsContentId_endsWith: String
+  ipfsContentId_in: [String!]
+  joystreamContentId_eq: String
+  joystreamContentId_contains: String
+  joystreamContentId_startsWith: String
+  joystreamContentId_endsWith: String
+  joystreamContentId_in: [String!]
+}
+
+input DataObjectWhereUniqueInput {
+  id: ID!
+}
+
+"""
+The javascript `Date` as string. Type represents date and time as the ISO Date string.
+"""
+scalar DateTime
+
+interface DeleteResponse {
+  id: ID!
+}
+
+type FeaturedVideo implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+  video: Video!
+  videoId: String!
+}
+
+type FeaturedVideoConnection {
+  totalCount: Int!
+  edges: [FeaturedVideoEdge!]!
+  pageInfo: PageInfo!
+}
+
+input FeaturedVideoCreateInput {
+  videoId: ID!
+}
+
+type FeaturedVideoEdge {
+  node: FeaturedVideo!
+  cursor: String!
+}
+
+enum FeaturedVideoOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  videoId_ASC
+  videoId_DESC
+}
+
+input FeaturedVideoUpdateInput {
+  videoId: ID
+}
+
+input FeaturedVideoWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  videoId_eq: ID
+  videoId_in: [ID!]
+}
+
+input FeaturedVideoWhereUniqueInput {
+  id: ID!
+}
+
 type Channel implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -370,607 +971,6 @@ input ChannelWhereInput {
 }
 
 input ChannelWhereUniqueInput {
-  id: ID!
-}
-
-type CuratorGroup implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: String!
-  updatedAt: DateTime
-  updatedById: String
-  deletedAt: DateTime
-  deletedById: String
-  version: Int!
-
-  """Curators belonging to this group"""
-  curatorIds: [Int!]!
-
-  """Is group active or not"""
-  isActive: Boolean!
-  channels: [Channel!]!
-}
-
-type CuratorGroupConnection {
-  totalCount: Int!
-  edges: [CuratorGroupEdge!]!
-  pageInfo: PageInfo!
-}
-
-input CuratorGroupCreateInput {
-  curatorIds: [Int!]!
-  isActive: Boolean!
-}
-
-type CuratorGroupEdge {
-  node: CuratorGroup!
-  cursor: String!
-}
-
-enum CuratorGroupOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  isActive_ASC
-  isActive_DESC
-}
-
-input CuratorGroupUpdateInput {
-  curatorIds: [Int!]
-  isActive: Boolean
-}
-
-input CuratorGroupWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  isActive_eq: Boolean
-  isActive_in: [Boolean!]
-}
-
-input CuratorGroupWhereUniqueInput {
-  id: ID!
-}
-
-"""Manages content ids, type and storage provider decision about it"""
-type DataObject implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: String!
-  updatedAt: DateTime
-  updatedById: String
-  deletedAt: DateTime
-  deletedById: String
-  version: Int!
-
-  """Content owner"""
-  owner: DataObjectOwner!
-
-  """Content added at"""
-  createdInBlock: Int!
-
-  """Content type id"""
-  typeId: Int!
-
-  """Content size in bytes"""
-  size: Float!
-  liaison: Worker
-  liaisonId: String
-
-  """Storage provider as liaison judgment"""
-  liaisonJudgement: LiaisonJudgement!
-
-  """IPFS content id"""
-  ipfsContentId: String!
-
-  """Joystream runtime content"""
-  joystreamContentId: String!
-  channelcoverPhotoDataObject: [Channel!]
-  channelavatarPhotoDataObject: [Channel!]
-  videothumbnailPhotoDataObject: [Video!]
-  videomediaDataObject: [Video!]
-}
-
-type DataObjectConnection {
-  totalCount: Int!
-  edges: [DataObjectEdge!]!
-  pageInfo: PageInfo!
-}
-
-input DataObjectCreateInput {
-  owner: JSONObject!
-  createdInBlock: Float!
-  typeId: Float!
-  size: Float!
-  liaisonId: ID
-  liaisonJudgement: LiaisonJudgement!
-  ipfsContentId: String!
-  joystreamContentId: String!
-}
-
-type DataObjectEdge {
-  node: DataObject!
-  cursor: String!
-}
-
-enum DataObjectOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  createdInBlock_ASC
-  createdInBlock_DESC
-  typeId_ASC
-  typeId_DESC
-  size_ASC
-  size_DESC
-  liaisonId_ASC
-  liaisonId_DESC
-  liaisonJudgement_ASC
-  liaisonJudgement_DESC
-  ipfsContentId_ASC
-  ipfsContentId_DESC
-  joystreamContentId_ASC
-  joystreamContentId_DESC
-}
-
-union DataObjectOwner = DataObjectOwnerMember | DataObjectOwnerChannel | DataObjectOwnerDao | DataObjectOwnerCouncil | DataObjectOwnerWorkingGroup
-
-type DataObjectOwnerChannel {
-  """Channel identifier"""
-  channel: Int!
-
-  """Variant needs to have at least one property. This value is not used."""
-  dummy: Int
-}
-
-input DataObjectOwnerChannelCreateInput {
-  channel: Float!
-  dummy: Float
-}
-
-input DataObjectOwnerChannelUpdateInput {
-  channel: Float
-  dummy: Float
-}
-
-input DataObjectOwnerChannelWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  channel_eq: Int
-  channel_gt: Int
-  channel_gte: Int
-  channel_lt: Int
-  channel_lte: Int
-  channel_in: [Int!]
-  dummy_eq: Int
-  dummy_gt: Int
-  dummy_gte: Int
-  dummy_lt: Int
-  dummy_lte: Int
-  dummy_in: [Int!]
-}
-
-input DataObjectOwnerChannelWhereUniqueInput {
-  id: ID!
-}
-
-type DataObjectOwnerCouncil {
-  """Variant needs to have at least one property. This value is not used."""
-  dummy: Int
-}
-
-input DataObjectOwnerCouncilCreateInput {
-  dummy: Float
-}
-
-input DataObjectOwnerCouncilUpdateInput {
-  dummy: Float
-}
-
-input DataObjectOwnerCouncilWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  dummy_eq: Int
-  dummy_gt: Int
-  dummy_gte: Int
-  dummy_lt: Int
-  dummy_lte: Int
-  dummy_in: [Int!]
-}
-
-input DataObjectOwnerCouncilWhereUniqueInput {
-  id: ID!
-}
-
-type DataObjectOwnerDao {
-  """DAO identifier"""
-  dao: Int!
-}
-
-input DataObjectOwnerDaoCreateInput {
-  dao: Float!
-}
-
-input DataObjectOwnerDaoUpdateInput {
-  dao: Float
-}
-
-input DataObjectOwnerDaoWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  dao_eq: Int
-  dao_gt: Int
-  dao_gte: Int
-  dao_lt: Int
-  dao_lte: Int
-  dao_in: [Int!]
-}
-
-input DataObjectOwnerDaoWhereUniqueInput {
-  id: ID!
-}
-
-type DataObjectOwnerMember {
-  """Member identifier"""
-  member: Int!
-
-  """Variant needs to have at least one property. This value is not used."""
-  dummy: Int
-}
-
-input DataObjectOwnerMemberCreateInput {
-  member: Float!
-  dummy: Float
-}
-
-input DataObjectOwnerMemberUpdateInput {
-  member: Float
-  dummy: Float
-}
-
-input DataObjectOwnerMemberWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  member_eq: Int
-  member_gt: Int
-  member_gte: Int
-  member_lt: Int
-  member_lte: Int
-  member_in: [Int!]
-  dummy_eq: Int
-  dummy_gt: Int
-  dummy_gte: Int
-  dummy_lt: Int
-  dummy_lte: Int
-  dummy_in: [Int!]
-}
-
-input DataObjectOwnerMemberWhereUniqueInput {
-  id: ID!
-}
-
-type DataObjectOwnerWorkingGroup {
-  """Working group identifier"""
-  workingGroup: Int!
-}
-
-input DataObjectOwnerWorkingGroupCreateInput {
-  workingGroup: Float!
-}
-
-input DataObjectOwnerWorkingGroupUpdateInput {
-  workingGroup: Float
-}
-
-input DataObjectOwnerWorkingGroupWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  workingGroup_eq: Int
-  workingGroup_gt: Int
-  workingGroup_gte: Int
-  workingGroup_lt: Int
-  workingGroup_lte: Int
-  workingGroup_in: [Int!]
-}
-
-input DataObjectOwnerWorkingGroupWhereUniqueInput {
-  id: ID!
-}
-
-input DataObjectUpdateInput {
-  owner: JSONObject
-  createdInBlock: Float
-  typeId: Float
-  size: Float
-  liaisonId: ID
-  liaisonJudgement: LiaisonJudgement
-  ipfsContentId: String
-  joystreamContentId: String
-}
-
-input DataObjectWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  owner_json: JSONObject
-  createdInBlock_eq: Int
-  createdInBlock_gt: Int
-  createdInBlock_gte: Int
-  createdInBlock_lt: Int
-  createdInBlock_lte: Int
-  createdInBlock_in: [Int!]
-  typeId_eq: Int
-  typeId_gt: Int
-  typeId_gte: Int
-  typeId_lt: Int
-  typeId_lte: Int
-  typeId_in: [Int!]
-  size_eq: Float
-  size_gt: Float
-  size_gte: Float
-  size_lt: Float
-  size_lte: Float
-  size_in: [Float!]
-  liaisonId_eq: ID
-  liaisonId_in: [ID!]
-  liaisonJudgement_eq: LiaisonJudgement
-  liaisonJudgement_in: [LiaisonJudgement!]
-  ipfsContentId_eq: String
-  ipfsContentId_contains: String
-  ipfsContentId_startsWith: String
-  ipfsContentId_endsWith: String
-  ipfsContentId_in: [String!]
-  joystreamContentId_eq: String
-  joystreamContentId_contains: String
-  joystreamContentId_startsWith: String
-  joystreamContentId_endsWith: String
-  joystreamContentId_in: [String!]
-}
-
-input DataObjectWhereUniqueInput {
-  id: ID!
-}
-
-"""
-The javascript `Date` as string. Type represents date and time as the ISO Date string.
-"""
-scalar DateTime
-
-interface DeleteResponse {
-  id: ID!
-}
-
-type FeaturedVideo implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: String!
-  updatedAt: DateTime
-  updatedById: String
-  deletedAt: DateTime
-  deletedById: String
-  version: Int!
-  video: Video!
-  videoId: String!
-}
-
-type FeaturedVideoConnection {
-  totalCount: Int!
-  edges: [FeaturedVideoEdge!]!
-  pageInfo: PageInfo!
-}
-
-input FeaturedVideoCreateInput {
-  videoId: ID!
-}
-
-type FeaturedVideoEdge {
-  node: FeaturedVideo!
-  cursor: String!
-}
-
-enum FeaturedVideoOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  videoId_ASC
-  videoId_DESC
-}
-
-input FeaturedVideoUpdateInput {
-  videoId: ID
-}
-
-input FeaturedVideoWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  videoId_eq: ID
-  videoId_in: [ID!]
-}
-
-input FeaturedVideoWhereUniqueInput {
   id: ID!
 }
 
@@ -1379,12 +1379,6 @@ type ProcessorState {
 }
 
 type Query {
-  channelCategories(offset: Int, limit: Int = 50, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): [ChannelCategory!]!
-  channelCategoryByUniqueInput(where: ChannelCategoryWhereUniqueInput!): ChannelCategory
-  channelCategoriesConnection(first: Int, after: String, last: Int, before: String, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): ChannelCategoryConnection!
-  channels(offset: Int, limit: Int = 50, where: ChannelWhereInput, orderBy: ChannelOrderByInput): [Channel!]!
-  channelByUniqueInput(where: ChannelWhereUniqueInput!): Channel
-  channelsConnection(first: Int, after: String, last: Int, before: String, where: ChannelWhereInput, orderBy: ChannelOrderByInput): ChannelConnection!
   curatorGroups(offset: Int, limit: Int = 50, where: CuratorGroupWhereInput, orderBy: CuratorGroupOrderByInput): [CuratorGroup!]!
   curatorGroupByUniqueInput(where: CuratorGroupWhereUniqueInput!): CuratorGroup
   curatorGroupsConnection(first: Int, after: String, last: Int, before: String, where: CuratorGroupWhereInput, orderBy: CuratorGroupOrderByInput): CuratorGroupConnection!
@@ -1394,6 +1388,12 @@ type Query {
   featuredVideos(offset: Int, limit: Int = 50, where: FeaturedVideoWhereInput, orderBy: FeaturedVideoOrderByInput): [FeaturedVideo!]!
   featuredVideoByUniqueInput(where: FeaturedVideoWhereUniqueInput!): FeaturedVideo
   featuredVideosConnection(first: Int, after: String, last: Int, before: String, where: FeaturedVideoWhereInput, orderBy: FeaturedVideoOrderByInput): FeaturedVideoConnection!
+  channelCategories(offset: Int, limit: Int = 50, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): [ChannelCategory!]!
+  channelCategoryByUniqueInput(where: ChannelCategoryWhereUniqueInput!): ChannelCategory
+  channelCategoriesConnection(first: Int, after: String, last: Int, before: String, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): ChannelCategoryConnection!
+  channels(offset: Int, limit: Int = 50, where: ChannelWhereInput, orderBy: ChannelOrderByInput): [Channel!]!
+  channelByUniqueInput(where: ChannelWhereUniqueInput!): Channel
+  channelsConnection(first: Int, after: String, last: Int, before: String, where: ChannelWhereInput, orderBy: ChannelOrderByInput): ChannelConnection!
   languages(offset: Int, limit: Int = 50, where: LanguageWhereInput, orderBy: LanguageOrderByInput): [Language!]!
   languageByUniqueInput(where: LanguageWhereUniqueInput!): Language
   languagesConnection(first: Int, after: String, last: Int, before: String, where: LanguageWhereInput, orderBy: LanguageOrderByInput): LanguageConnection!

@@ -6,8 +6,6 @@ import { CuratorGroup } from '../src/modules/curator-group/curator-group.model';
 export { CuratorGroup };
 import { DataObject } from '../src/modules/data-object/data-object.model';
 export { DataObject };
-import { FeaturedVideo } from '../src/modules/featured-video/featured-video.model';
-export { FeaturedVideo };
 import { Language } from '../src/modules/language/language.model';
 export { Language };
 import { License } from '../src/modules/license/license.model';
