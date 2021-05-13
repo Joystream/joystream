@@ -329,6 +329,23 @@ impl<MemberId, ChannelId> Default for BagIdType<MemberId, ChannelId> {
     }
 }
 
+/// Define dynamic bag types.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum DynamicBagType{
+    /// Member dynamic bag type.
+    Member,
+
+    /// Channel dynamic bag type.
+    Channel,
+}
+
+impl Default for DynamicBagType {
+    fn default() -> Self {
+        Self::Member
+    }
+}
+
 /// A type for static bags ID.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
