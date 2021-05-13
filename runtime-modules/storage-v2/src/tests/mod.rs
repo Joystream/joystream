@@ -33,6 +33,8 @@ fn create_storage_bucket_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        set_max_voucher_limits();
+
         let accepting_new_bags = true;
         let size_limit = 20;
         let objects_limit = 1;
@@ -2213,6 +2215,8 @@ fn create_storage_bucket_and_assign_to_bag(
     objects_limit: u64,
     size_limit: u64,
 ) -> u64 {
+    set_max_voucher_limits();
+
     let bucket_id = CreateStorageBucketFixture::default()
         .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
         .with_invite_worker(storage_provider_id)
@@ -2740,6 +2744,8 @@ fn set_storage_bucket_voucher_limits_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        set_max_voucher_limits();
+
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
@@ -2876,5 +2882,48 @@ fn set_storage_bucket_voucher_limits_fails_with_invalid_storage_association() {
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(incorrect_storage_provider_id)
             .call_and_assert(Err(Error::<Test>::InvalidStorageProvider.into()));
+    });
+}
+
+fn set_max_voucher_limits() {
+    let new_size_limit = 100;
+    let new_objects_limit = 1;
+
+    UpdateStorageBucketsVoucherMaxLimitsFixture::default()
+        .with_new_objects_size_limit(new_size_limit)
+        .with_new_objects_number_limit(new_objects_limit)
+        .call_and_assert(Ok(()));
+}
+
+#[test]
+fn update_storage_buckets_voucher_max_limits_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let new_size_limit = 14;
+        let new_number_limit = 4;
+
+        UpdateStorageBucketsVoucherMaxLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_objects_number_limit(new_number_limit)
+            .with_new_objects_size_limit(new_size_limit)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StorageBucketsVoucherMaxLimitsUpdated(
+            new_size_limit,
+            new_number_limit,
+        ));
+    });
+}
+
+#[test]
+fn update_storage_buckets_voucher_max_limits_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateStorageBucketsVoucherMaxLimitsFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }

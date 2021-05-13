@@ -13,11 +13,7 @@
 // TODO: add module comment
 // TODO: make public methods as root extrinsics to enable storage-node dev mode.
 // TODO: make public methods "weight-ready".
-
-/// TODO: convert to variable
-pub const MAX_OBJECT_SIZE_LIMIT: u64 = 100;
-/// TODO: convert to variable
-pub const MAX_OBJECT_NUMBER_LIMIT: u64 = 1;
+// TODO: review extrinsic, parameters and error names.
 
 #[cfg(test)]
 mod tests;
@@ -642,6 +638,12 @@ decl_storage! {
 
         /// "Storage buckets per bag" number limit.
         pub StorageBucketsPerBagLimit get (fn storage_buckets_per_bag_limit): u64;
+
+        /// "Max objects size for a storage bucket voucher" number limit.
+        pub VoucherMaxObjectsSizeLimit get (fn voucher_max_objects_size_limit): u64;
+
+        /// "Max objects number for a storage bucket voucher" number limit.
+        pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
     }
 }
 
@@ -739,6 +741,12 @@ decl_event! {
         /// Params
         /// - new limit
         StorageBucketsPerBagLimitUpdated(u64),
+
+        /// Emits on changing the "Storage buckets voucher max limits".
+        /// Params
+        /// - new objects size limit
+        /// - new objects number limit
+        StorageBucketsVoucherMaxLimitsUpdated(u64, u64),
 
         /// Emits on moving data objects between bags.
         /// Params
@@ -997,6 +1005,27 @@ decl_module! {
             StorageBucketsPerBagLimit::put(new_limit);
 
             Self::deposit_event(RawEvent::StorageBucketsPerBagLimitUpdated(new_limit));
+        }
+
+        /// Updates "Storage buckets voucher max limits".
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_buckets_voucher_max_limits(
+            origin,
+            new_objects_size: u64,
+            new_objects_number: u64,
+        ) {
+            T::ensure_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            VoucherMaxObjectsSizeLimit::put(new_objects_size);
+            VoucherMaxObjectsNumberLimit::put(new_objects_number);
+
+            Self::deposit_event(
+                RawEvent::StorageBucketsVoucherMaxLimitsUpdated(new_objects_size, new_objects_number)
+            );
         }
 
         /// Add and remove hashes to the current blacklist.
@@ -1286,12 +1315,12 @@ decl_module! {
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
             ensure!(
-                new_objects_size_limit <= MAX_OBJECT_SIZE_LIMIT,
+                new_objects_size_limit <= Self::voucher_max_objects_size_limit(),
                 Error::<T>::VoucherMaxObjectSizeLimitExceeded
             );
 
             ensure!(
-                new_objects_number_limit <= MAX_OBJECT_NUMBER_LIMIT,
+                new_objects_number_limit <= Self::voucher_max_objects_number_limit(),
                 Error::<T>::VoucherMaxObjectNumberLimitExceeded
             );
 
@@ -1895,12 +1924,12 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            voucher.size_limit <= MAX_OBJECT_SIZE_LIMIT,
+            voucher.size_limit <= Self::voucher_max_objects_size_limit(),
             Error::<T>::VoucherMaxObjectSizeLimitExceeded
         );
 
         ensure!(
-            voucher.objects_limit <= MAX_OBJECT_NUMBER_LIMIT,
+            voucher.objects_limit <= Self::voucher_max_objects_number_limit(),
             Error::<T>::VoucherMaxObjectNumberLimitExceeded
         );
 
