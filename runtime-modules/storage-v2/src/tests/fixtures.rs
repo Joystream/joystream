@@ -758,12 +758,12 @@ impl UpdateBlacklistFixture {
     }
 }
 
-pub struct DeleteDynamicBagsFixture {
+pub struct DeleteDynamicBagFixture {
     bag_id: DynamicBagId<Test>,
     deletion_account_id: u64,
 }
 
-impl DeleteDynamicBagsFixture {
+impl DeleteDynamicBagFixture {
     pub fn default() -> Self {
         Self {
             bag_id: Default::default(),
@@ -1079,6 +1079,32 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
                 old_number_limit,
                 Storage::voucher_max_objects_number_limit()
             );
+        }
+    }
+}
+
+pub struct CreateDynamicBagFixture {
+    bag_id: DynamicBagId<Test>,
+}
+
+impl CreateDynamicBagFixture {
+    pub fn default() -> Self {
+        Self {
+            bag_id: Default::default(),
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::create_dynamic_bag(self.bag_id.clone());
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(<crate::DynamicBags<Test>>::contains_key(&self.bag_id));
         }
     }
 }

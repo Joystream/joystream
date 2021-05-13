@@ -2276,7 +2276,7 @@ fn delete_dynamic_bags_succeeded() {
             DataObjectDeletionPrize::get()
         );
 
-        DeleteDynamicBagsFixture::default()
+        DeleteDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
@@ -2328,7 +2328,7 @@ fn delete_dynamic_bags_succeeded_having_voucher() {
         assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
         assert_eq!(bucket.voucher.objects_used, 1);
 
-        DeleteDynamicBagsFixture::default()
+        DeleteDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
@@ -2366,7 +2366,7 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
             <StorageTreasury<Test>>::usable_balance(),
         );
 
-        DeleteDynamicBagsFixture::default()
+        DeleteDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
@@ -2925,5 +2925,36 @@ fn update_storage_buckets_voucher_max_limits_origin() {
         UpdateStorageBucketsVoucherMaxLimitsFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn create_dynamic_bag_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(dynamic_bag_id));
+    });
+}
+
+#[test]
+fn create_dynamic_bag_failed_with_existing_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .call_and_assert(Ok(()));
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagExists.into()));
     });
 }

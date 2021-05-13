@@ -91,6 +91,12 @@ pub trait DataObjectStorage<T: Trait> {
 
     /// Validates `delete_dynamic_bag` parameters and conditions.
     fn can_delete_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
+
+    /// Creates dynamic bag. BagId should provide the caller.
+    fn create_dynamic_bag(bag_id: DynamicBagId<T>) -> DispatchResult;
+
+    /// Validates `create_dynamic_bag` parameters and conditions.
+    fn can_create_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult;
 }
 
 /// Storage trait.
@@ -332,7 +338,7 @@ impl<MemberId, ChannelId> Default for BagIdType<MemberId, ChannelId> {
 /// Define dynamic bag types.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub enum DynamicBagType{
+pub enum DynamicBagType {
     /// Member dynamic bag type.
     Member,
 
@@ -797,6 +803,11 @@ decl_event! {
         /// - dynamic bag ID
         DynamicBagDeleted(AccountId, DynamicBagId),
 
+        /// Emits on creating a dynamic bag.
+        /// Params
+        /// - dynamic bag ID
+        DynamicBagCreated(DynamicBagId),
+
         /// Emits on changing the deletion prize for a dynamic bag.
         /// Params
         /// - dynamic bag ID
@@ -917,6 +928,9 @@ decl_error! {
 
         /// The storage bucket doesn't accept new bags.
         StorageBucketDoesntAcceptNewBags,
+
+        /// Cannot create the dynamic bag: dynamic bag exists.
+        DynamicBagExists,
     }
 }
 
@@ -1620,9 +1634,39 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         Ok(())
     }
+
+    fn create_dynamic_bag(bag_id: DynamicBagId<T>) -> DispatchResult {
+        Self::validate_create_dynamic_bag_params(&bag_id)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        let bag = DynamicBag::<T>::default();
+
+        <DynamicBags<T>>::insert(&bag_id, bag);
+
+        Self::deposit_event(RawEvent::DynamicBagCreated(bag_id));
+
+        Ok(())
+    }
+
+    fn can_create_dynamic_bag(bag_id: &DynamicBagId<T>) -> DispatchResult {
+        Self::validate_create_dynamic_bag_params(bag_id)
+    }
 }
 
 impl<T: Trait> Module<T> {
+    // Validates dynamic bag creation params and conditions.
+    fn validate_create_dynamic_bag_params(bag_id: &DynamicBagId<T>) -> DispatchResult {
+        ensure!(
+            !<DynamicBags<T>>::contains_key(&bag_id),
+            Error::<T>::DynamicBagExists
+        );
+
+        Ok(())
+    }
+
     // Validates dynamic bag deletion params and conditions.
     fn validate_delete_dynamic_bag_params(
         bag_id: &DynamicBagId<T>,
