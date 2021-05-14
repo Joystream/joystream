@@ -6,10 +6,7 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
 
-import {
-  inconsistentState,
-  logger,
-} from './common'
+import { inconsistentState, logger } from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node'
 import { EntryMethod } from '@joystream/types/augment'
@@ -41,7 +38,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info('Member has been registered', {ids: memberId})
+  logger.info('Member has been registered', { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -67,7 +64,7 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's about text has been updated", {ids: memberId})
+  logger.info("Member's about text has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -93,7 +90,7 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's avatar has been updated", {ids: memberId})
+  logger.info("Member's avatar has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -119,7 +116,7 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's avatar has been updated", {ids: memberId})
+  logger.info("Member's avatar has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -145,7 +142,7 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's root has been updated", {ids: memberId})
+  logger.info("Member's root has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -171,7 +168,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's controller has been updated", {ids: memberId})
+  logger.info("Member's controller has been updated", { ids: memberId })
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
@@ -204,6 +201,6 @@ function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   }
 
   // should never happen
-  logger.error('Not implemented entry method', {entryMethod: entryMethod.toString()})
+  logger.error('Not implemented entry method', { entryMethod: entryMethod.toString() })
   throw 'Not implemented entry method'
 }

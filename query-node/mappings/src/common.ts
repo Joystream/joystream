@@ -1,17 +1,10 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { u64 } from '@polkadot/types/primitive';
+import { u64 } from '@polkadot/types/primitive'
 
 // Asset
-import {
-  DataObjectOwner,
-  DataObject,
-  LiaisonJudgement,
-  Network,
-} from 'query-node'
-import {
-  ContentParameters,
-} from '@joystream/types/augment'
+import { DataObjectOwner, DataObject, LiaisonJudgement, Network } from 'query-node'
+import { ContentParameters } from '@joystream/types/augment'
 
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
@@ -46,7 +39,7 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 export async function prepareDataObject(
   contentParameters: ContentParameters,
   blockNumber: number,
-  owner: typeof DataObjectOwner,
+  owner: typeof DataObjectOwner
 ): Promise<DataObject> {
   // convert generic content parameters coming from processor to custom Joystream data type
   const customContentParameters = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
@@ -76,7 +69,6 @@ export async function prepareDataObject(
   Hydra will provide logger instance and relevant code using `Logger` should be refactored.
 */
 class Logger {
-
   /*
     Log significant event.
   */

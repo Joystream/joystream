@@ -12,7 +12,7 @@ import { Bytes } from '@polkadot/types'
 import ISO6391 from 'iso-639-1'
 import { u64 } from '@polkadot/types/primitive'
 import { FindConditions } from 'typeorm'
-import * as jspb from "google-protobuf"
+import * as jspb from 'google-protobuf'
 
 // protobuf definitions
 import {
@@ -25,17 +25,9 @@ import {
   VideoCategoryMetadata,
 } from '@joystream/content-metadata-protobuf'
 
-import {
-  Content,
-} from '../../../generated/types'
+import { Content } from '../../../generated/types'
 
-import {
-  invalidMetadata,
-  inconsistentState,
-  logger,
-  prepareDataObject,
-} from '../common'
-
+import { invalidMetadata, inconsistentState, logger, prepareDataObject } from '../common'
 
 import {
   // primary entities
@@ -58,17 +50,11 @@ import {
   DataObject,
   LiaisonJudgement,
   AssetAvailability,
-
   Membership,
 } from 'query-node'
 
 // Joystream types
-import {
-  ChannelId,
-  ContentParameters,
-  NewAsset,
-  ContentActor,
-} from '@joystream/types/augment'
+import { ChannelId, ContentParameters, NewAsset, ContentActor } from '@joystream/types/augment'
 
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
@@ -107,7 +93,6 @@ export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments
   Change - set the new value
 */
 export class PropertyChange<T> {
-
   static newUnset<T>(): PropertyChange<T> {
     return new PropertyChange<T>('unset')
   }
@@ -123,11 +108,10 @@ export class PropertyChange<T> {
   /*
     Determines property change from the given object property.
   */
-  static fromObjectProperty<
-    T,
-    Key extends string,
-    ChangedObject extends {[key in Key]?: T}
-  >(object: ChangedObject, key: Key): PropertyChange<T> {
+  static fromObjectProperty<T, Key extends string, ChangedObject extends { [key in Key]?: T }>(
+    object: ChangedObject,
+    key: Key
+  ): PropertyChange<T> {
     if (!(key in object)) {
       return PropertyChange.newNoChange<T>()
     }
@@ -160,9 +144,7 @@ export class PropertyChange<T> {
   }
 
   public getValue(): T | undefined {
-    return this.type == 'change'
-      ? this.value
-      : undefined
+    return this.type == 'change' ? this.value : undefined
   }
 
   /*
@@ -198,7 +180,7 @@ export interface RawVideoMetadata {
 */
 export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   type: T,
-  parameters: IReadProtobufArguments,
+  parameters: IReadProtobufArguments
 ): Promise<Partial<T>> {
   // true option here is crucial, it indicates that we want just the underlying bytes (by default it will also include bytes encoding the length)
   const metaU8a = parameters.metadata.toU8a(true)
@@ -220,7 +202,7 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
   }
 
   // this should never happen
-  logger.error('Not implemented metadata type', {type})
+  logger.error('Not implemented metadata type', { type })
   throw `Not implemented metadata type`
 }
 
@@ -231,7 +213,7 @@ export async function readProtobuf<T extends ChannelCategory | VideoCategory>(
 
 export async function readProtobufWithAssets<T extends Channel | Video>(
   type: T,
-  parameters: IReadProtobufArgumentsWithAssets,
+  parameters: IReadProtobufArgumentsWithAssets
 ): Promise<Partial<T>> {
   // true option here is crucial, it indicates that we want just the underlying bytes (by default it will also include bytes encoding the length)
   const metaU8a = parameters.metadata.toU8a(true)
@@ -240,7 +222,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   if (type instanceof Channel) {
     const meta = ChannelMetadata.deserializeBinary(metaU8a)
     const metaAsObject = convertMetadataToObject<ChannelMetadata.AsObject>(meta)
-    const result = metaAsObject as any as Partial<Channel>
+    const result = (metaAsObject as any) as Partial<Channel>
 
     // prepare cover photo asset if needed
     if ('coverPhoto' in metaAsObject) {
@@ -283,7 +265,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   if (type instanceof Video) {
     const meta = VideoMetadata.deserializeBinary(metaU8a)
     const metaAsObject = convertMetadataToObject<VideoMetadata.AsObject>(meta)
-    const result = metaAsObject as any as Partial<Video>
+    const result = (metaAsObject as any) as Partial<Video>
 
     // prepare video category if needed
     if ('category' in metaAsObject) {
@@ -299,7 +281,11 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
       // NOTE: type hack - `RawVideoMetadata` is inserted instead of VideoMediaMetadata - it should be edited in `video.ts`
       //       see `integrateVideoMetadata()` in `video.ts` for more info
-      result.mediaMetadata = prepareVideoMetadata(metaAsObject, videoSize, parameters.blockNumber) as unknown as VideoMediaMetadata
+      result.mediaMetadata = (prepareVideoMetadata(
+        metaAsObject,
+        videoSize,
+        parameters.blockNumber
+      ) as unknown) as VideoMediaMetadata
 
       // remove extra values
       delete metaAsObject.mediaType
@@ -355,13 +341,16 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
   }
 
   // this should never happen
-  logger.error('Not implemented metadata type', {type})
+  logger.error('Not implemented metadata type', { type })
   throw `Not implemented metadata type`
 }
 
-export async function convertContentActorToChannelOwner(db: DatabaseManager, contentActor: ContentActor): Promise<{
-  ownerMember?: Membership,
-  ownerCuratorGroup?: CuratorGroup,
+export async function convertContentActorToChannelOwner(
+  db: DatabaseManager,
+  contentActor: ContentActor
+): Promise<{
+  ownerMember?: Membership
+  ownerCuratorGroup?: CuratorGroup
 }> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
@@ -380,7 +369,9 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
   if (contentActor.isCurator) {
     const curatorGroupId = contentActor.asCurator[0].toNumber()
-    const curatorGroup = await db.get(CuratorGroup, { where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup> })
+    const curatorGroup = await db.get(CuratorGroup, {
+      where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+    })
 
     // ensure curator group exists
     if (!curatorGroup) {
@@ -395,11 +386,14 @@ export async function convertContentActorToChannelOwner(db: DatabaseManager, con
 
   // TODO: contentActor.isLead
 
-  logger.error('Not implemented ContentActor type', {contentActor: contentActor.toString()})
+  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
   throw 'Not-implemented ContentActor type used'
 }
 
-export function convertContentActorToDataObjectOwner(contentActor: ContentActor, channelId: number): typeof DataObjectOwner {
+export function convertContentActorToDataObjectOwner(
+  contentActor: ContentActor,
+  channelId: number
+): typeof DataObjectOwner {
   const owner = new DataObjectOwnerChannel()
   owner.channel = channelId
 
@@ -425,21 +419,22 @@ export function convertContentActorToDataObjectOwner(contentActor: ContentActor,
   */
 }
 
-function handlePublishedBeforeJoystream(video: Partial<Video>, metadata: PublishedBeforeJoystreamMetadata.AsObject): PropertyChange<Date> {
+function handlePublishedBeforeJoystream(
+  video: Partial<Video>,
+  metadata: PublishedBeforeJoystreamMetadata.AsObject
+): PropertyChange<Date> {
   // is publish being unset
   if ('isPublished' in metadata && !metadata.isPublished) {
     return PropertyChange.newUnset()
   }
 
   // try to parse timestamp from publish date
-  const timestamp = metadata.date
-    ? Date.parse(metadata.date)
-    : NaN
+  const timestamp = metadata.date ? Date.parse(metadata.date) : NaN
 
   // ensure date is valid
   if (isNaN(timestamp)) {
     invalidMetadata(`Invalid date used for publishedBeforeJoystream`, {
-      timestamp
+      timestamp,
     })
     return PropertyChange.newNoChange()
   }
@@ -461,7 +456,7 @@ interface IConvertAssetParameters {
 async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetStorageOrUrls> {
   // is asset describing list of URLs?
   if (parameters.rawAsset.isUrls) {
-    const urls = parameters.rawAsset.asUrls.toArray().map(item => item.toString())
+    const urls = parameters.rawAsset.asUrls.toArray().map((item) => item.toString())
 
     return urls
   }
@@ -570,7 +565,7 @@ function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): n
 
   // ensure asset index is valid
   if (assetIndex > assets.length) {
-    invalidMetadata(`Non-existing asset video size extraction requested`, {assetsProvided: assets.length, assetIndex})
+    invalidMetadata(`Non-existing asset video size extraction requested`, { assetsProvided: assets.length, assetIndex })
     return undefined
   }
 
@@ -591,7 +586,11 @@ function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): n
   return videoSize
 }
 
-async function prepareLanguage(languageIso: string | undefined, db: DatabaseManager, blockNumber: number): Promise<PropertyChange<Language>> {
+async function prepareLanguage(
+  languageIso: string | undefined,
+  db: DatabaseManager,
+  blockNumber: number
+): Promise<PropertyChange<Language>> {
   // is language being unset?
   if (languageIso === undefined) {
     return PropertyChange.newUnset()
@@ -613,7 +612,6 @@ async function prepareLanguage(languageIso: string | undefined, db: DatabaseMana
   if (language) {
     return PropertyChange.newChange(language)
   }
-
 
   // create new language
   const newLanguage = new Language({
@@ -650,31 +648,53 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
   return license
 }
 
-function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): RawVideoMetadata {
+function prepareVideoMetadata(
+  videoProtobuf: VideoMetadata.AsObject,
+  videoSize: number | undefined,
+  blockNumber: number
+): RawVideoMetadata {
   const rawMeta = {
     encoding: {
-      codecName: PropertyChange.fromObjectProperty<string, 'codecName', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'codecName'),
-      container: PropertyChange.fromObjectProperty<string, 'container', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'container'),
-      mimeMediaType: PropertyChange.fromObjectProperty<string, 'mimeMediaType', MediaTypeMetadata.AsObject>(videoProtobuf.mediaType || {}, 'mimeMediaType'),
+      codecName: PropertyChange.fromObjectProperty<string, 'codecName', MediaTypeMetadata.AsObject>(
+        videoProtobuf.mediaType || {},
+        'codecName'
+      ),
+      container: PropertyChange.fromObjectProperty<string, 'container', MediaTypeMetadata.AsObject>(
+        videoProtobuf.mediaType || {},
+        'container'
+      ),
+      mimeMediaType: PropertyChange.fromObjectProperty<string, 'mimeMediaType', MediaTypeMetadata.AsObject>(
+        videoProtobuf.mediaType || {},
+        'mimeMediaType'
+      ),
     },
-    pixelWidth: PropertyChange.fromObjectProperty<number, 'mediaPixelWidth', VideoMetadata.AsObject>(videoProtobuf, 'mediaPixelWidth'),
-    pixelHeight: PropertyChange.fromObjectProperty<number, 'mediaPixelHeight', VideoMetadata.AsObject>(videoProtobuf, 'mediaPixelHeight'),
-    size: videoSize === undefined
-      ? PropertyChange.newNoChange()
-      : PropertyChange.newChange(videoSize)
+    pixelWidth: PropertyChange.fromObjectProperty<number, 'mediaPixelWidth', VideoMetadata.AsObject>(
+      videoProtobuf,
+      'mediaPixelWidth'
+    ),
+    pixelHeight: PropertyChange.fromObjectProperty<number, 'mediaPixelHeight', VideoMetadata.AsObject>(
+      videoProtobuf,
+      'mediaPixelHeight'
+    ),
+    size: videoSize === undefined ? PropertyChange.newNoChange() : PropertyChange.newChange(videoSize),
   } as RawVideoMetadata
 
   return rawMeta
 }
 
-async function prepareVideoCategory(categoryId: number | undefined, db: DatabaseManager): Promise<PropertyChange<VideoCategory>> {
+async function prepareVideoCategory(
+  categoryId: number | undefined,
+  db: DatabaseManager
+): Promise<PropertyChange<VideoCategory>> {
   // is category being unset?
   if (categoryId === undefined) {
     return PropertyChange.newUnset()
   }
 
   // load video category
-  const category = await db.get(VideoCategory, { where: { id: categoryId.toString() } as FindConditions<VideoCategory> })
+  const category = await db.get(VideoCategory, {
+    where: { id: categoryId.toString() } as FindConditions<VideoCategory>,
+  })
 
   // ensure video category exists
   if (!category) {
@@ -692,14 +712,14 @@ function convertMetadataToObject<T extends Object>(metadata: jspb.Message): T {
   for (const key in metaAsObject) {
     const funcNameBase = key.charAt(0).toUpperCase() + key.slice(1)
     const hasFuncName = 'has' + funcNameBase
-    const isSet = funcNameBase == 'PersonsList' // there is no `VideoMetadata.hasPersonsList` method from unkown reason -> create exception
-      ? true
-      : metadata[hasFuncName]()
+    const isSet =
+      funcNameBase == 'PersonsList' // there is no `VideoMetadata.hasPersonsList` method from unkown reason -> create exception
+        ? true
+        : metadata[hasFuncName]()
 
     if (!isSet) {
       continue
     }
-
 
     const getFuncName = 'get' + funcNameBase
     const value = metadata[getFuncName]()
