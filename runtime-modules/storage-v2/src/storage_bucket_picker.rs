@@ -3,6 +3,7 @@
 use frame_support::traits::{Get, Randomness};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::SaturatedConversion;
+use sp_std::cell::RefCell;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 
@@ -21,29 +22,32 @@ impl<T: Trait> StorageBucketPicker<T> {
     // Total number of possible IDs is limited by the dynamic bag settings.
     // Returns the accumulated bucket ID set or empty set.
     pub(crate) fn pick_storage_buckets() -> BTreeSet<T::StorageBucketId> {
-        let bucket_num = T::InitialStorageBucketsNumberForDynamicBag::get();
+        let required_bucket_num = T::InitialStorageBucketsNumberForDynamicBag::get() as usize;
 
-        let mut bucket_ids = BTreeSet::new();
+        // Storage IDs accumulator.
+        let bucket_ids_cell = RefCell::new(BTreeSet::new());
 
-        let potential_bucket_ids = RandomStorageBucketIdIterator::<T>::new()
+        RandomStorageBucketIdIterator::<T>::new()
             .chain(SequentialStorageBucketIdIterator::<T>::new())
-            .filter(Self::check_storage_bucket_id_for_bag_assigning);
+            .filter(Self::check_storage_bucket_is_valid_for_bag_assigning)
+            .filter(|bucket_id| {
+                let bucket_ids = bucket_ids_cell.borrow();
 
-        for bucket_id in potential_bucket_ids {
-            if !bucket_ids.contains(&bucket_id) {
+                // Skips the iteration on existing ID.
+                !bucket_ids.contains(bucket_id)
+            })
+            .take(required_bucket_num)
+            .for_each(|bucket_id| {
+                let mut bucket_ids = bucket_ids_cell.borrow_mut();
+
                 bucket_ids.insert(bucket_id);
-            }
+            });
 
-            if bucket_ids.len() >= bucket_num as usize {
-                break;
-            }
-        }
-
-        bucket_ids
+        bucket_ids_cell.into_inner()
     }
 
     // Verifies storage bucket ID (non-deleted and accepting new bags).
-    pub(crate) fn check_storage_bucket_id_for_bag_assigning(
+    pub(crate) fn check_storage_bucket_is_valid_for_bag_assigning(
         bucket_id: &T::StorageBucketId,
     ) -> bool {
         // Check bucket for existence (return false if not). Check `accepting_new_bags`.
