@@ -227,7 +227,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
     // prepare cover photo asset if needed
     if ('coverPhoto' in metaAsObject) {
       const asset = await extractAsset({
-        //assetIndex: metaAsObject.coverPhoto,
+        // assetIndex: metaAsObject.coverPhoto,
         assetIndex: metaAsObject.coverPhoto,
         assets: parameters.assets,
         db: parameters.db,

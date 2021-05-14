@@ -171,7 +171,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   logger.info("Member's controller has been updated", { ids: memberId })
 }
 
-/////////////////// Helpers ////////////////////////////////////////////////////
+/// //////////////// Helpers ////////////////////////////////////////////////////
 
 /*
   Helper for converting Bytes type to string

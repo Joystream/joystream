@@ -80,7 +80,7 @@ export async function content_VideoCategoryUpdated(db: DatabaseManager, event: S
   })
 
   // update all fields read from protobuf
-  for (let [key, value] of Object.entries(protobufContent)) {
+  for (const [key, value] of Object.entries(protobufContent)) {
     videoCategory[key] = value
   }
 
@@ -116,7 +116,7 @@ export async function content_VideoCategoryDeleted(db: DatabaseManager, event: S
   logger.info('Video category has been deleted', { id: videoCategoryId })
 }
 
-/////////////////// Video //////////////////////////////////////////////////////
+/// //////////////// Video //////////////////////////////////////////////////////
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_VideoCreated(db: DatabaseManager, event: SubstrateEvent) {
@@ -212,7 +212,7 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
     const originalLicense = video.license
 
     // update all fields read from protobuf
-    for (let [key, value] of Object.entries(fixedProtobuf)) {
+    for (const [key, value] of Object.entries(fixedProtobuf)) {
       video[key] = value
     }
 
@@ -311,7 +311,7 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
   const toAdd = videoIds.filter((video) => !existingFeaturedVideos.map((item) => item.id).some(isSame(video.toHex())))
 
   // mark previously featured videos as not-featured
-  for (let video of toRemove) {
+  for (const video of toRemove) {
     video.isFeatured = false
 
     // set last update time
@@ -340,7 +340,7 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
   }
 
   // mark previously not-featured videos as featured
-  for (let video of videosToAdd) {
+  for (const video of videosToAdd) {
     video.isFeatured = true
 
     // set last update time
@@ -353,7 +353,7 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
   logger.info('New featured videos have been set', { videoIds })
 }
 
-/////////////////// Helpers ////////////////////////////////////////////////////
+/// //////////////// Helpers ////////////////////////////////////////////////////
 
 /*
   Integrates video metadata-related data into existing data (if any) or creates a new record.

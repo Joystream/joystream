@@ -1,11 +1,11 @@
 import { createDBConnection } from '@dzlzv/hydra-processor/lib/db'
 import { DatabaseManager, makeDatabaseManager } from '@dzlzv/hydra-db-utils'
-import { Connection, getManager } from 'typeorm'
+import { Connection, getManager, FindConditions } from 'typeorm'
 
 import { bootMembers, IBootstrapMember } from './members'
 import { bootWorkers, IBootstrapWorker, IBootstrapWorkers } from './workers'
 import { Worker, WorkerType } from 'query-node'
-import { FindConditions } from 'typeorm'
+
 import fs from 'fs'
 import path from 'path'
 

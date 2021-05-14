@@ -9,7 +9,7 @@ import { Channel, Worker, WorkerType } from 'query-node'
 import { GatewayWorkingGroup, StorageWorkingGroup } from '../../generated/types'
 import { ApplicationId, ApplicationIdToWorkerIdMap, WorkerId } from '@joystream/types/augment'
 
-/////////////////// Storage working group //////////////////////////////////////
+/// //////////////// Storage working group //////////////////////////////////////
 
 export async function storageWorkingGroup_OpeningFilled(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
@@ -54,7 +54,7 @@ export async function storageWorkingGroup_TerminatedLeader(db: DatabaseManager, 
   await workingGroup_TerminatedLeader(db, WorkerType.STORAGE, workerId)
 }
 
-/////////////////// Gateway working group //////////////////////////////////////
+/// //////////////// Gateway working group //////////////////////////////////////
 
 export async function gatewayWorkingGroup_OpeningFilled(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
@@ -99,7 +99,7 @@ export async function gatewayWorkingGroup_TerminatedLeader(db: DatabaseManager, 
   await workingGroup_TerminatedLeader(db, WorkerType.GATEWAY, workerId)
 }
 
-/////////////////// Generic working group processing ///////////////////////////
+/// //////////////// Generic working group processing ///////////////////////////
 
 export async function workingGroup_OpeningFilled(
   db: DatabaseManager,
@@ -179,7 +179,7 @@ export async function workingGroup_TerminatedLeader(
   logger.info('Working group leader has been removed (worker exited)', { workerId, workerType })
 }
 
-/////////////////// Helpers ////////////////////////////////////////////////////
+/// //////////////// Helpers ////////////////////////////////////////////////////
 
 async function createWorker(db: DatabaseManager, workerId: WorkerId, workerType: WorkerType): Promise<void> {
   // create new worker

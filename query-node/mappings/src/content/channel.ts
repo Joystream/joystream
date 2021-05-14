@@ -14,10 +14,8 @@ import {
   convertContentActorToDataObjectOwner,
 } from './utils'
 
-import { Channel, ChannelCategory, DataObject } from 'query-node'
+import { Channel, ChannelCategory, DataObject, AssetAvailability } from 'query-node'
 import { inconsistentState, logger } from '../common'
-
-import { AssetAvailability } from 'query-node'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -92,7 +90,7 @@ export async function content_ChannelUpdated(db: DatabaseManager, event: Substra
     })
 
     // update all fields read from protobuf
-    for (let [key, value] of Object.entries(protobufContent)) {
+    for (const [key, value] of Object.entries(protobufContent)) {
       channel[key] = value
     }
   }
@@ -162,7 +160,7 @@ export async function content_ChannelCensorshipStatusUpdated(db: DatabaseManager
   logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
 }
 
-/////////////////// ChannelCategory ////////////////////////////////////////////
+/// //////////////// ChannelCategory ////////////////////////////////////////////
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function content_ChannelCategoryCreated(db: DatabaseManager, event: SubstrateEvent) {
@@ -226,7 +224,7 @@ export async function content_ChannelCategoryUpdated(db: DatabaseManager, event:
   })
 
   // update all fields read from protobuf
-  for (let [key, value] of Object.entries(protobufContent)) {
+  for (const [key, value] of Object.entries(protobufContent)) {
     channelCategory[key] = value
   }
 
@@ -264,7 +262,7 @@ export async function content_ChannelCategoryDeleted(db: DatabaseManager, event:
   logger.info('Channel category has been deleted', { id: channelCategory.id })
 }
 
-/////////////////// Helpers ////////////////////////////////////////////////////
+/// //////////////// Helpers ////////////////////////////////////////////////////
 
 function handleChannelRewardAccountChange(
   channel: Channel, // will be modified inside of the function!

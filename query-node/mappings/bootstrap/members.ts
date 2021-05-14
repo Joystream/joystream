@@ -1,4 +1,4 @@
-//import { Connection } from 'typeorm'
+// import { Connection } from 'typeorm'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { logger } from '../src/common'
 import { MembershipEntryMethod, Membership } from 'query-node'
@@ -13,7 +13,7 @@ export interface IBootstrapMember {
   registered_at_time: number
 }
 
-//export async function bootMembers(members: IBootstrapMember[], db: Connection): Promise<void> {
+// export async function bootMembers(members: IBootstrapMember[], db: Connection): Promise<void> {
 export async function bootMembers(db: DatabaseManager, members: IBootstrapMember[]): Promise<void> {
   for (const rawMember of members) {
     // create new membership

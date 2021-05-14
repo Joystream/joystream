@@ -32,7 +32,7 @@ export async function dataDirectory_ContentAdded(db: DatabaseManager, event: Sub
   const { contentParameters, storageObjectOwner } = new DataDirectory.ContentAddedEvent(event).data
 
   // save all content objects
-  for (let parameters of contentParameters) {
+  for (const parameters of contentParameters) {
     const owner = convertStorageObjectOwner(storageObjectOwner)
     const dataObject = await prepareDataObject(parameters, event.blockNumber, owner)
 
@@ -61,7 +61,7 @@ export async function dataDirectory_ContentRemoved(db: DatabaseManager, event: S
   })
 
   // remove assets from database
-  for (let item of dataObjects) {
+  for (const item of dataObjects) {
     await db.remove<DataObject>(item)
   }
 
@@ -118,7 +118,7 @@ export async function dataDirectory_ContentAccepted(db: DatabaseManager, event: 
   await updateConnectedAssets(db, dataObject)
 }
 
-/////////////////// Updating connected entities ////////////////////////////////
+/// //////////////// Updating connected entities ////////////////////////////////
 
 async function updateConnectedAssets(db: DatabaseManager, dataObject: DataObject) {
   await updateSingleConnectedAsset(db, new Channel(), 'avatarPhoto', dataObject)
@@ -128,7 +128,7 @@ async function updateConnectedAssets(db: DatabaseManager, dataObject: DataObject
   await updateSingleConnectedAsset(db, new Video(), 'media', dataObject)
 }
 
-//async function updateSingleConnectedAsset(db: DatabaseManager, type: typeof Channel | typeof Video, propertyName: string, dataObject: DataObject) {
+// async function updateSingleConnectedAsset(db: DatabaseManager, type: typeof Channel | typeof Video, propertyName: string, dataObject: DataObject) {
 async function updateSingleConnectedAsset<T extends Channel | Video>(
   db: DatabaseManager,
   type: T,
@@ -168,7 +168,7 @@ async function updateSingleConnectedAsset<T extends Channel | Video>(
   }
 }
 
-/////////////////// Helpers ////////////////////////////////////////////////////
+/// //////////////// Helpers ////////////////////////////////////////////////////
 
 function convertStorageObjectOwner(objectOwner: StorageObjectOwner): typeof DataObjectOwner {
   if (objectOwner.isMember) {
