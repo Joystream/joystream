@@ -271,7 +271,16 @@ export async function content_VideoUpdated(
 
     // license has changed - plan old license delete
     if (originalLicense && video.license != originalLicense) {
-      licenseToDelete = originalLicense
+      video.license = video.license
+        ? new License({
+          ...originalLicense,
+          ...video.license,
+        }) // update existing license
+        : undefined // unset license
+
+      if (!video.license) { // delete old license when requested
+        licenseToDelete = originalLicense
+      }
     }
   }
 
