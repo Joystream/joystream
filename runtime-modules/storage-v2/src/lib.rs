@@ -19,7 +19,7 @@ mod tests;
 mod benchmarking;
 
 mod bag_manager;
-mod storage_bucket_picker;
+pub(crate) mod storage_bucket_picker;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};

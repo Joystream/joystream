@@ -21,9 +21,10 @@ use crate::{
 
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
-    InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag, MaxStorageBucketNumber,
-    Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID, WG_LEADER_ACCOUNT_ID,
+    InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag,
+    MaxRandomIterationNumber, MaxStorageBucketNumber, Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID,
+    DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -3132,7 +3133,7 @@ fn create_dynamic_bag(dynamic_bag_id: &DynamicBagId<Test>) {
 #[test]
 fn test_storage_bucket_picking_for_bag_non_random() {
     build_test_externalities().execute_with(|| {
-        // Randomness disabled on the initial block.
+        // Randomness disabled at the initial block.
 
         let initial_buckets_number = InitialStorageBucketsNumberForDynamicBag::get();
         // No buckets
@@ -3155,13 +3156,40 @@ fn test_storage_bucket_picking_for_bag_non_random() {
             bucket_ids,
             BTreeSet::from_iter((0u64..initial_buckets_number).into_iter())
         );
+
+        // Check removed buckets
+        let removed_bucket_id = 1;
+        <crate::StorageBucketById<Test>>::remove(removed_bucket_id);
+
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        let mut expected_ids =
+            BTreeSet::from_iter((0u64..(initial_buckets_number + 1)).into_iter());
+        expected_ids.remove(&removed_bucket_id);
+
+        assert_eq!(bucket_ids, expected_ids);
+
+        // Check disabled buckets
+        let disabled_bucket_id = 2;
+        <crate::StorageBucketById<Test>>::mutate(disabled_bucket_id, |bucket| {
+            bucket.accepting_new_bags = false;
+        });
+
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        let mut expected_ids =
+            BTreeSet::from_iter((0u64..(initial_buckets_number + 2)).into_iter());
+        expected_ids.remove(&removed_bucket_id);
+        expected_ids.remove(&disabled_bucket_id);
+
+        assert_eq!(bucket_ids, expected_ids);
     });
 }
 
 #[test]
 fn test_storage_bucket_picking_for_bag_with_randomness() {
     build_test_externalities().execute_with(|| {
-        // Randomness disabled on the initial block.
+        // Enable randomness (disabled at the initial block).
         let starting_block = 1;
         run_to_block(starting_block);
 
@@ -3175,7 +3203,6 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
         let created_buckets = create_storage_buckets(buckets_number);
         let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
 
-        println!("{:?}", Storage::next_storage_bucket_id());
         assert_eq!(bucket_ids, created_buckets);
 
         // More then initial buckets number
@@ -3183,9 +3210,87 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
         create_storage_buckets(buckets_number);
         let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
 
+        let sequential_random_ids = BTreeSet::from_iter((0u64..initial_buckets_number).into_iter());
+
+        // Check number of generated IDs
+        assert_eq!(initial_buckets_number, bucket_ids.len() as u64);
+        // Verify that generated IDs differ from sequential ID enumeration.
+        assert_ne!(sequential_random_ids, bucket_ids);
+        // Check that IDs are within possible range.
+        assert!(bucket_ids
+            .iter()
+            .all(|id| { *id < Storage::next_storage_bucket_id() }));
+
+        // Check removed buckets
+        let removed_bucket_id = bucket_ids.iter().next().unwrap();
+        <crate::StorageBucketById<Test>>::remove(removed_bucket_id);
+
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+        // Check number of generated IDs
+        assert_eq!(initial_buckets_number, bucket_ids.len() as u64);
+        // Check that IDs are within possible range.
+        assert!(bucket_ids
+            .iter()
+            .all(|id| { *id < Storage::next_storage_bucket_id() }));
+        // Check removed bucket
+        assert!(!bucket_ids.contains(removed_bucket_id));
+
+        // Check disabled buckets
+        let disabled_bucket_id = 2;
+        <crate::StorageBucketById<Test>>::mutate(disabled_bucket_id, |bucket| {
+            bucket.accepting_new_bags = false;
+        });
+
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        let mut expected_ids =
+            BTreeSet::from_iter((0u64..(initial_buckets_number + 2)).into_iter());
+        expected_ids.remove(&removed_bucket_id);
+        expected_ids.remove(&disabled_bucket_id);
+
+        // Check number of generated IDs
+        assert_eq!(initial_buckets_number, bucket_ids.len() as u64);
+        // Check that IDs are within possible range.
+        assert!(bucket_ids
+            .iter()
+            .all(|id| { *id < Storage::next_storage_bucket_id() }));
+        // Check removed bucket
+        assert!(!bucket_ids.contains(removed_bucket_id));
+    });
+}
+
+#[test]
+fn test_storage_bucket_iterators() {
+    build_test_externalities().execute_with(|| {
+        // Enable randomness (disabled at the initial block).
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        // More then initial buckets number
+        let buckets_number = 5;
+        create_storage_buckets(buckets_number);
+
+        use crate::storage_bucket_picker::{
+            RandomStorageBucketIdIterator as Rand, SequentialStorageBucketIdIterator as Seq,
+        };
+
+        let ids = Rand::<Test>::new()
+            .chain(Seq::<Test>::new())
+            .collect::<Vec<_>>();
+
+        // Check combined iterator length.
         assert_eq!(
-            bucket_ids,
-            BTreeSet::from_iter((0u64..initial_buckets_number).into_iter())
+            ids.len(),
+            (MaxRandomIterationNumber::get() + buckets_number) as usize
+        );
+        // Check that IDs are within possible range.
+        assert!(ids
+            .iter()
+            .all(|id| { *id < Storage::next_storage_bucket_id() }));
+        // Checks all possible entries are present (remove duplicates).
+        assert_eq!(
+            ids.iter().collect::<BTreeSet<_>>().len(),
+            buckets_number as usize
         );
     });
 }

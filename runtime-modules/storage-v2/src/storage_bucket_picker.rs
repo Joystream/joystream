@@ -23,19 +23,23 @@ impl<T: Trait> StorageBucketPicker<T> {
     pub(crate) fn pick_storage_buckets() -> BTreeSet<T::StorageBucketId> {
         let bucket_num = T::InitialStorageBucketsNumberForDynamicBag::get();
 
-        RandomStorageBucketIdIterator::<T>::new()
-            .chain(SequentialStorageBucketIdIterator::<T>::new())
-            .filter(Self::check_storage_bucket_id_for_bag_assigning)
-            .scan(BTreeSet::new(), |bucket_ids, bucket_id| {
-                if !bucket_ids.contains(&bucket_id) {
-                    bucket_ids.insert(bucket_id);
-                }
+        let mut bucket_ids = BTreeSet::new();
 
-                Some(bucket_ids.clone())
-            })
-            .take(bucket_num as usize)
-            .last()
-            .unwrap_or_default()
+        let potential_bucket_ids = RandomStorageBucketIdIterator::<T>::new()
+            .chain(SequentialStorageBucketIdIterator::<T>::new())
+            .filter(Self::check_storage_bucket_id_for_bag_assigning);
+
+        for bucket_id in potential_bucket_ids {
+            if !bucket_ids.contains(&bucket_id) {
+                bucket_ids.insert(bucket_id);
+            }
+
+            if bucket_ids.len() >= bucket_num as usize {
+                break;
+            }
+        }
+
+        bucket_ids
     }
 
     // Verifies storage bucket ID (non-deleted and accepting new bags).
@@ -53,7 +57,7 @@ impl<T: Trait> StorageBucketPicker<T> {
 // Iterator for random storage bucket IDs. It uses Substrate Randomness trait
 // (and possibly randomness_collective_flip pallet for implementation).
 // Its maximum iterations are bounded.
-struct RandomStorageBucketIdIterator<T: Trait> {
+pub(crate) struct RandomStorageBucketIdIterator<T: Trait> {
     // Trait marker.
     trait_marker: PhantomData<T>,
 
@@ -76,7 +80,7 @@ impl<T: Trait> Iterator for RandomStorageBucketIdIterator<T> {
             return None;
         }
 
-        if self.current_iteration > self.max_iteration_number {
+        if self.current_iteration >= self.max_iteration_number {
             return None;
         }
 
@@ -116,7 +120,7 @@ impl<T: Trait> RandomStorageBucketIdIterator<T> {
     }
 
     // Creates new iterator.
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         // Cannot create randomness in the initial block (Substrate error).
         let seed = if <frame_system::Module<T>>::block_number() == Zero::zero() {
             Default::default()
@@ -135,7 +139,7 @@ impl<T: Trait> RandomStorageBucketIdIterator<T> {
 
 // Iterator for sequential storage bucket IDs. It starts from the first possible storage bucket ID
 // (zero) and goes up to the last storage bucket IDs (next_storage_bucket_id - excluding).
-struct SequentialStorageBucketIdIterator<T: Trait> {
+pub(crate) struct SequentialStorageBucketIdIterator<T: Trait> {
     // Trait marker.
     trait_marker: PhantomData<T>,
 
@@ -161,7 +165,7 @@ impl<T: Trait> Iterator for SequentialStorageBucketIdIterator<T> {
 
 impl<T: Trait> SequentialStorageBucketIdIterator<T> {
     // Creates new iterator.
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             current_bucket_id: Zero::zero(),
             trait_marker: PhantomData,
