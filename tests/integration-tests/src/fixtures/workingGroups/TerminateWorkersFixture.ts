@@ -100,7 +100,8 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
         worker.status.__typename === 'WorkerStatusTerminated',
         `Invalid worker status: ${worker.status.__typename}`
       )
-      assert.equal(worker.status.terminatedWorkerEventId, qEvent.id)
+      Utils.assert(worker.status.terminatedWorkerEvent, 'Query node: Missing terminatedWorkerEvent relation')
+      assert.equal(worker.status.terminatedWorkerEvent.id, qEvent.id)
     })
   }
 

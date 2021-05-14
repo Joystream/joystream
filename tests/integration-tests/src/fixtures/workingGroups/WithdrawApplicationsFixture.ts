@@ -56,7 +56,11 @@ export class WithdrawApplicationsFixture extends BaseWorkingGroupFixture {
         qApplication.status.__typename === 'ApplicationStatusWithdrawn',
         'Query node: Invalid application status!'
       )
-      assert.equal(qApplication.status.applicationWithdrawnEventId, qEvent.id)
+      Utils.assert(
+        qApplication.status.applicationWithdrawnEvent,
+        'Query node: Missing applicationWithdrawnEvent relation'
+      )
+      assert.equal(qApplication.status.applicationWithdrawnEvent.id, qEvent.id)
     })
   }
 

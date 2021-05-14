@@ -17,7 +17,7 @@ fragment AppliedOnOpeningEventFields on AppliedOnOpeningEvent {
 }
 
 query getAppliedOnOpeningEventsByEventIds($eventIds: [ID!]) {
-  appliedOnOpeningEvents(where: { eventId_in: $eventIds }) {
+  appliedOnOpeningEvents(where: { event: { id_in: $eventIds } }) {
     ...AppliedOnOpeningEventFields
   }
 }
@@ -37,7 +37,7 @@ fragment OpeningAddedEventFields on OpeningAddedEvent {
 }
 
 query getOpeningAddedEventsByEventIds($eventIds: [ID!]) {
-  openingAddedEvents(where: { eventId_in: $eventIds }) {
+  openingAddedEvents(where: { event: { id_in: $eventIds } }) {
     ...OpeningAddedEventFields
   }
 }
@@ -57,7 +57,7 @@ fragment LeaderSetEventFields on LeaderSetEvent {
 }
 
 query getLeaderSetEventsByEventIds($eventIds: [ID!]) {
-  leaderSetEvents(where: { eventId_in: $eventIds }) {
+  leaderSetEvents(where: { event: { id_in: $eventIds } }) {
     ...LeaderSetEventFields
   }
 }
@@ -80,7 +80,7 @@ fragment OpeningFilledEventFields on OpeningFilledEvent {
 }
 
 query getOpeningFilledEventsByEventIds($eventIds: [ID!]) {
-  openingFilledEvents(where: { eventId_in: $eventIds }) {
+  openingFilledEvents(where: { event: { id_in: $eventIds } }) {
     ...OpeningFilledEventFields
   }
 }
@@ -100,7 +100,7 @@ fragment ApplicationWithdrawnEventFields on ApplicationWithdrawnEvent {
 }
 
 query getApplicationWithdrawnEventsByEventIds($eventIds: [ID!]) {
-  applicationWithdrawnEvents(where: { eventId_in: $eventIds }) {
+  applicationWithdrawnEvents(where: { event: { id_in: $eventIds } }) {
     ...ApplicationWithdrawnEventFields
   }
 }
@@ -120,7 +120,7 @@ fragment OpeningCanceledEventFields on OpeningCanceledEvent {
 }
 
 query getOpeningCancelledEventsByEventIds($eventIds: [ID!]) {
-  openingCanceledEvents(where: { eventId_in: $eventIds }) {
+  openingCanceledEvents(where: { event: { id_in: $eventIds } }) {
     ...OpeningCanceledEventFields
   }
 }
@@ -143,7 +143,9 @@ fragment StatusTextChangedEventFields on StatusTextChangedEvent {
       upcomingOpeningId
     }
     ... on WorkingGroupMetadataSet {
-      metadataId
+      metadata {
+        id
+      }
     }
     ... on InvalidActionMetadata {
       reason
@@ -152,7 +154,7 @@ fragment StatusTextChangedEventFields on StatusTextChangedEvent {
 }
 
 query getStatusTextChangedEventsByEventIds($eventIds: [ID!]) {
-  statusTextChangedEvents(where: { eventId_in: $eventIds }) {
+  statusTextChangedEvents(where: { event: { id_in: $eventIds } }) {
     ...StatusTextChangedEventFields
   }
 }
@@ -173,7 +175,7 @@ fragment WorkerRoleAccountUpdatedEventFields on WorkerRoleAccountUpdatedEvent {
 }
 
 query getWorkerRoleAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
-  workerRoleAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+  workerRoleAccountUpdatedEvents(where: { event: { id_in: $eventIds } }) {
     ...WorkerRoleAccountUpdatedEventFields
   }
 }
@@ -194,7 +196,7 @@ fragment WorkerRewardAccountUpdatedEventFields on WorkerRewardAccountUpdatedEven
 }
 
 query getWorkerRewardAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
-  workerRewardAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+  workerRewardAccountUpdatedEvents(where: { event: { id_in: $eventIds } }) {
     ...WorkerRewardAccountUpdatedEventFields
   }
 }
@@ -215,7 +217,7 @@ fragment StakeIncreasedEventFields on StakeIncreasedEvent {
 }
 
 query getStakeIncreasedEventsByEventIds($eventIds: [ID!]) {
-  stakeIncreasedEvents(where: { eventId_in: $eventIds }) {
+  stakeIncreasedEvents(where: { event: { id_in: $eventIds } }) {
     ...StakeIncreasedEventFields
   }
 }
@@ -236,7 +238,7 @@ fragment WorkerStartedLeavingEventFields on WorkerStartedLeavingEvent {
 }
 
 query getWorkerStartedLeavingEventsByEventIds($eventIds: [ID!]) {
-  workerStartedLeavingEvents(where: { eventId_in: $eventIds }) {
+  workerStartedLeavingEvents(where: { event: { id_in: $eventIds } }) {
     ...WorkerStartedLeavingEventFields
   }
 }
@@ -257,7 +259,7 @@ fragment WorkerRewardAmountUpdatedEventFields on WorkerRewardAmountUpdatedEvent 
 }
 
 query getWorkerRewardAmountUpdatedEventsByEventIds($eventIds: [ID!]) {
-  workerRewardAmountUpdatedEvents(where: { eventId_in: $eventIds }) {
+  workerRewardAmountUpdatedEvents(where: { event: { id_in: $eventIds } }) {
     ...WorkerRewardAmountUpdatedEventFields
   }
 }
@@ -280,7 +282,7 @@ fragment StakeSlashedEventFields on StakeSlashedEvent {
 }
 
 query getStakeSlashedEventsByEventIds($eventIds: [ID!]) {
-  stakeSlashedEvents(where: { eventId_in: $eventIds }) {
+  stakeSlashedEvents(where: { event: { id_in: $eventIds } }) {
     ...StakeSlashedEventFields
   }
 }
@@ -301,7 +303,7 @@ fragment StakeDecreasedEventFields on StakeDecreasedEvent {
 }
 
 query getStakeDecreasedEventsByEventIds($eventIds: [ID!]) {
-  stakeDecreasedEvents(where: { eventId_in: $eventIds }) {
+  stakeDecreasedEvents(where: { event: { id_in: $eventIds } }) {
     ...StakeDecreasedEventFields
   }
 }
@@ -323,7 +325,7 @@ fragment TerminatedWorkerEventFields on TerminatedWorkerEvent {
 }
 
 query getTerminatedWorkerEventsByEventIds($eventIds: [ID!]) {
-  terminatedWorkerEvents(where: { eventId_in: $eventIds }) {
+  terminatedWorkerEvents(where: { event: { id_in: $eventIds } }) {
     ...TerminatedWorkerEventFields
   }
 }
@@ -345,7 +347,7 @@ fragment TerminatedLeaderEventFields on TerminatedLeaderEvent {
 }
 
 query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
-  terminatedLeaderEvents(where: { eventId_in: $eventIds }) {
+  terminatedLeaderEvents(where: { event: { id_in: $eventIds } }) {
     ...TerminatedLeaderEventFields
   }
 }
@@ -365,7 +367,7 @@ fragment LeaderUnsetEventFields on LeaderUnsetEvent {
 }
 
 query getLeaderUnsetEventsByEventIds($eventIds: [ID!]) {
-  leaderUnsetEvents(where: { eventId_in: $eventIds }) {
+  leaderUnsetEvents(where: { event: { id_in: $eventIds } }) {
     ...LeaderUnsetEventFields
   }
 }
@@ -382,7 +384,7 @@ fragment BudgetSetEventFields on BudgetSetEvent {
 }
 
 query getBudgetSetEventsByEventIds($eventIds: [ID!]) {
-  budgetSetEvents(where: { eventId_in: $eventIds }) {
+  budgetSetEvents(where: { event: { id_in: $eventIds } }) {
     ...BudgetSetEventFields
   }
 }
@@ -401,7 +403,7 @@ fragment BudgetSpendingEventFields on BudgetSpendingEvent {
 }
 
 query getBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
-  budgetSpendingEvents(where: { eventId_in: $eventIds }) {
+  budgetSpendingEvents(where: { event: { id_in: $eventIds } }) {
     ...BudgetSpendingEventFields
   }
 }

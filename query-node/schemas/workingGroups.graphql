@@ -4,16 +4,16 @@ type WorkerStatusActive @variant {
 }
 
 type WorkerStatusLeft @variant {
-  # TODO: Variant relationships
-  workerStartedLeavingEventId: ID!
+  "Related event emitted on leaving initialization"
+  workerStartedLeavingEvent: WorkerStartedLeavingEvent!
 
-  # Set when the unstaking period is finished
-  workerExitedEventId: ID
+  "Related event emitted (and set) when the unstaking period is finished"
+  workerExitedEvent: WorkerExitedEvent
 }
 
 type WorkerStatusTerminated @variant {
-  # TODO: Variant relationship
-  terminatedWorkerEventId: ID!
+  "Related event emitted on worker termination"
+  terminatedWorkerEvent: TerminatedWorkerEvent!
 }
 
 union WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
@@ -125,8 +125,8 @@ type WorkingGroup @entity {
 }
 
 type OpeningStatusCancelled @variant {
-  # TODO: Variant relationships
-  openingCancelledEventId: ID!
+  "Related event emitted on opening cancellation"
+  openingCanceledEvent: OpeningCanceledEvent!
 }
 
 type OpeningStatusOpen @variant {
@@ -135,8 +135,8 @@ type OpeningStatusOpen @variant {
 }
 
 type OpeningStatusFilled @variant {
-  # TODO: Variant relationships
-  openingFilledEventId: ID!
+  "Related event emitted after filling the opening"
+  openingFilledEvent: OpeningFilledEvent!
 }
 
 union WorkingGroupOpeningStatus = OpeningStatusOpen | OpeningStatusFilled | OpeningStatusCancelled
@@ -236,22 +236,23 @@ type ApplicationStatusPending @variant {
 }
 
 type ApplicationStatusAccepted @variant {
-  # TODO: Variant relationships
-  openingFilledEventId: ID!
+  "Related OpeningFilled event"
+  openingFilledEvent: OpeningFilledEvent!
 }
 
 type ApplicationStatusRejected @variant {
-  # TODO: Variant relationships
-  openingFilledEventId: ID!
+  "Related OpeningFilled event"
+  openingFilledEvent: OpeningFilledEvent!
 }
 
 type ApplicationStatusCancelled @variant {
-  openingCancelledEventId: ID!
+  "Related OpeningCanceled event"
+  openingCanceledEvent: OpeningCanceledEvent!
 }
 
 type ApplicationStatusWithdrawn @variant {
-  # TODO: Variant relationships
-  applicationWithdrawnEventId: ID!
+  "Related ApplicationWithdrawn event"
+  applicationWithdrawnEvent: ApplicationWithdrawnEvent!
 }
 
 union WorkingGroupApplicationStatus =

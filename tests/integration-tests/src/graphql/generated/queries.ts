@@ -242,22 +242,22 @@ export type ApplicationBasicFieldsFragment = {
   runtimeId: number
   status:
     | { __typename: 'ApplicationStatusPending' }
-    | { __typename: 'ApplicationStatusAccepted'; openingFilledEventId: string }
-    | { __typename: 'ApplicationStatusRejected'; openingFilledEventId: string }
-    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEventId: string }
-    | { __typename: 'ApplicationStatusCancelled'; openingCancelledEventId: string }
+    | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: Types.Maybe<{ id: string }> }
 }
 
 type OpeningStatusFields_OpeningStatusOpen_Fragment = { __typename: 'OpeningStatusOpen' }
 
 type OpeningStatusFields_OpeningStatusFilled_Fragment = {
   __typename: 'OpeningStatusFilled'
-  openingFilledEventId: string
+  openingFilledEvent?: Types.Maybe<{ id: string }>
 }
 
 type OpeningStatusFields_OpeningStatusCancelled_Fragment = {
   __typename: 'OpeningStatusCancelled'
-  openingCancelledEventId: string
+  openingCanceledEvent?: Types.Maybe<{ id: string }>
 }
 
 export type OpeningStatusFieldsFragment =
@@ -296,8 +296,12 @@ export type WorkerFieldsFragment = {
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
-    | { __typename: 'WorkerStatusLeft'; workerStartedLeavingEventId: string; workerExitedEventId?: Types.Maybe<string> }
-    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEventId: string }
+    | {
+        __typename: 'WorkerStatusLeft'
+        workerStartedLeavingEvent?: Types.Maybe<{ id: string }>
+        workerExitedEvent?: Types.Maybe<{ id: string }>
+      }
+    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: Types.Maybe<{ id: string }> }
   payouts: Array<{ id: string }>
   slashes: Array<{ id: string }>
   hiredAtBlock: BlockFieldsFragment
@@ -519,7 +523,7 @@ export type StatusTextChangedEventFieldsFragment = {
   result:
     | { __typename: 'UpcomingOpeningAdded'; upcomingOpeningId: string }
     | { __typename: 'UpcomingOpeningRemoved'; upcomingOpeningId: string }
-    | { __typename: 'WorkingGroupMetadataSet'; metadataId: string }
+    | { __typename: 'WorkingGroupMetadataSet'; metadata?: Types.Maybe<{ id: string }> }
     | { __typename: 'InvalidActionMetadata'; reason: string }
 }
 
@@ -956,16 +960,24 @@ export const ApplicationBasicFields = gql`
     status {
       __typename
       ... on ApplicationStatusCancelled {
-        openingCancelledEventId
+        openingCanceledEvent {
+          id
+        }
       }
       ... on ApplicationStatusWithdrawn {
-        applicationWithdrawnEventId
+        applicationWithdrawnEvent {
+          id
+        }
       }
       ... on ApplicationStatusAccepted {
-        openingFilledEventId
+        openingFilledEvent {
+          id
+        }
       }
       ... on ApplicationStatusRejected {
-        openingFilledEventId
+        openingFilledEvent {
+          id
+        }
       }
     }
   }
@@ -974,10 +986,14 @@ export const OpeningStatusFields = gql`
   fragment OpeningStatusFields on WorkingGroupOpeningStatus {
     __typename
     ... on OpeningStatusFilled {
-      openingFilledEventId
+      openingFilledEvent {
+        id
+      }
     }
     ... on OpeningStatusCancelled {
-      openingCancelledEventId
+      openingCanceledEvent {
+        id
+      }
     }
   }
 `
@@ -1184,11 +1200,17 @@ export const WorkerFields = gql`
     status {
       __typename
       ... on WorkerStatusLeft {
-        workerStartedLeavingEventId
-        workerExitedEventId
+        workerStartedLeavingEvent {
+          id
+        }
+        workerExitedEvent {
+          id
+        }
       }
       ... on WorkerStatusTerminated {
-        terminatedWorkerEventId
+        terminatedWorkerEvent {
+          id
+        }
       }
     }
     isLead
@@ -1284,7 +1306,9 @@ export const StatusTextChangedEventFields = gql`
         upcomingOpeningId
       }
       ... on WorkingGroupMetadataSet {
-        metadataId
+        metadata {
+          id
+        }
       }
       ... on InvalidActionMetadata {
         reason
@@ -1520,7 +1544,7 @@ export const GetMembershipSystemSnapshotBefore = gql`
 `
 export const GetMembershipBoughtEventsByMemberId = gql`
   query getMembershipBoughtEventsByMemberId($memberId: ID!) {
-    membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
+    membershipBoughtEvents(where: { newMember: { id_eq: $memberId } }) {
       ...MembershipBoughtEventFields
     }
   }
@@ -1528,7 +1552,7 @@ export const GetMembershipBoughtEventsByMemberId = gql`
 `
 export const GetMemberProfileUpdatedEventsByMemberId = gql`
   query getMemberProfileUpdatedEventsByMemberId($memberId: ID!) {
-    memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
+    memberProfileUpdatedEvents(where: { member: { id_eq: $memberId } }) {
       ...MemberProfileUpdatedEventFields
     }
   }
@@ -1536,7 +1560,7 @@ export const GetMemberProfileUpdatedEventsByMemberId = gql`
 `
 export const GetMemberAccountsUpdatedEventsByMemberId = gql`
   query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
-    memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
+    memberAccountsUpdatedEvents(where: { member: { id_eq: $memberId } }) {
       ...MemberAccountsUpdatedEventFields
     }
   }
@@ -1544,7 +1568,7 @@ export const GetMemberAccountsUpdatedEventsByMemberId = gql`
 `
 export const GetMemberInvitedEventsByNewMemberId = gql`
   query getMemberInvitedEventsByNewMemberId($newMemberId: ID!) {
-    memberInvitedEvents(where: { newMemberId_eq: $newMemberId }) {
+    memberInvitedEvents(where: { newMember: { id_eq: $newMemberId } }) {
       ...MemberInvitedEventFields
     }
   }
@@ -1552,7 +1576,7 @@ export const GetMemberInvitedEventsByNewMemberId = gql`
 `
 export const GetInvitesTransferredEventsBySourceMemberId = gql`
   query getInvitesTransferredEventsBySourceMemberId($sourceMemberId: ID!) {
-    invitesTransferredEvents(where: { sourceMemberId_eq: $sourceMemberId }) {
+    invitesTransferredEvents(where: { sourceMember: { id_eq: $sourceMemberId } }) {
       ...InvitesTransferredEventFields
     }
   }
@@ -1560,7 +1584,7 @@ export const GetInvitesTransferredEventsBySourceMemberId = gql`
 `
 export const GetStakingAccountAddedEventsByMemberId = gql`
   query getStakingAccountAddedEventsByMemberId($memberId: ID!) {
-    stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
+    stakingAccountAddedEvents(where: { member: { id_eq: $memberId } }) {
       ...StakingAccountAddedEventFields
     }
   }
@@ -1568,7 +1592,7 @@ export const GetStakingAccountAddedEventsByMemberId = gql`
 `
 export const GetStakingAccountConfirmedEventsByMemberId = gql`
   query getStakingAccountConfirmedEventsByMemberId($memberId: ID!) {
-    stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
+    stakingAccountConfirmedEvents(where: { member: { id_eq: $memberId } }) {
       ...StakingAccountConfirmedEventFields
     }
   }
@@ -1576,7 +1600,7 @@ export const GetStakingAccountConfirmedEventsByMemberId = gql`
 `
 export const GetStakingAccountRemovedEventsByMemberId = gql`
   query getStakingAccountRemovedEventsByMemberId($memberId: ID!) {
-    stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
+    stakingAccountRemovedEvents(where: { member: { id_eq: $memberId } }) {
       ...StakingAccountRemovedEventFields
     }
   }
@@ -1584,7 +1608,7 @@ export const GetStakingAccountRemovedEventsByMemberId = gql`
 `
 export const GetReferralCutUpdatedEventsByEventId = gql`
   query getReferralCutUpdatedEventsByEventId($eventId: ID!) {
-    referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
+    referralCutUpdatedEvents(where: { event: { id_eq: $eventId } }) {
       ...ReferralCutUpdatedEventFields
     }
   }
@@ -1592,7 +1616,7 @@ export const GetReferralCutUpdatedEventsByEventId = gql`
 `
 export const GetMembershipPriceUpdatedEventsByEventId = gql`
   query getMembershipPriceUpdatedEventsByEventId($eventId: ID!) {
-    membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
+    membershipPriceUpdatedEvents(where: { event: { id_eq: $eventId } }) {
       ...MembershipPriceUpdatedEventFields
     }
   }
@@ -1600,7 +1624,7 @@ export const GetMembershipPriceUpdatedEventsByEventId = gql`
 `
 export const GetInitialInvitationBalanceUpdatedEventsByEventId = gql`
   query getInitialInvitationBalanceUpdatedEventsByEventId($eventId: ID!) {
-    initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
+    initialInvitationBalanceUpdatedEvents(where: { event: { id_eq: $eventId } }) {
       ...InitialInvitationBalanceUpdatedEventFields
     }
   }
@@ -1608,7 +1632,7 @@ export const GetInitialInvitationBalanceUpdatedEventsByEventId = gql`
 `
 export const GetInitialInvitationCountUpdatedEventsByEventId = gql`
   query getInitialInvitationCountUpdatedEventsByEventId($eventId: ID!) {
-    initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
+    initialInvitationCountUpdatedEvents(where: { event: { id_eq: $eventId } }) {
       ...InitialInvitationCountUpdatedEventFields
     }
   }
@@ -1664,7 +1688,7 @@ export const GetUpcomingOpeningById = gql`
 `
 export const GetUpcomingOpeningsByCreatedInEventIds = gql`
   query getUpcomingOpeningsByCreatedInEventIds($createdInEventIds: [ID!]) {
-    upcomingWorkingGroupOpenings(where: { createdInEventId_in: $createdInEventIds }) {
+    upcomingWorkingGroupOpenings(where: { createdInEvent: { id_in: $createdInEventIds } }) {
       ...UpcomingOpeningFields
     }
   }
@@ -1672,7 +1696,7 @@ export const GetUpcomingOpeningsByCreatedInEventIds = gql`
 `
 export const GetWorkingGroupMetadataSnapshotsByTimeAsc = gql`
   query getWorkingGroupMetadataSnapshotsByTimeAsc($groupId: ID!) {
-    workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC) {
+    workingGroupMetadata(where: { group: { id_eq: $groupId } }, orderBy: createdAt_ASC) {
       ...WorkingGroupMetadataFields
     }
   }
@@ -1680,7 +1704,7 @@ export const GetWorkingGroupMetadataSnapshotsByTimeAsc = gql`
 `
 export const GetWorkersByRuntimeIds = gql`
   query getWorkersByRuntimeIds($workerIds: [Int!], $groupId: ID!) {
-    workers(where: { runtimeId_in: $workerIds, groupId_eq: $groupId }) {
+    workers(where: { runtimeId_in: $workerIds, group: { id_eq: $groupId } }) {
       ...WorkerFields
     }
   }
@@ -1688,7 +1712,7 @@ export const GetWorkersByRuntimeIds = gql`
 `
 export const GetAppliedOnOpeningEventsByEventIds = gql`
   query getAppliedOnOpeningEventsByEventIds($eventIds: [ID!]) {
-    appliedOnOpeningEvents(where: { eventId_in: $eventIds }) {
+    appliedOnOpeningEvents(where: { event: { id_in: $eventIds } }) {
       ...AppliedOnOpeningEventFields
     }
   }
@@ -1696,7 +1720,7 @@ export const GetAppliedOnOpeningEventsByEventIds = gql`
 `
 export const GetOpeningAddedEventsByEventIds = gql`
   query getOpeningAddedEventsByEventIds($eventIds: [ID!]) {
-    openingAddedEvents(where: { eventId_in: $eventIds }) {
+    openingAddedEvents(where: { event: { id_in: $eventIds } }) {
       ...OpeningAddedEventFields
     }
   }
@@ -1704,7 +1728,7 @@ export const GetOpeningAddedEventsByEventIds = gql`
 `
 export const GetLeaderSetEventsByEventIds = gql`
   query getLeaderSetEventsByEventIds($eventIds: [ID!]) {
-    leaderSetEvents(where: { eventId_in: $eventIds }) {
+    leaderSetEvents(where: { event: { id_in: $eventIds } }) {
       ...LeaderSetEventFields
     }
   }
@@ -1712,7 +1736,7 @@ export const GetLeaderSetEventsByEventIds = gql`
 `
 export const GetOpeningFilledEventsByEventIds = gql`
   query getOpeningFilledEventsByEventIds($eventIds: [ID!]) {
-    openingFilledEvents(where: { eventId_in: $eventIds }) {
+    openingFilledEvents(where: { event: { id_in: $eventIds } }) {
       ...OpeningFilledEventFields
     }
   }
@@ -1720,7 +1744,7 @@ export const GetOpeningFilledEventsByEventIds = gql`
 `
 export const GetApplicationWithdrawnEventsByEventIds = gql`
   query getApplicationWithdrawnEventsByEventIds($eventIds: [ID!]) {
-    applicationWithdrawnEvents(where: { eventId_in: $eventIds }) {
+    applicationWithdrawnEvents(where: { event: { id_in: $eventIds } }) {
       ...ApplicationWithdrawnEventFields
     }
   }
@@ -1728,7 +1752,7 @@ export const GetApplicationWithdrawnEventsByEventIds = gql`
 `
 export const GetOpeningCancelledEventsByEventIds = gql`
   query getOpeningCancelledEventsByEventIds($eventIds: [ID!]) {
-    openingCanceledEvents(where: { eventId_in: $eventIds }) {
+    openingCanceledEvents(where: { event: { id_in: $eventIds } }) {
       ...OpeningCanceledEventFields
     }
   }
@@ -1736,7 +1760,7 @@ export const GetOpeningCancelledEventsByEventIds = gql`
 `
 export const GetStatusTextChangedEventsByEventIds = gql`
   query getStatusTextChangedEventsByEventIds($eventIds: [ID!]) {
-    statusTextChangedEvents(where: { eventId_in: $eventIds }) {
+    statusTextChangedEvents(where: { event: { id_in: $eventIds } }) {
       ...StatusTextChangedEventFields
     }
   }
@@ -1744,7 +1768,7 @@ export const GetStatusTextChangedEventsByEventIds = gql`
 `
 export const GetWorkerRoleAccountUpdatedEventsByEventIds = gql`
   query getWorkerRoleAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
-    workerRoleAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    workerRoleAccountUpdatedEvents(where: { event: { id_in: $eventIds } }) {
       ...WorkerRoleAccountUpdatedEventFields
     }
   }
@@ -1752,7 +1776,7 @@ export const GetWorkerRoleAccountUpdatedEventsByEventIds = gql`
 `
 export const GetWorkerRewardAccountUpdatedEventsByEventIds = gql`
   query getWorkerRewardAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
-    workerRewardAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    workerRewardAccountUpdatedEvents(where: { event: { id_in: $eventIds } }) {
       ...WorkerRewardAccountUpdatedEventFields
     }
   }
@@ -1760,7 +1784,7 @@ export const GetWorkerRewardAccountUpdatedEventsByEventIds = gql`
 `
 export const GetStakeIncreasedEventsByEventIds = gql`
   query getStakeIncreasedEventsByEventIds($eventIds: [ID!]) {
-    stakeIncreasedEvents(where: { eventId_in: $eventIds }) {
+    stakeIncreasedEvents(where: { event: { id_in: $eventIds } }) {
       ...StakeIncreasedEventFields
     }
   }
@@ -1768,7 +1792,7 @@ export const GetStakeIncreasedEventsByEventIds = gql`
 `
 export const GetWorkerStartedLeavingEventsByEventIds = gql`
   query getWorkerStartedLeavingEventsByEventIds($eventIds: [ID!]) {
-    workerStartedLeavingEvents(where: { eventId_in: $eventIds }) {
+    workerStartedLeavingEvents(where: { event: { id_in: $eventIds } }) {
       ...WorkerStartedLeavingEventFields
     }
   }
@@ -1776,7 +1800,7 @@ export const GetWorkerStartedLeavingEventsByEventIds = gql`
 `
 export const GetWorkerRewardAmountUpdatedEventsByEventIds = gql`
   query getWorkerRewardAmountUpdatedEventsByEventIds($eventIds: [ID!]) {
-    workerRewardAmountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    workerRewardAmountUpdatedEvents(where: { event: { id_in: $eventIds } }) {
       ...WorkerRewardAmountUpdatedEventFields
     }
   }
@@ -1784,7 +1808,7 @@ export const GetWorkerRewardAmountUpdatedEventsByEventIds = gql`
 `
 export const GetStakeSlashedEventsByEventIds = gql`
   query getStakeSlashedEventsByEventIds($eventIds: [ID!]) {
-    stakeSlashedEvents(where: { eventId_in: $eventIds }) {
+    stakeSlashedEvents(where: { event: { id_in: $eventIds } }) {
       ...StakeSlashedEventFields
     }
   }
@@ -1792,7 +1816,7 @@ export const GetStakeSlashedEventsByEventIds = gql`
 `
 export const GetStakeDecreasedEventsByEventIds = gql`
   query getStakeDecreasedEventsByEventIds($eventIds: [ID!]) {
-    stakeDecreasedEvents(where: { eventId_in: $eventIds }) {
+    stakeDecreasedEvents(where: { event: { id_in: $eventIds } }) {
       ...StakeDecreasedEventFields
     }
   }
@@ -1800,7 +1824,7 @@ export const GetStakeDecreasedEventsByEventIds = gql`
 `
 export const GetTerminatedWorkerEventsByEventIds = gql`
   query getTerminatedWorkerEventsByEventIds($eventIds: [ID!]) {
-    terminatedWorkerEvents(where: { eventId_in: $eventIds }) {
+    terminatedWorkerEvents(where: { event: { id_in: $eventIds } }) {
       ...TerminatedWorkerEventFields
     }
   }
@@ -1808,7 +1832,7 @@ export const GetTerminatedWorkerEventsByEventIds = gql`
 `
 export const GetTerminatedLeaderEventsByEventIds = gql`
   query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
-    terminatedLeaderEvents(where: { eventId_in: $eventIds }) {
+    terminatedLeaderEvents(where: { event: { id_in: $eventIds } }) {
       ...TerminatedLeaderEventFields
     }
   }
@@ -1816,7 +1840,7 @@ export const GetTerminatedLeaderEventsByEventIds = gql`
 `
 export const GetLeaderUnsetEventsByEventIds = gql`
   query getLeaderUnsetEventsByEventIds($eventIds: [ID!]) {
-    leaderUnsetEvents(where: { eventId_in: $eventIds }) {
+    leaderUnsetEvents(where: { event: { id_in: $eventIds } }) {
       ...LeaderUnsetEventFields
     }
   }
@@ -1824,7 +1848,7 @@ export const GetLeaderUnsetEventsByEventIds = gql`
 `
 export const GetBudgetSetEventsByEventIds = gql`
   query getBudgetSetEventsByEventIds($eventIds: [ID!]) {
-    budgetSetEvents(where: { eventId_in: $eventIds }) {
+    budgetSetEvents(where: { event: { id_in: $eventIds } }) {
       ...BudgetSetEventFields
     }
   }
@@ -1832,7 +1856,7 @@ export const GetBudgetSetEventsByEventIds = gql`
 `
 export const GetBudgetSpendingEventsByEventIds = gql`
   query getBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
-    budgetSpendingEvents(where: { eventId_in: $eventIds }) {
+    budgetSpendingEvents(where: { event: { id_in: $eventIds } }) {
       ...BudgetSpendingEventFields
     }
   }

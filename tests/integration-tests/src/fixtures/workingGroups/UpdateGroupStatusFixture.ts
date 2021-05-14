@@ -119,7 +119,8 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
         qEvent.result.__typename === 'WorkingGroupMetadataSet',
         'Invalid StatusTextChanged event result type'
       )
-      assert(qEvent.result.metadataId, postUpdateSnapshot.id)
+      Utils.assert(qEvent.result.metadata, 'Query node: Missing metadata relation')
+      assert(qEvent.result.metadata.id, postUpdateSnapshot.id)
       lastSnapshot = postUpdateSnapshot
     })
 

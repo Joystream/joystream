@@ -1,8 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
 import { StorageWorkingGroup as WorkingGroups } from './generated/types'
 import {
   ApplicationMetadata,
@@ -165,7 +164,7 @@ async function createOpeningMeta(
     metadata = originalMeta
     originallyValid = true
   }
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const {
     applicationFormQuestions,
@@ -243,7 +242,7 @@ async function handleAddUpcomingOpeningAction(
 ): Promise<UpcomingOpeningAdded | InvalidActionMetadata> {
   const upcomingOpeningMeta = action.metadata || {}
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
   const openingMeta = await createOpeningMeta(db, event_, upcomingOpeningMeta.metadata || {})
   const { rewardPerBlock, expectedStart, minApplicationStake } = upcomingOpeningMeta
   const upcomingOpening = new UpcomingWorkingGroupOpening({
@@ -294,7 +293,7 @@ async function handleSetWorkingGroupMetadataAction(
   const { newMetadata } = action
   const group = await getWorkingGroup(db, event_, ['metadata'])
   const oldMetadata = group.metadata
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
   const setNewOptionalString = (field: keyof IWorkingGroupMetadata) =>
     typeof newMetadata?.[field] === 'string' ? newMetadata[field] || undefined : oldMetadata?.[field]
 
@@ -341,11 +340,10 @@ async function handleWorkingGroupMetadataAction(
 }
 
 async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, balance: optPenalty, optBytes: optRationale } = new WorkingGroups.TerminatedWorkerEvent(event_).data
+  const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
   const eventType = worker.isLead ? EventType.TerminatedLeader : EventType.TerminatedWorker
@@ -385,16 +383,15 @@ export async function findLeaderSetEventByTxHash(db: DatabaseManager, txHash?: s
 
 // Mapping functions
 export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const {
-    balance: rewardPerBlock,
-    bytes: metadataBytes,
-    openingId: openingRuntimeId,
+  const [
+    openingRuntimeId,
+    metadataBytes,
     openingType,
     stakePolicy,
-  } = new WorkingGroups.OpeningAddedEvent(event_).data
+    optRewardPerBlock,
+  ] = new WorkingGroups.OpeningAddedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const opening = new WorkingGroupOpening({
     createdAt: eventTime,
@@ -404,7 +401,7 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     runtimeId: openingRuntimeId.toNumber(),
     applications: [],
     group,
-    rewardPerBlock: rewardPerBlock.unwrapOr(new BN(0)),
+    rewardPerBlock: optRewardPerBlock.unwrapOr(new BN(0)),
     stakeAmount: stakePolicy.stake_amount,
     unstakingPeriod: stakePolicy.leaving_unstaking_period.toNumber(),
     status: new OpeningStatusOpen(),
@@ -429,12 +426,10 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
 }
 
 export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
-  const {
-    applicationId: applicationRuntimeId,
-    applyOnOpeningParameters: {
+  const [
+    {
       opening_id: openingRuntimeId,
       description: metadataBytes,
       member_id: memberId,
@@ -442,7 +437,9 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
       role_account_id: roleAccout,
       stake_parameters: { stake, staking_account_id: stakingAccount },
     },
-  } = new WorkingGroups.AppliedOnOpeningEvent(event_).data
+    applicationRuntimeId,
+  ] = new WorkingGroups.AppliedOnOpeningEvent(event_).params
+
   const group = await getWorkingGroup(db, event_)
   const openingDbId = `${group.name}-${openingRuntimeId.toString()}`
 
@@ -479,8 +476,7 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
 }
 
 export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
   const group = await getWorkingGroup(db, event_)
 
   const event = await createEvent(db, event_, EventType.LeaderSet)
@@ -495,14 +491,11 @@ export async function workingGroups_LeaderSet(db: DatabaseManager, event_: Subst
 }
 
 export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
-  const {
-    openingId: openingRuntimeId,
-    applicationId: applicationIdsSet,
-    applicationIdToWorkerIdMap,
-  } = new WorkingGroups.OpeningFilledEvent(event_).data
+  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(
+    event_
+  ).params
 
   const group = await getWorkingGroup(db, event_)
   const opening = await getOpening(db, `${group.name}-${openingRuntimeId.toString()}`, [
@@ -554,7 +547,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
               id: `${group.name}-${workerRuntimeId.toString()}`,
               runtimeId: workerRuntimeId.toNumber(),
               hiredAtBlock: await getOrCreateBlock(db, event_),
-              hiredAtTime: new Date(event_.blockTimestamp.toNumber()),
+              hiredAtTime: new Date(event_.blockTimestamp),
               application,
               group,
               isLead: opening.type === WorkingGroupOpeningType.LEADER,
@@ -596,12 +589,11 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
 }
 
 export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { openingId: openingRuntimeId } = new WorkingGroups.OpeningCanceledEvent(event_).data
+  const [openingRuntimeId] = new WorkingGroups.OpeningCanceledEvent(event_).params
 
   const group = await getWorkingGroup(db, event_)
   const opening = await getOpening(db, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   // Create and save event
   const event = await createEvent(db, event_, EventType.OpeningCanceled)
@@ -617,7 +609,7 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
 
   // Set opening status
   const openingCancelled = new OpeningStatusCancelled()
-  openingCancelled.openingCancelledEventId = openingCanceledEvent.id
+  openingCancelled.openingCanceledEventId = openingCanceledEvent.id
   opening.status = openingCancelled
   opening.updatedAt = eventTime
 
@@ -625,7 +617,7 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
 
   // Set applications status
   const applicationCancelled = new ApplicationStatusCancelled()
-  applicationCancelled.openingCancelledEventId = openingCanceledEvent.id
+  applicationCancelled.openingCanceledEventId = openingCanceledEvent.id
   await Promise.all(
     (opening.applications || [])
       // Skip withdrawn applications
@@ -639,12 +631,11 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
 }
 
 export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { applicationId: applicationRuntimeId } = new WorkingGroups.ApplicationWithdrawnEvent(event_).data
+  const [applicationRuntimeId] = new WorkingGroups.ApplicationWithdrawnEvent(event_).params
 
   const group = await getWorkingGroup(db, event_)
   const application = await getApplication(db, `${group.name}-${applicationRuntimeId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   // Create and save event
   const event = await createEvent(db, event_, EventType.ApplicationWithdrawn)
@@ -668,10 +659,9 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
 }
 
 export async function workingGroups_StatusTextChanged(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { optBytes } = new WorkingGroups.StatusTextChangedEvent(event_).data
+  const [, optBytes] = new WorkingGroups.StatusTextChangedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   // Since result cannot be empty at this point, but we already need to have an existing StatusTextChangedEvent
   // in order to be able to create UpcomingOpening.createdInEvent relation, we use a temporary "mock" result
@@ -714,11 +704,10 @@ export async function workingGroups_WorkerRoleAccountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, accountId } = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event_).data
+  const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
     createdAt: eventTime,
@@ -741,11 +730,10 @@ export async function workingGroups_WorkerRewardAccountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, accountId } = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event_).data
+  const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
     createdAt: eventTime,
@@ -765,11 +753,10 @@ export async function workingGroups_WorkerRewardAccountUpdated(
 }
 
 export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, balance: increaseAmount } = new WorkingGroups.StakeIncreasedEvent(event_).data
+  const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const stakeIncreasedEvent = new StakeIncreasedEvent({
     createdAt: eventTime,
@@ -789,16 +776,10 @@ export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: 
 }
 
 export async function workingGroups_RewardPaid(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const {
-    workerId,
-    accountId: rewardAccountId,
-    balance: amount,
-    rewardPaymentType,
-  } = new WorkingGroups.RewardPaidEvent(event_).data
+  const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const rewardPaidEvent = new RewardPaidEvent({
     createdAt: eventTime,
@@ -824,13 +805,10 @@ export async function workingGroups_NewMissedRewardLevelReached(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, balance: newMissedRewardAmountOpt } = new WorkingGroups.NewMissedRewardLevelReachedEvent(
-    event_
-  ).data
+  const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
     createdAt: eventTime,
@@ -851,11 +829,10 @@ export async function workingGroups_NewMissedRewardLevelReached(
 }
 
 export async function workingGroups_WorkerExited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId } = new WorkingGroups.WorkerExitedEvent(event_).data
+  const [workerId] = new WorkingGroups.WorkerExitedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
     createdAt: eventTime,
@@ -875,9 +852,8 @@ export async function workingGroups_WorkerExited(db: DatabaseManager, event_: Su
 }
 
 export async function workingGroups_LeaderUnset(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const leaderUnsetEvent = new LeaderUnsetEvent({
     createdAt: eventTime,
@@ -906,11 +882,10 @@ export async function workingGroups_WorkerRewardAmountUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, balance: newRewardPerBlockOpt } = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event_).data
+  const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
     createdAt: eventTime,
@@ -930,15 +905,10 @@ export async function workingGroups_WorkerRewardAmountUpdated(
 }
 
 export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const {
-    workerId,
-    balances: { 0: slashedAmount, 1: requestedAmount },
-    optBytes: optRationale,
-  } = new WorkingGroups.StakeSlashedEvent(event_).data
+  const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerStakeSlashedEvent = new StakeSlashedEvent({
     createdAt: eventTime,
@@ -960,11 +930,10 @@ export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: Su
 }
 
 export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, balance: amount } = new WorkingGroups.StakeDecreasedEvent(event_).data
+  const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerStakeDecreasedEvent = new StakeDecreasedEvent({
     createdAt: eventTime,
@@ -984,11 +953,10 @@ export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: 
 }
 
 export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { workerId, optBytes: optRationale } = new WorkingGroups.WorkerStartedLeavingEvent(event_).data
+  const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event_).params
   const group = await getWorkingGroup(db, event_)
   const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
     createdAt: eventTime,
@@ -1010,10 +978,9 @@ export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, ev
 }
 
 export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { balance: newBudget } = new WorkingGroups.BudgetSetEvent(event_).data
+  const [newBudget] = new WorkingGroups.BudgetSetEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const budgetSetEvent = new BudgetSetEvent({
     createdAt: eventTime,
@@ -1032,12 +999,9 @@ export async function workingGroups_BudgetSet(db: DatabaseManager, event_: Subst
 }
 
 export async function workingGroups_BudgetSpending(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { accountId: reciever, balance: amount, optBytes: optRationale } = new WorkingGroups.BudgetSpendingEvent(
-    event_
-  ).data
+  const [reciever, amount, optRationale] = new WorkingGroups.BudgetSpendingEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const eventTime = new Date(event_.blockTimestamp)
 
   const budgetSpendingEvent = new BudgetSpendingEvent({
     createdAt: eventTime,

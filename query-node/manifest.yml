@@ -1,7 +1,7 @@
 version: '0.1'
 description: Joystream query-node manifest file for olympia
 repository: https://github.com/Joystream/joystream
-hydraVersion: "2"
+hydraVersion: "3"
 dataSource:
   kind: substrate
   chain: joystream

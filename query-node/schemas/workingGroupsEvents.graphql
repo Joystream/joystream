@@ -255,8 +255,8 @@ type UpcomingOpeningRemoved @variant {
 }
 
 type WorkingGroupMetadataSet @variant {
-  # TODO: Variant relationships
-  metadataId: ID!
+  "The new metadata snapshot resulting from the update"
+  metadata: WorkingGroupMetadata!
 }
 
 type InvalidActionMetadata @variant {

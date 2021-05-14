@@ -20,7 +20,7 @@ fragment MembershipBoughtEventFields on MembershipBoughtEvent {
 }
 # FIXME: Can this be a unique result?
 query getMembershipBoughtEventsByMemberId($memberId: ID!) {
-  membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
+  membershipBoughtEvents(where: { newMember: { id_eq: $memberId } }) {
     ...MembershipBoughtEventFields
   }
 }
@@ -41,7 +41,7 @@ fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
 }
 
 query getMemberProfileUpdatedEventsByMemberId($memberId: ID!) {
-  memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
+  memberProfileUpdatedEvents(where: { member: { id_eq: $memberId } }) {
     ...MemberProfileUpdatedEventFields
   }
 }
@@ -59,7 +59,7 @@ fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
 }
 
 query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
-  memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
+  memberAccountsUpdatedEvents(where: { member: { id_eq: $memberId } }) {
     ...MemberAccountsUpdatedEventFields
   }
 }
@@ -84,7 +84,7 @@ fragment MemberInvitedEventFields on MemberInvitedEvent {
 }
 
 query getMemberInvitedEventsByNewMemberId($newMemberId: ID!) {
-  memberInvitedEvents(where: { newMemberId_eq: $newMemberId }) {
+  memberInvitedEvents(where: { newMember: { id_eq: $newMemberId } }) {
     ...MemberInvitedEventFields
   }
 }
@@ -104,7 +104,7 @@ fragment InvitesTransferredEventFields on InvitesTransferredEvent {
 }
 
 query getInvitesTransferredEventsBySourceMemberId($sourceMemberId: ID!) {
-  invitesTransferredEvents(where: { sourceMemberId_eq: $sourceMemberId }) {
+  invitesTransferredEvents(where: { sourceMember: { id_eq: $sourceMemberId } }) {
     ...InvitesTransferredEventFields
   }
 }
@@ -121,7 +121,7 @@ fragment StakingAccountAddedEventFields on StakingAccountAddedEvent {
 }
 
 query getStakingAccountAddedEventsByMemberId($memberId: ID!) {
-  stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
+  stakingAccountAddedEvents(where: { member: { id_eq: $memberId } }) {
     ...StakingAccountAddedEventFields
   }
 }
@@ -138,7 +138,7 @@ fragment StakingAccountConfirmedEventFields on StakingAccountConfirmedEvent {
 }
 
 query getStakingAccountConfirmedEventsByMemberId($memberId: ID!) {
-  stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
+  stakingAccountConfirmedEvents(where: { member: { id_eq: $memberId } }) {
     ...StakingAccountConfirmedEventFields
   }
 }
@@ -155,7 +155,7 @@ fragment StakingAccountRemovedEventFields on StakingAccountRemovedEvent {
 }
 
 query getStakingAccountRemovedEventsByMemberId($memberId: ID!) {
-  stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
+  stakingAccountRemovedEvents(where: { member: { id_eq: $memberId } }) {
     ...StakingAccountRemovedEventFields
   }
 }
@@ -169,7 +169,7 @@ fragment ReferralCutUpdatedEventFields on ReferralCutUpdatedEvent {
 }
 
 query getReferralCutUpdatedEventsByEventId($eventId: ID!) {
-  referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
+  referralCutUpdatedEvents(where: { event: { id_eq: $eventId } }) {
     ...ReferralCutUpdatedEventFields
   }
 }
@@ -183,7 +183,7 @@ fragment MembershipPriceUpdatedEventFields on MembershipPriceUpdatedEvent {
 }
 
 query getMembershipPriceUpdatedEventsByEventId($eventId: ID!) {
-  membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
+  membershipPriceUpdatedEvents(where: { event: { id_eq: $eventId } }) {
     ...MembershipPriceUpdatedEventFields
   }
 }
@@ -197,7 +197,7 @@ fragment InitialInvitationBalanceUpdatedEventFields on InitialInvitationBalanceU
 }
 
 query getInitialInvitationBalanceUpdatedEventsByEventId($eventId: ID!) {
-  initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
+  initialInvitationBalanceUpdatedEvents(where: { event: { id_eq: $eventId } }) {
     ...InitialInvitationBalanceUpdatedEventFields
   }
 }
@@ -211,7 +211,7 @@ fragment InitialInvitationCountUpdatedEventFields on InitialInvitationCountUpdat
 }
 
 query getInitialInvitationCountUpdatedEventsByEventId($eventId: ID!) {
-  initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
+  initialInvitationCountUpdatedEvents(where: { event: { id_eq: $eventId } }) {
     ...InitialInvitationCountUpdatedEventFields
   }
 }

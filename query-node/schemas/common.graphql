@@ -77,7 +77,7 @@ type Event @entity {
   type: EventType!
 }
 
-# FIXME: Warthog bug currently prevents it from beeing implemented
+# FIXME: https://github.com/Joystream/hydra/issues/359
 # interface IEvent @entity {
 #   "Generic event data"
 #   event: Event!

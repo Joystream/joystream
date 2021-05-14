@@ -1,6 +1,6 @@
 import { ApiPromise } from '@polkadot/api'
 import { BalanceOf } from '@polkadot/types/interfaces'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+import { DatabaseManager } from '@dzlzv/hydra-common'
 import { Block, MembershipSystemSnapshot, WorkingGroup } from 'query-node/dist/model'
 import { CURRENT_NETWORK } from './common'
 import BN from 'bn.js'

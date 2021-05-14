@@ -61,7 +61,8 @@ export class LeaveRoleFixture extends BaseWorkingGroupFixture {
         worker.status.__typename === 'WorkerStatusLeft',
         `Invalid worker status: ${worker.status.__typename}`
       )
-      assert.equal(worker.status.workerStartedLeavingEventId, qEvent.id)
+      Utils.assert(worker.status.workerStartedLeavingEvent, 'Query node: Missing workerStartedLeavingEvent relation')
+      assert.equal(worker.status.workerStartedLeavingEvent.id, qEvent.id)
     })
   }
 
