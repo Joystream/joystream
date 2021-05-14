@@ -19,9 +19,8 @@ jobs:
         yarn install --frozen-lockfile
         yarn workspace @joystream/types build
         yarn workspace @joystream/content-metadata-protobuf build:ts
-        yarn workspace query-node-root query-node:build
+        ./query-node/build.sh
         yarn workspace query-node-mappings checks --quiet
-        yarn workspace query-node-root mappings:build
 
   query_node_build_osx:
     name: MacOS Checks
@@ -40,8 +39,5 @@ jobs:
         yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace @joystream/types build
         yarn workspace @joystream/content-metadata-protobuf build:ts
-        yarn workspace query-node-root query-node:build
+        ./query-node/build.sh
         yarn workspace query-node-mappings checks --quiet
-        yarn workspace query-node-root mappings:build
-
-
