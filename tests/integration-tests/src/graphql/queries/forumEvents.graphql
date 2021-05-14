@@ -1,0 +1,112 @@
+fragment CategoryCreatedEventFields on CategoryCreatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  category {
+    id
+  }
+}
+
+query getCategoryCreatedEventsByEventIds($eventIds: [ID!]) {
+  categoryCreatedEvents(where: { eventId_in: $eventIds }) {
+    ...CategoryCreatedEventFields
+  }
+}
+
+fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  category {
+    id
+  }
+  newArchivalStatus
+  actor {
+    id
+  }
+}
+
+query getCategoryUpdatedEventsByEventIds($eventIds: [ID!]) {
+  categoryUpdatedEvents(where: { eventId_in: $eventIds }) {
+    ...CategoryUpdatedEventFields
+  }
+}
+
+fragment CategoryDeletedEventFields on CategoryDeletedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  category {
+    id
+  }
+  actor {
+    id
+  }
+}
+
+query getCategoryDeletedEventsByEventIds($eventIds: [ID!]) {
+  categoryDeletedEvents(where: { eventId_in: $eventIds }) {
+    ...CategoryDeletedEventFields
+  }
+}
+
+fragment ThreadCreatedEventFields on ThreadCreatedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  thread {
+    id
+  }
+}
+
+query getThreadCreatedEventsByEventIds($eventIds: [ID!]) {
+  threadCreatedEvents(where: { eventId_in: $eventIds }) {
+    ...ThreadCreatedEventFields
+  }
+}
+
+fragment VoteOnPollEventFields on VoteOnPollEvent {
+  id
+  event {
+    ...EventFields
+  }
+  pollAlternative {
+    id
+    index
+    text
+    poll {
+      thread {
+        id
+      }
+    }
+  }
+  votingMember {
+    id
+  }
+}
+
+query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
+  voteOnPollEvents(where: { eventId_in: $eventIds }) {
+    ...VoteOnPollEventFields
+  }
+}
+
+fragment ThreadDeletedEventFields on ThreadDeletedEvent {
+  id
+  event {
+    ...EventFields
+  }
+  thread {
+    id
+  }
+}
+
+query getThreadDeletedEventsByEventIds($eventIds: [ID!]) {
+  threadDeletedEvents(where: { eventId_in: $eventIds }) {
+    ...ThreadDeletedEventFields
+  }
+}

@@ -1,0 +1,98 @@
+fragment ForumCategoryFields on ForumCategory {
+  id
+  parent {
+    id
+  }
+  title
+  description
+  threads {
+    id
+  }
+  moderators {
+    id
+  }
+  createdInEvent {
+    id
+  }
+  status {
+    __typename
+    ... on CategoryStatusArchived {
+      categoryUpdatedEventId
+    }
+    ... on CategoryStatusRemoved {
+      categoryDeletedEventId
+    }
+  }
+}
+
+query getCategoriesByIds($ids: [ID!]) {
+  forumCategories(where: { id_in: $ids }) {
+    ...ForumCategoryFields
+  }
+}
+
+fragment ForumThreadWithPostsFields on ForumThread {
+  id
+  author {
+    id
+  }
+  category {
+    id
+  }
+  title
+  posts {
+    id
+    text
+    author {
+      id
+    }
+    text
+    status {
+      __typename
+    }
+    origin {
+      __typename
+      ... on PostOriginThreadInitial {
+        threadCreatedEventId
+      }
+      ... on PostOriginThreadReply {
+        postAddedEventId
+      }
+    }
+  }
+  poll {
+    description
+    endTime
+    pollAlternatives {
+      index
+      text
+      votes {
+        votingMember {
+          id
+        }
+      }
+    }
+  }
+  isSticky
+  createdInEvent {
+    id
+  }
+  status {
+    __typename
+    ... on ThreadStatusLocked {
+      threadDeletedEventId
+    }
+    ... on ThreadStatusModerated {
+      threadModeratedEventId
+    }
+    ... on ThreadStatusRemoved {
+      threadDeletedEventId
+    }
+  }
+}
+
+query getThreadsWithPostsByIds($ids: [ID!]) {
+  forumThreads(where: { id_in: $ids }) {
+    ...ForumThreadWithPostsFields
+  }
+}

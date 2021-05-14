@@ -51,27 +51,28 @@ typegen:
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
   # Forum
-  # FIXME: https://github.com/Joystream/hydra/issues/373
-    # - forum.CategoryCreated
-    # - forum.CategoryUpdated
-    # - forum.CategoryDeleted
-    # - forum.ThreadCreated
-    # - forum.ThreadModerated
-    # - forum.ThreadUpdated
-    # - forum.ThreadTitleUpdated
-    # - forum.ThreadDeleted
-    # - forum.ThreadMoved
+    - forum.CategoryCreated
+    - forum.CategoryUpdated
+    - forum.CategoryDeleted
+    - forum.ThreadCreated
+    - forum.ThreadModerated
+    # - forum.ThreadUpdated FIXME: Not emitted by the runtime
+    - forum.ThreadTitleUpdated
+    - forum.ThreadDeleted
+    - forum.ThreadMoved
+    - forum.VoteOnPoll
+    # FIXME: https://github.com/Joystream/hydra/issues/373
     # - forum.PostAdded
     # - forum.PostModerated
     # - forum.PostDeleted
     # - forum.PostTextUpdated
     # - forum.PostReacted
-    # - forum.VoteOnPoll
     # - forum.CategoryStickyThreadUpdate
     # - forum.CategoryMembershipOfModeratorUpdated
   calls:
     - members.updateProfile
     - members.updateAccounts
+    - forum.createThread
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'
@@ -307,8 +308,6 @@ mappings:
       handler: forum_ThreadCreated(DatabaseManager, SubstrateEvent)
     - event: forum.ThreadModerated
       handler: forum_ThreadModerated(DatabaseManager, SubstrateEvent)
-    - event: forum.ThreadUpdated
-      handler: forum_ThreadUpdated(DatabaseManager, SubstrateEvent)
     - event: forum.ThreadTitleUpdated
       handler: forum_ThreadTitleUpdated(DatabaseManager, SubstrateEvent)
     - event: forum.ThreadDeleted

@@ -1,11 +1,3 @@
-type ForumModerator @entity {
-  "Moderator worker"
-  worker: Worker!
-
-  "Categories managed by the moderator"
-  categories: [ForumCategory!] @derivedFrom(field: "moderators")
-}
-
 type CategoryStatusActive @variant {
   # No additional information required
   _phantom: Int
@@ -42,7 +34,7 @@ type ForumCategory @entity {
   threads: [ForumThread!] @derivedFrom(field: "category")
 
   "List of all moderators managing this category"
-  moderators: [ForumModerator!]
+  moderators: [Worker!]
 
   "The event the category was created in"
   createdInEvent: CategoryCreatedEvent! @derivedFrom(field: "category")
@@ -76,7 +68,7 @@ type ThreadStatusModerated @variant {
 type ThreadStatusRemoved @variant {
   # TODO: Variant relationship
   "Id of the event the thread was removed in"
-  threadDeletedEvent: ID!
+  threadDeletedEventId: ID!
 }
 
 union ThreadStatus = ThreadStatusActive | ThreadStatusLocked | ThreadStatusModerated | ThreadStatusRemoved
@@ -94,9 +86,6 @@ type ForumThread @entity {
   "Thread title"
   title: String! @fulltext(query: "threadsByTitle")
 
-  "Thread text (md-formatted)"
-  text: String! @fulltext(query: "threadsByText")
-
   "All posts in the thread"
   posts: [ForumPost!] @derivedFrom(field: "thread")
 
@@ -107,7 +96,7 @@ type ForumThread @entity {
   isSticky: Boolean!
 
   "The event the thread was created in"
-  createdInEvent: ThreadCreatedEvent!
+  createdInEvent: ThreadCreatedEvent! @derivedFrom(field: "thread")
 
   "Current thread status"
   status: ThreadStatus!
@@ -135,6 +124,9 @@ type ForumPoll @entity {
 }
 
 type ForumPollAlternative @entity {
+  "Index uniquely identifying the alternative in given poll"
+  index: Int!
+
   "The related poll"
   poll: ForumPoll!
 
@@ -193,6 +185,20 @@ type PostStatusRemoved @variant {
 
 union PostStatus = PostStatusActive | PostStatusLocked | PostStatusModerated | PostStatusRemoved
 
+type PostOriginThreadInitial @variant {
+  # TODO: Variant relationship
+  "Id of the related thread creation event"
+  threadCreatedEventId: ID!
+}
+
+type PostOriginThreadReply @variant {
+  # TODO: Variant relationship
+  "Id of the related post added event"
+  postAddedEventId: ID!
+}
+
+union PostOrigin = PostOriginThreadInitial | PostOriginThreadReply
+
 type ForumPost @entity {
   "Runtime post id"
   id: ID!
@@ -212,8 +218,8 @@ type ForumPost @entity {
   "Current post status"
   status: PostStatus!
 
-  "The event the post was created in"
-  createdInEvent: PostAddedEvent! @derivedFrom(field: "post")
+  "The origin of the post (either thread creation event or regular PostAdded event)"
+  origin: PostOrigin!
 
   "List of all text update events (edits)"
   edits: [PostTextUpdatedEvent!] @derivedFrom(field: "post")

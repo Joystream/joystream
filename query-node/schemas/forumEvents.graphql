@@ -5,8 +5,7 @@ type CategoryCreatedEvent @entity {
   "The created category"
   category: ForumCategory!
 
-  "The moderator (possibly lead) responsible for creating the category"
-  actor: ForumModerator!
+  # The actor is always lead
 }
 
 type CategoryUpdatedEvent @entity {
@@ -20,7 +19,7 @@ type CategoryUpdatedEvent @entity {
   newArchivalStatus: Boolean!
 
   "The moderator (possibly lead) responsible for updating the category"
-  actor: ForumModerator!
+  actor: Worker!
 }
 
 type CategoryDeletedEvent @entity {
@@ -31,7 +30,7 @@ type CategoryDeletedEvent @entity {
   category: ForumCategory!
 
   "The moderator (possibly lead) responsible for deleting the category"
-  actor: ForumModerator!
+  actor: Worker!
 }
 
 type ThreadCreatedEvent @entity {
@@ -40,6 +39,12 @@ type ThreadCreatedEvent @entity {
 
   "The thread that was created"
   thread: ForumThread!
+
+  "Thread's original title"
+  title: String!
+
+  "Thread's original text"
+  text: String!
 
   # The author is already part of the Thread entity itself and is immutable
 }
@@ -55,7 +60,7 @@ type ThreadModeratedEvent @entity {
   rationale: String!
 
   "Actor responsible for the moderation"
-  actor: ForumModerator!
+  actor: Worker!
 }
 
 # FIXME: Not emitted by the runtime
@@ -70,7 +75,7 @@ type ThreadModeratedEvent @entity {
 #   newArchivalStatus: Boolean!
 
 #   "Actor responsible for the update"
-#   actor: ForumModerator!
+#   actor: Worker!
 # }
 
 type ThreadTitleUpdatedEvent @entity {
@@ -110,7 +115,7 @@ type ThreadMovedEvent @entity {
   newCategory: ForumCategory!
 
   "The actor performing the transfer"
-  actor: ForumModerator!
+  actor: Worker!
 }
 
 type PostAddedEvent @entity {
@@ -138,7 +143,7 @@ type PostModeratedEvent @entity {
   rationale: String!
 
   "The actor responsible for the moderation"
-  actor: ForumModerator!
+  actor: Worker!
 }
 
 type PostDeletedEvent @entity {
@@ -201,7 +206,7 @@ type CategoryStickyThreadUpdateEvent @entity {
   newStickyThreads: [ForumThread!]
 
   "The actor responsible for making the threads sticky"
-  actor: ForumModerator!
+  actor: Worker!
 }
 
 type CategoryMembershipOfModeratorUpdated @entity {
@@ -209,7 +214,7 @@ type CategoryMembershipOfModeratorUpdated @entity {
   event: Event!
 
   "The moderator in question"
-  moderator: ForumModerator!
+  moderator: Worker!
 
   "The category in question"
   category: ForumCategory!

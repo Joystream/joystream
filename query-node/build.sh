@@ -30,6 +30,7 @@ yarn
 yarn workspace query-node config:dev
 yarn workspace query-node codegen
 sed -i 's/get bytes(): Option/get optBytes(): Option/' ./mappings/generated/types/storage-working-group.ts
+sed -i 's/get categoryId(): Option/get optCategoryId(): Option/' ./mappings/generated/types/forum.ts
 yarn workspace query-node compile
 
 yarn workspace query-node-mappings build

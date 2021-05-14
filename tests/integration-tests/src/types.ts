@@ -1,16 +1,11 @@
-import { MemberId } from '@joystream/types/common'
+import { MemberId, PostId, ThreadId } from '@joystream/types/common'
 import { ApplicationId, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@joystream/types/working-group'
 import { Event } from '@polkadot/types/interfaces/system'
 import { BTreeMap } from '@polkadot/types'
 import { EventFieldsFragment } from './graphql/generated/queries'
-
-export type MemberContext = {
-  account: string
-  memberId: MemberId
-}
+import { CategoryId } from '@joystream/types/forum'
 
 export type AnyQueryNodeEvent = { event: EventFieldsFragment }
-
 export interface EventDetails {
   event: Event
   blockNumber: number
@@ -18,6 +13,13 @@ export interface EventDetails {
   blockHash: string
   indexInBlock: number
 }
+
+export type MemberContext = {
+  account: string
+  memberId: MemberId
+}
+
+// Membership
 
 export interface MembershipBoughtEventDetails extends EventDetails {
   memberId: MemberId
@@ -42,6 +44,8 @@ export type MembershipEventName =
   | 'ReferralCutUpdated'
   | 'InitialInvitationBalanceUpdated'
   | 'LeaderInvitationQuotaUpdated'
+
+// Working groups
 
 export interface OpeningAddedEventDetails extends EventDetails {
   openingId: OpeningId
@@ -85,3 +89,36 @@ export type WorkingGroupModuleName =
   | 'contentDirectoryWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
+
+// Forum
+
+export interface CategoryCreatedEventDetails extends EventDetails {
+  categoryId: CategoryId
+}
+
+export interface ThreadCreatedEventDetails extends EventDetails {
+  threadId: ThreadId
+}
+
+export interface PostAddedEventDetails extends EventDetails {
+  postId: PostId
+}
+
+export type ForumEventName =
+  | 'CategoryCreated'
+  | 'CategoryUpdated'
+  | 'CategoryDeleted'
+  | 'ThreadCreated'
+  | 'ThreadModerated'
+  | 'ThreadUpdated'
+  | 'ThreadTitleUpdated'
+  | 'ThreadDeleted'
+  | 'ThreadMoved'
+  | 'PostAdded'
+  | 'PostModerated'
+  | 'PostDeleted'
+  | 'PostTextUpdated'
+  | 'PostReacted'
+  | 'VoteOnPoll'
+  | 'CategoryStickyThreadUpdate'
+  | 'CategoryMembershipOfModeratorUpdated'

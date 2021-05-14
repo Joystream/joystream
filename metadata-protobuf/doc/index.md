@@ -6,14 +6,24 @@
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
   
+- [proto/Forum.proto](#proto/Forum.proto)
+    - [ForumPostMetadata](#.ForumPostMetadata)
+  
+    - [ForumPostReaction](#.ForumPostReaction)
+  
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
+    - [AddUpcomingOpening](#.AddUpcomingOpening)
     - [ApplicationMetadata](#.ApplicationMetadata)
     - [OpeningMetadata](#.OpeningMetadata)
     - [OpeningMetadata.ApplicationFormQuestion](#.OpeningMetadata.ApplicationFormQuestion)
-    - [WorkingGroupStatusMetadata](#.WorkingGroupStatusMetadata)
+    - [RemoveUpcomingOpening](#.RemoveUpcomingOpening)
+    - [SetGroupMetadata](#.SetGroupMetadata)
+    - [UpcomingOpeningMetadata](#.UpcomingOpeningMetadata)
+    - [WorkingGroupMetadata](#.WorkingGroupMetadata)
+    - [WorkingGroupMetadataAction](#.WorkingGroupMetadataAction)
   
     - [OpeningMetadata.ApplicationFormQuestion.InputType](#.OpeningMetadata.ApplicationFormQuestion.InputType)
   
@@ -55,6 +65,50 @@
 
 
 
+<a name="proto/Forum.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Forum.proto
+
+
+
+<a name=".ForumPostMetadata"></a>
+
+### ForumPostMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| text | [string](#string) | optional | Post text content (md-formatted) |
+| repliesTo | [uint32](#uint32) | optional | Id of the post that given post replies to (if any) |
+
+
+
+
+
+ 
+
+
+<a name=".ForumPostReaction"></a>
+
+### ForumPostReaction
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CANCEL | 0 | This means cancelling any previous reaction |
+| LIKE | 1 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="proto/Membership.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -71,7 +125,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) | optional | Member&#39;s real name |
-| avatar_uri | [string](#string) | optional | Member&#39;s avatar image uri |
+| avatar | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
 
 
@@ -92,6 +146,21 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## proto/WorkingGroups.proto
+
+
+
+<a name=".AddUpcomingOpening"></a>
+
+### AddUpcomingOpening
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| metadata | [UpcomingOpeningMetadata](#UpcomingOpeningMetadata) | optional | Upcoming opening metadata |
+
+
+
 
 
 
@@ -118,11 +187,11 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| short_description | [string](#string) | required | Short description of the opening |
-| description | [string](#string) | required | Full description of the opening |
-| hiring_limit | [uint32](#uint32) | required | Expected number of hired applicants |
-| expected_ending_timestamp | [uint64](#uint64) | required | Expected time when the opening will close (Unix timestamp) |
-| application_details | [string](#string) | required | Md-formatted text explaining the application process |
+| short_description | [string](#string) | optional | Short description of the opening |
+| description | [string](#string) | optional | Full description of the opening |
+| hiring_limit | [uint32](#uint32) | optional | Expected number of hired applicants |
+| expected_ending_timestamp | [uint32](#uint32) | optional | Expected time when the opening will close (Unix timestamp) |
+| application_details | [string](#string) | optional | Md-formatted text explaining the application process |
 | application_form_questions | [OpeningMetadata.ApplicationFormQuestion](#OpeningMetadata.ApplicationFormQuestion) | repeated | List of questions that should be answered during application |
 
 
@@ -138,17 +207,65 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| question | [string](#string) | required | The question itself (ie. &#34;What is your name?&#34;&#34;) |
-| type | [OpeningMetadata.ApplicationFormQuestion.InputType](#OpeningMetadata.ApplicationFormQuestion.InputType) | required | Suggested type of the UI answer input |
+| question | [string](#string) | optional | The question itself (ie. &#34;What is your name?&#34;&#34;) |
+| type | [OpeningMetadata.ApplicationFormQuestion.InputType](#OpeningMetadata.ApplicationFormQuestion.InputType) | optional | Suggested type of the UI answer input |
 
 
 
 
 
 
-<a name=".WorkingGroupStatusMetadata"></a>
+<a name=".RemoveUpcomingOpening"></a>
 
-### WorkingGroupStatusMetadata
+### RemoveUpcomingOpening
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) | optional | Upcoming opening query-node id |
+
+
+
+
+
+
+<a name=".SetGroupMetadata"></a>
+
+### SetGroupMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| new_metadata | [WorkingGroupMetadata](#WorkingGroupMetadata) | optional | New working group metadata to set (can be a partial update) |
+
+
+
+
+
+
+<a name=".UpcomingOpeningMetadata"></a>
+
+### UpcomingOpeningMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expected_start | [uint32](#uint32) | optional | Expected opening start (timestamp) |
+| reward_per_block | [uint64](#uint64) | optional | Expected reward per block |
+| min_application_stake | [uint64](#uint64) | optional | Expected min. application stake |
+| metadata | [OpeningMetadata](#OpeningMetadata) | optional | Opening metadata |
+
+
+
+
+
+
+<a name=".WorkingGroupMetadata"></a>
+
+### WorkingGroupMetadata
 
 
 
@@ -158,6 +275,23 @@
 | about | [string](#string) | optional | Status about text (md-formatted) |
 | status | [string](#string) | optional | The status itself (expected to be 1-3 words) |
 | status_message | [string](#string) | optional | Short status message |
+
+
+
+
+
+
+<a name=".WorkingGroupMetadataAction"></a>
+
+### WorkingGroupMetadataAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| set_group_metadata | [SetGroupMetadata](#SetGroupMetadata) | optional |  |
+| add_upcoming_opening | [AddUpcomingOpening](#AddUpcomingOpening) | optional |  |
+| remove_upcoming_opening | [RemoveUpcomingOpening](#RemoveUpcomingOpening) | optional |  |
 
 
 
@@ -173,8 +307,8 @@
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
+| TEXTAREA | 0 |  |
 | TEXT | 1 |  |
-| TEXTAREA | 2 |  |
 
 
  

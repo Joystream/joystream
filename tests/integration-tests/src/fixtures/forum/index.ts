@@ -1,0 +1,6 @@
+export { CreateCategoriesFixture, CategoryParams } from './CreateCategoriesFixture'
+export { UpdateCategoriesStatusFixture, CategoryStatusUpdate } from './UpdateCategoriesStatusFixture'
+export { RemoveCategoriesFixture, CategoryRemovalInput } from './RemoveCategoriesFixture'
+export { CreateThreadsFixture, ThreadParams } from './CreateThreadsFixture'
+export { DeleteThreadsFixture, ThreadRemovalInput } from './DeleteThreadsFixture'
+export { VoteOnPollFixture, VoteParams } from './VoteOnPollFixture'
