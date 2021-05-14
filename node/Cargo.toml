@@ -10,6 +10,7 @@ targets = ['x86_64-unknown-linux-gnu']
 
 [[bin]]
 name = 'joystream-node'
+path = 'bin/main.rs'
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -198,47 +199,58 @@ version = '3.0.0'
 [dependencies.cumulus-client-consensus-relay-chain]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
+version = '0.1.0'
 
 [dependencies.cumulus-client-collator]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
+version = '0.1.0'
 
 [dependencies.cumulus-client-cli]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
+version = '0.1.0'
 
 [dependencies.cumulus-client-network]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
+version = '0.1.0'
 
 [dependencies.cumulus-primitives-core]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
+version = '0.1.0'
 
 [dependencies.cumulus-client-service]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
+version = '0.1.0'
 
 # Polkadot dependencies
 [dependencies.polkadot-primitives]
 git = "https://github.com/paritytech/polkadot"
 branch = 'rococo-v1'
+version = '0.8.30'
 
 [dependencies.polkadot-service]
 git = "https://github.com/paritytech/polkadot"
 branch = 'rococo-v1'
+version = '0.8.30'
 
 [dependencies.polkadot-cli]
 git = "https://github.com/paritytech/polkadot"
 branch = 'rococo-v1'
+version = '0.8.30'
 
 [dependencies.polkadot-test-service]
 git = "https://github.com/paritytech/polkadot"
 branch = 'rococo-v1'
+version = '0.8.30'
 
 [dependencies.polkadot-parachain]
 git = "https://github.com/paritytech/polkadot"
 branch = 'rococo-v1'
+version = '0.8.30'
 
 [features]
 default = []

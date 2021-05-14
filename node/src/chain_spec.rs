@@ -4,13 +4,14 @@ pub mod initial_balances;
 pub mod initial_members;
 pub mod proposals_config;
 
+
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 
-use cumulus_primitives_core::ParaId;
+pub use cumulus_primitives_core::ParaId;
 use joystream_node_runtime::{
     membership, wasm_binary_unwrap, Balance, BalancesConfig, ContentConfig,
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
@@ -19,7 +20,9 @@ use joystream_node_runtime::{
     ParachainInfoConfig, ProposalsCodexConfig, SessionKeys, StakerStatus,
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
 };
-use joystream_node_runtime::{AccountId, Signature};
+
+// Exported to be used by chain-spec-builder
+pub use joystream_node_runtime::{AccountId, Signature, GenesisConfig};
 
 #[cfg(feature = "standalone")]
 use joystream_node_runtime::{
@@ -172,6 +175,19 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
             para_id: id.into(),
         },
     )
+}
+
+pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
+    let mut properties: json::map::Map<String, json::Value> = json::map::Map::new();
+    properties.insert(
+        String::from("tokenDecimals"),
+        json::Value::Number(json::Number::from(0)),
+    );
+    properties.insert(
+        String::from("tokenSymbol"),
+        json::Value::String(String::from("JOY")),
+    );
+    properties
 }
 
 #[allow(clippy::too_many_arguments)]
