@@ -15,12 +15,13 @@ use common::working_group::WorkingGroup;
 
 use crate::{
     AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DataObjectStorage,
-    DynamicBagId, Error, ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId,
+    DynamicBagId, DynamicBagType, Error, ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
 };
 
 use mocks::{
-    build_test_externalities, Balances, DataObjectDeletionPrize, MaxNumberOfDataObjectsPerBag,
+    build_test_externalities, Balances, DataObjectDeletionPrize,
+    InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag, MaxStorageBucketNumber,
     Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID, WG_LEADER_ACCOUNT_ID,
 };
@@ -133,13 +134,8 @@ fn create_storage_bucket_fails_with_non_leader_origin() {
 #[test]
 fn create_storage_bucket_fails_with_exceeding_max_storage_bucket_limit() {
     build_test_externalities().execute_with(|| {
-        CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Ok(()));
-
-        CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Ok(()));
+        let buckets_number = MaxStorageBucketNumber::get();
+        create_storage_buckets(buckets_number);
 
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -3131,4 +3127,88 @@ fn create_dynamic_bag(dynamic_bag_id: &DynamicBagId<Test>) {
     CreateDynamicBagFixture::default()
         .with_bag_id(dynamic_bag_id.clone())
         .call_and_assert(Ok(()));
+}
+
+#[test]
+fn test_storage_bucket_picking_for_bag_non_random() {
+    build_test_externalities().execute_with(|| {
+        // Randomness disabled on the initial block.
+
+        let initial_buckets_number = InitialStorageBucketsNumberForDynamicBag::get();
+        // No buckets
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+        assert_eq!(bucket_ids, BTreeSet::new());
+
+        // Less then initial buckets number
+        let buckets_number = initial_buckets_number - 1;
+        let created_buckets = create_storage_buckets(buckets_number);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        assert_eq!(bucket_ids, created_buckets);
+
+        // More then initial buckets number
+        let buckets_number = 5;
+        create_storage_buckets(buckets_number);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        assert_eq!(
+            bucket_ids,
+            BTreeSet::from_iter((0u64..initial_buckets_number).into_iter())
+        );
+    });
+}
+
+#[test]
+fn test_storage_bucket_picking_for_bag_with_randomness() {
+    build_test_externalities().execute_with(|| {
+        // Randomness disabled on the initial block.
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_buckets_number = InitialStorageBucketsNumberForDynamicBag::get();
+        // No buckets
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+        assert_eq!(bucket_ids, BTreeSet::new());
+
+        // Less then initial buckets number
+        let buckets_number = initial_buckets_number - 1;
+        let created_buckets = create_storage_buckets(buckets_number);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        println!("{:?}", Storage::next_storage_bucket_id());
+        assert_eq!(bucket_ids, created_buckets);
+
+        // More then initial buckets number
+        let buckets_number = 5;
+        create_storage_buckets(buckets_number);
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+
+        assert_eq!(
+            bucket_ids,
+            BTreeSet::from_iter((0u64..initial_buckets_number).into_iter())
+        );
+    });
+}
+
+fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
+    set_max_voucher_limits();
+
+    let objects_limit = 1;
+    let size_limit = 100;
+
+    let mut bucket_ids = BTreeSet::new();
+
+    for _ in 0..buckets_number {
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(None)
+            .with_objects_limit(objects_limit)
+            .with_size_limit(size_limit)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        bucket_ids.insert(bucket_id);
+    }
+
+    bucket_ids
 }

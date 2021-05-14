@@ -4285,6 +4285,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
+ "pallet-randomness-collective-flip",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",

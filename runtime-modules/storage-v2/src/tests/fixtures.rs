@@ -5,7 +5,7 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
-    Balances, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
+    Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
 };
 
@@ -19,9 +19,11 @@ use crate::{
 pub fn run_to_block(n: u64) {
     while System::block_number() < n {
         <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <CollectiveFlip as OnFinalize<u64>>::on_finalize(System::block_number());
         <Storage as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <CollectiveFlip as OnInitialize<u64>>::on_initialize(System::block_number());
         <Storage as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }

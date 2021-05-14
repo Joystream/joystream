@@ -678,9 +678,11 @@ parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
     pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
+    pub const MaxRandomIterationNumber: u64 = 30; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage_v2::StorageBucketsPerBagValueConstraint =
         storage_v2::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 5; //TODO: adjust value
 }
 
 impl storage_v2::Trait for Runtime {
@@ -696,6 +698,9 @@ impl storage_v2::Trait for Runtime {
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type InitialStorageBucketsNumberForDynamicBag = InitialStorageBucketsNumberForDynamicBag;
+    type Randomness = RandomnessCollectiveFlip;
+    type MaxRandomIterationNumber = MaxRandomIterationNumber;
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)

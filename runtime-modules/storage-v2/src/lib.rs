@@ -6,8 +6,6 @@
 #![warn(missing_docs)]
 
 // TODO: Remove old Storage pallet.
-// TODO: authentication_key
-// TODO: Check dynamic bag existence.
 // TODO: add dynamic bag creation policy.
 // TODO: add module comment
 // TODO: make public methods as root extrinsics to enable storage-node dev mode.
@@ -21,10 +19,11 @@ mod tests;
 mod benchmarking;
 
 mod bag_manager;
+mod storage_bucket_picker;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, ExistenceRequirement, Get};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -42,6 +41,7 @@ use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
 use bag_manager::BagManager;
+use storage_bucket_picker::StorageBucketPicker;
 
 //TODO: Prepare types for moving to common module for the DataObjectStorage.
 
@@ -164,6 +164,15 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// "Storage buckets per bag" value constraint.
     type StorageBucketsPerBagValueConstraint: Get<StorageBucketsPerBagValueConstraint>;
+
+    /// Defines initial storage buckets number assigned to a new dynamic bag.
+    type InitialStorageBucketsNumberForDynamicBag: Get<u64>; //TODO: remove?
+
+    /// Defines max random iteration number (eg.: when picking the storage buckets).
+    type MaxRandomIterationNumber: Get<u64>;
+
+    /// Something that provides randomness in the runtime.
+    type Randomness: Randomness<Self::Hash>;
 
     /// Demand the working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
@@ -961,6 +970,10 @@ decl_module! {
         /// Exports const - "Storage buckets per bag" value constraint.
         const StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
             T::StorageBucketsPerBagValueConstraint::get();
+
+        /// Exports const - initial storage buckets number assigned to a new dynamic bag.
+        const InitialStorageBucketsNumberForDynamicBag: u64 =
+            T::InitialStorageBucketsNumberForDynamicBag::get();
 
         // ===== Storage Lead actions =====
 
@@ -2203,5 +2216,12 @@ impl<T: Trait> Module<T> {
         if fee != Zero::zero() {
             let _ = Balances::<T>::slash(account_id, fee);
         }
+    }
+
+    // Selects storage bucket ID sets to assign to the storage bucket.
+    pub(crate) fn pick_storage_buckets_for_dynamic_bag(
+        _bag_type: DynamicBagType,
+    ) -> BTreeSet<T::StorageBucketId> {
+        StorageBucketPicker::<T>::pick_storage_buckets()
     }
 }

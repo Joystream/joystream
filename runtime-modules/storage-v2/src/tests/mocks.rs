@@ -50,13 +50,15 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxStorageBucketNumber: u64 = 2;
+    pub const MaxStorageBucketNumber: u64 = 1000;
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
+    pub const MaxRandomIterationNumber: u64 = 3;
 }
 
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -76,6 +78,9 @@ impl crate::Trait for Test {
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = ();
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type InitialStorageBucketsNumberForDynamicBag = InitialStorageBucketsNumberForDynamicBag;
+    type Randomness = CollectiveFlip;
+    type MaxRandomIterationNumber = MaxRandomIterationNumber;
 
     fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -179,3 +184,4 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 pub type Storage = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
+pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
