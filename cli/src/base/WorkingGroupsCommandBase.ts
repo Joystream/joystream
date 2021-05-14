@@ -194,6 +194,6 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
     if (flags.group) {
       this.group = flags.group
     }
-    this.log(chalk.white('Current Group: ' + this.group))
+    this.log(chalk.magentaBright('Current Group: ' + this.group))
   }
 }

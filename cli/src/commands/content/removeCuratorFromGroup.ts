@@ -33,7 +33,7 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
       curatorId = await this.promptForCurator('Choose a Curator to remove', groupCuratorIds)
     } else {
       if (!groupCuratorIds.includes(parseInt(curatorId))) {
-        this.error(`Curator ${chalk.white(curatorId)} is not part of group ${chalk.white(groupId)}`)
+        this.error(`Curator ${chalk.magentaBright(curatorId)} is not part of group ${chalk.magentaBright(groupId)}`)
       }
       await this.getCurator(curatorId)
     }
@@ -41,6 +41,10 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
     await this.requestAccountDecoding(account)
     await this.sendAndFollowNamedTx(account, 'content', 'removeCuratorFromGroup', [groupId, curatorId])
 
-    this.log(chalk.green(`Curator ${chalk.white(curatorId)} successfully removed from group ${chalk.white(groupId)}!`))
+    this.log(
+      chalk.green(
+        `Curator ${chalk.magentaBright(curatorId)} successfully removed from group ${chalk.magentaBright(groupId)}!`
+      )
+    )
   }
 }

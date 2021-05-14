@@ -198,7 +198,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       if (output) {
         try {
           saveOutputJsonToFile(output, rememberedInput)
-          this.log(chalk.green(`Output succesfully saved in: ${chalk.white(output)}!`))
+          this.log(chalk.green(`Output succesfully saved in: ${chalk.magentaBright(output)}!`))
         } catch (e) {
           this.warn(`Could not save output to ${output}!`)
         }
@@ -209,7 +209,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
 
       // Send the tx
-      this.log(chalk.white('Sending the extrinsic...'))
+      this.log(chalk.magentaBright('Sending the extrinsic...'))
       const txSuccess = await this.sendAndFollowTx(
         account,
         this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams),

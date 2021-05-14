@@ -30,7 +30,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
     const workerId = parseInt(args.workerId)
     const groupMember = await this.getWorkerWithStakeForLeadAction(workerId)
 
-    this.log(chalk.white('Current worker stake: ', formatBalance(groupMember.stake)))
+    this.log(chalk.magentaBright('Current worker stake: ', formatBalance(groupMember.stake)))
     const balanceValidator = minMaxInt(1, groupMember.stake.toNumber())
     const balance = (await this.promptForParam(
       'Balance',
@@ -43,7 +43,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
 
     this.log(
       chalk.green(
-        `${chalk.white(formatBalance(balance))} from worker ${chalk.white(
+        `${chalk.magentaBright(formatBalance(balance))} from worker ${chalk.magentaBright(
           workerId
         )} stake has been succesfully slashed!`
       )
