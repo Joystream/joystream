@@ -57,14 +57,6 @@ export async function storageWorkingGroup_WorkerExited(db: DatabaseManager, even
   await workingGroup_WorkerExited(db, WorkerType.STORAGE, workerId)
 }
 
-export async function storageWorkingGroup_LeaderSet(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
-  // read event data
-  const {workerId} = new StorageWorkingGroup.LeaderSetEvent(event).data
-
-  // call generic processing
-  await workingGroup_LeaderSet(db, WorkerType.STORAGE, workerId)
-}
-
 export async function storageWorkingGroup_TerminatedLeader(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const {workerId} = new StorageWorkingGroup.TerminatedLeaderEvent(event).data
@@ -105,14 +97,6 @@ export async function gatewayWorkingGroup_WorkerExited(db: DatabaseManager, even
 
   // call generic processing
   await workingGroup_WorkerExited(db, WorkerType.GATEWAY, workerId)
-}
-
-export async function gatewayWorkingGroup_LeaderSet(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
-  // read event data
-  const {workerId} = new GatewayWorkingGroup.LeaderSetEvent(event).data
-
-  // call generic processing
-  await workingGroup_LeaderSet(db, WorkerType.GATEWAY, workerId)
 }
 
 export async function gatewayWorkingGroup_TerminatedLeader(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -176,14 +160,6 @@ export async function workingGroup_WorkerExited(db: DatabaseManager, workerType:
 
   // emit log event
   logger.info("Worker has been removed (worker exited)", {workerId, workerType})
-}
-
-export async function workingGroup_LeaderSet(db: DatabaseManager, workerType: WorkerType, workerId: WorkerId): Promise<void> {
-  // create leader (worker)
-  await createWorker(db, workerId, workerType)
-
-  // emit log event
-  logger.info("Working group leader has been removed (worker exited)", {workerId, workerType})
 }
 
 export async function workingGroup_TerminatedLeader(db: DatabaseManager, workerType: WorkerType, workerId: WorkerId): Promise<void> {

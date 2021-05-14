@@ -58,16 +58,12 @@ typegen:
     - storage_working_group.OpeningFilled
     - storage_working_group.TerminatedWorker
     - storage_working_group.WorkerExited
-    - storage_working_group.LeaderSet
-    # - storage_working_group.LeaderUnset # not needed as long as Leader vs Worker distinction is not needed
     - storage_working_group.TerminatedLeader
 
     - gateway_working_group.WorkerStorageUpdated
     - gateway_working_group.OpeningFilled
     - gateway_working_group.TerminatedWorker
     - gateway_working_group.WorkerExited
-    - gateway_working_group.LeaderSet
-    # - gateway_working_group.LeaderUnset # not needed as long as Leader vs Worker distinction is not needed
     - gateway_working_group.TerminatedLeader
   calls:
     # members
@@ -219,8 +215,6 @@ mappings:
       handler: storageWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
 
     ## storage - leader
-    - event: storageWorkingGroup.LeaderSet
-      handler: storageWorkingGroup_LeaderSet(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.TerminatedLeader
       handler: storageWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
 
@@ -235,8 +229,6 @@ mappings:
       handler: gatewayWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
 
     ## gateway - leader
-    - event: gatewayWorkingGroup.LeaderSet
-      handler: gatewayWorkingGroup_LeaderSet(DatabaseManager, SubstrateEvent)
     - event: gatewayWorkingGroup.TerminatedLeader
       handler: gatewayWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
 

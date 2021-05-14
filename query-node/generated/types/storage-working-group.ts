@@ -208,45 +208,6 @@ export namespace StorageWorkingGroup {
     }
   }
   /**
-   *  Emits on setting the leader.
-   *  Params:
-   *  - Worker id.
-   *
-   *  Event parameters: [WorkerId, ]
-   */
-  export class LeaderSetEvent {
-    public readonly expectedParamTypes = ["WorkerId"];
-
-    constructor(public readonly ctx: SubstrateEvent) {}
-
-    get data(): LeaderSet_Params {
-      return new LeaderSet_Params(this.ctx);
-    }
-
-    validateParams(): boolean {
-      if (this.expectedParamTypes.length !== this.ctx.params.length) {
-        return false;
-      }
-      let valid = true;
-      this.expectedParamTypes.forEach((type, i) => {
-        if (type !== this.ctx.params[i].type) {
-          valid = false;
-        }
-      });
-      return valid;
-    }
-  }
-
-  class LeaderSet_Params {
-    constructor(public readonly ctx: SubstrateEvent) {}
-
-    get workerId(): WorkerId {
-      return createTypeUnsafe<WorkerId & Codec>(typeRegistry, "WorkerId", [
-        this.ctx.params[0].value,
-      ]);
-    }
-  }
-  /**
    *  Emits on terminating the leader.
    *  Params:
    *  - leader worker id.
