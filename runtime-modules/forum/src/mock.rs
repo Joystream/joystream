@@ -1,15 +1,18 @@
 #![cfg(test)]
 
+use crate as forum;
 use crate::*;
 use common::BlockAndTime;
 
-use frame_support::{impl_outer_origin, parameter_types};
+use frame_support::{parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
+
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
 /// Module which has a full Substrate module for
 /// mocking behaviour of MembershipRegistry
@@ -54,47 +57,52 @@ pub mod registry {
     pub type TestMembershipRegistryModule = Module<Runtime>;
 }
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+    }
+);
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Runtime;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockWeight: Weight = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
 }
 
 impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
+    type Call = Call;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128; // u64 is not enough to hold bytes used to generate bounty account
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
-    type PalletInfo = ();
+    type SS58Prefix = ();
+    type OnSetCode = ();
+}
+
+parameter_types! {
+    pub const MinimumPeriod: u64 = 5;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -105,7 +113,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 impl Config for Runtime {
-    type Event = ();
+    type Event = Event;
     type MembershipRegistry = registry::TestMembershipRegistryModule;
     type ThreadId = u64;
     type PostId = u64;
@@ -409,8 +417,8 @@ pub fn assert_not_forum_sudo_cannot_update_category(
 /// - add each config as parameter, then
 ///
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn default_genesis_config() -> forum::GenesisConfig<Runtime> {
+    forum::GenesisConfig::<Runtime> {
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
         thread_by_id: vec![],
@@ -496,8 +504,8 @@ pub fn genesis_config(
     post_text_constraint: &InputValidationLengthConstraint,
     thread_moderation_rationale_constraint: &InputValidationLengthConstraint,
     post_moderation_rationale_constraint: &InputValidationLengthConstraint,
-) -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+) -> forum::GenesisConfig<Runtime> {
+    forum::GenesisConfig::<Runtime> {
         category_by_id: category_by_id.clone(),
         next_category_id,
         thread_by_id: thread_by_id.clone(),
@@ -524,7 +532,7 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities(config: forum::GenesisConfig<Runtime>) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
