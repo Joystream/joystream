@@ -165,8 +165,11 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// "Storage buckets per bag" value constraint.
     type StorageBucketsPerBagValueConstraint: Get<StorageBucketsPerBagValueConstraint>;
 
-    /// Defines initial storage buckets number assigned to a new dynamic bag.
-    type InitialStorageBucketsNumberForDynamicBag: Get<u64>; //TODO: remove?
+    /// Defines the default dynamic bag creation policy for members.
+    type DefaultMemberDynamicBagCreationPolicy: Get<DynamicBagCreationPolicy>;
+
+    /// Defines the default dynamic bag creation policy for channels.
+    type DefaultChannelDynamicBagCreationPolicy: Get<DynamicBagCreationPolicy>;
 
     /// Defines max random iteration number (eg.: when picking the storage buckets).
     type MaxRandomIterationNumber: Get<u64>;
@@ -864,6 +867,12 @@ decl_event! {
         /// Params
         /// - storage bucket ID
         StorageBucketDeleted(StorageBucketId),
+
+        /// Emits on updating the number of storage buckets in dynamic bag creation policy.
+        /// Params
+        /// - dynamic bag type
+        /// - new number of storage buckets
+        NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(DynamicBagType, u64),
     }
 }
 
@@ -1002,9 +1011,13 @@ decl_module! {
         const StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
             T::StorageBucketsPerBagValueConstraint::get();
 
-        /// Exports const - initial storage buckets number assigned to a new dynamic bag.
-        const InitialStorageBucketsNumberForDynamicBag: u64 =
-            T::InitialStorageBucketsNumberForDynamicBag::get();
+        /// Exports const - the default dynamic bag creation policy for members.
+        const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy =
+            T::DefaultMemberDynamicBagCreationPolicy::get();
+
+        /// Exports const - the default dynamic bag creation policy for channels.
+        const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy =
+            T::DefaultChannelDynamicBagCreationPolicy::get();
 
         // ===== Storage Lead actions =====
 
@@ -1102,6 +1115,33 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::StorageBucketsVoucherMaxLimitsUpdated(new_objects_size, new_objects_number)
+            );
+        }
+
+        /// Update number of storage buckets used in given dynamic bag creation policy.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+            origin,
+            dynamic_bag_type: DynamicBagType,
+            number_of_storage_buckets: u64,
+        ) {
+            T::ensure_working_group_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+
+            creation_policy.number_of_storage_buckets = number_of_storage_buckets;
+
+            DynamicBagCreationPolicies::insert(dynamic_bag_type, creation_policy);
+
+            Self::deposit_event(
+                RawEvent::NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(
+                    dynamic_bag_type,
+                    number_of_storage_buckets
+                )
             );
         }
 
@@ -2263,10 +2303,11 @@ impl<T: Trait> Module<T> {
 
     // Get default dynamic bag policy by bag type. // TODO: implement
     fn get_default_dynamic_bag_creation_policy(
-        _bag_type: DynamicBagType,
+        bag_type: DynamicBagType,
     ) -> DynamicBagCreationPolicy {
-        DynamicBagCreationPolicy {
-            number_of_storage_buckets: T::InitialStorageBucketsNumberForDynamicBag::get(),
+        match bag_type {
+            DynamicBagType::Member => T::DefaultMemberDynamicBagCreationPolicy::get(),
+            DynamicBagType::Channel => T::DefaultChannelDynamicBagCreationPolicy::get(),
         }
     }
 

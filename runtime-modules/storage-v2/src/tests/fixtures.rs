@@ -11,7 +11,8 @@ use super::mocks::{
 
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
-    ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus, UploadParameters,
+    DynamicBagType, ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -1107,6 +1108,63 @@ impl CreateDynamicBagFixture {
 
         if actual_result.is_ok() {
             assert!(<crate::DynamicBags<Test>>::contains_key(&self.bag_id));
+        }
+    }
+}
+
+pub struct UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
+    origin: RawOrigin<u64>,
+    new_storage_buckets_number: u64,
+    dynamic_bag_type: DynamicBagType,
+}
+
+impl UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            new_storage_buckets_number: 0,
+            dynamic_bag_type: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_storage_buckets_number(self, new_storage_buckets_number: u64) -> Self {
+        Self {
+            new_storage_buckets_number,
+            ..self
+        }
+    }
+
+    pub fn with_dynamic_bag_type(self, dynamic_bag_type: DynamicBagType) -> Self {
+        Self {
+            dynamic_bag_type,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+
+        let actual_result =
+            Storage::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+                self.origin.clone().into(),
+                self.dynamic_bag_type,
+                self.new_storage_buckets_number,
+            );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+        if actual_result.is_ok() {
+            assert_eq!(
+                new_policy.number_of_storage_buckets,
+                self.new_storage_buckets_number
+            );
+        } else {
+            assert_eq!(old_policy, new_policy);
         }
     }
 }

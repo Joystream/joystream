@@ -64,6 +64,7 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, Membershi
 
 use governance::{council, election};
 use storage::data_object_storage_registry;
+use storage_v2::DynamicBagCreationPolicy;
 
 // Node dependencies
 pub use common;
@@ -682,7 +683,12 @@ parameter_types! {
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage_v2::StorageBucketsPerBagValueConstraint =
         storage_v2::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
-    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 5; //TODO: adjust value
+    pub const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
+        number_of_storage_buckets: 4
+    }; //TODO: adjust value
+    pub const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
+        number_of_storage_buckets: 4
+    }; //TODO: adjust value
 }
 
 impl storage_v2::Trait for Runtime {
@@ -698,7 +704,8 @@ impl storage_v2::Trait for Runtime {
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
-    type InitialStorageBucketsNumberForDynamicBag = InitialStorageBucketsNumberForDynamicBag;
+    type DefaultMemberDynamicBagCreationPolicy = DefaultMemberDynamicBagCreationPolicy;
+    type DefaultChannelDynamicBagCreationPolicy = DefaultChannelDynamicBagCreationPolicy;
     type Randomness = RandomnessCollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
 

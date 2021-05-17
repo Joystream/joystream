@@ -22,6 +22,7 @@ use crate::{
 
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
+    DefaultChannelDynamicBagCreationPolicy, DefaultMemberDynamicBagCreationPolicy,
     InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag,
     MaxRandomIterationNumber, MaxStorageBucketNumber, Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID,
     DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
@@ -3083,7 +3084,7 @@ fn update_storage_buckets_voucher_max_limits_succeeded() {
 }
 
 #[test]
-fn update_storage_buckets_voucher_max_limits_origin() {
+fn update_storage_buckets_voucher_max_limits_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         let non_leader_id = 1;
 
@@ -3349,4 +3350,74 @@ fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
     }
 
     bucket_ids
+}
+
+#[test]
+fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let dynamic_bag_type = DynamicBagType::Channel;
+        let new_bucket_number = 40;
+
+        UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_storage_buckets_number(new_bucket_number)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(
+            RawEvent::NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(
+                dynamic_bag_type,
+                new_bucket_number,
+            ),
+        );
+    });
+}
+
+#[test]
+fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn dynamic_bag_creation_policy_defaults_and_updates_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let new_bucket_number = 40;
+
+        // Change member dynamic bag creation policy.
+        let dynamic_bag_type = DynamicBagType::Member;
+        let policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_type);
+        assert_eq!(policy, DefaultMemberDynamicBagCreationPolicy::get());
+
+        UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_storage_buckets_number(new_bucket_number)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        let policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_type);
+        assert_eq!(policy.number_of_storage_buckets, new_bucket_number);
+
+        // Change channel dynamic bag creation policy.
+        let dynamic_bag_type = DynamicBagType::Channel;
+        let policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_type);
+        assert_eq!(policy, DefaultChannelDynamicBagCreationPolicy::get());
+
+        UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_storage_buckets_number(new_bucket_number)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        let policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_type);
+        assert_eq!(policy.number_of_storage_buckets, new_bucket_number);
+    });
 }
