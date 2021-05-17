@@ -7,7 +7,7 @@ use sp_std::cell::RefCell;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
 
-use crate::{Module, Trait};
+use crate::{DynamicBagType, Module, Trait};
 
 // Generates storage bucket IDs to assign to a new dynamic bag.
 pub(crate) struct StorageBucketPicker<T> {
@@ -16,13 +16,19 @@ pub(crate) struct StorageBucketPicker<T> {
 
 impl<T: Trait> StorageBucketPicker<T> {
     // Selects storage bucket ID sets to assign to the storage bucket.
-    // At first it tries to generate random bucket IDs. If acquired random IDs number is not enough
-    // it tries to get additional IDs starting from zero up to total number of the possible IDs.
+    // At first, it tries to generate random bucket IDs. If acquired random IDs number is not enough
+    // it tries to get additional IDs starting from zero up to the total number of the possible IDs.
     // The function filters deleted buckets and disabled buckets (accepting_new_bags == false)
     // Total number of possible IDs is limited by the dynamic bag settings.
-    // Returns the accumulated bucket ID set or empty set.
-    pub(crate) fn pick_storage_buckets() -> BTreeSet<T::StorageBucketId> {
-        let required_bucket_num = T::InitialStorageBucketsNumberForDynamicBag::get() as usize;
+    // Returns an accumulated bucket ID set or an empty set.
+    pub(crate) fn pick_storage_buckets(bag_type: DynamicBagType) -> BTreeSet<T::StorageBucketId> {
+        let creation_policy = Module::<T>::get_dynamic_bag_creation_policy(bag_type);
+
+        if creation_policy.no_storage_buckets_required() {
+            return BTreeSet::new();
+        }
+
+        let required_bucket_num = creation_policy.number_of_storage_buckets as usize;
 
         // Storage IDs accumulator.
         let bucket_ids_cell = RefCell::new(BTreeSet::new());

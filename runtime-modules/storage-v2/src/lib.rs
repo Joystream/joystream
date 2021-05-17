@@ -233,6 +233,23 @@ impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccoun
     type ModuleId = ModId;
 }
 
+/// Holds parameter values impacting how exactly the creation of a new dynamic bag occurs,
+/// and there is one such policy for each type of dynamic bag.
+/// It describes how many storage buckets should store the bag.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct DynamicBagCreationPolicy {
+    /// The number of storage buckets which should replicate the new bag.
+    pub number_of_storage_buckets: u64,
+}
+
+impl DynamicBagCreationPolicy {
+    // Verifies non-zero number of storage buckets.
+    pub(crate) fn no_storage_buckets_required(&self) -> bool {
+        self.number_of_storage_buckets == 0
+    }
+}
+
 /// "Storage buckets per bag" value constraint type.
 pub type StorageBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
 
@@ -346,7 +363,7 @@ impl<MemberId, ChannelId> Default for BagIdType<MemberId, ChannelId> {
 
 /// Define dynamic bag types.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, Copy)]
 pub enum DynamicBagType {
     /// Member dynamic bag type.
     Member,
@@ -395,6 +412,16 @@ pub enum DynamicBagIdType<MemberId, ChannelId> {
 impl<MemberId: Default, ChannelId> Default for DynamicBagIdType<MemberId, ChannelId> {
     fn default() -> Self {
         Self::Member(Default::default())
+    }
+}
+
+#[allow(clippy::from_over_into)] // Cannot implement From using these types.
+impl<MemberId: Default, ChannelId> Into<DynamicBagType> for DynamicBagIdType<MemberId, ChannelId> {
+    fn into(self) -> DynamicBagType {
+        match self {
+            DynamicBagIdType::Member(_) => DynamicBagType::Member,
+            DynamicBagIdType::Channel(_) => DynamicBagType::Channel,
+        }
     }
 }
 
@@ -675,6 +702,10 @@ decl_storage! {
 
         /// "Max objects number for a storage bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
+
+        /// DynamicBagCreationPolicy by bag type storage map.
+        pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy):
+            map hasher(blake2_128_concat) DynamicBagType => DynamicBagCreationPolicy;
     }
 }
 
@@ -1656,7 +1687,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let bag = DynamicBag::<T>::default();
+        let storage_buckets = Self::pick_storage_buckets_for_dynamic_bag(bag_id.clone().into());
+
+        let bag = DynamicBag::<T> {
+            stored_by: storage_buckets,
+            ..Default::default()
+        };
 
         <DynamicBags<T>>::insert(&bag_id, bag);
 
@@ -2220,8 +2256,28 @@ impl<T: Trait> Module<T> {
 
     // Selects storage bucket ID sets to assign to the storage bucket.
     pub(crate) fn pick_storage_buckets_for_dynamic_bag(
-        _bag_type: DynamicBagType,
+        bag_type: DynamicBagType,
     ) -> BTreeSet<T::StorageBucketId> {
-        StorageBucketPicker::<T>::pick_storage_buckets()
+        StorageBucketPicker::<T>::pick_storage_buckets(bag_type)
+    }
+
+    // Get default dynamic bag policy by bag type. // TODO: implement
+    fn get_default_dynamic_bag_creation_policy(
+        _bag_type: DynamicBagType,
+    ) -> DynamicBagCreationPolicy {
+        DynamicBagCreationPolicy {
+            number_of_storage_buckets: T::InitialStorageBucketsNumberForDynamicBag::get(),
+        }
+    }
+
+    // Loads dynamic bag creation policy or use default values.
+    pub(crate) fn get_dynamic_bag_creation_policy(
+        bag_type: DynamicBagType,
+    ) -> DynamicBagCreationPolicy {
+        if DynamicBagCreationPolicies::contains_key(bag_type) {
+            return Self::dynamic_bag_creation_policy(bag_type);
+        }
+
+        Self::get_default_dynamic_bag_creation_policy(bag_type)
     }
 }

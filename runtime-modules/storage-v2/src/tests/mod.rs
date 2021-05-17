@@ -15,8 +15,9 @@ use common::working_group::WorkingGroup;
 
 use crate::{
     AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DataObjectStorage,
-    DynamicBagId, DynamicBagType, Error, ModuleAccount, ObjectsInBagParams, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
+    DynamicBagCreationPolicy, DynamicBagId, DynamicBagType, Error, ModuleAccount,
+    ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
+    UploadParameters, Voucher,
 };
 
 use mocks::{
@@ -522,6 +523,8 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
 #[test]
 fn update_storage_buckets_for_dynamic_bags_succeeded() {
     build_test_externalities().execute_with(|| {
+        set_update_storage_buckets_per_bag_limit();
+
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
@@ -1253,12 +1256,18 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
 #[test]
 fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
     build_test_externalities().execute_with(|| {
+        set_max_voucher_limits();
+
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
+        let objects_limit = 1;
+        let size_limit = 100;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_invite_worker(invite_worker)
+            .with_objects_limit(objects_limit)
+            .with_size_limit(size_limit)
             .call_and_assert(Ok(()))
             .unwrap();
 
@@ -1905,15 +1914,6 @@ fn delete_data_objects_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
-
-        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
-        let invite_worker = Some(storage_provider_id);
-
-        CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(invite_worker)
-            .call_and_assert(Ok(()))
-            .unwrap();
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -3101,11 +3101,26 @@ fn create_dynamic_bag_succeeded() {
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
+        create_storage_buckets(10);
+
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(dynamic_bag_id));
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(dynamic_bag_id.clone()));
+
+        let bag = Storage::dynamic_bag(dynamic_bag_id.clone());
+        // Check that IDs are within possible range.
+        assert!(bag
+            .stored_by
+            .iter()
+            .all(|id| { *id < Storage::next_storage_bucket_id() }));
+
+        let creation_policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_id.into());
+        assert_eq!(
+            bag.stored_by.len(),
+            creation_policy.number_of_storage_buckets as usize
+        );
     });
 }
 
@@ -3183,6 +3198,15 @@ fn test_storage_bucket_picking_for_bag_non_random() {
         expected_ids.remove(&disabled_bucket_id);
 
         assert_eq!(bucket_ids, expected_ids);
+
+        // No storage buckets required
+        crate::DynamicBagCreationPolicies::insert(
+            DynamicBagType::Member,
+            DynamicBagCreationPolicy::default(),
+        );
+
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+        assert_eq!(bucket_ids, BTreeSet::new());
     });
 }
 
@@ -3256,6 +3280,15 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
             .all(|id| { *id < Storage::next_storage_bucket_id() }));
         // Check removed bucket
         assert!(!bucket_ids.contains(removed_bucket_id));
+
+        // No storage buckets required
+        crate::DynamicBagCreationPolicies::insert(
+            DynamicBagType::Member,
+            DynamicBagCreationPolicy::default(),
+        );
+
+        let bucket_ids = Storage::pick_storage_buckets_for_dynamic_bag(DynamicBagType::Member);
+        assert_eq!(bucket_ids, BTreeSet::new());
     });
 }
 
