@@ -11,8 +11,7 @@ use super::mocks::{
 
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
-    DynamicBagType, ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    UploadParameters,
+    DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -41,7 +40,6 @@ impl EventFixture {
             u64,
             u64,
             UploadParameters<Test>,
-            ObjectsInBagParams<Test>,
             BagId<Test>,
             DynamicBagId<Test>,
             u64,
@@ -59,7 +57,6 @@ impl EventFixture {
             u64,
             u64,
             UploadParameters<Test>,
-            ObjectsInBagParams<Test>,
             BagId<Test>,
             DynamicBagId<Test>,
             u64,
@@ -395,7 +392,8 @@ pub struct AcceptPendingDataObjectsFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
     storage_bucket_id: u64,
-    params: ObjectsInBagParams<Test>,
+    bag_id: BagId<Test>,
+    data_object_ids: BTreeSet<u64>,
 }
 
 impl AcceptPendingDataObjectsFixture {
@@ -404,7 +402,8 @@ impl AcceptPendingDataObjectsFixture {
             origin: RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID),
             worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
-            params: Default::default(),
+            data_object_ids: Default::default(),
+            bag_id: Default::default(),
         }
     }
 
@@ -416,8 +415,15 @@ impl AcceptPendingDataObjectsFixture {
         Self { worker_id, ..self }
     }
 
-    pub fn with_params(self, params: ObjectsInBagParams<Test>) -> Self {
-        Self { params, ..self }
+    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn with_data_object_ids(self, data_object_ids: BTreeSet<u64>) -> Self {
+        Self {
+            data_object_ids,
+            ..self
+        }
     }
 
     pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
@@ -432,7 +438,8 @@ impl AcceptPendingDataObjectsFixture {
             self.origin.clone().into(),
             self.worker_id,
             self.storage_bucket_id,
-            self.params.clone(),
+            self.bag_id.clone(),
+            self.data_object_ids.clone(),
         );
 
         assert_eq!(actual_result, expected_result);

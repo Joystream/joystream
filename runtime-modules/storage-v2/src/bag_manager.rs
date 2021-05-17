@@ -167,6 +167,25 @@ impl<T: Trait> BagManager<T> {
         .ok_or_else(|| Error::<T>::DataObjectDoesntExist.into())
     }
 
+    // Check the storage bucket binding for a bag.
+    pub(crate) fn ensure_storage_bucket_bound(
+        bag_id: &BagId<T>,
+        storage_bucket_id: &T::StorageBucketId,
+    ) -> DispatchResult {
+        let storage_bucket_bound = Self::query(
+            bag_id,
+            |bag| bag.stored_by.contains(storage_bucket_id),
+            |bag| bag.stored_by.contains(storage_bucket_id),
+        );
+
+        ensure!(
+            storage_bucket_bound,
+            Error::<T>::StorageBucketIsNotBoundToBag
+        );
+
+        Ok(())
+    }
+
     // Gets data object number from the bag container.
     pub(crate) fn get_data_objects_number(bag_id: &BagId<T>) -> u64 {
         Self::query(

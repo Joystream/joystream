@@ -555,31 +555,6 @@ pub struct StorageBucket<WorkerId> {
     pub metadata: Vec<u8>,
 }
 
-/// Data wrapper structure. Helps passing parameters to extrinsics.
-/// Defines a 'bag-to-data object' pair.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub struct AssignedDataObject<MemberId, ChannelId, DataObjectId> {
-    /// Bag ID.
-    pub bag_id: BagIdType<MemberId, ChannelId>,
-
-    /// Data object ID.
-    pub data_object_id: DataObjectId,
-}
-
-/// Type alias for the ObjectsInBagParamsObject.
-pub type ObjectsInBagParams<T> =
-    ObjectsInBagParamsObject<MemberId<T>, <T as Trait>::ChannelId, <T as Trait>::DataObjectId>;
-
-/// Data wrapper structure. Helps passing the parameters to the
-/// `accept_pending_data_objects` extrinsic.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ObjectsInBagParamsObject<MemberId: Ord, ChannelId: Ord, DataObjectId: Ord> {
-    /// 'Bag' to 'data object' container.
-    pub assigned_data_objects: BTreeSet<AssignedDataObject<MemberId, ChannelId, DataObjectId>>,
-}
-
 //TODO: refactor
 // Helper-struct for the data object uploading.
 #[derive(Default, Clone, Debug)]
@@ -721,7 +696,6 @@ decl_event! {
         WorkerId = WorkerId<T>,
         <T as Trait>::DataObjectId,
         UploadParameters = UploadParameters<T>,
-        ObjectsInBagParams = ObjectsInBagParams<T>,
         BagId = BagId<T>,
         DynamicBagId = DynamicBagId<T>,
         <T as frame_system::Trait>::AccountId,
@@ -774,8 +748,9 @@ decl_event! {
         /// Params
         /// - storage bucket ID
         /// - worker ID (storage provider ID)
+        /// - bag ID
         /// - pending data objects
-        PendingDataObjectsAccepted(StorageBucketId, WorkerId, ObjectsInBagParams),
+        PendingDataObjectsAccepted(StorageBucketId, WorkerId, BagId, BTreeSet<DataObjectId>),
 
         /// Emits on cancelling the storage bucket invitation.
         /// Params
@@ -889,6 +864,12 @@ decl_error! {
         /// The requested storage bucket doesn't exist.
         StorageBucketDoesntExist,
 
+        /// The requested storage bucket is not bound to a bag.
+        StorageBucketIsNotBoundToBag,
+
+        /// The requested storage bucket is already bound to a bag.
+        StorageBucketIsBoundToBag,
+
         /// Invalid operation with invites: there is no storage bucket invitation.
         NoStorageBucketInvitation,
 
@@ -924,9 +905,6 @@ decl_error! {
 
         /// Insufficient balance for an operation.
         InsufficientBalance,
-
-        /// The `objects-in-the-bag` extrinsic parameters are empty.
-        ObjectInBagParamsAreEmpty,
 
         /// Data object doesn't exist.
         DataObjectDoesntExist,
@@ -1473,7 +1451,8 @@ decl_module! {
             origin,
             worker_id: WorkerId<T>,
             storage_bucket_id: T::StorageBucketId,
-            params: ObjectsInBagParams<T>
+            bag_id: BagId<T>,
+            data_objects: BTreeSet<T::DataObjectId>,
         ) {
             T::ensure_worker_origin(origin, worker_id)?;
 
@@ -1481,18 +1460,22 @@ decl_module! {
 
             Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
-            Self::validate_accept_pending_data_objects_params(&params)?;
+            Self::validate_accept_pending_data_objects_params(
+                &bag_id,
+                &data_objects,
+                &storage_bucket_id
+            )?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            for ids in params.assigned_data_objects.iter() {
-                BagManager::<T>::accept_data_objects(&ids.bag_id, &ids.data_object_id);
+            for data_object_id in data_objects.iter() {
+                BagManager::<T>::accept_data_objects(&bag_id, &data_object_id);
             }
 
             Self::deposit_event(
-                    RawEvent::PendingDataObjectsAccepted(storage_bucket_id, worker_id, params)
+                    RawEvent::PendingDataObjectsAccepted(storage_bucket_id, worker_id, bag_id, data_objects)
             );
         }
 
@@ -1535,7 +1518,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Self::validate_upload_data_objects_parameters(params).map(|_| ())
     }
 
-    // TODO: calculate actual weight!
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult {
         let voucher_update = Self::validate_upload_data_objects_parameters(&params)?;
 
@@ -1925,19 +1907,21 @@ impl<T: Trait> Module<T> {
 
     // Ensures validity of the `accept_pending_data_objects` extrinsic parameters
     fn validate_accept_pending_data_objects_params(
-        params: &ObjectsInBagParams<T>,
+        bag_id: &BagId<T>,
+        data_objects: &BTreeSet<T::DataObjectId>,
+        storage_bucket_id: &T::StorageBucketId,
     ) -> DispatchResult {
         ensure!(
-            !params.assigned_data_objects.is_empty(),
-            Error::<T>::ObjectInBagParamsAreEmpty
+            !data_objects.is_empty(),
+            Error::<T>::DataObjectIdParamsAreEmpty
         );
 
-        for ids in params.assigned_data_objects.iter() {
-            BagManager::<T>::ensure_bag_exists(&ids.bag_id)?;
-            BagManager::<T>::ensure_data_object_existence(&ids.bag_id, &ids.data_object_id)?;
-        }
+        BagManager::<T>::ensure_bag_exists(bag_id)?;
+        BagManager::<T>::ensure_storage_bucket_bound(bag_id, storage_bucket_id)?;
 
-        //TODO: validate bag_to_bucket relation?
+        for data_object_id in data_objects.iter() {
+            BagManager::<T>::ensure_data_object_existence(bag_id, data_object_id)?;
+        }
 
         Ok(())
     }
@@ -1955,10 +1939,22 @@ impl<T: Trait> Module<T> {
 
         BagManager::<T>::ensure_bag_exists(&bag_id)?;
 
+        let storage_bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
+        ensure!(
+            storage_bucket_ids.len().saturated_into::<u64>()
+                <= Self::storage_buckets_per_bag_limit(),
+            Error::<T>::StorageBucketPerBagLimitExceeded
+        );
+
         for bucket_id in remove_buckets.iter() {
             ensure!(
                 <StorageBucketById<T>>::contains_key(&bucket_id),
                 Error::<T>::StorageBucketDoesntExist
+            );
+
+            ensure!(
+                storage_bucket_ids.contains(&bucket_id),
+                Error::<T>::StorageBucketIsNotBoundToBag
             );
         }
 
@@ -1969,14 +1965,12 @@ impl<T: Trait> Module<T> {
                 bucket.accepting_new_bags,
                 Error::<T>::StorageBucketDoesntAcceptNewBags
             );
-        }
 
-        let storage_bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
-        ensure!(
-            storage_bucket_ids.len().saturated_into::<u64>()
-                <= Self::storage_buckets_per_bag_limit(),
-            Error::<T>::StorageBucketPerBagLimitExceeded
-        );
+            ensure!(
+                !storage_bucket_ids.contains(&bucket_id),
+                Error::<T>::StorageBucketIsBoundToBag
+            );
+        }
 
         let objects_total_size = BagManager::<T>::get_data_objects_total_size(bag_id);
         let objects_number = BagManager::<T>::get_data_objects_number(bag_id);

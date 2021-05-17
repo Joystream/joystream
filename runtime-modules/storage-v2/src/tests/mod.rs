@@ -14,10 +14,9 @@ use sp_std::iter::FromIterator;
 use common::working_group::WorkingGroup;
 
 use crate::{
-    AssignedDataObject, BagId, DataObject, DataObjectCreationParameters, DataObjectStorage,
-    DynamicBagCreationPolicy, DynamicBagId, DynamicBagType, Error, ModuleAccount,
-    ObjectsInBagParams, RawEvent, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
-    UploadParameters, Voucher,
+    BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DynamicBagCreationPolicy,
+    DynamicBagId, DynamicBagType, Error, ModuleAccount, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
 };
 
 use mocks::{
@@ -557,11 +556,11 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(buckets.clone())
+            .with_remove_bucket_ids(buckets.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
-        assert_eq!(bag.stored_by, buckets);
+        assert_eq!(bag.stored_by, BTreeSet::new());
     });
 }
 
@@ -1156,8 +1155,89 @@ fn accept_pending_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let objects_limit = 1;
+        let size_limit = 100;
+        set_max_voucher_limits();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .with_size_limit(size_limit)
+            .with_objects_limit(objects_limit)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+
+        let buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(buckets.clone())
+            .call_and_assert(Ok(()));
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id = 0; // just uploaded data object
+
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        let bag = Storage::static_bag(static_bag_id.clone());
+        // Check `accepted` flag for the fist data object in the bag.
+        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, false);
+
+        AcceptPendingDataObjectsFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_worker_id(storage_provider_id)
+            .with_storage_bucket_id(bucket_id)
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::static_bag(static_bag_id);
+        // Check `accepted` flag for the fist data object in the bag.
+        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
+
+        EventFixture::assert_last_crate_event(RawEvent::PendingDataObjectsAccepted(
+            bucket_id,
+            storage_provider_id,
+            bag_id,
+            data_object_ids,
+        ));
+    });
+}
+
+#[test]
+fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
+    build_test_externalities().execute_with(|| {
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id = BagId::<Test>::StaticBag(static_bag_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -1174,9 +1254,8 @@ fn accept_pending_data_objects_succeeded() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
         let upload_params = UploadParameters::<Test> {
-            bag_id: council_bag_id.clone(),
+            bag_id: bag_id.clone(),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -1186,38 +1265,17 @@ fn accept_pending_data_objects_succeeded() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        let data_object_id = 0; // just uploaded data object
+        let data_object_id = 0;
 
-        let mut objects = BTreeSet::new();
-        objects.insert(AssignedDataObject {
-            bag_id: council_bag_id,
-            data_object_id,
-        });
-
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
-
-        let bag = Storage::static_bag(StaticBagId::Council);
-        // Check `accepted` flag for the fist data object in the bag.
-        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, false);
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
             .with_storage_bucket_id(bucket_id)
-            .with_params(accept_params.clone())
-            .call_and_assert(Ok(()));
-
-        let bag = Storage::static_bag(StaticBagId::Council);
-        // Check `accepted` flag for the fist data object in the bag.
-        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
-
-        EventFixture::assert_last_crate_event(RawEvent::PendingDataObjectsAccepted(
-            bucket_id,
-            storage_provider_id,
-            accept_params,
-        ));
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids)
+            .call_and_assert(Err(Error::<Test>::StorageBucketIsNotBoundToBag.into()));
     });
 }
 
@@ -1247,21 +1305,14 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
 
         let data_object_id = 0;
 
-        let mut objects = BTreeSet::new();
-        objects.insert(AssignedDataObject {
-            bag_id,
-            data_object_id,
-        });
-
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
             .with_storage_bucket_id(bucket_id)
-            .with_params(accept_params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
@@ -1310,20 +1361,13 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
 
         let data_object_id = 0; // just uploaded data object
 
-        let mut objects = BTreeSet::new();
-        objects.insert(AssignedDataObject {
-            bag_id,
-            data_object_id,
-        });
-
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
-            .with_params(accept_params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids)
             .call_and_assert(Ok(()));
 
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
@@ -1356,16 +1400,12 @@ fn accept_pending_data_objects_fails_with_empty_params() {
             size_limit,
         );
 
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: BTreeSet::new(),
-        };
-
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
-            .with_params(accept_params.clone())
-            .call_and_assert(Err(Error::<Test>::ObjectInBagParamsAreEmpty.into()));
+            .with_data_object_ids(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::DataObjectIdParamsAreEmpty.into()));
     });
 }
 
@@ -1386,19 +1426,12 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
 
         let data_object_id = 0;
 
-        let mut objects = BTreeSet::new();
-        objects.insert(AssignedDataObject {
-            bag_id: bag_id,
-            data_object_id,
-        });
-
-        let accept_params = ObjectsInBagParams::<Test> {
-            assigned_data_objects: objects,
-        };
+        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
-            .with_params(accept_params.clone())
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids)
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
             .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
