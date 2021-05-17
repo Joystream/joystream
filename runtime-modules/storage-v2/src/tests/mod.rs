@@ -24,9 +24,9 @@ use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
     DefaultChannelDynamicBagCreationPolicy, DefaultMemberDynamicBagCreationPolicy,
     InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag,
-    MaxRandomIterationNumber, MaxStorageBucketNumber, Storage, Test, DEFAULT_MEMBER_ACCOUNT_ID,
-    DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
-    WG_LEADER_ACCOUNT_ID,
+    MaxRandomIterationNumber, MaxStorageBucketNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+    DEFAULT_STORAGE_PROVIDER_ID, WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -149,6 +149,18 @@ fn create_storage_bucket_fails_with_exceeding_max_storage_bucket_limit() {
 }
 
 #[test]
+fn create_storage_bucket_fails_with_invalid_storage_provider_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_storage_provider_id = 155;
+
+        CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(Some(invalid_storage_provider_id))
+            .call_and_assert(Err(Error::<Test>::StorageProviderOperatorDoesntExist.into()));
+    });
+}
+
+#[test]
 fn accept_storage_bucket_invitation_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -215,7 +227,7 @@ fn accept_storage_bucket_invitation_fails_with_non_invited_storage_provider() {
 #[test]
 fn accept_storage_bucket_invitation_fails_with_different_invited_storage_provider() {
     build_test_externalities().execute_with(|| {
-        let different_storage_provider_id = 122;
+        let different_storage_provider_id = ANOTHER_STORAGE_PROVIDER_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -1551,7 +1563,7 @@ fn invite_storage_bucket_operator_fails_with_non_existing_storage_bucket() {
 #[test]
 fn invite_storage_bucket_operator_fails_with_non_missing_invitation() {
     build_test_externalities().execute_with(|| {
-        let invited_worker_id = 155;
+        let invited_worker_id = DEFAULT_STORAGE_PROVIDER_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -1563,6 +1575,24 @@ fn invite_storage_bucket_operator_fails_with_non_missing_invitation() {
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_storage_bucket_id(bucket_id)
             .call_and_assert(Err(Error::<Test>::InvitedStorageProvider.into()));
+    });
+}
+
+#[test]
+fn invite_storage_bucket_operator_fails_with_invalid_storage_provider_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_storage_provider_id = 155;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteStorageBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_operator_worker_id(invalid_storage_provider_id)
+            .call_and_assert(Err(Error::<Test>::StorageProviderOperatorDoesntExist.into()));
     });
 }
 
@@ -2580,7 +2610,7 @@ fn delete_storage_bucket_fails_with_non_existing_storage_bucket() {
 #[test]
 fn delete_storage_bucket_fails_with_non_missing_invitation() {
     build_test_externalities().execute_with(|| {
-        let invited_worker_id = 155;
+        let invited_worker_id = DEFAULT_STORAGE_PROVIDER_ID;
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))

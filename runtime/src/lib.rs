@@ -716,6 +716,12 @@ impl storage_v2::Trait for Runtime {
     fn ensure_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
         StorageWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
     }
+
+    fn ensure_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        StorageWorkingGroup::ensure_worker_exists(&worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
+    }
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

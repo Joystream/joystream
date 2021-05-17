@@ -6,7 +6,6 @@
 #![warn(missing_docs)]
 
 // TODO: Remove old Storage pallet.
-// TODO: add dynamic bag creation policy.
 // TODO: add module comment
 // TODO: make public methods as root extrinsics to enable storage-node dev mode.
 // TODO: make public methods "weight-ready".
@@ -42,8 +41,6 @@ use common::working_group::WorkingGroup;
 
 use bag_manager::BagManager;
 use storage_bucket_picker::StorageBucketPicker;
-
-//TODO: Prepare types for moving to common module for the DataObjectStorage.
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -184,6 +181,10 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Validate origin for the worker.
     /// TODO: Refactor after merging with the Olympia release.
     fn ensure_worker_origin(origin: Self::Origin, worker_id: WorkerId<Self>) -> DispatchResult;
+
+    /// Validate worker existence.
+    /// TODO: Refactor after merging with the Olympia release.
+    fn ensure_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
 }
 
 /// Operations with local pallet account.
@@ -983,6 +984,9 @@ decl_error! {
 
         /// Dynamic bag doesn't exist.
         DynamicBagDoesntExist,
+
+        /// Storage provider operator doesn't exist.
+        StorageProviderOperatorDoesntExist,
     }
 }
 
@@ -1203,7 +1207,7 @@ decl_module! {
                 ..Default::default()
             };
 
-            Self::can_create_storage_bucket(&voucher)?;
+            Self::can_create_storage_bucket(&voucher, &invite_worker)?;
 
             //
             // == MUTATION SAFE ==
@@ -1319,7 +1323,7 @@ decl_module! {
 
             Self::ensure_bucket_missing_invitation_status(&bucket)?;
 
-            // TODO: ensure operator_id exists?
+            Self::ensure_storage_provider_operator_exists(&operator_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1595,8 +1599,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
-        //TODO: Check dynamic bag existence.
-
         BagManager::<T>::move_data_objects(&src_bag_id, &dest_bag_id, &objects);
 
         // Change source bag.
@@ -1701,7 +1703,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             voucher_update_with_prize.total_deletion_prize,
         )?;
 
-        //TODO: check for existence (skip)
         let dynamic_bag = Self::dynamic_bag(&bag_id);
 
         Self::change_storage_buckets_vouchers(
@@ -2050,7 +2051,10 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure the new bucket could be created. It also validates some parameters.
-    fn can_create_storage_bucket(voucher: &Voucher) -> DispatchResult {
+    fn can_create_storage_bucket(
+        voucher: &Voucher,
+        invited_worker: &Option<WorkerId<T>>,
+    ) -> DispatchResult {
         ensure!(
             Self::storage_buckets_number() < T::MaxStorageBucketNumber::get(),
             Error::<T>::MaxStorageBucketNumberLimitExceeded
@@ -2065,6 +2069,10 @@ impl<T: Trait> Module<T> {
             voucher.objects_limit <= Self::voucher_max_objects_number_limit(),
             Error::<T>::VoucherMaxObjectNumberLimitExceeded
         );
+
+        if let Some(operator_id) = invited_worker {
+            Self::ensure_storage_provider_operator_exists(operator_id)?;
+        }
 
         Ok(())
     }
@@ -2301,7 +2309,7 @@ impl<T: Trait> Module<T> {
         StorageBucketPicker::<T>::pick_storage_buckets(bag_type)
     }
 
-    // Get default dynamic bag policy by bag type. // TODO: implement
+    // Get default dynamic bag policy by bag type.
     fn get_default_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
     ) -> DynamicBagCreationPolicy {
@@ -2320,5 +2328,15 @@ impl<T: Trait> Module<T> {
         }
 
         Self::get_default_dynamic_bag_creation_policy(bag_type)
+    }
+
+    // Verifies storage provider operator existence.
+    fn ensure_storage_provider_operator_exists(operator_id: &WorkerId<T>) -> DispatchResult {
+        ensure!(
+            T::ensure_worker_exists(operator_id).is_ok(),
+            Error::<T>::StorageProviderOperatorDoesntExist
+        );
+
+        Ok(())
     }
 }

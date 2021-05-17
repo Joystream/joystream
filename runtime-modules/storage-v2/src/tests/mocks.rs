@@ -72,6 +72,7 @@ parameter_types! {
 pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
+pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 
 impl crate::Trait for Test {
     type Event = TestEvent;
@@ -106,6 +107,17 @@ impl crate::Trait for Test {
 
         if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
             Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_worker_exists(worker_id: &u64) -> DispatchResult {
+        let allowed_storage_providers =
+            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
+
+        if !allowed_storage_providers.contains(worker_id) {
+            Err(DispatchError::Other("Invalid worker"))
         } else {
             Ok(())
         }
