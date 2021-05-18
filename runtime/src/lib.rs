@@ -945,7 +945,7 @@ mod parachain_impl {
     }
 }
 
-macro_rules! construct_mandala_runtime {
+macro_rules! construct_joystream_runtime {
 	($( $Pallets:tt )*) => {
 		#[allow(clippy::large_enum_variant)]
 		construct_runtime! {
@@ -1001,7 +1001,7 @@ macro_rules! construct_mandala_runtime {
 }
 
 #[cfg(feature = "standalone")]
-construct_mandala_runtime! {
+construct_joystream_runtime! {
     // Consensus & Staking
     Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent} = 56,
     Babe: pallet_babe::{Pallet, Call, Storage, Config, ValidateUnsigned} = 57,
@@ -1014,7 +1014,7 @@ construct_mandala_runtime! {
 }
 
 #[cfg(not(feature = "standalone"))]
-construct_mandala_runtime! {
+construct_joystream_runtime! {
     // Parachain
     ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 56,
     ParachainInfo: parachain_info::{Pallet, Storage, Config} = 57,

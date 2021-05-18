@@ -40,7 +40,7 @@ impl_outer_origin! {
 }
 
 impl_outer_event! {
-    pub enum MetaEvent for Test {
+    pub enum Event for Test {
         data_object_type_registry<T>,
         data_directory<T>,
         data_object_storage_registry<T>,
@@ -140,7 +140,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = MetaEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
@@ -184,7 +184,7 @@ parameter_types! {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = MetaEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -200,16 +200,16 @@ parameter_types! {
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl data_object_type_registry::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
 }
 
 impl data_directory::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
     type MemberOriginValidator = ();
 }
@@ -223,7 +223,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
 }
 
 impl data_object_storage_registry::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = MockContent;
 }
@@ -233,7 +233,7 @@ parameter_types! {
 }
 
 impl membership::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type MemberId = u64;
     type SubscriptionId = u32;
     type PaidTermId = u32;
