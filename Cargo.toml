@@ -18,7 +18,7 @@ members = [
 	"runtime-modules/versioned-store-permissions",
 	"runtime-modules/working-group",
 	"runtime-modules/content-directory",
-	"runtime-modules/storage-v2",
+	"runtime-modules/storage",
 	"node",
 	"utils/chain-spec-builder/",
 ]

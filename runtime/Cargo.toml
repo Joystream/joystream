@@ -78,7 +78,7 @@ proposals-engine = { package = 'pallet-proposals-engine', default-features = fal
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
-storage-v2 = { package = 'pallet-storage-v2', default-features = false, path = '../runtime-modules/storage-v2'}
+storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -154,7 +154,7 @@ std = [
     'proposals-discussion/std',
     'proposals-codex/std',
     'content-directory/std',
-    'storage-v2/std',
+    'storage/std',
 ]
 runtime-benchmarks = [
     'frame-system/runtime-benchmarks',
@@ -170,7 +170,7 @@ runtime-benchmarks = [
     'pallet-offences-benchmarking',
 	'pallet-session-benchmarking',
     'substrate-utility/runtime-benchmarks',
-    'storage-v2/runtime-benchmarks',
+    'storage/runtime-benchmarks',
     "hex-literal",
 ]
 

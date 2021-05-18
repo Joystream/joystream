@@ -63,7 +63,7 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
-use storage_v2::DynamicBagCreationPolicy;
+use storage::DynamicBagCreationPolicy;
 
 // Node dependencies
 pub use common;
@@ -79,7 +79,6 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
-pub use storage_v2::DataObject;
 pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
@@ -652,8 +651,8 @@ parameter_types! {
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxRandomIterationNumber: u64 = 30; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
-    pub const StorageBucketsPerBagValueConstraint: storage_v2::StorageBucketsPerBagValueConstraint =
-        storage_v2::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
     pub const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
         number_of_storage_buckets: 4
     }; //TODO: adjust value
@@ -662,7 +661,7 @@ parameter_types! {
     }; //TODO: adjust value
 }
 
-impl storage_v2::Trait for Runtime {
+impl storage::Trait for Runtime {
     type Event = Event;
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
@@ -759,6 +758,6 @@ construct_runtime!(
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
         //
-        StorageV2: storage_v2::{Module, Call, Storage, Event<T>},
+        Storage: storage::{Module, Call, Storage, Event<T>},
     }
 );

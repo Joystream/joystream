@@ -37,6 +37,7 @@ mod tests {
     use crate::tests::mocks::{build_test_externalities, Test};
     use frame_support::assert_ok;
 
+    #[ignore] // until enabling the benchmarking for the pallet
     #[test]
     fn create_storage_bucket() {
         build_test_externalities().execute_with(|| {
