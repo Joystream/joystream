@@ -30,7 +30,7 @@ pub type Membership = membership::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type Council = governance::council::Module<Runtime>;
 pub type Election = governance::election::Module<Runtime>;
-pub type ProposalCodex = proposals_codex::Module<Runtime>;
+pub type ProposalsCodex = proposals_codex::Module<Runtime>;
 
 fn setup_members(count: u8) {
     let authority_account_id = <Runtime as frame_system::Config>::AccountId::default();
@@ -557,7 +557,7 @@ fn text_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_text_proposal(
+            ProposalsCodex::create_text_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 member_id as u64,
                 b"title".to_vec(),
@@ -587,7 +587,7 @@ fn spending_proposal_execution_succeeds() {
         assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_spending_proposal(
+            ProposalsCodex::create_spending_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 member_id as u64,
                 b"title".to_vec(),
@@ -628,7 +628,7 @@ fn set_election_parameters_proposal_execution_succeeds() {
         assert_eq!(Election::announcing_period(), 0);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_election_parameters_proposal(
+            ProposalsCodex::create_set_election_parameters_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 member_id as u64,
                 b"title".to_vec(),
@@ -653,7 +653,7 @@ fn set_validator_count_proposal_execution_succeeds() {
         assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_validator_count_proposal(
+            ProposalsCodex::create_set_validator_count_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 member_id as u64,
                 b"title".to_vec(),

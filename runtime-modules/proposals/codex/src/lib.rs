@@ -160,7 +160,6 @@ pub trait Config:
     type ProposalEncoder: ProposalEncoder<Self>;
 }
 
-#[cfg(not(feature = "standalone"))]
 pub trait Config:
     frame_system::Config
     + proposals_engine::Config
@@ -277,7 +276,7 @@ decl_error! {
 
 // Storage for the proposals codex module
 decl_storage! {
-    pub trait Store for Module<T: Config> as ProposalCodex{
+    pub trait Store for Module<T: Config> as ProposalsCodex{
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;

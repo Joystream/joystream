@@ -72,7 +72,7 @@ fn add_opening(
     };
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_add_working_group_leader_opening_proposal(
+        ProposalsCodex::create_add_working_group_leader_opening_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id as u64,
             b"title".to_vec(),
@@ -107,7 +107,7 @@ fn begin_review_applications(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+        ProposalsCodex::create_begin_review_working_group_leader_applications_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id,
             b"title".to_vec(),
@@ -137,7 +137,7 @@ fn fill_opening(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_fill_working_group_leader_opening_proposal(
+        ProposalsCodex::create_fill_working_group_leader_opening_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id,
             b"title".to_vec(),
@@ -178,7 +178,7 @@ fn decrease_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+        ProposalsCodex::create_decrease_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id,
             b"title".to_vec(),
@@ -208,7 +208,7 @@ fn slash_stake(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_slash_working_group_leader_stake_proposal(
+        ProposalsCodex::create_slash_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id,
             b"title".to_vec(),
@@ -238,7 +238,7 @@ fn set_reward(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_set_working_group_leader_reward_proposal(
+        ProposalsCodex::create_set_working_group_leader_reward_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id as u64,
             b"title".to_vec(),
@@ -280,7 +280,7 @@ fn set_mint_capacity<
     }
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_set_working_group_mint_capacity_proposal(
+        ProposalsCodex::create_set_working_group_mint_capacity_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id,
             b"title".to_vec(),
@@ -309,7 +309,7 @@ fn terminate_role(
     let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-        ProposalCodex::create_terminate_working_group_leader_role_proposal(
+        ProposalsCodex::create_terminate_working_group_leader_role_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             member_id,
             b"title".to_vec(),

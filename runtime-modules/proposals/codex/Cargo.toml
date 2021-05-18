@@ -30,6 +30,7 @@ sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
+frame-election-provider-support = { version = "3.0.0", features = ["runtime-benchmarks"], package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1" }
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
 strum = {version = "0.19", default-features = false}
 
