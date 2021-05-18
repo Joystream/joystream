@@ -3,7 +3,7 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { AnyQueryNodeEvent, EventDetails, MembershipEventName } from '../../types'
 import { MembershipSystemSnapshotFieldsFragment } from '../../graphql/generated/queries'
 
@@ -14,7 +14,7 @@ type MembershipSystemValues = {
   invitedInitialBalance: BN
 }
 
-export class SudoUpdateMembershipSystem extends BaseMembershipFixture {
+export class SudoUpdateMembershipSystem extends BaseQueryNodeFixture {
   private newValues: Partial<MembershipSystemValues>
 
   private events: EventDetails[] = []
@@ -37,8 +37,8 @@ export class SudoUpdateMembershipSystem extends BaseMembershipFixture {
   }
 
   private async assertBeforeSnapshotIsValid(beforeSnapshot: MembershipSystemSnapshotFieldsFragment) {
-    assert.isNumber(beforeSnapshot.snapshotBlock.number)
-    const chainValues = await this.getMembershipSystemValuesAt(beforeSnapshot.snapshotBlock.number)
+    assert.isNumber(beforeSnapshot.snapshotBlock)
+    const chainValues = await this.getMembershipSystemValuesAt(beforeSnapshot.snapshotBlock)
     assert.equal(beforeSnapshot.referralCut, chainValues.referralCut)
     assert.equal(beforeSnapshot.invitedInitialBalance, chainValues.invitedInitialBalance.toString())
     assert.equal(beforeSnapshot.membershipPrice, chainValues.membershipPrice.toString())
@@ -64,7 +64,7 @@ export class SudoUpdateMembershipSystem extends BaseMembershipFixture {
     if (!qEvent) {
       throw new Error('Missing query-node event')
     }
-    assert.equal(qEvent.event.inExtrinsic, txHash)
+    assert.equal(qEvent.inExtrinsic, txHash)
     return qEvent
   }
 

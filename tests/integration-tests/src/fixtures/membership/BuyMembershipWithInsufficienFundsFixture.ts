@@ -1,20 +1,20 @@
 import BN from 'bn.js'
 import { Api } from '../../Api'
 import { assert } from 'chai'
-import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { generateParamsFromAccountId } from './utils'
+import { BaseFixture } from '../../Fixture'
 
-export class BuyMembershipWithInsufficienFundsFixture extends BaseMembershipFixture {
+export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
   private account: string
 
-  public constructor(api: Api, query: QueryNodeApi, account: string) {
-    super(api, query)
+  public constructor(api: Api, account: string) {
+    super(api)
     this.account = account
   }
 
   private generateBuyMembershipTx(accountId: string): SubmittableExtrinsic<'promise'> {
-    return this.api.tx.members.buyMembership(this.generateParamsFromAccountId(accountId))
+    return this.api.tx.members.buyMembership(generateParamsFromAccountId(accountId))
   }
 
   async execute(): Promise<void> {

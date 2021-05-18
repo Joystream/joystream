@@ -4,16 +4,16 @@ type WorkerStatusActive @variant {
 }
 
 type WorkerStatusLeft @variant {
-  # TODO: Variant relationships
-  workerStartedLeavingEventId: ID!
+  "Related event emitted on leaving initialization"
+  workerStartedLeavingEvent: WorkerStartedLeavingEvent!
 
-  # Set when the unstaking period is finished
-  workerExitedEventId: ID
+  "Related event emitted (and set) when the unstaking period is finished"
+  workerExitedEvent: WorkerExitedEvent
 }
 
 type WorkerStatusTerminated @variant {
-  # TODO: Variant relationship
-  terminatedWorkerEventId: ID!
+  "Related event emitted on worker termination"
+  terminatedWorkerEvent: TerminatedWorkerEvent!
 }
 
 union WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
@@ -62,12 +62,6 @@ type Worker @entity {
   "All related stake slashes"
   slashes: [StakeSlashedEvent!] @derivedFrom(field: "worker")
 
-  "Block the worker was hired at"
-  hiredAtBlock: Block!
-
-  "Time the worker was hired at"
-  hiredAtTime: DateTime!
-
   "The event that caused the worker to be hired"
   entry: OpeningFilledEvent!
 
@@ -93,9 +87,6 @@ type WorkingGroupMetadata @entity {
 
   "Working group description text"
   description: String
-
-  "Block the metadata was set at"
-  setAtBlock: Block!
 
   "Event the working group metadata was set in"
   setInEvent: StatusTextChangedEvent!
@@ -128,8 +119,8 @@ type WorkingGroup @entity {
 }
 
 type OpeningStatusCancelled @variant {
-  # TODO: Variant relationships
-  openingCancelledEventId: ID!
+  "Related event emitted on opening cancellation"
+  openingCanceledEvent: OpeningCanceledEvent!
 }
 
 type OpeningStatusOpen @variant {
@@ -138,8 +129,8 @@ type OpeningStatusOpen @variant {
 }
 
 type OpeningStatusFilled @variant {
-  # TODO: Variant relationships
-  openingFilledEventId: ID!
+  "Related event emitted after filling the opening"
+  openingFilledEvent: OpeningFilledEvent!
 }
 
 union WorkingGroupOpeningStatus = OpeningStatusOpen | OpeningStatusFilled | OpeningStatusCancelled
@@ -203,8 +194,8 @@ type WorkingGroupOpening @entity {
   "Initial workers' reward per block"
   rewardPerBlock: BigInt!
 
-  "Block the opening was created at"
-  createdAtBlock: Block!
+  "Event the opening was created in"
+  createdInEvent: OpeningAddedEvent! @derivedFrom(field: "opening")
 
   "Time of opening creation"
   createdAt: DateTime!
@@ -212,10 +203,7 @@ type WorkingGroupOpening @entity {
 
 type UpcomingWorkingGroupOpening @entity {
   "Event the upcoming opening was created in"
-  createdInEvent: StatusTextChangedEvent! @unique
-
-  "Block the upcoming opening was added at"
-  createdAtBlock: Block!
+  createdInEvent: StatusTextChangedEvent!
 
   "Related working group"
   group: WorkingGroup!
@@ -239,22 +227,23 @@ type ApplicationStatusPending @variant {
 }
 
 type ApplicationStatusAccepted @variant {
-  # TODO: Variant relationships
-  openingFilledEventId: ID!
+  "Related OpeningFilled event"
+  openingFilledEvent: OpeningFilledEvent!
 }
 
 type ApplicationStatusRejected @variant {
-  # TODO: Variant relationships
-  openingFilledEventId: ID!
+  "Related OpeningFilled event"
+  openingFilledEvent: OpeningFilledEvent!
 }
 
 type ApplicationStatusCancelled @variant {
-  openingCancelledEventId: ID!
+  "Related OpeningCanceled event"
+  openingCanceledEvent: OpeningCanceledEvent!
 }
 
 type ApplicationStatusWithdrawn @variant {
-  # TODO: Variant relationships
-  applicationWithdrawnEventId: ID!
+  "Related ApplicationWithdrawn event"
+  applicationWithdrawnEvent: ApplicationWithdrawnEvent!
 }
 
 union WorkingGroupApplicationStatus =
@@ -295,11 +284,8 @@ type WorkingGroupApplication @entity {
   "Current application status"
   status: WorkingGroupApplicationStatus!
 
-  "Block the application was created at"
-  createdAtBlock: Block!
-
-  "Time of application creation"
-  createdAt: DateTime!
+  "Event the application was created in"
+  createdInEvent: AppliedOnOpeningEvent! @derivedFrom(field: "application")
 }
 
 type ApplicationFormQuestionAnswer @entity {

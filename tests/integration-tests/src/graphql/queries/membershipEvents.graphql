@@ -2,9 +2,11 @@
 
 fragment MembershipBoughtEventFields on MembershipBoughtEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   newMember {
     id
   }
@@ -18,18 +20,19 @@ fragment MembershipBoughtEventFields on MembershipBoughtEvent {
     id
   }
 }
-# FIXME: Can this be a unique result?
-query getMembershipBoughtEventsByMemberId($memberId: ID!) {
-  membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
+query getMembershipBoughtEventsByEventIds($eventIds: [ID!]) {
+  membershipBoughtEvents(where: { id_in: $eventIds }) {
     ...MembershipBoughtEventFields
   }
 }
 
 fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   member {
     id
   }
@@ -41,16 +44,18 @@ fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
 }
 
 query getMemberProfileUpdatedEventsByMemberId($memberId: ID!) {
-  memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
+  memberProfileUpdatedEvents(where: { member: { id_eq: $memberId } }) {
     ...MemberProfileUpdatedEventFields
   }
 }
 
 fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   member {
     id
   }
@@ -59,16 +64,18 @@ fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
 }
 
 query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
-  memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
+  memberAccountsUpdatedEvents(where: { member: { id_eq: $memberId } }) {
     ...MemberAccountsUpdatedEventFields
   }
 }
 
 fragment MemberInvitedEventFields on MemberInvitedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   invitingMember {
     id
   }
@@ -83,17 +90,19 @@ fragment MemberInvitedEventFields on MemberInvitedEvent {
   }
 }
 
-query getMemberInvitedEventsByNewMemberId($newMemberId: ID!) {
-  memberInvitedEvents(where: { newMemberId_eq: $newMemberId }) {
+query getMemberInvitedEventsByEventIds($eventIds: [ID!]) {
+  memberInvitedEvents(where: { id_in: $eventIds }) {
     ...MemberInvitedEventFields
   }
 }
 
 fragment InvitesTransferredEventFields on InvitesTransferredEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   sourceMember {
     id
   }
@@ -104,16 +113,18 @@ fragment InvitesTransferredEventFields on InvitesTransferredEvent {
 }
 
 query getInvitesTransferredEventsBySourceMemberId($sourceMemberId: ID!) {
-  invitesTransferredEvents(where: { sourceMemberId_eq: $sourceMemberId }) {
+  invitesTransferredEvents(where: { sourceMember: { id_eq: $sourceMemberId } }) {
     ...InvitesTransferredEventFields
   }
 }
 
 fragment StakingAccountAddedEventFields on StakingAccountAddedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   member {
     id
   }
@@ -121,16 +132,18 @@ fragment StakingAccountAddedEventFields on StakingAccountAddedEvent {
 }
 
 query getStakingAccountAddedEventsByMemberId($memberId: ID!) {
-  stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
+  stakingAccountAddedEvents(where: { member: { id_eq: $memberId } }) {
     ...StakingAccountAddedEventFields
   }
 }
 
 fragment StakingAccountConfirmedEventFields on StakingAccountConfirmedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   member {
     id
   }
@@ -138,16 +151,18 @@ fragment StakingAccountConfirmedEventFields on StakingAccountConfirmedEvent {
 }
 
 query getStakingAccountConfirmedEventsByMemberId($memberId: ID!) {
-  stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
+  stakingAccountConfirmedEvents(where: { member: { id_eq: $memberId } }) {
     ...StakingAccountConfirmedEventFields
   }
 }
 
 fragment StakingAccountRemovedEventFields on StakingAccountRemovedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   member {
     id
   }
@@ -155,63 +170,71 @@ fragment StakingAccountRemovedEventFields on StakingAccountRemovedEvent {
 }
 
 query getStakingAccountRemovedEventsByMemberId($memberId: ID!) {
-  stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
+  stakingAccountRemovedEvents(where: { member: { id_eq: $memberId } }) {
     ...StakingAccountRemovedEventFields
   }
 }
 
 fragment ReferralCutUpdatedEventFields on ReferralCutUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   newValue
 }
 
 query getReferralCutUpdatedEventsByEventId($eventId: ID!) {
-  referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
+  referralCutUpdatedEvents(where: { id_eq: $eventId }) {
     ...ReferralCutUpdatedEventFields
   }
 }
 
 fragment MembershipPriceUpdatedEventFields on MembershipPriceUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   newPrice
 }
 
 query getMembershipPriceUpdatedEventsByEventId($eventId: ID!) {
-  membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
+  membershipPriceUpdatedEvents(where: { id_eq: $eventId }) {
     ...MembershipPriceUpdatedEventFields
   }
 }
 
 fragment InitialInvitationBalanceUpdatedEventFields on InitialInvitationBalanceUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   newInitialBalance
 }
 
 query getInitialInvitationBalanceUpdatedEventsByEventId($eventId: ID!) {
-  initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
+  initialInvitationBalanceUpdatedEvents(where: { id_eq: $eventId }) {
     ...InitialInvitationBalanceUpdatedEventFields
   }
 }
 
 fragment InitialInvitationCountUpdatedEventFields on InitialInvitationCountUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   newInitialInvitationCount
 }
 
 query getInitialInvitationCountUpdatedEventsByEventId($eventId: ID!) {
-  initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
+  initialInvitationCountUpdatedEvents(where: { id_eq: $eventId }) {
     ...InitialInvitationCountUpdatedEventFields
   }
 }

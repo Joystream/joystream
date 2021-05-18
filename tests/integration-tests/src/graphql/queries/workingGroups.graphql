@@ -4,16 +4,24 @@ fragment ApplicationBasicFields on WorkingGroupApplication {
   status {
     __typename
     ... on ApplicationStatusCancelled {
-      openingCancelledEventId
+      openingCanceledEvent {
+        id
+      }
     }
     ... on ApplicationStatusWithdrawn {
-      applicationWithdrawnEventId
+      applicationWithdrawnEvent {
+        id
+      }
     }
     ... on ApplicationStatusAccepted {
-      openingFilledEventId
+      openingFilledEvent {
+        id
+      }
     }
     ... on ApplicationStatusRejected {
-      openingFilledEventId
+      openingFilledEvent {
+        id
+      }
     }
   }
 }
@@ -21,10 +29,14 @@ fragment ApplicationBasicFields on WorkingGroupApplication {
 fragment OpeningStatusFields on WorkingGroupOpeningStatus {
   __typename
   ... on OpeningStatusFilled {
-    openingFilledEventId
+    openingFilledEvent {
+      id
+    }
   }
   ... on OpeningStatusCancelled {
-    openingCancelledEventId
+    openingCanceledEvent {
+      id
+    }
   }
 }
 
@@ -60,11 +72,17 @@ fragment WorkerFields on Worker {
   status {
     __typename
     ... on WorkerStatusLeft {
-      workerStartedLeavingEventId
-      workerExitedEventId
+      workerStartedLeavingEvent {
+        id
+      }
+      workerExitedEvent {
+        id
+      }
     }
     ... on WorkerStatusTerminated {
-      terminatedWorkerEventId
+      terminatedWorkerEvent {
+        id
+      }
     }
   }
   isLead
@@ -75,10 +93,9 @@ fragment WorkerFields on Worker {
   slashes {
     id
   }
-  hiredAtBlock {
-    ...BlockFields
+  entry {
+    id
   }
-  hiredAtTime
   application {
     ...ApplicationBasicFields
   }
@@ -93,13 +110,8 @@ fragment WorkingGroupMetadataFields on WorkingGroupMetadata {
   statusMessage
   about
   description
-  setAtBlock {
-    ...BlockFields
-  }
   setInEvent {
-    event {
-      ...EventFields
-    }
+    id
   }
 }
 
@@ -122,10 +134,9 @@ fragment OpeningFields on WorkingGroupOpening {
   stakeAmount
   unstakingPeriod
   rewardPerBlock
-  createdAtBlock {
-    ...BlockFields
+  createdInEvent {
+    id
   }
-  createdAt
 }
 
 query getOpeningById($openingId: ID!) {
@@ -142,10 +153,9 @@ query getOpeningsByIds($openingIds: [ID!]) {
 
 fragment ApplicationFields on WorkingGroupApplication {
   ...ApplicationBasicFields
-  createdAtBlock {
-    ...BlockFields
+  createdInEvent {
+    id
   }
-  createdAt
   opening {
     id
     runtimeId
@@ -207,9 +217,6 @@ fragment UpcomingOpeningFields on UpcomingWorkingGroupOpening {
   expectedStart
   stakeAmount
   rewardPerBlock
-  createdAtBlock {
-    ...BlockFields
-  }
   createdInEvent {
     id
   }
@@ -223,19 +230,19 @@ query getUpcomingOpeningById($id: ID!) {
 }
 
 query getUpcomingOpeningsByCreatedInEventIds($createdInEventIds: [ID!]) {
-  upcomingWorkingGroupOpenings(where: { createdInEventId_in: $createdInEventIds }) {
+  upcomingWorkingGroupOpenings(where: { createdInEvent: { id_in: $createdInEventIds } }) {
     ...UpcomingOpeningFields
   }
 }
 
 query getWorkingGroupMetadataSnapshotsByTimeAsc($groupId: ID!) {
-  workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC) {
+  workingGroupMetadata(where: { group: { id_eq: $groupId } }, orderBy: createdAt_ASC) {
     ...WorkingGroupMetadataFields
   }
 }
 
 query getWorkersByRuntimeIds($workerIds: [Int!], $groupId: ID!) {
-  workers(where: { runtimeId_in: $workerIds, groupId_eq: $groupId }) {
+  workers(where: { runtimeId_in: $workerIds, group: { id_eq: $groupId } }) {
     ...WorkerFields
   }
 }

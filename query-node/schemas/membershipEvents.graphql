@@ -1,6 +1,22 @@
 type MembershipBoughtEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "New membership created."
   newMember: Membership!
@@ -22,8 +38,24 @@ type MembershipBoughtEvent @entity {
 }
 
 type MemberInvitedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Inviting member."
   invitingMember: Membership!
@@ -45,8 +77,24 @@ type MemberInvitedEvent @entity {
 }
 
 type MemberProfileUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership being updated."
   member: Membership!
@@ -59,8 +107,24 @@ type MemberProfileUpdatedEvent @entity {
 }
 
 type MemberAccountsUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership in question."
   member: Membership!
@@ -73,8 +137,24 @@ type MemberAccountsUpdatedEvent @entity {
 }
 
 type MemberVerificationStatusUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership in question."
   member: Membership!
@@ -87,16 +167,48 @@ type MemberVerificationStatusUpdatedEvent @entity {
 }
 
 type ReferralCutUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "New cut value."
   newValue: Int!
 }
 
 type InvitesTransferredEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership sending invites."
   sourceMember: Membership!
@@ -109,40 +221,120 @@ type InvitesTransferredEvent @entity {
 }
 
 type MembershipPriceUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The new membership price."
   newPrice: BigInt!
 }
 
 type InitialInvitationBalanceUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "New initial invitation balance."
   newInitialBalance: BigInt!
 }
 
 type LeaderInvitationQuotaUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "New quota."
   newInvitationQuota: Int!
 }
 
 type InitialInvitationCountUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "New initial invitation count for members."
   newInitialInvitationCount: Int!
 }
 
 type StakingAccountAddedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership in question."
   member: Membership!
@@ -152,8 +344,24 @@ type StakingAccountAddedEvent @entity {
 }
 
 type StakingAccountConfirmedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership in question."
   member: Membership!
@@ -163,8 +371,24 @@ type StakingAccountConfirmedEvent @entity {
 }
 
 type StakingAccountRemovedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Membership in question."
   member: Membership!

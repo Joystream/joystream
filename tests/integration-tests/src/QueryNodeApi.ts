@@ -7,18 +7,12 @@ import {
   GetMemberByIdQuery,
   GetMemberByIdQueryVariables,
   GetMemberById,
-  GetMembershipBoughtEventsByMemberIdQuery,
-  GetMembershipBoughtEventsByMemberIdQueryVariables,
-  GetMembershipBoughtEventsByMemberId,
   GetMemberProfileUpdatedEventsByMemberIdQuery,
   GetMemberProfileUpdatedEventsByMemberIdQueryVariables,
   GetMemberProfileUpdatedEventsByMemberId,
   GetMemberAccountsUpdatedEventsByMemberIdQuery,
   GetMemberAccountsUpdatedEventsByMemberIdQueryVariables,
   GetMemberAccountsUpdatedEventsByMemberId,
-  GetMemberInvitedEventsByNewMemberIdQuery,
-  GetMemberInvitedEventsByNewMemberIdQueryVariables,
-  GetMemberInvitedEventsByNewMemberId,
   GetInvitesTransferredEventsBySourceMemberIdQuery,
   GetInvitesTransferredEventsBySourceMemberIdQueryVariables,
   GetInvitesTransferredEventsBySourceMemberId,
@@ -204,6 +198,15 @@ import {
   GetThreadsWithPostsByIdsQuery,
   GetThreadsWithPostsByIdsQueryVariables,
   GetThreadsWithPostsByIds,
+  GetMembershipBoughtEventsByEventIdsQuery,
+  GetMembershipBoughtEventsByEventIdsQueryVariables,
+  GetMembershipBoughtEventsByEventIds,
+  GetMembersByIdsQuery,
+  GetMembersByIdsQueryVariables,
+  GetMembersByIds,
+  GetMemberInvitedEventsByEventIdsQuery,
+  GetMemberInvitedEventsByEventIdsQueryVariables,
+  GetMemberInvitedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -315,11 +318,20 @@ export class QueryNodeApi {
     )
   }
 
-  public async getMembershipBoughtEvent(memberId: MemberId): Promise<MembershipBoughtEventFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetMembershipBoughtEventsByMemberIdQuery,
-      GetMembershipBoughtEventsByMemberIdQueryVariables
-    >(GetMembershipBoughtEventsByMemberId, { memberId: memberId.toString() }, 'membershipBoughtEvents')
+  public async getMembersByIds(ids: MemberId[]): Promise<MembershipFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetMembersByIdsQuery, GetMembersByIdsQueryVariables>(
+      GetMembersByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'memberships'
+    )
+  }
+
+  public async getMembershipBoughtEvents(events: EventDetails[]): Promise<MembershipBoughtEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMembershipBoughtEventsByEventIdsQuery,
+      GetMembershipBoughtEventsByEventIdsQueryVariables
+    >(GetMembershipBoughtEventsByEventIds, { eventIds }, 'membershipBoughtEvents')
   }
 
   public async getMemberProfileUpdatedEvents(memberId: MemberId): Promise<MemberProfileUpdatedEventFieldsFragment[]> {
@@ -336,11 +348,12 @@ export class QueryNodeApi {
     >(GetMemberAccountsUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberAccountsUpdatedEvents')
   }
 
-  public async getMemberInvitedEvent(memberId: MemberId): Promise<MemberInvitedEventFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetMemberInvitedEventsByNewMemberIdQuery,
-      GetMemberInvitedEventsByNewMemberIdQueryVariables
-    >(GetMemberInvitedEventsByNewMemberId, { newMemberId: memberId.toString() }, 'memberInvitedEvents')
+  public async getMemberInvitedEvents(events: EventDetails[]): Promise<MemberInvitedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMemberInvitedEventsByEventIdsQuery,
+      GetMemberInvitedEventsByEventIdsQueryVariables
+    >(GetMemberInvitedEventsByEventIds, { eventIds }, 'memberInvitedEvents')
   }
 
   // TODO: Use event id

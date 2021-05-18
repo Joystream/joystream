@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types } from '@joystream/types'
-import { makeDatabaseManager } from '@dzlzv/hydra-db-utils'
 import { createDBConnection } from '@dzlzv/hydra-processor'
+import { makeDatabaseManager } from '@dzlzv/hydra-processor/lib/executor/TransactionalExecutor'
 import path from 'path'
 
 // A script to initialize processor database with some initial values that cannot be fetched from events / extrinics

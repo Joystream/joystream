@@ -11,11 +11,19 @@ fragment MembershipFields on Membership {
   }
   controllerAccount
   rootAccount
-  registeredAtBlock {
-    ...BlockFields
+  entry {
+    __typename
+    ... on MembershipEntryPaid {
+      membershipBoughtEvent {
+        id
+      }
+    }
+    ... on MembershipEntryInvited {
+      memberInvitedEvent {
+        id
+      }
+    }
   }
-  registeredAtTime
-  entry
   isVerified
   inviteCount
   invitedBy {
@@ -33,11 +41,15 @@ query getMemberById($id: ID!) {
   }
 }
 
-fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
-  snapshotBlock {
-    ...BlockFields
+query getMembersByIds($ids: [ID!]) {
+  memberships(where: { id_in: $ids }) {
+    ...MembershipFields
   }
-  snapshotTime
+}
+
+fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
+  createdAt
+  snapshotBlock
   referralCut
   invitedInitialBalance
   defaultInviteCount
@@ -45,13 +57,13 @@ fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
 }
 
 query getMembershipSystemSnapshotAt($time: DateTime!) {
-  membershipSystemSnapshots(where: { snapshotTime_eq: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+  membershipSystemSnapshots(where: { createdAt_eq: $time }, orderBy: createdAt_DESC, limit: 1) {
     ...MembershipSystemSnapshotFields
   }
 }
 
 query getMembershipSystemSnapshotBefore($time: DateTime!) {
-  membershipSystemSnapshots(where: { snapshotTime_lt: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+  membershipSystemSnapshots(where: { createdAt_lt: $time }, orderBy: createdAt_DESC, limit: 1) {
     ...MembershipSystemSnapshotFields
   }
 }

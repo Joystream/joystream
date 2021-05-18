@@ -1,5 +1,4 @@
 export { AddStakingAccountsHappyCaseFixture } from './AddStakingAccountsHappyCaseFixture'
-export { BaseMembershipFixture } from './BaseMembershipFixture'
 export { BuyMembershipHappyCaseFixture } from './BuyMembershipHappyCaseFixture'
 export { BuyMembershipWithInsufficienFundsFixture } from './BuyMembershipWithInsufficienFundsFixture'
 export { InviteMembersHappyCaseFixture } from './InviteMembersHappyCaseFixture'

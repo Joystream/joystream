@@ -2,12 +2,11 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { EventDetails, MemberContext } from '../../types'
 import { MemberAccountsUpdatedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 
-export class UpdateAccountsHappyCaseFixture extends BaseMembershipFixture {
+export class UpdateAccountsHappyCaseFixture extends BaseQueryNodeFixture {
   private memberContext: MemberContext
   // Update data
   private newRootAccount: string
@@ -45,13 +44,12 @@ export class UpdateAccountsHappyCaseFixture extends BaseMembershipFixture {
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     const {
-      event: { inExtrinsic, type },
+      inExtrinsic,
       member: { id: memberId },
       newControllerAccount,
       newRootAccount,
     } = qEvent
     assert.equal(inExtrinsic, txHash)
-    assert.equal(type, EventType.MemberAccountsUpdated)
     assert.equal(memberId, this.memberContext.memberId.toString())
     assert.equal(newControllerAccount, this.newControllerAccount)
     assert.equal(newRootAccount, this.newRootAccount)

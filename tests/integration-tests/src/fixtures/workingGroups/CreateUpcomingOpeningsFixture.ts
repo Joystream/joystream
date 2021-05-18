@@ -6,7 +6,6 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { StatusTextChangedEventFieldsFragment, UpcomingOpeningFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import {
   IUpcomingOpeningMetadata,
@@ -116,7 +115,6 @@ export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
             ? expectedMeta.minApplicationStake.toString()
             : null
         )
-        assert.equal(qUpcomingOpening.createdAtBlock.number, e.blockNumber)
         Utils.assert(qEvent.result.__typename === 'UpcomingOpeningAdded')
         assert.equal(qEvent.result.upcomingOpeningId, qUpcomingOpening.id)
         this.assertQueriedOpeningMetadataIsValid(qUpcomingOpening.metadata, expectedMeta.metadata)
@@ -128,7 +126,6 @@ export class CreateUpcomingOpeningsFixture extends BaseCreateOpeningFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: StatusTextChangedEventFieldsFragment, i: number): void {
     const params = this.upcomingOpeningsParams[i]
-    assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.metadata, this.getActionMetadataBytes(params).toString())
     assert.equal(

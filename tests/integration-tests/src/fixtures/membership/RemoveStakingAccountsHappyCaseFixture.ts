@@ -2,12 +2,11 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { EventDetails, MemberContext } from '../../types'
 import { StakingAccountRemovedEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 
-export class RemoveStakingAccountsHappyCaseFixture extends BaseMembershipFixture {
+export class RemoveStakingAccountsHappyCaseFixture extends BaseQueryNodeFixture {
   private memberContext: MemberContext
   private accounts: string[]
 
@@ -27,8 +26,7 @@ export class RemoveStakingAccountsHappyCaseFixture extends BaseMembershipFixture
     qEvents: StakingAccountRemovedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
-    assert.equal(qEvent.event.inExtrinsic, txHash)
-    assert.equal(qEvent.event.type, EventType.StakingAccountRemoved)
+    assert.equal(qEvent.inExtrinsic, txHash)
     assert.equal(qEvent.member.id, this.memberContext.memberId.toString())
     assert.equal(qEvent.account, account)
   }

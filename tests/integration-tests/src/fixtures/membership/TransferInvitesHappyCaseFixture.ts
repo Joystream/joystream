@@ -2,13 +2,12 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { MemberContext, EventDetails } from '../../types'
 import { InvitesTransferredEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { Membership } from '@joystream/types/members'
 
-export class TransferInvitesHappyCaseFixture extends BaseMembershipFixture {
+export class TransferInvitesHappyCaseFixture extends BaseQueryNodeFixture {
   private fromContext: MemberContext
   private toContext: MemberContext
   private invitesToTransfer: number
@@ -39,14 +38,8 @@ export class TransferInvitesHappyCaseFixture extends BaseMembershipFixture {
     if (!qEvent) {
       throw new Error('Query node: InvitesTransferredEvent not found!')
     }
-    const {
-      event: { inExtrinsic, type },
-      sourceMember,
-      targetMember,
-      numberOfInvites,
-    } = qEvent
+    const { inExtrinsic, sourceMember, targetMember, numberOfInvites } = qEvent
     assert.equal(inExtrinsic, txHash)
-    assert.equal(type, EventType.InvitesTransferred)
     assert.equal(sourceMember.id, this.fromContext.memberId.toString())
     assert.equal(targetMember.id, this.toContext.memberId.toString())
     assert.equal(numberOfInvites, this.invitesToTransfer)

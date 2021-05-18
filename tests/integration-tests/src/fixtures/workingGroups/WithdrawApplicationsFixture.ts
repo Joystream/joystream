@@ -7,7 +7,6 @@ import { ApplicationId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { ApplicationFieldsFragment, ApplicationWithdrawnEventFieldsFragment } from '../../graphql/generated/queries'
 
 export class WithdrawApplicationsFixture extends BaseWorkingGroupFixture {
@@ -39,7 +38,6 @@ export class WithdrawApplicationsFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ApplicationWithdrawnEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.ApplicationWithdrawn)
     assert.equal(qEvent.application.runtimeId, this.applicationIds[i].toNumber())
     assert.equal(qEvent.group.name, this.group)
   }
@@ -56,7 +54,11 @@ export class WithdrawApplicationsFixture extends BaseWorkingGroupFixture {
         qApplication.status.__typename === 'ApplicationStatusWithdrawn',
         'Query node: Invalid application status!'
       )
-      assert.equal(qApplication.status.applicationWithdrawnEventId, qEvent.id)
+      Utils.assert(
+        qApplication.status.applicationWithdrawnEvent,
+        'Query node: Missing applicationWithdrawnEvent relation'
+      )
+      assert.equal(qApplication.status.applicationWithdrawnEvent.id, qEvent.id)
     })
   }
 

@@ -8,7 +8,6 @@ import { Worker, WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { lockIdByWorkingGroup } from '../../consts'
 import {
   LeaderUnsetEventFieldsFragment,
@@ -78,7 +77,6 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
     qEvent: TerminatedWorkerEventFieldsFragment | TerminatedLeaderEventFieldsFragment,
     i: number
   ): void {
-    assert.equal(qEvent.event.type, this.asSudo ? EventType.TerminatedLeader : EventType.TerminatedWorker)
     assert.equal(qEvent.worker.runtimeId, this.workerIds[i].toNumber())
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.rationale, this.getRationale(this.workerIds[i]))
@@ -100,7 +98,8 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
         worker.status.__typename === 'WorkerStatusTerminated',
         `Invalid worker status: ${worker.status.__typename}`
       )
-      assert.equal(worker.status.terminatedWorkerEventId, qEvent.id)
+      Utils.assert(worker.status.terminatedWorkerEvent, 'Query node: Missing terminatedWorkerEvent relation')
+      assert.equal(worker.status.terminatedWorkerEvent.id, qEvent.id)
     })
   }
 
@@ -109,11 +108,10 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
     qEvent: LeaderUnsetEventFieldsFragment | null
   ): void {
     Utils.assert(qEvent, 'Query node: LeaderUnsetEvent not found!')
-    assert.equal(qEvent.event.inExtrinsic, this.extrinsics[0].hash.toString())
-    assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
-    assert.equal(qEvent.event.inBlock.timestamp, eventDetails.blockTimestamp)
+    assert.equal(qEvent.inExtrinsic, this.extrinsics[0].hash.toString())
+    assert.equal(qEvent.inBlock, eventDetails.blockNumber)
+    assert.equal(new Date(qEvent.createdAt).getTime(), eventDetails.blockTimestamp)
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.event.type, EventType.LeaderUnset)
     assert.equal(qEvent.leader.runtimeId, this.workerIds[0].toNumber())
   }
 

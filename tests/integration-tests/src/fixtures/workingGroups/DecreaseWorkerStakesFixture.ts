@@ -8,7 +8,6 @@ import { Worker, WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { lockIdByWorkingGroup } from '../../consts'
 import { StakeDecreasedEventFieldsFragment, WorkerFieldsFragment } from '../../graphql/generated/queries'
 
@@ -62,7 +61,6 @@ export class DecreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StakeDecreasedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.StakeDecreased)
     assert.equal(qEvent.worker.runtimeId, this.workerIds[i].toNumber())
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.amount, this.amounts[i].toString())

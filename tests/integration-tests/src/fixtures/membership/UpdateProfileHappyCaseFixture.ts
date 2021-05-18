@@ -2,15 +2,14 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { MemberContext, EventDetails } from '../../types'
 import { MembershipFieldsFragment, MemberProfileUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { Utils } from '../../utils'
 
 // TODO: Add partial update to make sure it works too
-export class UpdateProfileHappyCaseFixture extends BaseMembershipFixture {
+export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
   private memberContext: MemberContext
   // Update data
   private newName = 'New name'
@@ -46,13 +45,12 @@ export class UpdateProfileHappyCaseFixture extends BaseMembershipFixture {
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
     const {
-      event: { inExtrinsic, type },
+      inExtrinsic,
       member: { id: memberId },
       newHandle,
       newMetadata,
     } = qEvent
     assert.equal(inExtrinsic, txHash)
-    assert.equal(type, EventType.MemberProfileUpdated)
     assert.equal(memberId, this.memberContext.memberId.toString())
     assert.equal(newHandle, this.newHandle)
     assert.equal(newMetadata.name, this.newName)

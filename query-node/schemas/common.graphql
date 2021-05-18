@@ -5,98 +5,20 @@ enum Network {
   OLYMPIA
 }
 
-enum EventType {
-  # Memberships
-  MembershipBought
-  MemberInvited
-  MemberProfileUpdated
-  MemberAccountsUpdated
-  MemberVerificationStatusUpdated
-  ReferralCutUpdated
-  InvitesTransferred
-  MembershipPriceUpdated
-  InitialInvitationBalanceUpdated
-  LeaderInvitationQuotaUpdated
-  InitialInvitationCountUpdated
-  StakingAccountAddedEvent
-  StakingAccountConfirmed
-  StakingAccountRemoved
-  # Working Groups
-  OpeningAdded
-  AppliedOnOpening
-  OpeningFilled
-  LeaderSet
-  WorkerRoleAccountUpdated
-  LeaderUnset
-  WorkerExited
-  TerminatedWorker
-  TerminatedLeader
-  WorkerStartedLeaving
-  StakeSlashed
-  StakeDecreased
-  StakeIncreased
-  ApplicationWithdrawn
-  OpeningCanceled
-  BudgetSet
-  WorkerRewardAccountUpdated
-  WorkerRewardAmountUpdated
-  StatusTextChanged
-  BudgetSpending
-  RewardPaid
-  NewMissedRewardLevelReached
-  # Forum
-  CategoryCreated
-  CategoryUpdated
-  CategoryDeleted
-  ThreadCreated
-  ThreadModerated
-  ThreadUpdated
-  ThreadTitleUpdated
-  ThreadDeleted
-  ThreadMoved
-  PostAdded
-  PostModerated
-  PostDeleted
-  PostTextUpdated
-  PostReacted
-  VoteOnPoll
-  CategoryStickyThreadUpdate
-  CategoryMembershipOfModeratorUpdated
-}
-
-type Block @entity {
-  "{network}-{blockNumber}"
-  id: ID!
-
-  "Block number (height)"
-  number: Int!
-
-  "Block timestamp"
-  timestamp: BigInt!
-
-  "Network the block was produced in"
-  network: Network!
-}
-
-type Event @entity {
+# FIXME: https://github.com/Joystream/hydra/issues/359
+interface Event @entity {
   "(network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
   "Hash of the extrinsic which caused the event to be emitted"
   inExtrinsic: String
 
-  "Block in which the event was emitted."
-  inBlock: Block!
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
 
   "Index of event in block from which it was emitted."
   indexInBlock: Int!
-
-  "Type of the event"
-  type: EventType!
 }
-
-# FIXME: Warthog bug currently prevents it from beeing implemented
-# interface IEvent @entity {
-#   "Generic event data"
-#   event: Event!
-# }

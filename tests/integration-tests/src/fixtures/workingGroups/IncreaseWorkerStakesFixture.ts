@@ -8,7 +8,6 @@ import { WorkerId, Worker } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { lockIdByWorkingGroup } from '../../consts'
 import { StakeIncreasedEventFieldsFragment, WorkerFieldsFragment } from '../../graphql/generated/queries'
 
@@ -52,7 +51,6 @@ export class IncreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StakeIncreasedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.StakeIncreased)
     assert.equal(qEvent.worker.runtimeId, this.workerIds[i].toNumber())
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.amount, this.stakeIncreases[i].toString())

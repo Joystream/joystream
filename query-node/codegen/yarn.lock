@@ -76,10 +76,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@dzlzv/hydra-cli@2.1.0-beta.8":
-  version "2.1.0-beta.8"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-2.1.0-beta.8.tgz#79c1aae06081354686eca2cbfd28b72389f65693"
-  integrity sha512-jIk5KcMuLVxRt3eBCBcuzZPg9fWx7qrtj/Kin9Z3a7OF6cAhcGEuu/YxtiVTJwpUFeFtjedukDO1TIkw+rXw3A==
+"@dzlzv/hydra-cli@3.0.0-beta.6":
+  version "3.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-3.0.0-beta.6.tgz#b85504ed9f4ec939b7108094fd7969d60a9b1f45"
+  integrity sha512-3ENzap6vq2DKOV8gA5Qq9ZX9xDJvP6WXpRvp+Aedf2yTms/gWB9vbhkp2oCZGnjqZqGZ9d2jIBBFJOwiRWpqsA==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
@@ -109,12 +109,12 @@
     mustache "^4.0.1"
     pluralize "^8.0.0"
     tslib "1.11.2"
-    warthog "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
+    warthog "https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz"
 
-"@dzlzv/hydra-typegen@2.1.0-beta.8":
-  version "2.1.0-beta.8"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-2.1.0-beta.8.tgz#a6ddcd21652310cf0e174e999f700f213e399ea8"
-  integrity sha512-MQRwhvzaTlurJQJ08QI12ORz+c3vHfBr7ycEzU1xG1fkadSNrVPY7pYjkH/Q2xphl79sohvzVnFCipqbkDTWkw==
+"@dzlzv/hydra-typegen@3.0.0-beta.6":
+  version "3.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-typegen/-/hydra-typegen-3.0.0-beta.6.tgz#665364fdde787a293df58196f81abd517847e976"
+  integrity sha512-mYDh3G8tHjPIy6lUhXS2lNNOs27SxW580ODd3Ib87sR/scHv3Xmdv2Tgcu3lDj367MeKfhQ0hRfFDdLZnxaHeA==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
@@ -1374,6 +1374,11 @@ bn.js@^4.11.9:
   version "4.12.0"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.12.0.tgz#775b3f278efbb9718eec7361f483fb36fbbfea88"
   integrity sha512-c98Bf3tPniI+scsdk237ku1Dc3ujXQTSgyiPUDEOe7tRkhrqridvh8klBv0HCEso1OLOYcHuCv/cS6DNxKH+ZA==
+
+bn.js@^5.2.0:
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-5.2.0.tgz#358860674396c6997771a9d051fcc1b57d4ae002"
+  integrity sha512-D7iWRBvnZE8ecXiLj/9wbxH7Tk79fAh8IHaTNq1RWRixsS02W+5qS+iE9yq6RYl0asXx5tw0bLhmT5pIfbSquw==
 
 body-parser@1.19.0, body-parser@^1.18.3:
   version "1.19.0"
@@ -3887,15 +3892,10 @@ pg-int8@1.0.1:
   resolved "https://registry.yarnpkg.com/pg-int8/-/pg-int8-1.0.1.tgz#943bd463bf5b71b4170115f80f8efc9a0c0eb78c"
   integrity sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==
 
-pg-packet-stream@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/pg-packet-stream/-/pg-packet-stream-1.1.0.tgz#e45c3ae678b901a2873af1e17b92d787962ef914"
-  integrity sha512-kRBH0tDIW/8lfnnOyTwKD23ygJ/kexQVXZs7gEyBljw4FYqimZFxnMMx50ndZ8In77QgfGuItS5LLclC2TtjYg==
-
-pg-pool@^2.0.10:
-  version "2.0.10"
-  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-2.0.10.tgz#842ee23b04e86824ce9d786430f8365082d81c4a"
-  integrity sha512-qdwzY92bHf3nwzIUcj+zJ0Qo5lpG/YxchahxIN8+ZVmXqkahKXsnl2aiJPHLYN9o5mB/leG+Xh6XKxtP7e0sjg==
+pg-pool@^3.1.1:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-3.3.0.tgz#12d5c7f65ea18a6e99ca9811bd18129071e562fc"
+  integrity sha512-0O5huCql8/D6PIRFAlmccjphLYWC+JIzvUhSzXSpGaf+tjTZc4nn+Lr7mLXBbFJfvwbP0ywDv73EiaBsxn7zdg==
 
 pg-pool@^3.2.2:
   version "3.2.2"
@@ -3906,6 +3906,11 @@ pg-protocol@^1.2.0, pg-protocol@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.4.0.tgz#43a71a92f6fe3ac559952555aa3335c8cb4908be"
   integrity sha512-El+aXWcwG/8wuFICMQjM5ZSAm6OWiJicFdNYo+VY3QP+8vI4SvLIWVe51PppTzMhikUJR+PsyIFKqfdXPz/yxA==
+
+pg-protocol@^1.2.2:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.5.0.tgz#b5dd452257314565e2d54ab3c132adc46565a6a0"
+  integrity sha512-muRttij7H8TqRNu/DxrAJQITO4Ac7RmX3Klyr/9mJEOBeIpgnF8f9jAfRz5d3XwQZl5qBjF9gLsUtMPJE0vezQ==
 
 pg-types@^2.1.0, pg-types@^2.2.0:
   version "2.2.0"
@@ -3918,16 +3923,16 @@ pg-types@^2.1.0, pg-types@^2.2.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg@^7.12.1:
-  version "7.18.2"
-  resolved "https://registry.yarnpkg.com/pg/-/pg-7.18.2.tgz#4e219f05a00aff4db6aab1ba02f28ffa4513b0bb"
-  integrity sha512-Mvt0dGYMwvEADNKy5PMQGlzPudKcKKzJds/VbOeZJpb6f/pI3mmoXX0JksPgI3l3JPP/2Apq7F36O63J7mgveA==
+pg@8.0.3:
+  version "8.0.3"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.0.3.tgz#b220ee468a1819e1c7e9ca9878f8ae50ba8e1952"
+  integrity sha512-fvcNXn4o/iq4jKq15Ix/e58q3jPSmzOp6/8C3CaHoSR/bsxdg+1FXfDRePdtE/zBb3++TytvOrS1hNef3WC/Kg==
   dependencies:
     buffer-writer "2.0.0"
     packet-reader "1.0.0"
     pg-connection-string "0.1.3"
-    pg-packet-stream "^1.1.0"
-    pg-pool "^2.0.10"
+    pg-pool "^3.1.1"
+    pg-protocol "^1.2.2"
     pg-types "^2.1.0"
     pgpass "1.x"
     semver "4.3.2"
@@ -4908,9 +4913,9 @@ vary@^1, vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
 
-"warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz":
-  version "2.23.0"
-  resolved "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz#4582fc35554580e0af0f43a9b3725aad2eb808c6"
+"warthog@https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz":
+  version "2.30.0"
+  resolved "https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz#24a0b975f2ad5cba17a934752ac07052e856b49c"
   dependencies:
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
@@ -4938,6 +4943,7 @@ vary@^1, vary@~1.1.2:
     apollo-server "^2.9.9"
     apollo-server-express "^2.9.9"
     app-root-path "^3.0.0"
+    bn.js "^5.2.0"
     caller "^1.0.1"
     class-transformer "^0.2.3"
     class-validator "^0.11.0"
@@ -4960,7 +4966,7 @@ vary@^1, vary@~1.1.2:
     mkdirp "^0.5.1"
     node-emoji "^1.10.0"
     open "^7.0.0"
-    pg "^7.12.1"
+    pg "8.0.3"
     pgtools "^0.3.0"
     prettier "^1.19.1"
     reflect-metadata "^0.1.13"

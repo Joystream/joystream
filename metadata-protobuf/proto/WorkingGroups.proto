@@ -31,10 +31,10 @@ message ApplicationMetadata {
 // set_status_text extrinsic messages:
 
 message WorkingGroupMetadata {
-  optional string description = 1; // Full status description (md-formatted)
-  optional string about = 2; // Status about text (md-formatted)
-  optional string status = 3; // The status itself (expected to be 1-3 words)
-  optional string status_message = 4; // Short status message
+  optional string description = 1; // Group description text (md-formatted)
+  optional string about = 2; // Group about text (md-formatted)
+  optional string status = 3; // Current group status (expected to be 1-3 words)
+  optional string status_message = 4; // Short status message associated with the status
 }
 
 message SetGroupMetadata {
