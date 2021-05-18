@@ -63,7 +63,6 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
-use storage::data_object_storage_registry;
 use storage_v2::DynamicBagCreationPolicy;
 
 // Node dependencies
@@ -80,7 +79,7 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
-pub use storage::{data_directory, data_object_type_registry};
+pub use storage_v2::DataObject;
 pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
@@ -546,30 +545,6 @@ impl memo::Trait for Runtime {
     type Event = Event;
 }
 
-parameter_types! {
-    pub const MaxObjectsPerInjection: u32 = 100;
-}
-
-impl storage::data_object_type_registry::Trait for Runtime {
-    type Event = Event;
-    type DataObjectTypeId = u64;
-}
-
-impl storage::data_directory::Trait for Runtime {
-    type Event = Event;
-    type ContentId = ContentId;
-    type StorageProviderHelper = integration::storage::StorageProviderHelper;
-    type IsActiveDataObjectType = DataObjectTypeRegistry;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type MaxObjectsPerInjection = MaxObjectsPerInjection;
-}
-
-impl storage::data_object_storage_registry::Trait for Runtime {
-    type Event = Event;
-    type DataObjectStorageRelationshipId = u64;
-    type ContentIdExists = DataDirectory;
-}
-
 impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = MemberId;
@@ -603,10 +578,6 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-}
-
-impl service_discovery::Trait for Runtime {
-    type Event = Event;
 }
 
 parameter_types! {
@@ -779,11 +750,6 @@ construct_runtime!(
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        // --- Storage
-        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
-        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
@@ -792,6 +758,7 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        //
         StorageV2: storage_v2::{Module, Call, Storage, Event<T>},
     }
 );

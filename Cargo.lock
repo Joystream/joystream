@@ -2425,13 +2425,11 @@ dependencies = [
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
  "pallet-recurring-reward",
- "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
  "pallet-stake",
  "pallet-staking",
  "pallet-staking-reward-curve",
- "pallet-storage",
  "pallet-storage-v2",
  "pallet-sudo",
  "pallet-timestamp",
@@ -4144,29 +4142,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-service-discovery"
-version = "3.1.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
- "pallet-timestamp",
- "pallet-token-mint",
- "pallet-working-group",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-session"
 version = "2.0.1"
 source = "git+https://github.com/paritytech/substrate.git?rev=2cd20966cc09b059817c3ebe12fc130cdd850d62#2cd20966cc09b059817c3ebe12fc130cdd850d62"
@@ -4249,30 +4224,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "pallet-storage"
-version = "3.1.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
- "pallet-timestamp",
- "pallet-token-mint",
- "pallet-working-group",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]

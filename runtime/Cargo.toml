@@ -74,8 +74,6 @@ working-group = { package = 'pallet-working-group', default-features = false, pa
 content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../runtime-modules/content-working-group'}
 versioned-store = { package = 'pallet-versioned-store', default-features = false, path = '../runtime-modules/versioned-store'}
 versioned-store-permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../runtime-modules/versioned-store-permissions'}
-storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
-service-discovery = { package = 'pallet-service-discovery', default-features = false, path = '../runtime-modules/service-discovery'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../runtime-modules/proposals/engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
@@ -152,8 +150,6 @@ std = [
     'content-working-group/std',
     'versioned-store/std',
     'versioned-store-permissions/std',
-    'storage/std',
-    'service-discovery/std',
     'proposals-engine/std',
     'proposals-discussion/std',
     'proposals-codex/std',
