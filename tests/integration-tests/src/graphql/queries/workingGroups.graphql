@@ -93,10 +93,9 @@ fragment WorkerFields on Worker {
   slashes {
     id
   }
-  hiredAtBlock {
-    ...BlockFields
+  entry {
+    id
   }
-  hiredAtTime
   application {
     ...ApplicationBasicFields
   }
@@ -111,13 +110,8 @@ fragment WorkingGroupMetadataFields on WorkingGroupMetadata {
   statusMessage
   about
   description
-  setAtBlock {
-    ...BlockFields
-  }
   setInEvent {
-    event {
-      ...EventFields
-    }
+    id
   }
 }
 
@@ -140,10 +134,9 @@ fragment OpeningFields on WorkingGroupOpening {
   stakeAmount
   unstakingPeriod
   rewardPerBlock
-  createdAtBlock {
-    ...BlockFields
+  createdInEvent {
+    id
   }
-  createdAt
 }
 
 query getOpeningById($openingId: ID!) {
@@ -160,10 +153,9 @@ query getOpeningsByIds($openingIds: [ID!]) {
 
 fragment ApplicationFields on WorkingGroupApplication {
   ...ApplicationBasicFields
-  createdAtBlock {
-    ...BlockFields
+  createdInEvent {
+    id
   }
-  createdAt
   opening {
     id
     runtimeId
@@ -225,9 +217,6 @@ fragment UpcomingOpeningFields on UpcomingWorkingGroupOpening {
   expectedStart
   stakeAmount
   rewardPerBlock
-  createdAtBlock {
-    ...BlockFields
-  }
   createdInEvent {
     id
   }

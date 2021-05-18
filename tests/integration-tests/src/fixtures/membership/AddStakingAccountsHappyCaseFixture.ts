@@ -2,16 +2,15 @@ import { Api } from '../../Api'
 import { assert } from 'chai'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { MemberContext, EventDetails } from '../../types'
 import {
   StakingAccountAddedEventFieldsFragment,
   StakingAccountConfirmedEventFieldsFragment,
 } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 
-export class AddStakingAccountsHappyCaseFixture extends BaseMembershipFixture {
+export class AddStakingAccountsHappyCaseFixture extends BaseQueryNodeFixture {
   private memberContext: MemberContext
   private accounts: string[]
 
@@ -33,8 +32,7 @@ export class AddStakingAccountsHappyCaseFixture extends BaseMembershipFixture {
     qEvents: StakingAccountAddedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
-    assert.equal(qEvent.event.inExtrinsic, txHash)
-    assert.equal(qEvent.event.type, EventType.StakingAccountAddedEvent)
+    assert.equal(qEvent.inExtrinsic, txHash)
     assert.equal(qEvent.member.id, this.memberContext.memberId.toString())
     assert.equal(qEvent.account, account)
   }
@@ -46,8 +44,7 @@ export class AddStakingAccountsHappyCaseFixture extends BaseMembershipFixture {
     qEvents: StakingAccountConfirmedEventFieldsFragment[]
   ) {
     const qEvent = this.findMatchingQueryNodeEvent(eventDetails, qEvents)
-    assert.equal(qEvent.event.inExtrinsic, txHash)
-    assert.equal(qEvent.event.type, EventType.StakingAccountConfirmed)
+    assert.equal(qEvent.inExtrinsic, txHash)
     assert.equal(qEvent.member.id, this.memberContext.memberId.toString())
     assert.equal(qEvent.account, account)
   }

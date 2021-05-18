@@ -7,7 +7,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { OpeningAddedEventFieldsFragment, OpeningFieldsFragment } from '../../graphql/generated/queries'
-import { EventType, WorkingGroupOpeningType } from '../../graphql/generated/schema'
+import { WorkingGroupOpeningType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { MIN_APPLICATION_STAKE, MIN_UNSTANKING_PERIOD } from '../../consts'
 import moment from 'moment'
@@ -109,13 +109,17 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
     return this.api.retrieveOpeningAddedEventDetails(result, this.group)
   }
 
-  protected assertQueriedOpeningsAreValid(qOpenings: OpeningFieldsFragment[]): void {
+  protected assertQueriedOpeningsAreValid(
+    qOpenings: OpeningFieldsFragment[],
+    qEvents: OpeningAddedEventFieldsFragment[]
+  ): void {
     this.events.map((e, i) => {
       const qOpening = qOpenings.find((o) => o.runtimeId === e.openingId.toNumber())
       const openingParams = this.openingsParams[i]
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qOpening, 'Query node: Opening not found')
       assert.equal(qOpening.runtimeId, e.openingId.toNumber())
-      assert.equal(qOpening.createdAtBlock.number, e.blockNumber)
+      assert.equal(qOpening.createdInEvent.id, qEvent.id)
       assert.equal(qOpening.group.name, this.group)
       assert.equal(qOpening.rewardPerBlock, openingParams.reward.toString())
       assert.equal(qOpening.type, this.asSudo ? WorkingGroupOpeningType.Leader : WorkingGroupOpeningType.Regular)
@@ -128,7 +132,6 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: OpeningAddedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.OpeningAdded)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.opening.runtimeId, this.events[i].openingId.toNumber())
   }
@@ -136,7 +139,7 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     // Query the events
-    await this.query.tryQueryWithTimeout(
+    const qEvents = await this.query.tryQueryWithTimeout(
       () => this.query.getOpeningAddedEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
@@ -146,6 +149,6 @@ export class CreateOpeningsFixture extends BaseCreateOpeningFixture {
       this.events.map((e) => e.openingId),
       this.group
     )
-    this.assertQueriedOpeningsAreValid(qOpenings)
+    this.assertQueriedOpeningsAreValid(qOpenings, qEvents)
   }
 }

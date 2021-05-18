@@ -20,7 +20,7 @@ export default async function creatingMemberships({ api, query, env }: FlowProps
 
   // Assert account can not buy the membership with insufficient funds
   const aAccount = (await api.createKeyPairs(1))[0].address
-  const insufficientFundsFixture = new BuyMembershipWithInsufficienFundsFixture(api, query, aAccount)
+  const insufficientFundsFixture = new BuyMembershipWithInsufficienFundsFixture(api, aAccount)
   await new FixtureRunner(insufficientFundsFixture).run()
 
   debug('Done')

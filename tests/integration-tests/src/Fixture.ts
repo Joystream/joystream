@@ -109,9 +109,7 @@ export abstract class BaseQueryNodeFixture extends BaseFixture {
     queryNodeEvents: T[]
   ): T {
     const { blockNumber, indexInBlock } = eventToFind
-    const qEvent = queryNodeEvents.find(
-      (e) => e.event.inBlock.number === blockNumber && e.event.indexInBlock === indexInBlock
-    )
+    const qEvent = queryNodeEvents.find((e) => e.inBlock === blockNumber && e.indexInBlock === indexInBlock)
     if (!qEvent) {
       throw new Error(`Could not find matching query-node event (expected ${blockNumber}:${indexInBlock})!`)
     }
@@ -133,8 +131,8 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
   protected assertQueryNodeEventsAreValid(qEvents: AnyQueryNodeEvent[]): void {
     this.events.forEach((e, i) => {
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
-      assert.equal(qEvent.event.inExtrinsic, this.extrinsics[i].hash.toString())
-      assert.equal(qEvent.event.inBlock.timestamp, e.blockTimestamp)
+      assert.equal(qEvent.inExtrinsic, this.extrinsics[i].hash.toString())
+      assert.equal(new Date(qEvent.createdAt).getTime(), e.blockTimestamp)
       this.assertQueryNodeEventIsValid(qEvent, i)
     })
   }

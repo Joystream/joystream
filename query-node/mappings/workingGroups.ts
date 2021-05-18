@@ -15,7 +15,7 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { createEvent, deserializeMetadata, getOrCreateBlock, bytesToString } from './common'
+import { deserializeMetadata, bytesToString, genericEventFields } from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -26,7 +26,6 @@ import {
   ApplicationFormQuestionType,
   OpeningStatusOpen,
   WorkingGroupOpeningType,
-  EventType,
   WorkingGroupApplication,
   ApplicationFormQuestionAnswer,
   AppliedOnOpeningEvent,
@@ -74,7 +73,6 @@ import {
   Event,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
-import _ from 'lodash'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -254,7 +252,6 @@ async function handleAddUpcomingOpeningAction(
     expectedStart: expectedStart ? new Date(expectedStart) : undefined,
     stakeAmount: minApplicationStake?.toNumber() ? new BN(minApplicationStake.toString()) : undefined,
     createdInEvent: statusChangedEvent,
-    createdAtBlock: await getOrCreateBlock(db, event_),
   })
   await db.save<UpcomingWorkingGroupOpening>(upcomingOpening)
 
@@ -300,7 +297,6 @@ async function handleSetWorkingGroupMetadataAction(
   const newGroupMetadata = new WorkingGroupMetadata({
     createdAt: eventTime,
     updatedAt: eventTime,
-    setAtBlock: await getOrCreateBlock(db, event_),
     setInEvent: statusChangedEvent,
     group,
     status: setNewOptionalString('status'),
@@ -346,13 +342,10 @@ async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEven
   const eventTime = new Date(event_.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
-  const eventType = worker.isLead ? EventType.TerminatedLeader : EventType.TerminatedWorker
 
   const terminatedEvent = new EventConstructor({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, eventType),
     worker,
     penalty: optPenalty.unwrapOr(undefined),
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
@@ -371,8 +364,7 @@ async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEven
 }
 
 export async function findLeaderSetEventByTxHash(db: DatabaseManager, txHash?: string): Promise<LeaderSetEvent> {
-  const event = await db.get(Event, { where: { inExtrinsic: txHash } })
-  const leaderSetEvent = await db.get(LeaderSetEvent, { where: { event }, relations: ['event'] })
+  const leaderSetEvent = await db.get(LeaderSetEvent, { where: { inExtrinsic: txHash } })
 
   if (!leaderSetEvent) {
     throw new Error(`LeaderSet event not found by tx hash: ${txHash}`)
@@ -396,7 +388,6 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
   const opening = new WorkingGroupOpening({
     createdAt: eventTime,
     updatedAt: eventTime,
-    createdAtBlock: await getOrCreateBlock(db, event_),
     id: `${group.name}-${openingRuntimeId.toString()}`,
     runtimeId: openingRuntimeId.toNumber(),
     applications: [],
@@ -413,11 +404,8 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
 
   await db.save<WorkingGroupOpening>(opening)
 
-  const event = await createEvent(db, event_, EventType.OpeningAdded)
   const openingAddedEvent = new OpeningAddedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     group,
     opening,
   })
@@ -446,7 +434,6 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
   const application = new WorkingGroupApplication({
     createdAt: eventTime,
     updatedAt: eventTime,
-    createdAtBlock: await getOrCreateBlock(db, event_),
     id: `${group.name}-${applicationRuntimeId.toString()}`,
     runtimeId: applicationRuntimeId.toNumber(),
     opening: new WorkingGroupOpening({ id: openingDbId }),
@@ -462,11 +449,8 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
   await db.save<WorkingGroupApplication>(application)
   await createApplicationQuestionAnswers(db, application, metadataBytes)
 
-  const event = await createEvent(db, event_, EventType.AppliedOnOpening)
   const appliedOnOpeningEvent = new AppliedOnOpeningEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     group,
     opening: new WorkingGroupOpening({ id: openingDbId }),
     application,
@@ -476,14 +460,10 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
 }
 
 export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const eventTime = new Date(event_.blockTimestamp)
   const group = await getWorkingGroup(db, event_)
 
-  const event = await createEvent(db, event_, EventType.LeaderSet)
   const leaderSetEvent = new LeaderSetEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     group,
   })
 
@@ -505,11 +485,8 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
   const acceptedApplicationIds = createType('Vec<ApplicationId>', applicationIdsSet.toHex() as any)
 
   // Save the event
-  const event = await createEvent(db, event_, EventType.OpeningFilled)
   const openingFilledEvent = new OpeningFilledEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     group,
     opening,
   })
@@ -546,8 +523,6 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
               updatedAt: eventTime,
               id: `${group.name}-${workerRuntimeId.toString()}`,
               runtimeId: workerRuntimeId.toNumber(),
-              hiredAtBlock: await getOrCreateBlock(db, event_),
-              hiredAtTime: new Date(event_.blockTimestamp),
               application,
               group,
               isLead: opening.type === WorkingGroupOpeningType.LEADER,
@@ -581,7 +556,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
     group.updatedAt = eventTime
     await db.save<WorkingGroup>(group)
 
-    const leaderSetEvent = await findLeaderSetEventByTxHash(db, openingFilledEvent.event.inExtrinsic)
+    const leaderSetEvent = await findLeaderSetEventByTxHash(db, openingFilledEvent.inExtrinsic)
     leaderSetEvent.worker = hiredWorkers[0]
     leaderSetEvent.updatedAt = eventTime
     await db.save<LeaderSetEvent>(leaderSetEvent)
@@ -596,11 +571,8 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
   const eventTime = new Date(event_.blockTimestamp)
 
   // Create and save event
-  const event = await createEvent(db, event_, EventType.OpeningCanceled)
   const openingCanceledEvent = new OpeningCanceledEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     group,
     opening,
   })
@@ -638,11 +610,8 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
   const eventTime = new Date(event_.blockTimestamp)
 
   // Create and save event
-  const event = await createEvent(db, event_, EventType.ApplicationWithdrawn)
   const applicationWithdrawnEvent = new ApplicationWithdrawnEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     group,
     application,
   })
@@ -661,17 +630,14 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
 export async function workingGroups_StatusTextChanged(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [, optBytes] = new WorkingGroups.StatusTextChangedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp)
 
   // Since result cannot be empty at this point, but we already need to have an existing StatusTextChangedEvent
   // in order to be able to create UpcomingOpening.createdInEvent relation, we use a temporary "mock" result
   const mockResult = new InvalidActionMetadata()
   mockResult.reason = 'Metadata not yet processed'
   const statusTextChangedEvent = new StatusTextChangedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.StatusTextChanged),
     metadata: optBytes.isSome ? optBytes.unwrap().toString() : undefined,
     result: mockResult,
   })
@@ -710,10 +676,8 @@ export async function workingGroups_WorkerRoleAccountUpdated(
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.WorkerRoleAccountUpdated),
     worker,
     newRoleAccount: accountId.toString(),
   })
@@ -736,10 +700,8 @@ export async function workingGroups_WorkerRewardAccountUpdated(
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.WorkerRewardAccountUpdated),
     worker,
     newRewardAccount: accountId.toString(),
   })
@@ -759,10 +721,8 @@ export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: 
   const eventTime = new Date(event_.blockTimestamp)
 
   const stakeIncreasedEvent = new StakeIncreasedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.StakeIncreased),
     worker,
     amount: increaseAmount,
   })
@@ -782,10 +742,8 @@ export async function workingGroups_RewardPaid(db: DatabaseManager, event_: Subs
   const eventTime = new Date(event_.blockTimestamp)
 
   const rewardPaidEvent = new RewardPaidEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.RewardPaid),
     worker,
     amount,
     rewardAccount: rewardAccountId.toString(),
@@ -811,10 +769,8 @@ export async function workingGroups_NewMissedRewardLevelReached(
   const eventTime = new Date(event_.blockTimestamp)
 
   const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.NewMissedRewardLevelReached),
     worker,
     newMissedRewardAmount: newMissedRewardAmountOpt.unwrapOr(new BN(0)),
   })
@@ -835,10 +791,8 @@ export async function workingGroups_WorkerExited(db: DatabaseManager, event_: Su
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.WorkerExited),
     worker,
   })
 
@@ -856,10 +810,8 @@ export async function workingGroups_LeaderUnset(db: DatabaseManager, event_: Sub
   const eventTime = new Date(event_.blockTimestamp)
 
   const leaderUnsetEvent = new LeaderUnsetEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.LeaderUnset),
     leader: group.leader,
   })
 
@@ -888,10 +840,8 @@ export async function workingGroups_WorkerRewardAmountUpdated(
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.WorkerRewardAmountUpdated),
     worker,
     newRewardPerBlock: newRewardPerBlockOpt.unwrapOr(new BN(0)),
   })
@@ -911,10 +861,8 @@ export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: Su
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerStakeSlashedEvent = new StakeSlashedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.StakeSlashed),
     worker,
     requestedAmount,
     slashedAmount,
@@ -936,10 +884,8 @@ export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: 
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerStakeDecreasedEvent = new StakeDecreasedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.StakeDecreased),
     worker,
     amount,
   })
@@ -959,10 +905,8 @@ export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, ev
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.WorkerStartedLeaving),
     worker,
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
@@ -983,10 +927,8 @@ export async function workingGroups_BudgetSet(db: DatabaseManager, event_: Subst
   const eventTime = new Date(event_.blockTimestamp)
 
   const budgetSetEvent = new BudgetSetEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.BudgetSet),
     newBudget,
   })
 
@@ -1004,10 +946,8 @@ export async function workingGroups_BudgetSpending(db: DatabaseManager, event_: 
   const eventTime = new Date(event_.blockTimestamp)
 
   const budgetSpendingEvent = new BudgetSpendingEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     group,
-    event: await createEvent(db, event_, EventType.BudgetSpending),
     amount,
     reciever: reciever.toString(),
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,

@@ -11,7 +11,6 @@ import { ApplicationId, Opening, OpeningId } from '@joystream/types/working-grou
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 
 export type ApplicantDetails = {
   memberId: MemberId
@@ -115,13 +114,17 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
     return metadata
   }
 
-  protected assertQueriedApplicationsAreValid(qApplications: ApplicationFieldsFragment[]): void {
+  protected assertQueriedApplicationsAreValid(
+    qApplications: ApplicationFieldsFragment[],
+    qEvents: AppliedOnOpeningEventFieldsFragment[]
+  ): void {
     this.events.map((e, i) => {
       const applicationDetails = this.applications[i]
       const qApplication = qApplications.find((a) => a.runtimeId === e.applicationId.toNumber())
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qApplication, 'Query node: Application not found!')
       assert.equal(qApplication.runtimeId, e.applicationId.toNumber())
-      assert.equal(qApplication.createdAtBlock.number, e.blockNumber)
+      assert.equal(qApplication.createdInEvent.id, qEvent.id)
       assert.equal(qApplication.opening.runtimeId, applicationDetails.openingId.toNumber())
       assert.equal(qApplication.applicant.id, applicationDetails.applicant.memberId.toString())
       assert.equal(qApplication.roleAccount, applicationDetails.applicant.roleAccount)
@@ -143,7 +146,6 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: AppliedOnOpeningEventFieldsFragment, i: number): void {
     const applicationDetails = this.applications[i]
-    assert.equal(qEvent.event.type, EventType.AppliedOnOpening)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.opening.runtimeId, applicationDetails.openingId.toNumber())
     assert.equal(qEvent.application.runtimeId, this.events[i].applicationId.toNumber())
@@ -152,7 +154,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     // Query the events
-    await this.query.tryQueryWithTimeout(
+    const qEvents = await this.query.tryQueryWithTimeout(
       () => this.query.getAppliedOnOpeningEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
@@ -161,6 +163,6 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
       this.events.map((e) => e.applicationId),
       this.group
     )
-    this.assertQueriedApplicationsAreValid(qApplications)
+    this.assertQueriedApplicationsAreValid(qApplications, qEvents)
   }
 }

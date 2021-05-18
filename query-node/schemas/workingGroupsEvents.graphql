@@ -1,6 +1,22 @@
 type OpeningAddedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -12,8 +28,24 @@ type OpeningAddedEvent @entity {
 }
 
 type AppliedOnOpeningEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -28,8 +60,24 @@ type AppliedOnOpeningEvent @entity {
 }
 
 type OpeningFilledEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -42,8 +90,24 @@ type OpeningFilledEvent @entity {
 }
 
 type LeaderSetEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -54,8 +118,24 @@ type LeaderSetEvent @entity {
 }
 
 type WorkerRoleAccountUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -68,8 +148,24 @@ type WorkerRoleAccountUpdatedEvent @entity {
 }
 
 type LeaderUnsetEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -79,8 +175,24 @@ type LeaderUnsetEvent @entity {
 }
 
 type WorkerExitedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -90,8 +202,24 @@ type WorkerExitedEvent @entity {
 }
 
 type TerminatedWorkerEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -107,8 +235,24 @@ type TerminatedWorkerEvent @entity {
 }
 
 type TerminatedLeaderEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -124,8 +268,24 @@ type TerminatedLeaderEvent @entity {
 }
 
 type WorkerStartedLeavingEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -138,8 +298,24 @@ type WorkerStartedLeavingEvent @entity {
 }
 
 type StakeSlashedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -158,8 +334,24 @@ type StakeSlashedEvent @entity {
 }
 
 type StakeDecreasedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -172,8 +364,24 @@ type StakeDecreasedEvent @entity {
 }
 
 type StakeIncreasedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -186,8 +394,24 @@ type StakeIncreasedEvent @entity {
 }
 
 type ApplicationWithdrawnEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -197,8 +421,24 @@ type ApplicationWithdrawnEvent @entity {
 }
 
 type OpeningCanceledEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -208,8 +448,24 @@ type OpeningCanceledEvent @entity {
 }
 
 type BudgetSetEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -219,8 +475,24 @@ type BudgetSetEvent @entity {
 }
 
 type WorkerRewardAccountUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -233,8 +505,24 @@ type WorkerRewardAccountUpdatedEvent @entity {
 }
 
 type WorkerRewardAmountUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -271,8 +559,24 @@ union WorkingGroupMetadataActionResult =
   | InvalidActionMetadata
 
 type StatusTextChangedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -285,8 +589,24 @@ type StatusTextChangedEvent @entity {
 }
 
 type BudgetSpendingEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -309,8 +629,24 @@ enum RewardPaymentType {
 }
 
 type RewardPaidEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!
@@ -329,8 +665,24 @@ type RewardPaidEvent @entity {
 }
 
 type NewMissedRewardLevelReachedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Related group"
   group: WorkingGroup!

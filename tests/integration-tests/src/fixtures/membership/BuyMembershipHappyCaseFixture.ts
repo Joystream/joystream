@@ -1,131 +1,106 @@
-import BN from 'bn.js'
 import { Api } from '../../Api'
 import { assert } from 'chai'
-import { BaseMembershipFixture } from './BaseMembershipFixture'
+import { generateParamsFromAccountId } from './utils'
 import { MemberId } from '@joystream/types/common'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Membership } from '@joystream/types/members'
-import { EventType, MembershipEntryMethod } from '../../graphql/generated/schema'
-import { blake2AsHex } from '@polkadot/util-crypto'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { MembershipBoughtEventDetails } from '../../types'
 import { MembershipBoughtEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { Utils } from '../../utils'
+import { StandardizedFixture } from '../../Fixture'
+import { SubmittableResult } from '@polkadot/api'
 
-export class BuyMembershipHappyCaseFixture extends BaseMembershipFixture {
-  private accounts: string[]
-  private memberIds: MemberId[] = []
-
-  private extrinsics: SubmittableExtrinsic<'promise'>[] = []
-  private events: MembershipBoughtEventDetails[] = []
-  private members: Membership[] = []
+export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
+  protected accounts: string[]
+  protected memberIds: MemberId[] = []
+  protected events: MembershipBoughtEventDetails[] = []
+  protected members: Membership[] = []
 
   public constructor(api: Api, query: QueryNodeApi, accounts: string[]) {
     super(api, query)
     this.accounts = accounts
   }
 
-  private generateBuyMembershipTx(accountId: string): SubmittableExtrinsic<'promise'> {
-    return this.api.tx.members.buyMembership(this.generateParamsFromAccountId(accountId))
+  protected async getSignerAccountOrAccounts(): Promise<string[]> {
+    return this.accounts
+  }
+
+  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
+    return this.accounts.map((a) => this.api.tx.members.buyMembership(generateParamsFromAccountId(a)))
+  }
+
+  protected async getEventFromResult(result: SubmittableResult): Promise<MembershipBoughtEventDetails> {
+    return this.api.retrieveMembershipBoughtEventDetails(result)
   }
 
   public getCreatedMembers(): MemberId[] {
-    return this.memberIds.slice()
+    return this.events.map((e) => e.memberId)
   }
 
-  private assertMemberMatchQueriedResult(member: Membership, qMember: MembershipFieldsFragment | null) {
-    if (!qMember) {
-      throw new Error('Query node: Membership not found!')
-    }
-    const {
-      handle,
-      rootAccount,
-      controllerAccount,
-      metadata: { name, about },
-      isVerified,
-      entry,
-    } = qMember
-    const txParams = this.generateParamsFromAccountId(rootAccount)
-    const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
-    assert.equal(blake2AsHex(handle), member.handle_hash.toString())
-    assert.equal(handle, txParams.handle)
-    assert.equal(rootAccount, member.root_account.toString())
-    assert.equal(controllerAccount, member.controller_account.toString())
-    assert.equal(name, metadata.name)
-    assert.equal(about, metadata.about)
-    // TODO: avatar
-    assert.equal(isVerified, false)
-    assert.equal(entry, MembershipEntryMethod.Paid)
+  protected assertQueriedMembersAreValid(
+    qMembers: MembershipFieldsFragment[],
+    qEvents: MembershipBoughtEventFieldsFragment[]
+  ): void {
+    this.events.forEach((e, i) => {
+      const account = this.accounts[i]
+      const params = generateParamsFromAccountId(account)
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
+      const qMember = qMembers.find((m) => m.id === e.memberId.toString())
+      Utils.assert(qMember, 'Query node: Membership not found!')
+      const {
+        handle,
+        rootAccount,
+        controllerAccount,
+        metadata: { name, about },
+        isVerified,
+        entry,
+      } = qMember
+      const metadata = Utils.metadataFromBytes(MembershipMetadata, params.metadata)
+      assert.equal(handle, params.handle)
+      assert.equal(rootAccount, params.root_account)
+      assert.equal(controllerAccount, params.controller_account)
+      assert.equal(name, metadata.name)
+      assert.equal(about, metadata.about)
+      // TODO: avatar
+      assert.equal(isVerified, false)
+      Utils.assert(entry.__typename === 'MembershipEntryPaid', 'Query node: Invalid membership entry method')
+      Utils.assert(entry.membershipBoughtEvent)
+      assert.equal(entry.membershipBoughtEvent.id, qEvent.id)
+    })
   }
 
-  private assertEventMatchQueriedResult(
-    eventDetails: MembershipBoughtEventDetails,
-    account: string,
-    txHash: string,
-    qEvent: MembershipBoughtEventFieldsFragment | null
-  ) {
-    if (!qEvent) {
-      throw new Error('Query node: MembershipBought event not found!')
-    }
-    const txParams = this.generateParamsFromAccountId(account)
+  protected assertQueryNodeEventIsValid(qEvent: MembershipBoughtEventFieldsFragment, i: number): void {
+    const account = this.accounts[i]
+    const event = this.events[i]
+    const txParams = generateParamsFromAccountId(account)
     const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
-    assert.equal(qEvent.event.inBlock.number, eventDetails.blockNumber)
-    assert.equal(qEvent.event.inExtrinsic, txHash)
-    assert.equal(qEvent.event.indexInBlock, eventDetails.indexInBlock)
-    assert.equal(qEvent.event.type, EventType.MembershipBought)
-    assert.equal(qEvent.newMember.id, eventDetails.memberId.toString())
+    assert.equal(qEvent.newMember.id, event.memberId.toString())
     assert.equal(qEvent.handle, txParams.handle)
-    assert.equal(qEvent.rootAccount, txParams.root_account.toString())
-    assert.equal(qEvent.controllerAccount, txParams.controller_account.toString())
+    assert.equal(qEvent.rootAccount, txParams.root_account)
+    assert.equal(qEvent.controllerAccount, txParams.controller_account)
     assert.equal(qEvent.metadata.name, metadata.name || null)
     assert.equal(qEvent.metadata.about, metadata.about || null)
     // TODO: avatar
   }
 
   async execute(): Promise<void> {
-    // Fee estimation and transfer
+    // Add membership-price funds to accounts
     const membershipFee = await this.api.getMembershipFee()
-    const membershipTransactionFee = await this.api.estimateTxFee(
-      this.generateBuyMembershipTx(this.accounts[0]),
-      this.accounts[0]
-    )
-    const estimatedFee = membershipTransactionFee.add(new BN(membershipFee))
-
-    await this.api.treasuryTransferBalanceToAccounts(this.accounts, estimatedFee)
-
-    this.extrinsics = this.accounts.map((a) => this.generateBuyMembershipTx(a))
-    const results = await Promise.all(this.accounts.map((a, i) => this.api.signAndSend(this.extrinsics[i], a)))
-    this.events = await Promise.all(results.map((r) => this.api.retrieveMembershipBoughtEventDetails(r)))
-    this.memberIds = this.events.map((e) => e.memberId)
-
-    this.debug(`Registered ${this.memberIds.length} new members`)
-
-    assert.equal(this.memberIds.length, this.accounts.length)
-
-    // Assert that created members have expected root and controller accounts
-    this.members = await Promise.all(this.memberIds.map((id) => this.api.query.members.membershipById(id)))
-
-    this.members.forEach((member, index) => {
-      assert(member.root_account.eq(this.accounts[index]))
-      assert(member.controller_account.eq(this.accounts[index]))
-    })
+    await Promise.all(this.accounts.map((a) => this.api.treasuryTransferBalance(a, membershipFee)))
+    await super.execute()
   }
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
-    // Ensure newly created members were parsed by query node
-    await Promise.all(
-      this.members.map(async (member, i) => {
-        const memberId = this.memberIds[i]
-        await this.query.tryQueryWithTimeout(
-          () => this.query.getMemberById(memberId),
-          (qMember) => this.assertMemberMatchQueriedResult(member, qMember)
-        )
-        // Ensure the query node event is valid
-        const qEvent = await this.query.getMembershipBoughtEvent(memberId)
-        this.assertEventMatchQueriedResult(this.events[i], this.accounts[i], this.extrinsics[i].hash.toString(), qEvent)
-      })
+
+    const qEvents = await this.query.tryQueryWithTimeout(
+      () => this.query.getMembershipBoughtEvents(this.events),
+      (r) => this.assertQueryNodeEventsAreValid(r)
     )
+
+    const qMembers = await this.query.getMembersByIds(this.events.map((e) => e.memberId))
+    this.assertQueriedMembersAreValid(qMembers, qEvents)
   }
 }

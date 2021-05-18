@@ -1,9 +1,3 @@
-enum MembershipEntryMethod {
-  PAID
-  INVITED
-  GENESIS
-}
-
 type MemberMetadata @entity {
   "Member's name"
   name: String
@@ -14,6 +8,24 @@ type MemberMetadata @entity {
   "Short text chosen by member to share information about themselves"
   about: String
 }
+
+type MembershipEntryPaid @variant {
+  "The event the membership was bought in"
+  # Must be optional because of member.entry <=> membershipBoughtEvent.newMember cross relationship
+  membershipBoughtEvent: MembershipBoughtEvent
+}
+
+type MembershipEntryInvited @variant {
+  "The event the member was invited in"
+  # Must be optional because of member.entry <=> memberInvitedEvent.newMember cross relationship
+  memberInvitedEvent: MemberInvitedEvent
+}
+
+type MembershipEntryGenesis @variant {
+  phantom: Int
+}
+
+union MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited | MembershipEntryGenesis
 
 "Stored information about a registered user"
 type Membership @entity {
@@ -31,12 +43,6 @@ type Membership @entity {
 
   "Member's root account id"
   rootAccount: String!
-
-  "Block at which the member was registered"
-  registeredAtBlock: Block!
-
-  "Timestamp when member was registered"
-  registeredAtTime: DateTime!
 
   "How the member was registered"
   entry: MembershipEntryMethod!
@@ -70,11 +76,8 @@ type Membership @entity {
 }
 
 type MembershipSystemSnapshot @entity {
-  "The snapshot block"
-  snapshotBlock: Block!
-
-  "Time of the snapshot (based on block timestamp)"
-  snapshotTime: DateTime!
+  "The snapshot block number"
+  snapshotBlock: Int!
 
   "Initial invitation count of a new member."
   defaultInviteCount: Int!

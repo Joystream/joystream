@@ -7,7 +7,6 @@ import { WorkerId, Worker } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { WorkerFieldsFragment, WorkerStartedLeavingEventFieldsFragment } from '../../graphql/generated/queries'
 
 export class LeaveRoleFixture extends BaseWorkingGroupFixture {
@@ -42,7 +41,6 @@ export class LeaveRoleFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: WorkerStartedLeavingEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.WorkerStartedLeaving)
     assert.equal(qEvent.worker.runtimeId, this.workerIds[i].toNumber())
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.rationale, this.getRationale(this.workerIds[i]))

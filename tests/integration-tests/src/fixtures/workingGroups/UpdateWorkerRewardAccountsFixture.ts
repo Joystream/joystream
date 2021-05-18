@@ -7,7 +7,6 @@ import { WorkerId, Worker } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { WorkerFieldsFragment, WorkerRewardAccountUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { AccountId } from '@joystream/types/common'
 
@@ -49,7 +48,6 @@ export class UpdateWorkerRewardAccountsFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: WorkerRewardAccountUpdatedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.WorkerRewardAccountUpdated)
     assert.equal(qEvent.worker.runtimeId, this.workerIds[i].toNumber())
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.newRewardAccount, this.rewardAccounts[i].toString())

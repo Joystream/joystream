@@ -6,7 +6,6 @@ import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { OpeningId } from '@joystream/types/working-group'
 import {
   ApplicationBasicFieldsFragment,
@@ -64,7 +63,6 @@ export class CancelOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: OpeningCanceledEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.OpeningCanceled)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.opening.runtimeId, this.openingIds[i].toNumber())
   }

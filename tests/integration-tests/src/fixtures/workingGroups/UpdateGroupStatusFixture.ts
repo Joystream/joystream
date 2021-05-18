@@ -6,7 +6,6 @@ import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { EventType } from '../../graphql/generated/schema'
 import { IWorkingGroupMetadata, WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
 import {
   StatusTextChangedEventFieldsFragment,
@@ -48,7 +47,6 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StatusTextChangedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.metadata, this.getActionMetadataBytes(this.updates[i]).toString())
     assert.equal(qEvent.result.__typename, 'WorkingGroupMetadataSet')
@@ -80,7 +78,6 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
     assert.equal(postUpdateSnapshot.statusMessage, expectedMeta.statusMessage || null)
     assert.equal(postUpdateSnapshot.description, expectedMeta.description || null)
     assert.equal(postUpdateSnapshot.about, expectedMeta.about || null)
-    assert.equal(postUpdateSnapshot.setAtBlock.number, eventDetails.blockNumber)
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -103,8 +100,7 @@ export class UpdateGroupStatusFixture extends BaseWorkingGroupFixture {
     this.events.forEach((postUpdateEvent, i) => {
       const postUpdateSnapshotIndex = snapshots.findIndex(
         (s) =>
-          s.setInEvent.event.id ===
-          this.query.getQueryNodeEventId(postUpdateEvent.blockNumber, postUpdateEvent.indexInBlock)
+          s.setInEvent.id === this.query.getQueryNodeEventId(postUpdateEvent.blockNumber, postUpdateEvent.indexInBlock)
       )
       const postUpdateSnapshot = postUpdateSnapshotIndex > -1 ? snapshots[postUpdateSnapshotIndex] : null
       const preUpdateSnapshot = postUpdateSnapshotIndex > 0 ? snapshots[postUpdateSnapshotIndex - 1] : null

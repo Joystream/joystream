@@ -6,7 +6,6 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { StatusTextChangedEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { WorkingGroupMetadataAction } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
@@ -42,7 +41,6 @@ export class RemoveUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: StatusTextChangedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.StatusTextChanged)
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.metadata, this.getActionMetadataBytes(this.upcomingOpeningIds[i]).toString())
     Utils.assert(qEvent.result.__typename === 'UpcomingOpeningRemoved', 'Unexpected StatuxTextChangedEvent result type')
