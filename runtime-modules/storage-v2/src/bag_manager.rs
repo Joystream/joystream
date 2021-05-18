@@ -195,7 +195,7 @@ impl<T: Trait> BagManager<T> {
         )
     }
 
-    // Gets data objects total size from the bag container. //TODO: inline as a counter
+    // Gets data objects total size from the bag container.
     pub(crate) fn get_data_objects_total_size(bag_id: &BagId<T>) -> u64 {
         Self::query(
             bag_id,

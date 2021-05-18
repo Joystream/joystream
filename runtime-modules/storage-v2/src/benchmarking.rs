@@ -1,5 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
+//TODO: implement benchmarks after merging with the Olympia release.
+
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
@@ -19,7 +21,7 @@ benchmarks! {
 
     create_storage_bucket {
         let account_id: T::AccountId = Default::default();
-        //TODO: implement
+
 
     }: _ (RawOrigin::Signed(account_id), None, false, 0, 0)
     verify {
