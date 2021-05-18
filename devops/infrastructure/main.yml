@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  EC2InstanceType:
+    Type: String
+  EC2AMI:
+    Type: String
+    Default: 'ami-09e67e426f25ce0d7'
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Default: 'joystream-key'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        !Sub 'Internal Security group for ${AWS::StackName}'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9933
+          ToPort: 9933
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9944
+          ToPort: 9944
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+  Instance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT5M
+        Count: 1
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              wget: []
+              unzip: []
+    Properties:
+      ImageId: !Ref EC2AMI
+      InstanceType: !Ref EC2InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+
+          # send script output to /tmp so we can debug boot failures
+          exec > /tmp/userdata.log 2>&1
+
+          # Update all packages
+          apt-get update -y
+
+          # Get latest cfn scripts;
+          # apt-get install -y python3-pip
+          apt-get install -y python3-setuptools
+          mkdir -p /opt/aws/bin
+
+          # pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+          wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+          python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
+
+          ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+
+          cd /home/ubuntu/
+
+          git clone https://github.com/Joystream/joystream.git
+
+          cd joystream/
+
+          touch setup_complete.txt
+
+          echo "Done" > setup_complete.txt
+
+          # Signal to CloudFormation that the instance is ready
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource Instance
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+Outputs:
+  InstanceDNS:
+    Description: The DNS name for the created instance
+    Value: !Sub "http://${Instance.PublicDnsName}"
+    Export:
+      Name: InstanceDNS 
