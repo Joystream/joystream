@@ -1,62 +1,67 @@
 #![cfg(test)]
 
-use frame_support::{impl_outer_origin, parameter_types};
+use frame_support::{parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use sp_std::cell::{Cell, RefCell};
 use sp_std::rc::Rc;
 use std::panic;
 
 use crate::hiring::ApplicationDeactivationCause;
-use crate::{Config, Module};
+use crate::Config;
 use balances;
 use stake;
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+use crate as hiring;
+
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Hiring: hiring::{Pallet, Call, Storage},
+        Balances: balances::{Pallet, Call, Storage, Event<T>},
+    }
+);
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockWeight: Weight = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
-
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
 
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
+    type Call = Call;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128; // u64 is not enough to hold bytes used to generate bounty account
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type AccountData = balances::AccountData<u64>;
+    type PalletInfo = PalletInfo;
+    type AccountData = balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
-    type PalletInfo = ();
+    type SS58Prefix = ();
+    type OnSetCode = ();
 }
 
 parameter_types! {
@@ -64,10 +69,12 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
+type Balance = u64;
+
 impl balances::Config for Test {
-    type Balance = u64;
+    type Balance = Balance;
     type DustRemoval = ();
-    type Event = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -88,10 +95,6 @@ impl stake::Config for Test {
     type StakeId = u64;
     type SlashId = u64;
 }
-
-pub type Balances = balances::Module<Test>;
-pub type System = frame_system::Module<Test>;
-pub type Hiring = Module<Test>;
 
 // Intercepts panic method
 // Returns: whether panic occurred
