@@ -194,8 +194,8 @@ export class QueryNodeApi {
   public tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    timeoutMs = 210000,
-    retryTimeMs = 30000
+    timeoutMs = 60000,
+    retryTimeMs = 15000
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const retryDebug = this.tryDebug.extend(label).extend('retry')
