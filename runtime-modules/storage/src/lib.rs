@@ -76,10 +76,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
-// TODO: make public methods as root extrinsics to enable storage-node dev mode.
-// TODO: make public methods "weight-ready".
-// TODO: review extrinsic, parameters and error names.
-
 #[cfg(test)]
 mod tests;
 
@@ -2182,8 +2178,6 @@ impl<T: Trait> Module<T> {
     fn validate_upload_data_objects_parameters(
         params: &UploadParameters<T>,
     ) -> Result<BagChangeInfo<BalanceOf<T>>, DispatchError> {
-        // TODO: consider refactoring and splitting the method.
-
         // Check global uploading block.
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
@@ -2196,9 +2190,7 @@ impl<T: Trait> Module<T> {
         BagManager::<T>::ensure_bag_exists(&params.bag_id)?;
 
         let bag_objects_number = BagManager::<T>::get_data_objects_number(&params.bag_id.clone());
-
         let new_objects_number: u64 = params.object_creation_list.len().saturated_into();
-
         let total_possible_data_objects_number: u64 = new_objects_number + bag_objects_number;
 
         // Check bag capacity.
@@ -2208,7 +2200,6 @@ impl<T: Trait> Module<T> {
         );
 
         let mut bag_change = BagChangeInfo::default();
-
         // Check data objects.
         for object_params in params.object_creation_list.iter() {
             // Should be non-empty hash.
@@ -2230,7 +2221,6 @@ impl<T: Trait> Module<T> {
 
         let size_fee =
             Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
-
         let usable_balance =
             Balances::<T>::usable_balance(&params.deletion_prize_source_account_id);
 
