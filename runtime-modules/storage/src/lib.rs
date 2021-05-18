@@ -1,12 +1,81 @@
 //! # Storage module
-//! Storage module for the Joystream platform. Version 2.
+//! Storage module for the Joystream platform.
+//!
+//! Initial spec links:
+//! - [spec](https://github.com/Joystream/joystream/issues/2224)
+//! - [utilization model](https://github.com/Joystream/joystream/issues/2359)
+//!
+//! Pallet functionality could be split in three distinct groups:
+//! - extrinsics for the working group leader
+//! - extrinsics for the storage provider
+//! - public methods for the pallet integration
+//!
+//! #### Working group leader extrinsics
+//! - [create_storage_bucket](./struct.Module.html#method.create_storage_bucket) - creates storage
+//! bucket.
+//! - [update_storage_buckets_for_bag](./struct.Module.html#method.update_storage_buckets_for_bag) -
+//! updates storage buckets for a bag.
+//! - [delete_storage_bucket](./struct.Module.html#method.delete_storage_bucket) - deletes storage
+//! bucket.
+//! - [invite_storage_bucket_operator](./struct.Module.html#method.invite_storage_bucket_operator) -
+//! invites storage bucket operator.
+//! - [cancel_storage_bucket_operator_invite](./struct.Module.html#method.cancel_storage_bucket_operator_invite) -
+//! cancels pending storage bucket invite.
+//! - [remove_storage_bucket_operator](./struct.Module.html#method.remove_storage_bucket_operator) -
+//! removes storage bucket operator.
+//! - [update_uploading_blocked_status](./struct.Module.html#method.update_uploading_blocked_status) -
+//! updates whether uploading is globally blocked.
+//! - [update_data_size_fee](./struct.Module.html#method.update_data_size_fee) - updates size-based
+//! pricing of new objects uploaded.
+//! - [update_storage_buckets_per_bag_limit](./struct.Module.html#method.update_storage_buckets_per_bag_limit) -
+//! updates "Storage buckets per bag" number limit.
+//! - [update_storage_buckets_voucher_max_limits](./struct.Module.html#method.update_storage_buckets_voucher_max_limits) -
+//! updates "Storage buckets voucher max limits".
+//! - [update_number_of_storage_buckets_in_dynamic_bag_creation_policy](./struct.Module.html#method.update_number_of_storage_buckets_in_dynamic_bag_creation_policy) -
+//! updates number of storage buckets used in given dynamic bag creation policy.
+//! - [update_blacklist](./struct.Module.html#method.update_blacklist) - adds and removes hashes to
+//! the current blacklist.
+//!
+//! #### Storage provider extrinsics
+//!
+//! - [accept_storage_bucket_invitation](./struct.Module.html#method.accept_storage_bucket_invitation) -
+//! accepts the storage bucket invitation.
+//! - [set_storage_operator_metadata](./struct.Module.html#method.set_storage_operator_metadata) -
+//! sets storage operator metadata.
+//! - [set_storage_bucket_voucher_limits](./struct.Module.html#method.set_storage_bucket_voucher_limits) -
+//! sets storage bucket voucher limits.
+//! - [update_storage_bucket_status](./struct.Module.html#method.update_storage_bucket_status) -
+//! updates whether new bags are being accepted for storage.
+//! - [accept_pending_data_objects](./struct.Module.html#method.accept_pending_data_objects) - a
+//! storage provider signals that the data object was successfully uploaded to its storage.
+//!
+//! #### Public methods
+//! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
+//! - can_upload_data_objects
+//! - upload_data_objects
+//! - can_move_data_objects
+//! - move_data_objects
+//! - can_delete_data_objects
+//! - delete_data_objects
+//! - can_delete_dynamic_bag
+//! - delete_dynamic_bag
+//! - can_create_dynamic_bag
+//! - create_dynamic_bag
+//!
+//! ### Pallet constants
+//! - MaxStorageBucketNumber
+//! - MaxNumberOfDataObjectsPerBag
+//! - DataObjectDeletionPrize
+//! - BlacklistSizeLimit
+//! - StorageBucketsPerBagValueConstraint
+//! - DefaultMemberDynamicBagCreationPolicy
+//! - DefaultChannelDynamicBagCreationPolicy
+//!
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
-// TODO: Remove old Storage pallet.
-// TODO: add module comment
 // TODO: make public methods as root extrinsics to enable storage-node dev mode.
 // TODO: make public methods "weight-ready".
 // TODO: review extrinsic, parameters and error names.
