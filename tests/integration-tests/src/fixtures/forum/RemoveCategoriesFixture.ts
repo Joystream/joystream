@@ -6,7 +6,6 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { CategoryDeletedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
 import { WithForumLeadFixture } from './WithForumLeadFixture'
@@ -59,7 +58,6 @@ export class RemoveCategoriesFixture extends WithForumLeadFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: CategoryDeletedEventFieldsFragment, i: number): void {
     const { categoryId, asWorker } = this.removals[i]
-    assert.equal(qEvent.event.type, EventType.CategoryDeleted)
     assert.equal(qEvent.category.id, categoryId.toString())
     assert.equal(qEvent.actor.id, `forumWorkingGroup-${asWorker ? asWorker.toString() : this.forumLeadId!.toString()}`)
   }

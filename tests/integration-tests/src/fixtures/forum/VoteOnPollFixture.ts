@@ -4,7 +4,6 @@ import { EventDetails } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithPostsFieldsFragment, VoteOnPollEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { CategoryId } from '@joystream/types/forum'
@@ -46,7 +45,6 @@ export class VoteOnPollFixture extends StandardizedFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: VoteOnPollEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.VoteOnPoll)
     assert.equal(qEvent.pollAlternative.poll.thread.id, this.votes[i].threadId.toString())
     assert.equal(qEvent.pollAlternative.index, this.votes[i].index)
     assert.equal(qEvent.votingMember.id, this.votes[i].asMember.toString())

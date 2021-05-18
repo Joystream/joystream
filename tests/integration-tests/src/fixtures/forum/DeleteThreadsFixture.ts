@@ -5,7 +5,6 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithPostsFieldsFragment, ThreadDeletedEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { CategoryId } from '@joystream/types/forum'
@@ -77,7 +76,6 @@ export class DeleteThreadsFixture extends StandardizedFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ThreadDeletedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.ThreadDeleted)
     assert.equal(qEvent.thread.id, this.removals[i].threadId.toString())
   }
 

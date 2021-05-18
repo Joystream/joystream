@@ -1,24 +1,28 @@
 fragment CategoryCreatedEventFields on CategoryCreatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   category {
     id
   }
 }
 
 query getCategoryCreatedEventsByEventIds($eventIds: [ID!]) {
-  categoryCreatedEvents(where: { eventId_in: $eventIds }) {
+  categoryCreatedEvents(where: { id_in: $eventIds }) {
     ...CategoryCreatedEventFields
   }
 }
 
 fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   category {
     id
   }
@@ -29,16 +33,18 @@ fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
 }
 
 query getCategoryUpdatedEventsByEventIds($eventIds: [ID!]) {
-  categoryUpdatedEvents(where: { eventId_in: $eventIds }) {
+  categoryUpdatedEvents(where: { id_in: $eventIds }) {
     ...CategoryUpdatedEventFields
   }
 }
 
 fragment CategoryDeletedEventFields on CategoryDeletedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   category {
     id
   }
@@ -48,32 +54,36 @@ fragment CategoryDeletedEventFields on CategoryDeletedEvent {
 }
 
 query getCategoryDeletedEventsByEventIds($eventIds: [ID!]) {
-  categoryDeletedEvents(where: { eventId_in: $eventIds }) {
+  categoryDeletedEvents(where: { id_in: $eventIds }) {
     ...CategoryDeletedEventFields
   }
 }
 
 fragment ThreadCreatedEventFields on ThreadCreatedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   thread {
     id
   }
 }
 
 query getThreadCreatedEventsByEventIds($eventIds: [ID!]) {
-  threadCreatedEvents(where: { eventId_in: $eventIds }) {
+  threadCreatedEvents(where: { id_in: $eventIds }) {
     ...ThreadCreatedEventFields
   }
 }
 
 fragment VoteOnPollEventFields on VoteOnPollEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   pollAlternative {
     id
     index
@@ -90,23 +100,25 @@ fragment VoteOnPollEventFields on VoteOnPollEvent {
 }
 
 query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
-  voteOnPollEvents(where: { eventId_in: $eventIds }) {
+  voteOnPollEvents(where: { id_in: $eventIds }) {
     ...VoteOnPollEventFields
   }
 }
 
 fragment ThreadDeletedEventFields on ThreadDeletedEvent {
   id
-  event {
-    ...EventFields
-  }
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
   thread {
     id
   }
 }
 
 query getThreadDeletedEventsByEventIds($eventIds: [ID!]) {
-  threadDeletedEvents(where: { eventId_in: $eventIds }) {
+  threadDeletedEvents(where: { id_in: $eventIds }) {
     ...ThreadDeletedEventFields
   }
 }

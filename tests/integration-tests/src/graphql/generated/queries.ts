@@ -1,16 +1,6 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
-export type BlockFieldsFragment = { number: number; timestamp: any; network: Types.Network }
-
-export type EventFieldsFragment = {
-  id: string
-  inExtrinsic?: Types.Maybe<string>
-  indexInBlock: number
-  type: Types.EventType
-  inBlock: BlockFieldsFragment
-}
-
 export type ForumCategoryFieldsFragment = {
   id: string
   title: string
@@ -69,7 +59,15 @@ export type GetThreadsWithPostsByIdsQueryVariables = Types.Exact<{
 
 export type GetThreadsWithPostsByIdsQuery = { forumThreads: Array<ForumThreadWithPostsFieldsFragment> }
 
-export type CategoryCreatedEventFieldsFragment = { id: string; event: EventFieldsFragment; category: { id: string } }
+export type CategoryCreatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  category: { id: string }
+}
 
 export type GetCategoryCreatedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -81,8 +79,12 @@ export type GetCategoryCreatedEventsByEventIdsQuery = {
 
 export type CategoryUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newArchivalStatus: boolean
-  event: EventFieldsFragment
   category: { id: string }
   actor: { id: string }
 }
@@ -97,7 +99,11 @@ export type GetCategoryUpdatedEventsByEventIdsQuery = {
 
 export type CategoryDeletedEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   category: { id: string }
   actor: { id: string }
 }
@@ -110,7 +116,15 @@ export type GetCategoryDeletedEventsByEventIdsQuery = {
   categoryDeletedEvents: Array<CategoryDeletedEventFieldsFragment>
 }
 
-export type ThreadCreatedEventFieldsFragment = { id: string; event: EventFieldsFragment; thread: { id: string } }
+export type ThreadCreatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  thread: { id: string }
+}
 
 export type GetThreadCreatedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -120,7 +134,11 @@ export type GetThreadCreatedEventsByEventIdsQuery = { threadCreatedEvents: Array
 
 export type VoteOnPollEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   pollAlternative: { id: string; index: number; text: string; poll: { thread: { id: string } } }
   votingMember: { id: string }
 }
@@ -131,7 +149,15 @@ export type GetVoteOnPollEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetVoteOnPollEventsByEventIdsQuery = { voteOnPollEvents: Array<VoteOnPollEventFieldsFragment> }
 
-export type ThreadDeletedEventFieldsFragment = { id: string; event: EventFieldsFragment; thread: { id: string } }
+export type ThreadDeletedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  thread: { id: string }
+}
 
 export type GetThreadDeletedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -146,13 +172,14 @@ export type MembershipFieldsFragment = {
   handle: string
   controllerAccount: string
   rootAccount: string
-  registeredAtTime: any
-  entry: Types.MembershipEntryMethod
   isVerified: boolean
   inviteCount: number
   boundAccounts: Array<string>
   metadata: MemberMetadataFieldsFragment
-  registeredAtBlock: BlockFieldsFragment
+  entry:
+    | { __typename: 'MembershipEntryPaid'; membershipBoughtEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'MembershipEntryGenesis' }
   invitedBy?: Types.Maybe<{ id: string }>
   invitees: Array<{ id: string }>
 }
@@ -163,13 +190,19 @@ export type GetMemberByIdQueryVariables = Types.Exact<{
 
 export type GetMemberByIdQuery = { membershipByUniqueInput?: Types.Maybe<MembershipFieldsFragment> }
 
+export type GetMembersByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment> }
+
 export type MembershipSystemSnapshotFieldsFragment = {
-  snapshotTime: any
+  createdAt: any
+  snapshotBlock: number
   referralCut: number
   invitedInitialBalance: any
   defaultInviteCount: number
   membershipPrice: any
-  snapshotBlock: BlockFieldsFragment
 }
 
 export type GetMembershipSystemSnapshotAtQueryVariables = Types.Exact<{
@@ -190,27 +223,35 @@ export type GetMembershipSystemSnapshotBeforeQuery = {
 
 export type MembershipBoughtEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   rootAccount: string
   controllerAccount: string
   handle: string
-  event: EventFieldsFragment
   newMember: { id: string }
   metadata: MemberMetadataFieldsFragment
   referrer?: Types.Maybe<{ id: string }>
 }
 
-export type GetMembershipBoughtEventsByMemberIdQueryVariables = Types.Exact<{
-  memberId: Types.Scalars['ID']
+export type GetMembershipBoughtEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetMembershipBoughtEventsByMemberIdQuery = {
+export type GetMembershipBoughtEventsByEventIdsQuery = {
   membershipBoughtEvents: Array<MembershipBoughtEventFieldsFragment>
 }
 
 export type MemberProfileUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newHandle?: Types.Maybe<string>
-  event: EventFieldsFragment
   member: { id: string }
   newMetadata: { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 }
@@ -225,9 +266,13 @@ export type GetMemberProfileUpdatedEventsByMemberIdQuery = {
 
 export type MemberAccountsUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newRootAccount?: Types.Maybe<string>
   newControllerAccount?: Types.Maybe<string>
-  event: EventFieldsFragment
   member: { id: string }
 }
 
@@ -241,25 +286,33 @@ export type GetMemberAccountsUpdatedEventsByMemberIdQuery = {
 
 export type MemberInvitedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   rootAccount: string
   controllerAccount: string
   handle: string
-  event: EventFieldsFragment
   invitingMember: { id: string }
   newMember: { id: string }
   metadata: MemberMetadataFieldsFragment
 }
 
-export type GetMemberInvitedEventsByNewMemberIdQueryVariables = Types.Exact<{
-  newMemberId: Types.Scalars['ID']
+export type GetMemberInvitedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetMemberInvitedEventsByNewMemberIdQuery = { memberInvitedEvents: Array<MemberInvitedEventFieldsFragment> }
+export type GetMemberInvitedEventsByEventIdsQuery = { memberInvitedEvents: Array<MemberInvitedEventFieldsFragment> }
 
 export type InvitesTransferredEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   numberOfInvites: number
-  event: EventFieldsFragment
   sourceMember: { id: string }
   targetMember: { id: string }
 }
@@ -274,8 +327,12 @@ export type GetInvitesTransferredEventsBySourceMemberIdQuery = {
 
 export type StakingAccountAddedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   account: string
-  event: EventFieldsFragment
   member: { id: string }
 }
 
@@ -289,8 +346,12 @@ export type GetStakingAccountAddedEventsByMemberIdQuery = {
 
 export type StakingAccountConfirmedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   account: string
-  event: EventFieldsFragment
   member: { id: string }
 }
 
@@ -304,8 +365,12 @@ export type GetStakingAccountConfirmedEventsByMemberIdQuery = {
 
 export type StakingAccountRemovedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   account: string
-  event: EventFieldsFragment
   member: { id: string }
 }
 
@@ -317,7 +382,15 @@ export type GetStakingAccountRemovedEventsByMemberIdQuery = {
   stakingAccountRemovedEvents: Array<StakingAccountRemovedEventFieldsFragment>
 }
 
-export type ReferralCutUpdatedEventFieldsFragment = { id: string; newValue: number; event: EventFieldsFragment }
+export type ReferralCutUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newValue: number
+}
 
 export type GetReferralCutUpdatedEventsByEventIdQueryVariables = Types.Exact<{
   eventId: Types.Scalars['ID']
@@ -327,7 +400,15 @@ export type GetReferralCutUpdatedEventsByEventIdQuery = {
   referralCutUpdatedEvents: Array<ReferralCutUpdatedEventFieldsFragment>
 }
 
-export type MembershipPriceUpdatedEventFieldsFragment = { id: string; newPrice: any; event: EventFieldsFragment }
+export type MembershipPriceUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newPrice: any
+}
 
 export type GetMembershipPriceUpdatedEventsByEventIdQueryVariables = Types.Exact<{
   eventId: Types.Scalars['ID']
@@ -339,8 +420,12 @@ export type GetMembershipPriceUpdatedEventsByEventIdQuery = {
 
 export type InitialInvitationBalanceUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newInitialBalance: any
-  event: EventFieldsFragment
 }
 
 export type GetInitialInvitationBalanceUpdatedEventsByEventIdQueryVariables = Types.Exact<{
@@ -353,8 +438,12 @@ export type GetInitialInvitationBalanceUpdatedEventsByEventIdQuery = {
 
 export type InitialInvitationCountUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newInitialInvitationCount: number
-  event: EventFieldsFragment
 }
 
 export type GetInitialInvitationCountUpdatedEventsByEventIdQueryVariables = Types.Exact<{
@@ -370,22 +459,22 @@ export type ApplicationBasicFieldsFragment = {
   runtimeId: number
   status:
     | { __typename: 'ApplicationStatusPending' }
-    | { __typename: 'ApplicationStatusAccepted'; openingFilledEventId: string }
-    | { __typename: 'ApplicationStatusRejected'; openingFilledEventId: string }
-    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEventId: string }
-    | { __typename: 'ApplicationStatusCancelled'; openingCancelledEventId: string }
+    | { __typename: 'ApplicationStatusAccepted'; openingFilledEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ApplicationStatusRejected'; openingFilledEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ApplicationStatusWithdrawn'; applicationWithdrawnEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ApplicationStatusCancelled'; openingCanceledEvent?: Types.Maybe<{ id: string }> }
 }
 
 type OpeningStatusFields_OpeningStatusOpen_Fragment = { __typename: 'OpeningStatusOpen' }
 
 type OpeningStatusFields_OpeningStatusFilled_Fragment = {
   __typename: 'OpeningStatusFilled'
-  openingFilledEventId: string
+  openingFilledEvent?: Types.Maybe<{ id: string }>
 }
 
 type OpeningStatusFields_OpeningStatusCancelled_Fragment = {
   __typename: 'OpeningStatusCancelled'
-  openingCancelledEventId: string
+  openingCanceledEvent?: Types.Maybe<{ id: string }>
 }
 
 export type OpeningStatusFieldsFragment =
@@ -416,7 +505,6 @@ export type WorkerFieldsFragment = {
   stakeAccount: string
   isLead: boolean
   stake: any
-  hiredAtTime: any
   storage?: Types.Maybe<string>
   rewardPerBlock: any
   missingRewardAmount?: Types.Maybe<any>
@@ -424,11 +512,15 @@ export type WorkerFieldsFragment = {
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
-    | { __typename: 'WorkerStatusLeft'; workerStartedLeavingEventId: string; workerExitedEventId?: Types.Maybe<string> }
-    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEventId: string }
+    | {
+        __typename: 'WorkerStatusLeft'
+        workerStartedLeavingEvent?: Types.Maybe<{ id: string }>
+        workerExitedEvent?: Types.Maybe<{ id: string }>
+      }
+    | { __typename: 'WorkerStatusTerminated'; terminatedWorkerEvent?: Types.Maybe<{ id: string }> }
   payouts: Array<{ id: string }>
   slashes: Array<{ id: string }>
-  hiredAtBlock: BlockFieldsFragment
+  entry: { id: string }
   application: ApplicationBasicFieldsFragment
 }
 
@@ -438,8 +530,7 @@ export type WorkingGroupMetadataFieldsFragment = {
   statusMessage?: Types.Maybe<string>
   about?: Types.Maybe<string>
   description?: Types.Maybe<string>
-  setAtBlock: BlockFieldsFragment
-  setInEvent: { event: EventFieldsFragment }
+  setInEvent: { id: string }
 }
 
 export type OpeningFieldsFragment = {
@@ -449,7 +540,6 @@ export type OpeningFieldsFragment = {
   stakeAmount: any
   unstakingPeriod: number
   rewardPerBlock: any
-  createdAt: any
   group: { name: string }
   applications: Array<ApplicationBasicFieldsFragment>
   status:
@@ -457,7 +547,7 @@ export type OpeningFieldsFragment = {
     | OpeningStatusFields_OpeningStatusFilled_Fragment
     | OpeningStatusFields_OpeningStatusCancelled_Fragment
   metadata: OpeningMetadataFieldsFragment
-  createdAtBlock: BlockFieldsFragment
+  createdInEvent: { id: string }
 }
 
 export type GetOpeningByIdQueryVariables = Types.Exact<{
@@ -473,12 +563,11 @@ export type GetOpeningsByIdsQueryVariables = Types.Exact<{
 export type GetOpeningsByIdsQuery = { workingGroupOpenings: Array<OpeningFieldsFragment> }
 
 export type ApplicationFieldsFragment = {
-  createdAt: any
   roleAccount: string
   rewardAccount: string
   stakingAccount: string
   stake: any
-  createdAtBlock: BlockFieldsFragment
+  createdInEvent: { id: string }
   opening: { id: string; runtimeId: number }
   applicant: { id: string }
   answers: Array<{ answer: string; question: { question?: Types.Maybe<string> } }>
@@ -518,7 +607,6 @@ export type UpcomingOpeningFieldsFragment = {
   createdAt: any
   group: { name: string }
   metadata: OpeningMetadataFieldsFragment
-  createdAtBlock: BlockFieldsFragment
   createdInEvent: { id: string }
 }
 
@@ -555,7 +643,11 @@ export type GetWorkersByRuntimeIdsQuery = { workers: Array<WorkerFieldsFragment>
 
 export type AppliedOnOpeningEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
   application: { id: string; runtimeId: number }
@@ -571,7 +663,11 @@ export type GetAppliedOnOpeningEventsByEventIdsQuery = {
 
 export type OpeningAddedEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
 }
@@ -584,7 +680,11 @@ export type GetOpeningAddedEventsByEventIdsQuery = { openingAddedEvents: Array<O
 
 export type LeaderSetEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   worker?: Types.Maybe<{ id: string; runtimeId: number }>
 }
@@ -597,7 +697,11 @@ export type GetLeaderSetEventsByEventIdsQuery = { leaderSetEvents: Array<LeaderS
 
 export type OpeningFilledEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
   workersHired: Array<WorkerFieldsFragment>
@@ -611,7 +715,11 @@ export type GetOpeningFilledEventsByEventIdsQuery = { openingFilledEvents: Array
 
 export type ApplicationWithdrawnEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   application: { id: string; runtimeId: number }
 }
@@ -626,7 +734,11 @@ export type GetApplicationWithdrawnEventsByEventIdsQuery = {
 
 export type OpeningCanceledEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   opening: { id: string; runtimeId: number }
 }
@@ -641,13 +753,17 @@ export type GetOpeningCancelledEventsByEventIdsQuery = {
 
 export type StatusTextChangedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   metadata?: Types.Maybe<string>
-  event: EventFieldsFragment
   group: { name: string }
   result:
     | { __typename: 'UpcomingOpeningAdded'; upcomingOpeningId: string }
     | { __typename: 'UpcomingOpeningRemoved'; upcomingOpeningId: string }
-    | { __typename: 'WorkingGroupMetadataSet'; metadataId: string }
+    | { __typename: 'WorkingGroupMetadataSet'; metadata?: Types.Maybe<{ id: string }> }
     | { __typename: 'InvalidActionMetadata'; reason: string }
 }
 
@@ -661,8 +777,12 @@ export type GetStatusTextChangedEventsByEventIdsQuery = {
 
 export type WorkerRoleAccountUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newRoleAccount: string
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -677,8 +797,12 @@ export type GetWorkerRoleAccountUpdatedEventsByEventIdsQuery = {
 
 export type WorkerRewardAccountUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newRewardAccount: string
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -693,8 +817,12 @@ export type GetWorkerRewardAccountUpdatedEventsByEventIdsQuery = {
 
 export type StakeIncreasedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   amount: any
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -707,8 +835,12 @@ export type GetStakeIncreasedEventsByEventIdsQuery = { stakeIncreasedEvents: Arr
 
 export type WorkerStartedLeavingEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   rationale?: Types.Maybe<string>
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -723,8 +855,12 @@ export type GetWorkerStartedLeavingEventsByEventIdsQuery = {
 
 export type WorkerRewardAmountUpdatedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newRewardPerBlock: any
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -739,10 +875,14 @@ export type GetWorkerRewardAmountUpdatedEventsByEventIdsQuery = {
 
 export type StakeSlashedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   requestedAmount: any
   slashedAmount: any
   rationale?: Types.Maybe<string>
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -755,8 +895,12 @@ export type GetStakeSlashedEventsByEventIdsQuery = { stakeSlashedEvents: Array<S
 
 export type StakeDecreasedEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   amount: any
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -769,9 +913,13 @@ export type GetStakeDecreasedEventsByEventIdsQuery = { stakeDecreasedEvents: Arr
 
 export type TerminatedWorkerEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   penalty?: Types.Maybe<any>
   rationale?: Types.Maybe<string>
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -786,9 +934,13 @@ export type GetTerminatedWorkerEventsByEventIdsQuery = {
 
 export type TerminatedLeaderEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   penalty?: Types.Maybe<any>
   rationale?: Types.Maybe<string>
-  event: EventFieldsFragment
   group: { name: string }
   worker: { id: string; runtimeId: number }
 }
@@ -803,7 +955,11 @@ export type GetTerminatedLeaderEventsByEventIdsQuery = {
 
 export type LeaderUnsetEventFieldsFragment = {
   id: string
-  event: EventFieldsFragment
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   group: { name: string }
   leader: { id: string; runtimeId: number }
 }
@@ -816,8 +972,12 @@ export type GetLeaderUnsetEventsByEventIdsQuery = { leaderUnsetEvents: Array<Lea
 
 export type BudgetSetEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   newBudget: any
-  event: EventFieldsFragment
   group: { name: string }
 }
 
@@ -829,10 +989,14 @@ export type GetBudgetSetEventsByEventIdsQuery = { budgetSetEvents: Array<BudgetS
 
 export type BudgetSpendingEventFieldsFragment = {
   id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
   reciever: string
   amount: any
   rationale?: Types.Maybe<string>
-  event: EventFieldsFragment
   group: { name: string }
 }
 
@@ -931,43 +1095,27 @@ export const ForumThreadWithPostsFields = gql`
     }
   }
 `
-export const BlockFields = gql`
-  fragment BlockFields on Block {
-    number
-    timestamp
-    network
-  }
-`
-export const EventFields = gql`
-  fragment EventFields on Event {
-    id
-    inBlock {
-      ...BlockFields
-    }
-    inExtrinsic
-    indexInBlock
-    type
-  }
-  ${BlockFields}
-`
 export const CategoryCreatedEventFields = gql`
   fragment CategoryCreatedEventFields on CategoryCreatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     category {
       id
     }
   }
-  ${EventFields}
 `
 export const CategoryUpdatedEventFields = gql`
   fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     category {
       id
     }
@@ -976,14 +1124,15 @@ export const CategoryUpdatedEventFields = gql`
       id
     }
   }
-  ${EventFields}
 `
 export const CategoryDeletedEventFields = gql`
   fragment CategoryDeletedEventFields on CategoryDeletedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     category {
       id
     }
@@ -991,26 +1140,28 @@ export const CategoryDeletedEventFields = gql`
       id
     }
   }
-  ${EventFields}
 `
 export const ThreadCreatedEventFields = gql`
   fragment ThreadCreatedEventFields on ThreadCreatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     thread {
       id
     }
   }
-  ${EventFields}
 `
 export const VoteOnPollEventFields = gql`
   fragment VoteOnPollEventFields on VoteOnPollEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     pollAlternative {
       id
       index
@@ -1025,19 +1176,19 @@ export const VoteOnPollEventFields = gql`
       id
     }
   }
-  ${EventFields}
 `
 export const ThreadDeletedEventFields = gql`
   fragment ThreadDeletedEventFields on ThreadDeletedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     thread {
       id
     }
   }
-  ${EventFields}
 `
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
@@ -1054,11 +1205,19 @@ export const MembershipFields = gql`
     }
     controllerAccount
     rootAccount
-    registeredAtBlock {
-      ...BlockFields
+    entry {
+      __typename
+      ... on MembershipEntryPaid {
+        membershipBoughtEvent {
+          id
+        }
+      }
+      ... on MembershipEntryInvited {
+        memberInvitedEvent {
+          id
+        }
+      }
     }
-    registeredAtTime
-    entry
     isVerified
     inviteCount
     invitedBy {
@@ -1070,27 +1229,25 @@ export const MembershipFields = gql`
     boundAccounts
   }
   ${MemberMetadataFields}
-  ${BlockFields}
 `
 export const MembershipSystemSnapshotFields = gql`
   fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
-    snapshotBlock {
-      ...BlockFields
-    }
-    snapshotTime
+    createdAt
+    snapshotBlock
     referralCut
     invitedInitialBalance
     defaultInviteCount
     membershipPrice
   }
-  ${BlockFields}
 `
 export const MembershipBoughtEventFields = gql`
   fragment MembershipBoughtEventFields on MembershipBoughtEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     newMember {
       id
     }
@@ -1104,15 +1261,16 @@ export const MembershipBoughtEventFields = gql`
       id
     }
   }
-  ${EventFields}
   ${MemberMetadataFields}
 `
 export const MemberProfileUpdatedEventFields = gql`
   fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     member {
       id
     }
@@ -1122,28 +1280,30 @@ export const MemberProfileUpdatedEventFields = gql`
       about
     }
   }
-  ${EventFields}
 `
 export const MemberAccountsUpdatedEventFields = gql`
   fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     member {
       id
     }
     newRootAccount
     newControllerAccount
   }
-  ${EventFields}
 `
 export const MemberInvitedEventFields = gql`
   fragment MemberInvitedEventFields on MemberInvitedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     invitingMember {
       id
     }
@@ -1157,15 +1317,16 @@ export const MemberInvitedEventFields = gql`
       ...MemberMetadataFields
     }
   }
-  ${EventFields}
   ${MemberMetadataFields}
 `
 export const InvitesTransferredEventFields = gql`
   fragment InvitesTransferredEventFields on InvitesTransferredEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     sourceMember {
       id
     }
@@ -1174,86 +1335,92 @@ export const InvitesTransferredEventFields = gql`
     }
     numberOfInvites
   }
-  ${EventFields}
 `
 export const StakingAccountAddedEventFields = gql`
   fragment StakingAccountAddedEventFields on StakingAccountAddedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     member {
       id
     }
     account
   }
-  ${EventFields}
 `
 export const StakingAccountConfirmedEventFields = gql`
   fragment StakingAccountConfirmedEventFields on StakingAccountConfirmedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     member {
       id
     }
     account
   }
-  ${EventFields}
 `
 export const StakingAccountRemovedEventFields = gql`
   fragment StakingAccountRemovedEventFields on StakingAccountRemovedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     member {
       id
     }
     account
   }
-  ${EventFields}
 `
 export const ReferralCutUpdatedEventFields = gql`
   fragment ReferralCutUpdatedEventFields on ReferralCutUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     newValue
   }
-  ${EventFields}
 `
 export const MembershipPriceUpdatedEventFields = gql`
   fragment MembershipPriceUpdatedEventFields on MembershipPriceUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     newPrice
   }
-  ${EventFields}
 `
 export const InitialInvitationBalanceUpdatedEventFields = gql`
   fragment InitialInvitationBalanceUpdatedEventFields on InitialInvitationBalanceUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     newInitialBalance
   }
-  ${EventFields}
 `
 export const InitialInvitationCountUpdatedEventFields = gql`
   fragment InitialInvitationCountUpdatedEventFields on InitialInvitationCountUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     newInitialInvitationCount
   }
-  ${EventFields}
 `
 export const ApplicationBasicFields = gql`
   fragment ApplicationBasicFields on WorkingGroupApplication {
@@ -1262,16 +1429,24 @@ export const ApplicationBasicFields = gql`
     status {
       __typename
       ... on ApplicationStatusCancelled {
-        openingCancelledEventId
+        openingCanceledEvent {
+          id
+        }
       }
       ... on ApplicationStatusWithdrawn {
-        applicationWithdrawnEventId
+        applicationWithdrawnEvent {
+          id
+        }
       }
       ... on ApplicationStatusAccepted {
-        openingFilledEventId
+        openingFilledEvent {
+          id
+        }
       }
       ... on ApplicationStatusRejected {
-        openingFilledEventId
+        openingFilledEvent {
+          id
+        }
       }
     }
   }
@@ -1280,10 +1455,14 @@ export const OpeningStatusFields = gql`
   fragment OpeningStatusFields on WorkingGroupOpeningStatus {
     __typename
     ... on OpeningStatusFilled {
-      openingFilledEventId
+      openingFilledEvent {
+        id
+      }
     }
     ... on OpeningStatusCancelled {
-      openingCancelledEventId
+      openingCanceledEvent {
+        id
+      }
     }
   }
 `
@@ -1327,23 +1506,20 @@ export const OpeningFields = gql`
     stakeAmount
     unstakingPeriod
     rewardPerBlock
-    createdAtBlock {
-      ...BlockFields
+    createdInEvent {
+      id
     }
-    createdAt
   }
   ${ApplicationBasicFields}
   ${OpeningStatusFields}
   ${OpeningMetadataFields}
-  ${BlockFields}
 `
 export const ApplicationFields = gql`
   fragment ApplicationFields on WorkingGroupApplication {
     ...ApplicationBasicFields
-    createdAtBlock {
-      ...BlockFields
+    createdInEvent {
+      id
     }
-    createdAt
     opening {
       id
       runtimeId
@@ -1363,7 +1539,6 @@ export const ApplicationFields = gql`
     stake
   }
   ${ApplicationBasicFields}
-  ${BlockFields}
 `
 export const WorkingGroupMetadataFields = gql`
   fragment WorkingGroupMetadataFields on WorkingGroupMetadata {
@@ -1372,17 +1547,10 @@ export const WorkingGroupMetadataFields = gql`
     statusMessage
     about
     description
-    setAtBlock {
-      ...BlockFields
-    }
     setInEvent {
-      event {
-        ...EventFields
-      }
+      id
     }
   }
-  ${BlockFields}
-  ${EventFields}
 `
 export const WorkingGroupFields = gql`
   fragment WorkingGroupFields on WorkingGroup {
@@ -1411,23 +1579,21 @@ export const UpcomingOpeningFields = gql`
     expectedStart
     stakeAmount
     rewardPerBlock
-    createdAtBlock {
-      ...BlockFields
-    }
     createdInEvent {
       id
     }
     createdAt
   }
   ${OpeningMetadataFields}
-  ${BlockFields}
 `
 export const AppliedOnOpeningEventFields = gql`
   fragment AppliedOnOpeningEventFields on AppliedOnOpeningEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1440,14 +1606,15 @@ export const AppliedOnOpeningEventFields = gql`
       runtimeId
     }
   }
-  ${EventFields}
 `
 export const OpeningAddedEventFields = gql`
   fragment OpeningAddedEventFields on OpeningAddedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1456,14 +1623,15 @@ export const OpeningAddedEventFields = gql`
       runtimeId
     }
   }
-  ${EventFields}
 `
 export const LeaderSetEventFields = gql`
   fragment LeaderSetEventFields on LeaderSetEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1472,7 +1640,6 @@ export const LeaderSetEventFields = gql`
       runtimeId
     }
   }
-  ${EventFields}
 `
 export const WorkerFields = gql`
   fragment WorkerFields on Worker {
@@ -1490,11 +1657,17 @@ export const WorkerFields = gql`
     status {
       __typename
       ... on WorkerStatusLeft {
-        workerStartedLeavingEventId
-        workerExitedEventId
+        workerStartedLeavingEvent {
+          id
+        }
+        workerExitedEvent {
+          id
+        }
       }
       ... on WorkerStatusTerminated {
-        terminatedWorkerEventId
+        terminatedWorkerEvent {
+          id
+        }
       }
     }
     isLead
@@ -1505,10 +1678,9 @@ export const WorkerFields = gql`
     slashes {
       id
     }
-    hiredAtBlock {
-      ...BlockFields
+    entry {
+      id
     }
-    hiredAtTime
     application {
       ...ApplicationBasicFields
     }
@@ -1516,15 +1688,16 @@ export const WorkerFields = gql`
     rewardPerBlock
     missingRewardAmount
   }
-  ${BlockFields}
   ${ApplicationBasicFields}
 `
 export const OpeningFilledEventFields = gql`
   fragment OpeningFilledEventFields on OpeningFilledEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1536,15 +1709,16 @@ export const OpeningFilledEventFields = gql`
       ...WorkerFields
     }
   }
-  ${EventFields}
   ${WorkerFields}
 `
 export const ApplicationWithdrawnEventFields = gql`
   fragment ApplicationWithdrawnEventFields on ApplicationWithdrawnEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1553,14 +1727,15 @@ export const ApplicationWithdrawnEventFields = gql`
       runtimeId
     }
   }
-  ${EventFields}
 `
 export const OpeningCanceledEventFields = gql`
   fragment OpeningCanceledEventFields on OpeningCanceledEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1569,14 +1744,15 @@ export const OpeningCanceledEventFields = gql`
       runtimeId
     }
   }
-  ${EventFields}
 `
 export const StatusTextChangedEventFields = gql`
   fragment StatusTextChangedEventFields on StatusTextChangedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1590,21 +1766,24 @@ export const StatusTextChangedEventFields = gql`
         upcomingOpeningId
       }
       ... on WorkingGroupMetadataSet {
-        metadataId
+        metadata {
+          id
+        }
       }
       ... on InvalidActionMetadata {
         reason
       }
     }
   }
-  ${EventFields}
 `
 export const WorkerRoleAccountUpdatedEventFields = gql`
   fragment WorkerRoleAccountUpdatedEventFields on WorkerRoleAccountUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1614,14 +1793,15 @@ export const WorkerRoleAccountUpdatedEventFields = gql`
     }
     newRoleAccount
   }
-  ${EventFields}
 `
 export const WorkerRewardAccountUpdatedEventFields = gql`
   fragment WorkerRewardAccountUpdatedEventFields on WorkerRewardAccountUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1631,14 +1811,15 @@ export const WorkerRewardAccountUpdatedEventFields = gql`
     }
     newRewardAccount
   }
-  ${EventFields}
 `
 export const StakeIncreasedEventFields = gql`
   fragment StakeIncreasedEventFields on StakeIncreasedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1648,14 +1829,15 @@ export const StakeIncreasedEventFields = gql`
     }
     amount
   }
-  ${EventFields}
 `
 export const WorkerStartedLeavingEventFields = gql`
   fragment WorkerStartedLeavingEventFields on WorkerStartedLeavingEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1665,14 +1847,15 @@ export const WorkerStartedLeavingEventFields = gql`
     }
     rationale
   }
-  ${EventFields}
 `
 export const WorkerRewardAmountUpdatedEventFields = gql`
   fragment WorkerRewardAmountUpdatedEventFields on WorkerRewardAmountUpdatedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1682,14 +1865,15 @@ export const WorkerRewardAmountUpdatedEventFields = gql`
     }
     newRewardPerBlock
   }
-  ${EventFields}
 `
 export const StakeSlashedEventFields = gql`
   fragment StakeSlashedEventFields on StakeSlashedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1701,14 +1885,15 @@ export const StakeSlashedEventFields = gql`
     slashedAmount
     rationale
   }
-  ${EventFields}
 `
 export const StakeDecreasedEventFields = gql`
   fragment StakeDecreasedEventFields on StakeDecreasedEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1718,14 +1903,15 @@ export const StakeDecreasedEventFields = gql`
     }
     amount
   }
-  ${EventFields}
 `
 export const TerminatedWorkerEventFields = gql`
   fragment TerminatedWorkerEventFields on TerminatedWorkerEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1736,14 +1922,15 @@ export const TerminatedWorkerEventFields = gql`
     penalty
     rationale
   }
-  ${EventFields}
 `
 export const TerminatedLeaderEventFields = gql`
   fragment TerminatedLeaderEventFields on TerminatedLeaderEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1754,14 +1941,15 @@ export const TerminatedLeaderEventFields = gql`
     penalty
     rationale
   }
-  ${EventFields}
 `
 export const LeaderUnsetEventFields = gql`
   fragment LeaderUnsetEventFields on LeaderUnsetEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1770,27 +1958,29 @@ export const LeaderUnsetEventFields = gql`
       runtimeId
     }
   }
-  ${EventFields}
 `
 export const BudgetSetEventFields = gql`
   fragment BudgetSetEventFields on BudgetSetEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
     newBudget
   }
-  ${EventFields}
 `
 export const BudgetSpendingEventFields = gql`
   fragment BudgetSpendingEventFields on BudgetSpendingEvent {
     id
-    event {
-      ...EventFields
-    }
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
     group {
       name
     }
@@ -1798,7 +1988,6 @@ export const BudgetSpendingEventFields = gql`
     amount
     rationale
   }
-  ${EventFields}
 `
 export const GetCategoriesByIds = gql`
   query getCategoriesByIds($ids: [ID!]) {
@@ -1818,7 +2007,7 @@ export const GetThreadsWithPostsByIds = gql`
 `
 export const GetCategoryCreatedEventsByEventIds = gql`
   query getCategoryCreatedEventsByEventIds($eventIds: [ID!]) {
-    categoryCreatedEvents(where: { eventId_in: $eventIds }) {
+    categoryCreatedEvents(where: { id_in: $eventIds }) {
       ...CategoryCreatedEventFields
     }
   }
@@ -1826,7 +2015,7 @@ export const GetCategoryCreatedEventsByEventIds = gql`
 `
 export const GetCategoryUpdatedEventsByEventIds = gql`
   query getCategoryUpdatedEventsByEventIds($eventIds: [ID!]) {
-    categoryUpdatedEvents(where: { eventId_in: $eventIds }) {
+    categoryUpdatedEvents(where: { id_in: $eventIds }) {
       ...CategoryUpdatedEventFields
     }
   }
@@ -1834,7 +2023,7 @@ export const GetCategoryUpdatedEventsByEventIds = gql`
 `
 export const GetCategoryDeletedEventsByEventIds = gql`
   query getCategoryDeletedEventsByEventIds($eventIds: [ID!]) {
-    categoryDeletedEvents(where: { eventId_in: $eventIds }) {
+    categoryDeletedEvents(where: { id_in: $eventIds }) {
       ...CategoryDeletedEventFields
     }
   }
@@ -1842,7 +2031,7 @@ export const GetCategoryDeletedEventsByEventIds = gql`
 `
 export const GetThreadCreatedEventsByEventIds = gql`
   query getThreadCreatedEventsByEventIds($eventIds: [ID!]) {
-    threadCreatedEvents(where: { eventId_in: $eventIds }) {
+    threadCreatedEvents(where: { id_in: $eventIds }) {
       ...ThreadCreatedEventFields
     }
   }
@@ -1850,7 +2039,7 @@ export const GetThreadCreatedEventsByEventIds = gql`
 `
 export const GetVoteOnPollEventsByEventIds = gql`
   query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
-    voteOnPollEvents(where: { eventId_in: $eventIds }) {
+    voteOnPollEvents(where: { id_in: $eventIds }) {
       ...VoteOnPollEventFields
     }
   }
@@ -1858,7 +2047,7 @@ export const GetVoteOnPollEventsByEventIds = gql`
 `
 export const GetThreadDeletedEventsByEventIds = gql`
   query getThreadDeletedEventsByEventIds($eventIds: [ID!]) {
-    threadDeletedEvents(where: { eventId_in: $eventIds }) {
+    threadDeletedEvents(where: { id_in: $eventIds }) {
       ...ThreadDeletedEventFields
     }
   }
@@ -1872,9 +2061,17 @@ export const GetMemberById = gql`
   }
   ${MembershipFields}
 `
+export const GetMembersByIds = gql`
+  query getMembersByIds($ids: [ID!]) {
+    memberships(where: { id_in: $ids }) {
+      ...MembershipFields
+    }
+  }
+  ${MembershipFields}
+`
 export const GetMembershipSystemSnapshotAt = gql`
   query getMembershipSystemSnapshotAt($time: DateTime!) {
-    membershipSystemSnapshots(where: { snapshotTime_eq: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+    membershipSystemSnapshots(where: { createdAt_eq: $time }, orderBy: createdAt_DESC, limit: 1) {
       ...MembershipSystemSnapshotFields
     }
   }
@@ -1882,15 +2079,15 @@ export const GetMembershipSystemSnapshotAt = gql`
 `
 export const GetMembershipSystemSnapshotBefore = gql`
   query getMembershipSystemSnapshotBefore($time: DateTime!) {
-    membershipSystemSnapshots(where: { snapshotTime_lt: $time }, orderBy: snapshotTime_DESC, limit: 1) {
+    membershipSystemSnapshots(where: { createdAt_lt: $time }, orderBy: createdAt_DESC, limit: 1) {
       ...MembershipSystemSnapshotFields
     }
   }
   ${MembershipSystemSnapshotFields}
 `
-export const GetMembershipBoughtEventsByMemberId = gql`
-  query getMembershipBoughtEventsByMemberId($memberId: ID!) {
-    membershipBoughtEvents(where: { newMemberId_eq: $memberId }) {
+export const GetMembershipBoughtEventsByEventIds = gql`
+  query getMembershipBoughtEventsByEventIds($eventIds: [ID!]) {
+    membershipBoughtEvents(where: { id_in: $eventIds }) {
       ...MembershipBoughtEventFields
     }
   }
@@ -1898,7 +2095,7 @@ export const GetMembershipBoughtEventsByMemberId = gql`
 `
 export const GetMemberProfileUpdatedEventsByMemberId = gql`
   query getMemberProfileUpdatedEventsByMemberId($memberId: ID!) {
-    memberProfileUpdatedEvents(where: { memberId_eq: $memberId }) {
+    memberProfileUpdatedEvents(where: { member: { id_eq: $memberId } }) {
       ...MemberProfileUpdatedEventFields
     }
   }
@@ -1906,15 +2103,15 @@ export const GetMemberProfileUpdatedEventsByMemberId = gql`
 `
 export const GetMemberAccountsUpdatedEventsByMemberId = gql`
   query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
-    memberAccountsUpdatedEvents(where: { memberId_eq: $memberId }) {
+    memberAccountsUpdatedEvents(where: { member: { id_eq: $memberId } }) {
       ...MemberAccountsUpdatedEventFields
     }
   }
   ${MemberAccountsUpdatedEventFields}
 `
-export const GetMemberInvitedEventsByNewMemberId = gql`
-  query getMemberInvitedEventsByNewMemberId($newMemberId: ID!) {
-    memberInvitedEvents(where: { newMemberId_eq: $newMemberId }) {
+export const GetMemberInvitedEventsByEventIds = gql`
+  query getMemberInvitedEventsByEventIds($eventIds: [ID!]) {
+    memberInvitedEvents(where: { id_in: $eventIds }) {
       ...MemberInvitedEventFields
     }
   }
@@ -1922,7 +2119,7 @@ export const GetMemberInvitedEventsByNewMemberId = gql`
 `
 export const GetInvitesTransferredEventsBySourceMemberId = gql`
   query getInvitesTransferredEventsBySourceMemberId($sourceMemberId: ID!) {
-    invitesTransferredEvents(where: { sourceMemberId_eq: $sourceMemberId }) {
+    invitesTransferredEvents(where: { sourceMember: { id_eq: $sourceMemberId } }) {
       ...InvitesTransferredEventFields
     }
   }
@@ -1930,7 +2127,7 @@ export const GetInvitesTransferredEventsBySourceMemberId = gql`
 `
 export const GetStakingAccountAddedEventsByMemberId = gql`
   query getStakingAccountAddedEventsByMemberId($memberId: ID!) {
-    stakingAccountAddedEvents(where: { memberId_eq: $memberId }) {
+    stakingAccountAddedEvents(where: { member: { id_eq: $memberId } }) {
       ...StakingAccountAddedEventFields
     }
   }
@@ -1938,7 +2135,7 @@ export const GetStakingAccountAddedEventsByMemberId = gql`
 `
 export const GetStakingAccountConfirmedEventsByMemberId = gql`
   query getStakingAccountConfirmedEventsByMemberId($memberId: ID!) {
-    stakingAccountConfirmedEvents(where: { memberId_eq: $memberId }) {
+    stakingAccountConfirmedEvents(where: { member: { id_eq: $memberId } }) {
       ...StakingAccountConfirmedEventFields
     }
   }
@@ -1946,7 +2143,7 @@ export const GetStakingAccountConfirmedEventsByMemberId = gql`
 `
 export const GetStakingAccountRemovedEventsByMemberId = gql`
   query getStakingAccountRemovedEventsByMemberId($memberId: ID!) {
-    stakingAccountRemovedEvents(where: { memberId_eq: $memberId }) {
+    stakingAccountRemovedEvents(where: { member: { id_eq: $memberId } }) {
       ...StakingAccountRemovedEventFields
     }
   }
@@ -1954,7 +2151,7 @@ export const GetStakingAccountRemovedEventsByMemberId = gql`
 `
 export const GetReferralCutUpdatedEventsByEventId = gql`
   query getReferralCutUpdatedEventsByEventId($eventId: ID!) {
-    referralCutUpdatedEvents(where: { eventId_eq: $eventId }) {
+    referralCutUpdatedEvents(where: { id_eq: $eventId }) {
       ...ReferralCutUpdatedEventFields
     }
   }
@@ -1962,7 +2159,7 @@ export const GetReferralCutUpdatedEventsByEventId = gql`
 `
 export const GetMembershipPriceUpdatedEventsByEventId = gql`
   query getMembershipPriceUpdatedEventsByEventId($eventId: ID!) {
-    membershipPriceUpdatedEvents(where: { eventId_eq: $eventId }) {
+    membershipPriceUpdatedEvents(where: { id_eq: $eventId }) {
       ...MembershipPriceUpdatedEventFields
     }
   }
@@ -1970,7 +2167,7 @@ export const GetMembershipPriceUpdatedEventsByEventId = gql`
 `
 export const GetInitialInvitationBalanceUpdatedEventsByEventId = gql`
   query getInitialInvitationBalanceUpdatedEventsByEventId($eventId: ID!) {
-    initialInvitationBalanceUpdatedEvents(where: { eventId_eq: $eventId }) {
+    initialInvitationBalanceUpdatedEvents(where: { id_eq: $eventId }) {
       ...InitialInvitationBalanceUpdatedEventFields
     }
   }
@@ -1978,7 +2175,7 @@ export const GetInitialInvitationBalanceUpdatedEventsByEventId = gql`
 `
 export const GetInitialInvitationCountUpdatedEventsByEventId = gql`
   query getInitialInvitationCountUpdatedEventsByEventId($eventId: ID!) {
-    initialInvitationCountUpdatedEvents(where: { eventId_eq: $eventId }) {
+    initialInvitationCountUpdatedEvents(where: { id_eq: $eventId }) {
       ...InitialInvitationCountUpdatedEventFields
     }
   }
@@ -2034,7 +2231,7 @@ export const GetUpcomingOpeningById = gql`
 `
 export const GetUpcomingOpeningsByCreatedInEventIds = gql`
   query getUpcomingOpeningsByCreatedInEventIds($createdInEventIds: [ID!]) {
-    upcomingWorkingGroupOpenings(where: { createdInEventId_in: $createdInEventIds }) {
+    upcomingWorkingGroupOpenings(where: { createdInEvent: { id_in: $createdInEventIds } }) {
       ...UpcomingOpeningFields
     }
   }
@@ -2042,7 +2239,7 @@ export const GetUpcomingOpeningsByCreatedInEventIds = gql`
 `
 export const GetWorkingGroupMetadataSnapshotsByTimeAsc = gql`
   query getWorkingGroupMetadataSnapshotsByTimeAsc($groupId: ID!) {
-    workingGroupMetadata(where: { groupId_eq: $groupId }, orderBy: createdAt_ASC) {
+    workingGroupMetadata(where: { group: { id_eq: $groupId } }, orderBy: createdAt_ASC) {
       ...WorkingGroupMetadataFields
     }
   }
@@ -2050,7 +2247,7 @@ export const GetWorkingGroupMetadataSnapshotsByTimeAsc = gql`
 `
 export const GetWorkersByRuntimeIds = gql`
   query getWorkersByRuntimeIds($workerIds: [Int!], $groupId: ID!) {
-    workers(where: { runtimeId_in: $workerIds, groupId_eq: $groupId }) {
+    workers(where: { runtimeId_in: $workerIds, group: { id_eq: $groupId } }) {
       ...WorkerFields
     }
   }
@@ -2058,7 +2255,7 @@ export const GetWorkersByRuntimeIds = gql`
 `
 export const GetAppliedOnOpeningEventsByEventIds = gql`
   query getAppliedOnOpeningEventsByEventIds($eventIds: [ID!]) {
-    appliedOnOpeningEvents(where: { eventId_in: $eventIds }) {
+    appliedOnOpeningEvents(where: { id_in: $eventIds }) {
       ...AppliedOnOpeningEventFields
     }
   }
@@ -2066,7 +2263,7 @@ export const GetAppliedOnOpeningEventsByEventIds = gql`
 `
 export const GetOpeningAddedEventsByEventIds = gql`
   query getOpeningAddedEventsByEventIds($eventIds: [ID!]) {
-    openingAddedEvents(where: { eventId_in: $eventIds }) {
+    openingAddedEvents(where: { id_in: $eventIds }) {
       ...OpeningAddedEventFields
     }
   }
@@ -2074,7 +2271,7 @@ export const GetOpeningAddedEventsByEventIds = gql`
 `
 export const GetLeaderSetEventsByEventIds = gql`
   query getLeaderSetEventsByEventIds($eventIds: [ID!]) {
-    leaderSetEvents(where: { eventId_in: $eventIds }) {
+    leaderSetEvents(where: { id_in: $eventIds }) {
       ...LeaderSetEventFields
     }
   }
@@ -2082,7 +2279,7 @@ export const GetLeaderSetEventsByEventIds = gql`
 `
 export const GetOpeningFilledEventsByEventIds = gql`
   query getOpeningFilledEventsByEventIds($eventIds: [ID!]) {
-    openingFilledEvents(where: { eventId_in: $eventIds }) {
+    openingFilledEvents(where: { id_in: $eventIds }) {
       ...OpeningFilledEventFields
     }
   }
@@ -2090,7 +2287,7 @@ export const GetOpeningFilledEventsByEventIds = gql`
 `
 export const GetApplicationWithdrawnEventsByEventIds = gql`
   query getApplicationWithdrawnEventsByEventIds($eventIds: [ID!]) {
-    applicationWithdrawnEvents(where: { eventId_in: $eventIds }) {
+    applicationWithdrawnEvents(where: { id_in: $eventIds }) {
       ...ApplicationWithdrawnEventFields
     }
   }
@@ -2098,7 +2295,7 @@ export const GetApplicationWithdrawnEventsByEventIds = gql`
 `
 export const GetOpeningCancelledEventsByEventIds = gql`
   query getOpeningCancelledEventsByEventIds($eventIds: [ID!]) {
-    openingCanceledEvents(where: { eventId_in: $eventIds }) {
+    openingCanceledEvents(where: { id_in: $eventIds }) {
       ...OpeningCanceledEventFields
     }
   }
@@ -2106,7 +2303,7 @@ export const GetOpeningCancelledEventsByEventIds = gql`
 `
 export const GetStatusTextChangedEventsByEventIds = gql`
   query getStatusTextChangedEventsByEventIds($eventIds: [ID!]) {
-    statusTextChangedEvents(where: { eventId_in: $eventIds }) {
+    statusTextChangedEvents(where: { id_in: $eventIds }) {
       ...StatusTextChangedEventFields
     }
   }
@@ -2114,7 +2311,7 @@ export const GetStatusTextChangedEventsByEventIds = gql`
 `
 export const GetWorkerRoleAccountUpdatedEventsByEventIds = gql`
   query getWorkerRoleAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
-    workerRoleAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    workerRoleAccountUpdatedEvents(where: { id_in: $eventIds }) {
       ...WorkerRoleAccountUpdatedEventFields
     }
   }
@@ -2122,7 +2319,7 @@ export const GetWorkerRoleAccountUpdatedEventsByEventIds = gql`
 `
 export const GetWorkerRewardAccountUpdatedEventsByEventIds = gql`
   query getWorkerRewardAccountUpdatedEventsByEventIds($eventIds: [ID!]) {
-    workerRewardAccountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    workerRewardAccountUpdatedEvents(where: { id_in: $eventIds }) {
       ...WorkerRewardAccountUpdatedEventFields
     }
   }
@@ -2130,7 +2327,7 @@ export const GetWorkerRewardAccountUpdatedEventsByEventIds = gql`
 `
 export const GetStakeIncreasedEventsByEventIds = gql`
   query getStakeIncreasedEventsByEventIds($eventIds: [ID!]) {
-    stakeIncreasedEvents(where: { eventId_in: $eventIds }) {
+    stakeIncreasedEvents(where: { id_in: $eventIds }) {
       ...StakeIncreasedEventFields
     }
   }
@@ -2138,7 +2335,7 @@ export const GetStakeIncreasedEventsByEventIds = gql`
 `
 export const GetWorkerStartedLeavingEventsByEventIds = gql`
   query getWorkerStartedLeavingEventsByEventIds($eventIds: [ID!]) {
-    workerStartedLeavingEvents(where: { eventId_in: $eventIds }) {
+    workerStartedLeavingEvents(where: { id_in: $eventIds }) {
       ...WorkerStartedLeavingEventFields
     }
   }
@@ -2146,7 +2343,7 @@ export const GetWorkerStartedLeavingEventsByEventIds = gql`
 `
 export const GetWorkerRewardAmountUpdatedEventsByEventIds = gql`
   query getWorkerRewardAmountUpdatedEventsByEventIds($eventIds: [ID!]) {
-    workerRewardAmountUpdatedEvents(where: { eventId_in: $eventIds }) {
+    workerRewardAmountUpdatedEvents(where: { id_in: $eventIds }) {
       ...WorkerRewardAmountUpdatedEventFields
     }
   }
@@ -2154,7 +2351,7 @@ export const GetWorkerRewardAmountUpdatedEventsByEventIds = gql`
 `
 export const GetStakeSlashedEventsByEventIds = gql`
   query getStakeSlashedEventsByEventIds($eventIds: [ID!]) {
-    stakeSlashedEvents(where: { eventId_in: $eventIds }) {
+    stakeSlashedEvents(where: { id_in: $eventIds }) {
       ...StakeSlashedEventFields
     }
   }
@@ -2162,7 +2359,7 @@ export const GetStakeSlashedEventsByEventIds = gql`
 `
 export const GetStakeDecreasedEventsByEventIds = gql`
   query getStakeDecreasedEventsByEventIds($eventIds: [ID!]) {
-    stakeDecreasedEvents(where: { eventId_in: $eventIds }) {
+    stakeDecreasedEvents(where: { id_in: $eventIds }) {
       ...StakeDecreasedEventFields
     }
   }
@@ -2170,7 +2367,7 @@ export const GetStakeDecreasedEventsByEventIds = gql`
 `
 export const GetTerminatedWorkerEventsByEventIds = gql`
   query getTerminatedWorkerEventsByEventIds($eventIds: [ID!]) {
-    terminatedWorkerEvents(where: { eventId_in: $eventIds }) {
+    terminatedWorkerEvents(where: { id_in: $eventIds }) {
       ...TerminatedWorkerEventFields
     }
   }
@@ -2178,7 +2375,7 @@ export const GetTerminatedWorkerEventsByEventIds = gql`
 `
 export const GetTerminatedLeaderEventsByEventIds = gql`
   query getTerminatedLeaderEventsByEventIds($eventIds: [ID!]) {
-    terminatedLeaderEvents(where: { eventId_in: $eventIds }) {
+    terminatedLeaderEvents(where: { id_in: $eventIds }) {
       ...TerminatedLeaderEventFields
     }
   }
@@ -2186,7 +2383,7 @@ export const GetTerminatedLeaderEventsByEventIds = gql`
 `
 export const GetLeaderUnsetEventsByEventIds = gql`
   query getLeaderUnsetEventsByEventIds($eventIds: [ID!]) {
-    leaderUnsetEvents(where: { eventId_in: $eventIds }) {
+    leaderUnsetEvents(where: { id_in: $eventIds }) {
       ...LeaderUnsetEventFields
     }
   }
@@ -2194,7 +2391,7 @@ export const GetLeaderUnsetEventsByEventIds = gql`
 `
 export const GetBudgetSetEventsByEventIds = gql`
   query getBudgetSetEventsByEventIds($eventIds: [ID!]) {
-    budgetSetEvents(where: { eventId_in: $eventIds }) {
+    budgetSetEvents(where: { id_in: $eventIds }) {
       ...BudgetSetEventFields
     }
   }
@@ -2202,7 +2399,7 @@ export const GetBudgetSetEventsByEventIds = gql`
 `
 export const GetBudgetSpendingEventsByEventIds = gql`
   query getBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
-    budgetSpendingEvents(where: { eventId_in: $eventIds }) {
+    budgetSpendingEvents(where: { id_in: $eventIds }) {
       ...BudgetSpendingEventFields
     }
   }

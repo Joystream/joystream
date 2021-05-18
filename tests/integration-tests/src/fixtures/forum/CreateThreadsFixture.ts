@@ -5,7 +5,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithPostsFieldsFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
-import { EventType, PostOriginThreadInitial } from '../../graphql/generated/schema'
+import { PostOriginThreadInitial } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { CategoryId, Poll } from '@joystream/types/forum'
@@ -120,7 +120,6 @@ export class CreateThreadsFixture extends StandardizedFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ThreadCreatedEventFieldsFragment, i: number): void {
-    assert.equal(qEvent.event.type, EventType.ThreadCreated)
     assert.equal(qEvent.thread.id, this.events[i].threadId.toString())
   }
 

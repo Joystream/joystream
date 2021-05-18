@@ -1,6 +1,22 @@
 type CategoryCreatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The created category"
   category: ForumCategory!
@@ -9,8 +25,24 @@ type CategoryCreatedEvent @entity {
 }
 
 type CategoryUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The category beeing updated"
   category: ForumCategory!
@@ -23,8 +55,24 @@ type CategoryUpdatedEvent @entity {
 }
 
 type CategoryDeletedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Category beeing deleted"
   category: ForumCategory!
@@ -34,8 +82,24 @@ type CategoryDeletedEvent @entity {
 }
 
 type ThreadCreatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The thread that was created"
   thread: ForumThread!
@@ -50,8 +114,24 @@ type ThreadCreatedEvent @entity {
 }
 
 type ThreadModeratedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The thread beeing moderated"
   thread: ForumThread!
@@ -79,8 +159,24 @@ type ThreadModeratedEvent @entity {
 # }
 
 type ThreadTitleUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The thread beeing updated"
   thread: ForumThread!
@@ -92,8 +188,24 @@ type ThreadTitleUpdatedEvent @entity {
 }
 
 type ThreadDeletedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The thread beeing deleted"
   thread: ForumThread!
@@ -102,8 +214,24 @@ type ThreadDeletedEvent @entity {
 }
 
 type ThreadMovedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The thread beeing moved"
   thread: ForumThread!
@@ -119,8 +247,24 @@ type ThreadMovedEvent @entity {
 }
 
 type PostAddedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The post that was added"
   post: ForumPost!
@@ -133,8 +277,24 @@ type PostAddedEvent @entity {
 }
 
 type PostModeratedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The post beeing moderated"
   post: ForumPost!
@@ -147,8 +307,24 @@ type PostModeratedEvent @entity {
 }
 
 type PostDeletedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "List of deleted posts"
   posts: [ForumPost!] @derivedFrom(field: "deletedInEvent")
@@ -158,8 +334,24 @@ type PostDeletedEvent @entity {
 }
 
 type PostTextUpdatedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The post beeing updated"
   post: ForumPost!
@@ -171,8 +363,24 @@ type PostTextUpdatedEvent @entity {
 }
 
 type PostReactedEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The post beeing reacted to"
   post: ForumPost!
@@ -185,8 +393,24 @@ type PostReactedEvent @entity {
 }
 
 type VoteOnPollEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "Poll alternative beeing voted on"
   pollAlternative: ForumPollAlternative!
@@ -196,8 +420,24 @@ type VoteOnPollEvent @entity {
 }
 
 type CategoryStickyThreadUpdateEvent @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The related category"
   category: ForumCategory!
@@ -210,8 +450,24 @@ type CategoryStickyThreadUpdateEvent @entity {
 }
 
 type CategoryMembershipOfModeratorUpdated @entity {
-  "Generic event data"
-  event: Event!
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
 
   "The moderator in question"
   moderator: Worker!

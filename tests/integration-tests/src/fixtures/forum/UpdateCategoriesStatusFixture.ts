@@ -6,7 +6,6 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { CategoryUpdatedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
-import { EventType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
 import { WithForumLeadFixture } from './WithForumLeadFixture'
@@ -68,7 +67,6 @@ export class UpdateCategoriesStatusFixture extends WithForumLeadFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: CategoryUpdatedEventFieldsFragment, i: number): void {
     const { categoryId, archived, asWorker } = this.updates[i]
-    assert.equal(qEvent.event.type, EventType.CategoryUpdated)
     assert.equal(qEvent.category.id, categoryId.toString())
     assert.equal(qEvent.newArchivalStatus, archived)
     assert.equal(qEvent.actor.id, `forumWorkingGroup-${asWorker ? asWorker.toString() : this.forumLeadId!.toString()}`)

@@ -1,15 +1,12 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import BN from 'bn.js'
-import { bytesToString, createEvent } from './common'
+import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
+import { bytesToString, genericEventFields } from './common'
 import {
   CategoryCreatedEvent,
   CategoryStatusActive,
   CategoryUpdatedEvent,
-  EventType,
   ForumCategory,
   Worker,
   CategoryStatusArchived,
@@ -84,49 +81,37 @@ async function getActorWorker(db: DatabaseManager, actor: PrivilegedActor): Prom
 }
 
 export async function forum_CategoryCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const {
-    categoryId,
-    optCategoryId: parentCategoryId,
-    bytess: { 0: title, 1: description },
-  } = new Forum.CategoryCreatedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [categoryId, parentCategoryId, titleBytes, descriptionBytes] = new Forum.CategoryCreatedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
 
   const category = new ForumCategory({
     id: categoryId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
-    title: bytesToString(title),
-    description: bytesToString(description),
+    title: bytesToString(titleBytes),
+    description: bytesToString(descriptionBytes),
     status: new CategoryStatusActive(),
     parent: parentCategoryId.isSome ? new ForumCategory({ id: parentCategoryId.unwrap().toString() }) : undefined,
   })
 
   await db.save<ForumCategory>(category)
 
-  const event = await createEvent(db, event_, EventType.CategoryCreated)
   const categoryCreatedEvent = new CategoryCreatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     category,
   })
   await db.save<CategoryCreatedEvent>(categoryCreatedEvent)
 }
 
 export async function forum_CategoryUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { categoryId, privilegedActor, bool: newArchivalStatus } = new Forum.CategoryUpdatedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [categoryId, newArchivalStatus, privilegedActor] = new Forum.CategoryUpdatedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const category = await getCategory(db, categoryId.toString())
   const actorWorker = await getActorWorker(db, privilegedActor)
 
-  const event = await createEvent(db, event_, EventType.CategoryUpdated)
   const categoryUpdatedEvent = new CategoryUpdatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     category,
-    event,
     newArchivalStatus: newArchivalStatus.valueOf(),
     actor: actorWorker,
   })
@@ -144,18 +129,14 @@ export async function forum_CategoryUpdated(db: DatabaseManager, event_: Substra
 }
 
 export async function forum_CategoryDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { categoryId, privilegedActor } = new Forum.CategoryDeletedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [categoryId, privilegedActor] = new Forum.CategoryDeletedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const category = await getCategory(db, categoryId.toString())
   const actorWorker = await getActorWorker(db, privilegedActor)
 
-  const event = await createEvent(db, event_, EventType.CategoryDeleted)
   const categoryDeletedEvent = new CategoryDeletedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     category,
-    event,
     actor: actorWorker,
   })
   await db.save<CategoryDeletedEvent>(categoryDeletedEvent)
@@ -169,10 +150,9 @@ export async function forum_CategoryDeleted(db: DatabaseManager, event_: Substra
 }
 
 export async function forum_ThreadCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   const { forumUserId, categoryId, title, text, poll } = new Forum.CreateThreadCall(event_).args
-  const { threadId } = new Forum.ThreadCreatedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [threadId] = new Forum.ThreadCreatedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const author = new Membership({ id: forumUserId.toString() })
 
   const thread = new ForumThread({
@@ -211,11 +191,8 @@ export async function forum_ThreadCreated(db: DatabaseManager, event_: Substrate
     )
   }
 
-  const event = await createEvent(db, event_, EventType.ThreadCreated)
   const threadCreatedEvent = new ThreadCreatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     thread,
     title: bytesToString(title),
     text: bytesToString(text),
@@ -239,18 +216,14 @@ export async function forum_ThreadCreated(db: DatabaseManager, event_: Substrate
 }
 
 export async function forum_ThreadModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { threadId, bytes: rationaleBytes, privilegedActor } = new Forum.ThreadModeratedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [threadId, rationaleBytes, privilegedActor] = new Forum.ThreadModeratedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const actorWorker = await getActorWorker(db, privilegedActor)
   const thread = await getThread(db, threadId.toString())
 
-  const event = await createEvent(db, event_, EventType.ThreadModerated)
   const threadModeratedEvent = new ThreadModeratedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
+    ...genericEventFields(event_),
     actor: actorWorker,
-    event,
     thread,
     rationale: bytesToString(rationaleBytes),
   })
@@ -266,16 +239,12 @@ export async function forum_ThreadModerated(db: DatabaseManager, event_: Substra
 }
 
 export async function forum_ThreadTitleUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { threadId, bytes: newTitleBytes } = new Forum.ThreadTitleUpdatedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [threadId, , , newTitleBytes] = new Forum.ThreadTitleUpdatedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const thread = await getThread(db, threadId.toString())
 
-  const event = await createEvent(db, event_, EventType.ThreadTitleUpdated)
   const threadTitleUpdatedEvent = new ThreadTitleUpdatedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     thread,
     newTitle: bytesToString(newTitleBytes),
   })
@@ -288,16 +257,12 @@ export async function forum_ThreadTitleUpdated(db: DatabaseManager, event_: Subs
 }
 
 export async function forum_ThreadDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { threadId, bool: hide } = new Forum.ThreadDeletedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [threadId, , , hide] = new Forum.ThreadDeletedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const thread = await getThread(db, threadId.toString())
 
-  const event = await createEvent(db, event_, EventType.ThreadDeleted)
   const threadDeletedEvent = new ThreadDeletedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     thread,
   })
 
@@ -311,21 +276,13 @@ export async function forum_ThreadDeleted(db: DatabaseManager, event_: Substrate
 }
 
 export async function forum_ThreadMoved(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const {
-    threadId,
-    privilegedActor,
-    categoryIds: { 0: newCategoryId, 1: oldCategoryId },
-  } = new Forum.ThreadMovedEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [threadId, newCategoryId, privilegedActor, oldCategoryId] = new Forum.ThreadMovedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
   const thread = await getThread(db, threadId.toString())
   const actorWorker = await getActorWorker(db, privilegedActor)
 
-  const event = await createEvent(db, event_, EventType.ThreadMoved)
   const threadMovedEvent = new ThreadMovedEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     thread,
     oldCategory: new ForumCategory({ id: oldCategoryId.toString() }),
     newCategory: new ForumCategory({ id: newCategoryId.toString() }),
@@ -340,17 +297,12 @@ export async function forum_ThreadMoved(db: DatabaseManager, event_: SubstrateEv
 }
 
 export async function forum_VoteOnPoll(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
-  const { threadId, forumUserId, u32: alternativeIndex } = new Forum.VoteOnPollEvent(event_).data
-  const eventTime = new Date(event_.blockTimestamp.toNumber())
+  const [threadId, alternativeIndex, forumUserId] = new Forum.VoteOnPollEvent(event_).params
   const pollAlternative = await getPollAlternative(db, threadId.toString(), alternativeIndex.toNumber())
   const votingMember = new Membership({ id: forumUserId.toString() })
 
-  const event = await createEvent(db, event_, EventType.VoteOnPoll)
   const voteOnPollEvent = new VoteOnPollEvent({
-    createdAt: eventTime,
-    updatedAt: eventTime,
-    event,
+    ...genericEventFields(event_),
     pollAlternative,
     votingMember,
   })
@@ -359,32 +311,26 @@ export async function forum_VoteOnPoll(db: DatabaseManager, event_: SubstrateEve
 }
 
 export async function forum_PostAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
 
 export async function forum_PostModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
 
 export async function forum_PostDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
 
 export async function forum_PostTextUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
 
 export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
 
 export async function forum_CategoryStickyThreadUpdate(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
 
@@ -392,6 +338,5 @@ export async function forum_CategoryMembershipOfModeratorUpdated(
   db: DatabaseManager,
   event_: SubstrateEvent
 ): Promise<void> {
-  event_.blockTimestamp = new BN(event_.blockTimestamp) // FIXME: Temporary fix for wrong blockTimestamp type
   // TODO
 }
