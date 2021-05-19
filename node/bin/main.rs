@@ -1,4 +1,3 @@
- 
 // Copyright 2019 Joystream Contributors
 // This file is part of Joystream node.
 

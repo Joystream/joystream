@@ -25,9 +25,10 @@ use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
     self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
-    proposals_config, AccountId, Extensions, ParaId
+    proposals_config, AccountId, Extensions, ParaId,
 };
 
+use futures_util::TryFutureExt;
 use sc_chain_spec::ChainType;
 use sc_keystore::LocalKeystore as Keystore;
 use sc_telemetry::TelemetryEndpoints;
@@ -36,11 +37,10 @@ use sp_core::{
     sr25519,
 };
 use sp_keystore::CryptoStore;
-use futures_util::TryFutureExt;
 
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
-const JOYSTREAM_PARA_ID: u32 = 100; 
+const JOYSTREAM_PARA_ID: u32 = 100;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, enum_utils::FromStr)]
@@ -341,7 +341,10 @@ fn generate_chain_spec(
     chain_spec.as_json(false).map_err(|err| err)
 }
 
-async fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> Result<(), String> {
+async fn generate_authority_keys_and_store(
+    seeds: &[String],
+    keystore_path: &Path,
+) -> Result<(), String> {
     for (n, seed) in seeds.iter().enumerate() {
         let keystore = Keystore::open(keystore_path.join(format!("auth-{}", n)), None)
             .map_err(|err| err.to_string())?;
@@ -366,7 +369,8 @@ async fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Pat
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
-        ).await?;
+        )
+        .await?;
     }
 
     Ok(())
@@ -431,7 +435,7 @@ async fn main() -> Result<(), String> {
             print_seeds(&authority_seeds, &endowed_seeds, &sudo_seed);
 
             if let Some(keystore_path) = keystore_path {
-                 generate_authority_keys_and_store(&authority_seeds, &keystore_path).await?;
+                generate_authority_keys_and_store(&authority_seeds, &keystore_path).await?;
             }
 
             let endowed_accounts = endowed_seeds

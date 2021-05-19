@@ -4,7 +4,6 @@ pub mod initial_balances;
 pub mod initial_members;
 pub mod proposals_config;
 
-
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -22,7 +21,7 @@ use joystream_node_runtime::{
 };
 
 // Exported to be used by chain-spec-builder
-pub use joystream_node_runtime::{AccountId, Signature, GenesisConfig};
+pub use joystream_node_runtime::{AccountId, GenesisConfig, Signature};
 
 #[cfg(feature = "standalone")]
 use joystream_node_runtime::{

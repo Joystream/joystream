@@ -24,13 +24,13 @@ use super::initial_test_ext;
 
 use crate::CouncilManager;
 
-pub type Balances = pallet_balances::Module<Runtime>;
-pub type System = frame_system::Module<Runtime>;
-pub type Membership = membership::Module<Runtime>;
-pub type ProposalsEngine = proposals_engine::Module<Runtime>;
-pub type Council = governance::council::Module<Runtime>;
-pub type Election = governance::election::Module<Runtime>;
-pub type ProposalsCodex = proposals_codex::Module<Runtime>;
+pub type Balances = pallet_balances::Pallet<Runtime>;
+pub type System = frame_system::Pallet<Runtime>;
+pub type Membership = membership::Pallet<Runtime>;
+pub type ProposalsEngine = proposals_engine::Pallet<Runtime>;
+pub type Council = governance::council::Pallet<Runtime>;
+pub type Election = governance::election::Pallet<Runtime>;
+pub type ProposalsCodex = proposals_codex::Pallet<Runtime>;
 
 fn setup_members(count: u8) {
     let authority_account_id = <Runtime as frame_system::Config>::AccountId::default();
@@ -76,7 +76,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     account_id: AccountId32,
     balance: u128,
 ) {
-    type Balances = pallet_balances::Module<Runtime>;
+    type Balances = pallet_balances::Pallet<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
         let _ = <Runtime as stake::Config>::Currency::deposit_creating(&account_id, balance);
@@ -644,6 +644,7 @@ fn set_election_parameters_proposal_execution_succeeds() {
 }
 
 #[test]
+#[cfg(feature = "standalone")]
 fn set_validator_count_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 1;
