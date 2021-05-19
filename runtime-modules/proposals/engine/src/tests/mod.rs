@@ -1,7 +1,7 @@
 pub(crate) mod mock;
 
 use crate::*;
-use mock::*;
+use mock::{Event, *};
 
 use codec::Encode;
 use frame_support::dispatch::DispatchResult;
@@ -255,7 +255,7 @@ impl EventFixture {
             .iter()
             .map(|ev| EventRecord {
                 phase: Phase::Initialization,
-                event: TestEvent::engine(ev.clone()),
+                event: Event::proposals_engine(ev.clone()),
                 topics: vec![],
             })
             .collect::<Vec<EventRecord<_, _>>>();
