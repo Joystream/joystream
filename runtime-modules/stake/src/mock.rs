@@ -1,72 +1,61 @@
 #![cfg(test)]
 
 use crate::*;
-use crate::{Config, Module};
+use crate::Config;
 use balances;
-use frame_support::{impl_outer_origin, parameter_types};
+use frame_support::{parameter_types};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
+use crate as stake;
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Balances: balances::{Pallet, Call, Storage, Event<T>},
+        StakePool: stake::{Pallet, Call, Storage},
+    }
+);
+
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub RuntimeBlockLength: BlockLength =
-        BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-    pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
-        .base_block(BlockExecutionWeight::get())
-        .for_class(DispatchClass::all(), |weights| {
-            weights.base_extrinsic = ExtrinsicBaseWeight::get();
-        })
-        .for_class(DispatchClass::Normal, |weights| {
-            weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
-        })
-        .for_class(DispatchClass::Operational, |weights| {
-            weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
-            // Operational transactions have some extra reserved space, so that they
-            // are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
-            weights.reserved = Some(
-                MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
-            );
-        })
-        .avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
-        .build_or_panic();
-    pub const SS58Prefix: u8 = 42; // Ss58AddressFormat::SubstrateAccount
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
 }
 
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
+    type Call = Call;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    /// Block & extrinsics weights: base values and limits.
-    type BlockWeights = RuntimeBlockWeights;
-    /// The maximum length of a block (in bytes).
-    type BlockLength = RuntimeBlockLength;
-    type DbWeight = ();
     type Version = ();
-    type AccountData = balances::AccountData<u64>;
+    type PalletInfo = PalletInfo;
+    type AccountData = balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
-    type PalletInfo = ();
+    type SS58Prefix = ();
+    type OnSetCode = ();
 }
 
 parameter_types! {
@@ -74,10 +63,12 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
+type Balance = u64;
+
 impl balances::Config for Test {
-    type Balance = u64;
+    type Balance = Balance;
     type DustRemoval = ();
-    type Event = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -99,10 +90,6 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 
     t.into()
 }
-
-pub type System = frame_system::Module<Test>;
-pub type Balances = balances::Module<Test>;
-pub type StakePool = Module<Test>;
 
 // Some helper methods for creating Stake states
 pub mod fixtures {
