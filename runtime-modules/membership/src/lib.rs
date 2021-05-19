@@ -464,7 +464,7 @@ decl_module! {
                     *b"faucet00",
                     &new_member_account,
                     initial_balance,
-                    WithdrawReasons::TRANSFER.into(),
+                    WithdrawReasons::TRANSFER,
                 );
 
                 // Endow the new member account with an amount to get started
