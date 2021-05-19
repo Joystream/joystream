@@ -8,14 +8,14 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { CategoryDeletedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
-import { WithForumLeadFixture } from './WithForumLeadFixture'
+import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 
 export type CategoryRemovalInput = {
   categoryId: CategoryId
   asWorker?: WorkerId
 }
 
-export class RemoveCategoriesFixture extends WithForumLeadFixture {
+export class RemoveCategoriesFixture extends WithForumWorkersFixture {
   protected removals: CategoryRemovalInput[]
 
   public constructor(api: Api, query: QueryNodeApi, removals: CategoryRemovalInput[]) {
@@ -24,12 +24,7 @@ export class RemoveCategoriesFixture extends WithForumLeadFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
-    return Promise.all(
-      this.removals.map(async (r) => {
-        const workerId = r.asWorker || (await this.getForumLeadId())
-        return (await this.api.query.forumWorkingGroup.workerById(workerId)).role_account_id.toString()
-      })
-    )
+    return this.getSignersFromInput(this.removals)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
@@ -52,7 +47,8 @@ export class RemoveCategoriesFixture extends WithForumLeadFixture {
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qCategory, 'Query node: Category not found')
       Utils.assert(qCategory.status.__typename === 'CategoryStatusRemoved', 'Invalid category status')
-      assert.equal(qCategory.status.categoryDeletedEventId, qEvent.id)
+      Utils.assert(qCategory.status.categoryDeletedEvent, 'Query node: Missing CategoryDeletedEvent ref')
+      assert.equal(qCategory.status.categoryDeletedEvent.id, qEvent.id)
     })
   }
 

@@ -9,7 +9,6 @@ import { StandardizedFixture } from '../../Fixture'
 import { CategoryId } from '@joystream/types/forum'
 import { MemberId, ThreadId } from '@joystream/types/common'
 import { Utils } from '../../utils'
-import _ from 'lodash'
 
 export type VoteParams = {
   categoryId: CategoryId

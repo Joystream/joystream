@@ -1,7 +1,16 @@
 import { FlowProps } from '../../Flow'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
-import { CategoryParams, CreateCategoriesFixture, DeleteThreadsFixture, ThreadRemovalInput } from '../../fixtures/forum'
+import {
+  CategoryParams,
+  CreateCategoriesFixture,
+  DeleteThreadsFixture,
+  MoveThreadParams,
+  MoveThreadsFixture,
+  ThreadRemovalInput,
+  ThreadTitleUpdate,
+  UpdateThreadTitlesFixture,
+} from '../../fixtures/forum'
 import { CreateThreadsFixture, ThreadParams } from '../../fixtures/forum/CreateThreadsFixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 
@@ -44,16 +53,48 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   await createThreadsRunner.runWithQueryNodeChecks()
   const threadIds = createThreadsFixture.getCreatedThreadsIds()
 
-  // TODO: Threads updates
+  // Update categories
+  const threadCategoryUpdates: MoveThreadParams[] = threadIds.map((threadId, i) => ({
+    threadId,
+    categoryId: threads[i].categoryId,
+    newCategoryId: categoryIds[(categoryIds.indexOf(threads[i].categoryId) + 1) % categoryIds.length],
+  }))
+
+  const moveThreadsFixture = new MoveThreadsFixture(api, query, threadCategoryUpdates)
+  const moveThreadsRunner = new FixtureRunner(moveThreadsFixture)
+  await moveThreadsRunner.run()
+  const threadCategories = threadCategoryUpdates.map((u) => u.newCategoryId)
+
+  // Update titles
+  const titleUpdates = threadIds.reduce(
+    (updates, threadId, i) =>
+      updates.concat([
+        { threadId, categoryId: threadCategories[i], newTitle: '' },
+        { threadId, categoryId: threadCategories[i], newTitle: `Test updated title ${i}` },
+      ]),
+    [] as ThreadTitleUpdate[]
+  )
+
+  const updateThreadTitlesFixture = new UpdateThreadTitlesFixture(api, query, titleUpdates)
+  const updateThreadTitlesRunner = new FixtureRunner(updateThreadTitlesFixture)
+  await updateThreadTitlesRunner.run()
 
   // Remove threads
-  const threadRemovals: ThreadRemovalInput[] = threads.map((t, i) => ({
-    threadId: threadIds[i],
-    categoryId: t.categoryId,
+  const threadRemovals: ThreadRemovalInput[] = threadIds.map((threadId, i) => ({
+    threadId,
+    categoryId: threadCategories[i],
     hide: i >= 1, // Test both cases
   }))
   const removeThreadsFixture = new DeleteThreadsFixture(api, query, threadRemovals)
-  await new FixtureRunner(removeThreadsFixture).runWithQueryNodeChecks()
+  const removeThreadsRunner = new FixtureRunner(removeThreadsFixture)
+  await removeThreadsRunner.run()
+
+  // Run compound query node checks
+  await Promise.all([
+    moveThreadsRunner.runQueryNodeChecks(),
+    updateThreadTitlesRunner.runQueryNodeChecks(),
+    removeThreadsRunner.runQueryNodeChecks(),
+  ])
 
   debug('Done')
 }

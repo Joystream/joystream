@@ -1,5 +1,7 @@
 fragment ForumCategoryFields on ForumCategory {
   id
+  createdAt
+  updatedAt
   parent {
     id
   }
@@ -17,22 +19,80 @@ fragment ForumCategoryFields on ForumCategory {
   status {
     __typename
     ... on CategoryStatusArchived {
-      categoryUpdatedEventId
+      categoryUpdatedEvent {
+        id
+      }
     }
     ... on CategoryStatusRemoved {
-      categoryDeletedEventId
+      categoryDeletedEvent {
+        id
+      }
     }
   }
 }
 
-query getCategoriesByIds($ids: [ID!]) {
-  forumCategories(where: { id_in: $ids }) {
-    ...ForumCategoryFields
+fragment ForumPostFields on ForumPost {
+  id
+  createdAt
+  updatedAt
+  text
+  author {
+    id
+  }
+  thread {
+    id
+  }
+  repliesTo {
+    id
+  }
+  text
+  status {
+    __typename
+    ... on PostStatusLocked {
+      postDeletedEvent {
+        id
+      }
+    }
+    ... on PostStatusModerated {
+      postModeratedEvent {
+        id
+      }
+    }
+    ... on PostStatusRemoved {
+      postDeletedEvent {
+        id
+      }
+    }
+  }
+  origin {
+    __typename
+    ... on PostOriginThreadInitial {
+      threadCreatedEvent {
+        id
+      }
+    }
+    ... on PostOriginThreadReply {
+      postAddedEvent {
+        id
+      }
+    }
+  }
+  edits {
+    id
+  }
+  reactions {
+    id
+    member {
+      id
+    }
+    reaction
   }
 }
 
 fragment ForumThreadWithPostsFields on ForumThread {
   id
+  createdAt
+  updatedAt
   author {
     id
   }
@@ -41,24 +101,7 @@ fragment ForumThreadWithPostsFields on ForumThread {
   }
   title
   posts {
-    id
-    text
-    author {
-      id
-    }
-    text
-    status {
-      __typename
-    }
-    origin {
-      __typename
-      ... on PostOriginThreadInitial {
-        threadCreatedEventId
-      }
-      ... on PostOriginThreadReply {
-        postAddedEventId
-      }
-    }
+    ...ForumPostFields
   }
   poll {
     description
@@ -80,19 +123,43 @@ fragment ForumThreadWithPostsFields on ForumThread {
   status {
     __typename
     ... on ThreadStatusLocked {
-      threadDeletedEventId
+      threadDeletedEvent {
+        id
+      }
     }
     ... on ThreadStatusModerated {
-      threadModeratedEventId
+      threadModeratedEvent {
+        id
+      }
     }
     ... on ThreadStatusRemoved {
-      threadDeletedEventId
+      threadDeletedEvent {
+        id
+      }
     }
+  }
+  titleUpdates {
+    id
+  }
+  movedInEvents {
+    id
+  }
+}
+
+query getCategoriesByIds($ids: [ID!]) {
+  forumCategories(where: { id_in: $ids }) {
+    ...ForumCategoryFields
   }
 }
 
 query getThreadsWithPostsByIds($ids: [ID!]) {
   forumThreads(where: { id_in: $ids }) {
     ...ForumThreadWithPostsFields
+  }
+}
+
+query getPostsByIds($ids: [ID!]) {
+  forumPosts(where: { id_in: $ids }) {
+    ...ForumPostFields
   }
 }

@@ -1,6 +1,7 @@
 import categories from '../flows/forum/categories'
 import polls from '../flows/forum/polls'
 import threads from '../flows/forum/threads'
+import posts from '../flows/forum/posts'
 import leadOpening from '../flows/working-groups/leadOpening'
 import creatingMemberships from '../flows/membership/creatingMemberships'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
@@ -37,4 +38,5 @@ scenario(async ({ job }) => {
   job('forum categories', categories).requires(sudoHireLead)
   job('forum threads', threads).requires(sudoHireLead)
   job('forum polls', polls).requires(sudoHireLead)
+  job('forum posts', posts).requires(sudoHireLead)
 })

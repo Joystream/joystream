@@ -1,5 +1,5 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
-import { MemberId, ThreadId } from '@joystream/types/common'
+import { MemberId, PostId, ThreadId } from '@joystream/types/common'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
@@ -207,6 +207,22 @@ import {
   GetMemberInvitedEventsByEventIdsQuery,
   GetMemberInvitedEventsByEventIdsQueryVariables,
   GetMemberInvitedEventsByEventIds,
+  ForumPostFieldsFragment,
+  GetPostsByIdsQuery,
+  GetPostsByIdsQueryVariables,
+  GetPostsByIds,
+  PostAddedEventFieldsFragment,
+  GetPostAddedEventsByEventIdsQuery,
+  GetPostAddedEventsByEventIdsQueryVariables,
+  GetPostAddedEventsByEventIds,
+  ThreadTitleUpdatedEventFieldsFragment,
+  GetThreadTitleUpdatedEventsByEventIdsQuery,
+  GetThreadTitleUpdatedEventsByEventIdsQueryVariables,
+  GetThreadTitleUpdatedEventsByEventIds,
+  ThreadMovedEventFieldsFragment,
+  GetThreadMovedEventsByEventIdsQuery,
+  GetThreadMovedEventsByEventIdsQueryVariables,
+  GetThreadMovedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -752,6 +768,14 @@ export class QueryNodeApi {
     >(GetThreadCreatedEventsByEventIds, { eventIds }, 'threadCreatedEvents')
   }
 
+  public async getThreadTitleUpdatedEvents(events: EventDetails[]): Promise<ThreadTitleUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadTitleUpdatedEventsByEventIdsQuery,
+      GetThreadTitleUpdatedEventsByEventIdsQueryVariables
+    >(GetThreadTitleUpdatedEventsByEventIds, { eventIds }, 'threadTitleUpdatedEvents')
+  }
+
   public async getThreadsWithPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithPostsFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetThreadsWithPostsByIdsQuery, GetThreadsWithPostsByIdsQueryVariables>(
       GetThreadsWithPostsByIds,
@@ -775,5 +799,30 @@ export class QueryNodeApi {
       GetThreadDeletedEventsByEventIdsQuery,
       GetThreadDeletedEventsByEventIdsQueryVariables
     >(GetThreadDeletedEventsByEventIds, { eventIds }, 'threadDeletedEvents')
+  }
+
+  public async getPostsByIds(ids: PostId[]): Promise<ForumPostFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetPostsByIdsQuery, GetPostsByIdsQueryVariables>(
+      GetPostsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'forumPosts'
+    )
+  }
+
+  public async getPostAddedEvents(events: EventDetails[]): Promise<PostAddedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetPostAddedEventsByEventIdsQuery, GetPostAddedEventsByEventIdsQueryVariables>(
+      GetPostAddedEventsByEventIds,
+      { eventIds },
+      'postAddedEvents'
+    )
+  }
+
+  public async getThreadMovedEvents(events: EventDetails[]): Promise<ThreadMovedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadMovedEventsByEventIdsQuery,
+      GetThreadMovedEventsByEventIdsQueryVariables
+    >(GetThreadMovedEventsByEventIds, { eventIds }, 'threadMovedEvents')
   }
 }

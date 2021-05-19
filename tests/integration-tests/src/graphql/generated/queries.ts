@@ -3,43 +3,49 @@ import * as Types from './schema'
 import gql from 'graphql-tag'
 export type ForumCategoryFieldsFragment = {
   id: string
+  createdAt: any
+  updatedAt?: Types.Maybe<any>
   title: string
   description: string
   parent?: Types.Maybe<{ id: string }>
-  threads: Array<{ id: string }>
+  threads: Array<{ id: string; isSticky: boolean }>
   moderators: Array<{ id: string }>
   createdInEvent: { id: string }
   status:
     | { __typename: 'CategoryStatusActive' }
-    | { __typename: 'CategoryStatusArchived'; categoryUpdatedEventId: string }
-    | { __typename: 'CategoryStatusRemoved'; categoryDeletedEventId: string }
+    | { __typename: 'CategoryStatusArchived'; categoryUpdatedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'CategoryStatusRemoved'; categoryDeletedEvent?: Types.Maybe<{ id: string }> }
 }
 
-export type GetCategoriesByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetCategoriesByIdsQuery = { forumCategories: Array<ForumCategoryFieldsFragment> }
+export type ForumPostFieldsFragment = {
+  id: string
+  createdAt: any
+  updatedAt?: Types.Maybe<any>
+  text: string
+  author: { id: string }
+  thread: { id: string }
+  repliesTo?: Types.Maybe<{ id: string }>
+  status:
+    | { __typename: 'PostStatusActive' }
+    | { __typename: 'PostStatusLocked'; postDeletedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'PostStatusModerated'; postModeratedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'PostStatusRemoved'; postDeletedEvent?: Types.Maybe<{ id: string }> }
+  origin:
+    | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'PostOriginThreadReply'; postAddedEvent?: Types.Maybe<{ id: string }> }
+  edits: Array<{ id: string }>
+  reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
+}
 
 export type ForumThreadWithPostsFieldsFragment = {
   id: string
+  createdAt: any
+  updatedAt?: Types.Maybe<any>
   title: string
   isSticky: boolean
   author: { id: string }
   category: { id: string }
-  posts: Array<{
-    id: string
-    text: string
-    author: { id: string }
-    status:
-      | { __typename: 'PostStatusActive' }
-      | { __typename: 'PostStatusLocked' }
-      | { __typename: 'PostStatusModerated' }
-      | { __typename: 'PostStatusRemoved' }
-    origin:
-      | { __typename: 'PostOriginThreadInitial'; threadCreatedEventId: string }
-      | { __typename: 'PostOriginThreadReply'; postAddedEventId: string }
-  }>
+  posts: Array<ForumPostFieldsFragment>
   poll?: Types.Maybe<{
     description: string
     endTime: any
@@ -48,16 +54,30 @@ export type ForumThreadWithPostsFieldsFragment = {
   createdInEvent: { id: string }
   status:
     | { __typename: 'ThreadStatusActive' }
-    | { __typename: 'ThreadStatusLocked'; threadDeletedEventId: string }
-    | { __typename: 'ThreadStatusModerated'; threadModeratedEventId: string }
-    | { __typename: 'ThreadStatusRemoved'; threadDeletedEventId: string }
+    | { __typename: 'ThreadStatusLocked'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ThreadStatusModerated'; threadModeratedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'ThreadStatusRemoved'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
+  titleUpdates: Array<{ id: string }>
+  movedInEvents: Array<{ id: string }>
 }
+
+export type GetCategoriesByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCategoriesByIdsQuery = { forumCategories: Array<ForumCategoryFieldsFragment> }
 
 export type GetThreadsWithPostsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetThreadsWithPostsByIdsQuery = { forumThreads: Array<ForumThreadWithPostsFieldsFragment> }
+
+export type GetPostsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetPostsByIdsQuery = { forumPosts: Array<ForumPostFieldsFragment> }
 
 export type CategoryCreatedEventFieldsFragment = {
   id: string
@@ -132,6 +152,25 @@ export type GetThreadCreatedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetThreadCreatedEventsByEventIdsQuery = { threadCreatedEvents: Array<ThreadCreatedEventFieldsFragment> }
 
+export type ThreadTitleUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newTitle: string
+  thread: { id: string }
+}
+
+export type GetThreadTitleUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetThreadTitleUpdatedEventsByEventIdsQuery = {
+  threadTitleUpdatedEvents: Array<ThreadTitleUpdatedEventFieldsFragment>
+}
+
 export type VoteOnPollEventFieldsFragment = {
   id: string
   createdAt: any
@@ -164,6 +203,43 @@ export type GetThreadDeletedEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetThreadDeletedEventsByEventIdsQuery = { threadDeletedEvents: Array<ThreadDeletedEventFieldsFragment> }
+
+export type PostAddedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  isEditable?: Types.Maybe<boolean>
+  text: string
+  post: { id: string }
+}
+
+export type GetPostAddedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetPostAddedEventsByEventIdsQuery = { postAddedEvents: Array<PostAddedEventFieldsFragment> }
+
+export type ThreadMovedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  thread: { id: string }
+  oldCategory: { id: string }
+  newCategory: { id: string }
+  actor: { id: string }
+}
+
+export type GetThreadMovedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetThreadMovedEventsByEventIdsQuery = { threadMovedEvents: Array<ThreadMovedEventFieldsFragment> }
 
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
@@ -1009,6 +1085,8 @@ export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Arr
 export const ForumCategoryFields = gql`
   fragment ForumCategoryFields on ForumCategory {
     id
+    createdAt
+    updatedAt
     parent {
       id
     }
@@ -1016,6 +1094,7 @@ export const ForumCategoryFields = gql`
     description
     threads {
       id
+      isSticky
     }
     moderators {
       id
@@ -1026,17 +1105,82 @@ export const ForumCategoryFields = gql`
     status {
       __typename
       ... on CategoryStatusArchived {
-        categoryUpdatedEventId
+        categoryUpdatedEvent {
+          id
+        }
       }
       ... on CategoryStatusRemoved {
-        categoryDeletedEventId
+        categoryDeletedEvent {
+          id
+        }
       }
+    }
+  }
+`
+export const ForumPostFields = gql`
+  fragment ForumPostFields on ForumPost {
+    id
+    createdAt
+    updatedAt
+    text
+    author {
+      id
+    }
+    thread {
+      id
+    }
+    repliesTo {
+      id
+    }
+    text
+    status {
+      __typename
+      ... on PostStatusLocked {
+        postDeletedEvent {
+          id
+        }
+      }
+      ... on PostStatusModerated {
+        postModeratedEvent {
+          id
+        }
+      }
+      ... on PostStatusRemoved {
+        postDeletedEvent {
+          id
+        }
+      }
+    }
+    origin {
+      __typename
+      ... on PostOriginThreadInitial {
+        threadCreatedEvent {
+          id
+        }
+      }
+      ... on PostOriginThreadReply {
+        postAddedEvent {
+          id
+        }
+      }
+    }
+    edits {
+      id
+    }
+    reactions {
+      id
+      member {
+        id
+      }
+      reaction
     }
   }
 `
 export const ForumThreadWithPostsFields = gql`
   fragment ForumThreadWithPostsFields on ForumThread {
     id
+    createdAt
+    updatedAt
     author {
       id
     }
@@ -1045,24 +1189,7 @@ export const ForumThreadWithPostsFields = gql`
     }
     title
     posts {
-      id
-      text
-      author {
-        id
-      }
-      text
-      status {
-        __typename
-      }
-      origin {
-        __typename
-        ... on PostOriginThreadInitial {
-          threadCreatedEventId
-        }
-        ... on PostOriginThreadReply {
-          postAddedEventId
-        }
-      }
+      ...ForumPostFields
     }
     poll {
       description
@@ -1084,16 +1211,29 @@ export const ForumThreadWithPostsFields = gql`
     status {
       __typename
       ... on ThreadStatusLocked {
-        threadDeletedEventId
+        threadDeletedEvent {
+          id
+        }
       }
       ... on ThreadStatusModerated {
-        threadModeratedEventId
+        threadModeratedEvent {
+          id
+        }
       }
       ... on ThreadStatusRemoved {
-        threadDeletedEventId
+        threadDeletedEvent {
+          id
+        }
       }
     }
+    titleUpdates {
+      id
+    }
+    movedInEvents {
+      id
+    }
   }
+  ${ForumPostFields}
 `
 export const CategoryCreatedEventFields = gql`
   fragment CategoryCreatedEventFields on CategoryCreatedEvent {
@@ -1154,6 +1294,20 @@ export const ThreadCreatedEventFields = gql`
     }
   }
 `
+export const ThreadTitleUpdatedEventFields = gql`
+  fragment ThreadTitleUpdatedEventFields on ThreadTitleUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    thread {
+      id
+    }
+    newTitle
+  }
+`
 export const VoteOnPollEventFields = gql`
   fragment VoteOnPollEventFields on VoteOnPollEvent {
     id
@@ -1186,6 +1340,43 @@ export const ThreadDeletedEventFields = gql`
     inExtrinsic
     indexInBlock
     thread {
+      id
+    }
+  }
+`
+export const PostAddedEventFields = gql`
+  fragment PostAddedEventFields on PostAddedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    post {
+      id
+    }
+    isEditable
+    text
+  }
+`
+export const ThreadMovedEventFields = gql`
+  fragment ThreadMovedEventFields on ThreadMovedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    thread {
+      id
+    }
+    oldCategory {
+      id
+    }
+    newCategory {
+      id
+    }
+    actor {
       id
     }
   }
@@ -2005,6 +2196,14 @@ export const GetThreadsWithPostsByIds = gql`
   }
   ${ForumThreadWithPostsFields}
 `
+export const GetPostsByIds = gql`
+  query getPostsByIds($ids: [ID!]) {
+    forumPosts(where: { id_in: $ids }) {
+      ...ForumPostFields
+    }
+  }
+  ${ForumPostFields}
+`
 export const GetCategoryCreatedEventsByEventIds = gql`
   query getCategoryCreatedEventsByEventIds($eventIds: [ID!]) {
     categoryCreatedEvents(where: { id_in: $eventIds }) {
@@ -2037,6 +2236,14 @@ export const GetThreadCreatedEventsByEventIds = gql`
   }
   ${ThreadCreatedEventFields}
 `
+export const GetThreadTitleUpdatedEventsByEventIds = gql`
+  query getThreadTitleUpdatedEventsByEventIds($eventIds: [ID!]) {
+    threadTitleUpdatedEvents(where: { id_in: $eventIds }) {
+      ...ThreadTitleUpdatedEventFields
+    }
+  }
+  ${ThreadTitleUpdatedEventFields}
+`
 export const GetVoteOnPollEventsByEventIds = gql`
   query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
     voteOnPollEvents(where: { id_in: $eventIds }) {
@@ -2052,6 +2259,22 @@ export const GetThreadDeletedEventsByEventIds = gql`
     }
   }
   ${ThreadDeletedEventFields}
+`
+export const GetPostAddedEventsByEventIds = gql`
+  query getPostAddedEventsByEventIds($eventIds: [ID!]) {
+    postAddedEvents(where: { id_in: $eventIds }) {
+      ...PostAddedEventFields
+    }
+  }
+  ${PostAddedEventFields}
+`
+export const GetThreadMovedEventsByEventIds = gql`
+  query getThreadMovedEventsByEventIds($eventIds: [ID!]) {
+    threadMovedEvents(where: { id_in: $eventIds }) {
+      ...ThreadMovedEventFields
+    }
+  }
+  ${ThreadMovedEventFields}
 `
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {

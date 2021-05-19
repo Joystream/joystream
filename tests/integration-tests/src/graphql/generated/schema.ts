@@ -1370,105 +1370,13 @@ export type CategoryStatusActiveWhereUniqueInput = {
 }
 
 export type CategoryStatusArchived = {
-  /** Id of the event the category was archived in */
-  categoryUpdatedEventId: Scalars['String']
-}
-
-export type CategoryStatusArchivedCreateInput = {
-  categoryUpdatedEventId: Scalars['String']
-}
-
-export type CategoryStatusArchivedUpdateInput = {
-  categoryUpdatedEventId?: Maybe<Scalars['String']>
-}
-
-export type CategoryStatusArchivedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  categoryUpdatedEventId_eq?: Maybe<Scalars['String']>
-  categoryUpdatedEventId_contains?: Maybe<Scalars['String']>
-  categoryUpdatedEventId_startsWith?: Maybe<Scalars['String']>
-  categoryUpdatedEventId_endsWith?: Maybe<Scalars['String']>
-  categoryUpdatedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<CategoryStatusArchivedWhereInput>>
-  OR?: Maybe<Array<CategoryStatusArchivedWhereInput>>
-}
-
-export type CategoryStatusArchivedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the category was archived in */
+  categoryUpdatedEvent?: Maybe<CategoryUpdatedEvent>
 }
 
 export type CategoryStatusRemoved = {
-  /** Id of the event the category was deleted in */
-  categoryDeletedEventId: Scalars['String']
-}
-
-export type CategoryStatusRemovedCreateInput = {
-  categoryDeletedEventId: Scalars['String']
-}
-
-export type CategoryStatusRemovedUpdateInput = {
-  categoryDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type CategoryStatusRemovedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  categoryDeletedEventId_eq?: Maybe<Scalars['String']>
-  categoryDeletedEventId_contains?: Maybe<Scalars['String']>
-  categoryDeletedEventId_startsWith?: Maybe<Scalars['String']>
-  categoryDeletedEventId_endsWith?: Maybe<Scalars['String']>
-  categoryDeletedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<CategoryStatusRemovedWhereInput>>
-  OR?: Maybe<Array<CategoryStatusRemovedWhereInput>>
-}
-
-export type CategoryStatusRemovedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the category was deleted in */
+  categoryDeletedEvent?: Maybe<CategoryDeletedEvent>
 }
 
 export type CategoryStickyThreadUpdateEvent = BaseGraphQlObject & {
@@ -2912,11 +2820,11 @@ export type ForumThread = BaseGraphQlObject & {
   createdInEvent: ThreadCreatedEvent
   /** Current thread status */
   status: ThreadStatus
+  titleUpdates: Array<ThreadTitleUpdatedEvent>
   madeStickyInEvents: Array<CategoryStickyThreadUpdateEvent>
   movedInEvents: Array<ThreadMovedEvent>
   threaddeletedeventthread?: Maybe<Array<ThreadDeletedEvent>>
   threadmoderatedeventthread?: Maybe<Array<ThreadModeratedEvent>>
-  threadtitleupdatedeventthread?: Maybe<Array<ThreadTitleUpdatedEvent>>
 }
 
 export type ForumThreadConnection = {
@@ -3007,6 +2915,9 @@ export type ForumThreadWhereInput = {
   posts_every?: Maybe<ForumPostWhereInput>
   poll?: Maybe<ForumPollWhereInput>
   createdInEvent?: Maybe<ThreadCreatedEventWhereInput>
+  titleUpdates_none?: Maybe<ThreadTitleUpdatedEventWhereInput>
+  titleUpdates_some?: Maybe<ThreadTitleUpdatedEventWhereInput>
+  titleUpdates_every?: Maybe<ThreadTitleUpdatedEventWhereInput>
   madeStickyInEvents_none?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   madeStickyInEvents_some?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   madeStickyInEvents_every?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
@@ -3019,9 +2930,6 @@ export type ForumThreadWhereInput = {
   threadmoderatedeventthread_none?: Maybe<ThreadModeratedEventWhereInput>
   threadmoderatedeventthread_some?: Maybe<ThreadModeratedEventWhereInput>
   threadmoderatedeventthread_every?: Maybe<ThreadModeratedEventWhereInput>
-  threadtitleupdatedeventthread_none?: Maybe<ThreadTitleUpdatedEventWhereInput>
-  threadtitleupdatedeventthread_some?: Maybe<ThreadTitleUpdatedEventWhereInput>
-  threadtitleupdatedeventthread_every?: Maybe<ThreadTitleUpdatedEventWhereInput>
   AND?: Maybe<Array<ForumThreadWhereInput>>
   OR?: Maybe<Array<ForumThreadWhereInput>>
 }
@@ -6366,105 +6274,13 @@ export type PostModeratedEventWhereUniqueInput = {
 export type PostOrigin = PostOriginThreadInitial | PostOriginThreadReply
 
 export type PostOriginThreadInitial = {
-  /** Id of the related thread creation event */
-  threadCreatedEventId: Scalars['String']
-}
-
-export type PostOriginThreadInitialCreateInput = {
-  threadCreatedEventId: Scalars['String']
-}
-
-export type PostOriginThreadInitialUpdateInput = {
-  threadCreatedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostOriginThreadInitialWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  threadCreatedEventId_eq?: Maybe<Scalars['String']>
-  threadCreatedEventId_contains?: Maybe<Scalars['String']>
-  threadCreatedEventId_startsWith?: Maybe<Scalars['String']>
-  threadCreatedEventId_endsWith?: Maybe<Scalars['String']>
-  threadCreatedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<PostOriginThreadInitialWhereInput>>
-  OR?: Maybe<Array<PostOriginThreadInitialWhereInput>>
-}
-
-export type PostOriginThreadInitialWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Thread creation event */
+  threadCreatedEvent?: Maybe<ThreadCreatedEvent>
 }
 
 export type PostOriginThreadReply = {
-  /** Id of the related post added event */
-  postAddedEventId: Scalars['String']
-}
-
-export type PostOriginThreadReplyCreateInput = {
-  postAddedEventId: Scalars['String']
-}
-
-export type PostOriginThreadReplyUpdateInput = {
-  postAddedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostOriginThreadReplyWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  postAddedEventId_eq?: Maybe<Scalars['String']>
-  postAddedEventId_contains?: Maybe<Scalars['String']>
-  postAddedEventId_startsWith?: Maybe<Scalars['String']>
-  postAddedEventId_endsWith?: Maybe<Scalars['String']>
-  postAddedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<PostOriginThreadReplyWhereInput>>
-  OR?: Maybe<Array<PostOriginThreadReplyWhereInput>>
-}
-
-export type PostOriginThreadReplyWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Related PostAdded event */
+  postAddedEvent?: Maybe<PostAddedEvent>
 }
 
 export type PostReactedEvent = BaseGraphQlObject & {
@@ -6673,156 +6489,18 @@ export type PostStatusActiveWhereUniqueInput = {
 }
 
 export type PostStatusLocked = {
-  /** Post deleted event id in case the post became locked through runtime removal */
-  postDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostStatusLockedCreateInput = {
-  postDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostStatusLockedUpdateInput = {
-  postDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostStatusLockedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  postDeletedEventId_eq?: Maybe<Scalars['String']>
-  postDeletedEventId_contains?: Maybe<Scalars['String']>
-  postDeletedEventId_startsWith?: Maybe<Scalars['String']>
-  postDeletedEventId_endsWith?: Maybe<Scalars['String']>
-  postDeletedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<PostStatusLockedWhereInput>>
-  OR?: Maybe<Array<PostStatusLockedWhereInput>>
-}
-
-export type PostStatusLockedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Post deleted event in case the post became locked through runtime removal */
+  postDeletedEvent?: Maybe<PostDeletedEvent>
 }
 
 export type PostStatusModerated = {
-  /** Id of the event the post was moderated in */
-  postModeratedEventId: Scalars['String']
-}
-
-export type PostStatusModeratedCreateInput = {
-  postModeratedEventId: Scalars['String']
-}
-
-export type PostStatusModeratedUpdateInput = {
-  postModeratedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostStatusModeratedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  postModeratedEventId_eq?: Maybe<Scalars['String']>
-  postModeratedEventId_contains?: Maybe<Scalars['String']>
-  postModeratedEventId_startsWith?: Maybe<Scalars['String']>
-  postModeratedEventId_endsWith?: Maybe<Scalars['String']>
-  postModeratedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<PostStatusModeratedWhereInput>>
-  OR?: Maybe<Array<PostStatusModeratedWhereInput>>
-}
-
-export type PostStatusModeratedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the post was moderated in */
+  postModeratedEvent?: Maybe<PostModeratedEvent>
 }
 
 export type PostStatusRemoved = {
-  /** Id of the event the post was removed in */
-  postDeletedEventId: Scalars['String']
-}
-
-export type PostStatusRemovedCreateInput = {
-  postDeletedEventId: Scalars['String']
-}
-
-export type PostStatusRemovedUpdateInput = {
-  postDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type PostStatusRemovedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  postDeletedEventId_eq?: Maybe<Scalars['String']>
-  postDeletedEventId_contains?: Maybe<Scalars['String']>
-  postDeletedEventId_startsWith?: Maybe<Scalars['String']>
-  postDeletedEventId_endsWith?: Maybe<Scalars['String']>
-  postDeletedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<PostStatusRemovedWhereInput>>
-  OR?: Maybe<Array<PostStatusRemovedWhereInput>>
-}
-
-export type PostStatusRemovedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the post was removed in */
+  postDeletedEvent?: Maybe<PostDeletedEvent>
 }
 
 export type PostTextUpdatedEvent = BaseGraphQlObject & {
@@ -10858,156 +10536,18 @@ export type ThreadStatusActiveWhereUniqueInput = {
 }
 
 export type ThreadStatusLocked = {
-  /** Id of the event the thread was deleted (locked) in */
-  threadDeletedEventId: Scalars['String']
-}
-
-export type ThreadStatusLockedCreateInput = {
-  threadDeletedEventId: Scalars['String']
-}
-
-export type ThreadStatusLockedUpdateInput = {
-  threadDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type ThreadStatusLockedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  threadDeletedEventId_eq?: Maybe<Scalars['String']>
-  threadDeletedEventId_contains?: Maybe<Scalars['String']>
-  threadDeletedEventId_startsWith?: Maybe<Scalars['String']>
-  threadDeletedEventId_endsWith?: Maybe<Scalars['String']>
-  threadDeletedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<ThreadStatusLockedWhereInput>>
-  OR?: Maybe<Array<ThreadStatusLockedWhereInput>>
-}
-
-export type ThreadStatusLockedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the thread was deleted (locked) in */
+  threadDeletedEvent?: Maybe<ThreadDeletedEvent>
 }
 
 export type ThreadStatusModerated = {
-  /** Id of the event the thread was moderated in */
-  threadModeratedEventId: Scalars['String']
-}
-
-export type ThreadStatusModeratedCreateInput = {
-  threadModeratedEventId: Scalars['String']
-}
-
-export type ThreadStatusModeratedUpdateInput = {
-  threadModeratedEventId?: Maybe<Scalars['String']>
-}
-
-export type ThreadStatusModeratedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  threadModeratedEventId_eq?: Maybe<Scalars['String']>
-  threadModeratedEventId_contains?: Maybe<Scalars['String']>
-  threadModeratedEventId_startsWith?: Maybe<Scalars['String']>
-  threadModeratedEventId_endsWith?: Maybe<Scalars['String']>
-  threadModeratedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<ThreadStatusModeratedWhereInput>>
-  OR?: Maybe<Array<ThreadStatusModeratedWhereInput>>
-}
-
-export type ThreadStatusModeratedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the thread was moderated in */
+  threadModeratedEvent?: Maybe<ThreadModeratedEvent>
 }
 
 export type ThreadStatusRemoved = {
-  /** Id of the event the thread was removed in */
-  threadDeletedEventId: Scalars['String']
-}
-
-export type ThreadStatusRemovedCreateInput = {
-  threadDeletedEventId: Scalars['String']
-}
-
-export type ThreadStatusRemovedUpdateInput = {
-  threadDeletedEventId?: Maybe<Scalars['String']>
-}
-
-export type ThreadStatusRemovedWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  threadDeletedEventId_eq?: Maybe<Scalars['String']>
-  threadDeletedEventId_contains?: Maybe<Scalars['String']>
-  threadDeletedEventId_startsWith?: Maybe<Scalars['String']>
-  threadDeletedEventId_endsWith?: Maybe<Scalars['String']>
-  threadDeletedEventId_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<ThreadStatusRemovedWhereInput>>
-  OR?: Maybe<Array<ThreadStatusRemovedWhereInput>>
-}
-
-export type ThreadStatusRemovedWhereUniqueInput = {
-  id: Scalars['ID']
+  /** Event the thread was removed in */
+  threadDeletedEvent?: Maybe<ThreadDeletedEvent>
 }
 
 export type ThreadTitleUpdatedEvent = BaseGraphQlObject & {

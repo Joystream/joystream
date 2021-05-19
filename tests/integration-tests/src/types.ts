@@ -22,6 +22,11 @@ export type MemberContext = {
   memberId: MemberId
 }
 
+export type MetadataInput<T> = {
+  value: T | string
+  expectFailure?: boolean
+}
+
 // Membership
 
 export interface MembershipBoughtEventDetails extends EventDetails {

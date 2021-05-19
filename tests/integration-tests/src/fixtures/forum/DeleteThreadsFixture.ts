@@ -71,7 +71,8 @@ export class DeleteThreadsFixture extends StandardizedFixture {
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qThread, 'Query node: Thread not found')
       Utils.assert(qThread.status.__typename === expectedStatus, `Invalid thread status. Expected: ${expectedStatus}`)
-      assert.equal(qThread.status.threadDeletedEventId, qEvent.id)
+      Utils.assert(qThread.status.threadDeletedEvent, 'Query node: Missing ThreadDeletedEvent ref')
+      assert.equal(qThread.status.threadDeletedEvent.id, qEvent.id)
     })
   }
 

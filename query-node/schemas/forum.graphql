@@ -4,15 +4,13 @@ type CategoryStatusActive @variant {
 }
 
 type CategoryStatusArchived @variant {
-  # TODO: Variant relationship
-  "Id of the event the category was archived in"
-  categoryUpdatedEventId: ID!
+  "Event the category was archived in"
+  categoryUpdatedEvent: CategoryUpdatedEvent!
 }
 
 type CategoryStatusRemoved @variant {
-  # TODO: Variant relationship
-  "Id of the event the category was deleted in"
-  categoryDeletedEventId: ID!
+  "Event the category was deleted in"
+  categoryDeletedEvent: CategoryDeletedEvent!
 }
 
 union CategoryStatus = CategoryStatusActive | CategoryStatusArchived | CategoryStatusRemoved
@@ -51,24 +49,20 @@ type ThreadStatusActive @variant {
 
 "The thread is visible, but not editable - it was removed by the author from the runtime state, but the `hide` flag was set to FALSE"
 type ThreadStatusLocked @variant {
-  # TODO: Variant relationship
-  # TODO: May become optional if threads can be created as non-editable
-  "Id of the event the thread was deleted (locked) in"
-  threadDeletedEventId: ID!
+  "Event the thread was deleted (locked) in"
+  threadDeletedEvent: ThreadDeletedEvent!
 }
 
 "The thread is hidden - it was removed by the moderator and the associated stake was slashed"
 type ThreadStatusModerated @variant {
-  # TODO: Variant relationship
-  "Id of the event the thread was moderated in"
-  threadModeratedEventId: ID!
+  "Event the thread was moderated in"
+  threadModeratedEvent: ThreadModeratedEvent!
 }
 
 "The thread is hidden - it was removed by the author and the `hide` flag was set to TRUE"
 type ThreadStatusRemoved @variant {
-  # TODO: Variant relationship
-  "Id of the event the thread was removed in"
-  threadDeletedEventId: ID!
+  "Event the thread was removed in"
+  threadDeletedEvent: ThreadDeletedEvent!
 }
 
 union ThreadStatus = ThreadStatusActive | ThreadStatusLocked | ThreadStatusModerated | ThreadStatusRemoved
@@ -100,6 +94,9 @@ type ForumThread @entity {
 
   "Current thread status"
   status: ThreadStatus!
+
+  "Theread title update events"
+  titleUpdates: [ThreadTitleUpdatedEvent!] @derivedFrom(field: "thread")
 
   # Required to create Many-to-Many relation
   "The events the thred was made sticky in"
@@ -164,37 +161,34 @@ type PostStatusActive @variant {
 
 "The post is visible but not editable - either it wasn't editable to begin with or it was removed from the runtime state, but with `hide` flag beeing set to FALSE"
 type PostStatusLocked @variant {
-  # TODO: Variant relationship
-  "Post deleted event id in case the post became locked through runtime removal"
-  postDeletedEventId: ID
+  "Post deleted event in case the post became locked through runtime removal"
+  postDeletedEvent: PostDeletedEvent
 }
 
 "The post is hidden - it was removed by the moderator and the associated stake was slashed"
 type PostStatusModerated @variant {
-  # TODO: Variant relationship
-  "Id of the event the post was moderated in"
-  postModeratedEventId: ID!
+  "Event the post was moderated in"
+  postModeratedEvent: PostModeratedEvent!
 }
 
 "The post is hidden - it was removed from the runtime state by the author and the `hide` flag was set to TRUE"
 type PostStatusRemoved @variant {
-  # TODO: Variant relationship
-  "Id of the event the post was removed in"
-  postDeletedEventId: ID!
+  "Event the post was removed in"
+  postDeletedEvent: PostDeletedEvent!
 }
 
 union PostStatus = PostStatusActive | PostStatusLocked | PostStatusModerated | PostStatusRemoved
 
 type PostOriginThreadInitial @variant {
-  # TODO: Variant relationship
-  "Id of the related thread creation event"
-  threadCreatedEventId: ID!
+  "Thread creation event"
+  # Must be optional because of post<->event cross-relationship
+  threadCreatedEvent: ThreadCreatedEvent
 }
 
 type PostOriginThreadReply @variant {
-  # TODO: Variant relationship
-  "Id of the related post added event"
-  postAddedEventId: ID!
+  "Related PostAdded event"
+  # Must be optional because of post<->event cross-relationship
+  postAddedEvent: PostAddedEvent
 }
 
 union PostOrigin = PostOriginThreadInitial | PostOriginThreadReply

@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
-import { bytesToString, genericEventFields } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields } from './common'
 import {
   CategoryCreatedEvent,
   CategoryStatusActive,
@@ -29,9 +29,13 @@ import {
   PostStatusActive,
   PostOriginThreadInitial,
   VoteOnPollEvent,
+  PostAddedEvent,
+  PostStatusLocked,
+  PostOriginThreadReply,
 } from 'query-node/dist/model'
 import { Forum } from './generated/types'
 import { PrivilegedActor } from '@joystream/types/augment/all'
+import { ForumPostMetadata } from '@joystream/metadata-protobuf'
 
 async function getCategory(db: DatabaseManager, categoryId: string): Promise<ForumCategory> {
   const category = await db.get(ForumCategory, { where: { id: categoryId } })
@@ -311,7 +315,42 @@ export async function forum_VoteOnPoll(db: DatabaseManager, event_: SubstrateEve
 }
 
 export async function forum_PostAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+  const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new Forum.PostAddedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+
+  const metadata = deserializeMetadata(ForumPostMetadata, metadataBytes)
+  const postText = metadata ? metadata.text || '' : bytesToString(metadataBytes)
+  const repliesToPost =
+    typeof metadata?.repliesTo === 'number' &&
+    (await db.get(ForumPost, { where: { id: metadata.repliesTo.toString() } }))
+
+  const postStatus = isEditable.valueOf() ? new PostStatusActive() : new PostStatusLocked()
+  const postOrigin = new PostOriginThreadReply()
+
+  const post = new ForumPost({
+    id: postId.toString(),
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    text: postText,
+    thread: new ForumThread({ id: threadId.toString() }),
+    status: postStatus,
+    author: new Membership({ id: forumUserId.toString() }),
+    origin: postOrigin,
+    repliesTo: repliesToPost || undefined,
+  })
+  await db.save<ForumPost>(post)
+
+  const postAddedEvent = new PostAddedEvent({
+    ...genericEventFields(event_),
+    post,
+    isEditable: isEditable.valueOf(),
+    text: postText,
+  })
+
+  await db.save<PostAddedEvent>(postAddedEvent)
+  // Update the other side of cross-relationship
+  postOrigin.postAddedEventId = postAddedEvent.id
+  await db.save<ForumPost>(post)
 }
 
 export async function forum_PostModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {

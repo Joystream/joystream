@@ -77,6 +77,25 @@ query getThreadCreatedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment ThreadTitleUpdatedEventFields on ThreadTitleUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  thread {
+    id
+  }
+  newTitle
+}
+
+query getThreadTitleUpdatedEventsByEventIds($eventIds: [ID!]) {
+  threadTitleUpdatedEvents(where: { id_in: $eventIds }) {
+    ...ThreadTitleUpdatedEventFields
+  }
+}
+
 fragment VoteOnPollEventFields on VoteOnPollEvent {
   id
   createdAt
@@ -120,5 +139,52 @@ fragment ThreadDeletedEventFields on ThreadDeletedEvent {
 query getThreadDeletedEventsByEventIds($eventIds: [ID!]) {
   threadDeletedEvents(where: { id_in: $eventIds }) {
     ...ThreadDeletedEventFields
+  }
+}
+
+fragment PostAddedEventFields on PostAddedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  post {
+    id
+  }
+  isEditable
+  text
+}
+
+query getPostAddedEventsByEventIds($eventIds: [ID!]) {
+  postAddedEvents(where: { id_in: $eventIds }) {
+    ...PostAddedEventFields
+  }
+}
+
+fragment ThreadMovedEventFields on ThreadMovedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  thread {
+    id
+  }
+  oldCategory {
+    id
+  }
+  newCategory {
+    id
+  }
+  actor {
+    id
+  }
+}
+
+query getThreadMovedEventsByEventIds($eventIds: [ID!]) {
+  threadMovedEvents(where: { id_in: $eventIds }) {
+    ...ThreadMovedEventFields
   }
 }

@@ -61,14 +61,14 @@ typegen:
     - forum.ThreadDeleted
     - forum.ThreadMoved
     - forum.VoteOnPoll
-    # FIXME: https://github.com/Joystream/hydra/issues/373
-    # - forum.PostAdded
-    # - forum.PostModerated
+    - forum.PostAdded
+    - forum.PostModerated
+    # FIXME: https://github.com/Joystream/hydra/issues/398
     # - forum.PostDeleted
-    # - forum.PostTextUpdated
-    # - forum.PostReacted
-    # - forum.CategoryStickyThreadUpdate
-    # - forum.CategoryMembershipOfModeratorUpdated
+    - forum.PostTextUpdated
+    - forum.PostReacted
+    - forum.CategoryStickyThreadUpdate
+    - forum.CategoryMembershipOfModeratorUpdated
   calls:
     - members.updateProfile
     - members.updateAccounts

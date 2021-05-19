@@ -8,7 +8,8 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { CategoryUpdatedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
-import { WithForumLeadFixture } from './WithForumLeadFixture'
+import { WithForumWorkersFixture } from './WithForumWorkersFixture'
+import _ from 'lodash'
 
 export type CategoryStatusUpdate = {
   categoryId: CategoryId
@@ -16,7 +17,7 @@ export type CategoryStatusUpdate = {
   asWorker?: WorkerId
 }
 
-export class UpdateCategoriesStatusFixture extends WithForumLeadFixture {
+export class UpdateCategoriesStatusFixture extends WithForumWorkersFixture {
   protected updates: CategoryStatusUpdate[]
 
   public constructor(api: Api, query: QueryNodeApi, updates: CategoryStatusUpdate[]) {
@@ -51,14 +52,16 @@ export class UpdateCategoriesStatusFixture extends WithForumLeadFixture {
     qCategories: ForumCategoryFieldsFragment[],
     qEvents: CategoryUpdatedEventFieldsFragment[]
   ): void {
-    this.events.map((e, i) => {
-      const update = this.updates[i]
+    // Check against latest update per category
+    _.uniqBy([...this.updates].reverse(), (v) => v.categoryId).map((update) => {
+      const updateIndex = this.updates.indexOf(update)
       const qCategory = qCategories.find((c) => c.id === update.categoryId.toString())
-      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
+      const qEvent = this.findMatchingQueryNodeEvent(this.events[updateIndex], qEvents)
       Utils.assert(qCategory, 'Query node: Category not found')
       if (update.archived) {
         Utils.assert(qCategory.status.__typename === 'CategoryStatusArchived', 'Invalid category status')
-        assert.equal(qCategory.status.categoryUpdatedEventId, qEvent.id)
+        Utils.assert(qCategory.status.categoryUpdatedEvent, 'Query node: Missing CategoryUpdatedEvent ref')
+        assert.equal(qCategory.status.categoryUpdatedEvent.id, qEvent.id)
       } else {
         assert.equal(qCategory.status.__typename, 'CategoryStatusActive')
       }
