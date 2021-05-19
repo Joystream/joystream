@@ -1,3 +1,4 @@
+use crate::constants::*;
 use frame_support::traits::{OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use sp_api::impl_runtime_apis;
@@ -21,6 +22,18 @@ use crate::{
 use crate::{
     AuthorityDiscovery, Babe, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical,
 };
+
+#[cfg(feature = "standalone")]
+use sp_runtime::traits::NumberFor;
+
+#[cfg(feature = "standalone")]
+use pallet_grandpa::fg_primitives;
+
+#[cfg(feature = "standalone")]
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+
+#[cfg(feature = "standalone")]
+use frame_support::traits::KeyOwnerProofSystem;
 
 use crate::{
     Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
@@ -261,6 +274,14 @@ impl_runtime_apis! {
                 equivocation_proof,
                 key_owner_proof,
             )
+        }
+
+        fn current_epoch() -> sp_consensus_babe::Epoch {
+            Babe::current_epoch()
+        }
+
+        fn next_epoch() -> sp_consensus_babe::Epoch {
+            Babe::next_epoch()
         }
 
         fn current_epoch_start() -> sp_consensus_babe::Slot {

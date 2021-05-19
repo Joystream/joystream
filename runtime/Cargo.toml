@@ -27,12 +27,14 @@ sp-version = { package = 'sp-version', default-features = false, git = 'https://
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 sp-application-crypto = { package = 'sp-application-crypto', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 sp-inherents = { package = 'sp-inherents', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'rococo-v1', version = '3.0.0'}
+sp-npos-elections = { package = 'sp-npos-elections', default-features = false, git = "https://github.com/paritytech/substrate", branch = "rococo-v1", version = '3.0.0' }
 
 # Frame
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
+frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = "3.0.0", features = ["runtime-benchmarks"] }
 
 # Pallets
 pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
@@ -97,7 +99,7 @@ strum = {version = "0.19", default-features = false}
 substrate-wasm-builder = "4.0.0"
 
 [features]
-default = ['std']
+default = ['std', 'standalone']
 no_std = []
 std = [
     # Third-party dependencies
@@ -188,6 +190,12 @@ runtime-benchmarks = [
 	"pallet-session-benchmarking",
     "substrate-utility/runtime-benchmarks",
 ]
+# When enabled, the runtime api will not be build.
+#
+# This is required by Cumulus to access certain types of the
+# runtime without clashing with the runtime api exported functions
+# in WASM.
+disable-runtime-api = []
 standalone = []
 
 

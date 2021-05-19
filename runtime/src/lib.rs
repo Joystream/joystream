@@ -104,13 +104,15 @@ pub use pallet_staking::StakerStatus;
 use standalone_use::*;
 #[cfg(feature = "standalone")]
 mod standalone_use {
+    pub use frame_election_provider_support::onchain;
+    pub use frame_system::EnsureRoot;
     pub use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+    pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
     pub use pallet_session::historical as pallet_session_historical;
     pub use pallet_staking::StakerStatus;
+    pub use sp_core::crypto::KeyTypeId;
     pub use sp_runtime::{
-        curve::PiecewiseLinear,
-        traits::{NumberFor, OpaqueKeys},
-        transaction_validity::TransactionPriority,
+        curve::PiecewiseLinear, traits::OpaqueKeys, transaction_validity::TransactionPriority,
     };
 }
 
@@ -691,6 +693,7 @@ mod standalone_impl {
     }
 
     parameter_types! {
+        pub const MaximumBlockWeight: Weight = 2 * frame_support::weights::constants::WEIGHT_PER_SECOND;
         pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MaximumBlockWeight::get();
     }
 
@@ -711,8 +714,9 @@ mod standalone_impl {
     impl pallet_im_online::Config for Runtime {
         type AuthorityId = ImOnlineId;
         type Event = Event;
-        type SessionDuration = SessionDuration;
+        type ValidatorSet = Historical;
         type ReportUnresponsiveness = Offences;
+        type NextSessionRotation = ();
         // Using the default weights until we check if we can run the benchmarks for this pallet in
         // the reference machine in an acceptable time.
         type WeightInfo = ();
@@ -731,27 +735,33 @@ mod standalone_impl {
         pub MinSolutionScoreBump: Perbill = Perbill::from_rational_approximation(5u32, 10_000);
     }
 
+    impl onchain::Config for Runtime {
+        type AccountId = AccountId;
+        type BlockNumber = BlockNumber;
+        type BlockWeights = RuntimeBlockWeights;
+        type Accuracy = Perbill;
+        type DataProvider = Staking;
+    }
+
     impl pallet_staking::Config for Runtime {
+        const MAX_NOMINATIONS: u32 = 16;
         type Currency = Balances;
         type UnixTime = Timestamp;
-        type CurrencyToVote = common::currency::CurrencyToVoteHandler;
-        type RewardRemainder = (); // Could be Treasury.
+        type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote;
+        type RewardRemainder = ();
         type Event = Event;
-        type Slash = (); // Where to send the slashed funds. Could be Treasury.
-        type Reward = (); // Rewards are minted from the void.
+        type Slash = ();
+        type Reward = ();
         type SessionsPerEra = SessionsPerEra;
         type BondingDuration = BondingDuration;
-        type SlashDeferDuration = SlashDeferDuration;
-        type SlashCancelOrigin = EnsureRoot<AccountId>; // Requires sudo. Parity recommends: a super-majority of the council can cancel the slash.
         type SessionInterface = Self;
-        type RewardCurve = RewardCurve;
-        type NextNewSession = Session;
-        type ElectionLookahead = ElectionLookahead;
-        type MaxIterations = MaxIterations;
-        type MinSolutionScoreBump = MinSolutionScoreBump;
-        type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
-        type UnsignedPriority = StakingUnsignedPriority;
-        type WeightInfo = weights::pallet_staking::WeightInfo;
+        type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+        type ElectionProvider = onchain::OnChainSequentialPhragmen<Self>;
+        type SlashDeferDuration = ();
+        type SlashCancelOrigin = EnsureRoot<Self::AccountId>;
+        type NextNewSession = ();
+        type MaxNominatorRewardedPerValidator = ();
+        type WeightInfo = ();
     }
 
     pallet_staking_reward_curve::build! {
@@ -763,26 +773,6 @@ mod standalone_impl {
             max_piece_count: 40,
             test_precision: 0_005_000,
         );
-    }
-
-    parameter_types! {
-        // phase durations. 1/4 of the last session for each.
-        pub const SignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
-        pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
-
-        // fallback: no need to do on-chain phragmen initially.
-        pub const Fallback: pallet_election_provider_multi_phase::FallbackStrategy =
-            pallet_election_provider_multi_phase::FallbackStrategy::Nothing;
-
-        pub SolutionImprovementThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
-
-        // miner configs
-        pub const MultiPhaseUnsignedPriority: TransactionPriority = StakingUnsignedPriority::get() - 1u64;
-        pub const MinerMaxIterations: u32 = 10;
-        pub MinerMaxWeight: Weight = RuntimeBlockWeights::get()
-            .get(DispatchClass::Normal)
-            .max_extrinsic.expect("Normal extrinsics have a weight limit configured; qed")
-            .saturating_sub(BlockExecutionWeight::get());
     }
 
     sp_npos_elections::generate_solution_type!(
@@ -1011,6 +1001,7 @@ construct_joystream_runtime! {
     Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 62,
     Historical: pallet_session_historical::{Pallet} = 63,
     AuthorityDiscovery: pallet_authority_discovery::{Pallet, Call, Config} = 64,
+    ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>} = 65,
 }
 
 #[cfg(not(feature = "standalone"))]

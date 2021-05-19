@@ -44,12 +44,11 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 governance::council::Call::spend_from_council_mint(balance, destination),
             ),
             ProposalDetails::SetValidatorCount(new_validator_count) => {
-                #[cfg(feature = "standalone")]
-                return Call::Staking(pallet_staking::Call::set_validator_count(
-                    new_validator_count,
-                ));
                 #[cfg(not(feature = "standalone"))]
                 return Vec::new();
+                Call::Staking(pallet_staking::Call::set_validator_count(
+                    new_validator_count,
+                ))
             }
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),

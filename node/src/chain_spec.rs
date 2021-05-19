@@ -9,6 +9,7 @@ use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
+use sp_runtime::Perbill;
 
 pub use cumulus_primitives_core::ParaId;
 use joystream_node_runtime::{
@@ -16,8 +17,8 @@ use joystream_node_runtime::{
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
     GatewayWorkingGroupConfig, MembersConfig, Moment, OperationsWorkingGroupConfig,
-    ParachainInfoConfig, ProposalsCodexConfig, SessionKeys, StakerStatus,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
+    ProposalsCodexConfig, SessionKeys, StakerStatus, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -28,6 +29,10 @@ use joystream_node_runtime::{
     AuthorityDiscoveryConfig, BabeConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
     StakingConfig,
 };
+
+#[cfg(not(feature = "standalone"))]
+use joystream_node_runtime::ParachainInfoConfig;
+
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
@@ -189,6 +194,21 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
     properties
 }
 
+#[cfg(feature = "standalone")]
+fn session_keys(
+    grandpa: GrandpaId,
+    babe: BabeId,
+    im_online: ImOnlineId,
+    authority_discovery: AuthorityDiscoveryId,
+) -> SessionKeys {
+    SessionKeys {
+        grandpa,
+        babe,
+        im_online,
+        authority_discovery,
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
     initial_authorities: Vec<(
@@ -237,6 +257,46 @@ pub fn testnet_genesis(
                 .collect(),
         },
         pallet_sudo: SudoConfig { key: root_key },
+        #[cfg(feature = "standalone")]
+        pallet_babe: BabeConfig {
+            authorities: vec![],
+            epoch_config: None,
+        },
+        #[cfg(feature = "standalone")]
+        pallet_im_online: ImOnlineConfig { keys: vec![] },
+        #[cfg(feature = "standalone")]
+        pallet_authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
+        #[cfg(feature = "standalone")]
+        pallet_grandpa: GrandpaConfig {
+            authorities: vec![],
+        },
+        #[cfg(feature = "standalone")]
+        pallet_staking: StakingConfig {
+            validator_count: 100,
+            minimum_validator_count: initial_authorities.len() as u32,
+            stakers: initial_authorities
+                .iter()
+                .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))
+                .collect(),
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            slash_reward_fraction: Perbill::from_percent(10),
+            history_depth: 336,
+            ..Default::default()
+        },
+        #[cfg(feature = "standalone")]
+        pallet_session: SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(),
+                        x.0.clone(),
+                        session_keys(x.2.clone(), x.3.clone(), x.4.clone(), x.5.clone()),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        },
+        #[cfg(not(feature = "standalone"))]
         parachain_info: ParachainInfoConfig { parachain_id: id },
         council: CouncilConfig {
             active_council: vec![],

@@ -8,9 +8,6 @@ use sp_runtime::{
     MultiSignature,
 };
 
-/// Priority for a transaction. Additive. Higher is better.
-pub type TransactionPriority = u64;
-
 /// Alias for ContentId, used in various places.
 pub type ContentId = sp_core::H256;
 
