@@ -8,6 +8,8 @@
   },
   "bugs": "https://github.com/shamil-gadelshin/storage-node-v2/issues",
   "dependencies": {
+    "@polkadot/api": "4.2.1",
+    "@joystream/types": "^0.15.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
@@ -50,7 +52,15 @@
     "bin": "storage-node",
     "plugins": [
       "@oclif/plugin-help"
-    ]
+    ],
+    "topics": {
+      "wg": {
+        "description": "Storage working group commands."
+      },
+      "wg:leader": {
+        "description": "Storage working group leader commands."
+      }
+    }
   },
   "repository": "shamil-gadelshin/storage-node-v2",
   "scripts": {

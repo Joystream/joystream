@@ -28,28 +28,8 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`storage-node hello [FILE]`](#storage-node-hello-file)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
-
-## `storage-node hello [FILE]`
-
-describe the command here
-
-```
-USAGE
-  $ storage-node hello [FILE]
-
-OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
-
-EXAMPLE
-  $ storage-node hello
-  hello world from ./src/hello.ts!
-```
-
-_See code: [src/commands/hello.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/hello.ts)_
+* [`storage-node wg:leader:create-bucket [FILE]`](#storage-node-wgleadercreate-bucket-file)
 
 ## `storage-node help [COMMAND]`
 
@@ -67,4 +47,20 @@ OPTIONS
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+
+## `storage-node wg:leader:create-bucket [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node wg:leader:create-bucket [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/wg/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/wg/leader/create-bucket.ts)_
 <!-- commandsstop -->
