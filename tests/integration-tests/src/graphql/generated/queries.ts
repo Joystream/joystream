@@ -241,6 +241,26 @@ export type GetThreadMovedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetThreadMovedEventsByEventIdsQuery = { threadMovedEvents: Array<ThreadMovedEventFieldsFragment> }
 
+export type CategoryStickyThreadUpdateEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  category: { id: string }
+  newStickyThreads: Array<{ id: string }>
+  actor: { id: string }
+}
+
+export type GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCategoryStickyThreadUpdateEventsByEventIdsQuery = {
+  categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEventFieldsFragment>
+}
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = {
@@ -1381,6 +1401,25 @@ export const ThreadMovedEventFields = gql`
     }
   }
 `
+export const CategoryStickyThreadUpdateEventFields = gql`
+  fragment CategoryStickyThreadUpdateEventFields on CategoryStickyThreadUpdateEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    category {
+      id
+    }
+    newStickyThreads {
+      id
+    }
+    actor {
+      id
+    }
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -2275,6 +2314,14 @@ export const GetThreadMovedEventsByEventIds = gql`
     }
   }
   ${ThreadMovedEventFields}
+`
+export const GetCategoryStickyThreadUpdateEventsByEventIds = gql`
+  query getCategoryStickyThreadUpdateEventsByEventIds($eventIds: [ID!]) {
+    categoryStickyThreadUpdateEvents(where: { id_in: $eventIds }) {
+      ...CategoryStickyThreadUpdateEventFields
+    }
+  }
+  ${CategoryStickyThreadUpdateEventFields}
 `
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {

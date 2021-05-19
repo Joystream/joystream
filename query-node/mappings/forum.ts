@@ -32,10 +32,12 @@ import {
   PostAddedEvent,
   PostStatusLocked,
   PostOriginThreadReply,
+  CategoryStickyThreadUpdateEvent,
 } from 'query-node/dist/model'
 import { Forum } from './generated/types'
 import { PrivilegedActor } from '@joystream/types/augment/all'
 import { ForumPostMetadata } from '@joystream/metadata-protobuf'
+import { Not } from 'typeorm'
 
 async function getCategory(db: DatabaseManager, categoryId: string): Promise<ForumCategory> {
   const category = await db.get(ForumCategory, { where: { id: categoryId } })
@@ -353,6 +355,42 @@ export async function forum_PostAdded(db: DatabaseManager, event_: SubstrateEven
   await db.save<ForumPost>(post)
 }
 
+export async function forum_CategoryStickyThreadUpdate(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  const [categoryId, newStickyThreadsIdsVec, privilegedActor] = new Forum.CategoryStickyThreadUpdateEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+  const actorWorker = await getActorWorker(db, privilegedActor)
+  const newStickyThreadsIds = newStickyThreadsIdsVec.map((id) => id.toString())
+  const threadsToSetSticky = await db.getMany(ForumThread, {
+    where: { category: { id: categoryId.toString() }, id: newStickyThreadsIds },
+  })
+  const threadsToUnsetSticky = await db.getMany(ForumThread, {
+    where: { category: { id: categoryId.toString() }, isSticky: true, id: Not(newStickyThreadsIds) },
+  })
+
+  const setStickyUpdates = (threadsToSetSticky || []).map(async (t) => {
+    t.updatedAt = eventTime
+    t.isSticky = true
+    await db.save<ForumThread>(t)
+  })
+
+  const unsetStickyUpdates = (threadsToUnsetSticky || []).map(async (t) => {
+    t.updatedAt = eventTime
+    t.isSticky = false
+    await db.save<ForumThread>(t)
+  })
+
+  await Promise.all(setStickyUpdates.concat(unsetStickyUpdates))
+
+  const categoryStickyThreadUpdateEvent = new CategoryStickyThreadUpdateEvent({
+    ...genericEventFields(event_),
+    actor: actorWorker,
+    category: new ForumCategory({ id: categoryId.toString() }),
+    newStickyThreads: threadsToSetSticky,
+  })
+
+  await db.save<CategoryStickyThreadUpdateEvent>(categoryStickyThreadUpdateEvent)
+}
+
 export async function forum_PostModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TODO
 }
@@ -366,10 +404,6 @@ export async function forum_PostTextUpdated(db: DatabaseManager, event_: Substra
 }
 
 export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
-}
-
-export async function forum_CategoryStickyThreadUpdate(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TODO
 }
 

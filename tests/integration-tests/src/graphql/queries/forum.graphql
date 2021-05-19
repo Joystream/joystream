@@ -9,6 +9,7 @@ fragment ForumCategoryFields on ForumCategory {
   description
   threads {
     id
+    isSticky
   }
   moderators {
     id

@@ -223,6 +223,10 @@ import {
   GetThreadMovedEventsByEventIdsQuery,
   GetThreadMovedEventsByEventIdsQueryVariables,
   GetThreadMovedEventsByEventIds,
+  CategoryStickyThreadUpdateEventFieldsFragment,
+  GetCategoryStickyThreadUpdateEventsByEventIdsQuery,
+  GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables,
+  GetCategoryStickyThreadUpdateEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -824,5 +828,15 @@ export class QueryNodeApi {
       GetThreadMovedEventsByEventIdsQuery,
       GetThreadMovedEventsByEventIdsQueryVariables
     >(GetThreadMovedEventsByEventIds, { eventIds }, 'threadMovedEvents')
+  }
+
+  public async getCategoryStickyThreadUpdateEvents(
+    events: EventDetails[]
+  ): Promise<CategoryStickyThreadUpdateEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryStickyThreadUpdateEventsByEventIdsQuery,
+      GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables
+    >(GetCategoryStickyThreadUpdateEventsByEventIds, { eventIds }, 'categoryStickyThreadUpdateEvents')
   }
 }

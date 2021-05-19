@@ -7,12 +7,16 @@ import {
   DeleteThreadsFixture,
   MoveThreadParams,
   MoveThreadsFixture,
+  SetStickyThreadsFixture,
+  StickyThreadsParams,
   ThreadRemovalInput,
   ThreadTitleUpdate,
   UpdateThreadTitlesFixture,
 } from '../../fixtures/forum'
 import { CreateThreadsFixture, ThreadParams } from '../../fixtures/forum/CreateThreadsFixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
+import _ from 'lodash'
+import { ThreadId } from '@joystream/types/common'
 
 export default async function threads({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger(`flow:threads`)
@@ -53,7 +57,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   await createThreadsRunner.runWithQueryNodeChecks()
   const threadIds = createThreadsFixture.getCreatedThreadsIds()
 
-  // Update categories
+  // Move threads
   const threadCategoryUpdates: MoveThreadParams[] = threadIds.map((threadId, i) => ({
     threadId,
     categoryId: threads[i].categoryId,
@@ -64,6 +68,23 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   const moveThreadsRunner = new FixtureRunner(moveThreadsFixture)
   await moveThreadsRunner.run()
   const threadCategories = threadCategoryUpdates.map((u) => u.newCategoryId)
+  const threadIdsByCategoryId = threadIds.reduce((ids, id, i) => {
+    const categoryId = threadCategories[i].toString()
+    return { ...ids, [categoryId]: [...(ids[categoryId] || []), id] }
+  }, {} as Record<string, ThreadId[]>)
+
+  // Set threads as sticky (2 per category)
+  const stickyThreadsParams: StickyThreadsParams[] = categoryIds.reduce((paramsArr, categoryId, i) => {
+    const threadIds = threadIdsByCategoryId[categoryId.toString()]
+    return paramsArr.concat([
+      { categoryId, stickyTreads: [threadIds[0], threadIds[1]] },
+      { categoryId, stickyTreads: [threadIds[1], threadIds[2]] },
+    ])
+  }, [] as StickyThreadsParams[])
+
+  const setStickyThreadsFixture = new SetStickyThreadsFixture(api, query, stickyThreadsParams)
+  const setStickyThreadsRunner = new FixtureRunner(setStickyThreadsFixture)
+  await setStickyThreadsRunner.run()
 
   // Update titles
   const titleUpdates = threadIds.reduce(
@@ -80,6 +101,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   await updateThreadTitlesRunner.run()
 
   // Remove threads
+  // TODO: Should removing / moving threads also "unstick" them?
   const threadRemovals: ThreadRemovalInput[] = threadIds.map((threadId, i) => ({
     threadId,
     categoryId: threadCategories[i],

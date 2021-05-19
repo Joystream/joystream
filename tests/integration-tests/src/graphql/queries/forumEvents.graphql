@@ -188,3 +188,27 @@ query getThreadMovedEventsByEventIds($eventIds: [ID!]) {
     ...ThreadMovedEventFields
   }
 }
+
+fragment CategoryStickyThreadUpdateEventFields on CategoryStickyThreadUpdateEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  category {
+    id
+  }
+  newStickyThreads {
+    id
+  }
+  actor {
+    id
+  }
+}
+
+query getCategoryStickyThreadUpdateEventsByEventIds($eventIds: [ID!]) {
+  categoryStickyThreadUpdateEvents(where: { id_in: $eventIds }) {
+    ...CategoryStickyThreadUpdateEventFields
+  }
+}
