@@ -22,7 +22,7 @@ export default class WgLeaderCreateBucket extends Command {
     dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { flags } = this.parse(WgLeaderCreateBucket)
 
     const objectSize = flags.size ?? 0
@@ -43,7 +43,7 @@ export default class WgLeaderCreateBucket extends Command {
     )
   }
 
-  async finally(err: any) {
+  async finally(err: Error | undefined): Promise<void> {
     // called after run and catch regardless of whether or not the command errored
     // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
     if (!err) this.exit(0)
