@@ -1,0 +1,59 @@
+- name: Configure chain spec on the deployed servers
+  hosts: all
+  vars:
+    base_dir: ~/Joystream/joystream
+    random_suffix: 5154
+    change_spec_path: ./data/chainspec.json
+  tasks:
+  - name: Run subkey to generate node keys
+    local_action: ansible.builtin.command {{ base_dir }}/target/release/chain-spec-builder generate -a 2 --chain-spec-path {{ change_spec_path }} --deployment live --endowed 1 --keystore-path ./data/
+    register: chain_spec_output
+    run_once: true
+
+  - name: Run subkey to generate node keys
+    local_action: ansible.builtin.command subkey generate-node-key
+    register: subkey_output
+
+  - name: Print to stdout
+    debug:
+      msg:
+      - "Public Key: {{ subkey_output.stderr }}"
+      - "Private Key: {{ subkey_output.stdout }}"
+
+  - name: Print to stdout chain spec
+    debug: var=chain_spec_output
+    run_once: true
+
+  - name: Change chain spec name, id, protocolId
+    delegate_to: localhost
+    json_modify:
+      change_spec_path: "{{ change_spec_path }}"
+      prefix: "{{ random_suffix }}"
+      all_nodes: "{{ hostvars }}"
+    register: result
+    run_once: true
+
+  - debug:
+      var: result
+
+  - name: Copying chain spec file to server
+    copy:
+      src: "{{ change_spec_path }}"
+      dest: ~/joystream/chainspec.json
+  
+  - name: Creating chains directory
+    file:
+      path: "{{ item }}"
+      state: directory
+    loop:
+      - "~/joystream/chains/{{ result.result.id }}/network"
+
+  - name: Copy secret to remote host
+    copy:
+      dest: "~/joystream/chains/{{ result.result.id }}/network/secret"
+      content: "{{ subkey_output.stdout }}"
+
+  - name: Copy auth directory to remote host
+    copy:
+      src: "./data/auth-{{ ansible_play_batch.index(inventory_hostname) }}/"
+      dest: "~/joystream/chains/{{ result.result.id }}/keystore/"
