@@ -205,6 +205,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
           'Content-Length': fileSize.toString(),
         },
+        maxBodyLength: fileSize,
       }
       await axios.put(uploadUrl, fileStream, config)
     } catch (e) {
@@ -262,13 +263,15 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     )
     if (rejectedAssetsOutput.length) {
       this.warn(
-        `Some assets were not uploaded succesfully. Try reuploading them with ${chalk.white('content:reuploadAssets')}!`
+        `Some assets were not uploaded succesfully. Try reuploading them with ${chalk.magentaBright(
+          'content:reuploadAssets'
+        )}!`
       )
       console.log(rejectedAssetsOutput)
       const outputPath = inputFilePath.replace('.json', `${outputFilePostfix}.json`)
       try {
         fs.writeFileSync(outputPath, JSON.stringify(rejectedAssetsOutput, null, 4))
-        this.log(`Rejected content ids succesfully saved to: ${chalk.white(outputPath)}!`)
+        this.log(`Rejected content ids succesfully saved to: ${chalk.magentaBright(outputPath)}!`)
       } catch (e) {
         console.error(e)
         this.warn(

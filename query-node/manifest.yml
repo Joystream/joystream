@@ -58,11 +58,13 @@ typegen:
     - storage_working_group.OpeningFilled
     - storage_working_group.TerminatedWorker
     - storage_working_group.WorkerExited
+    - storage_working_group.TerminatedLeader
 
     - gateway_working_group.WorkerStorageUpdated
     - gateway_working_group.OpeningFilled
     - gateway_working_group.TerminatedWorker
     - gateway_working_group.WorkerExited
+    - gateway_working_group.TerminatedLeader
   calls:
     # members
     - members.buyMembership
@@ -202,6 +204,7 @@ mappings:
     #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
 
     # working groups
+    ## storage - workers
     - event: storageWorkingGroup.WorkerStorageUpdated
       handler: storageWorkingGroup_WorkerStorageUpdated(DatabaseManager, SubstrateEvent)
     - event: storageWorkingGroup.OpeningFilled
@@ -211,8 +214,11 @@ mappings:
     - event: storageWorkingGroup.WorkerExited
       handler: storageWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
 
+    ## storage - leader
+    - event: storageWorkingGroup.TerminatedLeader
+      handler: storageWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
 
-
+    ## gateway - workers
     - event: gatewayWorkingGroup.WorkerStorageUpdated
       handler: gatewayWorkingGroup_WorkerStorageUpdated(DatabaseManager, SubstrateEvent)
     - event: gatewayWorkingGroup.OpeningFilled
@@ -221,6 +227,10 @@ mappings:
       handler: gatewayWorkingGroup_TerminatedWorker(DatabaseManager, SubstrateEvent)
     - event: gatewayWorkingGroup.WorkerExited
       handler: gatewayWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
+
+    ## gateway - leader
+    - event: gatewayWorkingGroup.TerminatedLeader
+      handler: gatewayWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
 
   extrinsicHandlers:
     # infer defaults here

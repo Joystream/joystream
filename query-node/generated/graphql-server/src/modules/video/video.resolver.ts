@@ -36,7 +36,6 @@ import { DataObject } from '../data-object/data-object.model';
 import { Language } from '../language/language.model';
 import { License } from '../license/license.model';
 import { VideoMediaMetadata } from '../video-media-metadata/video-media-metadata.model';
-import { FeaturedVideo } from '../featured-video/featured-video.model';
 import { getConnection } from 'typeorm';
 
 @ObjectType()
@@ -208,17 +207,6 @@ export class VideoResolver {
       .findOne(r.id, { relations: ['mediaMetadata'] });
     if (result && result.mediaMetadata !== undefined) {
       return result.mediaMetadata;
-    }
-    return null;
-  }
-
-  @FieldResolver(() => FeaturedVideo)
-  async featured(@Root() r: Video): Promise<FeaturedVideo | null> {
-    const result = await getConnection()
-      .getRepository(Video)
-      .findOne(r.id, { relations: ['featured'] });
-    if (result && result.featured !== undefined) {
-      return result.featured;
     }
     return null;
   }

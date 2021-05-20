@@ -6,12 +6,6 @@ import { IResolvers } from 'graphql-tools/dist/Interfaces'
 import * as schema from  './schema.graphql'
 
 export interface Query {
-    channelCategories: <T = Array<ChannelCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelCategoryWhereInput | null, orderBy?: ChannelCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    channelCategoryByUniqueInput: <T = ChannelCategory | null>(args: { where: ChannelCategoryWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
-    channelCategoriesConnection: <T = ChannelCategoryConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: ChannelCategoryWhereInput | null, orderBy?: ChannelCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    channels: <T = Array<Channel>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelWhereInput | null, orderBy?: ChannelOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    channelByUniqueInput: <T = Channel | null>(args: { where: ChannelWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
-    channelsConnection: <T = ChannelConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: ChannelWhereInput | null, orderBy?: ChannelOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     curatorGroups: <T = Array<CuratorGroup>>(args: { offset?: Int | null, limit?: Int | null, where?: CuratorGroupWhereInput | null, orderBy?: CuratorGroupOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     curatorGroupByUniqueInput: <T = CuratorGroup | null>(args: { where: CuratorGroupWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     curatorGroupsConnection: <T = CuratorGroupConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: CuratorGroupWhereInput | null, orderBy?: CuratorGroupOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
@@ -21,6 +15,12 @@ export interface Query {
     featuredVideos: <T = Array<FeaturedVideo>>(args: { offset?: Int | null, limit?: Int | null, where?: FeaturedVideoWhereInput | null, orderBy?: FeaturedVideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     featuredVideoByUniqueInput: <T = FeaturedVideo | null>(args: { where: FeaturedVideoWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     featuredVideosConnection: <T = FeaturedVideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: FeaturedVideoWhereInput | null, orderBy?: FeaturedVideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    channelCategories: <T = Array<ChannelCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelCategoryWhereInput | null, orderBy?: ChannelCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    channelCategoryByUniqueInput: <T = ChannelCategory | null>(args: { where: ChannelCategoryWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
+    channelCategoriesConnection: <T = ChannelCategoryConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: ChannelCategoryWhereInput | null, orderBy?: ChannelCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    channels: <T = Array<Channel>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelWhereInput | null, orderBy?: ChannelOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    channelByUniqueInput: <T = Channel | null>(args: { where: ChannelWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
+    channelsConnection: <T = ChannelConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: ChannelWhereInput | null, orderBy?: ChannelOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     languages: <T = Array<Language>>(args: { offset?: Int | null, limit?: Int | null, where?: LanguageWhereInput | null, orderBy?: LanguageOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     languageByUniqueInput: <T = Language | null>(args: { where: LanguageWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     languagesConnection: <T = LanguageConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: LanguageWhereInput | null, orderBy?: LanguageOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
@@ -85,6 +85,45 @@ export type AssetAvailability =   'ACCEPTED' |
   'PENDING' |
   'INVALID'
 
+export type CuratorGroupOrderByInput =   'createdAt_ASC' |
+  'createdAt_DESC' |
+  'updatedAt_ASC' |
+  'updatedAt_DESC' |
+  'deletedAt_ASC' |
+  'deletedAt_DESC' |
+  'isActive_ASC' |
+  'isActive_DESC'
+
+export type DataObjectOrderByInput =   'createdAt_ASC' |
+  'createdAt_DESC' |
+  'updatedAt_ASC' |
+  'updatedAt_DESC' |
+  'deletedAt_ASC' |
+  'deletedAt_DESC' |
+  'createdInBlock_ASC' |
+  'createdInBlock_DESC' |
+  'typeId_ASC' |
+  'typeId_DESC' |
+  'size_ASC' |
+  'size_DESC' |
+  'liaisonId_ASC' |
+  'liaisonId_DESC' |
+  'liaisonJudgement_ASC' |
+  'liaisonJudgement_DESC' |
+  'ipfsContentId_ASC' |
+  'ipfsContentId_DESC' |
+  'joystreamContentId_ASC' |
+  'joystreamContentId_DESC'
+
+export type FeaturedVideoOrderByInput =   'createdAt_ASC' |
+  'createdAt_DESC' |
+  'updatedAt_ASC' |
+  'updatedAt_DESC' |
+  'deletedAt_ASC' |
+  'deletedAt_DESC' |
+  'videoId_ASC' |
+  'videoId_DESC'
+
 export type ChannelCategoryOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
   'updatedAt_ASC' |
@@ -130,45 +169,6 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'languageId_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC'
-
-export type CuratorGroupOrderByInput =   'createdAt_ASC' |
-  'createdAt_DESC' |
-  'updatedAt_ASC' |
-  'updatedAt_DESC' |
-  'deletedAt_ASC' |
-  'deletedAt_DESC' |
-  'isActive_ASC' |
-  'isActive_DESC'
-
-export type DataObjectOrderByInput =   'createdAt_ASC' |
-  'createdAt_DESC' |
-  'updatedAt_ASC' |
-  'updatedAt_DESC' |
-  'deletedAt_ASC' |
-  'deletedAt_DESC' |
-  'createdInBlock_ASC' |
-  'createdInBlock_DESC' |
-  'typeId_ASC' |
-  'typeId_DESC' |
-  'size_ASC' |
-  'size_DESC' |
-  'liaisonId_ASC' |
-  'liaisonId_DESC' |
-  'liaisonJudgement_ASC' |
-  'liaisonJudgement_DESC' |
-  'ipfsContentId_ASC' |
-  'ipfsContentId_DESC' |
-  'joystreamContentId_ASC' |
-  'joystreamContentId_DESC'
-
-export type FeaturedVideoOrderByInput =   'createdAt_ASC' |
-  'createdAt_DESC' |
-  'updatedAt_ASC' |
-  'updatedAt_DESC' |
-  'deletedAt_ASC' |
-  'deletedAt_DESC' |
-  'videoId_ASC' |
-  'videoId_DESC'
 
 export type LanguageOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -352,168 +352,6 @@ export interface BaseWhereInput {
   deletedById_eq?: String | null
 }
 
-export interface ChannelCategoryCreateInput {
-  name?: String | null
-  createdInBlock: Float
-}
-
-export interface ChannelCategoryUpdateInput {
-  name?: String | null
-  createdInBlock?: Float | null
-}
-
-export interface ChannelCategoryWhereInput {
-  id_eq?: ID_Input | null
-  id_in?: ID_Output[] | ID_Output | null
-  createdAt_eq?: DateTime | null
-  createdAt_lt?: DateTime | null
-  createdAt_lte?: DateTime | null
-  createdAt_gt?: DateTime | null
-  createdAt_gte?: DateTime | null
-  createdById_eq?: ID_Input | null
-  createdById_in?: ID_Output[] | ID_Output | null
-  updatedAt_eq?: DateTime | null
-  updatedAt_lt?: DateTime | null
-  updatedAt_lte?: DateTime | null
-  updatedAt_gt?: DateTime | null
-  updatedAt_gte?: DateTime | null
-  updatedById_eq?: ID_Input | null
-  updatedById_in?: ID_Output[] | ID_Output | null
-  deletedAt_all?: Boolean | null
-  deletedAt_eq?: DateTime | null
-  deletedAt_lt?: DateTime | null
-  deletedAt_lte?: DateTime | null
-  deletedAt_gt?: DateTime | null
-  deletedAt_gte?: DateTime | null
-  deletedById_eq?: ID_Input | null
-  deletedById_in?: ID_Output[] | ID_Output | null
-  name_eq?: String | null
-  name_contains?: String | null
-  name_startsWith?: String | null
-  name_endsWith?: String | null
-  name_in?: String[] | String | null
-  createdInBlock_eq?: Int | null
-  createdInBlock_gt?: Int | null
-  createdInBlock_gte?: Int | null
-  createdInBlock_lt?: Int | null
-  createdInBlock_lte?: Int | null
-  createdInBlock_in?: Int[] | Int | null
-}
-
-export interface ChannelCategoryWhereUniqueInput {
-  id: ID_Output
-}
-
-export interface ChannelCreateInput {
-  ownerMemberId?: ID_Input | null
-  ownerCuratorGroupId?: ID_Input | null
-  categoryId?: ID_Input | null
-  rewardAccount?: String | null
-  title?: String | null
-  description?: String | null
-  coverPhotoDataObjectId?: ID_Input | null
-  coverPhotoUrls: Array<String>
-  coverPhotoAvailability: AssetAvailability
-  avatarPhotoDataObjectId?: ID_Input | null
-  avatarPhotoUrls: Array<String>
-  avatarPhotoAvailability: AssetAvailability
-  isPublic?: Boolean | null
-  isCensored: Boolean
-  languageId?: ID_Input | null
-  createdInBlock: Float
-}
-
-export interface ChannelUpdateInput {
-  ownerMemberId?: ID_Input | null
-  ownerCuratorGroupId?: ID_Input | null
-  categoryId?: ID_Input | null
-  rewardAccount?: String | null
-  title?: String | null
-  description?: String | null
-  coverPhotoDataObjectId?: ID_Input | null
-  coverPhotoUrls?: String[] | String | null
-  coverPhotoAvailability?: AssetAvailability | null
-  avatarPhotoDataObjectId?: ID_Input | null
-  avatarPhotoUrls?: String[] | String | null
-  avatarPhotoAvailability?: AssetAvailability | null
-  isPublic?: Boolean | null
-  isCensored?: Boolean | null
-  languageId?: ID_Input | null
-  createdInBlock?: Float | null
-}
-
-export interface ChannelWhereInput {
-  id_eq?: ID_Input | null
-  id_in?: ID_Output[] | ID_Output | null
-  createdAt_eq?: DateTime | null
-  createdAt_lt?: DateTime | null
-  createdAt_lte?: DateTime | null
-  createdAt_gt?: DateTime | null
-  createdAt_gte?: DateTime | null
-  createdById_eq?: ID_Input | null
-  createdById_in?: ID_Output[] | ID_Output | null
-  updatedAt_eq?: DateTime | null
-  updatedAt_lt?: DateTime | null
-  updatedAt_lte?: DateTime | null
-  updatedAt_gt?: DateTime | null
-  updatedAt_gte?: DateTime | null
-  updatedById_eq?: ID_Input | null
-  updatedById_in?: ID_Output[] | ID_Output | null
-  deletedAt_all?: Boolean | null
-  deletedAt_eq?: DateTime | null
-  deletedAt_lt?: DateTime | null
-  deletedAt_lte?: DateTime | null
-  deletedAt_gt?: DateTime | null
-  deletedAt_gte?: DateTime | null
-  deletedById_eq?: ID_Input | null
-  deletedById_in?: ID_Output[] | ID_Output | null
-  ownerMemberId_eq?: ID_Input | null
-  ownerMemberId_in?: ID_Output[] | ID_Output | null
-  ownerCuratorGroupId_eq?: ID_Input | null
-  ownerCuratorGroupId_in?: ID_Output[] | ID_Output | null
-  categoryId_eq?: ID_Input | null
-  categoryId_in?: ID_Output[] | ID_Output | null
-  rewardAccount_eq?: String | null
-  rewardAccount_contains?: String | null
-  rewardAccount_startsWith?: String | null
-  rewardAccount_endsWith?: String | null
-  rewardAccount_in?: String[] | String | null
-  title_eq?: String | null
-  title_contains?: String | null
-  title_startsWith?: String | null
-  title_endsWith?: String | null
-  title_in?: String[] | String | null
-  description_eq?: String | null
-  description_contains?: String | null
-  description_startsWith?: String | null
-  description_endsWith?: String | null
-  description_in?: String[] | String | null
-  coverPhotoDataObjectId_eq?: ID_Input | null
-  coverPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
-  coverPhotoAvailability_eq?: AssetAvailability | null
-  coverPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
-  avatarPhotoDataObjectId_eq?: ID_Input | null
-  avatarPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
-  avatarPhotoAvailability_eq?: AssetAvailability | null
-  avatarPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
-  isPublic_eq?: Boolean | null
-  isPublic_in?: Boolean[] | Boolean | null
-  isCensored_eq?: Boolean | null
-  isCensored_in?: Boolean[] | Boolean | null
-  languageId_eq?: ID_Input | null
-  languageId_in?: ID_Output[] | ID_Output | null
-  createdInBlock_eq?: Int | null
-  createdInBlock_gt?: Int | null
-  createdInBlock_gte?: Int | null
-  createdInBlock_lt?: Int | null
-  createdInBlock_lte?: Int | null
-  createdInBlock_in?: Int[] | Int | null
-}
-
-export interface ChannelWhereUniqueInput {
-  id: ID_Output
-}
-
 export interface CuratorGroupCreateInput {
   curatorIds: Array<Int>
   isActive: Boolean
@@ -566,59 +404,6 @@ export interface DataObjectCreateInput {
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
-}
-
-export interface DataObjectOwnerChannelCreateInput {
-  channel: Float
-  dummy?: Float | null
-}
-
-export interface DataObjectOwnerChannelUpdateInput {
-  channel?: Float | null
-  dummy?: Float | null
-}
-
-export interface DataObjectOwnerChannelWhereInput {
-  id_eq?: ID_Input | null
-  id_in?: ID_Output[] | ID_Output | null
-  createdAt_eq?: DateTime | null
-  createdAt_lt?: DateTime | null
-  createdAt_lte?: DateTime | null
-  createdAt_gt?: DateTime | null
-  createdAt_gte?: DateTime | null
-  createdById_eq?: ID_Input | null
-  createdById_in?: ID_Output[] | ID_Output | null
-  updatedAt_eq?: DateTime | null
-  updatedAt_lt?: DateTime | null
-  updatedAt_lte?: DateTime | null
-  updatedAt_gt?: DateTime | null
-  updatedAt_gte?: DateTime | null
-  updatedById_eq?: ID_Input | null
-  updatedById_in?: ID_Output[] | ID_Output | null
-  deletedAt_all?: Boolean | null
-  deletedAt_eq?: DateTime | null
-  deletedAt_lt?: DateTime | null
-  deletedAt_lte?: DateTime | null
-  deletedAt_gt?: DateTime | null
-  deletedAt_gte?: DateTime | null
-  deletedById_eq?: ID_Input | null
-  deletedById_in?: ID_Output[] | ID_Output | null
-  channel_eq?: Int | null
-  channel_gt?: Int | null
-  channel_gte?: Int | null
-  channel_lt?: Int | null
-  channel_lte?: Int | null
-  channel_in?: Int[] | Int | null
-  dummy_eq?: Int | null
-  dummy_gt?: Int | null
-  dummy_gte?: Int | null
-  dummy_lt?: Int | null
-  dummy_lte?: Int | null
-  dummy_in?: Int[] | Int | null
-}
-
-export interface DataObjectOwnerChannelWhereUniqueInput {
-  id: ID_Output
 }
 
 export interface DataObjectOwnerCouncilCreateInput {
@@ -708,6 +493,59 @@ export interface DataObjectOwnerDaoWhereInput {
 }
 
 export interface DataObjectOwnerDaoWhereUniqueInput {
+  id: ID_Output
+}
+
+export interface DataObjectOwnerChannelCreateInput {
+  channel: Float
+  dummy?: Float | null
+}
+
+export interface DataObjectOwnerChannelUpdateInput {
+  channel?: Float | null
+  dummy?: Float | null
+}
+
+export interface DataObjectOwnerChannelWhereInput {
+  id_eq?: ID_Input | null
+  id_in?: ID_Output[] | ID_Output | null
+  createdAt_eq?: DateTime | null
+  createdAt_lt?: DateTime | null
+  createdAt_lte?: DateTime | null
+  createdAt_gt?: DateTime | null
+  createdAt_gte?: DateTime | null
+  createdById_eq?: ID_Input | null
+  createdById_in?: ID_Output[] | ID_Output | null
+  updatedAt_eq?: DateTime | null
+  updatedAt_lt?: DateTime | null
+  updatedAt_lte?: DateTime | null
+  updatedAt_gt?: DateTime | null
+  updatedAt_gte?: DateTime | null
+  updatedById_eq?: ID_Input | null
+  updatedById_in?: ID_Output[] | ID_Output | null
+  deletedAt_all?: Boolean | null
+  deletedAt_eq?: DateTime | null
+  deletedAt_lt?: DateTime | null
+  deletedAt_lte?: DateTime | null
+  deletedAt_gt?: DateTime | null
+  deletedAt_gte?: DateTime | null
+  deletedById_eq?: ID_Input | null
+  deletedById_in?: ID_Output[] | ID_Output | null
+  channel_eq?: Int | null
+  channel_gt?: Int | null
+  channel_gte?: Int | null
+  channel_lt?: Int | null
+  channel_lte?: Int | null
+  channel_in?: Int[] | Int | null
+  dummy_eq?: Int | null
+  dummy_gt?: Int | null
+  dummy_gte?: Int | null
+  dummy_lt?: Int | null
+  dummy_lte?: Int | null
+  dummy_in?: Int[] | Int | null
+}
+
+export interface DataObjectOwnerChannelWhereUniqueInput {
   id: ID_Output
 }
 
@@ -922,6 +760,168 @@ export interface FeaturedVideoWhereInput {
 }
 
 export interface FeaturedVideoWhereUniqueInput {
+  id: ID_Output
+}
+
+export interface ChannelCategoryCreateInput {
+  name?: String | null
+  createdInBlock: Float
+}
+
+export interface ChannelCategoryUpdateInput {
+  name?: String | null
+  createdInBlock?: Float | null
+}
+
+export interface ChannelCategoryWhereInput {
+  id_eq?: ID_Input | null
+  id_in?: ID_Output[] | ID_Output | null
+  createdAt_eq?: DateTime | null
+  createdAt_lt?: DateTime | null
+  createdAt_lte?: DateTime | null
+  createdAt_gt?: DateTime | null
+  createdAt_gte?: DateTime | null
+  createdById_eq?: ID_Input | null
+  createdById_in?: ID_Output[] | ID_Output | null
+  updatedAt_eq?: DateTime | null
+  updatedAt_lt?: DateTime | null
+  updatedAt_lte?: DateTime | null
+  updatedAt_gt?: DateTime | null
+  updatedAt_gte?: DateTime | null
+  updatedById_eq?: ID_Input | null
+  updatedById_in?: ID_Output[] | ID_Output | null
+  deletedAt_all?: Boolean | null
+  deletedAt_eq?: DateTime | null
+  deletedAt_lt?: DateTime | null
+  deletedAt_lte?: DateTime | null
+  deletedAt_gt?: DateTime | null
+  deletedAt_gte?: DateTime | null
+  deletedById_eq?: ID_Input | null
+  deletedById_in?: ID_Output[] | ID_Output | null
+  name_eq?: String | null
+  name_contains?: String | null
+  name_startsWith?: String | null
+  name_endsWith?: String | null
+  name_in?: String[] | String | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
+}
+
+export interface ChannelCategoryWhereUniqueInput {
+  id: ID_Output
+}
+
+export interface ChannelCreateInput {
+  ownerMemberId?: ID_Input | null
+  ownerCuratorGroupId?: ID_Input | null
+  categoryId?: ID_Input | null
+  rewardAccount?: String | null
+  title?: String | null
+  description?: String | null
+  coverPhotoDataObjectId?: ID_Input | null
+  coverPhotoUrls: Array<String>
+  coverPhotoAvailability: AssetAvailability
+  avatarPhotoDataObjectId?: ID_Input | null
+  avatarPhotoUrls: Array<String>
+  avatarPhotoAvailability: AssetAvailability
+  isPublic?: Boolean | null
+  isCensored: Boolean
+  languageId?: ID_Input | null
+  createdInBlock: Float
+}
+
+export interface ChannelUpdateInput {
+  ownerMemberId?: ID_Input | null
+  ownerCuratorGroupId?: ID_Input | null
+  categoryId?: ID_Input | null
+  rewardAccount?: String | null
+  title?: String | null
+  description?: String | null
+  coverPhotoDataObjectId?: ID_Input | null
+  coverPhotoUrls?: String[] | String | null
+  coverPhotoAvailability?: AssetAvailability | null
+  avatarPhotoDataObjectId?: ID_Input | null
+  avatarPhotoUrls?: String[] | String | null
+  avatarPhotoAvailability?: AssetAvailability | null
+  isPublic?: Boolean | null
+  isCensored?: Boolean | null
+  languageId?: ID_Input | null
+  createdInBlock?: Float | null
+}
+
+export interface ChannelWhereInput {
+  id_eq?: ID_Input | null
+  id_in?: ID_Output[] | ID_Output | null
+  createdAt_eq?: DateTime | null
+  createdAt_lt?: DateTime | null
+  createdAt_lte?: DateTime | null
+  createdAt_gt?: DateTime | null
+  createdAt_gte?: DateTime | null
+  createdById_eq?: ID_Input | null
+  createdById_in?: ID_Output[] | ID_Output | null
+  updatedAt_eq?: DateTime | null
+  updatedAt_lt?: DateTime | null
+  updatedAt_lte?: DateTime | null
+  updatedAt_gt?: DateTime | null
+  updatedAt_gte?: DateTime | null
+  updatedById_eq?: ID_Input | null
+  updatedById_in?: ID_Output[] | ID_Output | null
+  deletedAt_all?: Boolean | null
+  deletedAt_eq?: DateTime | null
+  deletedAt_lt?: DateTime | null
+  deletedAt_lte?: DateTime | null
+  deletedAt_gt?: DateTime | null
+  deletedAt_gte?: DateTime | null
+  deletedById_eq?: ID_Input | null
+  deletedById_in?: ID_Output[] | ID_Output | null
+  ownerMemberId_eq?: ID_Input | null
+  ownerMemberId_in?: ID_Output[] | ID_Output | null
+  ownerCuratorGroupId_eq?: ID_Input | null
+  ownerCuratorGroupId_in?: ID_Output[] | ID_Output | null
+  categoryId_eq?: ID_Input | null
+  categoryId_in?: ID_Output[] | ID_Output | null
+  rewardAccount_eq?: String | null
+  rewardAccount_contains?: String | null
+  rewardAccount_startsWith?: String | null
+  rewardAccount_endsWith?: String | null
+  rewardAccount_in?: String[] | String | null
+  title_eq?: String | null
+  title_contains?: String | null
+  title_startsWith?: String | null
+  title_endsWith?: String | null
+  title_in?: String[] | String | null
+  description_eq?: String | null
+  description_contains?: String | null
+  description_startsWith?: String | null
+  description_endsWith?: String | null
+  description_in?: String[] | String | null
+  coverPhotoDataObjectId_eq?: ID_Input | null
+  coverPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  coverPhotoAvailability_eq?: AssetAvailability | null
+  coverPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  avatarPhotoDataObjectId_eq?: ID_Input | null
+  avatarPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  avatarPhotoAvailability_eq?: AssetAvailability | null
+  avatarPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  isPublic_eq?: Boolean | null
+  isPublic_in?: Boolean[] | Boolean | null
+  isCensored_eq?: Boolean | null
+  isCensored_in?: Boolean[] | Boolean | null
+  languageId_eq?: ID_Input | null
+  languageId_in?: ID_Output[] | ID_Output | null
+  createdInBlock_eq?: Int | null
+  createdInBlock_gt?: Int | null
+  createdInBlock_gte?: Int | null
+  createdInBlock_lt?: Int | null
+  createdInBlock_lte?: Int | null
+  createdInBlock_in?: Int[] | Int | null
+}
+
+export interface ChannelWhereUniqueInput {
   id: ID_Output
 }
 
@@ -1542,6 +1542,116 @@ export interface BaseModelUUID extends BaseGraphQLObject {
   version: Int
 }
 
+export interface CuratorGroup extends BaseGraphQLObject {
+  id: ID_Output
+  createdAt: DateTime
+  createdById: String
+  updatedAt?: DateTime | null
+  updatedById?: String | null
+  deletedAt?: DateTime | null
+  deletedById?: String | null
+  version: Int
+  curatorIds: Array<Int>
+  isActive: Boolean
+  channels: Array<Channel>
+}
+
+export interface CuratorGroupConnection {
+  totalCount: Int
+  edges: Array<CuratorGroupEdge>
+  pageInfo: PageInfo
+}
+
+export interface CuratorGroupEdge {
+  node: CuratorGroup
+  cursor: String
+}
+
+/*
+ * Manages content ids, type and storage provider decision about it
+
+ */
+export interface DataObject extends BaseGraphQLObject {
+  id: ID_Output
+  createdAt: DateTime
+  createdById: String
+  updatedAt?: DateTime | null
+  updatedById?: String | null
+  deletedAt?: DateTime | null
+  deletedById?: String | null
+  version: Int
+  owner: DataObjectOwner
+  createdInBlock: Int
+  typeId: Int
+  size: Float
+  liaison?: Worker | null
+  liaisonId?: String | null
+  liaisonJudgement: LiaisonJudgement
+  ipfsContentId: String
+  joystreamContentId: String
+  channelcoverPhotoDataObject?: Array<Channel> | null
+  channelavatarPhotoDataObject?: Array<Channel> | null
+  videothumbnailPhotoDataObject?: Array<Video> | null
+  videomediaDataObject?: Array<Video> | null
+}
+
+export interface DataObjectConnection {
+  totalCount: Int
+  edges: Array<DataObjectEdge>
+  pageInfo: PageInfo
+}
+
+export interface DataObjectEdge {
+  node: DataObject
+  cursor: String
+}
+
+export interface DataObjectOwnerCouncil {
+  dummy?: Int | null
+}
+
+export interface DataObjectOwnerDao {
+  dao: Int
+}
+
+export interface DataObjectOwnerChannel {
+  channel: Int
+  dummy?: Int | null
+}
+
+export interface DataObjectOwnerMember {
+  member: Int
+  dummy?: Int | null
+}
+
+export interface DataObjectOwnerWorkingGroup {
+  workingGroup: Int
+}
+
+export interface FeaturedVideo extends BaseGraphQLObject {
+  id: ID_Output
+  createdAt: DateTime
+  createdById: String
+  updatedAt?: DateTime | null
+  updatedById?: String | null
+  deletedAt?: DateTime | null
+  deletedById?: String | null
+  version: Int
+  video: Video
+  videoId: String
+}
+
+export interface FeaturedVideoConnection {
+  totalCount: Int
+  edges: Array<FeaturedVideoEdge>
+  pageInfo: PageInfo
+}
+
+export interface FeaturedVideoEdge {
+  node: FeaturedVideo
+  cursor: String
+}
+
 export interface Channel extends BaseGraphQLObject {
   id: ID_Output
   createdAt: DateTime
@@ -1620,116 +1730,6 @@ export interface ChannelConnection {
 
 export interface ChannelEdge {
   node: Channel
-  cursor: String
-}
-
-export interface CuratorGroup extends BaseGraphQLObject {
-  id: ID_Output
-  createdAt: DateTime
-  createdById: String
-  updatedAt?: DateTime | null
-  updatedById?: String | null
-  deletedAt?: DateTime | null
-  deletedById?: String | null
-  version: Int
-  curatorIds: Array<Int>
-  isActive: Boolean
-  channels: Array<Channel>
-}
-
-export interface CuratorGroupConnection {
-  totalCount: Int
-  edges: Array<CuratorGroupEdge>
-  pageInfo: PageInfo
-}
-
-export interface CuratorGroupEdge {
-  node: CuratorGroup
-  cursor: String
-}
-
-/*
- * Manages content ids, type and storage provider decision about it
-
- */
-export interface DataObject extends BaseGraphQLObject {
-  id: ID_Output
-  createdAt: DateTime
-  createdById: String
-  updatedAt?: DateTime | null
-  updatedById?: String | null
-  deletedAt?: DateTime | null
-  deletedById?: String | null
-  version: Int
-  owner: DataObjectOwner
-  createdInBlock: Int
-  typeId: Int
-  size: Float
-  liaison?: Worker | null
-  liaisonId?: String | null
-  liaisonJudgement: LiaisonJudgement
-  ipfsContentId: String
-  joystreamContentId: String
-  channelcoverPhotoDataObject?: Array<Channel> | null
-  channelavatarPhotoDataObject?: Array<Channel> | null
-  videothumbnailPhotoDataObject?: Array<Video> | null
-  videomediaDataObject?: Array<Video> | null
-}
-
-export interface DataObjectConnection {
-  totalCount: Int
-  edges: Array<DataObjectEdge>
-  pageInfo: PageInfo
-}
-
-export interface DataObjectEdge {
-  node: DataObject
-  cursor: String
-}
-
-export interface DataObjectOwnerChannel {
-  channel: Int
-  dummy?: Int | null
-}
-
-export interface DataObjectOwnerCouncil {
-  dummy?: Int | null
-}
-
-export interface DataObjectOwnerDao {
-  dao: Int
-}
-
-export interface DataObjectOwnerMember {
-  member: Int
-  dummy?: Int | null
-}
-
-export interface DataObjectOwnerWorkingGroup {
-  workingGroup: Int
-}
-
-export interface FeaturedVideo extends BaseGraphQLObject {
-  id: ID_Output
-  createdAt: DateTime
-  createdById: String
-  updatedAt?: DateTime | null
-  updatedById?: String | null
-  deletedAt?: DateTime | null
-  deletedById?: String | null
-  version: Int
-  video: Video
-  videoId: String
-}
-
-export interface FeaturedVideoConnection {
-  totalCount: Int
-  edges: Array<FeaturedVideoEdge>
-  pageInfo: PageInfo
-}
-
-export interface FeaturedVideoEdge {
-  node: FeaturedVideo
   cursor: String
 }
 
@@ -2064,9 +2064,9 @@ The `String` scalar type represents textual data, represented as UTF-8 character
 */
 export type String = string
 
-export type ChannelCategoriesByNameSearchResult = ChannelCategory
-
 export type DataObjectOwner = DataObjectOwnerMember | DataObjectOwnerChannel | DataObjectOwnerDao | DataObjectOwnerCouncil | DataObjectOwnerWorkingGroup
+
+export type ChannelCategoriesByNameSearchResult = ChannelCategory
 
 export type MembersByHandleSearchResult = Membership
 

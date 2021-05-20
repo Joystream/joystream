@@ -41,7 +41,7 @@ export default class AccountCreate extends AccountsCommandBase {
     this.saveAccount(keys, password)
 
     this.log(chalk.greenBright(`\nAccount succesfully created!`))
-    this.log(chalk.white(`${chalk.bold('Name:    ')}${args.name}`))
-    this.log(chalk.white(`${chalk.bold('Address: ')}${keys.address}`))
+    this.log(chalk.magentaBright(`${chalk.bold('Name:    ')}${args.name}`))
+    this.log(chalk.magentaBright(`${chalk.bold('Address: ')}${keys.address}`))
   }
 }

@@ -3100,7 +3100,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "5.2.0"
+version = "5.5.0"
 dependencies = [
  "cumulus-client-cli",
  "cumulus-client-collator",
@@ -3160,7 +3160,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "9.6.0"
+version = "9.7.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-xcm",

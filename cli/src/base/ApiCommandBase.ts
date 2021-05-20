@@ -125,7 +125,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return (
       '{\n' +
       Object.keys(obj)
-        .map((prop) => `  ${prop}${chalk.white(':' + obj[prop])}`)
+        .map((prop) => `  ${prop}${chalk.magentaBright(':' + obj[prop])}`)
         .join('\n') +
       '\n}'
     )
@@ -425,7 +425,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     params: CodecArg[],
     warnOnly = false
   ): Promise<boolean> {
-    this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+    this.log(chalk.magentaBright(`\nSending ${module}.${method} extrinsic...`))
     const tx = await this.getOriginalApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)
   }

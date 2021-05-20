@@ -70,7 +70,7 @@ export default class UpdateChannelCensorshipStatusCommand extends ContentDirecto
 
     console.log(
       chalk.green(
-        `Channel ${chalk.white(id)} censorship status succesfully changed to: ${chalk.white(
+        `Channel ${chalk.magentaBright(id)} censorship status succesfully changed to: ${chalk.magentaBright(
           status ? 'Censored' : 'Not censored'
         )}!`
       )
