@@ -99,7 +99,7 @@ strum = {version = "0.19", default-features = false}
 substrate-wasm-builder = "4.0.0"
 
 [features]
-default = ['std', 'standalone']
+default = ['std']
 no_std = []
 std = [
     # Third-party dependencies
@@ -196,6 +196,6 @@ runtime-benchmarks = [
 # runtime without clashing with the runtime api exported functions
 # in WASM.
 disable-runtime-api = []
-standalone = []
+standalone = ['proposals-codex/standalone']
 
 

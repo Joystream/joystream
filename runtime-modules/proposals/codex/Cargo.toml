@@ -57,3 +57,4 @@ std = [
     'proposals-engine/std',
     'proposals-discussion/std',
 ]
+standalone = []

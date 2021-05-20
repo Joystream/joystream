@@ -237,13 +237,13 @@ pub fn testnet_genesis(
         joystream_node_runtime::working_group::default_storage_size_constraint();
 
     joystream_node_runtime::GenesisConfig {
-        frame_system: joystream_node_runtime::SystemConfig {
+        frame_system: SystemConfig {
             code: joystream_node_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
             changes_trie_config: Default::default(),
         },
-        pallet_balances: joystream_node_runtime::BalancesConfig {
+        pallet_balances: BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()

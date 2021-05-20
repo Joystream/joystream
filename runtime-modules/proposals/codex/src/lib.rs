@@ -160,6 +160,7 @@ pub trait Config:
     type ProposalEncoder: ProposalEncoder<Self>;
 }
 
+#[cfg(not(feature = "standalone"))]
 pub trait Config:
     frame_system::Config
     + proposals_engine::Config
@@ -526,7 +527,7 @@ decl_module! {
             new_validator_count: u32,
         ) {
             #[cfg(feature = "standalone")]
-            try_create_set_validator_count_proposal(origin, member_id, title, description, stake_balance, new_validator_count)?;
+            Self::try_create_set_validator_count_proposal(origin, member_id, title, description, stake_balance, new_validator_count)?;
         }
 
         /// Create 'Add working group leader opening' proposal type.
@@ -866,7 +867,7 @@ impl<T: Config> Module<T> {
         description: Vec<u8>,
         stake_balance: Option<BalanceOf<T>>,
         new_validator_count: u32,
-    ) {
+    ) -> DispatchResult {
         ensure!(
             new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
             Error::<T>::InvalidValidatorCount

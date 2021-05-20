@@ -45,7 +45,10 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ),
             ProposalDetails::SetValidatorCount(new_validator_count) => {
                 #[cfg(not(feature = "standalone"))]
+                print("Error: Calling SetValidatorCount encoding option in parachain mode.");
+                #[cfg(not(feature = "standalone"))]
                 return Vec::new();
+                #[cfg(feature = "standalone")]
                 Call::Staking(pallet_staking::Call::set_validator_count(
                     new_validator_count,
                 ))

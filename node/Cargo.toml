@@ -253,5 +253,5 @@ branch = 'rococo-v1'
 version = '0.8.30'
 
 [features]
-default = ['standalone']
+default = []
 standalone = []
