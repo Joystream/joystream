@@ -41,13 +41,55 @@ export async function createStorageBucket(
         objectsLimit
       )
       .signAndSend(alice)
+      console.log(`Submitted with hash ${txHash}`)
 
-    // Show the hash
-    console.log(`Submitted with hash ${txHash}`)
+      // const unsub = await api.tx.storage
+      // .createStorageBucket(
+      //   invitedWorkerValue,
+      //   allowedNewBags,
+      //   sizeLimit,
+      //   objectsLimit
+      // )
+      // .signAndSend(alice, (result) => {
+      //   console.log(`Current status is ${result.status}`);
+
+      //   if (result.status.isInBlock) {
+      //     console.log(`Transaction included at blockHash ${result.status.asInBlock}`);
+      //   } else if (result.status.isFinalized) {
+      //     console.log(`Transaction finalized at blockHash ${result.status.asFinalized}`);
+      //     unsub();
+      //   }
+      // });
+    
   } catch (err) {
     console.error(`Api Error: ${err}`)
   }
 }
+
+export async function acceptStorageBucketInvitation(
+  workerId: number,
+  storageBucketId: number,
+): Promise<void> {
+  try {
+    let api = await createApi()
+
+    const keyring = new Keyring({ type: 'sr25519' })
+    const alice = keyring.addFromUri('//Alice')
+
+
+    const txHash = await api.tx.storage
+      .acceptStorageBucketInvitation(
+        workerId,
+        storageBucketId,
+      )
+      .signAndSend(alice)
+      console.log(`Submitted with hash ${txHash}`)
+    
+  } catch (err) {
+    console.error(`Api Error: ${err}`)
+  }
+}
+
 
 async function createApi() {
   const wsProvider = new WsProvider('ws://localhost:9944')
@@ -58,7 +100,7 @@ async function createApi() {
 
 function createExtendedTypes(defaultTypes: RegistryTypes) {
   let extendedTypes = types
-  extendedTypes.StorageBucketId = {}
+  extendedTypes.StorageBucketId = 'u64'
   extendedTypes.BagId = {}
   extendedTypes.UploadParameters = {}
   extendedTypes.DynamicBagId = {}
