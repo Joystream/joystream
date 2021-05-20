@@ -29,7 +29,8 @@ USAGE
 # Commands
 <!-- commands -->
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
-* [`storage-node wg:leader:create-bucket [FILE]`](#storage-node-wgleadercreate-bucket-file)
+* [`storage-node wg:leader:create-bucket`](#storage-node-wgleadercreate-bucket)
+* [`storage-node wg:operator:accept-invitation [FILE]`](#storage-node-wgoperatoraccept-invitation-file)
 
 ## `storage-node help [COMMAND]`
 
@@ -48,13 +49,31 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
 
-## `storage-node wg:leader:create-bucket [FILE]`
+## `storage-node wg:leader:create-bucket`
+
+Create new storage bucket. Requires storage working group leader permissions.
+
+```
+USAGE
+  $ storage-node wg:leader:create-bucket
+
+OPTIONS
+  -a, --allow          Accepts new bags
+  -d, --dev            Use development mode
+  -h, --help           show CLI help
+  -n, --number=number  Storage bucket max total objects number
+  -s, --size=size      Storage bucket max total objects size
+```
+
+_See code: [src/commands/wg/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/wg/leader/create-bucket.ts)_
+
+## `storage-node wg:operator:accept-invitation [FILE]`
 
 describe the command here
 
 ```
 USAGE
-  $ storage-node wg:leader:create-bucket [FILE]
+  $ storage-node wg:operator:accept-invitation [FILE]
 
 OPTIONS
   -f, --force
@@ -62,5 +81,5 @@ OPTIONS
   -n, --name=name  name to print
 ```
 
-_See code: [src/commands/wg/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/wg/leader/create-bucket.ts)_
+_See code: [src/commands/wg/operator/accept-invitation.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/wg/operator/accept-invitation.ts)_
 <!-- commandsstop -->
