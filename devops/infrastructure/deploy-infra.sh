@@ -28,4 +28,7 @@ if [ $? -eq 0 ]; then
 
   echo -e "\n\n=========== Configuring the servers ==========="
   ansible-playbook -i inventory -v --private-key $KEY_PATH configure.yml
+
+  echo -e "\n\n=========== Configuring the chain spec file ==========="
+  ansible-playbook -i inventory -v --private-key $KEY_PATH chain-spec-configuration.yml
 fi
