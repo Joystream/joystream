@@ -1,10 +1,11 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { RegistryTypes } from '@polkadot/types/types'
+import {
+  RegistryTypes,
+  CodecArg,
+  ISubmittableResult,
+} from '@polkadot/types/types'
 import { types } from '@joystream/types/'
-import { Keyring } from '@polkadot/api'
-
 import { TypeRegistry } from '@polkadot/types'
-import { CodecArg } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
@@ -12,15 +13,8 @@ import { DispatchError } from '@polkadot/types/interfaces/system'
 
 export class ExtrinsicFailedError extends Error {}
 
-export async function createApi(): Promise<ApiPromise> {
-  const wsProvider = new WsProvider('ws://localhost:9944')
-  let extendedTypes = createExtendedTypes(types)
-
-  return await ApiPromise.create({ provider: wsProvider, types: extendedTypes })
-}
-
-function createExtendedTypes(defaultTypes: RegistryTypes) {
-  let extendedTypes = types
+function createExtendedTypes(): RegistryTypes {
+  const extendedTypes = types
   extendedTypes.StorageBucketId = 'u64'
   extendedTypes.BagId = {}
   extendedTypes.UploadParameters = {}
@@ -39,11 +33,18 @@ function createExtendedTypes(defaultTypes: RegistryTypes) {
   return extendedTypes
 }
 
+export async function createApi(): Promise<ApiPromise> {
+  const wsProvider = new WsProvider('ws://localhost:9944')
+  const extendedTypes = createExtendedTypes()
+
+  return await ApiPromise.create({ provider: wsProvider, types: extendedTypes })
+}
+
 function sendExtrinsic(
   api: ApiPromise,
   account: KeyringPair,
   tx: SubmittableExtrinsic<'promise'>
-) {
+): Promise<ISubmittableResult> {
   return new Promise((resolve, reject) => {
     let unsubscribe: () => void
     tx.signAndSend(account, {}, (result) => {
@@ -64,9 +65,10 @@ function sendExtrinsic(
                 try {
                   // Need to assert that registry is of TypeRegistry type, since Registry intefrace
                   // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
-                  const { name, documentation } = (
-                    api.registry as TypeRegistry
-                  ).findMetaError(dispatchError.asModule)
+                  const typeRegistry = api.registry as TypeRegistry
+                  const { name, documentation } = typeRegistry.findMetaError(
+                    dispatchError.asModule
+                  )
                   errorMsg = `${name} (${documentation})`
                 } catch (e) {
                   // This probably means we don't have this error in the metadata

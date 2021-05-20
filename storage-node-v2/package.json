@@ -71,7 +71,8 @@
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md",
     "build": "tsc --build tsconfig.json",
-    "format": "prettier ./src --write"
+    "format": "prettier ./src --write",
+    "lint": "eslint ./src --ext .ts"
   },
   "types": "lib/index.d.ts"
 }

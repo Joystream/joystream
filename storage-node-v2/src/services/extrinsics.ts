@@ -3,20 +3,17 @@ import { createApi, sendAndFollowNamedTx } from './api'
 
 export async function createStorageBucket(
   invitedWorker: number | null = null,
-  allowedNewBags: boolean = true,
-  sizeLimit: number = 0,
-  objectsLimit: number = 0
+  allowedNewBags = true,
+  sizeLimit = 0,
+  objectsLimit = 0
 ): Promise<void> {
   try {
-    let api = await createApi()
+    const api = await createApi()
 
     const keyring = new Keyring({ type: 'sr25519' })
     const alice = keyring.addFromUri('//Alice')
 
-    let invitedWorkerValue: any = api.createType(
-      'Option<WorkerId>',
-      invitedWorker
-    )
+    const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
 
     await sendAndFollowNamedTx(api, alice, 'storage', 'createStorageBucket', [
       invitedWorkerValue,
@@ -34,7 +31,7 @@ export async function acceptStorageBucketInvitation(
   storageBucketId: number
 ): Promise<void> {
   try {
-    let api = await createApi()
+    const api = await createApi()
 
     const keyring = new Keyring({ type: 'sr25519' })
     const alice = keyring.addFromUri('//Alice')
