@@ -20,12 +20,8 @@ Resources:
         !Sub 'Internal Security group for ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 9933
-          ToPort: 9933
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 9944
-          ToPort: 9944
+          FromPort: 30333
+          ToPort: 30333
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 22
