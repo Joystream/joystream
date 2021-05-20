@@ -1,4 +1,4 @@
-import { createStorageBucket } from '../../../services/api'
+import { createStorageBucket } from '../../../services/extrinsics'
 import { Command, flags } from '@oclif/command'
 
 export default class WgLeaderCreateBucket extends Command {
@@ -13,7 +13,7 @@ export default class WgLeaderCreateBucket extends Command {
     number: flags.integer({
       char: 'n',
       description: 'Storage bucket max total objects number',
-    }),   
+    }),
     invited: flags.integer({
       char: 'i',
       description: 'Invited storage operator ID (storage WG worker ID)',
@@ -35,7 +35,12 @@ export default class WgLeaderCreateBucket extends Command {
       this.log('development mode is ON')
     }
 
-    await createStorageBucket(invitedWorker, allowNewBags, objectSize, objectNumber)
+    await createStorageBucket(
+      invitedWorker,
+      allowNewBags,
+      objectSize,
+      objectNumber
+    )
   }
 
   async finally(err: any) {
