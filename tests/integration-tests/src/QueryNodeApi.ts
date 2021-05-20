@@ -231,6 +231,14 @@ import {
   GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery,
   GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables,
   GetCategoryMembershipOfModeratorUpdatedEventsByEventIds,
+  ThreadModeratedEventFieldsFragment,
+  GetThreadModeratedEventsByEventIdsQuery,
+  GetThreadModeratedEventsByEventIdsQueryVariables,
+  GetThreadModeratedEventsByEventIds,
+  PostModeratedEventFieldsFragment,
+  GetPostModeratedEventsByEventIdsQuery,
+  GetPostModeratedEventsByEventIdsQueryVariables,
+  GetPostModeratedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -856,5 +864,21 @@ export class QueryNodeApi {
       { eventIds },
       'categoryMembershipOfModeratorUpdatedEvents'
     )
+  }
+
+  public async getThreadModeratedEvents(events: EventDetails[]): Promise<ThreadModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadModeratedEventsByEventIdsQuery,
+      GetThreadModeratedEventsByEventIdsQueryVariables
+    >(GetThreadModeratedEventsByEventIds, { eventIds }, 'threadModeratedEvents')
+  }
+
+  public async getPostModeratedEvents(events: EventDetails[]): Promise<PostModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetPostModeratedEventsByEventIdsQuery,
+      GetPostModeratedEventsByEventIdsQueryVariables
+    >(GetPostModeratedEventsByEventIds, { eventIds }, 'postModeratedEvents')
   }
 }

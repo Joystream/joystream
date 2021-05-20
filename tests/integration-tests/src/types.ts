@@ -100,6 +100,17 @@ export type WorkingGroupModuleName =
 
 // Forum
 
+export type ThreadPath = {
+  categoryId: CategoryId
+  threadId: ThreadId
+}
+
+export type PostPath = {
+  categoryId: CategoryId
+  threadId: ThreadId
+  postId: PostId
+}
+
 export interface CategoryCreatedEventDetails extends EventDetails {
   categoryId: CategoryId
 }

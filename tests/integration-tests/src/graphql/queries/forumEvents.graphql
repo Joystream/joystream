@@ -234,3 +234,47 @@ query getCategoryMembershipOfModeratorUpdatedEventsByEventIds($eventIds: [ID!]) 
     ...CategoryMembershipOfModeratorUpdatedEventFields
   }
 }
+
+fragment ThreadModeratedEventFields on ThreadModeratedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  thread {
+    id
+  }
+  rationale
+  actor {
+    id
+  }
+}
+
+query getThreadModeratedEventsByEventIds($eventIds: [ID!]) {
+  threadModeratedEvents(where: { id_in: $eventIds }) {
+    ...ThreadModeratedEventFields
+  }
+}
+
+fragment PostModeratedEventFields on PostModeratedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  post {
+    id
+  }
+  rationale
+  actor {
+    id
+  }
+}
+
+query getPostModeratedEventsByEventIds($eventIds: [ID!]) {
+  postModeratedEvents(where: { id_in: $eventIds }) {
+    ...PostModeratedEventFields
+  }
+}

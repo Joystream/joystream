@@ -13,8 +13,8 @@ import { POST_DEPOSIT } from '../../consts'
 import { ForumPostMetadata, IForumPostMetadata } from '@joystream/metadata-protobuf'
 
 export type PostParams = {
-  categoryId: CategoryId
-  threadId: ThreadId
+  categoryId: CategoryId | number
+  threadId: ThreadId | number
   asMember: MemberId
   editable?: boolean // defaults to true
   metadata: MetadataInput<IForumPostMetadata> & { expectReplyFailure?: boolean }

@@ -61,11 +61,11 @@ export default async function categories({ api, query }: FlowProps): Promise<voi
 
   const moderatorUpdates: CategoryModeratorStatusUpdate[] = subcategoryIds.reduce(
     (updates, categoryId, i) =>
-      updates.concat([
+      (updates = updates.concat([
         { categoryId, moderatorId: moderatorIds[i], canModerate: true },
         { categoryId, moderatorId: moderatorIds[i + 1], canModerate: true },
         { categoryId, moderatorId: moderatorIds[i + 1], canModerate: false },
-      ]),
+      ])),
     [] as CategoryModeratorStatusUpdate[]
   )
   const updateCategoryModeratorsFixture = new UpdateCategoryModeratorsFixture(api, query, moderatorUpdates)

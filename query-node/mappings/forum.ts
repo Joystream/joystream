@@ -40,7 +40,7 @@ import {
 import { Forum } from './generated/types'
 import { PrivilegedActor } from '@joystream/types/augment/all'
 import { ForumPostMetadata } from '@joystream/metadata-protobuf'
-import { Not } from 'typeorm'
+import { Not, In } from 'typeorm'
 
 async function getCategory(db: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
   const category = await db.get(ForumCategory, { where: { id: categoryId }, relations })
@@ -373,10 +373,10 @@ export async function forum_CategoryStickyThreadUpdate(db: DatabaseManager, even
   const actorWorker = await getActorWorker(db, privilegedActor)
   const newStickyThreadsIds = newStickyThreadsIdsVec.map((id) => id.toString())
   const threadsToSetSticky = await db.getMany(ForumThread, {
-    where: { category: { id: categoryId.toString() }, id: newStickyThreadsIds },
+    where: { category: { id: categoryId.toString() }, id: In(newStickyThreadsIds) },
   })
   const threadsToUnsetSticky = await db.getMany(ForumThread, {
-    where: { category: { id: categoryId.toString() }, isSticky: true, id: Not(newStickyThreadsIds) },
+    where: { category: { id: categoryId.toString() }, isSticky: true, id: Not(In(newStickyThreadsIds)) },
   })
 
   const setStickyUpdates = (threadsToSetSticky || []).map(async (t) => {

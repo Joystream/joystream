@@ -9,3 +9,6 @@ export { UpdateThreadTitlesFixture, ThreadTitleUpdate } from './UpdateThreadTitl
 export { MoveThreadsFixture, MoveThreadParams } from './MoveThreadsFixture'
 export { SetStickyThreadsFixture, StickyThreadsParams } from './SetStickyThreadsFixture'
 export { UpdateCategoryModeratorsFixture, CategoryModeratorStatusUpdate } from './UpdateCategoryModeratorsFixture'
+export { ModerateThreadsFixture, ThreadModerationInput } from './ModerateThreadsFixture'
+export { ModeratePostsFixture, PostModerationInput } from './ModeratePostsFixture'
+export { InitializeForumFixture, InitializeForumConfig } from './InitializeForumFixture'

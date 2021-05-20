@@ -281,6 +281,44 @@ export type GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery = {
   categoryMembershipOfModeratorUpdatedEvents: Array<CategoryMembershipOfModeratorUpdatedEventFieldsFragment>
 }
 
+export type ThreadModeratedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  thread: { id: string }
+  actor: { id: string }
+}
+
+export type GetThreadModeratedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetThreadModeratedEventsByEventIdsQuery = {
+  threadModeratedEvents: Array<ThreadModeratedEventFieldsFragment>
+}
+
+export type PostModeratedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  post: { id: string }
+  actor: { id: string }
+}
+
+export type GetPostModeratedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetPostModeratedEventsByEventIdsQuery = { postModeratedEvents: Array<PostModeratedEventFieldsFragment> }
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = {
@@ -1457,6 +1495,40 @@ export const CategoryMembershipOfModeratorUpdatedEventFields = gql`
     newCanModerateValue
   }
 `
+export const ThreadModeratedEventFields = gql`
+  fragment ThreadModeratedEventFields on ThreadModeratedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    thread {
+      id
+    }
+    rationale
+    actor {
+      id
+    }
+  }
+`
+export const PostModeratedEventFields = gql`
+  fragment PostModeratedEventFields on PostModeratedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    post {
+      id
+    }
+    rationale
+    actor {
+      id
+    }
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -2367,6 +2439,22 @@ export const GetCategoryMembershipOfModeratorUpdatedEventsByEventIds = gql`
     }
   }
   ${CategoryMembershipOfModeratorUpdatedEventFields}
+`
+export const GetThreadModeratedEventsByEventIds = gql`
+  query getThreadModeratedEventsByEventIds($eventIds: [ID!]) {
+    threadModeratedEvents(where: { id_in: $eventIds }) {
+      ...ThreadModeratedEventFields
+    }
+  }
+  ${ThreadModeratedEventFields}
+`
+export const GetPostModeratedEventsByEventIds = gql`
+  query getPostModeratedEventsByEventIds($eventIds: [ID!]) {
+    postModeratedEvents(where: { id_in: $eventIds }) {
+      ...PostModeratedEventFields
+    }
+  }
+  ${PostModeratedEventFields}
 `
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {
