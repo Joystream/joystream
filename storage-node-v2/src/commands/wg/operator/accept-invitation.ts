@@ -1,11 +1,11 @@
-import {Command, flags} from '@oclif/command'
-import { acceptStorageBucketInvitation } from '../../../services/api'
+import { Command, flags } from '@oclif/command'
+import { acceptStorageBucketInvitation } from '../../../services/extrinsics'
 
 export default class WgOperatorAcceptInvitation extends Command {
   static description = 'Accept pending storage bucket invitation.'
 
   static flags = {
-    help: flags.help({char: 'h'}),
+    help: flags.help({ char: 'h' }),
     worker: flags.integer({
       char: 'w',
       required: true,
@@ -19,7 +19,7 @@ export default class WgOperatorAcceptInvitation extends Command {
     dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
   }
 
-  static args = [{name: 'file'}]
+  static args = [{ name: 'file' }]
 
   async run() {
     const { flags } = this.parse(WgOperatorAcceptInvitation)
