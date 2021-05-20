@@ -67,6 +67,9 @@ export async function dataDirectory_ContentRemoved(db: DatabaseManager, event: S
     joystreamContentId: In(contentIds.map(item => encodeContentId(item)))
   } as FindConditions<DataObject> })
 
+  // store dataObject ids before they are deleted (for logging purposes)
+  const dataObjectIds = dataObjects.map(item => item.id)
+
   // remove assets from database
   for (let item of dataObjects) {
     // ensure dataObject is nowhere used to prevent db constraint error
@@ -77,7 +80,7 @@ export async function dataDirectory_ContentRemoved(db: DatabaseManager, event: S
   }
 
   // emit log event
-  logger.info("Storage content have been removed", {id: contentIds, dataObjectIds: dataObjects.map(item => item.id)})
+  logger.info("Storage content have been removed", {id: contentIds, dataObjectIds})
 }
 
 export async function dataDirectory_ContentAccepted(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -143,25 +146,37 @@ async function updateSingleConnectedAsset<T extends Channel | Video>(db: Databas
     }
   } // as FindConditions<T>
 
+  // NOTE: we don't need to retrieve multiple channels/videos via `db.getMany()` because dataObject
+  //       is allowed to be associated only with one channel/video in runtime
+
   // in therory the following condition(s) can be generalized `... db.get(type, ...` but in practice it doesn't work :-\
-  const items = type instanceof Channel
-    ? await db.getMany(Channel, condition)
-    : await db.getMany(Video, condition)
+  const item = type instanceof Channel
+    ? await db.get(Channel, condition)
+    : await db.get(Video, condition)
 
-  for (const item of items) {
-    item[propertyName + 'Availability'] = AssetAvailability.ACCEPTED
+  // escape when no dataObject association found
+  if (!item) {
+    return
+  }
 
-    if (type instanceof Channel) {
-      await db.save<Channel>(item)
+  item[propertyName + 'Availability'] = AssetAvailability.ACCEPTED
 
-      // emit log event
-      logger.info("Channel using Content has been accepted", {channelId: item.id.toString(), joystreamContentId: dataObject.joystreamContentId})
-    } else {
-      await db.save<Video>(item)
+  if (type instanceof Channel) {
+    await db.save<Channel>(item)
 
-      // emit log event
-      logger.info("Video using Content has been accepted", {videoId: item.id.toString(), joystreamContentId: dataObject.joystreamContentId})
-    }
+    // emit log event
+    logger.info("Channel using Content has been accepted", {
+      channelId: item.id.toString(),
+      joystreamContentId: dataObject.joystreamContentId
+    })
+  } else {
+    await db.save<Video>(item)
+
+    // emit log event
+    logger.info("Video using Content has been accepted", {
+      videoId: item.id.toString(),
+      joystreamContentId: dataObject.joystreamContentId
+    })
   }
 }
 
@@ -182,26 +197,36 @@ async function disconnectSingleDataObjectRelation<T extends Channel | Video>(db:
     }
   } // as FindConditions<T>
 
+  // NOTE: we don't need to retrieve multiple channels/videos via `db.getMany()` because dataObject
+  //       is allowed to be associated only with one channel/video in runtime
+
   // in therory the following condition(s) can be generalized `... db.get(type, ...` but in practice it doesn't work :-\
-  const items = type instanceof Channel
-    ? await db.getMany(Channel, condition)
-    : await db.getMany(Video, condition)
+  const item = type instanceof Channel
+    ? await db.get(Channel, condition)
+    : await db.get(Video, condition)
 
-  for (const item of items) {
-    item[propertyName + 'Availability'] = AssetAvailability.INVALID
-    item[propertyName + 'DataObject'] = null
+  // escape when no dataObject association found
+  if (!item) {
+    return
+  }
 
-    if (type instanceof Channel) {
-      await db.save<Channel>(item)
+  item[propertyName + 'Availability'] = AssetAvailability.INVALID
+  item[propertyName + 'DataObject'] = null
 
-      // emit log event
-      logger.info("Content has been disconnected from Channel", {channelId: item.id.toString(), joystreamContentId: dataObject.joystreamContentId})
-    } else {
-      await db.save<Video>(item)
+  if (type instanceof Channel) {
+    await db.save<Channel>(item)
 
-      // emit log event
-      logger.info("Content has been disconnected from Channel", {videoId: item.id.toString(), joystreamContentId: dataObject.joystreamContentId})
-    }
+    // emit log event
+    logger.info("Content has been disconnected from Channel", {
+      channelId: item.id.toString(),
+      joystreamContentId: dataObject.joystreamContentId})
+  } else { // type instanceof Video
+    await db.save<Video>(item)
+
+    // emit log event
+    logger.info("Content has been disconnected from Video", {
+      videoId: item.id.toString(),
+      joystreamContentId: dataObject.joystreamContentId})
   }
 }
 
