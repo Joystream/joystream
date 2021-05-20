@@ -15,7 +15,7 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { deserializeMetadata, bytesToString, genericEventFields } from './common'
+import { deserializeMetadata, bytesToString, genericEventFields, getWorker, WorkingGroupModuleName } from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -70,7 +70,6 @@ import {
   BudgetSetEvent,
   BudgetSpendingEvent,
   LeaderSetEvent,
-  Event,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 
@@ -109,15 +108,6 @@ async function getApplication(db: DatabaseManager, applicationDbId: string): Pro
   }
 
   return application
-}
-
-async function getWorker(db: DatabaseManager, workerDbId: string): Promise<Worker> {
-  const worker = await db.get(Worker, { where: { id: workerDbId } })
-  if (!worker) {
-    throw new Error(`Worker not found by id ${workerDbId}`)
-  }
-
-  return worker
 }
 
 async function getApplicationFormQuestions(
@@ -338,7 +328,7 @@ async function handleWorkingGroupMetadataAction(
 async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
@@ -672,7 +662,7 @@ export async function workingGroups_WorkerRoleAccountUpdated(
 ): Promise<void> {
   const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
@@ -696,7 +686,7 @@ export async function workingGroups_WorkerRewardAccountUpdated(
 ): Promise<void> {
   const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
@@ -717,7 +707,7 @@ export async function workingGroups_WorkerRewardAccountUpdated(
 export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const stakeIncreasedEvent = new StakeIncreasedEvent({
@@ -738,7 +728,7 @@ export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: 
 export async function workingGroups_RewardPaid(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const rewardPaidEvent = new RewardPaidEvent({
@@ -765,7 +755,7 @@ export async function workingGroups_NewMissedRewardLevelReached(
 ): Promise<void> {
   const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
@@ -787,7 +777,7 @@ export async function workingGroups_NewMissedRewardLevelReached(
 export async function workingGroups_WorkerExited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId] = new WorkingGroups.WorkerExitedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
@@ -836,7 +826,7 @@ export async function workingGroups_WorkerRewardAmountUpdated(
 ): Promise<void> {
   const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
@@ -857,7 +847,7 @@ export async function workingGroups_WorkerRewardAmountUpdated(
 export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerStakeSlashedEvent = new StakeSlashedEvent({
@@ -880,7 +870,7 @@ export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: Su
 export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerStakeDecreasedEvent = new StakeDecreasedEvent({
@@ -901,7 +891,7 @@ export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: 
 export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event_).params
   const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(db, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event_.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({

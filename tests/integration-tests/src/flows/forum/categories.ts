@@ -7,7 +7,10 @@ import {
   CategoryStatusUpdate,
   UpdateCategoriesStatusFixture,
   RemoveCategoriesFixture,
+  CategoryModeratorStatusUpdate,
+  UpdateCategoryModeratorsFixture,
 } from '../../fixtures/forum'
+import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
 
 export default async function categories({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger(`flow:cateogries`)
@@ -51,19 +54,37 @@ export default async function categories({ api, query }: FlowProps): Promise<voi
 
   await Promise.all([createCategoriesRunner.runQueryNodeChecks(), createSubcategoriesRunner.runQueryNodeChecks()])
 
+  // Create moderators and perform status updates
+  const createModeratorsFixture = new HireWorkersFixture(api, query, 'forumWorkingGroup', subcategoryIds.length + 1)
+  await new FixtureRunner(createModeratorsFixture).run()
+  const moderatorIds = createModeratorsFixture.getCreatedWorkerIds()
+
+  const moderatorUpdates: CategoryModeratorStatusUpdate[] = subcategoryIds.reduce(
+    (updates, categoryId, i) =>
+      updates.concat([
+        { categoryId, moderatorId: moderatorIds[i], canModerate: true },
+        { categoryId, moderatorId: moderatorIds[i + 1], canModerate: true },
+        { categoryId, moderatorId: moderatorIds[i + 1], canModerate: false },
+      ]),
+    [] as CategoryModeratorStatusUpdate[]
+  )
+  const updateCategoryModeratorsFixture = new UpdateCategoryModeratorsFixture(api, query, moderatorUpdates)
+  const updateCategoryModeratorsRunner = new FixtureRunner(updateCategoryModeratorsFixture)
+  await updateCategoryModeratorsRunner.run()
+
   // Update archival status
-  const categoryUpdatesArchival: CategoryStatusUpdate[] = subcategoryIds.map((id) => ({
-    categoryId: id,
-    archived: true,
-  }))
+  const categoryUpdates: CategoryStatusUpdate[] = [
+    { categoryId: subcategoryIds[0], archived: true },
+    { categoryId: subcategoryIds[1], archived: true },
+    { categoryId: subcategoryIds[1], archived: false },
+  ]
 
-  const categoryUpdatesArchivalFixture = new UpdateCategoriesStatusFixture(api, query, categoryUpdatesArchival)
-  await new FixtureRunner(categoryUpdatesArchivalFixture).runWithQueryNodeChecks()
+  const categoryUpdatesFixture = new UpdateCategoriesStatusFixture(api, query, categoryUpdates)
+  const categoryUpdatesRunner = new FixtureRunner(categoryUpdatesFixture)
+  await categoryUpdatesRunner.run()
 
-  const categoryUpdatesActive: CategoryStatusUpdate[] = categoryUpdatesArchival.map((u) => ({ ...u, archived: false }))
-
-  const categoryUpdatesActiveFixture = new UpdateCategoriesStatusFixture(api, query, categoryUpdatesActive)
-  await new FixtureRunner(categoryUpdatesActiveFixture).runWithQueryNodeChecks()
+  // Run compound query node checks
+  await Promise.all([updateCategoryModeratorsFixture.runQueryNodeChecks(), categoryUpdatesRunner.runQueryNodeChecks()])
 
   // Remove categories (make sure subcategories are removed first)
   const removeSubcategoriesFixture = new RemoveCategoriesFixture(

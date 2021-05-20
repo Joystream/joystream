@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
-import { bytesToString, deserializeMetadata, genericEventFields } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields, getWorker } from './common'
 import {
   CategoryCreatedEvent,
   CategoryStatusActive,
@@ -33,14 +33,17 @@ import {
   PostStatusLocked,
   PostOriginThreadReply,
   CategoryStickyThreadUpdateEvent,
+  CategoryMembershipOfModeratorUpdatedEvent,
+  PostModeratedEvent,
+  PostStatusModerated,
 } from 'query-node/dist/model'
 import { Forum } from './generated/types'
 import { PrivilegedActor } from '@joystream/types/augment/all'
 import { ForumPostMetadata } from '@joystream/metadata-protobuf'
 import { Not } from 'typeorm'
 
-async function getCategory(db: DatabaseManager, categoryId: string): Promise<ForumCategory> {
-  const category = await db.get(ForumCategory, { where: { id: categoryId } })
+async function getCategory(db: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
+  const category = await db.get(ForumCategory, { where: { id: categoryId }, relations })
   if (!category) {
     throw new Error(`Forum category not found by id: ${categoryId}`)
   }
@@ -55,6 +58,15 @@ async function getThread(db: DatabaseManager, threadId: string): Promise<ForumTh
   }
 
   return thread
+}
+
+async function getPost(db: DatabaseManager, postId: string): Promise<ForumPost> {
+  const post = await db.get(ForumPost, { where: { id: postId } })
+  if (!post) {
+    throw new Error(`Forum post not found by id: ${postId.toString()}`)
+  }
+
+  return post
 }
 
 async function getPollAlternative(db: DatabaseManager, threadId: string, index: number) {
@@ -391,8 +403,55 @@ export async function forum_CategoryStickyThreadUpdate(db: DatabaseManager, even
   await db.save<CategoryStickyThreadUpdateEvent>(categoryStickyThreadUpdateEvent)
 }
 
+export async function forum_CategoryMembershipOfModeratorUpdated(
+  db: DatabaseManager,
+  event_: SubstrateEvent
+): Promise<void> {
+  const [moderatorId, categoryId, canModerate] = new Forum.CategoryMembershipOfModeratorUpdatedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+  const moderator = await getWorker(db, 'forumWorkingGroup', moderatorId.toNumber())
+  const category = await getCategory(db, categoryId.toString(), ['moderators'])
+
+  if (canModerate.valueOf()) {
+    category.moderators.push(moderator)
+    category.updatedAt = eventTime
+    await db.save<ForumCategory>(category)
+  } else {
+    category.moderators.splice(category.moderators.map((m) => m.id).indexOf(moderator.id), 1)
+    category.updatedAt = eventTime
+    await db.save<ForumCategory>(category)
+  }
+
+  const categoryMembershipOfModeratorUpdatedEvent = new CategoryMembershipOfModeratorUpdatedEvent({
+    ...genericEventFields(event_),
+    category,
+    moderator,
+    newCanModerateValue: canModerate.valueOf(),
+  })
+  await db.save<CategoryMembershipOfModeratorUpdatedEvent>(categoryMembershipOfModeratorUpdatedEvent)
+}
+
 export async function forum_PostModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+  const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+  const actorWorker = await getActorWorker(db, privilegedActor)
+  const post = await getPost(db, postId.toString())
+
+  const postModeratedEvent = new PostModeratedEvent({
+    ...genericEventFields(event_),
+    actor: actorWorker,
+    post,
+    rationale: bytesToString(rationaleBytes),
+  })
+
+  await db.save<PostModeratedEvent>(postModeratedEvent)
+
+  const newStatus = new PostStatusModerated()
+  newStatus.postModeratedEventId = postModeratedEvent.id
+
+  post.updatedAt = eventTime
+  post.status = newStatus
+  await db.save<ForumPost>(post)
 }
 
 export async function forum_PostDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -404,12 +463,5 @@ export async function forum_PostTextUpdated(db: DatabaseManager, event_: Substra
 }
 
 export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
-}
-
-export async function forum_CategoryMembershipOfModeratorUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
-): Promise<void> {
   // TODO
 }

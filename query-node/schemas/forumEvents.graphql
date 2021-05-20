@@ -449,7 +449,7 @@ type CategoryStickyThreadUpdateEvent @entity {
   actor: Worker!
 }
 
-type CategoryMembershipOfModeratorUpdated @entity {
+type CategoryMembershipOfModeratorUpdatedEvent @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"

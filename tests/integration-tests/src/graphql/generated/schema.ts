@@ -1177,7 +1177,7 @@ export type CategoryDeletedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type CategoryMembershipOfModeratorUpdated = BaseGraphQlObject & {
+export type CategoryMembershipOfModeratorUpdatedEvent = BaseGraphQlObject & {
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
   createdById: Scalars['String']
@@ -1202,13 +1202,13 @@ export type CategoryMembershipOfModeratorUpdated = BaseGraphQlObject & {
   newCanModerateValue: Scalars['Boolean']
 }
 
-export type CategoryMembershipOfModeratorUpdatedConnection = {
+export type CategoryMembershipOfModeratorUpdatedEventConnection = {
   totalCount: Scalars['Int']
-  edges: Array<CategoryMembershipOfModeratorUpdatedEdge>
+  edges: Array<CategoryMembershipOfModeratorUpdatedEventEdge>
   pageInfo: PageInfo
 }
 
-export type CategoryMembershipOfModeratorUpdatedCreateInput = {
+export type CategoryMembershipOfModeratorUpdatedEventCreateInput = {
   inExtrinsic?: Maybe<Scalars['String']>
   inBlock: Scalars['Float']
   network: Network
@@ -1218,12 +1218,12 @@ export type CategoryMembershipOfModeratorUpdatedCreateInput = {
   newCanModerateValue: Scalars['Boolean']
 }
 
-export type CategoryMembershipOfModeratorUpdatedEdge = {
-  node: CategoryMembershipOfModeratorUpdated
+export type CategoryMembershipOfModeratorUpdatedEventEdge = {
+  node: CategoryMembershipOfModeratorUpdatedEvent
   cursor: Scalars['String']
 }
 
-export enum CategoryMembershipOfModeratorUpdatedOrderByInput {
+export enum CategoryMembershipOfModeratorUpdatedEventOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
   UpdatedAtAsc = 'updatedAt_ASC',
@@ -1246,7 +1246,7 @@ export enum CategoryMembershipOfModeratorUpdatedOrderByInput {
   NewCanModerateValueDesc = 'newCanModerateValue_DESC',
 }
 
-export type CategoryMembershipOfModeratorUpdatedUpdateInput = {
+export type CategoryMembershipOfModeratorUpdatedEventUpdateInput = {
   inExtrinsic?: Maybe<Scalars['String']>
   inBlock?: Maybe<Scalars['Float']>
   network?: Maybe<Network>
@@ -1256,7 +1256,7 @@ export type CategoryMembershipOfModeratorUpdatedUpdateInput = {
   newCanModerateValue?: Maybe<Scalars['Boolean']>
 }
 
-export type CategoryMembershipOfModeratorUpdatedWhereInput = {
+export type CategoryMembershipOfModeratorUpdatedEventWhereInput = {
   id_eq?: Maybe<Scalars['ID']>
   id_in?: Maybe<Array<Scalars['ID']>>
   createdAt_eq?: Maybe<Scalars['DateTime']>
@@ -1308,11 +1308,11 @@ export type CategoryMembershipOfModeratorUpdatedWhereInput = {
   newCanModerateValue_in?: Maybe<Array<Scalars['Boolean']>>
   moderator?: Maybe<WorkerWhereInput>
   category?: Maybe<ForumCategoryWhereInput>
-  AND?: Maybe<Array<CategoryMembershipOfModeratorUpdatedWhereInput>>
-  OR?: Maybe<Array<CategoryMembershipOfModeratorUpdatedWhereInput>>
+  AND?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEventWhereInput>>
+  OR?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEventWhereInput>>
 }
 
-export type CategoryMembershipOfModeratorUpdatedWhereUniqueInput = {
+export type CategoryMembershipOfModeratorUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -2217,7 +2217,7 @@ export type ForumCategory = BaseGraphQlObject & {
   /** Current category status */
   status: CategoryStatus
   categorydeletedeventcategory?: Maybe<Array<CategoryDeletedEvent>>
-  categorymembershipofmoderatorupdatedcategory?: Maybe<Array<CategoryMembershipOfModeratorUpdated>>
+  categorymembershipofmoderatorupdatedeventcategory?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEvent>>
   categorystickythreadupdateeventcategory?: Maybe<Array<CategoryStickyThreadUpdateEvent>>
   categoryupdatedeventcategory?: Maybe<Array<CategoryUpdatedEvent>>
   forumcategoryparent?: Maybe<Array<ForumCategory>>
@@ -2314,9 +2314,9 @@ export type ForumCategoryWhereInput = {
   categorydeletedeventcategory_none?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventcategory_some?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventcategory_every?: Maybe<CategoryDeletedEventWhereInput>
-  categorymembershipofmoderatorupdatedcategory_none?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
-  categorymembershipofmoderatorupdatedcategory_some?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
-  categorymembershipofmoderatorupdatedcategory_every?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
+  categorymembershipofmoderatorupdatedeventcategory_none?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
+  categorymembershipofmoderatorupdatedeventcategory_some?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
+  categorymembershipofmoderatorupdatedeventcategory_every?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
   categorystickythreadupdateeventcategory_none?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventcategory_some?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventcategory_every?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
@@ -6668,9 +6668,9 @@ export type Query = {
   categoryDeletedEvents: Array<CategoryDeletedEvent>
   categoryDeletedEventByUniqueInput?: Maybe<CategoryDeletedEvent>
   categoryDeletedEventsConnection: CategoryDeletedEventConnection
-  categoryMembershipOfModeratorUpdateds: Array<CategoryMembershipOfModeratorUpdated>
-  categoryMembershipOfModeratorUpdatedByUniqueInput?: Maybe<CategoryMembershipOfModeratorUpdated>
-  categoryMembershipOfModeratorUpdatedsConnection: CategoryMembershipOfModeratorUpdatedConnection
+  categoryMembershipOfModeratorUpdatedEvents: Array<CategoryMembershipOfModeratorUpdatedEvent>
+  categoryMembershipOfModeratorUpdatedEventByUniqueInput?: Maybe<CategoryMembershipOfModeratorUpdatedEvent>
+  categoryMembershipOfModeratorUpdatedEventsConnection: CategoryMembershipOfModeratorUpdatedEventConnection
   categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventByUniqueInput?: Maybe<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventsConnection: CategoryStickyThreadUpdateEventConnection
@@ -7023,24 +7023,24 @@ export type QueryCategoryDeletedEventsConnectionArgs = {
   orderBy?: Maybe<Array<CategoryDeletedEventOrderByInput>>
 }
 
-export type QueryCategoryMembershipOfModeratorUpdatedsArgs = {
+export type QueryCategoryMembershipOfModeratorUpdatedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
-  where?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
-  orderBy?: Maybe<Array<CategoryMembershipOfModeratorUpdatedOrderByInput>>
+  where?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEventOrderByInput>>
 }
 
-export type QueryCategoryMembershipOfModeratorUpdatedByUniqueInputArgs = {
-  where: CategoryMembershipOfModeratorUpdatedWhereUniqueInput
+export type QueryCategoryMembershipOfModeratorUpdatedEventByUniqueInputArgs = {
+  where: CategoryMembershipOfModeratorUpdatedEventWhereUniqueInput
 }
 
-export type QueryCategoryMembershipOfModeratorUpdatedsConnectionArgs = {
+export type QueryCategoryMembershipOfModeratorUpdatedEventsConnectionArgs = {
   first?: Maybe<Scalars['Int']>
   after?: Maybe<Scalars['String']>
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
-  where?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
-  orderBy?: Maybe<Array<CategoryMembershipOfModeratorUpdatedOrderByInput>>
+  where?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEventOrderByInput>>
 }
 
 export type QueryCategoryStickyThreadUpdateEventsArgs = {
@@ -11087,7 +11087,7 @@ export type Worker = BaseGraphQlObject & {
   storage?: Maybe<Scalars['String']>
   managedForumCategories: Array<ForumCategory>
   categorydeletedeventactor?: Maybe<Array<CategoryDeletedEvent>>
-  categorymembershipofmoderatorupdatedmoderator?: Maybe<Array<CategoryMembershipOfModeratorUpdated>>
+  categorymembershipofmoderatorupdatedeventmoderator?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEvent>>
   categorystickythreadupdateeventactor?: Maybe<Array<CategoryStickyThreadUpdateEvent>>
   categoryupdatedeventactor?: Maybe<Array<CategoryUpdatedEvent>>
   leaderseteventworker?: Maybe<Array<LeaderSetEvent>>
@@ -12050,9 +12050,9 @@ export type WorkerWhereInput = {
   categorydeletedeventactor_none?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventactor_some?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventactor_every?: Maybe<CategoryDeletedEventWhereInput>
-  categorymembershipofmoderatorupdatedmoderator_none?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
-  categorymembershipofmoderatorupdatedmoderator_some?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
-  categorymembershipofmoderatorupdatedmoderator_every?: Maybe<CategoryMembershipOfModeratorUpdatedWhereInput>
+  categorymembershipofmoderatorupdatedeventmoderator_none?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
+  categorymembershipofmoderatorupdatedeventmoderator_some?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
+  categorymembershipofmoderatorupdatedeventmoderator_every?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
   categorystickythreadupdateeventactor_none?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventactor_some?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventactor_every?: Maybe<CategoryStickyThreadUpdateEventWhereInput>

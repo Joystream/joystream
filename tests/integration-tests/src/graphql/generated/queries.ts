@@ -261,6 +261,26 @@ export type GetCategoryStickyThreadUpdateEventsByEventIdsQuery = {
   categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEventFieldsFragment>
 }
 
+export type CategoryMembershipOfModeratorUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newCanModerateValue: boolean
+  category: { id: string }
+  moderator: { id: string }
+}
+
+export type GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery = {
+  categoryMembershipOfModeratorUpdatedEvents: Array<CategoryMembershipOfModeratorUpdatedEventFieldsFragment>
+}
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = {
@@ -1420,6 +1440,23 @@ export const CategoryStickyThreadUpdateEventFields = gql`
     }
   }
 `
+export const CategoryMembershipOfModeratorUpdatedEventFields = gql`
+  fragment CategoryMembershipOfModeratorUpdatedEventFields on CategoryMembershipOfModeratorUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    category {
+      id
+    }
+    moderator {
+      id
+    }
+    newCanModerateValue
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -2322,6 +2359,14 @@ export const GetCategoryStickyThreadUpdateEventsByEventIds = gql`
     }
   }
   ${CategoryStickyThreadUpdateEventFields}
+`
+export const GetCategoryMembershipOfModeratorUpdatedEventsByEventIds = gql`
+  query getCategoryMembershipOfModeratorUpdatedEventsByEventIds($eventIds: [ID!]) {
+    categoryMembershipOfModeratorUpdatedEvents(where: { id_in: $eventIds }) {
+      ...CategoryMembershipOfModeratorUpdatedEventFields
+    }
+  }
+  ${CategoryMembershipOfModeratorUpdatedEventFields}
 `
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {

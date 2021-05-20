@@ -227,6 +227,10 @@ import {
   GetCategoryStickyThreadUpdateEventsByEventIdsQuery,
   GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables,
   GetCategoryStickyThreadUpdateEventsByEventIds,
+  CategoryMembershipOfModeratorUpdatedEventFieldsFragment,
+  GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery,
+  GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables,
+  GetCategoryMembershipOfModeratorUpdatedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -838,5 +842,19 @@ export class QueryNodeApi {
       GetCategoryStickyThreadUpdateEventsByEventIdsQuery,
       GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables
     >(GetCategoryStickyThreadUpdateEventsByEventIds, { eventIds }, 'categoryStickyThreadUpdateEvents')
+  }
+
+  public async getCategoryMembershipOfModeratorUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<CategoryMembershipOfModeratorUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery,
+      GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables
+    >(
+      GetCategoryMembershipOfModeratorUpdatedEventsByEventIds,
+      { eventIds },
+      'categoryMembershipOfModeratorUpdatedEvents'
+    )
   }
 }

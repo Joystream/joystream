@@ -1,7 +1,9 @@
-import { SubstrateEvent } from '@dzlzv/hydra-common'
+import { DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
 import { Network } from 'query-node/dist/src/modules/enums/enums'
 import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
+import { WorkerId } from '@joystream/types/augment/all'
+import { Worker } from 'query-node/dist/model'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
@@ -60,4 +62,24 @@ export function hasValuesForProperties<
     }
   })
   return true
+}
+
+export type WorkingGroupModuleName =
+  | 'storageWorkingGroup'
+  | 'contentDirectoryWorkingGroup'
+  | 'forumWorkingGroup'
+  | 'membershipWorkingGroup'
+
+export async function getWorker(
+  db: DatabaseManager,
+  groupName: WorkingGroupModuleName,
+  runtimeId: WorkerId | number
+): Promise<Worker> {
+  const workerDbId = `${groupName}-${runtimeId}`
+  const worker = await db.get(Worker, { where: { id: workerDbId } })
+  if (!worker) {
+    throw new Error(`Worker not found by id ${workerDbId}`)
+  }
+
+  return worker
 }

@@ -212,3 +212,25 @@ query getCategoryStickyThreadUpdateEventsByEventIds($eventIds: [ID!]) {
     ...CategoryStickyThreadUpdateEventFields
   }
 }
+
+fragment CategoryMembershipOfModeratorUpdatedEventFields on CategoryMembershipOfModeratorUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  category {
+    id
+  }
+  moderator {
+    id
+  }
+  newCanModerateValue
+}
+
+query getCategoryMembershipOfModeratorUpdatedEventsByEventIds($eventIds: [ID!]) {
+  categoryMembershipOfModeratorUpdatedEvents(where: { id_in: $eventIds }) {
+    ...CategoryMembershipOfModeratorUpdatedEventFields
+  }
+}
