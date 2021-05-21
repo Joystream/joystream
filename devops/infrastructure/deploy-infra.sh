@@ -36,12 +36,14 @@ if [ $? -eq 0 ]; then
     --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}PublicIp')].Value" \
     --output text | sed 's/\t\t*/\n/g' > inventory
 
+  sleep 15s
+
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Configuring the servers ==========="
-    ansible-playbook -i inventory -v --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME"
+    ansible-playbook -i inventory --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME"
   fi
 
   echo -e "\n\n=========== Configuring the chain spec file ==========="
-  ansible-playbook -i inventory -v --private-key $KEY_PATH chain-spec-configuration.yml --extra-vars "local_dir=$LOCAL_CODE_PATH"
+  ansible-playbook -i inventory --private-key $KEY_PATH chain-spec-configuration.yml --extra-vars "local_dir=$LOCAL_CODE_PATH"
 fi
