@@ -10,8 +10,9 @@ Once the AWS CLI is installed, configure a profile
 `aws configure --profile joystream-user`
 
 ### Create a key pair
+Change profile and region parameters according to your configuration
 ```
-aws ec2 create-key-pair --key-name joystream-key --query 'KeyMaterial' --output text > joystream-key.pem
+aws ec2 create-key-pair --key-name joystream-key --profile joystream-user --region us-east-1 --query 'KeyMaterial' --output text > joystream-key.pem
 ```
 
 Set the permissions for the key pair 
@@ -25,6 +26,7 @@ On Mac run the command:
 Follow [the official installation guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) for your system.
 
 # How to run
+Edit the file `deploy-infra.sh` and update parameters like AWS_KEY_PAIR_NAME, KEY_PATH
 Run the `deploy-infra.sh` script to deploy the infrastructure
 
 ```
