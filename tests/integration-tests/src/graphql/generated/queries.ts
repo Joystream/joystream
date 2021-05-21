@@ -319,6 +319,46 @@ export type GetPostModeratedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetPostModeratedEventsByEventIdsQuery = { postModeratedEvents: Array<PostModeratedEventFieldsFragment> }
 
+export type PostReactedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  post: { id: string }
+  reactionResult:
+    | { __typename: 'PostReactionResultCancel' }
+    | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
+    | { __typename: 'PostReactionResultInvalid'; reactionId: number }
+  reactingMember: { id: string }
+}
+
+export type GetPostReactedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetPostReactedEventsByEventIdsQuery = { postReactedEvents: Array<PostReactedEventFieldsFragment> }
+
+export type PostTextUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newText: string
+  post: { id: string }
+}
+
+export type GetPostTextUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetPostTextUpdatedEventsByEventIdsQuery = {
+  postTextUpdatedEvents: Array<PostTextUpdatedEventFieldsFragment>
+}
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = {
@@ -1529,6 +1569,46 @@ export const PostModeratedEventFields = gql`
     }
   }
 `
+export const PostReactedEventFields = gql`
+  fragment PostReactedEventFields on PostReactedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    post {
+      id
+    }
+    reactionResult {
+      __typename
+      ... on PostReactionResultValid {
+        reaction
+        reactionId
+      }
+      ... on PostReactionResultInvalid {
+        reactionId
+      }
+    }
+    reactingMember {
+      id
+    }
+  }
+`
+export const PostTextUpdatedEventFields = gql`
+  fragment PostTextUpdatedEventFields on PostTextUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    post {
+      id
+    }
+    newText
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -2455,6 +2535,22 @@ export const GetPostModeratedEventsByEventIds = gql`
     }
   }
   ${PostModeratedEventFields}
+`
+export const GetPostReactedEventsByEventIds = gql`
+  query getPostReactedEventsByEventIds($eventIds: [ID!]) {
+    postReactedEvents(where: { id_in: $eventIds }) {
+      ...PostReactedEventFields
+    }
+  }
+  ${PostReactedEventFields}
+`
+export const GetPostTextUpdatedEventsByEventIds = gql`
+  query getPostTextUpdatedEventsByEventIds($eventIds: [ID!]) {
+    postTextUpdatedEvents(where: { id_in: $eventIds }) {
+      ...PostTextUpdatedEventFields
+    }
+  }
+  ${PostTextUpdatedEventFields}
 `
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {

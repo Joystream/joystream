@@ -6302,8 +6302,8 @@ export type PostReactedEvent = BaseGraphQlObject & {
   indexInBlock: Scalars['Int']
   post: ForumPost
   postId: Scalars['String']
-  /** The reaction. Overrides the previous reaction. If empty - cancels the previous reaction. */
-  reaction?: Maybe<PostReaction>
+  /** The reaction result (new reaction, cancelation of previous reaction or invalid reaction (no effect)) */
+  reactionResult: PostReactionResult
   reactingMember: Membership
   reactingMemberId: Scalars['String']
 }
@@ -6320,7 +6320,7 @@ export type PostReactedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   post: Scalars['ID']
-  reaction?: Maybe<PostReaction>
+  reactionResult: Scalars['JSONObject']
   reactingMember: Scalars['ID']
 }
 
@@ -6346,8 +6346,6 @@ export enum PostReactedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   PostAsc = 'post_ASC',
   PostDesc = 'post_DESC',
-  ReactionAsc = 'reaction_ASC',
-  ReactionDesc = 'reaction_DESC',
   ReactingMemberAsc = 'reactingMember_ASC',
   ReactingMemberDesc = 'reactingMember_DESC',
 }
@@ -6358,7 +6356,7 @@ export type PostReactedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   post?: Maybe<Scalars['ID']>
-  reaction?: Maybe<PostReaction>
+  reactionResult?: Maybe<Scalars['JSONObject']>
   reactingMember?: Maybe<Scalars['ID']>
 }
 
@@ -6408,8 +6406,7 @@ export type PostReactedEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   post_eq?: Maybe<Scalars['ID']>
   post_in?: Maybe<Array<Scalars['ID']>>
-  reaction_eq?: Maybe<PostReaction>
-  reaction_in?: Maybe<Array<PostReaction>>
+  reactionResult_json?: Maybe<Scalars['JSONObject']>
   reactingMember_eq?: Maybe<Scalars['ID']>
   reactingMember_in?: Maybe<Array<Scalars['ID']>>
   post?: Maybe<ForumPostWhereInput>
@@ -6424,6 +6421,166 @@ export type PostReactedEventWhereUniqueInput = {
 
 export enum PostReaction {
   Like = 'LIKE',
+}
+
+export type PostReactionResult = PostReactionResultCancel | PostReactionResultValid | PostReactionResultInvalid
+
+export type PostReactionResultCancel = {
+  phantom?: Maybe<Scalars['Int']>
+}
+
+export type PostReactionResultCancelCreateInput = {
+  phantom?: Maybe<Scalars['Float']>
+}
+
+export type PostReactionResultCancelUpdateInput = {
+  phantom?: Maybe<Scalars['Float']>
+}
+
+export type PostReactionResultCancelWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  phantom_eq?: Maybe<Scalars['Int']>
+  phantom_gt?: Maybe<Scalars['Int']>
+  phantom_gte?: Maybe<Scalars['Int']>
+  phantom_lt?: Maybe<Scalars['Int']>
+  phantom_lte?: Maybe<Scalars['Int']>
+  phantom_in?: Maybe<Array<Scalars['Int']>>
+  AND?: Maybe<Array<PostReactionResultCancelWhereInput>>
+  OR?: Maybe<Array<PostReactionResultCancelWhereInput>>
+}
+
+export type PostReactionResultCancelWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type PostReactionResultInvalid = {
+  reactionId: Scalars['Int']
+}
+
+export type PostReactionResultInvalidCreateInput = {
+  reactionId: Scalars['Float']
+}
+
+export type PostReactionResultInvalidUpdateInput = {
+  reactionId?: Maybe<Scalars['Float']>
+}
+
+export type PostReactionResultInvalidWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  reactionId_eq?: Maybe<Scalars['Int']>
+  reactionId_gt?: Maybe<Scalars['Int']>
+  reactionId_gte?: Maybe<Scalars['Int']>
+  reactionId_lt?: Maybe<Scalars['Int']>
+  reactionId_lte?: Maybe<Scalars['Int']>
+  reactionId_in?: Maybe<Array<Scalars['Int']>>
+  AND?: Maybe<Array<PostReactionResultInvalidWhereInput>>
+  OR?: Maybe<Array<PostReactionResultInvalidWhereInput>>
+}
+
+export type PostReactionResultInvalidWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type PostReactionResultValid = {
+  reaction: PostReaction
+  reactionId: Scalars['Int']
+}
+
+export type PostReactionResultValidCreateInput = {
+  reaction: PostReaction
+  reactionId: Scalars['Float']
+}
+
+export type PostReactionResultValidUpdateInput = {
+  reaction?: Maybe<PostReaction>
+  reactionId?: Maybe<Scalars['Float']>
+}
+
+export type PostReactionResultValidWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  reaction_eq?: Maybe<PostReaction>
+  reaction_in?: Maybe<Array<PostReaction>>
+  reactionId_eq?: Maybe<Scalars['Int']>
+  reactionId_gt?: Maybe<Scalars['Int']>
+  reactionId_gte?: Maybe<Scalars['Int']>
+  reactionId_lt?: Maybe<Scalars['Int']>
+  reactionId_lte?: Maybe<Scalars['Int']>
+  reactionId_in?: Maybe<Array<Scalars['Int']>>
+  AND?: Maybe<Array<PostReactionResultValidWhereInput>>
+  OR?: Maybe<Array<PostReactionResultValidWhereInput>>
+}
+
+export type PostReactionResultValidWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type PostsByTextFtsOutput = {

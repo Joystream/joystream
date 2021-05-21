@@ -36,10 +36,18 @@ import {
   CategoryMembershipOfModeratorUpdatedEvent,
   PostModeratedEvent,
   PostStatusModerated,
+  ForumPostReaction,
+  PostReaction,
+  PostReactedEvent,
+  PostReactionResult,
+  PostReactionResultCancel,
+  PostReactionResultValid,
+  PostReactionResultInvalid,
+  PostTextUpdatedEvent,
 } from 'query-node/dist/model'
 import { Forum } from './generated/types'
-import { PrivilegedActor } from '@joystream/types/augment/all'
-import { ForumPostMetadata } from '@joystream/metadata-protobuf'
+import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
+import { ForumPostMetadata, ForumPostReaction as SupportedPostReactions } from '@joystream/metadata-protobuf'
 import { Not, In } from 'typeorm'
 
 async function getCategory(db: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
@@ -96,6 +104,27 @@ async function getActorWorker(db: DatabaseManager, actor: PrivilegedActor): Prom
   }
 
   return worker
+}
+
+// Get standarized PostReactionResult by PostReactionId
+function parseReaction(reactionId: PostReactionId): typeof PostReactionResult {
+  switch (reactionId.toNumber()) {
+    case SupportedPostReactions.Reaction.CANCEL: {
+      return new PostReactionResultCancel()
+    }
+    case SupportedPostReactions.Reaction.LIKE: {
+      const result = new PostReactionResultValid()
+      result.reaction = PostReaction.LIKE
+      result.reactionId = reactionId.toNumber()
+      return result
+    }
+    default: {
+      console.warn(`Invalid post reaction id: ${reactionId.toString()}`)
+      const result = new PostReactionResultInvalid()
+      result.reactionId = reactionId.toNumber()
+      return result
+    }
+  }
 }
 
 export async function forum_CategoryCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
@@ -454,14 +483,63 @@ export async function forum_PostModerated(db: DatabaseManager, event_: Substrate
   await db.save<ForumPost>(post)
 }
 
-export async function forum_PostDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+  const [userId, postId, reactionId] = new Forum.PostReactedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+
+  const reactionResult = parseReaction(reactionId)
+  const postReactedEvent = new PostReactedEvent({
+    ...genericEventFields(event_),
+    post: new ForumPost({ id: postId.toString() }),
+    reactingMember: new Membership({ id: userId.toString() }),
+    reactionResult,
+  })
+  await db.save<PostReactedEvent>(postReactedEvent)
+
+  const existingUserPostReaction = await db.get(ForumPostReaction, {
+    where: { post: { id: postId.toString() }, member: { id: userId.toString() } },
+  })
+
+  if (reactionResult.isTypeOf === 'PostReactionResultValid') {
+    const { reaction } = reactionResult as PostReactionResultValid
+
+    if (existingUserPostReaction) {
+      existingUserPostReaction.updatedAt = eventTime
+      existingUserPostReaction.reaction = reaction
+      await db.save<ForumPostReaction>(existingUserPostReaction)
+    } else {
+      const newUserPostReaction = new ForumPostReaction({
+        createdAt: eventTime,
+        updatedAt: eventTime,
+        post: new ForumPost({ id: postId.toString() }),
+        member: new Membership({ id: userId.toString() }),
+        reaction,
+      })
+      await db.save<ForumPostReaction>(newUserPostReaction)
+    }
+  } else if (existingUserPostReaction) {
+    await db.remove<ForumPostReaction>(existingUserPostReaction)
+  }
 }
 
 export async function forum_PostTextUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+  const [postId, , , , newTextBytes] = new Forum.PostTextUpdatedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+  const post = await getPost(db, postId.toString())
+
+  const postTextUpdatedEvent = new PostTextUpdatedEvent({
+    ...genericEventFields(event_),
+    post,
+    newText: bytesToString(newTextBytes),
+  })
+
+  await db.save<PostTextUpdatedEvent>(postTextUpdatedEvent)
+
+  post.updatedAt = eventTime
+  post.text = bytesToString(newTextBytes)
+  await db.save<ForumPost>(post)
 }
 
-export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function forum_PostDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TODO
 }

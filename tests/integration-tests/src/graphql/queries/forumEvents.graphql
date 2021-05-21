@@ -278,3 +278,53 @@ query getPostModeratedEventsByEventIds($eventIds: [ID!]) {
     ...PostModeratedEventFields
   }
 }
+
+fragment PostReactedEventFields on PostReactedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  post {
+    id
+  }
+  reactionResult {
+    __typename
+    ... on PostReactionResultValid {
+      reaction
+      reactionId
+    }
+    ... on PostReactionResultInvalid {
+      reactionId
+    }
+  }
+  reactingMember {
+    id
+  }
+}
+
+query getPostReactedEventsByEventIds($eventIds: [ID!]) {
+  postReactedEvents(where: { id_in: $eventIds }) {
+    ...PostReactedEventFields
+  }
+}
+
+fragment PostTextUpdatedEventFields on PostTextUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  post {
+    id
+  }
+  newText
+}
+
+query getPostTextUpdatedEventsByEventIds($eventIds: [ID!]) {
+  postTextUpdatedEvents(where: { id_in: $eventIds }) {
+    ...PostTextUpdatedEventFields
+  }
+}

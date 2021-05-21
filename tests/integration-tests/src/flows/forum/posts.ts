@@ -1,7 +1,16 @@
 import { FlowProps } from '../../Flow'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
-import { AddPostsFixture, InitializeForumFixture, PostParams } from '../../fixtures/forum'
+import {
+  AddPostsFixture,
+  InitializeForumFixture,
+  PostParams,
+  PostReactionParams,
+  PostTextUpdate,
+  ReactToPostsFixture,
+  UpdatePostsTextFixture,
+} from '../../fixtures/forum'
+import { ForumPostReaction } from '@joystream/metadata-protobuf'
 
 export default async function threads({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger(`flow:threads`)
@@ -75,7 +84,71 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   const addRepliesRunner = new FixtureRunner(addRepliesFixture)
   await addRepliesRunner.run()
 
-  await Promise.all([addPostsFixture.runQueryNodeChecks(), addRepliesRunner.runQueryNodeChecks()])
+  // Post reactions
+  const postReactions: PostReactionParams[] = [
+    {
+      ...threadPaths[0],
+      postId: postIds[0],
+      reactionId: ForumPostReaction.Reaction.LIKE,
+      asMember: memberIds[0],
+    },
+    {
+      ...threadPaths[1],
+      postId: postIds[1],
+      reactionId: ForumPostReaction.Reaction.LIKE,
+      asMember: memberIds[1],
+    },
+    {
+      ...threadPaths[1],
+      postId: postIds[1],
+      reactionId: 0, // Cancel previous one
+      asMember: memberIds[1],
+    },
+    {
+      ...threadPaths[2],
+      postId: postIds[2],
+      reactionId: ForumPostReaction.Reaction.LIKE,
+      asMember: memberIds[2],
+    },
+    {
+      ...threadPaths[2],
+      postId: postIds[2],
+      reactionId: 999, // Cancel previous one by providing invalid id
+      asMember: memberIds[2],
+    },
+  ]
+  const reactToPostsFixture = new ReactToPostsFixture(api, query, postReactions)
+  const reactToPostsRunner = new FixtureRunner(reactToPostsFixture)
+  await reactToPostsRunner.run()
+
+  // Run compound query node checks
+  await Promise.all([
+    addPostsFixture.runQueryNodeChecks(),
+    addRepliesRunner.runQueryNodeChecks(),
+    reactToPostsRunner.runQueryNodeChecks(),
+  ])
+
+  // Post text updates
+  const postTextUpdates: PostTextUpdate[] = [
+    {
+      ...threadPaths[0],
+      postId: postIds[0],
+      newText: 'New post 0 text',
+    },
+    {
+      ...threadPaths[2],
+      postId: postIds[2],
+      newText: 'New post 2 text',
+    },
+    {
+      ...threadPaths[2],
+      postId: postIds[2],
+      newText: '',
+    },
+  ]
+  const updatePostsTextFixture = new UpdatePostsTextFixture(api, query, postTextUpdates)
+  const updatePostsTextRunner = new FixtureRunner(updatePostsTextFixture)
+  await updatePostsTextRunner.runWithQueryNodeChecks()
 
   debug('Done')
 }

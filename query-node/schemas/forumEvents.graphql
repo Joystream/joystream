@@ -362,6 +362,21 @@ type PostTextUpdatedEvent @entity {
   # Only author can edit the post, so no actor context required
 }
 
+type PostReactionResultCancel @variant {
+  _phantom: Int
+}
+
+type PostReactionResultValid @variant {
+  reaction: PostReaction!
+  reactionId: Int!
+}
+
+type PostReactionResultInvalid @variant {
+  reactionId: Int!
+}
+
+union PostReactionResult = PostReactionResultCancel | PostReactionResultValid | PostReactionResultInvalid
+
 type PostReactedEvent @entity {
   ### GENERIC DATA ###
 
@@ -385,8 +400,8 @@ type PostReactedEvent @entity {
   "The post beeing reacted to"
   post: ForumPost!
 
-  "The reaction. Overrides the previous reaction. If empty - cancels the previous reaction."
-  reaction: PostReaction
+  "The reaction result - new valid reaction, cancelation of previous reaction or invalid reaction (which also cancels the previous one)"
+  reactionResult: PostReactionResult!
 
   "The member reacting to the post"
   reactingMember: Membership!
