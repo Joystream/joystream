@@ -29,8 +29,9 @@ USAGE
 # Commands
 <!-- commands -->
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
-* [`storage-node wg:leader:create-bucket`](#storage-node-wgleadercreate-bucket)
-* [`storage-node wg:operator:accept-invitation [FILE]`](#storage-node-wgoperatoraccept-invitation-file)
+* [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
+* [`storage-node leader:update-bags [FILE]`](#storage-node-leaderupdate-bags-file)
+* [`storage-node operator:accept-invitation [FILE]`](#storage-node-operatoraccept-invitation-file)
 
 ## `storage-node help [COMMAND]`
 
@@ -49,31 +50,32 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
 
-## `storage-node wg:leader:create-bucket`
+## `storage-node leader:create-bucket`
 
 Create new storage bucket. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node wg:leader:create-bucket
+  $ storage-node leader:create-bucket
 
 OPTIONS
-  -a, --allow          Accepts new bags
-  -d, --dev            Use development mode
-  -h, --help           show CLI help
-  -n, --number=number  Storage bucket max total objects number
-  -s, --size=size      Storage bucket max total objects size
+  -a, --allow            Accepts new bags
+  -d, --dev              Use development mode
+  -h, --help             show CLI help
+  -i, --invited=invited  Invited storage operator ID (storage WG worker ID)
+  -n, --number=number    Storage bucket max total objects number
+  -s, --size=size        Storage bucket max total objects size
 ```
 
-_See code: [src/commands/wg/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/wg/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
 
-## `storage-node wg:operator:accept-invitation [FILE]`
+## `storage-node leader:update-bags [FILE]`
 
 describe the command here
 
 ```
 USAGE
-  $ storage-node wg:operator:accept-invitation [FILE]
+  $ storage-node leader:update-bags [FILE]
 
 OPTIONS
   -f, --force
@@ -81,5 +83,22 @@ OPTIONS
   -n, --name=name  name to print
 ```
 
-_See code: [src/commands/wg/operator/accept-invitation.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/wg/operator/accept-invitation.ts)_
+_See code: [src/commands/leader/update-bags.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bags.ts)_
+
+## `storage-node operator:accept-invitation [FILE]`
+
+Accept pending storage bucket invitation.
+
+```
+USAGE
+  $ storage-node operator:accept-invitation [FILE]
+
+OPTIONS
+  -b, --bucket=bucket  (required) Storage bucket ID
+  -d, --dev            Use development mode
+  -h, --help           show CLI help
+  -w, --worker=worker  (required) Storage operator worker ID
+```
+
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
 <!-- commandsstop -->

@@ -1,7 +1,7 @@
-import { createStorageBucket } from '../../../services/extrinsics'
+import { createStorageBucket } from '../../services/extrinsics'
 import { Command, flags } from '@oclif/command'
 
-export default class WgLeaderCreateBucket extends Command {
+export default class LeaderCreateBucket extends Command {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
 
   static flags = {
@@ -23,7 +23,7 @@ export default class WgLeaderCreateBucket extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(WgLeaderCreateBucket)
+    const { flags } = this.parse(LeaderCreateBucket)
 
     const objectSize = flags.size ?? 0
     const objectNumber = flags.number ?? 0

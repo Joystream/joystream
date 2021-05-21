@@ -16,7 +16,6 @@ export class ExtrinsicFailedError extends Error {}
 function createExtendedTypes(): RegistryTypes {
   const extendedTypes = types
   extendedTypes.StorageBucketId = 'u64'
-  extendedTypes.BagId = {}
   extendedTypes.UploadParameters = {}
   extendedTypes.DynamicBagId = {}
   extendedTypes.StorageBucketsPerBagValueConstraint = {}
@@ -26,9 +25,11 @@ function createExtendedTypes(): RegistryTypes {
   extendedTypes.DataObjectId = {}
   extendedTypes.DynamicBag = {}
   extendedTypes.StaticBag = {}
-  extendedTypes.StaticBag = {}
-  extendedTypes.StaticBagId = {}
   extendedTypes.StorageBucket = {}
+
+  extendedTypes.BagId = {_enum: {Static: 'StaticBagId'}}
+  extendedTypes.Static = 'StaticBagId'
+  extendedTypes.StaticBagId = {_enum: ['Council']}
 
   return extendedTypes
 }
