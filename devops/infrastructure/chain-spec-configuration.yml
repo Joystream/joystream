@@ -1,4 +1,4 @@
-- name: Configure chain spec on the deployed servers
+- name: Configure chain spec and start joystream-node service on the servers
   hosts: all
   vars:
     local_dir: ~/Joystream/joystream
@@ -6,6 +6,8 @@
     random_suffix: "{{ 10000 | random(1000) }}"
     data_path: ./data
     change_spec_path: "{{ data_path }}/chainspec.json"
+    remote_code_path: "/home/ubuntu/joystream"
+    remote_chain_spec_path: "{{ remote_code_path }}/chainspec.json"
   tasks:
   - name: Run subkey to generate node keys
     local_action: ansible.builtin.command {{ local_dir }}/target/release/chain-spec-builder generate -a 2 --chain-spec-path {{ change_spec_path }} --deployment live --endowed 1 --keystore-path {{ data_path }}
@@ -27,7 +29,7 @@
     run_once: true
 
   - name: Save output of chain spec to local file
-    local_action: copy content={{ chain_spec_output.stdout }} dest=./chain_spec_output.txt
+    local_action: copy content={{ chain_spec_output.stdout }} dest="{{ data_path }}/chain_spec_output.txt"
 
   - name: Change chain spec name, id, protocolId
     delegate_to: localhost
@@ -45,21 +47,47 @@
   - name: Copying chain spec file to server
     copy:
       src: "{{ change_spec_path }}"
-      dest: ~/joystream/chainspec.json
+      dest: "{{ remote_chain_spec_path }}"
+
+  - set_fact:
+      chain_path: "{{ remote_code_path }}/chains/{{ result.result.id }}"
+
+  - set_fact:
+      network_path: "{{ chain_path }}/network"
+      keystore_path: "{{ chain_path }}/keystore/"
   
+  - set_fact:
+      secret_path: "{{ network_path }}/secret"
+
   - name: Creating chains directory
     file:
       path: "{{ item }}"
       state: directory
     loop:
-      - "~/joystream/chains/{{ result.result.id }}/network"
+      - "{{ network_path }}"
 
   - name: Copy secret to remote host
     copy:
-      dest: "~/joystream/chains/{{ result.result.id }}/network/secret"
+      dest: "{{ secret_path }}"
       content: "{{ subkey_output.stdout }}"
 
   - name: Copy auth directory to remote host
     copy:
       src: "{{ data_path }}/auth-{{ ansible_play_batch.index(inventory_hostname) }}/"
-      dest: "~/joystream/chains/{{ result.result.id }}/keystore/"
+      dest: "{{ keystore_path }}"
+
+  - name: Create a service file
+    template:
+      src: joystream-node.service.j2
+      dest: /etc/systemd/system/joystream-node.service
+    vars:
+      keystore_path: "{{ keystore_path }}"
+      secret_path: "{{ secret_path }}"
+      keystore_path: "{{ remote_chain_spec_path }}"
+    become: yes
+
+  - name: Start service joystream-node, if not started
+    service:
+      name: joystream-node
+      state: started
+    become: yes
