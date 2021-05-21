@@ -16,7 +16,6 @@ export class ExtrinsicFailedError extends Error {}
 function createExtendedTypes(): RegistryTypes {
   const extendedTypes = types
   extendedTypes.StorageBucketId = 'u64'
-  extendedTypes.UploadParameters = {}
   extendedTypes.DynamicBagId = {}
   extendedTypes.StorageBucketsPerBagValueConstraint = {}
   extendedTypes.Voucher = {}
@@ -30,6 +29,15 @@ function createExtendedTypes(): RegistryTypes {
   extendedTypes.BagId = {_enum: {Static: 'StaticBagId'}}
   extendedTypes.Static = 'StaticBagId'
   extendedTypes.StaticBagId = {_enum: ['Council']}
+
+  extendedTypes.DataObjectCreationParameters = {}
+  extendedTypes.BagIdType = {_enum: {Static: 'StaticBagId'}}
+  extendedTypes.UploadParameters = {
+    authenticationKey: 'Vec<u8>',
+    bagId: 'BagId',
+    objectCreationList: 'Vec<DataObjectCreationParameters>',
+    deletionPrizeSourceAccountId : 'AccountId'
+  }
 
   return extendedTypes
 }
@@ -134,5 +142,19 @@ export async function sendAndFollowNamedTx(
 ): Promise<boolean> {
   console.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
   const tx = api.tx[module][method](...params)
+  return await sendAndFollowTx(api, account, tx, warnOnly)
+}
+
+//TODO: handle SUDO errors
+export async function sendAndFollowSudoNamedTx(
+  api: ApiPromise,
+  account: KeyringPair,
+  module: string,
+  method: string,
+  params: CodecArg[],
+  warnOnly = false
+): Promise<boolean> {
+  console.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+  const tx = api.tx.sudo.sudo(api.tx[module][method](...params))
   return await sendAndFollowTx(api, account, tx, warnOnly)
 }

@@ -28,10 +28,27 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
+* [`storage-node dev:upload [FILE]`](#storage-node-devupload-file)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
-* [`storage-node leader:update-bags [FILE]`](#storage-node-leaderupdate-bags-file)
+* [`storage-node leader:update-bag [FILE]`](#storage-node-leaderupdate-bag-file)
 * [`storage-node operator:accept-invitation [FILE]`](#storage-node-operatoraccept-invitation-file)
+
+## `storage-node dev:upload [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node dev:upload [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/dev/upload.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/upload.ts)_
 
 ## `storage-node help [COMMAND]`
 
@@ -69,21 +86,22 @@ OPTIONS
 
 _See code: [src/commands/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
 
-## `storage-node leader:update-bags [FILE]`
+## `storage-node leader:update-bag [FILE]`
 
-describe the command here
+Add/remove a storage bucket from a bag (adds by default).
 
 ```
 USAGE
-  $ storage-node leader:update-bags [FILE]
+  $ storage-node leader:update-bag [FILE]
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -b, --bucket=bucket  (required) Storage bucket ID
+  -d, --dev            Use development mode
+  -h, --help           show CLI help
+  -r, --remove         Remove a bucket from the bag
 ```
 
-_See code: [src/commands/leader/update-bags.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bags.ts)_
+_See code: [src/commands/leader/update-bag.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag.ts)_
 
 ## `storage-node operator:accept-invitation [FILE]`
 

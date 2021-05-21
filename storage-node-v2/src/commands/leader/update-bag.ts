@@ -22,7 +22,7 @@ export default class LeaderUpdateBag extends Command {
 
     const bucket = flags.bucket ?? 0
 
-    this.log('Creating storage bucket...')
+    this.log('Update bag - add storage buckets...')
     if (flags.dev) {
       this.log('development mode is ON')
     }
