@@ -9,6 +9,7 @@ use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
+#[cfg(feature = "standalone")]
 use sp_runtime::Perbill;
 
 pub use cumulus_primitives_core::ParaId;
@@ -17,8 +18,7 @@ use joystream_node_runtime::{
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
     GatewayWorkingGroupConfig, MembersConfig, Moment, OperationsWorkingGroupConfig,
-    ProposalsCodexConfig, SessionKeys, StakerStatus, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, DAYS, BABE_GENESIS_EPOCH_CONFIG
+    ProposalsCodexConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -27,7 +27,7 @@ pub use joystream_node_runtime::{AccountId, GenesisConfig, Signature};
 #[cfg(feature = "standalone")]
 use joystream_node_runtime::{
     AuthorityDiscoveryConfig, BabeConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
-    StakingConfig,
+    SessionKeys, StakerStatus, StakingConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 
 #[cfg(not(feature = "standalone"))]
@@ -42,6 +42,17 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec =
     sc_service::GenericChainSpec<joystream_node_runtime::GenesisConfig, Extensions>;
+
+/// The chain specification option. This is expected to come in from the CLI and
+/// is little more than one of a number of alternatives which can easily be converted
+/// from a string (`--chain=...`) into a `ChainSpec`.
+#[derive(Clone, Debug)]
+pub enum Alternative {
+    /// Whatever the current runtime is, with just Alice as an auth.
+    Development,
+    /// Whatever the current runtime is, with simple Alice/Bob auths.
+    LocalTestnet,
+}
 
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
@@ -98,13 +109,23 @@ pub fn get_authority_keys_from_seed(
     )
 }
 
+impl Alternative {
+    /// Get an actual chain config from one of the alternatives.
+    pub(crate) fn load(self, id: ParaId) -> Result<ChainSpec, String> {
+        Ok(match self {
+            Alternative::Development => development_config(id),
+            Alternative::LocalTestnet => local_testnet_config(id),
+        })
+    }
+}
+
 pub fn development_config(id: ParaId) -> ChainSpec {
     ChainSpec::from_genesis(
         // Name
         "Development",
         // ID
         "dev",
-        ChainType::Local,
+        ChainType::Development,
         move || {
             testnet_genesis(
                 vec![get_authority_keys_from_seed("Alice")],
@@ -126,9 +147,12 @@ pub fn development_config(id: ParaId) -> ChainSpec {
         vec![],
         None,
         None,
-        None,
+        Some(chain_spec_properties()),
         Extensions {
-            relay_chain: "rococo-dev".into(),
+            // TODO fix
+            // relay_chain: "rococo-dev".into(),
+            // Error: Input("Relay chain argument error: Invalid input: Error opening spec file: No such file or directory (os error 2)")
+            relay_chain: "rococo-local".into(),
             para_id: id.into(),
         },
     )
@@ -173,7 +197,7 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
         vec![],
         None,
         None,
-        None,
+        Some(chain_spec_properties()),
         Extensions {
             relay_chain: "rococo-local".into(),
             para_id: id.into(),
@@ -228,6 +252,7 @@ pub fn testnet_genesis(
     initial_balances: Vec<(AccountId, Balance)>,
     id: ParaId,
 ) -> GenesisConfig {
+    #[cfg(feature = "standalone")]
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
 
@@ -236,17 +261,9 @@ pub fn testnet_genesis(
     let default_storage_size_constraint =
         joystream_node_runtime::working_group::default_storage_size_constraint();
 
-    println!("{:?}", endowed_accounts);
-    println!("================================");
-    println!("{:?}", initial_authorities);
-
-    println!("{:?}", initial_balances);
-
     GenesisConfig {
         frame_system: SystemConfig {
-            code: joystream_node_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!")
-                .to_vec(),
+            code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         },
         pallet_balances: BalancesConfig {

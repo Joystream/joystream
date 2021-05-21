@@ -1,3 +1,4 @@
+#[cfg(feature = "standalone")]
 use crate::constants::*;
 use frame_support::traits::{OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};

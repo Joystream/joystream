@@ -1,6 +1,7 @@
 use crate::{
     chain_spec,
     cli::{Cli, RelayChainCli, Subcommand},
+    service,
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
@@ -25,8 +26,8 @@ fn load_spec(
     para_id: ParaId,
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id)),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id)),
+        "dev" => Box::new(chain_spec::Alternative::Development.load(para_id)?),
+        "local" => Box::new(chain_spec::Alternative::LocalTestnet.load(para_id)?),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -39,8 +40,8 @@ impl SubstrateCli for Cli {
     }
 
     fn impl_version() -> String {
-        // TODO: configure env
-        "SUBSTRATE_CLI_IMPL_VERSION".to_string()
+        // TODO fix environment variable `SUBSTRATE_CLI_IMPL_VERSION` not defined error
+        "SUBSTRATE_CLI_IMPL_VERSION".into()
     }
 
     fn description() -> String {
@@ -140,7 +141,7 @@ pub fn run() -> Result<()> {
                     task_manager,
                     import_queue,
                     ..
-                } = crate::service::new_partial(&config)?;
+                } = service::new_partial(&config)?;
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         }
@@ -151,7 +152,7 @@ pub fn run() -> Result<()> {
                     client,
                     task_manager,
                     ..
-                } = crate::service::new_partial(&config)?;
+                } = service::new_partial(&config)?;
                 Ok((cmd.run(client, config.database), task_manager))
             })
         }
@@ -162,7 +163,7 @@ pub fn run() -> Result<()> {
                     client,
                     task_manager,
                     ..
-                } = crate::service::new_partial(&config)?;
+                } = service::new_partial(&config)?;
                 Ok((cmd.run(client, config.chain_spec), task_manager))
             })
         }
@@ -174,7 +175,7 @@ pub fn run() -> Result<()> {
                     task_manager,
                     import_queue,
                     ..
-                } = crate::service::new_partial(&config)?;
+                } = service::new_partial(&config)?;
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         }
@@ -207,7 +208,7 @@ pub fn run() -> Result<()> {
                     task_manager,
                     backend,
                     ..
-                } = crate::service::new_partial(&config)?;
+                } = service::new_partial(&config)?;
                 Ok((cmd.run(client, backend), task_manager))
             })
         }
@@ -293,7 +294,7 @@ pub fn run() -> Result<()> {
                 info!("Parachain genesis state: {}", genesis_state);
                 info!("Is collating: {}", if collator { "yes" } else { "no" });
 
-                crate::service::start_node(config, key, polkadot_config, id, collator)
+                service::start_node(config, key, polkadot_config, id, collator)
                     .await
                     .map(|r| r.0)
                     .map_err(Into::into)

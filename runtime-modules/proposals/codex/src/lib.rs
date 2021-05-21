@@ -85,6 +85,7 @@ const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
 // Max validator count for the 'set validator count' proposal
+#[cfg(feature = "standalone")]
 const MAX_VALIDATOR_COUNT: u32 = 300;
 // council_size min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 6;
