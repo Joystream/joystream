@@ -84,3 +84,26 @@ export async function updateStorageBucketsForBag(
     console.error(`Api Error: ${err}`)
   }
 }
+
+export async function uploadDataObjects(): Promise<void> {
+  try {
+    const api = await createApi()
+
+    const keyring = new Keyring({ type: 'sr25519' })
+    const alice = keyring.addFromUri('//Alice')
+
+    let data = api.createType('UploadParameters', {
+      deletionPrizeSourceAccountId: alice.address
+    })
+
+    await sendAndFollowNamedTx(
+      api,
+      alice,
+      'storage',
+      'sudoUploadDataObjects',
+      [data]
+    )
+  } catch (err) {
+    console.error(`Api Error: ${err}`)
+  }
+}
