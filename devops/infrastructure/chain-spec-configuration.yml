@@ -1,12 +1,14 @@
 - name: Configure chain spec on the deployed servers
   hosts: all
   vars:
-    base_dir: ~/Joystream/joystream
-    random_suffix: 5154
-    change_spec_path: ./data/chainspec.json
+    local_dir: ~/Joystream/joystream
+    # Generates random number between 1000..9999
+    random_suffix: "{{ 10000 | random(1000) }}"
+    data_path: ./data
+    change_spec_path: "{{ data_path }}/chainspec.json"
   tasks:
   - name: Run subkey to generate node keys
-    local_action: ansible.builtin.command {{ base_dir }}/target/release/chain-spec-builder generate -a 2 --chain-spec-path {{ change_spec_path }} --deployment live --endowed 1 --keystore-path ./data/
+    local_action: ansible.builtin.command {{ local_dir }}/target/release/chain-spec-builder generate -a 2 --chain-spec-path {{ change_spec_path }} --deployment live --endowed 1 --keystore-path {{ data_path }}
     register: chain_spec_output
     run_once: true
 
@@ -21,8 +23,11 @@
       - "Private Key: {{ subkey_output.stdout }}"
 
   - name: Print to stdout chain spec
-    debug: var=chain_spec_output
+    debug: var=chain_spec_output.stdout
     run_once: true
+
+  - name: Save output of chain spec to local file
+    local_action: copy content={{ chain_spec_output.stdout }} dest=./chain_spec_output.txt
 
   - name: Change chain spec name, id, protocolId
     delegate_to: localhost
@@ -33,8 +38,9 @@
     register: result
     run_once: true
 
-  - debug:
-      var: result
+  - name: Print output of modified chainspec
+    debug:
+      var: result.result
 
   - name: Copying chain spec file to server
     copy:
@@ -55,5 +61,5 @@
 
   - name: Copy auth directory to remote host
     copy:
-      src: "./data/auth-{{ ansible_play_batch.index(inventory_hostname) }}/"
+      src: "{{ data_path }}/auth-{{ ansible_play_batch.index(inventory_hostname) }}/"
       dest: "~/joystream/chains/{{ result.result.id }}/keystore/"

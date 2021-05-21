@@ -1,7 +1,10 @@
 ---
 
-- name: Configure Joystream Node
+- name: Get latest Joystream code and build it
   hosts: all
+  vars:
+    # branch_name can be sha1, tag, branch
+    branch_name: "master"
   tasks:
     - name: Creat bash profile file
       command: "touch /home/ubuntu/.bash_profile"
@@ -9,11 +12,12 @@
       ansible.builtin.git:
         repo: 'https://github.com/Joystream/joystream.git'
         dest: ~/joystream
+        version: "{{ branch_name }}"
     - name: Run setup script
       command: ./setup.sh
       args:
         chdir: ~/joystream
     - name: Build joystream node
-      shell: . ~/.bash_profile && yarn cargo-build >> output.log
+      shell: . ~/.bash_profile && yarn cargo-build
       args:
         chdir: ~/joystream
