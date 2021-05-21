@@ -183,7 +183,7 @@ export class Transport extends BaseTransport implements ITransport {
       const leadWorker = await this.queryCachedByGroup(group).workerById(leadId) as Worker;
 
       return {
-        lead: await this.groupMember(group, leadId, leadWorker),
+        lead: { ...await this.groupMember(group, leadId, leadWorker), title: _.startCase(group) + ' Lead' },
         loaded: true
       };
     } else {
@@ -201,7 +201,7 @@ export class Transport extends BaseTransport implements ITransport {
     const workers = (await this.entriesByIds<WorkerId, Worker>(
       this.queryByGroup(group).workerById
     ))
-      .filter(([id, worker]) => worker.is_active && (!leadStatus.lead?.workerId || !id.eq(leadStatus.lead.workerId)));
+      .filter(([id, worker]) => worker.is_active && (typeof leadStatus.lead?.workerId === 'undefined' || !id.eq(leadStatus.lead.workerId)));
 
     return {
       leadStatus,
@@ -498,7 +498,7 @@ export class Transport extends BaseTransport implements ITransport {
 
           return {
             workerId: id,
-            name: (groupLead?.workerId && groupLead.workerId === id.toNumber())
+            name: ((groupLead?.workerId !== undefined) && groupLead.workerId === id.toNumber())
               ? _.startCase(group) + ' Lead'
               : workerRoleNameByGroup[group],
             reward: earnedValue,

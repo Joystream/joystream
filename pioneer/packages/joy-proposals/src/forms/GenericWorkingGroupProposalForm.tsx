@@ -43,6 +43,10 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
+const availableGroupsOptions = Object.keys(WorkingGroupDef)
+  .filter((wgKey) => wgKey !== 'Gateway') // Gateway group not yet supported!
+  .map((wgKey) => ({ text: wgKey + ' Working Group', value: wgKey }))
+
 export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const {
     handleChange,
@@ -81,7 +85,7 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
           name='workingGroup'
           placeholder='Select the working group'
           selection
-          options={Object.keys(WorkingGroupDef).map((wgKey) => ({ text: wgKey + ' Working Group', value: wgKey }))}
+          options={availableGroupsOptions}
           value={values.workingGroup}
           onChange={ handleChange }
         />
