@@ -3,7 +3,11 @@
 STACK_NAME=joystream-node
 REGION=us-east-1
 CLI_PROFILE=joystream-user
-KEY_PATH=""
+KEY_PATH="./joystream-key.pem"
+
+BRANCH_NAME=sumer
+
+LOCAL_CODE_PATH="~/Joystream/joystream"
 
 EC2_INSTANCE_TYPE=t2.xlarge
 
@@ -19,7 +23,7 @@ aws cloudformation deploy \
   --parameter-overrides \
     EC2InstanceType=$EC2_INSTANCE_TYPE
 
-# If the deploy succeeded, show the DNS name of the created instance
+# If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then
   aws cloudformation list-exports \
     --profile $CLI_PROFILE \
@@ -27,8 +31,8 @@ if [ $? -eq 0 ]; then
     --output text | sed 's/\t\t*/\n/g' > inventory
 
   echo -e "\n\n=========== Configuring the servers ==========="
-  ansible-playbook -i inventory -v --private-key $KEY_PATH configure.yml
+  ansible-playbook -i inventory -v --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME"
 
   echo -e "\n\n=========== Configuring the chain spec file ==========="
-  ansible-playbook -i inventory -v --private-key $KEY_PATH chain-spec-configuration.yml
+  ansible-playbook -i inventory -v --private-key $KEY_PATH chain-spec-configuration.yml --extra-vars "local_dir=$LOCAL_CODE_PATH"
 fi
