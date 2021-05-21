@@ -18,7 +18,7 @@ use joystream_node_runtime::{
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
     GatewayWorkingGroupConfig, MembersConfig, Moment, OperationsWorkingGroupConfig,
     ProposalsCodexConfig, SessionKeys, StakerStatus, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, DAYS,
+    SystemConfig, DAYS, BABE_GENESIS_EPOCH_CONFIG
 };
 
 // Exported to be used by chain-spec-builder
@@ -227,7 +227,7 @@ pub fn testnet_genesis(
     data_directory_config: DataDirectoryConfig,
     initial_balances: Vec<(AccountId, Balance)>,
     id: ParaId,
-) -> joystream_node_runtime::GenesisConfig {
+) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
 
@@ -236,7 +236,13 @@ pub fn testnet_genesis(
     let default_storage_size_constraint =
         joystream_node_runtime::working_group::default_storage_size_constraint();
 
-    joystream_node_runtime::GenesisConfig {
+    println!("{:?}", endowed_accounts);
+    println!("================================");
+    println!("{:?}", initial_authorities);
+
+    println!("{:?}", initial_balances);
+
+    GenesisConfig {
         frame_system: SystemConfig {
             code: joystream_node_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
@@ -248,7 +254,9 @@ pub fn testnet_genesis(
                 .iter()
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
-                .chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
+                // TODO Fix dulicates in initial_authorities
+                // Additional duplicates check in new balances pallet crashes runtime
+                //.chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
                 .chain(
                     initial_balances
                         .iter()
@@ -260,7 +268,7 @@ pub fn testnet_genesis(
         #[cfg(feature = "standalone")]
         pallet_babe: BabeConfig {
             authorities: vec![],
-            epoch_config: None,
+            epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
         },
         #[cfg(feature = "standalone")]
         pallet_im_online: ImOnlineConfig { keys: vec![] },

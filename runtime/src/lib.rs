@@ -952,7 +952,6 @@ macro_rules! construct_joystream_runtime {
 
 				// Tokens & Related
 				Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 4,
-
 				TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 5,
 
                 // Joystream
