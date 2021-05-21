@@ -47,3 +47,40 @@ export async function acceptStorageBucketInvitation(
     console.error(`Api Error: ${err}`)
   }
 }
+
+//TODO: 
+// export enum BagId {
+//   Static = 'static',
+//   Dynamic = 'dynamic',
+// }
+
+export async function updateStorageBucketsForBag(
+  bucketId: number,
+  removeBucket: boolean
+): Promise<void> {
+  try {
+    const api = await createApi()
+
+    const keyring = new Keyring({ type: 'sr25519' })
+    const alice = keyring.addFromUri('//Alice')
+
+    let addBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
+    let removeBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
+
+    if (removeBucket) {
+      addBuckets = null
+    } else {
+      removeBuckets = null
+    }
+
+    await sendAndFollowNamedTx(
+      api,
+      alice,
+      'storage',
+      'updateStorageBucketsForBag',
+      [{"Static":"Council"}, addBuckets, removeBuckets]
+    )
+  } catch (err) {
+    console.error(`Api Error: ${err}`)
+  }
+}
