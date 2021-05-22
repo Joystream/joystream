@@ -123,7 +123,8 @@ type TokenomicsGroup =
   'validators' |
   'council' |
   'storageProviders' |
-  'contentCurators'
+  'contentCurators' |
+  'operations'
 
 const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerData | null}> = ({ data, statusData }) => {
   const { width } = useWindowDimensions();
@@ -139,6 +140,8 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         : (data && statusData) && `${(data[group][dataType] * Number(statusData.price)).toFixed(2)}`;
     }
   };
+
+  console.log(data);
 
   return (
     <StyledTable divideColumnsAt={[3, 6, 9]} celled>
@@ -228,6 +231,30 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStakeDollar={displayStatusData('contentCurators', 'totalStake', true)}
           stakeShare={data && `${round(data.contentCurators.lead.stakeShare * 100)}`}
           color='rgb(100, 160, 190)'
+        />
+        <SpendingAndStakeTableRow
+          role='Operations'
+          helpContent='The current Operations members, and the sum of their projected rewards and stakes.'
+          numberOfActors={data && `${data.operations.number}`}
+          groupEarning={data && `${Math.round(data.operations.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operations', 'rewardsPerWeek')}
+          earningShare={data && `${round(data.operations.rewardsShare * 100)}`}
+          groupStake={data && `${data.operations.totalStake}`}
+          groupStakeDollar={displayStatusData('operations', 'totalStake')}
+          stakeShare={data && `${round(data.operations.stakeShare * 100)}`}
+          color='rgb(30, 166, 165)'
+        />
+        <SpendingAndStakeTableRow
+          role='Operations Lead'
+          helpContent='Current Operations Lead, and their projected reward and stake.'
+          numberOfActors={data && `${data.operations.lead.number}`}
+          groupEarning={data && `${Math.round(data.operations.lead.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operations', 'rewardsPerWeek', true)}
+          earningShare={data && `${round(data.operations.lead.rewardsShare * 100)}`}
+          groupStake={data && `${data.operations.lead.totalStake}`}
+          groupStakeDollar={displayStatusData('operations', 'totalStake', true)}
+          stakeShare={data && `${round(data.operations.lead.stakeShare * 100)}`}
+          color='rgb(30, 132, 189)'
         />
         <SpendingAndStakeTableRow
           role='TOTAL'

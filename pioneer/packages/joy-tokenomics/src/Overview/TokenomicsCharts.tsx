@@ -54,6 +54,14 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
             colors: ['rgb(100, 160, 190)'],
             label: 'Content Curators Lead',
             value: data.contentCurators.lead.rewardsShare * 100
+          }, {
+            colors: ['rgb(30, 166, 165)'],
+            label: 'Operations',
+            value: data.operations.rewardsShare * 100
+          }, {
+            colors: ['rgb(30, 132, 189)'],
+            label: 'Operations Lead',
+            value: data.operations.lead.rewardsShare * 100
           }
           ]} />
         <Label as='div'>
