@@ -109,7 +109,7 @@ services:
     command: ["workspace", "query-node-root", "processor:start"]
 
   indexer:
-    image: joystream/hydra-indexer:2.1.0-beta.5
+    image: joystream/hydra-indexer:2.1.0-beta.9
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
