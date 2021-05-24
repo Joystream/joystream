@@ -69,7 +69,7 @@ export function GroupLeadView (props: GroupMember) {
         <Card.Header><HandleView profile={props.profile} /></Card.Header>
         <Card.Meta>{props.title}</Card.Meta>
         <Card.Meta>
-          { props.workerId && (
+          { (props.workerId !== undefined) && (
             <Label>{ 'Worker ID: ' + props.workerId.toString() }</Label>
           ) }
         </Card.Meta>
