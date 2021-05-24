@@ -1,7 +1,8 @@
-import { Command, flags } from '@oclif/command'
+import { flags } from '@oclif/command'
 import { uploadDataObjects } from '../../services/extrinsics'
+import ApiCommandBase from '../../command-base/ApiCommandBase'
 
-export default class DevUpload extends Command {
+export default class DevUpload extends ApiCommandBase {
   static description = 'describe the command here'
 
   static flags = {
@@ -20,12 +21,5 @@ export default class DevUpload extends Command {
     }
 
     await uploadDataObjects()
-  }
-
-  async finally(err: Error | undefined): Promise<void> {
-    // called after run and catch regardless of whether or not the command errored
-    // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
-    if (!err) this.exit(0)
-    super.finally(err)
   }
 }

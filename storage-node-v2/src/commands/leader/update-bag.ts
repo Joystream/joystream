@@ -1,7 +1,8 @@
-import { Command, flags } from '@oclif/command'
+import { flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/extrinsics'
+import ApiCommandBase from '../../command-base/ApiCommandBase'
 
-export default class LeaderUpdateBag extends Command {
+export default class LeaderUpdateBag extends ApiCommandBase {
   static description =
     'Add/remove a storage bucket from a bag (adds by default).'
 
@@ -32,12 +33,5 @@ export default class LeaderUpdateBag extends Command {
     }
 
     await updateStorageBucketsForBag(bucket, flags.remove)
-  }
-
-  async finally(err: Error | undefined): Promise<void> {
-    // called after run and catch regardless of whether or not the command errored
-    // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
-    if (!err) this.exit(0)
-    super.finally(err)
   }
 }

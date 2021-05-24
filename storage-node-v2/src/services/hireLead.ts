@@ -1,7 +1,5 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { Keyring } from '@polkadot/keyring'
-import { createApi, sendAndFollowTx } from './api'
+import { createApi, getAlicePair, sendAndFollowTx } from './api'
 
 import { Option, Vec } from '@polkadot/types'
 import {
@@ -24,9 +22,9 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
     LeadKeyPair.address
   )) as Vec<MemberId>
 
-  let memberId: bigint | undefined = (
-    members.toArray()[0] as MemberId
-  )?.toBigInt()
+  let memberId:
+    | bigint
+    | undefined = (members.toArray()[0] as MemberId)?.toBigInt()
 
   if (memberId === undefined) {
     console.log('Preparing member account creation extrinsic...')
@@ -40,8 +38,9 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
   }
 
   // Create a new lead opening.
-  const currentLead =
-    (await api.query.storageWorkingGroup.currentLead()) as Option<WorkerId>
+  const currentLead = (await api.query.storageWorkingGroup.currentLead()) as Option<
+    WorkerId
+  >
   if (currentLead.isSome) {
     console.log('Storage lead already exists, skipping...')
     return
@@ -49,12 +48,8 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
 
   console.log(`Making member id: ${memberId} the content lead.`)
 
-  const newOpeningId = (
-    (await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId
-  ).toBigInt()
-  const newApplicationId = (
-    (await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId
-  ).toBigInt()
+  const newOpeningId = ((await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId).toBigInt()
+  const newApplicationId = ((await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId).toBigInt()
 
   // Create curator lead opening
   console.log('Preparing Create Storage Lead Opening extrinsic...')
@@ -109,9 +104,4 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
       )
     )
   )
-}
-
-function getAlicePair(): KeyringPair {
-  const keyring = new Keyring({ type: 'sr25519' })
-  return keyring.addFromUri('//Alice')
 }
