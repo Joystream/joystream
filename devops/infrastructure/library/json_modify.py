@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-from ansible.module_utils.basic import *
 import json
+from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
@@ -9,14 +9,7 @@ def main():
         "change_spec_path": {"required": True, "type": "str"},
         "file_content": {"required": False, "type": "str" },
         "prefix": {"required": False, "type": "str" },
-        "all_nodes": {"required": False, "type": "dict" },
-        # "description": {"required": False, "type": "str"},
-        # "private": {"default": False, "type": "bool" },
-        # "state": {
-        # 	"default": "present", 
-        # 	"choices": ['present', 'absent'],  
-        # 	"type": 'str' 
-        # },
+        "all_nodes": {"required": False, "type": "dict" }
     }
     module = AnsibleModule(argument_spec=fields)
     prefix = module.params["prefix"]
@@ -25,9 +18,7 @@ def main():
 
     with open(change_spec_path) as f:
         data = json.load(f)
-    # data = json.loads(module.params["file_content"])
-    # print(data)
-    # response = {"hello": "world"}
+
     response = {
         "name": f'{data["name"]} {prefix}',
         "id": f'{data["id"]}_{prefix}',

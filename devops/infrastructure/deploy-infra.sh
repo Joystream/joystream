@@ -1,17 +1,8 @@
 #!/bin/bash
 
-STACK_NAME=joystream-node
-REGION=us-east-1
-CLI_PROFILE=joystream-user
-KEY_PATH=""
-AWS_KEY_PAIR_NAME=""
-BRANCH_NAME=sumer
-LOCAL_CODE_PATH="~/Joystream/joystream"
-EC2_INSTANCE_TYPE=t2.xlarge
-# Set a prebuilt AMI if required
-EC2_AMI_ID=""
+source bash-config.cfg
 
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $CLI_PROFILE --query Account --output text)
 
 NEW_STACK_NAME="${STACK_NAME}-${ACCOUNT_ID}"
 
@@ -36,8 +27,6 @@ if [ $? -eq 0 ]; then
     --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}PublicIp')].Value" \
     --output text | sed 's/\t\t*/\n/g' > inventory
 
-  sleep 15s
-
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Configuring the servers ==========="
@@ -45,5 +34,6 @@ if [ $? -eq 0 ]; then
   fi
 
   echo -e "\n\n=========== Configuring the chain spec file ==========="
-  ansible-playbook -i inventory --private-key $KEY_PATH chain-spec-configuration.yml --extra-vars "local_dir=$LOCAL_CODE_PATH"
+  ansible-playbook -i inventory --private-key $KEY_PATH chain-spec-configuration.yml \
+    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME"
 fi
