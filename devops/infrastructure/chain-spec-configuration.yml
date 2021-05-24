@@ -3,7 +3,7 @@
   vars:
     local_dir: ~/Joystream/joystream
     # Generates random number between 1000..9999
-    random_suffix: "{{ 10000 | random(1000) }}"
+    network_suffix: "{{ 10000 | random(1000) }}"
     data_path: ./data
     change_spec_path: "{{ data_path }}/chainspec.json"
     remote_code_path: "/home/ubuntu/joystream"
@@ -35,7 +35,7 @@
     delegate_to: localhost
     json_modify:
       change_spec_path: "{{ change_spec_path }}"
-      prefix: "{{ random_suffix }}"
+      prefix: "{{ network_suffix }}"
       all_nodes: "{{ hostvars }}"
     register: result
     run_once: true
@@ -81,9 +81,9 @@
       src: joystream-node.service.j2
       dest: /etc/systemd/system/joystream-node.service
     vars:
-      keystore_path: "{{ keystore_path }}"
-      secret_path: "{{ secret_path }}"
-      keystore_path: "{{ remote_chain_spec_path }}"
+      template_keystore_path: "{{ keystore_path }}"
+      template_secret_path: "{{ secret_path }}"
+      template_remote_chain_spec_path: "{{ remote_chain_spec_path }}"
     become: yes
 
   - name: Start service joystream-node, if not started

@@ -62,21 +62,13 @@ Resources:
             # Update all packages
             apt-get update -y
 
-            # Get latest cfn scripts;
-            # apt-get install -y python3-pip
+            # Get latest cfn scripts and install them;
             apt-get install -y python3-setuptools
             mkdir -p /opt/aws/bin
-
-            # pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
             wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
             python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
 
-            # curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-            # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-            # apt-get update -y
-            # apt-get install -y yarn
-
-            ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
   Instance:
     Type: AWS::EC2::Instance
@@ -97,6 +89,16 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_2'
+
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties:
+      Handle: !Ref 'WaitHandle'
+      Timeout: '300'
+      Count: 2
 
 Outputs:
   PublicIp:
