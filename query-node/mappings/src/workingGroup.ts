@@ -6,6 +6,7 @@ import { Bytes } from '@polkadot/types'
 import {
   inconsistentState,
   logger,
+  createPredictableId,
 } from './common'
 
 import {
@@ -30,7 +31,7 @@ export async function storageWorkingGroup_OpeningFilled(db: DatabaseManager, eve
   const {applicationIdToWorkerIdMap} = new StorageWorkingGroup.OpeningFilledEvent(event).data
 
   // call generic processing
-  await workingGroup_OpeningFilled(db, WorkerType.STORAGE, applicationIdToWorkerIdMap)
+  await workingGroup_OpeningFilled(db, WorkerType.STORAGE, applicationIdToWorkerIdMap, event.blockNumber, event.index)
 }
 
 export async function storageWorkingGroup_WorkerStorageUpdated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -72,7 +73,7 @@ export async function gatewayWorkingGroup_OpeningFilled(db: DatabaseManager, eve
   const {applicationIdToWorkerIdMap} = new GatewayWorkingGroup.OpeningFilledEvent(event).data
 
   // call generic processing
-  await workingGroup_OpeningFilled(db, WorkerType.GATEWAY, applicationIdToWorkerIdMap)
+  await workingGroup_OpeningFilled(db, WorkerType.GATEWAY, applicationIdToWorkerIdMap, event.blockNumber, event.index)
 }
 
 export async function gatewayWorkingGroup_WorkerStorageUpdated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -112,12 +113,14 @@ export async function gatewayWorkingGroup_TerminatedLeader(db: DatabaseManager, 
 export async function workingGroup_OpeningFilled(
   db: DatabaseManager,
   workerType: WorkerType,
-  applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap
+  applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap,
+  blockNumber: number,
+  eventIndex: number,
 ): Promise<void> {
   const workerIds = [...applicationIdToWorkerIdMap.values()]
 
   for (const workerId of workerIds) {
-    await createWorker(db, workerId, workerType)
+    await createWorker(db, workerId, workerType, blockNumber, eventIndex)
   }
 
   // emit log event
@@ -172,9 +175,15 @@ export async function workingGroup_TerminatedLeader(db: DatabaseManager, workerT
 
 /////////////////// Helpers ////////////////////////////////////////////////////
 
-async function createWorker(db: DatabaseManager, workerId: WorkerId, workerType: WorkerType): Promise<void> {
-  // create new worker
+async function createWorker(
+  db: DatabaseManager,
+  workerId: WorkerId,
+  workerType: WorkerType,
+  blockNumber: number,
+  eventIndex: number,
+): Promise<void> {
   const newWorker = new Worker({
+    id: createPredictableId(blockNumber, eventIndex, workerType),
     workerId: workerId.toString(),
     type: workerType,
     isActive: true,

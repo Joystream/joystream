@@ -11,6 +11,7 @@ import {
 import {
   inconsistentState,
   logger,
+  createPredictableId,
 } from '../common'
 
 import {
@@ -57,6 +58,7 @@ export async function content_VideoCategoryCreated(
       metadata: videoCategoryCreationParameters.meta,
       db,
       blockNumber: event.blockNumber,
+      eventIndex: event.index,
     }
   )
 
@@ -109,6 +111,7 @@ export async function content_VideoCategoryUpdated(
       metadata: videoCategoryUpdateParameters.new_meta,
       db,
       blockNumber: event.blockNumber,
+      eventIndex: event.index,
     }
   )
 
@@ -172,6 +175,7 @@ export async function content_VideoCreated(
       metadata: videoCreationParameters.meta,
       db,
       blockNumber: event.blockNumber,
+      eventIndex: event.index,
       assets: videoCreationParameters.assets,
       contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
     }
@@ -186,7 +190,7 @@ export async function content_VideoCreated(
   }
 
   // prepare video media metadata (if any)
-  const fixedProtobuf = integrateVideoMediaMetadata(null, protobufContent, event.blockNumber)
+  const fixedProtobuf = integrateVideoMediaMetadata(null, protobufContent, event.index, event.blockNumber)
 
   // create new video
   const video = new Video({
@@ -253,13 +257,14 @@ export async function content_VideoUpdated(
         metadata: newMetadata,
         db,
         blockNumber: event.blockNumber,
+        eventIndex: event.index,
         assets: videoUpdateParameters.assets.unwrapOr([]),
         contentOwner: convertContentActorToDataObjectOwner(contentActor, (new BN(video.channel.id)).toNumber()),
       }
     )
 
     // prepare video media metadata (if any)
-    const fixedProtobuf = integrateVideoMediaMetadata(video, protobufContent, event.blockNumber)
+    const fixedProtobuf = integrateVideoMediaMetadata(video, protobufContent, event.index, event.blockNumber)
 
     // remember original license
     const originalLicense = video.license
@@ -430,6 +435,7 @@ export async function content_FeaturedVideosSet(
 function integrateVideoMediaMetadata(
   existingRecord: Video | null,
   metadata: Partial<Video>,
+  eventIndex: number,
   blockNumber: number,
 ): Partial<Video> {
   if (!metadata.mediaMetadata) {
@@ -466,6 +472,14 @@ function integrateVideoMediaMetadata(
 
   // connect encoding to media metadata object
   mediaMetadata.encoding = encoding
+
+  // ensure predictable ids
+  if (!mediaMetadata.encoding.id) {
+    mediaMetadata.encoding.id = createPredictableId(blockNumber, eventIndex, mediaMetadata.encoding)
+  }
+  if (!mediaMetadata.id) {
+    mediaMetadata.id = createPredictableId(blockNumber, eventIndex, mediaMetadata)
+  }
 
   return {
     ...metadata,

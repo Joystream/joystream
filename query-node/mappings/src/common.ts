@@ -1,6 +1,7 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { u64 } from '@polkadot/types/primitive';
+import * as crypto from 'crypto'
 
 // Asset
 import {
@@ -41,11 +42,28 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 }
 
 /*
+  Creates a predictable and unique ID for the given content.
+*/
+export function createPredictableId(blockNumber: number, eventIndex: number, content: string | Object): string {
+  const contentType = typeof content == 'string'
+    ? content
+    : JSON.stringify(content)
+
+  const id = `${blockNumber}_${eventIndex}_${contentType}`
+
+  return crypto
+    .createHash('sha256')
+    .update(id, 'utf-8')
+    .digest('base64')
+}
+
+/*
   Prepares data object from content parameters.
 */
 export async function prepareDataObject(
   contentParameters: ContentParameters,
   blockNumber: number,
+  eventIndex: number,
   owner: typeof DataObjectOwner,
 ): Promise<DataObject> {
   // convert generic content parameters coming from processor to custom Joystream data type
@@ -63,6 +81,8 @@ export async function prepareDataObject(
     createdById: '1',
     updatedById: '1',
   })
+
+  dataObject.id = createPredictableId(blockNumber, eventIndex, dataObject)
 
   return dataObject
 }
