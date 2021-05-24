@@ -30,7 +30,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
 
     this.log('Accepting pending storage bucket invitation...')
     if (flags.dev) {
-      this.log('development mode is ON')
+      await this.ensureDevelopmentChain()
     }
 
     await acceptStorageBucketInvitation(worker, bucket)

@@ -33,7 +33,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
 
     this.log('Creating storage bucket...')
     if (flags.dev) {
-      this.log('development mode is ON')
+      await this.ensureDevelopmentChain()
     }
 
     await createStorageBucket(

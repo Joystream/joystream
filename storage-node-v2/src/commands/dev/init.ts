@@ -11,6 +11,8 @@ export default class DevInit extends ApiCommandBase {
   }
 
   async run(): Promise<void> {
+    await this.ensureDevelopmentChain()
+
     await hireStorageWorkingGroupLead()
   }
 }
