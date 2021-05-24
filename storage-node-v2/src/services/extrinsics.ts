@@ -1,6 +1,4 @@
-import { Keyring } from '@polkadot/keyring'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { createApi, sendAndFollowNamedTx } from './api'
+import { createApi, sendAndFollowNamedTx, getAlicePair } from './api'
 
 export async function createStorageBucket(
   invitedWorker: number | null = null,
@@ -11,8 +9,7 @@ export async function createStorageBucket(
   try {
     const api = await createApi()
 
-    const keyring = new Keyring({ type: 'sr25519' })
-    const alice = keyring.addFromUri('//Alice')
+    const alice = getAlicePair()
 
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
 
@@ -34,8 +31,7 @@ export async function acceptStorageBucketInvitation(
   try {
     const api = await createApi()
 
-    const keyring = new Keyring({ type: 'sr25519' })
-    const alice = keyring.addFromUri('//Alice')
+    const alice = getAlicePair()
 
     await sendAndFollowNamedTx(
       api,
@@ -89,8 +85,7 @@ export async function uploadDataObjects(): Promise<void> {
   try {
     const api = await createApi()
 
-    const keyring = new Keyring({ type: 'sr25519' })
-    const alice = keyring.addFromUri('//Alice')
+    const alice = getAlicePair()
 
     const data = api.createType('UploadParameters', {
       deletionPrizeSourceAccountId: alice.address,
@@ -102,9 +97,4 @@ export async function uploadDataObjects(): Promise<void> {
   } catch (err) {
     console.error(`Api Error: ${err}`)
   }
-}
-
-function getAlicePair(): KeyringPair {
-  const keyring = new Keyring({ type: 'sr25519' })
-  return keyring.addFromUri('//Alice')
 }

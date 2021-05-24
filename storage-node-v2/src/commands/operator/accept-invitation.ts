@@ -1,7 +1,8 @@
-import { Command, flags } from '@oclif/command'
+import { flags } from '@oclif/command'
 import { acceptStorageBucketInvitation } from '../../services/extrinsics'
+import ApiCommandBase from '../../command-base/ApiCommandBase'
 
-export default class OperatorAcceptInvitation extends Command {
+export default class OperatorAcceptInvitation extends ApiCommandBase {
   static description = 'Accept pending storage bucket invitation.'
 
   static flags = {
@@ -33,12 +34,5 @@ export default class OperatorAcceptInvitation extends Command {
     }
 
     await acceptStorageBucketInvitation(worker, bucket)
-  }
-
-  async finally(err: Error | undefined): Promise<void> {
-    // called after run and catch regardless of whether or not the command errored
-    // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
-    if (!err) this.exit(0)
-    super.finally(err)
   }
 }

@@ -13,6 +13,7 @@ import {
   DispatchError,
   DispatchResult,
 } from '@polkadot/types/interfaces/system'
+import { Keyring } from '@polkadot/keyring'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -161,7 +162,6 @@ export async function sendAndFollowNamedTx(
   return await sendAndFollowTx(api, account, tx, warnOnly)
 }
 
-//TODO: handle SUDO errors
 export async function sendAndFollowSudoNamedTx(
   api: ApiPromise,
   account: KeyringPair,
@@ -173,4 +173,9 @@ export async function sendAndFollowSudoNamedTx(
   console.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
   const tx = api.tx.sudo.sudo(api.tx[module][method](...params))
   return await sendAndFollowTx(api, account, tx, warnOnly)
+}
+
+export function getAlicePair(): KeyringPair {
+  const keyring = new Keyring({ type: 'sr25519' })
+  return keyring.addFromUri('//Alice')
 }

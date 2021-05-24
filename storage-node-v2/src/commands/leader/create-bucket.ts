@@ -1,7 +1,8 @@
 import { createStorageBucket } from '../../services/extrinsics'
-import { Command, flags } from '@oclif/command'
+import { flags } from '@oclif/command'
+import ApiCommandBase from '../../command-base/ApiCommandBase'
 
-export default class LeaderCreateBucket extends Command {
+export default class LeaderCreateBucket extends ApiCommandBase {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
 
   static flags = {
@@ -41,12 +42,5 @@ export default class LeaderCreateBucket extends Command {
       objectSize,
       objectNumber
     )
-  }
-
-  async finally(err: Error | undefined): Promise<void> {
-    // called after run and catch regardless of whether or not the command errored
-    // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
-    if (!err) this.exit(0)
-    super.finally(err)
   }
 }
