@@ -28,11 +28,28 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
+* [`storage-node dev:init [FILE]`](#storage-node-devinit-file)
 * [`storage-node dev:upload [FILE]`](#storage-node-devupload-file)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:update-bag [FILE]`](#storage-node-leaderupdate-bag-file)
 * [`storage-node operator:accept-invitation [FILE]`](#storage-node-operatoraccept-invitation-file)
+
+## `storage-node dev:init [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node dev:init [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/dev/init.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/init.ts)_
 
 ## `storage-node dev:upload [FILE]`
 
@@ -43,9 +60,8 @@ USAGE
   $ storage-node dev:upload [FILE]
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -d, --dev   Use development mode
+  -h, --help  show CLI help
 ```
 
 _See code: [src/commands/dev/upload.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/upload.ts)_

@@ -1,15 +1,15 @@
-import {Command, flags} from '@oclif/command'
+import { Command, flags } from '@oclif/command'
 import { uploadDataObjects } from '../../services/extrinsics'
 
 export default class DevUpload extends Command {
   static description = 'describe the command here'
 
   static flags = {
-    help: flags.help({char: 'h'}),
+    help: flags.help({ char: 'h' }),
     dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
   }
 
-  static args = [{name: 'file'}]
+  static args = [{ name: 'file' }]
 
   async run(): Promise<void> {
     const { flags } = this.parse(DevUpload)

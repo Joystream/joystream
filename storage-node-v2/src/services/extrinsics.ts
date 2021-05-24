@@ -1,4 +1,5 @@
-import { Keyring } from '@polkadot/api'
+import { Keyring } from '@polkadot/keyring'
+import { KeyringPair } from '@polkadot/keyring/types'
 import { createApi, sendAndFollowNamedTx } from './api'
 
 export async function createStorageBucket(
@@ -48,7 +49,7 @@ export async function acceptStorageBucketInvitation(
   }
 }
 
-//TODO: 
+//TODO:
 // export enum BagId {
 //   Static = 'static',
 //   Dynamic = 'dynamic',
@@ -61,8 +62,7 @@ export async function updateStorageBucketsForBag(
   try {
     const api = await createApi()
 
-    const keyring = new Keyring({ type: 'sr25519' })
-    const alice = keyring.addFromUri('//Alice')
+    const alice = getAlicePair()
 
     let addBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
     let removeBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
@@ -78,7 +78,7 @@ export async function updateStorageBucketsForBag(
       alice,
       'storage',
       'updateStorageBucketsForBag',
-      [{"Static":"Council"}, addBuckets, removeBuckets]
+      [{ 'Static': 'Council' }, addBuckets, removeBuckets]
     )
   } catch (err) {
     console.error(`Api Error: ${err}`)
@@ -92,18 +92,19 @@ export async function uploadDataObjects(): Promise<void> {
     const keyring = new Keyring({ type: 'sr25519' })
     const alice = keyring.addFromUri('//Alice')
 
-    let data = api.createType('UploadParameters', {
-      deletionPrizeSourceAccountId: alice.address
+    const data = api.createType('UploadParameters', {
+      deletionPrizeSourceAccountId: alice.address,
     })
 
-    await sendAndFollowNamedTx(
-      api,
-      alice,
-      'storage',
-      'sudoUploadDataObjects',
-      [data]
-    )
+    await sendAndFollowNamedTx(api, alice, 'storage', 'sudoUploadDataObjects', [
+      data,
+    ])
   } catch (err) {
     console.error(`Api Error: ${err}`)
   }
+}
+
+function getAlicePair(): KeyringPair {
+  const keyring = new Keyring({ type: 'sr25519' })
+  return keyring.addFromUri('//Alice')
 }
