@@ -81,7 +81,7 @@ export async function updateStorageBucketsForBag(
   }
 }
 
-export async function uploadDataObjects(): Promise<void> {
+export async function uploadDataObjects(objectSize: number, objectCid: string): Promise<void> {
   try {
     const api = await createApi()
 
@@ -89,6 +89,10 @@ export async function uploadDataObjects(): Promise<void> {
 
     const data = api.createType('UploadParameters', {
       deletionPrizeSourceAccountId: alice.address,
+      objectCreationList: [{
+        Size: objectSize,
+        IpfsContentId: objectCid
+      }],
     })
 
     await sendAndFollowNamedTx(api, alice, 'storage', 'sudoUploadDataObjects', [

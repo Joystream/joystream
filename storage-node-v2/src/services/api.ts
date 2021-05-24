@@ -25,7 +25,7 @@ function createExtendedTypes(): RegistryTypes {
   extendedTypes.Voucher = {}
   extendedTypes.DynamicBagType = {}
   extendedTypes.DynamicBagCreationPolicy = {}
-  extendedTypes.DataObjectId = {}
+  extendedTypes.DataObjectId = 'u64'
   extendedTypes.DynamicBag = {}
   extendedTypes.StaticBag = {}
   extendedTypes.StorageBucket = {}
@@ -34,7 +34,10 @@ function createExtendedTypes(): RegistryTypes {
   extendedTypes.Static = 'StaticBagId'
   extendedTypes.StaticBagId = { _enum: ['Council'] }
 
-  extendedTypes.DataObjectCreationParameters = {}
+  extendedTypes.DataObjectCreationParameters = {
+    Size: 'u64',
+    IpfsContentId: 'Text'
+  }
   extendedTypes.BagIdType = { _enum: { Static: 'StaticBagId' } }
   extendedTypes.UploadParameters = {
     authenticationKey: 'Vec<u8>',
