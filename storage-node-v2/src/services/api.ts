@@ -9,7 +9,10 @@ import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { DispatchError } from '@polkadot/types/interfaces/system'
+import {
+  DispatchError,
+  DispatchResult,
+} from '@polkadot/types/interfaces/system'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -26,17 +29,17 @@ function createExtendedTypes(): RegistryTypes {
   extendedTypes.StaticBag = {}
   extendedTypes.StorageBucket = {}
 
-  extendedTypes.BagId = {_enum: {Static: 'StaticBagId'}}
+  extendedTypes.BagId = { _enum: { Static: 'StaticBagId' } }
   extendedTypes.Static = 'StaticBagId'
-  extendedTypes.StaticBagId = {_enum: ['Council']}
+  extendedTypes.StaticBagId = { _enum: ['Council'] }
 
   extendedTypes.DataObjectCreationParameters = {}
-  extendedTypes.BagIdType = {_enum: {Static: 'StaticBagId'}}
+  extendedTypes.BagIdType = { _enum: { Static: 'StaticBagId' } }
   extendedTypes.UploadParameters = {
     authenticationKey: 'Vec<u8>',
     bagId: 'BagId',
     objectCreationList: 'Vec<DataObjectCreationParameters>',
-    deletionPrizeSourceAccountId : 'AccountId'
+    deletionPrizeSourceAccountId: 'AccountId',
   }
 
   return extendedTypes
@@ -90,7 +93,20 @@ function sendExtrinsic(
                 )
               )
             } else if (event.method === 'ExtrinsicSuccess') {
-              resolve(result)
+              const sudid = result.findRecord('sudo', 'Sudid')
+
+              if (sudid) {
+                const dispatchSuccess = sudid.event.data[0] as DispatchResult
+                if (dispatchSuccess.isOk) {
+                  resolve(result)
+                } else {
+                  reject(
+                    new ExtrinsicFailedError('Sudo extrinsic execution error!')
+                  )
+                }
+              } else {
+                resolve(result)
+              }
             }
           })
       } else if (result.isError) {
@@ -110,7 +126,7 @@ function sendExtrinsic(
   })
 }
 
-async function sendAndFollowTx(
+export async function sendAndFollowTx(
   api: ApiPromise,
   account: KeyringPair,
   tx: SubmittableExtrinsic<'promise'>,

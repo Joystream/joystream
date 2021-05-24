@@ -1,23 +1,27 @@
-import {Command, flags} from '@oclif/command'
+import { Command, flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/extrinsics'
 
 export default class LeaderUpdateBag extends Command {
-  static description = 'Add/remove a storage bucket from a bag (adds by default).'
+  static description =
+    'Add/remove a storage bucket from a bag (adds by default).'
 
   static flags = {
-    help: flags.help({char: 'h'}),
+    help: flags.help({ char: 'h' }),
     dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
     bucket: flags.integer({
       char: 'b',
       required: true,
       description: 'Storage bucket ID',
     }),
-    remove: flags.boolean({ char: 'r', description: 'Remove a bucket from the bag' }),
+    remove: flags.boolean({
+      char: 'r',
+      description: 'Remove a bucket from the bag',
+    }),
   }
 
-  static args = [{name: 'file'}]
+  static args = [{ name: 'file' }]
 
-  async run() {
+  async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateBag)
 
     const bucket = flags.bucket ?? 0
