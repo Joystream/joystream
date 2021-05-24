@@ -44,12 +44,12 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 /*
   Creates a predictable and unique ID for the given content.
 */
-export function createPredictableId(blockNumber: number, eventIndex: number, content: string | Object): string {
+export function createPredictableId(event: SubstrateEvent, content: string | Object): string {
   const contentType = typeof content == 'string'
     ? content
     : JSON.stringify(content)
 
-  const id = `${blockNumber}_${eventIndex}_${contentType}`
+  const id = `${event.blockNumber}_${event.index}_${contentType}`
 
   return crypto
     .createHash('sha256')
@@ -62,8 +62,7 @@ export function createPredictableId(blockNumber: number, eventIndex: number, con
 */
 export async function prepareDataObject(
   contentParameters: ContentParameters,
-  blockNumber: number,
-  eventIndex: number,
+  event: SubstrateEvent,
   owner: typeof DataObjectOwner,
 ): Promise<DataObject> {
   // convert generic content parameters coming from processor to custom Joystream data type
@@ -71,7 +70,7 @@ export async function prepareDataObject(
 
   const dataObject = new DataObject({
     owner,
-    createdInBlock: blockNumber,
+    createdInBlock: event.blockNumber,
     typeId: contentParameters.type_id.toNumber(),
     size: customContentParameters.size_in_bytes.toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
@@ -82,7 +81,7 @@ export async function prepareDataObject(
     updatedById: '1',
   })
 
-  dataObject.id = createPredictableId(blockNumber, eventIndex, dataObject)
+  dataObject.id = createPredictableId(event, dataObject)
 
   return dataObject
 }

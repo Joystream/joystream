@@ -39,8 +39,7 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     {
       metadata: channelCreationParameters.meta,
       db,
-      blockNumber: event.blockNumber,
-      eventIndex: event.index,
+      event,
       assets: channelCreationParameters.assets,
       contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
     }
@@ -108,8 +107,7 @@ export async function content_ChannelUpdated(
       {
         metadata: newMetadata,
         db,
-        blockNumber: event.blockNumber,
-        eventIndex: event.index,
+        event,
         assets: channelUpdateParameters.assets.unwrapOr([]),
         contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
       }
@@ -207,8 +205,7 @@ export async function content_ChannelCategoryCreated(
     {
       metadata: channelCategoryCreationParameters.meta,
       db,
-      blockNumber: event.blockNumber,
-      eventIndex: event.index,
+      event,
     }
   )
 
@@ -262,8 +259,7 @@ export async function content_ChannelCategoryUpdated(
     {
       metadata: channelCategoryUpdateParameters.new_meta,
       db,
-      blockNumber: event.blockNumber,
-      eventIndex: event.index,
+      event,
     }
   )
 
