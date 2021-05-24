@@ -7,18 +7,14 @@ export default class DevUpload extends ApiCommandBase {
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
   }
 
   static args = [{ name: 'file' }]
 
   async run(): Promise<void> {
-    const { flags } = this.parse(DevUpload)
+    await this.ensureDevelopmentChain()
 
     this.log('Uploading data objects...')
-    if (flags.dev) {
-      this.log('development mode is ON')
-    }
 
     await uploadDataObjects()
   }

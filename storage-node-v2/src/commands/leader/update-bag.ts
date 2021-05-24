@@ -29,7 +29,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
 
     this.log('Update bag - add storage buckets...')
     if (flags.dev) {
-      this.log('development mode is ON')
+      await this.ensureDevelopmentChain()
     }
 
     await updateStorageBucketsForBag(bucket, flags.remove)
