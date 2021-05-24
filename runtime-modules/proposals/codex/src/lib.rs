@@ -520,15 +520,15 @@ decl_module! {
         /// This proposal uses `set_validator_count()` extrinsic from the Substrate `staking`  module.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_validator_count_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            new_validator_count: u32,
+            _origin,
+            _member_id: MemberId<T>,
+            _title: Vec<u8>,
+            _description: Vec<u8>,
+            _stake_balance: Option<BalanceOf<T>>,
+            _new_validator_count: u32,
         ) {
             #[cfg(feature = "standalone")]
-            Self::try_create_set_validator_count_proposal(origin, member_id, title, description, stake_balance, new_validator_count)?;
+            Self::try_create_set_validator_count_proposal(_origin, _member_id, _title, _description, _stake_balance, _new_validator_count)?;
         }
 
         /// Create 'Add working group leader opening' proposal type.

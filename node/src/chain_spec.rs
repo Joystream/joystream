@@ -235,7 +235,7 @@ fn session_keys(
 
 #[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
-    initial_authorities: Vec<(
+    _initial_authorities: Vec<(
         AccountId,
         AccountId,
         GrandpaId,
@@ -298,19 +298,19 @@ pub fn testnet_genesis(
         #[cfg(feature = "standalone")]
         pallet_staking: StakingConfig {
             validator_count: 100,
-            minimum_validator_count: initial_authorities.len() as u32,
-            stakers: initial_authorities
+            minimum_validator_count: _initial_authorities.len() as u32,
+            stakers: _initial_authorities
                 .iter()
                 .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))
                 .collect(),
-            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            invulnerables: _initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             history_depth: 336,
             ..Default::default()
         },
         #[cfg(feature = "standalone")]
         pallet_session: SessionConfig {
-            keys: initial_authorities
+            keys: _initial_authorities
                 .iter()
                 .map(|x| {
                     (
@@ -331,12 +331,12 @@ pub fn testnet_genesis(
             auto_start: true,
             election_parameters: ElectionParameters {
                 announcing_period: 4 * DAYS,
-                voting_period: 1 * DAYS,
-                revealing_period: 1 * DAYS,
+                voting_period: DAYS,
+                revealing_period: DAYS,
                 council_size: 16,
                 candidacy_limit: 50,
                 min_council_stake: 1_000,
-                new_term_duration: 1 * DAYS,
+                new_term_duration: DAYS,
                 min_voting_stake: 100,
             },
         },

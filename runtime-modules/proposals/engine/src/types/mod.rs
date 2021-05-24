@@ -8,7 +8,8 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::{PerThing, Perbill};
+// TODO Switch to PerThing
+use sp_runtime::Perbill;
 use sp_std::boxed::Box;
 use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;

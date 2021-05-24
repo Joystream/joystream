@@ -23,23 +23,20 @@ native_executor_instance!(
     joystream_node_runtime::native_version,
 );
 
+type PartialComponentsType = PartialComponents<
+    TFullClient<Block, RuntimeApi, Executor>,
+    TFullBackend<Block>,
+    (),
+    sp_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
+    sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
+    (Option<Telemetry>, Option<TelemetryWorkerHandle>),
+>;
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
-pub fn new_partial(
-    config: &Configuration,
-) -> Result<
-    PartialComponents<
-        TFullClient<Block, RuntimeApi, Executor>,
-        TFullBackend<Block>,
-        (),
-        sp_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
-        sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
-        (Option<Telemetry>, Option<TelemetryWorkerHandle>),
-    >,
-    sc_service::Error,
-> {
+pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, sc_service::Error> {
     let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
     let telemetry = config
@@ -82,7 +79,7 @@ pub fn new_partial(
         client.clone(),
         inherent_data_providers.clone(),
         &task_manager.spawn_essential_handle(),
-        registry.clone(),
+        registry,
     )?;
 
     let params = PartialComponents {

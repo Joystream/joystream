@@ -1440,15 +1440,13 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .filter_map(|(worker_id, _)| {
                 // Filter the leader worker id if the leader is set.
-                lead_worker_id
-                    .clone()
-                    .map_or(Some(worker_id), |lead_worker_id| {
-                        if worker_id == lead_worker_id {
-                            None
-                        } else {
-                            Some(worker_id)
-                        }
-                    })
+                lead_worker_id.map_or(Some(worker_id), |lead_worker_id| {
+                    if worker_id == lead_worker_id {
+                        None
+                    } else {
+                        Some(worker_id)
+                    }
+                })
             })
             .collect()
     }

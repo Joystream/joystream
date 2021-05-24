@@ -106,7 +106,7 @@ use standalone_use::*;
 mod standalone_use {
     pub use frame_election_provider_support::onchain;
     pub use frame_system::EnsureRoot;
-    pub use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+    pub use pallet_grandpa::AuthorityId as GrandpaId;
     pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
     pub use pallet_session::historical as pallet_session_historical;
     pub use pallet_staking::StakerStatus;

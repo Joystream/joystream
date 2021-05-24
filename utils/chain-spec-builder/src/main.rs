@@ -274,7 +274,7 @@ fn genesis_constructor(
         forum_cfg,
         data_directory_config,
         initial_account_balances,
-        id.into(),
+        id,
     )
 }
 

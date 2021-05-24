@@ -1,5 +1,27 @@
+#[cfg(any(feature = "std", test))]
+pub use pallet_staking::StakerStatus;
+
 #[cfg(feature = "standalone")]
-use crate::constants::*;
+use standalone_use::*;
+#[cfg(feature = "standalone")]
+mod standalone_use {
+    pub use crate::constants::*;
+
+    pub use crate::{AuthorityDiscovery, Babe, EpochDuration, Grandpa, Historical};
+
+    pub use pallet_grandpa::AuthorityId as GrandpaId;
+
+    pub use pallet_grandpa::AuthorityList as GrandpaAuthorityList;
+
+    pub use sp_runtime::traits::NumberFor;
+
+    pub use pallet_grandpa::fg_primitives;
+
+    pub use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+
+    pub use frame_support::traits::KeyOwnerProofSystem;
+}
+
 use frame_support::traits::{OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use sp_api::impl_runtime_apis;
@@ -18,23 +40,6 @@ use crate::{
     content, data_directory, AccountId, Balance, BlockNumber, Hash, Index, RuntimeVersion,
     Signature, VERSION,
 };
-
-#[cfg(feature = "standalone")]
-use crate::{
-    AuthorityDiscovery, Babe, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical,
-};
-
-#[cfg(feature = "standalone")]
-use sp_runtime::traits::NumberFor;
-
-#[cfg(feature = "standalone")]
-use pallet_grandpa::fg_primitives;
-
-#[cfg(feature = "standalone")]
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-
-#[cfg(feature = "standalone")]
-use frame_support::traits::KeyOwnerProofSystem;
 
 use crate::{
     Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys, System,

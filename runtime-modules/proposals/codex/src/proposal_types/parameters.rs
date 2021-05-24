@@ -1,6 +1,8 @@
 use crate::{BalanceOf, Module, ProposalParameters};
 
 // Proposal parameters for the 'Set validator count' proposal
+
+#[cfg(feature = "standalone")]
 pub(crate) fn set_validator_count_proposal<T: crate::Config>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
     ProposalParameters {
