@@ -659,12 +659,12 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
   Checks if protobof contains license with some fields filled or is empty object (`{}` or `{someKey: undefined, ...}`).
   Empty object means deletion is requested.
 */
-function isLicenseEmpty(licenseObject) {
+function isLicenseEmpty(licenseObject: LicenseMetadata.AsObject): boolean {
     let somePropertySet = Object.entries(licenseObject).reduce((acc, [key, value]) => {
         return acc || value !== undefined
     }, false)
 
-    return somePropertySet
+    return !somePropertySet
 }
 
 
