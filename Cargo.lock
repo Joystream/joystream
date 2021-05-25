@@ -2070,6 +2070,7 @@ dependencies = [
  "pallet-content",
  "pallet-finality-tracker",
  "pallet-forum",
+ "pallet-gateway",
  "pallet-governance",
  "pallet-grandpa",
  "pallet-hiring",

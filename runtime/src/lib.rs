@@ -31,9 +31,9 @@ use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
-use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
+use sp_runtime::{curve::PiecewiseLinear, ModuleId};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -45,6 +45,7 @@ pub use constants::*;
 pub use primitives::*;
 pub use runtime_api::*;
 
+use integration::gateway::GatewaySignature;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
@@ -585,6 +586,19 @@ impl proposals_discussion::Trait for Runtime {
 }
 
 parameter_types! {
+ pub const GatewayModuleId: ModuleId = ModuleId(*b"mo:gatew");
+}
+
+impl gateway::Trait for Runtime {
+    type Event = Event;
+    type ServiceProviderId = ServiceProviderId;
+    type ServiceChannelId = ServiceChannelId;
+    type ModuleId = GatewayModuleId;
+    type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
+    type Signature = GatewaySignature;
+}
+
+parameter_types! {
     pub const TextProposalMaxLength: u32 = 5_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
@@ -655,6 +669,7 @@ construct_runtime!(
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
+        Gateway: gateway::{Module, Call, Storage, Event<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},

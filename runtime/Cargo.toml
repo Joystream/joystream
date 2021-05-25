@@ -75,6 +75,7 @@ proposals-engine = { package = 'pallet-proposals-engine', default-features = fal
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content' }
+gateway = { package = 'pallet-gateway', default-features = false, path = '../runtime-modules/gateway' }
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -148,6 +149,7 @@ std = [
     'proposals-discussion/std',
     'proposals-codex/std',
     'content/std',
+    'gateway/std',
 ]
 runtime-benchmarks = [
     "system/runtime-benchmarks",
@@ -164,5 +166,3 @@ runtime-benchmarks = [
 	"pallet-session-benchmarking",
     "pallet-utility/runtime-benchmarks",
 ]
-
-
