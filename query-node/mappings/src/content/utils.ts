@@ -13,6 +13,7 @@ import ISO6391 from 'iso-639-1'
 import { u64 } from '@polkadot/types/primitive'
 import { FindConditions } from 'typeorm'
 import * as jspb from "google-protobuf"
+import { fixBlockTimestamp } from '../eventFix'
 
 // protobuf definitions
 import {
@@ -636,6 +637,9 @@ async function prepareLanguage(
     iso: languageIso,
     createdInBlock: event.blockNumber,
 
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+
     // TODO: remove these lines after Hydra auto-fills the values when cascading save (remove them on all places)
     createdById: '1',
     updatedById: '1',
@@ -663,6 +667,9 @@ async function prepareLicense(
   // crete new license
   const license = new License({
     ...licenseProtobuf,
+
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     createdById: '1',
     updatedById: '1',

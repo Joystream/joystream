@@ -2,6 +2,7 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { u64 } from '@polkadot/types/primitive';
 import * as crypto from 'crypto'
+import { fixBlockTimestamp } from './eventFix'
 
 // Asset
 import {
@@ -76,6 +77,9 @@ export async function prepareDataObject(
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
     ipfsContentId: contentParameters.ipfs_content_id.toUtf8(),
     joystreamContentId: customContentParameters.content_id.encode(),
+
+    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
 
     createdById: '1',
     updatedById: '1',

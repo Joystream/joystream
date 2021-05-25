@@ -276,6 +276,7 @@ export async function content_VideoUpdated(
         ? new License({
           ...originalLicense,
           ...video.license,
+          createdAt: originalLicense.createdAt, // keep original createdAt time
         }) // update existing license
         : undefined // unset license
 
@@ -437,12 +438,17 @@ function integrateVideoMediaMetadata(
     return metadata
   }
 
+  const now = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+
   // fix TS type
   const rawMediaMetadata = metadata.mediaMetadata as unknown as RawVideoMetadata
 
   // ensure encoding object
   const encoding = (existingRecord && existingRecord.mediaMetadata && existingRecord.mediaMetadata.encoding)
     || new VideoMediaEncoding({
+        createdAt: now,
+        updatedAt: now,
+
         createdById: '1',
         updatedById: '1',
       })
@@ -455,6 +461,9 @@ function integrateVideoMediaMetadata(
   // ensure media metadata object
   const mediaMetadata = (existingRecord && existingRecord.mediaMetadata) || new VideoMediaMetadata({
     createdInBlock: event.blockNumber,
+
+    createdAt: now,
+    updatedAt: now,
 
     createdById: '1',
     updatedById: '1',
@@ -475,6 +484,26 @@ function integrateVideoMediaMetadata(
   if (!mediaMetadata.id) {
     mediaMetadata.id = createPredictableId(event, mediaMetadata)
   }
+
+  /////////////////// update updatedAt if needed ///////////////////////////////
+
+  const encodingNoChange = true
+    && rawMediaMetadata.encoding.codecName.isNoChange()
+    && rawMediaMetadata.encoding.container.isNoChange()
+    && rawMediaMetadata.encoding.mimeMediaType.isNoChange()
+  const mediaMetadataNoChange = encodingNoChange
+    && rawMediaMetadata.encoding.codecName.isNoChange()
+    && rawMediaMetadata.encoding.container.isNoChange()
+    && rawMediaMetadata.encoding.mimeMediaType.isNoChange()
+
+  if (!encodingNoChange) { // encoding changed?
+    mediaMetadata.encoding.updatedAt = now
+  }
+  if (!mediaMetadataNoChange) { // metadata changed?
+    mediaMetadata.updatedAt = now
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
 
   return {
     ...metadata,
