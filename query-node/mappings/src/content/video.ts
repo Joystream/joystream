@@ -188,6 +188,11 @@ export async function content_VideoCreated(
   // prepare video media metadata (if any)
   const fixedProtobuf = integrateVideoMediaMetadata(null, protobufContent, event.blockNumber)
 
+  const licenseIsEmpty = fixedProtobuf.license && !Object.keys(fixedProtobuf.license).length
+  if (licenseIsEmpty) { // license deletion was requested - ignore it and consider it empty
+    delete fixedProtobuf.license
+  }
+
   // create new video
   const video = new Video({
     // main data
@@ -271,16 +276,9 @@ export async function content_VideoUpdated(
 
     // license has changed - plan old license delete
     if (originalLicense && video.license != originalLicense) {
-      video.license = video.license
-        ? new License({
-          ...originalLicense,
-          ...video.license,
-        }) // update existing license
-        : undefined // unset license
-
-      if (!video.license) { // delete old license when requested
-        licenseToDelete = originalLicense
-      }
+      ([video.license, licenseToDelete] = handleLicenseUpdate(originalLicense, video.license))
+    } else if (!Object.keys(video.license || {}).length) { // license deletion was requested event no license exists?
+      delete video.license // ensure license is empty
     }
   }
 
@@ -471,4 +469,31 @@ function integrateVideoMediaMetadata(
     ...metadata,
     mediaMetadata
   }
+}
+
+// returns tuple `[newLicenseForVideo, oldLicenseToBeDeleted]`
+function handleLicenseUpdate(originalLicense, newLicense): [License | undefined, License | null] {
+  const isNewEmpty = !Object.keys(newLicense).length
+
+  if (!originalLicense && isNewEmpty) {
+    return [undefined, null]
+  }
+
+  if (!originalLicense) { // && !isNewEmpty
+    return [newLicense, null]
+  }
+
+  if (!isNewEmpty) { // && originalLicense
+    return [
+      new License({
+        ...originalLicense,
+        ...newLicense,
+      }),
+      null
+    ]
+  }
+
+  // originalLicense && isNewEmpty
+
+  return [originalLicense, null]
 }
