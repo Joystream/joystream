@@ -1,93 +1,20 @@
-- name: Configure chain spec and start joystream-node service on the servers
+---
+# Configure chain spec and start joystream-node service on the servers
+
+- name: Create and copy the chain-spec file
   hosts: all
-  vars:
-    local_dir: ~/Joystream/joystream
-    # Generates random number between 1000..9999
-    network_suffix: "{{ 10000 | random(1000) }}"
-    data_path: ./data
-    change_spec_path: "{{ data_path }}/chainspec.json"
-    remote_code_path: "/home/ubuntu/joystream"
-    remote_chain_spec_path: "{{ remote_code_path }}/chainspec.json"
-  tasks:
-  - name: Run subkey to generate node keys
-    local_action: ansible.builtin.command {{ local_dir }}/target/release/chain-spec-builder generate -a 2 --chain-spec-path {{ change_spec_path }} --deployment live --endowed 1 --keystore-path {{ data_path }}
-    register: chain_spec_output
-    run_once: true
 
-  - name: Run subkey to generate node keys
-    local_action: ansible.builtin.command subkey generate-node-key
-    register: subkey_output
+  roles:
+    - common
 
-  - name: Print to stdout
-    debug:
-      msg:
-      - "Public Key: {{ subkey_output.stderr }}"
-      - "Private Key: {{ subkey_output.stdout }}"
+- name: Copy secret, auth and start joystream-node service for validators
+  hosts: validators
 
-  - name: Print to stdout chain spec
-    debug: var=chain_spec_output.stdout
-    run_once: true
+  roles:
+    - validators
 
-  - name: Save output of chain spec to local file
-    local_action: copy content={{ chain_spec_output.stdout }} dest="{{ data_path }}/chain_spec_output.txt"
+- name: Configure RPC service and start it
+  hosts: rpc
 
-  - name: Change chain spec name, id, protocolId
-    delegate_to: localhost
-    json_modify:
-      change_spec_path: "{{ change_spec_path }}"
-      prefix: "{{ network_suffix }}"
-      all_nodes: "{{ hostvars }}"
-    register: result
-    run_once: true
-
-  - name: Print output of modified chainspec
-    debug:
-      var: result.result
-
-  - name: Copying chain spec file to server
-    copy:
-      src: "{{ change_spec_path }}"
-      dest: "{{ remote_chain_spec_path }}"
-
-  - set_fact:
-      chain_path: "{{ remote_code_path }}/chains/{{ result.result.id }}"
-
-  - set_fact:
-      network_path: "{{ chain_path }}/network"
-      keystore_path: "{{ chain_path }}/keystore/"
-  
-  - set_fact:
-      secret_path: "{{ network_path }}/secret"
-
-  - name: Creating chains directory
-    file:
-      path: "{{ item }}"
-      state: directory
-    loop:
-      - "{{ network_path }}"
-
-  - name: Copy secret to remote host
-    copy:
-      dest: "{{ secret_path }}"
-      content: "{{ subkey_output.stdout }}"
-
-  - name: Copy auth directory to remote host
-    copy:
-      src: "{{ data_path }}/auth-{{ ansible_play_batch.index(inventory_hostname) }}/"
-      dest: "{{ keystore_path }}"
-
-  - name: Create a service file
-    template:
-      src: joystream-node.service.j2
-      dest: /etc/systemd/system/joystream-node.service
-    vars:
-      template_keystore_path: "{{ keystore_path }}"
-      template_secret_path: "{{ secret_path }}"
-      template_remote_chain_spec_path: "{{ remote_chain_spec_path }}"
-    become: yes
-
-  - name: Start service joystream-node, if not started
-    service:
-      name: joystream-node
-      state: started
-    become: yes
+  roles:
+    - rpc
