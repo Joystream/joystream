@@ -5,6 +5,8 @@ import { useWindowDimensions } from '../../../joy-utils/src/react/hooks';
 
 import { TokenomicsData, StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
 
+import { COLORS } from './index';
+
 const round = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
 
 const applyCss = (columns: number[]): string => {
@@ -141,8 +143,6 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
     }
   };
 
-  console.log(data);
-
   return (
     <StyledTable divideColumnsAt={[3, 6, 9]} celled>
       <Table.Header>
@@ -170,7 +170,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.validators.totalStake}`}
           groupStakeDollar={displayStatusData('validators', 'totalStake')}
           stakeShare={data && `${round(data.validators.stakeShare * 100)}`}
-          color='rgb(246, 109, 68)'
+          color={COLORS.VALIDATOR}
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'Council' : 'Council Members'}
@@ -182,7 +182,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.council.totalStake}`}
           groupStakeDollar={displayStatusData('council', 'totalStake')}
           stakeShare={data && `${round(data.council.stakeShare * 100)}`}
-          color='rgb(254, 174, 101)'
+          color={COLORS.COUNCIL_MEMBER}
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'Storage' : 'Storage Providers'}
@@ -194,7 +194,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.storageProviders.totalStake}`}
           groupStakeDollar={displayStatusData('storageProviders', 'totalStake')}
           stakeShare={data && `${round(data.storageProviders.stakeShare * 100)}`}
-          color='rgb(230, 246, 157)'
+          color={COLORS.STORAGE_PROVIDER}
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'S. Lead' : width <= 1050 ? 'Storage Lead' : 'Storage Provider Lead'}
@@ -206,7 +206,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.storageProviders.lead.totalStake}`}
           groupStakeDollar={displayStatusData('storageProviders', 'totalStake', true)}
           stakeShare={data && `${round(data.storageProviders.lead.stakeShare * 100)}`}
-          color='rgb(170, 222, 167)'
+          color={COLORS.STORAGE_LEAD}
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'Curators' : 'Content Curators'}
@@ -218,7 +218,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.contentCurators.totalStake}`}
           groupStakeDollar={displayStatusData('contentCurators', 'totalStake')}
           stakeShare={data && `${round(data.contentCurators.stakeShare * 100)}`}
-          color='rgb(100, 194, 166)'
+          color={COLORS.CONTENT_CURATOR}
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'C. Lead' : 'Curators Lead'}
@@ -230,7 +230,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.contentCurators.lead.totalStake}`}
           groupStakeDollar={displayStatusData('contentCurators', 'totalStake', true)}
           stakeShare={data && `${round(data.contentCurators.lead.stakeShare * 100)}`}
-          color='rgb(100, 160, 190)'
+          color={COLORS.CURATOR_LEAD}
         />
         <SpendingAndStakeTableRow
           role='Operations'
@@ -242,7 +242,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.operations.totalStake}`}
           groupStakeDollar={displayStatusData('operations', 'totalStake')}
           stakeShare={data && `${round(data.operations.stakeShare * 100)}`}
-          color='rgb(30, 166, 165)'
+          color={COLORS.OPERATIONS}
         />
         <SpendingAndStakeTableRow
           role='Operations Lead'
@@ -254,7 +254,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           groupStake={data && `${data.operations.lead.totalStake}`}
           groupStakeDollar={displayStatusData('operations', 'totalStake', true)}
           stakeShare={data && `${round(data.operations.lead.stakeShare * 100)}`}
-          color='rgb(30, 132, 189)'
+          color={COLORS.OPERATIONS_LEAD}
         />
         <SpendingAndStakeTableRow
           role='TOTAL'
