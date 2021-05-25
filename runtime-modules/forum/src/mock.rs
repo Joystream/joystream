@@ -435,6 +435,18 @@ impl WeightInfo for () {
     fn update_category_archival_status_moderator(_: u32) -> Weight {
         0
     }
+    fn update_category_title_lead(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_category_title_moderator(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_category_description_lead(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_category_description_moderator(_: u32, _: u32) -> Weight {
+        0
+    }
     fn delete_category_lead(_: u32) -> Weight {
         0
     }
@@ -540,8 +552,16 @@ pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
 }
 
+pub fn good_category_title_new() -> Vec<u8> {
+    b"Great new category title".to_vec()
+}
+
 pub fn good_category_description() -> Vec<u8> {
     b"This is a great new category for the forum".to_vec()
+}
+
+pub fn good_category_description_new() -> Vec<u8> {
+    b"This is a great new category description for the forum".to_vec()
 }
 
 pub fn good_thread_title() -> Vec<u8> {
@@ -1072,9 +1092,67 @@ pub fn update_category_archival_status_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryUpdated(
+            TestEvent::forum_mod(RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
                 new_archival_status,
+                actor
+            ))
+        );
+    }
+}
+
+pub fn update_category_title_mock(
+    origin: OriginType,
+    actor: PrivilegedActor<Runtime>,
+    category_id: <Runtime as Trait>::CategoryId,
+    new_title: Vec<u8>,
+    result: DispatchResult,
+) {
+    let new_title_hash = Runtime::calculate_hash(new_title.as_slice());
+    assert_eq!(
+        TestForumModule::update_category_title(
+            mock_origin(origin),
+            actor.clone(),
+            category_id,
+            new_title
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryTitleUpdated(
+                category_id,
+                new_title_hash,
+                actor
+            ))
+        );
+    }
+}
+
+pub fn update_category_description_mock(
+    origin: OriginType,
+    actor: PrivilegedActor<Runtime>,
+    category_id: <Runtime as Trait>::CategoryId,
+    new_description: Vec<u8>,
+    result: DispatchResult,
+) {
+    let new_description_hash = Runtime::calculate_hash(new_description.as_slice());
+    assert_eq!(
+        TestForumModule::update_category_description(
+            mock_origin(origin),
+            actor.clone(),
+            category_id,
+            new_description
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryDescriptionUpdated(
+                category_id,
+                new_description_hash,
                 actor
             ))
         );
@@ -1086,7 +1164,7 @@ pub fn delete_category_mock(
     moderator_id: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     result: DispatchResult,
-) -> () {
+) {
     assert_eq!(
         TestForumModule::delete_category(mock_origin(origin), moderator_id.clone(), category_id),
         result,
@@ -1097,7 +1175,7 @@ pub fn delete_category_mock(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id, moderator_id))
         );
-    };
+    }
 }
 
 pub fn moderate_thread_mock(
