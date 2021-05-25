@@ -27,8 +27,9 @@ def main():
 
     boot_node_list = data["bootNodes"]
     for key in all_nodes:
-        public_key = all_nodes[key]["subkey_output"]["stderr"]
-        boot_node_list.append(f"/ip4/{key}/tcp/30333/p2p/{public_key}")
+        if "validators" in all_nodes[key]["group_names"]:
+            public_key = all_nodes[key]["subkey_output"]["stderr"]
+            boot_node_list.append(f"/ip4/{key}/tcp/30333/p2p/{public_key}")
 
     response["bootNodes"] = boot_node_list
 

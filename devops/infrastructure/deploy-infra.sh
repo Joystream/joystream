@@ -34,10 +34,17 @@ aws cloudformation deploy \
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then
-  aws cloudformation list-exports \
+  VALIDATORS=$(aws cloudformation list-exports \
     --profile $CLI_PROFILE \
     --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}PublicIp')].Value" \
-    --output text | sed 's/\t\t*/\n/g' > inventory
+    --output text | sed 's/\t\t*/\n/g')
+
+  RPC_NODES=$(aws cloudformation list-exports \
+    --profile $CLI_PROFILE \
+    --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}RPCPublicIp')].Value" \
+    --output text | sed 's/\t\t*/\n/g')
+
+  echo -e "[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > inventory
 
   if [ -z "$EC2_AMI_ID" ]
   then

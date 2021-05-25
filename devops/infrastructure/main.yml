@@ -17,7 +17,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription:
-        !Sub 'Internal Security group for ${AWS::StackName}'
+        !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 30333
@@ -29,7 +29,29 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Ref AWS::StackName
+          Value: !Sub '${AWS::StackName}_validator'
+
+  RPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9933
+          ToPort: 9933
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9944
+          ToPort: 9944
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_rpc'
 
   InstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -90,6 +112,18 @@ Resources:
         - Key: Name
           Value: !Sub '${AWS::StackName}_2'
 
+  RPCInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      SecurityGroupIds:
+        - !GetAtt RPCSecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_rpc'
+
   WaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
 
@@ -98,7 +132,7 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '300'
-      Count: 2
+      Count: 3
 
 Outputs:
   PublicIp:
@@ -112,3 +146,9 @@ Outputs:
     Value:  !Sub "${Instance2.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}PublicIp2"
+
+  RPCPublicIp:
+    Description: The DNS name for the created instance
+    Value:  !Sub "${RPCInstance.PublicIp}"
+    Export:
+      Name: !Sub "${AWS::StackName}RPCPublicIp"
