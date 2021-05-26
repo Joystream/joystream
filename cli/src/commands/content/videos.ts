@@ -34,7 +34,7 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
         3
       )
     } else {
-      this.log('There are no videos yet')
+      this.log(`There are no videos${channelId ? ' in this channel' : ''} yet`)
     }
   }
 }
