@@ -9,6 +9,7 @@ import { FindConditions } from 'typeorm'
 import {
   inconsistentState,
   logger,
+  extractExtrinsicArgs,
 } from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node'
@@ -18,7 +19,7 @@ import { EntryMethod } from '@joystream/types/augment'
 export async function members_MemberRegistered(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const { accountId, memberId, entryMethod } = new Members.MemberRegisteredEvent(event).data
-  const { avatarUri, about, handle } = new Members.BuyMembershipCall(event).args
+  const { avatarUri, about, handle } = extractExtrinsicArgs(event, Members.BuyMembershipCall)
 
   // create new membership
   const member = new Membership({
@@ -47,7 +48,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedAboutText(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { text, memberId } = new Members.ChangeMemberAboutTextCall(event).args
+  const { text, memberId } = extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall)
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -73,7 +74,7 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { uri, memberId } = new Members.ChangeMemberAvatarCall(event).args
+  const { uri, memberId } = extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall)
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -99,7 +100,7 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedHandle(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { handle, memberId } = new Members.ChangeMemberHandleCall(event).args
+  const { handle, memberId } = extractExtrinsicArgs(event, Members.ChangeMemberHandleCall)
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -125,7 +126,7 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberSetRootAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newRootAccount, memberId } = new Members.SetRootAccountCall(event).args
+  const { newRootAccount, memberId } = extractExtrinsicArgs(event, Members.SetRootAccountCall)
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -151,7 +152,7 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberSetControllerAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newControllerAccount, memberId } = new Members.SetControllerAccountCall(event).args
+  const { newControllerAccount, memberId } = extractExtrinsicArgs(event, Members.SetControllerAccountCall)
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })

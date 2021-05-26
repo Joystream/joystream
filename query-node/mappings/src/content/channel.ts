@@ -197,7 +197,6 @@ export async function content_ChannelCategoryCreated(
 ) {
   // read event data
   const {channelCategoryCreationParameters, channelCategoryId} = new Content.ChannelCategoryCreatedEvent(event).data
-  const {actor: contentActor} = new Content.CreateChannelCategoryCall(event).args
 
   // read metadata
   const protobufContent = await readProtobuf(
@@ -240,7 +239,6 @@ export async function content_ChannelCategoryUpdated(
   const {
     channelCategoryId,
     channelCategoryUpdateParameters,
-    contentActor,
   } = new Content.ChannelCategoryUpdatedEvent(event).data
 
   // load channel category
