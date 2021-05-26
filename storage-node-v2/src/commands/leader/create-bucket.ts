@@ -6,7 +6,6 @@ export default class LeaderCreateBucket extends ApiCommandBase {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
 
   static flags = {
-    help: flags.help({ char: 'h' }),
     size: flags.integer({
       char: 's',
       description: 'Storage bucket max total objects size',
@@ -20,7 +19,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       description: 'Invited storage operator ID (storage WG worker ID)',
     }),
     allow: flags.boolean({ char: 'a', description: 'Accepts new bags' }),
-    dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
+    ...ApiCommandBase.keyflags,
   }
 
   async run(): Promise<void> {
@@ -36,7 +35,10 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
+    const account = this.getAccount(flags)
+
     await createStorageBucket(
+      account,
       invitedWorker,
       allowNewBags,
       objectSize,

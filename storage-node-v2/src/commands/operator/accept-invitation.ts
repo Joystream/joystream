@@ -6,10 +6,9 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
   static description = 'Accept pending storage bucket invitation.'
 
   static flags = {
-    help: flags.help({ char: 'h' }),
     worker: flags.integer({
       char: 'w',
-      required: true,
+      required: true, //TODO: for dev
       description: 'Storage operator worker ID',
     }),
     bucket: flags.integer({
@@ -17,10 +16,8 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
       required: true,
       description: 'Storage bucket ID',
     }),
-    dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
+    ...ApiCommandBase.keyflags,
   }
-
-  static args = [{ name: 'file' }]
 
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorAcceptInvitation)
@@ -33,6 +30,8 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    await acceptStorageBucketInvitation(worker, bucket)
+    const account = this.getAccount(flags)
+
+    await acceptStorageBucketInvitation(account, worker, bucket)
   }
 }

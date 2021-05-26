@@ -1,6 +1,14 @@
-import { createApi, sendAndFollowNamedTx, getAlicePair } from './api'
+import {
+  createApi,
+  sendAndFollowSudoNamedTx,
+  sendAndFollowNamedTx,
+  getAlicePair,
+} from './api'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { CodecArg } from '@polkadot/types/types'
 
 export async function createStorageBucket(
+  account: KeyringPair,
   invitedWorker: number | null = null,
   allowedNewBags = true,
   sizeLimit = 0,
@@ -9,11 +17,9 @@ export async function createStorageBucket(
   try {
     const api = await createApi()
 
-    const alice = getAlicePair()
-
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
 
-    await sendAndFollowNamedTx(api, alice, 'storage', 'createStorageBucket', [
+    await sendAndFollowNamedTx(api, account, 'storage', 'createStorageBucket', [
       invitedWorkerValue,
       allowedNewBags,
       sizeLimit,
@@ -25,17 +31,16 @@ export async function createStorageBucket(
 }
 
 export async function acceptStorageBucketInvitation(
+  account: KeyringPair,
   workerId: number,
   storageBucketId: number
 ): Promise<void> {
   try {
     const api = await createApi()
 
-    const alice = getAlicePair()
-
     await sendAndFollowNamedTx(
       api,
-      alice,
+      account,
       'storage',
       'acceptStorageBucketInvitation',
       [workerId, storageBucketId]
@@ -52,26 +57,25 @@ export async function acceptStorageBucketInvitation(
 // }
 
 export async function updateStorageBucketsForBag(
+  account: KeyringPair,
   bucketId: number,
   removeBucket: boolean
 ): Promise<void> {
   try {
     const api = await createApi()
 
-    const alice = getAlicePair()
-
-    let addBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
-    let removeBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
+    let addBuckets: CodecArg
+    let removeBuckets: CodecArg
 
     if (removeBucket) {
-      addBuckets = null
+      removeBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
     } else {
-      removeBuckets = null
+      addBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
     }
 
     await sendAndFollowNamedTx(
       api,
-      alice,
+      account,
       'storage',
       'updateStorageBucketsForBag',
       [{ 'Static': 'Council' }, addBuckets, removeBuckets]
@@ -81,7 +85,10 @@ export async function updateStorageBucketsForBag(
   }
 }
 
-export async function uploadDataObjects(objectSize: number, objectCid: string): Promise<void> {
+export async function uploadDataObjects(
+  objectSize: number,
+  objectCid: string
+): Promise<void> {
   try {
     const api = await createApi()
 
@@ -89,15 +96,21 @@ export async function uploadDataObjects(objectSize: number, objectCid: string): 
 
     const data = api.createType('UploadParameters', {
       deletionPrizeSourceAccountId: alice.address,
-      objectCreationList: [{
-        Size: objectSize,
-        IpfsContentId: objectCid
-      }],
+      objectCreationList: [
+        {
+          Size: objectSize,
+          IpfsContentId: objectCid,
+        },
+      ],
     })
 
-    await sendAndFollowNamedTx(api, alice, 'storage', 'sudoUploadDataObjects', [
-      data,
-    ])
+    await sendAndFollowSudoNamedTx(
+      api,
+      alice,
+      'storage',
+      'sudoUploadDataObjects',
+      [data]
+    )
   } catch (err) {
     console.error(`Api Error: ${err}`)
   }

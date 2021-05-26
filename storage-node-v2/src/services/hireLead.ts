@@ -1,5 +1,10 @@
-import { createApi, getAlicePair, sendAndFollowSudoNamedTx, sendAndFollowNamedTx } from './api'
-
+import {
+  createApi,
+  getAlicePair,
+  sendAndFollowSudoNamedTx,
+  sendAndFollowNamedTx,
+} from './api'
+import { CodecArg } from '@polkadot/types/types'
 import { Option, Vec } from '@polkadot/types'
 import {
   WorkerId,
@@ -14,6 +19,8 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
   const SudoKeyPair = getAlicePair()
   const LeadKeyPair = getAlicePair()
 
+  const nullValue = (null as unknown) as CodecArg
+
   // Create membership if not already created
   const members = (await api.query.members.memberIdsByControllerAccountId(
     LeadKeyPair.address
@@ -26,14 +33,12 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
   if (memberId === undefined) {
     console.log('Preparing member account creation extrinsic...')
     memberId = ((await api.query.members.nextMemberId()) as MemberId).toBigInt()
-
-    await sendAndFollowNamedTx(
-      api,
-      LeadKeyPair,
-      'members',
-      'buyMembership',
-      [0, 'alice', null, null]
-    )
+    await sendAndFollowNamedTx(api, LeadKeyPair, 'members', 'buyMembership', [
+      0,
+      'alice',
+      nullValue,
+      nullValue,
+    ])
   }
 
   // Create a new lead opening.
@@ -58,13 +63,13 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
     'storageWorkingGroup',
     'addOpening',
     [
-        { CurrentBlock: null }, // activate_at
-        // Disable lint because of the auto-generated types.
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        { max_review_period_length: 9999 }, // OpeningPolicyCommitment
-        'storage opening', // human_readable_text
-        'Leader' // opening_type
-    ]  
+      { CurrentBlock: nullValue }, // activate_at
+      // Disable lint because of the auto-generated types.
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      { max_review_period_length: 9999 }, // OpeningPolicyCommitment
+      'storage opening', // human_readable_text
+      'Leader', // opening_type
+    ]
   )
 
   // Apply to lead opening
@@ -78,9 +83,9 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
       memberId, // member id
       newOpeningId, // opening id
       LeadKeyPair.address, // address
-      null, // opt role stake
-      null, // opt appl. stake
-      'bootstrap opening' // human_readable_text
+      nullValue, // opt role stake
+      nullValue, // opt appl. stake
+      'bootstrap opening', // human_readable_text
     ]
   )
 
@@ -90,8 +95,8 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
     api,
     SudoKeyPair,
     'storageWorkingGroup',
-    'beginApplicantReview'
-    ,[newOpeningId]
+    'beginApplicantReview',
+    [newOpeningId]
   )
 
   // Fill opening
@@ -99,12 +104,12 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
   await sendAndFollowSudoNamedTx(
     api,
     SudoKeyPair,
-      'storageWorkingGroup',
-      'fillOpening',
-      [
-        newOpeningId, // opening id
-        api.createType('ApplicationIdSet', [newApplicationId]), // succesful applicants
-        null // reward policy
-      ]
+    'storageWorkingGroup',
+    'fillOpening',
+    [
+      newOpeningId, // opening id
+      api.createType('ApplicationIdSet', [newApplicationId]), // successful applicants
+      nullValue, // reward policy
+    ]
   )
 }
