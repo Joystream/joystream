@@ -187,7 +187,12 @@ export async function content_VideoCreated(
   }
 
   // prepare video media metadata (if any)
-  const fixedProtobuf = integrateVideoMediaMetadata(null, protobufContent, event)
+  const fixedProtobuf = await integrateVideoMediaMetadata(db, null, protobufContent, event)
+
+  const licenseIsEmpty = fixedProtobuf.license && !Object.keys(fixedProtobuf.license).length
+  if (licenseIsEmpty) { // license deletion was requested - ignore it and consider it empty
+    delete fixedProtobuf.license
+  }
 
   // create new video
   const video = new Video({
@@ -260,7 +265,7 @@ export async function content_VideoUpdated(
     )
 
     // prepare video media metadata (if any)
-    const fixedProtobuf = integrateVideoMediaMetadata(video, protobufContent, event)
+    const fixedProtobuf = await integrateVideoMediaMetadata(db, video, protobufContent, event)
 
     // remember original license
     const originalLicense = video.license
@@ -272,17 +277,9 @@ export async function content_VideoUpdated(
 
     // license has changed - plan old license delete
     if (originalLicense && video.license != originalLicense) {
-      video.license = video.license
-        ? new License({
-          ...originalLicense,
-          ...video.license,
-          createdAt: originalLicense.createdAt, // keep original createdAt time
-        }) // update existing license
-        : undefined // unset license
-
-      if (!video.license) { // delete old license when requested
-        licenseToDelete = originalLicense
-      }
+      ([video.license, licenseToDelete] = handleLicenseUpdate(originalLicense, video.license))
+    } else if (!Object.keys(video.license || {}).length) { // license deletion was requested event no license exists?
+      delete video.license // ensure license is empty
     }
   }
 
@@ -429,11 +426,12 @@ export async function content_FeaturedVideosSet(
   NOTE: type hack - `RawVideoMetadata` is accepted for `metadata` instead of `Partial<Video>`
         see `prepareVideoMetadata()` in `utils.ts` for more info
 */
-function integrateVideoMediaMetadata(
+async function integrateVideoMediaMetadata(
+  db: DatabaseManager,
   existingRecord: Video | null,
   metadata: Partial<Video>,
   event: SubstrateEvent,
-): Partial<Video> {
+): Promise<Partial<Video>> {
   if (!metadata.mediaMetadata) {
     return metadata
   }
@@ -479,10 +477,10 @@ function integrateVideoMediaMetadata(
 
   // ensure predictable ids
   if (!mediaMetadata.encoding.id) {
-    mediaMetadata.encoding.id = createPredictableId(event, mediaMetadata.encoding)
+    mediaMetadata.encoding.id = await createPredictableId(db)
   }
   if (!mediaMetadata.id) {
-    mediaMetadata.id = createPredictableId(event, mediaMetadata)
+    mediaMetadata.id = await createPredictableId(db)
   }
 
   /////////////////// update updatedAt if needed ///////////////////////////////
@@ -509,4 +507,31 @@ function integrateVideoMediaMetadata(
     ...metadata,
     mediaMetadata
   }
+}
+
+// returns tuple `[newLicenseForVideo, oldLicenseToBeDeleted]`
+function handleLicenseUpdate(originalLicense, newLicense): [License | undefined, License | null] {
+  const isNewEmpty = !Object.keys(newLicense).length
+
+  if (!originalLicense && isNewEmpty) {
+    return [undefined, null]
+  }
+
+  if (!originalLicense) { // && !isNewEmpty
+    return [newLicense, null]
+  }
+
+  if (!isNewEmpty) { // && originalLicense
+    return [
+      new License({
+        ...originalLicense,
+        ...newLicense,
+      }),
+      null
+    ]
+  }
+
+  // originalLicense && isNewEmpty
+
+  return [originalLicense, null]
 }

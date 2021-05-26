@@ -9,6 +9,8 @@ import { FindConditions } from 'typeorm'
 import {
   inconsistentState,
   logger,
+  extractExtrinsicArgs,
+  extractSudoCallParameters,
 } from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node'
@@ -18,7 +20,15 @@ import { EntryMethod } from '@joystream/types/augment'
 export async function members_MemberRegistered(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const { accountId, memberId, entryMethod } = new Members.MemberRegisteredEvent(event).data
-  const { avatarUri, about, handle } = new Members.BuyMembershipCall(event).args
+  const { avatarUri, about, handle } = extractExtrinsicArgs(
+    event,
+    Members.BuyMembershipCall,
+    {
+      handle: 1,
+      avatarUri: 2,
+      about: 3,
+    },
+  )
 
   // create new membership
   const member = new Membership({
@@ -47,7 +57,11 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedAboutText(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { text, memberId } = new Members.ChangeMemberAboutTextCall(event).args
+  const { text, memberId } = isUpdateMembershipExtrinsic(event)
+    ? unpackUpdateMembershipOptions(
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, about: 3})
+      )
+    : extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall, {memberId: 0, text: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -73,7 +87,11 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { uri, memberId } = new Members.ChangeMemberAvatarCall(event).args
+  const { uri, memberId } = isUpdateMembershipExtrinsic(event)
+    ? unpackUpdateMembershipOptions(
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, avatarUri: 2})
+      )
+    : extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall, {memberId: 0, uri: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -99,7 +117,11 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedHandle(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { handle, memberId } = new Members.ChangeMemberHandleCall(event).args
+  const { handle, memberId } = isUpdateMembershipExtrinsic(event)
+    ? unpackUpdateMembershipOptions(
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, handle: 1})
+      )
+    : extractExtrinsicArgs(event, Members.ChangeMemberHandleCall, {memberId: 0, handle: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -125,7 +147,7 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberSetRootAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newRootAccount, memberId } = new Members.SetRootAccountCall(event).args
+  const { newRootAccount, memberId } = extractExtrinsicArgs(event, Members.SetRootAccountCall, {memberId: 0, newRootAccount: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -151,7 +173,11 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberSetControllerAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newControllerAccount, memberId } = new Members.SetControllerAccountCall(event).args
+  const { newControllerAccount, memberId } = extractExtrinsicArgs(
+    event,
+    Members.SetControllerAccountCall,
+    {memberId: 0, newControllerAccount: 1},
+  )
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -184,7 +210,14 @@ function convertBytesToString(b: Bytes | null): string {
     return ''
   }
 
-  return Buffer.from(b.toU8a(true)).toString()
+  const result = Buffer.from(b.toU8a(true)).toString()
+
+  // prevent utf-8 null character
+  if (result.match(/^\0$/)) {
+    return ''
+  }
+
+  return result
 }
 
 function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
@@ -206,4 +239,46 @@ function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   // should never happen
   logger.error('Not implemented entry method', {entryMethod: entryMethod.toString()})
   throw 'Not implemented entry method'
+}
+
+/*
+  Returns true if event is emitted inside of `update_membership` extrinsic.
+*/
+function isUpdateMembershipExtrinsic(event: SubstrateEvent): boolean {
+  if (!event.extrinsic) { // this should never happen
+    return false
+  }
+
+  if (event.extrinsic.method == 'updateMembership') {
+    return true
+  }
+
+  // no sudo was used to update membership -> this is not updateMembership
+  if (event.extrinsic.section != 'sudo') {
+    return false
+  }
+
+  const sudoCallParameters = extractSudoCallParameters<unknown[]>(event)
+
+  // very trivial check if update_membership extrinsic was used
+  return sudoCallParameters.args.length == 4 // memberId, handle, avatarUri, about
+}
+
+interface IUnpackedUpdateMembershipOptions {
+  memberId: MemberId
+  handle: Bytes
+  uri: Bytes
+  text: Bytes
+}
+
+/*
+  Returns unwrapped data + unite naming of uri/avatarUri and about/text
+*/
+function unpackUpdateMembershipOptions(args: Members.UpdateMembershipCall['args']): IUnpackedUpdateMembershipOptions {
+  return {
+    memberId: args.memberId,
+    handle: args.handle.unwrapOrDefault(),
+    uri: args.avatarUri.unwrapOrDefault(),
+    text: args.about.unwrapOrDefault(),
+  }
 }

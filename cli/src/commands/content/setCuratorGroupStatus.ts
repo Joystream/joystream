@@ -52,7 +52,7 @@ export default class SetCuratorGroupStatusCommand extends ContentDirectoryComman
 
     console.log(
       chalk.green(
-        `Curator Group ${chalk.magentaBright(id)} status succesfully changed to: ${chalk.magentaBright(
+        `Curator Group ${chalk.magentaBright(id)} status successfully changed to: ${chalk.magentaBright(
           status ? 'Active' : 'Inactive'
         )}!`
       )

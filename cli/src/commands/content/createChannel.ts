@@ -7,6 +7,7 @@ import { ChannelCreationParameters } from '@joystream/types/content'
 import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
+import chalk from 'chalk'
 
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
@@ -55,7 +56,14 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [actor, channelCreationParameters])
+    const result = await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [
+      actor,
+      channelCreationParameters,
+    ])
+    if (result) {
+      const event = this.findEvent(result, 'content', 'ChannelCreated')
+      this.log(chalk.green(`Channel with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`))
+    }
 
     await this.uploadAssets(inputAssets, input)
   }

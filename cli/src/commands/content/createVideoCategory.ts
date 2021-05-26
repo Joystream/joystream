@@ -6,6 +6,7 @@ import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoCategoryCreationParameters } from '@joystream/types/content'
 import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import chalk from 'chalk'
 
 export default class CreateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create video category inside content directory.'
@@ -38,9 +39,16 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'createVideoCategory', [
+    const result = await this.sendAndFollowNamedTx(currentAccount, 'content', 'createVideoCategory', [
       actor,
       videoCategoryCreationParameters,
     ])
+
+    if (result) {
+      const event = this.findEvent(result, 'content', 'VideoCategoryCreated')
+      this.log(
+        chalk.green(`VideoCategory with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`)
+      )
+    }
   }
 }

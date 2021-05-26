@@ -8,7 +8,7 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
   static args = [
     {
       name: 'channelId',
-      required: true,
+      required: false,
       description: 'ID of the Channel',
     },
   ]
@@ -34,7 +34,7 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
         3
       )
     } else {
-      this.log('There are no videos yet')
+      this.log(`There are no videos${channelId ? ' in this channel' : ''} yet`)
     }
   }
 }
