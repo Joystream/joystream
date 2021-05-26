@@ -24,7 +24,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
 
     const bucket = flags.bucket ?? 0
 
-    this.log('Update bag - add storage buckets...')
+    this.log('Update bag - add storage buckets...') //TODO: add/remove depends on flag -r
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }

@@ -98,19 +98,9 @@
     "@babel/helper-validator-identifier" "^7.14.0"
     to-fast-properties "^2.0.0"
 
-"@joystream/types@^0.15.0":
-  version "0.15.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.15.0.tgz#7493fbd39bd3b0de7d110e25710a4797de4c302f"
-  integrity sha512-UjfHH3MlRUt2yRnzqsynoXcifWLGuzXm0VFBZIpgZo7IJQpZMbY6bmORYsxpAuwAebm4ogSqvWAzrSSJa5s6bQ==
-  dependencies:
-    "@polkadot/api" "4.2.1"
-    "@polkadot/keyring" "^6.0.5"
-    "@polkadot/types" "4.2.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
+"@joystream/types@link:../types":
+  version "0.0.0"
+  uid ""
 
 "@nodelib/fs.scandir@2.1.4":
   version "2.1.4"
@@ -3056,12 +3046,12 @@ stdout-stderr@^0.1.9:
 "storage-node-v2@file:.":
   version "0.1.0"
   dependencies:
-    "@joystream/types" "^0.15.0"
+    "@joystream/types" "link:../../../../Library/Caches/Yarn/v6/npm-storage-node-v2-0.1.0-1efa87d5-7b5a-4299-b05e-f3900311e907-1622039443083/node_modules/types"
     "@oclif/command" "^1"
     "@oclif/config" "^1"
     "@oclif/plugin-help" "^3"
     "@polkadot/api" "4.2.1"
-    storage-node-v2 "file:../../../../Library/Caches/Yarn/v6/npm-storage-node-v2-0.1.0-9a7c099e-925a-46db-9cc9-8738470270a5-1621511115700/node_modules/storage-node-v2"
+    storage-node-v2 "file:../../../../Library/Caches/Yarn/v6/npm-storage-node-v2-0.1.0-1efa87d5-7b5a-4299-b05e-f3900311e907-1622039443083/node_modules/storage-node-v2"
     tslib "^1"
 
 string-width@^2.1.0, string-width@^2.1.1:

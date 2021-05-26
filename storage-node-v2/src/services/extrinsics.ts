@@ -68,9 +68,9 @@ export async function updateStorageBucketsForBag(
     let removeBuckets: CodecArg
 
     if (removeBucket) {
-      removeBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
+      removeBuckets = api.createType('StorageBucketIdSet', [bucketId])
     } else {
-      addBuckets = api.createType('BTreeSet<StorageBucketId>', [bucketId])
+      addBuckets = api.createType('StorageBucketIdSet', [bucketId])
     }
 
     await sendAndFollowNamedTx(

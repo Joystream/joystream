@@ -1,6 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import {
-  RegistryTypes,
   CodecArg,
   ISubmittableResult,
 } from '@polkadot/types/types'
@@ -15,50 +14,15 @@ import {
 } from '@polkadot/types/interfaces/system'
 import { Keyring } from '@polkadot/keyring'
 
+
+//TODO: ApiHelper class container for functions ??? 
+
 export class ExtrinsicFailedError extends Error {}
 
-function createExtendedTypes(): RegistryTypes {
-  const extendedTypes = types
-  extendedTypes.StorageBucketId = 'u64'
-  extendedTypes.DynamicBagId = {}
-  extendedTypes.StorageBucketsPerBagValueConstraint = {}
-  extendedTypes.Voucher = {
-    sizeLimit: 'u64',
-    objectsLimit: 'u64',
-    sizeUsed: 'u64',
-    objectsUsed: 'u64',
-  }
-  extendedTypes.DynamicBagType = {}
-  extendedTypes.DynamicBagCreationPolicy = {}
-  extendedTypes.DataObjectId = 'u64'
-  extendedTypes.DynamicBag = {}
-  extendedTypes.StaticBag = {}
-  extendedTypes.StorageBucket = {}
-
-  extendedTypes.BagId = { _enum: { Static: 'StaticBagId' } }
-  extendedTypes.Static = 'StaticBagId'
-  extendedTypes.StaticBagId = { _enum: ['Council'] }
-
-  extendedTypes.DataObjectCreationParameters = {
-    Size: 'u64',
-    IpfsContentId: 'Text',
-  }
-  extendedTypes.BagIdType = { _enum: { Static: 'StaticBagId' } }
-  extendedTypes.UploadParameters = {
-    authenticationKey: 'Vec<u8>',
-    bagId: 'BagId',
-    objectCreationList: 'Vec<DataObjectCreationParameters>',
-    deletionPrizeSourceAccountId: 'AccountId',
-  }
-
-  return extendedTypes
-}
-
 export async function createApi(): Promise<ApiPromise> {
-  const wsProvider = new WsProvider('ws://localhost:9944')
-  const extendedTypes = createExtendedTypes()
+  const provider = new WsProvider('ws://localhost:9944')
 
-  return await ApiPromise.create({ provider: wsProvider, types: extendedTypes })
+  return await ApiPromise.create({ provider, types })
 }
 
 function sendExtrinsic(
@@ -109,7 +73,7 @@ function sendExtrinsic(
                 if (dispatchSuccess.isOk) {
                   resolve(result)
                 } else {
-                  reject(
+                  reject(//TODO: print error
                     new ExtrinsicFailedError('Sudo extrinsic execution error!')
                   )
                 }
