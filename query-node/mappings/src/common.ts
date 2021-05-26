@@ -88,8 +88,12 @@ export interface ISudoCallArgs<T> extends ExtrinsicArg {
 */
 export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExtrinsicObject<DataParams>>(
   rawEvent: SubstrateEvent,
-  callFactory: new (event: SubstrateEvent) => EventObject
-): DataParams {
+  callFactory: new (event: SubstrateEvent) => EventObject,
+
+  // in ideal world this parameter would not be needed, but there is no way to associate parameters
+  // used in sudo to extrinsic parameters without it
+  argsIndeces: Record<keyof DataParams, number>,
+): EventObject['args'] { // this is equal to DataParams but only this notation works properly
   // escape when extrinsic info is not available
   if (!rawEvent.extrinsic) {
     throw 'Invalid event - no extrinsic set' // this should never happen
@@ -117,7 +121,32 @@ export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExt
   // typecast call arguments
   const callArgs = rawEvent.extrinsic.args[argIndex].value as unknown as ISudoCallArgs<DataParams>
 
-  return callArgs.args
+  // convert naming convention (underscore_names to camelCase)
+  const clearArgs = Object.keys(callArgs.args).reduce((acc, key) => {
+    const formattedName = key.replace(/_([a-z])/g, tmp => tmp[1].toUpperCase())
+
+    acc[formattedName] = callArgs.args[key]
+
+    return acc
+  }, {} as DataParams)
+
+  // prepare partial event object
+  const partialEvent = {
+    extrinsic: {
+      args: Object.keys(argsIndeces).reduce((acc, key) => {
+        acc[(argsIndeces)[key]] = {
+          value: clearArgs[key]
+        }
+
+        return acc
+      }, [] as unknown[]),
+    } as unknown as SubstrateExtrinsic
+  } as SubstrateEvent
+
+  // create event object and extract processed args
+  const finalArgs = (new callFactory(partialEvent)).args
+
+  return finalArgs
 }
 
 /////////////////// Logger /////////////////////////////////////////////////////
