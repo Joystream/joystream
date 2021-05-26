@@ -158,6 +158,16 @@ export interface Backer extends Struct {
 /** @name Backers */
 export interface Backers extends Vec<Backer> {}
 
+/** @name BagId */
+export interface BagId extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+}
+
+/** @name BagIdType */
+export interface BagIdType extends u64 {}
+
 /** @name BalanceOfMint */
 export interface BalanceOfMint extends u128 {}
 
@@ -388,6 +398,14 @@ export interface DataObject extends Struct {
   readonly ipfs_content_id: Text;
 }
 
+/** @name DataObjectCreationParameters */
+export interface DataObjectCreationParameters extends Struct {
+  readonly ipfsContentId: Text;
+}
+
+/** @name DataObjectId */
+export interface DataObjectId extends u64 {}
+
 /** @name DataObjectsMap */
 export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
 
@@ -434,6 +452,18 @@ export interface DiscussionThread extends Struct {
   readonly created_at: u32;
   readonly author_id: MemberId;
 }
+
+/** @name DynamicBag */
+export interface DynamicBag extends u64 {}
+
+/** @name DynamicBagCreationPolicy */
+export interface DynamicBagCreationPolicy extends u64 {}
+
+/** @name DynamicBagId */
+export interface DynamicBagId extends u64 {}
+
+/** @name DynamicBagType */
+export interface DynamicBagType extends u64 {}
 
 /** @name ElectionParameters */
 export interface ElectionParameters extends Struct {
@@ -1191,8 +1221,38 @@ export interface StakingStatus extends Enum {
   readonly asStaked: Staked;
 }
 
+/** @name Static */
+export interface Static extends Enum {
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+}
+
+/** @name StaticBag */
+export interface StaticBag extends u64 {}
+
+/** @name StaticBagId */
+export interface StaticBagId extends Enum {
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+}
+
 /** @name Status */
 export interface Status extends bool {}
+
+/** @name StorageBucket */
+export interface StorageBucket extends u64 {}
+
+/** @name StorageBucketId */
+export interface StorageBucketId extends u64 {}
+
+/** @name StorageBucketIdSet */
+export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
+
+/** @name StorageBucketsPerBagValueConstraint */
+export interface StorageBucketsPerBagValueConstraint extends Struct {
+  readonly min: u64;
+  readonly max_min_diff: u64;
+}
 
 /** @name StorageProviderId */
 export interface StorageProviderId extends u64 {}
@@ -1290,6 +1350,14 @@ export interface UpdatePropertyValuesOperation extends Struct {
   readonly new_parametrized_property_values: Vec<ParametrizedClassPropertyValue>;
 }
 
+/** @name UploadParameters */
+export interface UploadParameters extends Struct {
+  readonly authenticationKey: Text;
+  readonly bagId: BagId;
+  readonly objectCreationList: Vec<DataObjectCreationParameters>;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
+}
+
 /** @name Url */
 export interface Url extends Text {}
 
@@ -1364,6 +1432,14 @@ export interface VotingResults extends Struct {
   readonly approvals: u32;
   readonly rejections: u32;
   readonly slashes: u32;
+}
+
+/** @name Voucher */
+export interface Voucher extends Struct {
+  readonly sizeLimit: u64;
+  readonly objectsLimit: u64;
+  readonly sizeUsed: u64;
+  readonly objectsUsed: u64;
 }
 
 /** @name WaitingToBeingOpeningStageVariant */

@@ -8,7 +8,7 @@
   },
   "bugs": "https://github.com/shamil-gadelshin/storage-node-v2/issues",
   "dependencies": {
-    "@joystream/types": "^0.15.0",
+    "@joystream/types": "link:../types",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
