@@ -59,7 +59,9 @@ export default class AccountExport extends AccountsCommandBase {
         this.error(`Failed to create the export folder (${destPath})`, { exit: ExitCodes.FsOperationFailed })
       }
       for (const account of accounts) this.exportAccount(account, destPath)
-      this.log(chalk.greenBright(`All accounts successfully exported successfully to: ${chalk.magentaBright(destPath)}!`))
+      this.log(
+        chalk.greenBright(`All accounts successfully exported successfully to: ${chalk.magentaBright(destPath)}!`)
+      )
     } else {
       const destPath: string = args.path
       const choosenAccount: NamedKeyringPair = await this.promptForAccount(

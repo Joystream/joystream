@@ -79,7 +79,11 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [actor, channelId, videoCreationParameters])
+    const result = await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [
+      actor,
+      channelId,
+      videoCreationParameters,
+    ])
     if (result) {
       const event = this.findEvent(result, 'content', 'VideoCreated')
       this.log(chalk.green(`Video with id ${chalk.cyanBright(event?.data[2].toString())} successfully created!`))

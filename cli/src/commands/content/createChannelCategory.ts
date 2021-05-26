@@ -46,7 +46,9 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
 
     if (result) {
       const event = this.findEvent(result, 'content', 'ChannelCategoryCreated')
-      this.log(chalk.green(`ChannelCategory with id ${chalk.cyanBright(event?.data[0].toString())} successfully created!`))
+      this.log(
+        chalk.green(`ChannelCategory with id ${chalk.cyanBright(event?.data[0].toString())} successfully created!`)
+      )
     }
   }
 }

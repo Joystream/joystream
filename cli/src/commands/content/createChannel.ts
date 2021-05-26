@@ -56,7 +56,10 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [actor, channelCreationParameters])
+    const result = await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [
+      actor,
+      channelCreationParameters,
+    ])
     if (result) {
       const event = this.findEvent(result, 'content', 'ChannelCreated')
       this.log(chalk.green(`Channel with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`))
