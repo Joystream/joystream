@@ -187,7 +187,7 @@ export async function content_VideoCreated(
   }
 
   // prepare video media metadata (if any)
-  const fixedProtobuf = integrateVideoMediaMetadata(null, protobufContent, event)
+  const fixedProtobuf = await integrateVideoMediaMetadata(db, null, protobufContent, event)
 
   const licenseIsEmpty = fixedProtobuf.license && !Object.keys(fixedProtobuf.license).length
   if (licenseIsEmpty) { // license deletion was requested - ignore it and consider it empty
@@ -265,7 +265,7 @@ export async function content_VideoUpdated(
     )
 
     // prepare video media metadata (if any)
-    const fixedProtobuf = integrateVideoMediaMetadata(video, protobufContent, event)
+    const fixedProtobuf = await integrateVideoMediaMetadata(db, video, protobufContent, event)
 
     // remember original license
     const originalLicense = video.license
@@ -426,11 +426,12 @@ export async function content_FeaturedVideosSet(
   NOTE: type hack - `RawVideoMetadata` is accepted for `metadata` instead of `Partial<Video>`
         see `prepareVideoMetadata()` in `utils.ts` for more info
 */
-function integrateVideoMediaMetadata(
+async function integrateVideoMediaMetadata(
+  db: DatabaseManager,
   existingRecord: Video | null,
   metadata: Partial<Video>,
   event: SubstrateEvent,
-): Partial<Video> {
+): Promise<Partial<Video>> {
   if (!metadata.mediaMetadata) {
     return metadata
   }
@@ -468,10 +469,10 @@ function integrateVideoMediaMetadata(
 
   // ensure predictable ids
   if (!mediaMetadata.encoding.id) {
-    mediaMetadata.encoding.id = createPredictableId(event, mediaMetadata.encoding)
+    mediaMetadata.encoding.id = await createPredictableId(db)
   }
   if (!mediaMetadata.id) {
-    mediaMetadata.id = createPredictableId(event, mediaMetadata)
+    mediaMetadata.id = await createPredictableId(db)
   }
 
   return {

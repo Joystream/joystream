@@ -313,7 +313,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare license if needed
     if ('license' in metaAsObject) {
-      result.license = await prepareLicense(metaAsObject.license, parameters.event)
+      result.license = await prepareLicense(parameters.db, metaAsObject.license, parameters.event)
     }
 
     // prepare thumbnail photo asset if needed
@@ -479,6 +479,7 @@ async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetS
   // prepare data object
   const contentParameters: ContentParameters = parameters.rawAsset.asUpload
   const dataObject = await prepareDataObject(
+    parameters.db,
     contentParameters,
     parameters.event,
     parameters.contentOwner,
@@ -633,6 +634,7 @@ async function prepareLanguage(
 
   // create new language
   const newLanguage = new Language({
+    id: await createPredictableId(db),
     iso: languageIso,
     createdInBlock: event.blockNumber,
 
@@ -641,14 +643,13 @@ async function prepareLanguage(
     updatedById: '1',
   })
 
-  newLanguage.id = createPredictableId(event, newLanguage)
-
   await db.save<Language>(newLanguage)
 
   return PropertyChange.newChange(newLanguage)
 }
 
 async function prepareLicense(
+  db: DatabaseManager,
   licenseProtobuf: LicenseMetadata.AsObject | undefined,
   event: SubstrateEvent,
 ): Promise<License | undefined> {
@@ -668,12 +669,11 @@ async function prepareLicense(
   // crete new license
   const license = new License({
     ...licenseProtobuf,
+    id: await createPredictableId(db),
 
     createdById: '1',
     updatedById: '1',
   })
-
-  license.id = createPredictableId(event, license)
 
   return license
 }

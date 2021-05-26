@@ -181,7 +181,7 @@ async function createWorker(
   event: SubstrateEvent,
 ): Promise<void> {
   const newWorker = new Worker({
-    id: createPredictableId(event, workerType),
+    id: await createPredictableId(db),
     workerId: workerId.toString(),
     type: workerType,
     isActive: true,

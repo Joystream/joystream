@@ -1,7 +1,6 @@
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { u64 } from '@polkadot/types/primitive';
-import * as crypto from 'crypto'
 import { SubstrateExtrinsic, ExtrinsicArg } from '@dzlzv/hydra-common'
 
 // Asset
@@ -10,6 +9,7 @@ import {
   DataObject,
   LiaisonJudgement,
   Network,
+  NextEntityId,
 } from 'query-node'
 import {
   ContentParameters,
@@ -45,23 +45,27 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 /*
   Creates a predictable and unique ID for the given content.
 */
-export function createPredictableId(event: SubstrateEvent, content: string | Object): string {
-  const contentType = typeof content == 'string'
-    ? content
-    : JSON.stringify(content)
+export async function createPredictableId(db: DatabaseManager): Promise<string> {
+  // load or create record
+  const existingRecord = await db.get(NextEntityId, {}) || new NextEntityId({id: '0', nextId: 0})
 
-  const id = `${event.blockNumber}_${event.index}_${contentType}`
+  // remember id
+  const entityId = existingRecord.nextId
 
-  return crypto
-    .createHash('sha256')
-    .update(id, 'utf-8')
-    .digest('base64')
+  // increment id
+  existingRecord.nextId = existingRecord.nextId + 1
+
+  // save record
+  await db.save<NextEntityId>(existingRecord)
+
+  return entityId.toString()
 }
 
 /*
   Prepares data object from content parameters.
 */
 export async function prepareDataObject(
+  db: DatabaseManager,
   contentParameters: ContentParameters,
   event: SubstrateEvent,
   owner: typeof DataObjectOwner,
@@ -70,6 +74,7 @@ export async function prepareDataObject(
   const customContentParameters = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
 
   const dataObject = new DataObject({
+    id: await createPredictableId(db),
     owner,
     createdInBlock: event.blockNumber,
     typeId: contentParameters.type_id.toNumber(),
@@ -81,8 +86,6 @@ export async function prepareDataObject(
     createdById: '1',
     updatedById: '1',
   })
-
-  dataObject.id = createPredictableId(event, dataObject)
 
   return dataObject
 }
