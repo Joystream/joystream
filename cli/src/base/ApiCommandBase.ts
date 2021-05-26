@@ -431,8 +431,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return await this.sendAndFollowTx(account, tx, warnOnly)
   }
 
+  // TODO:
+  // Switch to:
+  // public findEvent<S extends keyof AugmentedEvents<'promise'> & string, M extends keyof AugmentedEvents<'promise'>[S] & string>
+  //          (result: SubmittableResult, section: S, method: M): Event | undefined {
+  // Once augment-api is supported
   public findEvent(result: SubmittableResult, section: string, method: string): Event | undefined {
-    return result.events.find((record) => record.event.section === section && record.event.method === method)?.event
+    return result.findRecord(section, method)?.event
   }
 
   async buildAndSendExtrinsic(
