@@ -613,4 +613,74 @@ export namespace Members {
       ]);
     }
   }
+  /**
+   *  Update member's all or some of handle, avatar and about text.
+   */
+  export class UpdateMembershipCall {
+    public readonly extrinsic: SubstrateExtrinsic;
+    public readonly expectedArgTypes = [
+      "MemberId",
+      "Option<Bytes>",
+      "Option<Bytes>",
+      "Option<Bytes>",
+    ];
+
+    constructor(public readonly ctx: SubstrateEvent) {
+      if (ctx.extrinsic === undefined) {
+        throw new Error(`No call data has been provided`);
+      }
+      this.extrinsic = ctx.extrinsic;
+    }
+
+    get args(): UpdateMembership_Args {
+      return new UpdateMembership_Args(this.extrinsic);
+    }
+
+    validateArgs(): boolean {
+      if (this.expectedArgTypes.length !== this.extrinsic.args.length) {
+        return false;
+      }
+      let valid = true;
+      this.expectedArgTypes.forEach((type, i) => {
+        if (type !== this.extrinsic.args[i].type) {
+          valid = false;
+        }
+      });
+      return valid;
+    }
+  }
+
+  class UpdateMembership_Args {
+    constructor(public readonly extrinsic: SubstrateExtrinsic) {}
+
+    get memberId(): MemberId {
+      return createTypeUnsafe<MemberId & Codec>(typeRegistry, "MemberId", [
+        this.extrinsic.args[0].value,
+      ]);
+    }
+
+    get handle(): Option<Bytes> {
+      return createTypeUnsafe<Option<Bytes> & Codec>(
+        typeRegistry,
+        "Option<Bytes>",
+        [this.extrinsic.args[1].value]
+      );
+    }
+
+    get avatarUri(): Option<Bytes> {
+      return createTypeUnsafe<Option<Bytes> & Codec>(
+        typeRegistry,
+        "Option<Bytes>",
+        [this.extrinsic.args[2].value]
+      );
+    }
+
+    get about(): Option<Bytes> {
+      return createTypeUnsafe<Option<Bytes> & Codec>(
+        typeRegistry,
+        "Option<Bytes>",
+        [this.extrinsic.args[3].value]
+      );
+    }
+  }
 }

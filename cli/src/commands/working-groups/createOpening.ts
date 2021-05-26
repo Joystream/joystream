@@ -198,7 +198,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       if (output) {
         try {
           saveOutputJsonToFile(output, rememberedInput)
-          this.log(chalk.green(`Output succesfully saved in: ${chalk.magentaBright(output)}!`))
+          this.log(chalk.green(`Output successfully saved in: ${chalk.magentaBright(output)}!`))
         } catch (e) {
           this.warn(`Could not save output to ${output}!`)
         }
@@ -218,7 +218,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Display a success message on success or ask to try again on error
       if (txSuccess) {
-        this.log(chalk.green('Opening succesfully created!'))
+        this.log(chalk.green('Opening successfully created!'))
         tryAgain = false
       } else {
         tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
