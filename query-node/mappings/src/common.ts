@@ -2,9 +2,7 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { u64 } from '@polkadot/types/primitive'
 import { fixBlockTimestamp } from './eventFix'
-=======
 import { SubstrateExtrinsic, ExtrinsicArg } from '@dzlzv/hydra-common'
->>>>>>> query_node_predictable_ids
 
 // Asset
 import {
