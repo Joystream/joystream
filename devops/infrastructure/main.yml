@@ -84,6 +84,9 @@ Resources:
             # Update all packages
             apt-get update -y
 
+            # Install the updates
+            apt-get upgrade -y
+
             # Get latest cfn scripts and install them;
             apt-get install -y python3-setuptools
             mkdir -p /opt/aws/bin
