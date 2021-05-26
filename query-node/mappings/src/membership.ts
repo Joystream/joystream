@@ -10,6 +10,7 @@ import {
   inconsistentState,
   logger,
   extractExtrinsicArgs,
+  extractSudoCallParameters,
 } from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node'
@@ -56,7 +57,11 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedAboutText(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { text, memberId } = extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall, {memberId: 0, text: 1})
+  const { text, memberId } = isUpdateMembershipExtrinsic(event)
+    ? unpackUpdateMembershipOptions(
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, about: 3})
+      )
+    : extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall, {memberId: 0, text: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -82,7 +87,11 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { uri, memberId } = extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall, {memberId: 0, uri: 1})
+  const { uri, memberId } = isUpdateMembershipExtrinsic(event)
+    ? unpackUpdateMembershipOptions(
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, avatarUri: 2})
+      )
+    : extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall, {memberId: 0, uri: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -108,7 +117,11 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberUpdatedHandle(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { handle, memberId } = extractExtrinsicArgs(event, Members.ChangeMemberHandleCall, {memberId: 0, handle: 1})
+  const { handle, memberId } = isUpdateMembershipExtrinsic(event)
+    ? unpackUpdateMembershipOptions(
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, handle: 1})
+      )
+    : extractExtrinsicArgs(event, Members.ChangeMemberHandleCall, {memberId: 0, handle: 1})
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -219,4 +232,46 @@ function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   // should never happen
   logger.error('Not implemented entry method', {entryMethod: entryMethod.toString()})
   throw 'Not implemented entry method'
+}
+
+/*
+  Returns true if event is emitted inside of `update_membership` extrinsic.
+*/
+function isUpdateMembershipExtrinsic(event: SubstrateEvent): boolean {
+  if (!event.extrinsic) { // this should never happen
+    return false
+  }
+
+  if (event.extrinsic.method == 'updateMembership') {
+    return true
+  }
+
+  // no sudo was used to update membership -> this is not updateMembership
+  if (event.extrinsic.section != 'sudo') {
+    return false
+  }
+
+  const sudoCallParameters = extractSudoCallParameters<unknown[]>(event)
+
+  // very trivial check if update_membership extrinsic was used
+  return sudoCallParameters.args.length == 4 // memberId, handle, avatarUri, about
+}
+
+interface IUnpackedUpdateMembershipOptions {
+  memberId: MemberId
+  handle: Bytes
+  uri: Bytes
+  text: Bytes
+}
+
+/*
+  Returns unwrapped data + unite naming of uri/avatarUri and about/text
+*/
+function unpackUpdateMembershipOptions(args: Members.UpdateMembershipCall['args']): IUnpackedUpdateMembershipOptions {
+  return {
+    memberId: args.memberId,
+    handle: args.handle.unwrapOrDefault(),
+    uri: args.avatarUri.unwrapOrDefault(),
+    text: args.about.unwrapOrDefault(),
+  }
 }

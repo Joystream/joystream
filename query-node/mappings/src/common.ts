@@ -106,20 +106,7 @@ export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExt
 
   // sudo extrinsic call
 
-  // see Substrate's sudo frame for more info about sudo extrinsics and `call` argument index
-  const argIndex = false
-    || (rawEvent.extrinsic.method == 'sudoAs' && 1) // who, *call*
-    || (rawEvent.extrinsic.method == 'sudo' && 0) // *call*
-    || (rawEvent.extrinsic.method == 'sudoUncheckedWeight' && 0) // *call*, _weight
-
-  // ensure `call` argument was found
-  if (argIndex === false) {
-    // this could possibly happen in sometime in future if new sudo options are introduced in Substrate
-    throw 'Not implemented situation with sudo'
-  }
-
-  // typecast call arguments
-  const callArgs = rawEvent.extrinsic.args[argIndex].value as unknown as ISudoCallArgs<DataParams>
+  const callArgs = extractSudoCallParameters<DataParams>(rawEvent)
 
   // convert naming convention (underscore_names to camelCase)
   const clearArgs = Object.keys(callArgs.args).reduce((acc, key) => {
@@ -147,6 +134,32 @@ export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExt
   const finalArgs = (new callFactory(partialEvent)).args
 
   return finalArgs
+}
+
+/*
+  Extracts extrinsic call parameters used inside of sudo call.
+*/
+export function extractSudoCallParameters<DataParams>(rawEvent: SubstrateEvent): ISudoCallArgs<DataParams> {
+  if (!rawEvent.extrinsic) {
+    throw 'Invalid event - no extrinsic set' // this should never happen
+  }
+
+  // see Substrate's sudo frame for more info about sudo extrinsics and `call` argument index
+  const argIndex = false
+    || (rawEvent.extrinsic.method == 'sudoAs' && 1) // who, *call*
+    || (rawEvent.extrinsic.method == 'sudo' && 0) // *call*
+    || (rawEvent.extrinsic.method == 'sudoUncheckedWeight' && 0) // *call*, _weight
+
+  // ensure `call` argument was found
+  if (argIndex === false) {
+    // this could possibly happen in sometime in future if new sudo options are introduced in Substrate
+    throw 'Not implemented situation with sudo'
+  }
+
+  // typecast call arguments
+  const callArgs = rawEvent.extrinsic.args[argIndex].value as unknown as ISudoCallArgs<DataParams>
+
+  return callArgs
 }
 
 /////////////////// Logger /////////////////////////////////////////////////////
