@@ -7,6 +7,7 @@ import { flags } from '@oclif/command'
 import { VideoCreationParameters } from '@joystream/types/content'
 import { MediaType, VideoMetadata } from '@joystream/content-metadata-protobuf'
 import { VideoInputSchema } from '../../json-schemas/ContentDirectory'
+import chalk from 'chalk'
 
 export default class CreateVideoCommand extends UploadCommandBase {
   static description = 'Create video under specific channel inside content directory.'
@@ -78,7 +79,11 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [actor, channelId, videoCreationParameters])
+    const result = await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [actor, channelId, videoCreationParameters])
+    if (result) {
+      const event = this.findEvent(result, 'content', 'VideoCreated')
+      this.log(chalk.green(`Video with id ${chalk.cyanBright(event?.data[2].toString())} succesfully created!`))
+    }
 
     // Upload assets
     await this.uploadAssets(inputAssets, input)

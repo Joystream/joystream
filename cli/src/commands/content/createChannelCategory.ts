@@ -6,6 +6,7 @@ import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { ChannelCategoryCreationParameters } from '@joystream/types/content'
 import { ChannelCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import chalk from 'chalk'
 
 export default class CreateChannelCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel category inside content directory.'
@@ -38,9 +39,14 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannelCategory', [
+    const result = await this.sendAndFollowNamedTx(currentAccount, 'content', 'createChannelCategory', [
       actor,
       channelCategoryCreationParameters,
     ])
+
+    if (result) {
+      const event = this.findEvent(result, 'content', 'ChannelCategoryCreated')
+      this.log(chalk.green(`ChannelCategory with id ${chalk.cyanBright(event?.data[0].toString())} succesfully created!`))
+    }
   }
 }
