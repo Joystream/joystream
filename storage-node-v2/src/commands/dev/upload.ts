@@ -11,15 +11,13 @@ export default class DevUpload extends ApiCommandBase {
       char: 's',
       required: true,
       description: 'Data object size.',
-    }),   
+    }),
     cid: flags.string({
       char: 'c',
       required: true,
       description: 'Data object IPFS content ID.',
-    })
+    }),
   }
-
-  static args = [{ name: 'file' }]
 
   async run(): Promise<void> {
     const { flags } = this.parse(DevUpload)

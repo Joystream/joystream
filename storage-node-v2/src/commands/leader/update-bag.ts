@@ -7,8 +7,6 @@ export default class LeaderUpdateBag extends ApiCommandBase {
     'Add/remove a storage bucket from a bag (adds by default).'
 
   static flags = {
-    help: flags.help({ char: 'h' }),
-    dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
     bucket: flags.integer({
       char: 'b',
       required: true,
@@ -18,9 +16,8 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       char: 'r',
       description: 'Remove a bucket from the bag',
     }),
+    ...ApiCommandBase.keyflags,
   }
-
-  static args = [{ name: 'file' }]
 
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateBag)
@@ -32,6 +29,8 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    await updateStorageBucketsForBag(bucket, flags.remove)
+    const account = this.getAccount(flags)
+
+    await updateStorageBucketsForBag(account, bucket, flags.remove)
   }
 }
