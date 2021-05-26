@@ -712,8 +712,9 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W)` where:
+        /// `O (W + V)` where:
         /// - `W` is the category depth
+        /// - `V` is the length of the category title.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -755,20 +756,21 @@ decl_module! {
             Ok(())
         }
 
-               /// Update category title
+        /// Update category description
         ///
         /// <weight>
         ///
         /// ## Weight
         /// `O (W)` where:
         /// - `W` is the category depth
+        /// - `V` is the length of the category description.
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::update_category_title_lead(
+        #[weight = WeightInfoForum::<T>::update_category_description_lead(
             T::MaxCategoryDepth::get() as u32,
             description.len().saturated_into(),
-        ).max(WeightInfoForum::<T>::update_category_title_moderator(
+        ).max(WeightInfoForum::<T>::update_category_description_moderator(
             T::MaxCategoryDepth::get() as u32,
             description.len().saturated_into(),
         ))]
