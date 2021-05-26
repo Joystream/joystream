@@ -39,8 +39,3 @@ yarn*
 # test data for local node tests
 test-data/
 tmp.*
-
-# Ignore files created by deployment scripts
-inventory
-devops/infrastructure/data-*
-chain_spec_output.txt
