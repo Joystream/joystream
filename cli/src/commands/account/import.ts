@@ -37,7 +37,7 @@ export default class AccountImport extends AccountsCommandBase {
       })
     }
 
-    this.log(chalk.bold.greenBright(`ACCOUNT IMPORTED SUCCESFULLY!`))
+    this.log(chalk.bold.greenBright(`ACCOUNT IMPORTED SUCCESSFULLY!`))
     this.log(chalk.bold.magentaBright(`NAME:    `), accountName)
     this.log(chalk.bold.magentaBright(`ADDRESS: `), accountAddress)
   }

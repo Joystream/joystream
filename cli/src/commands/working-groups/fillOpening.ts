@@ -39,7 +39,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
       rewardPolicyOpt,
     ])
 
-    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId)} succesfully filled!`))
+    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId)} successfully filled!`))
     this.log(
       chalk.green('Accepted working group application IDs: ') +
         chalk.magentaBright(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')
