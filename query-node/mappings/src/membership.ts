@@ -210,7 +210,14 @@ function convertBytesToString(b: Bytes | null): string {
     return ''
   }
 
-  return Buffer.from(b.toU8a(true)).toString()
+  const result = Buffer.from(b.toU8a(true)).toString()
+
+  // prevent utf-8 null character
+  if (result.match(/^\0$/)) {
+    return ''
+  }
+
+  return result
 }
 
 function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
