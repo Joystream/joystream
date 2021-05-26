@@ -8,7 +8,7 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
   static args = [
     {
       name: 'channelId',
-      required: true,
+      required: false,
       description: 'ID of the Channel',
     },
   ]
