@@ -37,7 +37,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
       newRoleAccount,
     ])
 
-    this.log(chalk.green(`Succesfully updated the role account to: ${chalk.magentaBright(newRoleAccount)})`))
+    this.log(chalk.green(`Successfully updated the role account to: ${chalk.magentaBright(newRoleAccount)})`))
 
     const matchingAccount = cliAccounts.find((account) => account.address === newRoleAccount)
     if (matchingAccount) {

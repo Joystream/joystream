@@ -6,7 +6,7 @@ import { flags } from '@oclif/command'
 import { ContentId } from '@joystream/types/storage'
 
 export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
-  static description = 'Allows reuploading assets that were not succesfully uploaded during channel/video creation'
+  static description = 'Allows reuploading assets that were not successfully uploaded during channel/video creation'
 
   static flags = {
     input: flags.string({

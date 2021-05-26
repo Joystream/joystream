@@ -59,7 +59,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const result = await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [actor, channelCreationParameters])
     if (result) {
       const event = this.findEvent(result, 'content', 'ChannelCreated')
-      this.log(chalk.green(`Channel with id ${chalk.cyanBright(event?.data[1].toString())} succesfully created!`))
+      this.log(chalk.green(`Channel with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`))
     }
 
     await this.uploadAssets(inputAssets, input)

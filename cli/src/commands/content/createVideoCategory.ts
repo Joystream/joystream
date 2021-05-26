@@ -46,7 +46,7 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
 
     if (result) {
       const event = this.findEvent(result, 'content', 'VideoCategoryCreated')
-      this.log(chalk.green(`VideoCategory with id ${chalk.cyanBright(event?.data[1].toString())} succesfully created!`))
+      this.log(chalk.green(`VideoCategory with id ${chalk.cyanBright(event?.data[1].toString())} successfully created!`))
     }
   }
 }
