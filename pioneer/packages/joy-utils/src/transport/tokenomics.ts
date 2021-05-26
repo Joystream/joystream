@@ -16,11 +16,11 @@ import { MemberId } from '@joystream/types/members';
 import { CategoryId } from '@joystream/types/forum';
 import { MintId, Mint } from '@joystream/types/mint';
 import { genericTypes } from '../consts/tokenomics';
+import { VideoId, ChannelId } from '@joystream/types/augment';
 
 import { ProposalId, ProposalDetails, Proposal } from '@joystream/types/proposals';
 
 import HISTORICAL_PROPOSALS from '../transport/static/historical-proposals.json';
-import { Entity, EntityId } from '@joystream/types/augment-codec/all';
 
 export default class TokenomicsTransport extends BaseTransport {
   private councilT: CouncilTransport;
@@ -305,11 +305,10 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async networkStatistics () {
-    const entityEntries = await this.entriesByIds<EntityId, Entity>(this.api.query.contentDirectory.entityById);
     const blockHeight = (await this.api.derive.chain.bestNumber()).toNumber();
     const numberOfMembers = (await this.api.query.members.nextMemberId() as MemberId).toNumber();
-    const content = entityEntries.filter(([, entity]) => entity.class_id.toNumber() === 10).length;
-    const numberOfChannels = entityEntries.filter(([, entity]) => entity.class_id.toNumber() === 1).length;
+    const content = (await this.api.query.content.nextVideoId() as VideoId).toNumber() - 1;
+    const numberOfChannels = (await this.api.query.content.nextChannelId() as ChannelId).toNumber() - 1;
     const proposalCount = (await this.api.query.proposalsEngine.proposalCount() as u32).toNumber();
     const numberOfForumCategories = (await this.api.query.forum.nextCategoryId() as CategoryId).toNumber() - 1;
     const numberOfForumPosts = (await this.api.query.forum.nextPostId() as PostId).toNumber() - 1;
