@@ -247,6 +247,10 @@ import {
   GetPostTextUpdatedEventsByEventIdsQuery,
   GetPostTextUpdatedEventsByEventIdsQueryVariables,
   GetPostTextUpdatedEventsByEventIds,
+  PostDeletedEventFieldsFragment,
+  GetPostDeletedEventsByEventIdsQuery,
+  GetPostDeletedEventsByEventIdsQueryVariables,
+  GetPostDeletedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -904,5 +908,13 @@ export class QueryNodeApi {
       GetPostTextUpdatedEventsByEventIdsQuery,
       GetPostTextUpdatedEventsByEventIdsQueryVariables
     >(GetPostTextUpdatedEventsByEventIds, { eventIds }, 'postTextUpdatedEvents')
+  }
+
+  public async getPostDeletedEvents(events: EventDetails[]): Promise<PostDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetPostDeletedEventsByEventIdsQuery,
+      GetPostDeletedEventsByEventIdsQueryVariables
+    >(GetPostDeletedEventsByEventIds, { eventIds }, 'postDeletedEvents')
   }
 }

@@ -6023,6 +6023,8 @@ export type PostDeletedEvent = BaseGraphQlObject & {
   posts: Array<ForumPost>
   actor: Membership
   actorId: Scalars['String']
+  /** Posts deletion rationale */
+  rationale: Scalars['String']
 }
 
 export type PostDeletedEventConnection = {
@@ -6037,6 +6039,7 @@ export type PostDeletedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   actor: Scalars['ID']
+  rationale: Scalars['String']
 }
 
 export type PostDeletedEventEdge = {
@@ -6061,6 +6064,8 @@ export enum PostDeletedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   ActorAsc = 'actor_ASC',
   ActorDesc = 'actor_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
 }
 
 export type PostDeletedEventUpdateInput = {
@@ -6069,6 +6074,7 @@ export type PostDeletedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   actor?: Maybe<Scalars['ID']>
+  rationale?: Maybe<Scalars['String']>
 }
 
 export type PostDeletedEventWhereInput = {
@@ -6117,6 +6123,11 @@ export type PostDeletedEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   actor_eq?: Maybe<Scalars['ID']>
   actor_in?: Maybe<Array<Scalars['ID']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
   posts_none?: Maybe<ForumPostWhereInput>
   posts_some?: Maybe<ForumPostWhereInput>
   posts_every?: Maybe<ForumPostWhereInput>
@@ -6302,7 +6313,10 @@ export type PostReactedEvent = BaseGraphQlObject & {
   indexInBlock: Scalars['Int']
   post: ForumPost
   postId: Scalars['String']
-  /** The reaction result (new reaction, cancelation of previous reaction or invalid reaction (no effect)) */
+  /**
+   * The reaction result - new valid reaction, cancelation of previous reaction or
+   * invalid reaction (which also cancels the previous one)
+   */
   reactionResult: PostReactionResult
   reactingMember: Membership
   reactingMemberId: Scalars['String']

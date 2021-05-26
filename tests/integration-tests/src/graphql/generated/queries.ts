@@ -359,6 +359,24 @@ export type GetPostTextUpdatedEventsByEventIdsQuery = {
   postTextUpdatedEvents: Array<PostTextUpdatedEventFieldsFragment>
 }
 
+export type PostDeletedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  posts: Array<{ id: string }>
+  actor: { id: string }
+}
+
+export type GetPostDeletedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetPostDeletedEventsByEventIdsQuery = { postDeletedEvents: Array<PostDeletedEventFieldsFragment> }
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = {
@@ -1609,6 +1627,23 @@ export const PostTextUpdatedEventFields = gql`
     newText
   }
 `
+export const PostDeletedEventFields = gql`
+  fragment PostDeletedEventFields on PostDeletedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    posts {
+      id
+    }
+    actor {
+      id
+    }
+    rationale
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -2551,6 +2586,14 @@ export const GetPostTextUpdatedEventsByEventIds = gql`
     }
   }
   ${PostTextUpdatedEventFields}
+`
+export const GetPostDeletedEventsByEventIds = gql`
+  query getPostDeletedEventsByEventIds($eventIds: [ID!]) {
+    postDeletedEvents(where: { id_in: $eventIds }) {
+      ...PostDeletedEventFields
+    }
+  }
+  ${PostDeletedEventFields}
 `
 export const GetMemberById = gql`
   query getMemberById($id: ID!) {

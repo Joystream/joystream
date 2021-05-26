@@ -44,6 +44,8 @@ import {
   PostReactionResultValid,
   PostReactionResultInvalid,
   PostTextUpdatedEvent,
+  PostDeletedEvent,
+  PostStatusRemoved,
 } from 'query-node/dist/model'
 import { Forum } from './generated/types'
 import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
@@ -541,5 +543,26 @@ export async function forum_PostTextUpdated(db: DatabaseManager, event_: Substra
 }
 
 export async function forum_PostDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+  const [rationaleBytes, userId, postsData] = new Forum.PostDeletedEvent(event_).params
+  const eventTime = new Date(event_.blockTimestamp)
+
+  const postDeletedEvent = new PostDeletedEvent({
+    ...genericEventFields(event_),
+    actor: new Membership({ id: userId.toString() }),
+    rationale: bytesToString(rationaleBytes),
+  })
+
+  await db.save<PostDeletedEvent>(postDeletedEvent)
+
+  await Promise.all(
+    postsData.map(async ([, , postId, hideFlag]) => {
+      const post = await getPost(db, postId.toString())
+      const newStatus = hideFlag.valueOf() ? new PostStatusRemoved() : new PostStatusLocked()
+      newStatus.postDeletedEventId = postDeletedEvent.id
+      post.updatedAt = eventTime
+      post.status = newStatus
+      post.deletedInEvent = postDeletedEvent
+      await db.save<ForumPost>(post)
+    })
+  )
 }

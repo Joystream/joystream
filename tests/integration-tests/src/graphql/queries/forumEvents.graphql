@@ -328,3 +328,25 @@ query getPostTextUpdatedEventsByEventIds($eventIds: [ID!]) {
     ...PostTextUpdatedEventFields
   }
 }
+
+fragment PostDeletedEventFields on PostDeletedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  posts {
+    id
+  }
+  actor {
+    id
+  }
+  rationale
+}
+
+query getPostDeletedEventsByEventIds($eventIds: [ID!]) {
+  postDeletedEvents(where: { id_in: $eventIds }) {
+    ...PostDeletedEventFields
+  }
+}

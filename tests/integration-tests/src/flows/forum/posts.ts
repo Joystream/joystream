@@ -3,9 +3,11 @@ import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import {
   AddPostsFixture,
+  DeletePostsFixture,
   InitializeForumFixture,
   PostParams,
   PostReactionParams,
+  PostsRemovalInput,
   PostTextUpdate,
   ReactToPostsFixture,
   UpdatePostsTextFixture,
@@ -49,6 +51,11 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
     {
       ...threadPaths[3],
       metadata: { value: { text: '' } },
+      asMember: memberIds[3],
+    },
+    {
+      ...threadPaths[3],
+      metadata: { value: { text: 'Second post by member 3' } },
       asMember: memberIds[3],
     },
     // Invalid cases
@@ -148,7 +155,45 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   ]
   const updatePostsTextFixture = new UpdatePostsTextFixture(api, query, postTextUpdates)
   const updatePostsTextRunner = new FixtureRunner(updatePostsTextFixture)
-  await updatePostsTextRunner.runWithQueryNodeChecks()
+  await updatePostsTextRunner.run()
+
+  const postRemovals: PostsRemovalInput[] = [
+    {
+      posts: [
+        {
+          ...threadPaths[0],
+          postId: postIds[0],
+          hide: true,
+        },
+      ],
+      asMember: memberIds[0],
+      rationale: 'Clearing first post test',
+    },
+    {
+      posts: [
+        {
+          ...threadPaths[3],
+          postId: postIds[3],
+          hide: true,
+        },
+        {
+          ...threadPaths[3],
+          postId: postIds[3],
+          hide: false,
+        },
+      ],
+      asMember: memberIds[3],
+      rationale: 'Lock+remove in one extrinsic test',
+    },
+  ]
+  const deletePostsFixture = new DeletePostsFixture(api, query, postRemovals)
+  const deletePostsRunner = new FixtureRunner(deletePostsFixture)
+  await deletePostsRunner.run()
+
+  // Run compound query node checks
+  await Promise.all([updatePostsTextRunner.runQueryNodeChecks(), deletePostsRunner.runQueryNodeChecks()])
+
+  // TODO: Delete posts as any member? Would require waiting PostLifetime (currently 3600 blocks)
 
   debug('Done')
 }

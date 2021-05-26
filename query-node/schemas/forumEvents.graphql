@@ -331,6 +331,9 @@ type PostDeletedEvent @entity {
 
   "The actor responsible for the removal"
   actor: Membership!
+
+  "Posts deletion rationale"
+  rationale: String!
 }
 
 type PostTextUpdatedEvent @entity {

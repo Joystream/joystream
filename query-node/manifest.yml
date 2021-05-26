@@ -63,8 +63,7 @@ typegen:
     - forum.VoteOnPoll
     - forum.PostAdded
     - forum.PostModerated
-    # FIXME: https://github.com/Joystream/hydra/issues/398
-    # - forum.PostDeleted
+    - forum.PostDeleted
     - forum.PostTextUpdated
     - forum.PostReacted
     - forum.CategoryStickyThreadUpdate
