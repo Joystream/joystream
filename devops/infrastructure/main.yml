@@ -11,6 +11,16 @@ Parameters:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  CreateAdminServer:
+    Description: Whether or not to create the admin instance for creating keys and chain-spec file
+    Type: String
+    AllowedValues: [true, false]
+    Default: false
+
+Conditions:
+  CreateAdminServerCondition: !Equals
+    - !Ref CreateAdminServer
+    - true
 
 Resources:
   SecurityGroup:
@@ -127,6 +137,17 @@ Resources:
         - Key: Name
           Value: !Sub '${AWS::StackName}_rpc'
 
+  AdminInstance:
+    Type: AWS::EC2::Instance
+    Condition: CreateAdminServerCondition
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_admin'
+
   WaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
 
@@ -135,7 +156,8 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '600'
-      Count: 3
+      Count:
+        !If [CreateAdminServerCondition, 4, 3]
 
 Outputs:
   PublicIp:
@@ -155,3 +177,10 @@ Outputs:
     Value:  !Sub "${RPCInstance.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}RPCPublicIp"
+
+  AdminPublicIp:
+    Description: The DNS name for the created instance
+    Value:  !Sub "${AdminInstance.PublicIp}"
+    Condition: CreateAdminServerCondition
+    Export:
+      Name: !Sub "${AWS::StackName}AdminPublicIp"

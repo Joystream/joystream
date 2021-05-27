@@ -30,7 +30,8 @@ aws cloudformation deploy \
   --parameter-overrides \
     EC2InstanceType=$EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
-    EC2AMI=$EC2_AMI_ID
+    EC2AMI=$EC2_AMI_ID \
+    CreateAdminServer=$CREATE_ADMIN_SERVER
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then
@@ -44,7 +45,16 @@ if [ $? -eq 0 ]; then
     --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}RPCPublicIp')].Value" \
     --output text | sed 's/\t\t*/\n/g')
 
-  echo -e "[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > inventory
+  if [ "$CREATE_ADMIN_SERVER" = true ] ; then
+    ADMIN_SERVER=$(aws cloudformation list-exports \
+      --profile $CLI_PROFILE \
+      --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}AdminPublicIp')].Value" \
+      --output text | sed 's/\t\t*/\n/g')
+    ADMIN_INVENTORY="[admin]\n$ADMIN_SERVER\n\n"
+    HOST="admin"
+  fi
+
+  echo -e "$ADMIN_INVENTORY[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > inventory
 
   if [ -z "$EC2_AMI_ID" ]
   then
