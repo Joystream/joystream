@@ -1,41 +1,13 @@
 #![cfg(test)]
 
-use frame_support::{StorageMap, StorageValue};
 use frame_system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::*;
 
-const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
-const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
-const DEFAULT_LEADER_WORKER_ID: u32 = 1;
-
-struct SetLeadFixture;
-impl SetLeadFixture {
-    fn set_default_lead() {
-        let worker = working_group::Worker {
-            member_id: DEFAULT_LEADER_MEMBER_ID,
-            role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
-            reward_relationship: None,
-            role_stake_profile: None,
-        };
-
-        // Create the worker.
-        <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
-            DEFAULT_LEADER_WORKER_ID,
-            worker,
-        );
-
-        // Update current lead.
-        <working_group::CurrentLead<Test, StorageWorkingGroupInstance>>::put(
-            DEFAULT_LEADER_WORKER_ID,
-        );
-    }
-}
-
 fn get_last_data_object_type_id() -> u64 {
     let dot_id = match System::events().last().unwrap().event {
         MetaEvent::data_object_type_registry(
-            data_object_type_registry::RawEvent::DataObjectTypeRegistered(dot_id),
+            data_object_type_registry::RawEvent::DataObjectTypeRegistered(_, dot_id),
         ) => dot_id,
         _ => 0xdeadbeefu64, // unlikely value
     };
@@ -242,7 +214,7 @@ fn update_existing() {
         let res = TestDataObjectTypeRegistry::update_data_object_type(
             RawOrigin::Signed(DEFAULT_LEADER_ACCOUNT_ID).into(),
             dot_id,
-            updated3,
+            updated3.clone(),
         );
         assert!(res.is_ok());
         assert_eq!(
@@ -250,7 +222,7 @@ fn update_existing() {
             EventRecord {
                 phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
-                    data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id)
+                    data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id, updated3)
                 ),
                 topics: vec![],
             }
@@ -295,7 +267,7 @@ fn activate_existing() {
         };
         let id_res = TestDataObjectTypeRegistry::register_data_object_type(
             RawOrigin::Signed(DEFAULT_LEADER_ACCOUNT_ID).into(),
-            data,
+            data.clone(),
         );
         assert!(id_res.is_ok());
         assert_eq!(
@@ -304,6 +276,7 @@ fn activate_existing() {
                 phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeRegistered(
+                        data,
                         expected_data_object_type_id
                     )
                 ),
@@ -312,9 +285,9 @@ fn activate_existing() {
         );
 
         // Retrieve, and ensure it's not active.
-        let data = TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id);
-        assert!(data.is_some());
-        assert!(!data.unwrap().active);
+        let mut data =
+            TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id).unwrap();
+        assert!(!data.active);
 
         // Now activate the data object type
         let res = TestDataObjectTypeRegistry::activate_data_object_type(
@@ -322,13 +295,16 @@ fn activate_existing() {
             expected_data_object_type_id,
         );
         assert!(res.is_ok());
+
+        data.active = true;
         assert_eq!(
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeUpdated(
-                        expected_data_object_type_id
+                        expected_data_object_type_id,
+                        data
                     )
                 ),
                 topics: vec![],

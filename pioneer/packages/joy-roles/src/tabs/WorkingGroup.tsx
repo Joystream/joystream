@@ -1,8 +1,8 @@
-import React from 'react';
-import { Button, Card, Icon, Message, SemanticICONS } from 'semantic-ui-react';
+import React, { useState } from 'react';
+import { Button, Card, Icon, Message, SemanticICONS, Transition } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
-import { GroupLeadView, GroupMember, GroupMemberView, GroupLead } from '../elements';
+import { GroupLeadView, GroupMember, GroupMemberView } from '../elements';
 import { Loadable } from '@polkadot/joy-utils/react/hocs';
 
 import { WorkingGroups } from '../working_groups';
@@ -65,7 +65,7 @@ type GroupOverviewOuterProps = Partial<WorkingGroupMembership> & {
 
 type GroupOverviewProps = GroupOverviewOuterProps & {
   group: WorkingGroups;
-  description: string;
+  description: string | JSX.Element;
   customGroupName?: string;
   customJoinTitle?: string;
   customJoinDesc?: string;
@@ -93,20 +93,28 @@ const GroupOverview = Loadable<GroupOverviewProps>(
     const joinDesc = customJoinDesc || `There are openings for new ${groupName}. This is a great way to support Joystream!`;
     const becomeLeadTitle = customBecomeLeadTitle || `Become ${groupName} Lead!`;
     const becomeLeadDesc = customBecomeLeadDesc || `An opportunity to become ${groupName} Leader is currently available! This is a great way to support Joystream!`;
+    const [showMembers, setShowMembers] = useState(false);
 
     return (
       <GroupOverviewSection>
         <h2>{ groupName }</h2>
         <p>{ description }</p>
-        <Card.Group style={{ alignItems: 'flex-start' }}>
-          { workers!.map((worker, key) => (
-            <GroupMemberView key={key} {...worker} />
-          )) }
-        </Card.Group>
+        <Button onClick={() => setShowMembers((v) => !v)}>
+          { showMembers ? 'Hide' : 'Show' } members
+        </Button>
+        <Transition visible={showMembers} animation='fade down' duration={500}>
+          <span>
+            <Card.Group style={{ alignItems: 'flex-start' }}>
+              { workers!.map((worker, key) => (
+                <GroupMemberView key={key} {...worker} />
+              )) }
+            </Card.Group>
+            { leadStatus && <CurrentLead groupName={groupName} {...leadStatus}/> }
+          </span>
+        </Transition>
         { workerRolesAvailable
           ? <JoinRole group={group} title={joinTitle} description={joinDesc} />
           : <NoRolesAvailable /> }
-        { leadStatus && <CurrentLead groupName={groupName} {...leadStatus}/> }
         { leadRolesAvailable && <JoinRole group={group} lead title={becomeLeadTitle} description={becomeLeadDesc} /> }
       </GroupOverviewSection>
     );
@@ -134,12 +142,29 @@ export const StorageProviders = (props: GroupOverviewOuterProps) => (
   />
 );
 
+export const OperationsGroup = (props: GroupOverviewOuterProps) => (
+  <GroupOverview
+    group={WorkingGroups.Operations}
+    description={
+      <span>
+        {"Operations Working Group encompases all the activites that don't require privilages on chain, for example:"}
+        <ul>
+          <li>Development</li>
+          <li>Management</li>
+          <li>Marketing</li>
+        </ul>
+      </span>
+    }
+    {...props}
+  />
+);
+
 const LeadSection = styled.div`
   margin-top: 1rem;
 `;
 
 export type GroupLeadStatus = {
-  lead?: GroupLead;
+  lead?: GroupMember;
   loaded: boolean;
 }
 

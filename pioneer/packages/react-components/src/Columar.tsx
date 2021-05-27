@@ -55,6 +55,6 @@ const ColumarExp = React.memo(styled(Columar)`
   }
 `) as unknown as ColumarType;
 
-ColumarExp.Column = Column;
+ColumarExp.Column = React.memo(Column);
 
 export default ColumarExp;

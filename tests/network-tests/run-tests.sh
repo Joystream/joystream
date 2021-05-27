@@ -86,7 +86,7 @@ else
   yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
   echo "Performing runtime upgrade."
-  DEBUG=* yarn workspace api-scripts tsnode-strict \
+  yarn workspace api-scripts tsnode-strict \
     src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
 
   echo "Runtime upgraded."

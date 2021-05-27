@@ -1,0 +1,28 @@
+name: content-metadata
+on: [pull_request, push]
+
+jobs:
+  schemas_checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: test protobuf
+      run: |
+        # # Install protoc compiler
+        # sudo apt-get install -y protobuf-compiler
+        # protoc --version
+        # # Install documentation plugin
+        # sudo apt-get install -y golang-go
+        # go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
+        yarn install --frozen-lockfile
+        yarn workspace @joystream/content-metadata-protobuf build:ts
+        yarn workspace @joystream/content-metadata-protobuf checks --quiet
+        yarn workspace @joystream/content-metadata-protobuf test

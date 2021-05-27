@@ -46,12 +46,17 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 parameter_types! {

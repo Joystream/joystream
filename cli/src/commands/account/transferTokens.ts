@@ -40,7 +40,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
 
     await this.requestAccountDecoding(selectedAccount)
 
-    this.log(chalk.white('Estimating fee...'))
+    this.log(chalk.magentaBright('Estimating fee...'))
     const tx = await this.getApi().createTransferTx(args.recipient, amountBN)
     let estimatedFee: BN
     try {
@@ -49,8 +49,8 @@ export default class AccountTransferTokens extends AccountsCommandBase {
       this.error('Could not estimate the fee.', { exit: ExitCodes.UnexpectedException })
     }
     const totalAmount: BN = amountBN.add(estimatedFee)
-    this.log(chalk.white('Estimated fee:', formatBalance(estimatedFee)))
-    this.log(chalk.white('Total transfer amount:', formatBalance(totalAmount)))
+    this.log(chalk.magentaBright('Estimated fee:', formatBalance(estimatedFee)))
+    this.log(chalk.magentaBright('Total transfer amount:', formatBalance(totalAmount)))
 
     checkBalance(accBalances, totalAmount)
 
@@ -58,8 +58,8 @@ export default class AccountTransferTokens extends AccountsCommandBase {
 
     try {
       const txHash: Hash = await tx.signAndSend(selectedAccount)
-      this.log(chalk.greenBright('Transaction succesfully sent!'))
-      this.log(chalk.white('Hash:', txHash.toString()))
+      this.log(chalk.greenBright('Transaction successfully sent!'))
+      this.log(chalk.magentaBright('Hash:', txHash.toString()))
     } catch (e) {
       this.error('Could not send the transaction.', { exit: ExitCodes.UnexpectedException })
     }

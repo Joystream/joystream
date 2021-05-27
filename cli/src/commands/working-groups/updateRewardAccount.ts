@@ -43,6 +43,6 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
       newRewardAccount,
     ])
 
-    this.log(chalk.green(`Succesfully updated the reward account to: ${chalk.white(newRewardAccount)})`))
+    this.log(chalk.green(`Successfully updated the reward account to: ${chalk.magentaBright(newRewardAccount)})`))
   }
 }

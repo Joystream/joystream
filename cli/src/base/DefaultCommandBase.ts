@@ -53,7 +53,7 @@ export default abstract class DefaultCommandBase extends Command {
   }
 
   private jsonPrettyKeyVal(key: string, val: any): string {
-    return this.jsonPrettyIndented(chalk.white(`${key}: ${this.jsonPrettyAny(val)}`))
+    return this.jsonPrettyIndented(chalk.magentaBright(`${key}: ${this.jsonPrettyAny(val)}`))
   }
 
   private jsonPrettyObj(obj: { [key: string]: any }): string {

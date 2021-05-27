@@ -32,12 +32,12 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS,
+    ContentConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    DataDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ElectionParameters, ForumConfig, GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig,
+    MembersConfig, Moment, OperationsWorkingGroupConfig, ProposalsCodexConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -138,10 +138,7 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -179,10 +176,7 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        content_config::empty_versioned_store_config(),
-                        content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
-                        content_config::empty_content_working_group_config(),
                         vec![],
                     )
                 },
@@ -225,16 +219,16 @@ pub fn testnet_genesis(
     cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
-    versioned_store_config: VersionedStoreConfig,
-    versioned_store_permissions_config: VersionedStorePermissionsConfig,
     data_directory_config: DataDirectoryConfig,
-    content_working_group_config: ContentWorkingGroupConfig,
     initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
 
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
+
+    let default_storage_size_constraint =
+        node_runtime::working_group::default_storage_size_constraint();
 
     GenesisConfig {
         frame_system: Some(SystemConfig {
@@ -322,6 +316,7 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
         working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
@@ -329,20 +324,37 @@ pub fn testnet_genesis(
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        content_directory: Some({
-            ContentDirectoryConfig {
-                class_by_id: vec![],
-                entity_by_id: vec![],
-                curator_group_by_id: vec![],
-                next_class_id: 1,
-                next_entity_id: 1,
+        working_group_Instance4: Some(OperationsWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        working_group_Instance5: Some(GatewayWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+            worker_storage_size_constraint: default_storage_size_constraint,
+        }),
+        content: Some({
+            ContentConfig {
                 next_curator_group_id: 1,
+                next_channel_category_id: 1,
+                next_channel_id: 1,
+                next_video_category_id: 1,
+                next_video_id: 1,
+                next_playlist_id: 1,
+                next_series_id: 1,
+                next_person_id: 1,
+                next_channel_transfer_request_id: 1,
             }
         }),
-        versioned_store: Some(versioned_store_config),
-        versioned_store_permissions: Some(versioned_store_permissions_config),
-        content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
                 .set_validator_count_proposal_voting_period,
@@ -408,10 +420,7 @@ pub(crate) mod tests {
             proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
             content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }
@@ -445,10 +454,7 @@ pub(crate) mod tests {
             proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
             content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
             vec![],
         )
     }

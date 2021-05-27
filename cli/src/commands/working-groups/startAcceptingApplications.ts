@@ -32,7 +32,9 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
     await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'acceptApplications', [openingId])
 
     this.log(
-      chalk.green(`Opening ${chalk.white(openingId)} status changed to: ${chalk.white('Accepting Applications')}`)
+      chalk.green(
+        `Opening ${chalk.magentaBright(openingId)} status changed to: ${chalk.magentaBright('Accepting Applications')}`
+      )
     )
   }
 }

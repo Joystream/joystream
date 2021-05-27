@@ -27,7 +27,6 @@ const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
 const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
 const { WorkersApi } = require('@joystream/storage-runtime-api/workers')
 const { AssetsApi } = require('@joystream/storage-runtime-api/assets')
-const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
@@ -88,7 +87,6 @@ class RuntimeApi {
     this.balances = await BalancesApi.create(this)
     this.workers = await WorkersApi.create(this)
     this.assets = await AssetsApi.create(this)
-    this.discovery = await DiscoveryApi.create(this)
     this.system = await SystemApi.create(this)
   }
 

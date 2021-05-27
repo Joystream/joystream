@@ -271,6 +271,40 @@ impl UpdateWorkerRoleAccountFixture {
     }
 }
 
+pub struct UpdateWorkerStorageFixture {
+    worker_id: u64,
+    storage_field: Vec<u8>,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerStorageFixture {
+    pub fn default_with_storage_field(worker_id: u64, storage_field: Vec<u8>) -> Self {
+        Self {
+            worker_id,
+            storage_field,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingGroup::update_role_storage(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.storage_field.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let storage = TestWorkingGroup::worker_storage(self.worker_id);
+
+            assert_eq!(storage, self.storage_field);
+        }
+    }
+}
+
 pub fn set_mint_id(mint_id: u64) {
     <crate::Mint<Test, TestWorkingGroupInstance>>::put(mint_id);
 }
@@ -470,6 +504,7 @@ pub fn setup_members(count: u8) {
             RawOrigin::Signed(authority_account_id).into(),
             account_id,
             Some(handle.to_vec()),
+            None,
             None,
             None,
         )
