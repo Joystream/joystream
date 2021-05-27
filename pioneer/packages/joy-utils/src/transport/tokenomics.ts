@@ -11,12 +11,12 @@ import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recur
 import { StakeId, Stake } from '@joystream/types/stake';
 import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics';
 import { calculateValidatorsRewardsPerEra } from '../functions/staking';
-import { WorkingGroupKey, PostId } from '@joystream/types/common';
+import { WorkingGroupKey, PostId, ChannelId } from '@joystream/types/common';
 import { MemberId } from '@joystream/types/members';
 import { CategoryId } from '@joystream/types/forum';
 import { MintId, Mint } from '@joystream/types/mint';
 import { genericTypes } from '../consts/tokenomics';
-import { VideoId, ChannelId } from '@joystream/types/augment';
+import { VideoId } from '@joystream/types/content';
 
 import { ProposalId, ProposalDetails, Proposal } from '@joystream/types/proposals';
 
