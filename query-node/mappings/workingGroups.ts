@@ -1,7 +1,13 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
+import {
+  EventContext,
+  StoreContext,
+  DatabaseManager,
+  SubstrateEvent
+} from '@dzlzv/hydra-common'
+
 import { StorageWorkingGroup as WorkingGroups } from './generated/types'
 import {
   ApplicationMetadata,
@@ -76,12 +82,12 @@ import { createType } from '@joystream/types'
 
 // Reusable functions
 async function getWorkingGroup(
-  db: DatabaseManager,
-  event_: SubstrateEvent,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   relations: string[] = []
 ): Promise<WorkingGroup> {
-  const [groupName] = event_.name.split('.')
-  const group = await db.get(WorkingGroup, { where: { name: groupName }, relations })
+  const [groupName] = event.name.split('.')
+  const group = await store.get(WorkingGroup, { where: { name: groupName }, relations })
   if (!group) {
     throw new Error(`Working group ${groupName} not found!`)
   }
@@ -90,47 +96,47 @@ async function getWorkingGroup(
 }
 
 async function getOpening(
-  db: DatabaseManager,
-  openingDbId: string,
+  store: DatabaseManager,
+  openingstoreId: string,
   relations: string[] = []
 ): Promise<WorkingGroupOpening> {
-  const opening = await db.get(WorkingGroupOpening, { where: { id: openingDbId }, relations })
+  const opening = await store.get(WorkingGroupOpening, { where: { id: openingstoreId }, relations })
   if (!opening) {
-    throw new Error(`Opening not found by id ${openingDbId}`)
+    throw new Error(`Opening not found by id ${openingstoreId}`)
   }
 
   return opening
 }
 
-async function getApplication(db: DatabaseManager, applicationDbId: string): Promise<WorkingGroupApplication> {
-  const application = await db.get(WorkingGroupApplication, { where: { id: applicationDbId } })
+async function getApplication(store: DatabaseManager, applicationstoreId: string): Promise<WorkingGroupApplication> {
+  const application = await store.get(WorkingGroupApplication, { where: { id: applicationstoreId } })
   if (!application) {
-    throw new Error(`Application not found by id ${applicationDbId}`)
+    throw new Error(`Application not found by id ${applicationstoreId}`)
   }
 
   return application
 }
 
-async function getWorker(db: DatabaseManager, workerDbId: string): Promise<Worker> {
-  const worker = await db.get(Worker, { where: { id: workerDbId } })
+async function getWorker(store: DatabaseManager, workerstoreId: string): Promise<Worker> {
+  const worker = await store.get(Worker, { where: { id: workerstoreId } })
   if (!worker) {
-    throw new Error(`Worker not found by id ${workerDbId}`)
+    throw new Error(`Worker not found by id ${workerstoreId}`)
   }
 
   return worker
 }
 
 async function getApplicationFormQuestions(
-  db: DatabaseManager,
-  openingDbId: string
+  store: DatabaseManager,
+  openingstoreId: string
 ): Promise<ApplicationFormQuestion[]> {
-  const openingWithQuestions = await getOpening(db, openingDbId, ['metadata', 'metadata.applicationFormQuestions'])
+  const openingWithQuestions = await getOpening(store, openingstoreId, ['metadata', 'metadata.applicationFormQuestions'])
 
   if (!openingWithQuestions) {
-    throw new Error(`Opening not found by id: ${openingDbId}`)
+    throw new Error(`Opening not found by id: ${openingstoreId}`)
   }
   if (!openingWithQuestions.metadata.applicationFormQuestions) {
-    throw new Error(`Application form questions not found for opening: ${openingDbId}`)
+    throw new Error(`Application form questions not found for opening: ${openingstoreId}`)
   }
   return openingWithQuestions.metadata.applicationFormQuestions
 }
@@ -148,8 +154,8 @@ function parseQuestionInputType(
 }
 
 async function createOpeningMeta(
-  db: DatabaseManager,
-  event_: SubstrateEvent,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   originalMeta: Bytes | IOpeningMetadata
 ): Promise<WorkingGroupOpeningMetadata> {
   let originallyValid: boolean
@@ -162,7 +168,7 @@ async function createOpeningMeta(
     metadata = originalMeta
     originallyValid = true
   }
-  const eventTime = new Date(event_.blockTimestamp)
+  const eventTime = new Date(event.blockTimestamp)
 
   const {
     applicationFormQuestions,
@@ -185,7 +191,7 @@ async function createOpeningMeta(
     applicationFormQuestions: [],
   })
 
-  await db.save<WorkingGroupOpeningMetadata>(openingMetadata)
+  await store.save<WorkingGroupOpeningMetadata>(openingMetadata)
 
   await Promise.all(
     (applicationFormQuestions || []).map(async ({ question, type }, index) => {
@@ -197,7 +203,7 @@ async function createOpeningMeta(
         index,
         openingMetadata,
       })
-      await db.save<ApplicationFormQuestion>(applicationFormQuestion)
+      await store.save<ApplicationFormQuestion>(applicationFormQuestion)
       return applicationFormQuestion
     })
   )
@@ -206,7 +212,7 @@ async function createOpeningMeta(
 }
 
 async function createApplicationQuestionAnswers(
-  db: DatabaseManager,
+  store: DatabaseManager,
   application: WorkingGroupApplication,
   metadataBytes: Bytes
 ) {
@@ -214,7 +220,7 @@ async function createApplicationQuestionAnswers(
   if (!metadata) {
     return
   }
-  const questions = await getApplicationFormQuestions(db, application.opening.id)
+  const questions = await getApplicationFormQuestions(store, application.opening.id)
   const { answers } = metadata
   await Promise.all(
     (answers || []).slice(0, questions.length).map(async (answer, index) => {
@@ -226,22 +232,22 @@ async function createApplicationQuestionAnswers(
         answer,
       })
 
-      await db.save<ApplicationFormQuestionAnswer>(applicationFormQuestionAnswer)
+      await store.save<ApplicationFormQuestionAnswer>(applicationFormQuestionAnswer)
       return applicationFormQuestionAnswer
     })
   )
 }
 
 async function handleAddUpcomingOpeningAction(
-  db: DatabaseManager,
-  event_: SubstrateEvent,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
   action: IAddUpcomingOpening
 ): Promise<UpcomingOpeningAdded | InvalidActionMetadata> {
   const upcomingOpeningMeta = action.metadata || {}
-  const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp)
-  const openingMeta = await createOpeningMeta(db, event_, upcomingOpeningMeta.metadata || {})
+  const group = await getWorkingGroup(store, event)
+  const eventTime = new Date(event.blockTimestamp)
+  const openingMeta = await createOpeningMeta(store, event, upcomingOpeningMeta.metadata || {})
   const { rewardPerBlock, expectedStart, minApplicationStake } = upcomingOpeningMeta
   const upcomingOpening = new UpcomingWorkingGroupOpening({
     createdAt: eventTime,
@@ -253,7 +259,7 @@ async function handleAddUpcomingOpeningAction(
     stakeAmount: minApplicationStake?.toNumber() ? new BN(minApplicationStake.toString()) : undefined,
     createdInEvent: statusChangedEvent,
   })
-  await db.save<UpcomingWorkingGroupOpening>(upcomingOpening)
+  await store.save<UpcomingWorkingGroupOpening>(upcomingOpening)
 
   const result = new UpcomingOpeningAdded()
   result.upcomingOpeningId = upcomingOpening.id
@@ -262,16 +268,16 @@ async function handleAddUpcomingOpeningAction(
 }
 
 async function handleRemoveUpcomingOpeningAction(
-  db: DatabaseManager,
+  store: DatabaseManager,
   action: IRemoveUpcomingOpening
 ): Promise<UpcomingOpeningRemoved | InvalidActionMetadata> {
   const { id } = action
-  const upcomingOpening = await db.get(UpcomingWorkingGroupOpening, { where: { id } })
+  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, { where: { id } })
   let result: UpcomingOpeningRemoved | InvalidActionMetadata
   if (upcomingOpening) {
     result = new UpcomingOpeningRemoved()
     result.upcomingOpeningId = upcomingOpening.id
-    await db.remove<UpcomingWorkingGroupOpening>(upcomingOpening)
+    await store.remove<UpcomingWorkingGroupOpening>(upcomingOpening)
   } else {
     const error = `Cannot remove upcoming opening: Entity by id ${id} not found!`
     console.error(error)
@@ -282,15 +288,15 @@ async function handleRemoveUpcomingOpeningAction(
 }
 
 async function handleSetWorkingGroupMetadataAction(
-  db: DatabaseManager,
-  event_: SubstrateEvent,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
   action: ISetGroupMetadata
 ): Promise<WorkingGroupMetadataSet> {
   const { newMetadata } = action
-  const group = await getWorkingGroup(db, event_, ['metadata'])
+  const group = await getWorkingGroup(store, event, ['metadata'])
   const oldMetadata = group.metadata
-  const eventTime = new Date(event_.blockTimestamp)
+  const eventTime = new Date(event.blockTimestamp)
   const setNewOptionalString = (field: keyof IWorkingGroupMetadata) =>
     typeof newMetadata?.[field] === 'string' ? newMetadata[field] || undefined : oldMetadata?.[field]
 
@@ -304,11 +310,11 @@ async function handleSetWorkingGroupMetadataAction(
     about: setNewOptionalString('about'),
     description: setNewOptionalString('description'),
   })
-  await db.save<WorkingGroupMetadata>(newGroupMetadata)
+  await store.save<WorkingGroupMetadata>(newGroupMetadata)
 
   group.metadata = newGroupMetadata
   group.updatedAt = eventTime
-  await db.save<WorkingGroup>(group)
+  await store.save<WorkingGroup>(group)
 
   const result = new WorkingGroupMetadataSet()
   result.metadataId = newGroupMetadata.id
@@ -317,17 +323,17 @@ async function handleSetWorkingGroupMetadataAction(
 }
 
 async function handleWorkingGroupMetadataAction(
-  db: DatabaseManager,
-  event_: SubstrateEvent,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
   action: IWorkingGroupMetadataAction
 ): Promise<typeof WorkingGroupMetadataActionResult> {
   if (action.addUpcomingOpening) {
-    return handleAddUpcomingOpeningAction(db, event_, statusChangedEvent, action.addUpcomingOpening)
+    return handleAddUpcomingOpeningAction(store, event, statusChangedEvent, action.addUpcomingOpening)
   } else if (action.removeUpcomingOpening) {
-    return handleRemoveUpcomingOpeningAction(db, action.removeUpcomingOpening)
+    return handleRemoveUpcomingOpeningAction(store, action.removeUpcomingOpening)
   } else if (action.setGroupMetadata) {
-    return handleSetWorkingGroupMetadataAction(db, event_, statusChangedEvent, action.setGroupMetadata)
+    return handleSetWorkingGroupMetadataAction(store, event, statusChangedEvent, action.setGroupMetadata)
   } else {
     const result = new InvalidActionMetadata()
     result.reason = 'No known action was provided'
@@ -335,23 +341,23 @@ async function handleWorkingGroupMetadataAction(
   }
 }
 
-async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+async function handleTerminatedWorker({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
 
   const terminatedEvent = new EventConstructor({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     penalty: optPenalty.unwrapOr(undefined),
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await db.save(terminatedEvent)
+  await store.save(terminatedEvent)
 
   const status = new WorkerStatusTerminated()
   status.terminatedWorkerEventId = terminatedEvent.id
@@ -360,11 +366,11 @@ async function handleTerminatedWorker(db: DatabaseManager, event_: SubstrateEven
   worker.rewardPerBlock = new BN(0)
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function findLeaderSetEventByTxHash(db: DatabaseManager, txHash?: string): Promise<LeaderSetEvent> {
-  const leaderSetEvent = await db.get(LeaderSetEvent, { where: { inExtrinsic: txHash } })
+export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?: string): Promise<LeaderSetEvent> {
+  const leaderSetEvent = await store.get(LeaderSetEvent, { where: { inExtrinsic: txHash } })
 
   if (!leaderSetEvent) {
     throw new Error(`LeaderSet event not found by tx hash: ${txHash}`)
@@ -374,16 +380,16 @@ export async function findLeaderSetEventByTxHash(db: DatabaseManager, txHash?: s
 }
 
 // Mapping functions
-export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
+export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext ): Promise<void> {
   const [
     openingRuntimeId,
     metadataBytes,
     openingType,
     stakePolicy,
     optRewardPerBlock,
-  ] = new WorkingGroups.OpeningAddedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp)
+  ] = new WorkingGroups.OpeningAddedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const eventTime = new Date(event.blockTimestamp)
 
   const opening = new WorkingGroupOpening({
     createdAt: eventTime,
@@ -399,22 +405,22 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
 
-  const metadata = await createOpeningMeta(db, event_, metadataBytes)
+  const metadata = await createOpeningMeta(store, event, metadataBytes)
   opening.metadata = metadata
 
-  await db.save<WorkingGroupOpening>(opening)
+  await store.save<WorkingGroupOpening>(opening)
 
   const openingAddedEvent = new OpeningAddedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     opening,
   })
 
-  await db.save<OpeningAddedEvent>(openingAddedEvent)
+  await store.save<OpeningAddedEvent>(openingAddedEvent)
 }
 
-export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_AppliedOnOpening({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const eventTime = new Date(event.blockTimestamp)
 
   const [
     {
@@ -426,17 +432,17 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
       stake_parameters: { stake, staking_account_id: stakingAccount },
     },
     applicationRuntimeId,
-  ] = new WorkingGroups.AppliedOnOpeningEvent(event_).params
+  ] = new WorkingGroups.AppliedOnOpeningEvent(event).params
 
-  const group = await getWorkingGroup(db, event_)
-  const openingDbId = `${group.name}-${openingRuntimeId.toString()}`
+  const group = await getWorkingGroup(store, event)
+  const openingstoreId = `${group.name}-${openingRuntimeId.toString()}`
 
   const application = new WorkingGroupApplication({
     createdAt: eventTime,
     updatedAt: eventTime,
     id: `${group.name}-${applicationRuntimeId.toString()}`,
     runtimeId: applicationRuntimeId.toNumber(),
-    opening: new WorkingGroupOpening({ id: openingDbId }),
+    opening: new WorkingGroupOpening({ id: openingstoreId }),
     applicant: new Membership({ id: memberId.toString() }),
     rewardAccount: rewardAccount.toString(),
     roleAccount: roleAccout.toString(),
@@ -446,39 +452,39 @@ export async function workingGroups_AppliedOnOpening(db: DatabaseManager, event_
     stake,
   })
 
-  await db.save<WorkingGroupApplication>(application)
-  await createApplicationQuestionAnswers(db, application, metadataBytes)
+  await store.save<WorkingGroupApplication>(application)
+  await createApplicationQuestionAnswers(store, application, metadataBytes)
 
   const appliedOnOpeningEvent = new AppliedOnOpeningEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
-    opening: new WorkingGroupOpening({ id: openingDbId }),
+    opening: new WorkingGroupOpening({ id: openingstoreId }),
     application,
   })
 
-  await db.save<AppliedOnOpeningEvent>(appliedOnOpeningEvent)
+  await store.save<AppliedOnOpeningEvent>(appliedOnOpeningEvent)
 }
 
-export async function workingGroups_LeaderSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const group = await getWorkingGroup(db, event_)
+export async function workingGroups_LeaderSet({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const group = await getWorkingGroup(store, event)
 
   const leaderSetEvent = new LeaderSetEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
   })
 
-  await db.save<LeaderSetEvent>(leaderSetEvent)
+  await store.save<LeaderSetEvent>(leaderSetEvent)
 }
 
-export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_OpeningFilled({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const eventTime = new Date(event.blockTimestamp)
 
   const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(
-    event_
+    event
   ).params
 
-  const group = await getWorkingGroup(db, event_)
-  const opening = await getOpening(db, `${group.name}-${openingRuntimeId.toString()}`, [
+  const group = await getWorkingGroup(store, event)
+  const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, [
     'applications',
     'applications.applicant',
   ])
@@ -486,12 +492,12 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
 
   // Save the event
   const openingFilledEvent = new OpeningFilledEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     opening,
   })
 
-  await db.save<OpeningFilledEvent>(openingFilledEvent)
+  await store.save<OpeningFilledEvent>(openingFilledEvent)
 
   // Update applications and create new workers
   const hiredWorkers = (
@@ -505,7 +511,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
           applicationStatus.openingFilledEventId = openingFilledEvent.id
           application.status = applicationStatus
           application.updatedAt = eventTime
-          await db.save<WorkingGroupApplication>(application)
+          await store.save<WorkingGroupApplication>(application)
           if (isAccepted) {
             // Cannot use "applicationIdToWorkerIdMap.get" here,
             // it only works if the passed instance is identical to BTreeMap key instance (=== instead of .eq)
@@ -536,7 +542,7 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
               entry: openingFilledEvent,
               rewardPerBlock: opening.rewardPerBlock,
             })
-            await db.save<Worker>(worker)
+            await store.save<Worker>(worker)
             return worker
           }
         })
@@ -548,36 +554,36 @@ export async function workingGroups_OpeningFilled(db: DatabaseManager, event_: S
   openingFilled.openingFilledEventId = openingFilledEvent.id
   opening.status = openingFilled
   opening.updatedAt = eventTime
-  await db.save<WorkingGroupOpening>(opening)
+  await store.save<WorkingGroupOpening>(opening)
 
   // Update working group and LeaderSetEvent if necessary
   if (opening.type === WorkingGroupOpeningType.LEADER && hiredWorkers.length) {
     group.leader = hiredWorkers[0]
     group.updatedAt = eventTime
-    await db.save<WorkingGroup>(group)
+    await store.save<WorkingGroup>(group)
 
-    const leaderSetEvent = await findLeaderSetEventByTxHash(db, openingFilledEvent.inExtrinsic)
+    const leaderSetEvent = await findLeaderSetEventByTxHash(store, openingFilledEvent.inExtrinsic)
     leaderSetEvent.worker = hiredWorkers[0]
     leaderSetEvent.updatedAt = eventTime
-    await db.save<LeaderSetEvent>(leaderSetEvent)
+    await store.save<LeaderSetEvent>(leaderSetEvent)
   }
 }
 
-export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [openingRuntimeId] = new WorkingGroups.OpeningCanceledEvent(event_).params
+export async function workingGroups_OpeningCanceled({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [openingRuntimeId] = new WorkingGroups.OpeningCanceledEvent(event).params
 
-  const group = await getWorkingGroup(db, event_)
-  const opening = await getOpening(db, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
-  const eventTime = new Date(event_.blockTimestamp)
+  const group = await getWorkingGroup(store, event)
+  const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
+  const eventTime = new Date(event.blockTimestamp)
 
   // Create and save event
   const openingCanceledEvent = new OpeningCanceledEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     opening,
   })
 
-  await db.save<OpeningCanceledEvent>(openingCanceledEvent)
+  await store.save<OpeningCanceledEvent>(openingCanceledEvent)
 
   // Set opening status
   const openingCancelled = new OpeningStatusCancelled()
@@ -585,7 +591,7 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
   opening.status = openingCancelled
   opening.updatedAt = eventTime
 
-  await db.save<WorkingGroupOpening>(opening)
+  await store.save<WorkingGroupOpening>(opening)
 
   // Set applications status
   const applicationCancelled = new ApplicationStatusCancelled()
@@ -597,26 +603,26 @@ export async function workingGroups_OpeningCanceled(db: DatabaseManager, event_:
       .map(async (application) => {
         application.status = applicationCancelled
         application.updatedAt = eventTime
-        await db.save<WorkingGroupApplication>(application)
+        await store.save<WorkingGroupApplication>(application)
       })
   )
 }
 
-export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [applicationRuntimeId] = new WorkingGroups.ApplicationWithdrawnEvent(event_).params
+export async function workingGroups_ApplicationWithdrawn({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [applicationRuntimeId] = new WorkingGroups.ApplicationWithdrawnEvent(event).params
 
-  const group = await getWorkingGroup(db, event_)
-  const application = await getApplication(db, `${group.name}-${applicationRuntimeId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+  const group = await getWorkingGroup(store, event)
+  const application = await getApplication(store, `${group.name}-${applicationRuntimeId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   // Create and save event
   const applicationWithdrawnEvent = new ApplicationWithdrawnEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     application,
   })
 
-  await db.save<ApplicationWithdrawnEvent>(applicationWithdrawnEvent)
+  await store.save<ApplicationWithdrawnEvent>(applicationWithdrawnEvent)
 
   // Set application status
   const statusWithdrawn = new ApplicationStatusWithdrawn()
@@ -624,32 +630,32 @@ export async function workingGroups_ApplicationWithdrawn(db: DatabaseManager, ev
   application.status = statusWithdrawn
   application.updatedAt = eventTime
 
-  await db.save<WorkingGroupApplication>(application)
+  await store.save<WorkingGroupApplication>(application)
 }
 
-export async function workingGroups_StatusTextChanged(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [, optBytes] = new WorkingGroups.StatusTextChangedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
+export async function workingGroups_StatusTextChanged({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [, optBytes] = new WorkingGroups.StatusTextChangedEvent(event).params
+  const group = await getWorkingGroup(store, event)
 
   // Since result cannot be empty at this point, but we already need to have an existing StatusTextChangedEvent
   // in order to be able to create UpcomingOpening.createdInEvent relation, we use a temporary "mock" result
   const mockResult = new InvalidActionMetadata()
   mockResult.reason = 'Metadata not yet processed'
   const statusTextChangedEvent = new StatusTextChangedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     metadata: optBytes.isSome ? optBytes.unwrap().toString() : undefined,
     result: mockResult,
   })
 
-  await db.save<StatusTextChangedEvent>(statusTextChangedEvent)
+  await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 
   let result: typeof WorkingGroupMetadataActionResult
 
   if (optBytes.isSome) {
     const metadata = deserializeMetadata(WorkingGroupMetadataAction, optBytes.unwrap())
     if (metadata) {
-      result = await handleWorkingGroupMetadataAction(db, event_, statusTextChangedEvent, metadata)
+      result = await handleWorkingGroupMetadataAction(store, event, statusTextChangedEvent, metadata)
     } else {
       result = new InvalidActionMetadata()
       result.reason = 'Invalid metadata: Cannot deserialize metadata binary'
@@ -663,86 +669,86 @@ export async function workingGroups_StatusTextChanged(db: DatabaseManager, event
 
   // Now we can set the "real" result
   statusTextChangedEvent.result = result
-  await db.save<StatusTextChangedEvent>(statusTextChangedEvent)
+  await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
+  store: DatabaseManager,
+  event: SubstrateEvent
 ): Promise<void> {
-  const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+  const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     newRoleAccount: accountId.toString(),
   })
 
-  await db.save<WorkerRoleAccountUpdatedEvent>(workerRoleAccountUpdatedEvent)
+  await store.save<WorkerRoleAccountUpdatedEvent>(workerRoleAccountUpdatedEvent)
 
   worker.roleAccount = accountId.toString()
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
 export async function workingGroups_WorkerRewardAccountUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
+  store: DatabaseManager,
+  event: SubstrateEvent
 ): Promise<void> {
-  const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+  const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     newRewardAccount: accountId.toString(),
   })
 
-  await db.save<WorkerRoleAccountUpdatedEvent>(workerRewardAccountUpdatedEvent)
+  await store.save<WorkerRoleAccountUpdatedEvent>(workerRewardAccountUpdatedEvent)
 
   worker.rewardAccount = accountId.toString()
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_StakeIncreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_StakeIncreased({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const stakeIncreasedEvent = new StakeIncreasedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     amount: increaseAmount,
   })
 
-  await db.save<StakeIncreasedEvent>(stakeIncreasedEvent)
+  await store.save<StakeIncreasedEvent>(stakeIncreasedEvent)
 
   worker.stake = worker.stake.add(increaseAmount)
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_RewardPaid(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_RewardPaid({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const rewardPaidEvent = new RewardPaidEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     amount,
@@ -750,118 +756,118 @@ export async function workingGroups_RewardPaid(db: DatabaseManager, event_: Subs
     type: rewardPaymentType.isRegularReward ? RewardPaymentType.REGULAR : RewardPaymentType.MISSED,
   })
 
-  await db.save<RewardPaidEvent>(rewardPaidEvent)
+  await store.save<RewardPaidEvent>(rewardPaidEvent)
 
   // Update group budget
   group.budget = group.budget.sub(amount)
   group.updatedAt = eventTime
 
-  await db.save<WorkingGroup>(group)
+  await store.save<WorkingGroup>(group)
 }
 
 export async function workingGroups_NewMissedRewardLevelReached(
-  db: DatabaseManager,
-  event_: SubstrateEvent
+  store: DatabaseManager,
+  event: SubstrateEvent
 ): Promise<void> {
-  const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+  const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     newMissedRewardAmount: newMissedRewardAmountOpt.unwrapOr(new BN(0)),
   })
 
-  await db.save<NewMissedRewardLevelReachedEvent>(newMissedRewardLevelReachedEvent)
+  await store.save<NewMissedRewardLevelReachedEvent>(newMissedRewardLevelReachedEvent)
 
   // Update worker
   worker.missingRewardAmount = newMissedRewardAmountOpt.unwrapOr(undefined)
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_WorkerExited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId] = new WorkingGroups.WorkerExitedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId] = new WorkingGroups.WorkerExitedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
   })
 
-  await db.save<WorkerExitedEvent>(workerExitedEvent)
+  await store.save<WorkerExitedEvent>(workerExitedEvent)
   ;(worker.status as WorkerStatusLeft).workerExitedEventId = workerExitedEvent.id
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_LeaderUnset(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_LeaderUnset({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const group = await getWorkingGroup(store, event)
+  const eventTime = new Date(event.blockTimestamp)
 
   const leaderUnsetEvent = new LeaderUnsetEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     leader: group.leader,
   })
 
-  await db.save<LeaderUnsetEvent>(leaderUnsetEvent)
+  await store.save<LeaderUnsetEvent>(leaderUnsetEvent)
 
   group.leader = undefined
   group.updatedAt = eventTime
 
-  await db.save<WorkingGroup>(group)
+  await store.save<WorkingGroup>(group)
 }
 
-export async function workingGroups_TerminatedWorker(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  await handleTerminatedWorker(db, event_)
+export async function workingGroups_TerminatedWorker(ctx: EventContext & StoreContext ): Promise<void> {
+  await handleTerminatedWorker(ctx)
 }
-export async function workingGroups_TerminatedLeader(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  await handleTerminatedWorker(db, event_)
+export async function workingGroups_TerminatedLeader(ctx: EventContext & StoreContext ): Promise<void> {
+  await handleTerminatedWorker(ctx)
 }
 
 export async function workingGroups_WorkerRewardAmountUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
+  store: DatabaseManager,
+  event: SubstrateEvent
 ): Promise<void> {
-  const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+  const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     newRewardPerBlock: newRewardPerBlockOpt.unwrapOr(new BN(0)),
   })
 
-  await db.save<WorkerRewardAmountUpdatedEvent>(workerRewardAmountUpdatedEvent)
+  await store.save<WorkerRewardAmountUpdatedEvent>(workerRewardAmountUpdatedEvent)
 
   worker.rewardPerBlock = newRewardPerBlockOpt.unwrapOr(new BN(0))
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_StakeSlashed({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerStakeSlashedEvent = new StakeSlashedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     requestedAmount,
@@ -869,94 +875,94 @@ export async function workingGroups_StakeSlashed(db: DatabaseManager, event_: Su
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await db.save<StakeSlashedEvent>(workerStakeSlashedEvent)
+  await store.save<StakeSlashedEvent>(workerStakeSlashedEvent)
 
   worker.stake = worker.stake.sub(slashedAmount)
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_StakeDecreased(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_StakeDecreased({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerStakeDecreasedEvent = new StakeDecreasedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     amount,
   })
 
-  await db.save<StakeDecreasedEvent>(workerStakeDecreasedEvent)
+  await store.save<StakeDecreasedEvent>(workerStakeDecreasedEvent)
 
   worker.stake = worker.stake.sub(amount)
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_WorkerStartedLeaving(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const worker = await getWorker(db, `${group.name}-${workerId.toString()}`)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const eventTime = new Date(event.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     worker,
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await db.save<WorkerStartedLeavingEvent>(workerStartedLeavingEvent)
+  await store.save<WorkerStartedLeavingEvent>(workerStartedLeavingEvent)
 
   const status = new WorkerStatusLeft()
   status.workerStartedLeavingEventId = workerStartedLeavingEvent.id
   worker.status = status
   worker.updatedAt = eventTime
 
-  await db.save<Worker>(worker)
+  await store.save<Worker>(worker)
 }
 
-export async function workingGroups_BudgetSet(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [newBudget] = new WorkingGroups.BudgetSetEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_BudgetSet({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [newBudget] = new WorkingGroups.BudgetSetEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const eventTime = new Date(event.blockTimestamp)
 
   const budgetSetEvent = new BudgetSetEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     newBudget,
   })
 
-  await db.save<BudgetSetEvent>(budgetSetEvent)
+  await store.save<BudgetSetEvent>(budgetSetEvent)
 
   group.budget = newBudget
   group.updatedAt = eventTime
 
-  await db.save<WorkingGroup>(group)
+  await store.save<WorkingGroup>(group)
 }
 
-export async function workingGroups_BudgetSpending(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [reciever, amount, optRationale] = new WorkingGroups.BudgetSpendingEvent(event_).params
-  const group = await getWorkingGroup(db, event_)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function workingGroups_BudgetSpending({ store, event }: EventContext & StoreContext ): Promise<void> {
+  const [reciever, amount, optRationale] = new WorkingGroups.BudgetSpendingEvent(event).params
+  const group = await getWorkingGroup(store, event)
+  const eventTime = new Date(event.blockTimestamp)
 
   const budgetSpendingEvent = new BudgetSpendingEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     group,
     amount,
     reciever: reciever.toString(),
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await db.save<BudgetSpendingEvent>(budgetSpendingEvent)
+  await store.save<BudgetSpendingEvent>(budgetSpendingEvent)
 
   group.budget = group.budget.sub(amount)
   group.updatedAt = eventTime
 
-  await db.save<WorkingGroup>(group)
+  await store.save<WorkingGroup>(group)
 }
