@@ -144,7 +144,7 @@ impl<T: Trait> BagManager<T> {
         // Static bags could be auto-created on absence.
         // We must check only dynamic bags.
 
-        if let BagId::<T>::DynamicBag(dynamic_bag_id) = bag_id {
+        if let BagId::<T>::Dynamic(dynamic_bag_id) = bag_id {
             ensure!(
                 <crate::DynamicBags<T>>::contains_key(dynamic_bag_id),
                 Error::<T>::DynamicBagDoesntExist
@@ -224,12 +224,12 @@ impl<T: Trait> BagManager<T> {
         dynamic_bag_query: DynamicBagQuery,
     ) -> Res {
         match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
+            BagId::<T>::Static(static_bag_id) => {
                 let bag = Module::<T>::static_bag(&static_bag_id);
 
                 static_bag_query(&bag)
             }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
+            BagId::<T>::Dynamic(dynamic_bag_id) => {
                 let bag = Module::<T>::dynamic_bag(dynamic_bag_id);
 
                 dynamic_bag_query(&bag)
@@ -249,10 +249,10 @@ impl<T: Trait> BagManager<T> {
         dynamic_bag_mutation: DynamicBagMutation,
     ) {
         match bag_id {
-            BagId::<T>::StaticBag(static_bag_id) => {
+            BagId::<T>::Static(static_bag_id) => {
                 <crate::StaticBags<T>>::mutate(static_bag_id, static_bag_mutation);
             }
-            BagId::<T>::DynamicBag(dynamic_bag_id) => {
+            BagId::<T>::Dynamic(dynamic_bag_id) => {
                 <crate::DynamicBags<T>>::mutate(dynamic_bag_id, dynamic_bag_mutation);
             }
         }

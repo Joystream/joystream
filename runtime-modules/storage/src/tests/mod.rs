@@ -273,7 +273,7 @@ fn update_storage_buckets_for_bags_succeeded() {
         run_to_block(starting_block);
 
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+        let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
@@ -307,7 +307,7 @@ fn update_storage_buckets_for_bags_succeeded() {
 fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
@@ -332,7 +332,7 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
 fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
     build_test_externalities().execute_with(|| {
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+        let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -354,7 +354,7 @@ fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
 #[test]
 fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         set_update_storage_buckets_per_bag_limit();
         let old_bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
@@ -418,7 +418,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
     build_test_externalities().execute_with(|| {
         set_update_storage_buckets_per_bag_limit();
 
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
@@ -462,7 +462,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
 #[test]
 fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_total_size_limit() {
     build_test_externalities().execute_with(|| {
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         set_update_storage_buckets_per_bag_limit();
         create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
@@ -519,7 +519,7 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
         let buckets = BTreeSet::from_iter(vec![bucket_id]);
 
         let static_bag_id = StaticBagId::WorkingGroup(WorkingGroup::Storage);
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+        let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -550,7 +550,7 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
 
         let member_id = 10;
         let dynamic_bag_id = DynamicBagId::<Test>::Member(member_id);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
         create_dynamic_bag(&dynamic_bag_id);
 
         UpdateStorageBucketForBagsFixture::default()
@@ -589,7 +589,7 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_storage_buckets() {
     build_test_externalities().execute_with(|| {
         let invalid_bucket_id = 11000;
         let buckets = BTreeSet::from_iter(vec![invalid_bucket_id]);
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         // Invalid added bucket ID.
         UpdateStorageBucketForBagsFixture::default()
@@ -617,7 +617,7 @@ fn upload_succeeded() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -673,7 +673,7 @@ fn upload_succeeded_with_data_size_fee() {
             .call_and_assert(Ok(()));
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -701,7 +701,7 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
@@ -733,7 +733,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 100;
 
@@ -767,7 +767,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
         let objects_limit = 1;
         let size_limit = 1;
 
@@ -801,7 +801,7 @@ fn upload_succeeded_with_dynamic_bag() {
         create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
+            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -837,7 +837,7 @@ fn upload_fails_with_non_existent_dynamic_bag() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
+            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -855,7 +855,7 @@ fn upload_succeeded_with_non_empty_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, 1000);
 
         let upload_params1 = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, 2),
@@ -866,7 +866,7 @@ fn upload_succeeded_with_non_empty_bag() {
             .call_and_assert(Ok(()));
 
         let upload_params2 = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(3, 2),
@@ -896,7 +896,7 @@ fn upload_fails_with_empty_params_object() {
 fn upload_fails_with_zero_object_size() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
@@ -915,7 +915,7 @@ fn upload_fails_with_zero_object_size() {
 fn upload_fails_with_empty_object_cid() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
@@ -937,7 +937,7 @@ fn upload_fails_with_max_data_object_size_exceeded() {
         let invalid_object_number: u8 = (max_object_size + 1).saturated_into();
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, invalid_object_number),
@@ -953,7 +953,7 @@ fn upload_fails_with_max_data_object_size_exceeded() {
 fn upload_fails_with_insufficient_balance_for_deletion_prize() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -971,7 +971,7 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, DataObjectDeletionPrize::get());
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -1000,7 +1000,7 @@ fn upload_failed_with_blocked_uploading() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -1034,7 +1034,7 @@ fn upload_failed_with_blacklisted_data_object() {
             .call_and_assert(Ok(()));
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list,
@@ -1160,7 +1160,7 @@ fn accept_pending_data_objects_succeeded() {
         set_max_voucher_limits();
 
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+        let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
@@ -1237,7 +1237,7 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
         let invite_worker = Some(storage_provider_id);
 
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id);
+        let bag_id = BagId::<Test>::Static(static_bag_id);
 
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -1301,7 +1301,7 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         let data_object_id = 0;
 
@@ -1347,7 +1347,7 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         create_dynamic_bag(&dynamic_bag_id);
 
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
             authentication_key: Vec::new(),
@@ -1391,7 +1391,7 @@ fn accept_pending_data_objects_fails_with_empty_params() {
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let objects_limit = 1;
         let size_limit = 100;
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
             bag_id.clone(),
@@ -1415,7 +1415,7 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let objects_limit = 1;
         let size_limit = 100;
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
             bag_id.clone(),
@@ -1441,7 +1441,7 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
 #[test]
 fn accept_pending_data_objects_fails_with_invalid_storage_provider() {
     build_test_externalities().execute_with(|| {
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
@@ -1666,11 +1666,11 @@ fn move_data_objects_succeeded() {
         run_to_block(starting_block);
 
         let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
-        let src_bag_id = BagId::<Test>::DynamicBag(src_dynamic_bag_id.clone());
+        let src_bag_id = BagId::<Test>::Dynamic(src_dynamic_bag_id.clone());
         create_dynamic_bag(&src_dynamic_bag_id);
 
         let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
-        let dest_bag_id = BagId::<Test>::DynamicBag(dest_dynamic_bag_id.clone());
+        let dest_bag_id = BagId::<Test>::Dynamic(dest_dynamic_bag_id.clone());
         create_dynamic_bag(&dest_dynamic_bag_id);
 
         let initial_balance = 1000;
@@ -1728,10 +1728,10 @@ fn move_data_objects_succeeded() {
 fn move_data_objects_fails_with_non_existing_dynamic_bags() {
     build_test_externalities().execute_with(|| {
         let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
-        let src_bag_id = BagId::<Test>::DynamicBag(src_dynamic_bag_id.clone());
+        let src_bag_id = BagId::<Test>::Dynamic(src_dynamic_bag_id.clone());
 
         let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
-        let dest_bag_id = BagId::<Test>::DynamicBag(dest_dynamic_bag_id.clone());
+        let dest_bag_id = BagId::<Test>::Dynamic(dest_dynamic_bag_id.clone());
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -1764,8 +1764,8 @@ fn move_data_objects_succeeded_having_voucher() {
         run_to_block(starting_block);
 
         let working_group = WorkingGroup::Storage;
-        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+        let src_bag_id = BagId::<Test>::Static(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::Static(StaticBagId::WorkingGroup(working_group));
 
         let src_bucket_id = create_default_storage_bucket_and_assign_to_bag(src_bag_id.clone());
         let dest_bucket_id = create_default_storage_bucket_and_assign_to_bag(dest_bag_id.clone());
@@ -1822,8 +1822,8 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
         run_to_block(starting_block);
 
         let working_group = WorkingGroup::Storage;
-        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+        let src_bag_id = BagId::<Test>::Static(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::Static(StaticBagId::WorkingGroup(working_group));
 
         let src_objects_limit = 1;
         let src_size_limit = 100;
@@ -1880,8 +1880,8 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
         run_to_block(starting_block);
 
         let working_group = WorkingGroup::Storage;
-        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
-        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(working_group));
+        let src_bag_id = BagId::<Test>::Static(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::Static(StaticBagId::WorkingGroup(working_group));
 
         let src_objects_limit = 1;
         let src_size_limit = 100;
@@ -1934,8 +1934,7 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
 #[test]
 fn move_data_objects_fails_with_empty_data_collection() {
     build_test_externalities().execute_with(|| {
-        let dest_bag_id =
-            BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(WorkingGroup::Storage));
+        let dest_bag_id = BagId::<Test>::Static(StaticBagId::WorkingGroup(WorkingGroup::Storage));
 
         MoveDataObjectsFixture::default()
             .with_dest_bag_id(dest_bag_id)
@@ -1946,8 +1945,7 @@ fn move_data_objects_fails_with_empty_data_collection() {
 #[test]
 fn move_data_objects_fails_with_non_existent_data() {
     build_test_externalities().execute_with(|| {
-        let dest_bag_id =
-            BagId::<Test>::StaticBag(StaticBagId::WorkingGroup(WorkingGroup::Storage));
+        let dest_bag_id = BagId::<Test>::Static(StaticBagId::WorkingGroup(WorkingGroup::Storage));
 
         let data_object_id = 0u64;
         let ids = BTreeSet::from_iter(vec![data_object_id]);
@@ -1962,9 +1960,9 @@ fn move_data_objects_fails_with_non_existent_data() {
 #[test]
 fn move_data_objects_fails_with_same_bag() {
     build_test_externalities().execute_with(|| {
-        let src_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let src_bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
-        let dest_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let dest_bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         MoveDataObjectsFixture::default()
             .with_src_bag_id(src_bag_id)
@@ -1983,7 +1981,7 @@ fn delete_data_objects_succeeded() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         create_dynamic_bag(&dynamic_bag_id);
 
@@ -2051,7 +2049,7 @@ fn delete_data_objects_fails_with_non_existent_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         let data_object_id = 0;
 
@@ -2083,7 +2081,7 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let council_bag_id = BagId::<Test>::Static(StaticBagId::Council);
         let upload_params = UploadParameters::<Test> {
             bag_id: council_bag_id.clone(),
             authentication_key: Vec::new(),
@@ -2116,7 +2114,7 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
 #[test]
 fn delete_data_objects_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
-        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let council_bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(council_bag_id.clone());
 
@@ -2173,7 +2171,7 @@ fn delete_data_objects_fails_with_empty_params() {
 #[test]
 fn delete_data_objects_fails_with_non_existing_data_object() {
     build_test_externalities().execute_with(|| {
-        let council_bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let council_bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let data_object_id = 0;
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
@@ -2468,7 +2466,7 @@ fn delete_dynamic_bags_succeeded() {
         create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
+            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -2528,7 +2526,7 @@ fn delete_dynamic_bags_succeeded_having_voucher() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         create_dynamic_bag(&dynamic_bag_id);
 
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
@@ -2577,7 +2575,7 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
         create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
+            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -2661,7 +2659,7 @@ fn delete_storage_bucket_fails_with_non_missing_invitation() {
 #[test]
 fn delete_storage_bucket_fails_with_non_empty_bucket() {
     build_test_externalities().execute_with(|| {
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
@@ -2844,7 +2842,7 @@ fn deletion_prize_changed_event_fired() {
         create_dynamic_bag(&dynamic_bag_id);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::DynamicBag(dynamic_bag_id.clone()),
+            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
@@ -2868,7 +2866,7 @@ fn storage_bucket_voucher_changed_event_fired() {
         run_to_block(starting_block);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
         create_dynamic_bag(&dynamic_bag_id);
 
         let objects_limit = 1;

@@ -418,15 +418,15 @@ pub type BagId<T> = BagIdType<MemberId<T>, <T as Trait>::ChannelId>;
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum BagIdType<MemberId, ChannelId> {
     /// Static bag type.
-    StaticBag(StaticBagId),
+    Static(StaticBagId),
 
     /// Dynamic bag type.
-    DynamicBag(DynamicBagIdType<MemberId, ChannelId>),
+    Dynamic(DynamicBagIdType<MemberId, ChannelId>),
 }
 
 impl<MemberId, ChannelId> Default for BagIdType<MemberId, ChannelId> {
     fn default() -> Self {
-        Self::StaticBag(Default::default())
+        Self::Static(Default::default())
     }
 }
 
@@ -1801,7 +1801,7 @@ impl<T: Trait> Module<T> {
     fn validate_delete_dynamic_bag_params(
         bag_id: &DynamicBagId<T>,
     ) -> Result<BagChangeInfo<BalanceOf<T>>, DispatchError> {
-        BagManager::<T>::ensure_bag_exists(&BagId::<T>::DynamicBag(bag_id.clone()))?;
+        BagManager::<T>::ensure_bag_exists(&BagId::<T>::Dynamic(bag_id.clone()))?;
 
         let dynamic_bag = Self::dynamic_bag(bag_id);
 
@@ -2298,7 +2298,7 @@ impl<T: Trait> Module<T> {
         deletion_prize: BalanceOf<T>,
         operation: OperationType,
     ) {
-        if let BagId::<T>::DynamicBag(ref dynamic_bag_id) = bag_id {
+        if let BagId::<T>::Dynamic(ref dynamic_bag_id) = bag_id {
             Self::change_deletion_prize_for_dynamic_bag(dynamic_bag_id, deletion_prize, operation);
         }
     }

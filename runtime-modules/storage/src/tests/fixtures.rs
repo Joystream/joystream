@@ -594,8 +594,8 @@ pub struct MoveDataObjectsFixture {
 impl MoveDataObjectsFixture {
     pub fn default() -> Self {
         Self {
-            src_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
-            dest_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            src_bag_id: BagId::<Test>::Static(StaticBagId::Council),
+            dest_bag_id: BagId::<Test>::Static(StaticBagId::Council),
             data_object_ids: BTreeSet::new(),
         }
     }
