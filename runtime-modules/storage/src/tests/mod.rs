@@ -272,6 +272,8 @@ fn update_storage_buckets_for_bags_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        set_default_update_storage_buckets_per_bag_limit();
+
         let static_bag_id = StaticBagId::Council;
         let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
@@ -334,6 +336,8 @@ fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
         let static_bag_id = StaticBagId::Council;
         let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
+        set_default_update_storage_buckets_per_bag_limit();
+
         let bucket_id = CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
             .with_invite_worker(None)
@@ -356,7 +360,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
-        set_update_storage_buckets_per_bag_limit();
+        set_default_update_storage_buckets_per_bag_limit();
         let old_bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
@@ -416,7 +420,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_number_limit() {
     build_test_externalities().execute_with(|| {
-        set_update_storage_buckets_per_bag_limit();
+        set_default_update_storage_buckets_per_bag_limit();
 
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
@@ -464,7 +468,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
-        set_update_storage_buckets_per_bag_limit();
+        set_default_update_storage_buckets_per_bag_limit();
         create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
@@ -507,6 +511,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 #[test]
 fn update_storage_buckets_for_working_group_static_bags_succeeded() {
     build_test_externalities().execute_with(|| {
+        set_default_update_storage_buckets_per_bag_limit();
+
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
 
@@ -535,7 +541,7 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
 #[test]
 fn update_storage_buckets_for_dynamic_bags_succeeded() {
     build_test_externalities().execute_with(|| {
-        set_update_storage_buckets_per_bag_limit();
+        set_default_update_storage_buckets_per_bag_limit();
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
@@ -587,6 +593,8 @@ fn update_storage_buckets_for_bags_fails_with_empty_params() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_non_existing_storage_buckets() {
     build_test_externalities().execute_with(|| {
+        set_default_update_storage_buckets_per_bag_limit();
+
         let invalid_bucket_id = 11000;
         let buckets = BTreeSet::from_iter(vec![invalid_bucket_id]);
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
@@ -604,6 +612,58 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_storage_buckets() {
             .with_bag_id(bag_id.clone())
             .with_remove_bucket_ids(buckets.clone())
             .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
+    });
+}
+#[test]
+fn update_storage_buckets_for_bags_fails_with_going_beyond_the_buckets_per_bag_limit() {
+    build_test_externalities().execute_with(|| {
+        let limit = 3;
+        set_update_storage_buckets_per_bag_limit(limit);
+
+        let buckets = BTreeSet::from_iter((0..=limit).into_iter());
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(buckets.clone())
+            .call_and_assert(Err(Error::<Test>::StorageBucketPerBagLimitExceeded.into()));
+    });
+}
+
+#[test]
+fn update_storage_buckets_succeeds_with_add_remove_within_limits() {
+    build_test_externalities().execute_with(|| {
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
+
+        let bucket1 = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
+        let _bucket2 = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
+        let _bucket3 = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
+
+        let bucket4 = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let limit = 3;
+        set_update_storage_buckets_per_bag_limit(limit);
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket4]);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Err(Error::<Test>::StorageBucketPerBagLimitExceeded.into()));
+
+        let remove_buckets = BTreeSet::from_iter(vec![bucket1]);
+
+        UpdateStorageBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets)
+            .with_remove_bucket_ids(remove_buckets)
+            .call_and_assert(Ok(()));
     });
 }
 
@@ -1155,9 +1215,11 @@ fn accept_pending_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        set_max_voucher_limits();
+        set_default_update_storage_buckets_per_bag_limit();
+
         let objects_limit = 1;
         let size_limit = 100;
-        set_max_voucher_limits();
 
         let static_bag_id = StaticBagId::Council;
         let bag_id = BagId::<Test>::Static(static_bag_id.clone());
@@ -2425,6 +2487,7 @@ fn create_storage_bucket_and_assign_to_bag(
     size_limit: u64,
 ) -> u64 {
     set_max_voucher_limits();
+    set_default_update_storage_buckets_per_bag_limit();
 
     let bucket_id = CreateStorageBucketFixture::default()
         .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
@@ -2956,13 +3019,17 @@ fn update_storage_buckets_per_bag_limit_fails_with_incorrect_value() {
     });
 }
 
-fn set_update_storage_buckets_per_bag_limit() {
-    let new_limit = 7;
-
+fn set_update_storage_buckets_per_bag_limit(new_limit: u64) {
     UpdateStorageBucketsPerBagLimitFixture::default()
         .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
         .with_new_limit(new_limit)
         .call_and_assert(Ok(()))
+}
+
+fn set_default_update_storage_buckets_per_bag_limit() {
+    let new_limit = 7;
+
+    set_update_storage_buckets_per_bag_limit(new_limit);
 }
 
 #[test]
