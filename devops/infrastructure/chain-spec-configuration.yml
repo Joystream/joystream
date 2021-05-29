@@ -3,9 +3,16 @@
 
 - name: Create and copy the chain-spec file
   hosts: all
+  gather_facts: no
 
-  roles:
-    - common
+  tasks:
+    - name: Generate chain-spec file and data keys either on localhost or admin server
+      include_role:
+        name: common
+        tasks_from: chain-spec-node-keys
+      vars:
+        local_or_admin: "{{ groups['admin'][0] if run_on_admin_server|bool else 'localhost' }}"
+        admin_code_dir: "{{ remote_code_path if run_on_admin_server|bool else local_dir }}"
 
 - name: Copy secret, auth and start joystream-node service for validators
   hosts: validators

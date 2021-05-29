@@ -1,0 +1,9 @@
+---
+# Setup Admin server, copy code, install subkey
+
+- name: Setup Admin server, install subkey
+  hosts: admin
+
+  roles:
+    - role: admin
+      when: run_on_admin_server|bool

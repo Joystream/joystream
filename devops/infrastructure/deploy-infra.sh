@@ -58,11 +58,15 @@ if [ $? -eq 0 ]; then
 
   if [ -z "$EC2_AMI_ID" ]
   then
-    echo -e "\n\n=========== Configuring the servers ==========="
-    ansible-playbook -i inventory --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME"
+    echo -e "\n\n=========== Configuring the node servers ==========="
+    ansible-playbook -i inventory --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE"
   fi
+
+  echo -e "\n\n=========== Configuring the Admin server ==========="
+  ansible-playbook -i inventory --private-key $KEY_PATH setup-admin.yml \
+    --extra-vars "local_dir=$LOCAL_CODE_PATH run_on_admin_server=$CREATE_ADMIN_SERVER build_local_code=$BUILD_LOCAL_CODE"
 
   echo -e "\n\n=========== Configuring the chain spec file ==========="
   ansible-playbook -i inventory --private-key $KEY_PATH chain-spec-configuration.yml \
-    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME"
+    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME run_on_admin_server=$CREATE_ADMIN_SERVER"
 fi
