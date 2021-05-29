@@ -19,7 +19,7 @@ RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \
     cargo build --release
 
-FROM rust:1.52.1-slim-buster
+FROM ubuntu:21.04
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node
