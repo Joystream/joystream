@@ -47,9 +47,11 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       shouldSlash,
     ])
 
-    this.log(chalk.green(`Worker ${chalk.white(workerId)} has been evicted!`))
+    this.log(chalk.green(`Worker ${chalk.magentaBright(workerId)} has been evicted!`))
     if (shouldSlash) {
-      this.log(chalk.green(`Worker stake totalling ${chalk.white(formatBalance(groupMember.stake))} has been slashed!`))
+      this.log(
+        chalk.green(`Worker stake totalling ${chalk.magentaBright(formatBalance(groupMember.stake))} has been slashed!`)
+      )
     }
   }
 }

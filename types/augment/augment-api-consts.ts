@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 import type { Vec, u32, u64 } from '@polkadot/types';
+import type { MaxNumber } from './all';
 import type { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
 import type { SessionIndex } from '@polkadot/types/interfaces/session';
 import type { EraIndex } from '@polkadot/types/interfaces/staking';
@@ -31,17 +32,17 @@ declare module '@polkadot/api/types/consts' {
        **/
       existentialDeposit: Balance & AugmentedConst<ApiType>;
     };
+    content: {
+      /**
+       * Exports const -  max number of curators per group
+       **/
+      maxNumberOfCuratorsPerGroup: MaxNumber & AugmentedConst<ApiType>;
+    };
     contentDirectoryWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.
        **/
       maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
-    };
-    dataDirectory: {
-      /**
-       * Maximum objects allowed per inject_data_objects() transaction
-       **/
-      maxObjectsPerInjection: u32 & AugmentedConst<ApiType>;
     };
     finalityTracker: {
       /**
@@ -52,6 +53,21 @@ declare module '@polkadot/api/types/consts' {
        * The number of recent samples to keep from this chain. Default is 101.
        **/
       windowSize: BlockNumber & AugmentedConst<ApiType>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+    };
+    members: {
+      screenedMemberMaxInitialBalance: BalanceOf & AugmentedConst<ApiType>;
+    };
+    operationsWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
     };
     proposalsCodex: {
       /**

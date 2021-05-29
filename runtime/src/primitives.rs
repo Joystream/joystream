@@ -14,6 +14,12 @@ pub type TransactionPriority = u64;
 /// Alias for ContentId, used in various places.
 pub type ContentId = sp_core::H256;
 
+/// Alias for DAOId, used in various places.
+pub type DAOId = u64;
+
+/// Alias for DataObjectTypeId, used in various places.
+pub type DataObjectTypeId = u64;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -40,8 +46,29 @@ pub type Hash = sp_core::H256;
 /// Moment type
 pub type Moment = u64;
 
-/// Credential type
-pub type Credential = u64;
+/// Content Directory Channel identifier.
+pub type ChannelId = u64;
+
+/// Content Directory Channel Category identifier.
+pub type ChannelCategoryId = u64;
+
+/// Content Directory Video identifier.
+pub type VideoId = u64;
+
+/// Content Directory Video Category identifier.
+pub type VideoCategoryId = u64;
+
+/// Content Directory Playlist identifier.
+pub type PlaylistId = u64;
+
+/// Content Directory Person identifier.
+pub type PersonId = u64;
+
+/// Content Directory Series identifier.
+pub type SeriesId = u64;
+
+/// Content Directory Channel transfer request identifier.
+pub type ChannelOwnershipTransferRequestId = u64;
 
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///

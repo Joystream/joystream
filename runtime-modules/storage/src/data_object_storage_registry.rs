@@ -30,7 +30,7 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
 
 use crate::data_directory::{self, ContentIdExists};
-use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
+use crate::*;
 
 const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
@@ -79,7 +79,7 @@ decl_error! {
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectStorageRelationship<T: Trait> {
     /// Content id.
-    pub content_id: <T as data_directory::Trait>::ContentId,
+    pub content_id: <T as common::StorageOwnership>::ContentId,
 
     /// Storge provider id.
     pub storage_provider_id: StorageProviderId<T>,
@@ -111,7 +111,7 @@ decl_storage! {
 decl_event! {
     /// _Data object storage registry_ events
     pub enum Event<T> where
-        <T as data_directory::Trait>::ContentId,
+        <T as common::StorageOwnership>::ContentId,
         <T as Trait>::DataObjectStorageRelationshipId,
         StorageProviderId = StorageProviderId<T>
     {
@@ -124,9 +124,10 @@ decl_event! {
 
         /// Emits on adding of the data object storage relationship.
         /// Params:
+        /// - Id of the storage provider.
         /// - Id of the relationship.
         /// - Current state of the relationship (True=Active).
-        DataObjectStorageRelationshipReadyUpdated(DataObjectStorageRelationshipId, bool),
+        DataObjectStorageRelationshipReadyUpdated(StorageProviderId, DataObjectStorageRelationshipId, bool),
     }
 }
 
@@ -226,7 +227,9 @@ impl<T: Trait> Module<T> {
         // Update DOSR and fire event.
         <Relationships<T>>::insert(id, dosr);
         Self::deposit_event(RawEvent::DataObjectStorageRelationshipReadyUpdated(
-            id, ready,
+            storage_provider_id,
+            id,
+            ready,
         ));
 
         Ok(())

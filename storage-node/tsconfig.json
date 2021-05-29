@@ -9,7 +9,11 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "skipLibCheck": true,
-    "types": ["node", "mocha"]
+    "types": ["node", "mocha"],
+    "paths": {
+      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
+      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
+    }
   },
   "files": [],
   "exclude": ["**/node_modules/*", "build"],

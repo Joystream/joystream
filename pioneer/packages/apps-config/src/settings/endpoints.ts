@@ -31,8 +31,28 @@ function createLive (t: TFunction): LinkOption[] {
   return [
     {
       info: 'joystream',
-      text: t<string>('rpc.joystream', 'Joystream (Current Testnet, hosted by Jsgenesis)', { ns: 'apps-config' }),
+      text: t<string>('rpc.joystream-1', 'Joystream (Europe/Germany - High Availabitliy)', { ns: 'apps-config' }),
       value: 'wss://rome-rpc-endpoint.joystream.org:9944'
+    },
+    {
+      info: 'joystream',
+      text: t<string>('rpc.joystream-2', 'Joystream (JoystreamStats.Live)', { ns: 'apps-config' }),
+      value: 'wss://joystreamstats.live:9945'
+    },
+    {
+      info: 'joystream',
+      text: t<string>('rpc.joystream-3', 'Joystream (Europe/UK)', { ns: 'apps-config' }),
+      value: 'wss://testnet-rpc-3-uk.joystream.org'
+    },
+    {
+      info: 'joystream',
+      text: t<string>('rpc.joystream-4', 'Joystream (US/East)', { ns: 'apps-config' }),
+      value: 'wss://testnet-rpc-1-us.joystream.org'
+    },
+    {
+      info: 'joystream',
+      text: t<string>('rpc.joystream-5', 'Joystream (Singapore)', { ns: 'apps-config' }),
+      value: 'wss://testnet-rpc-2-singapore.joystream.org'
     }
     // {
     //   dnslink: 'polkadot',

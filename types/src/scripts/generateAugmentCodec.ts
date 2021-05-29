@@ -17,12 +17,11 @@ import stake from '../stake'
 import mint from '../mint'
 import recurringRewards from '../recurring-rewards'
 import hiring from '../hiring'
-import contentWorkingGroup from '../content-working-group'
 import workingGroup from '../working-group'
-import discovery from '../discovery'
-import media from '../media'
+import storage from '../storage'
 import proposals from '../proposals'
-import contentDirectory from '../content-directory'
+import content from '../content'
+import legacy from '../legacy'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
 const AUGMENT_CODEC_PATH = path.join(__dirname, '../../augment-codec')
@@ -30,6 +29,7 @@ const EXPORT_ALL_TYPES_FILE_PATH = path.join(AUGMENT_CODEC_PATH, 'all.ts')
 const RELATIVE_TYPES_ROOT_PATH = '..' // @joystream/types/index path relative to AUGMENT_CODEC_PATH
 
 const typesByModule = {
+  'legacy': legacy,
   'common': common,
   'members': members,
   'council': council,
@@ -39,12 +39,10 @@ const typesByModule = {
   'mint': mint,
   'recurring-rewards': recurringRewards,
   'hiring': hiring,
-  'content-working-group': contentWorkingGroup,
   'working-group': workingGroup,
-  'discovery': discovery,
-  'media': media,
+  'storage': storage,
   'proposals': proposals,
-  'content-directory': contentDirectory,
+  'content': content,
 }
 
 type Imports = { [moduleName: string]: string[] }

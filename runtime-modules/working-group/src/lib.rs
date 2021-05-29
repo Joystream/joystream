@@ -214,6 +214,12 @@ decl_event!(
         /// - Role account id of the worker.
         WorkerRoleAccountUpdated(WorkerId, AccountId),
 
+        /// Emits on updating the worker storage role.
+        /// Params:
+        /// - Id of the worker.
+        /// - Raw storage field.
+        WorkerStorageUpdated(WorkerId, Vec<u8>),
+
         /// Emits on updating the reward account of the worker.
         /// Params:
         /// - Member id of the worker.
@@ -317,6 +323,10 @@ decl_storage! {
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
             WorkerId<T> => WorkerOf<T>;
 
+        /// Maps identifier to corresponding worker storage.
+        pub WorkerStorage get(fn worker_storage): map hasher(blake2_128_concat)
+            WorkerId<T> => Vec<u8>;
+
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
 
@@ -325,6 +335,9 @@ decl_storage! {
 
         /// Worker exit rationale text length limits.
         pub WorkerExitRationaleText get(fn worker_exit_rationale_text) : InputValidationLengthConstraint;
+
+        /// Worker storage size upper bound.
+        pub WorkerStorageSize get(fn worker_storage_size) : u16 = default_storage_size_constraint();
 
         /// Map member id by hiring application id.
         /// Required by StakingEventsHandler callback call to refund the balance on unstaking.
@@ -337,11 +350,13 @@ decl_storage! {
         config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_exit_rationale_text_constraint): InputValidationLengthConstraint;
+        config(worker_storage_size_constraint): u16;
         build(|config: &GenesisConfig<T, I>| {
             Module::<T, I>::initialize_working_group(
                 config.opening_human_readable_text_constraint,
                 config.worker_application_human_readable_text_constraint,
                 config.worker_exit_rationale_text_constraint,
+                config.worker_storage_size_constraint,
                 config.working_group_mint_capacity)
         });
     }
@@ -387,6 +402,30 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
+        }
+
+        /// Update the associated role storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_storage(
+            origin,
+            worker_id: WorkerId<T>,
+            storage: Vec<u8>
+        ) {
+
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            Self::ensure_worker_signed(origin, &worker_id)?;
+
+            Self::ensure_worker_role_storage_text_is_valid(&storage)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Complete the role storage update
+            WorkerStorage::<T, I>::insert(worker_id, storage.clone());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
 
         /// Update the reward account associated with a set reward relationship for the active worker.
@@ -1334,11 +1373,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             )
             .map_err(|e| DispatchError::Other(e))
     }
+
+    fn ensure_worker_role_storage_text_is_valid(text: &[u8]) -> DispatchResult {
+        ensure!(
+            text.len() as u16 <= Self::worker_storage_size(),
+            Error::<T, I>::WorkerStorageValueTooLong
+        );
+        Ok(())
+    }
 }
 
 /// Creates default text constraint.
 pub fn default_text_constraint() -> InputValidationLengthConstraint {
     InputValidationLengthConstraint::new(1, 1024)
+}
+
+/// Creates default storage size constraint.
+pub fn default_storage_size_constraint() -> u16 {
+    2048
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
@@ -1493,6 +1545,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         opening_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
+        worker_storage_size_constraint: u16,
         working_group_mint_capacity: minting::BalanceOf<T>,
     ) {
         // Create a mint.
@@ -1510,6 +1563,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             worker_application_human_readable_text_constraint,
         );
         <WorkerExitRationaleText<I>>::put(worker_exit_rationale_text_constraint);
+        <WorkerStorageSize<I>>::put(worker_storage_size_constraint);
+    }
+
+    /// Set storage size constraint
+    pub fn set_worker_storage_size_constraint(worker_storage_size_constraint: u16) {
+        <WorkerStorageSize<I>>::put(worker_storage_size_constraint);
     }
 
     // Set worker id as a leader id.

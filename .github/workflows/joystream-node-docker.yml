@@ -24,7 +24,7 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v1
         with:
-          version: latest
+          node-version: '14.x'
 
       - id: compute_shasum
         name: Compute runtime code shasum

@@ -32,6 +32,6 @@ export default class ApiSetUri extends ApiCommandBase {
     } else {
       newUri = await this.promptForApiUri()
     }
-    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.white(newUri))
+    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.magentaBright(newUri))
   }
 }

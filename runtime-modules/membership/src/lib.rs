@@ -10,21 +10,17 @@ pub(crate) mod mock;
 mod tests;
 
 use codec::{Codec, Decode, Encode};
-use frame_support::traits::Currency;
-use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::{Currency, Get, LockableCurrency, WithdrawReason};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{BaseArithmetic, One};
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, Member, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
 use common::currency::{BalanceOf, GovernanceCurrency};
-
-//TODO: Convert errors to the Substrate decl_error! macro.
-/// Result with string error message. This exists for backward compatibility purpose.
-pub type DispatchResult = Result<(), &'static str>;
-
 pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -65,6 +61,10 @@ pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Tr
         + MaybeSerialize
         + PartialEq
         + Ord;
+
+    /// The maximum amount of initial funds that may be endowed to new members added by
+    /// screening authority. If set to zero, no initial balance can be given.
+    type ScreenedMemberMaxInitialBalance: Get<BalanceOf<Self>>;
 }
 
 const FIRST_PAID_TERMS_ID: u8 = 1;
@@ -133,7 +133,7 @@ struct ValidatedUserInfo {
     about: Vec<u8>,
 }
 
-#[derive(Encode, Decode, Debug, PartialEq)]
+#[derive(Encode, Decode, Debug, PartialEq, Eq, Clone)]
 pub enum EntryMethod<PaidTermId, AccountId> {
     Paid(PaidTermId),
     Screening(AccountId),
@@ -245,8 +245,9 @@ decl_event! {
     pub enum Event<T> where
       <T as frame_system::Trait>::AccountId,
       <T as Trait>::MemberId,
+      <T as Trait>::PaidTermId,
     {
-        MemberRegistered(MemberId, AccountId),
+        MemberRegistered(MemberId, AccountId, EntryMethod<PaidTermId, AccountId>),
         MemberUpdatedAboutText(MemberId),
         MemberUpdatedAvatar(MemberId),
         MemberUpdatedHandle(MemberId),
@@ -257,7 +258,12 @@ decl_event! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error<T>;
+
         fn deposit_event() = default;
+
+        const ScreenedMemberMaxInitialBalance: BalanceOf<T> = T::ScreenedMemberMaxInitialBalance::get();
 
         /// Non-members can buy membership
         #[weight = 10_000_000] // TODO: adjust weight
@@ -271,13 +277,13 @@ decl_module! {
             let who = ensure_signed(origin)?;
 
             // make sure we are accepting new memberships
-            ensure!(Self::new_memberships_allowed(), "new members not allowed");
+            ensure!(Self::new_memberships_allowed(), Error::<T>::NewMembershipsNotAllowed);
 
             // ensure paid_terms_id is active
             let terms = Self::ensure_active_terms_id(paid_terms_id)?;
 
             // ensure enough free balance to cover terms fees
-            ensure!(T::Currency::can_slash(&who, terms.fee), "not enough balance to buy membership");
+            ensure!(T::Currency::can_slash(&who, terms.fee), Error::<T>::NotEnoughBalanceToBuyMembership);
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
@@ -292,7 +298,7 @@ decl_module! {
 
             let _ = T::Currency::slash(&who, terms.fee);
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, who, EntryMethod::Paid(paid_terms_id)));
         }
 
         /// Change member's about text
@@ -302,7 +308,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member about text");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             Self::_change_member_about_text(member_id, &text)?;
         }
@@ -314,7 +320,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member avatar");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             Self::_change_member_avatar(member_id, &uri)?;
         }
@@ -327,7 +333,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member handle");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             Self::_change_member_handle(member_id, handle)?;
         }
@@ -345,7 +351,7 @@ decl_module! {
 
             let membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.controller_account == sender, "only controller account can update member info");
+            ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             if let Some(uri) = avatar_uri {
                 Self::_change_member_avatar(member_id, &uri)?;
@@ -364,7 +370,7 @@ decl_module! {
 
             let mut membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.root_account == sender, "only root account can set new controller account");
+            ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
             // only update if new_controller_account is different than current one
             if membership.controller_account != new_controller_account {
@@ -388,7 +394,7 @@ decl_module! {
 
             let mut membership = Self::ensure_membership(member_id)?;
 
-            ensure!(membership.root_account == sender, "only root account can set new root account");
+            ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
             // only update if new root account is different than current one
             if membership.root_account != new_root_account {
@@ -406,22 +412,27 @@ decl_module! {
             }
         }
 
+        /// Screened members are awarded a initial locked balance that can only be slashed or used
+        /// for fees, and is not transferable. The screening authority must ensure that the provided
+        /// new_member_account was verified to avoid applying locks arbitrarily to accounts not controlled
+        /// by the member.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_screened_member(
             origin,
             new_member_account: T::AccountId,
             handle: Option<Vec<u8>>,
             avatar_uri: Option<Vec<u8>>,
-            about: Option<Vec<u8>>
+            about: Option<Vec<u8>>,
+            initial_balance: Option<BalanceOf<T>>,
         ) {
             // ensure sender is screening authority
             let sender = ensure_signed(origin)?;
 
             if <ScreeningAuthority<T>>::exists() {
-                ensure!(sender == Self::screening_authority(), "not screener");
+                ensure!(sender == Self::screening_authority(), Error::<T>::NotScreeningAuthority);
             } else {
                 // no screening authority defined. Cannot accept this request
-                return Err("no screening authority defined".into());
+                return Err(Error::<T>::NoScreeningAuthorityDefined.into());
             }
 
             // make sure we are accepting new memberships
@@ -429,16 +440,50 @@ decl_module! {
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
+            if let Some(initial_balance) = initial_balance {
+                ensure!(
+                    T::ScreenedMemberMaxInitialBalance::get() >= initial_balance,
+                    Error::<T>::InitialBalanceExceedsMaxInitialBalance
+                );
+
+                // Only allow "new" accounts with 0 balance
+                ensure!(
+                    T::Currency::free_balance(&new_member_account).is_zero(),
+                    Error::<T>::OnlyNewAccountsCanBeUsedForScreenedMembers
+                );
+
+                ensure!(
+                    frame_system::Module::<T>::account_nonce(&new_member_account).is_zero(),
+                    Error::<T>::OnlyNewAccountsCanBeUsedForScreenedMembers
+                );
+
+                // Check account nonce
+
+                // Set a lock to prevent transfers of the amount that will be endowed
+                T::Currency::set_lock(
+                    *b"faucet00",
+                    &new_member_account,
+                    initial_balance,
+                    WithdrawReason::Transfer.into(),
+                );
+
+                // Endow the new member account with an amount to get started
+                T::Currency::deposit_creating(&new_member_account, initial_balance);
+            };
+
+            let entry_method = EntryMethod::Screening(sender);
+
+            // cannot fail because of prior check_user_registration_info
             let member_id = Self::insert_member(
                 &new_member_account,
                 &new_member_account,
                 &user_info,
-                EntryMethod::Screening(sender),
+                entry_method.clone(),
                 <frame_system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
             )?;
 
-            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
+            Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account, entry_method));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -472,11 +517,11 @@ pub enum MemberRootAccountMismatch {
 
 impl<T: Trait> Module<T> {
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, &'static str> {
+    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         if <MembershipById<T>>::contains_key(&id) {
             Ok(Self::membership(&id))
         } else {
-            Err("member profile not found")
+            Err(Error::<T>::MemberProfileNotFound)
         }
     }
 
@@ -506,37 +551,37 @@ impl<T: Trait> Module<T> {
 
     fn ensure_active_terms_id(
         terms_id: T::PaidTermId,
-    ) -> Result<PaidMembershipTerms<BalanceOf<T>>, &'static str> {
+    ) -> Result<PaidMembershipTerms<BalanceOf<T>>, Error<T>> {
         let active_terms = Self::active_paid_membership_terms();
         ensure!(
             active_terms.iter().any(|&id| id == terms_id),
-            "paid terms id not active"
+            Error::<T>::PaidTermIdNotActive
         );
 
         if <PaidMembershipTermsById<T>>::contains_key(terms_id) {
             Ok(Self::paid_membership_terms_by_id(terms_id))
         } else {
-            Err("paid membership term id does not exist")
+            Err(Error::<T>::PaidTermIdNotFound)
         }
     }
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
-    fn ensure_unique_handle(handle: &Vec<u8>) -> DispatchResult {
+    fn ensure_unique_handle(handle: &Vec<u8>) -> Result<(), Error<T>> {
         ensure!(
             !<MemberIdByHandle<T>>::contains_key(handle),
-            "handle already registered"
+            Error::<T>::HandleAlreadyRegistered
         );
         Ok(())
     }
 
-    fn validate_handle(handle: &[u8]) -> DispatchResult {
+    fn validate_handle(handle: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             handle.len() >= Self::min_handle_length() as usize,
-            "handle too short"
+            Error::<T>::HandleTooShort
         );
         ensure!(
             handle.len() <= Self::max_handle_length() as usize,
-            "handle too long"
+            Error::<T>::HandleTooLong
         );
         Ok(())
     }
@@ -547,10 +592,10 @@ impl<T: Trait> Module<T> {
         text
     }
 
-    fn validate_avatar(uri: &[u8]) -> DispatchResult {
+    fn validate_avatar(uri: &[u8]) -> Result<(), Error<T>> {
         ensure!(
             uri.len() <= Self::max_avatar_uri_length() as usize,
-            "avatar uri too long"
+            Error::<T>::AvatarUriTooLong
         );
         Ok(())
     }
@@ -560,9 +605,9 @@ impl<T: Trait> Module<T> {
         handle: Option<Vec<u8>>,
         avatar_uri: Option<Vec<u8>>,
         about: Option<Vec<u8>>,
-    ) -> Result<ValidatedUserInfo, &'static str> {
+    ) -> Result<ValidatedUserInfo, Error<T>> {
         // Handle is required during registration
-        let handle = handle.ok_or("handle must be provided during registration")?;
+        let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
         Self::validate_handle(&handle)?;
 
         let about = Self::validate_text(&about.unwrap_or_default());
@@ -583,7 +628,7 @@ impl<T: Trait> Module<T> {
         entry_method: EntryMethod<T::PaidTermId, T::AccountId>,
         registered_at_block: T::BlockNumber,
         registered_at_time: T::Moment,
-    ) -> Result<T::MemberId, &'static str> {
+    ) -> Result<T::MemberId, Error<T>> {
         Self::ensure_unique_handle(&user_info.handle)?;
 
         let new_member_id = Self::members_created();
@@ -695,5 +740,61 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+}
+
+decl_error! {
+    /// Membership module predefined errors
+    pub enum Error for Module<T: Trait> {
+        /// New memberships not allowed.
+        NewMembershipsNotAllowed,
+
+        /// A screening authority is not defined.
+        NoScreeningAuthorityDefined,
+
+        /// Origin is not the screeing authority.
+        NotScreeningAuthority,
+
+        /// Not enough balance to buy membership.
+        NotEnoughBalanceToBuyMembership,
+
+        /// Screening authority attempting to endow more that maximum allowed.
+        InitialBalanceExceedsMaxInitialBalance,
+
+        /// Only new accounts can be used for screened members.
+        OnlyNewAccountsCanBeUsedForScreenedMembers,
+
+        /// Controller account required.
+        ControllerAccountRequired,
+
+        /// Root account required.
+        RootAccountRequired,
+
+        /// Invalid origin.
+        UnsignedOrigin,
+
+        /// Member profile not found (invalid member id).
+        MemberProfileNotFound,
+
+        /// Handle already registered.
+        HandleAlreadyRegistered,
+
+        /// Handle must be provided during registration.
+        HandleMustBeProvidedDuringRegistration,
+
+        /// Handle too short.
+        HandleTooShort,
+
+        /// Handle too long.
+        HandleTooLong,
+
+        /// Avatar url is too long.
+        AvatarUriTooLong,
+
+        /// Paid term id not found.
+        PaidTermIdNotFound,
+
+        /// Paid term id not active.
+        PaidTermIdNotActive,
     }
 }

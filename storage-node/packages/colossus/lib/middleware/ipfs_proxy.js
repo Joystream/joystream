@@ -26,23 +26,15 @@ const pathFilter = function (path, req) {
   return path.match('^/asset/v0') && (req.method === 'GET' || req.method === 'HEAD')
 }
 
-const createPathRewriter = (resolve) => {
+const createPathRewriter = () => {
   return async (_path, req) => {
-    // we expect the handler was used in openapi/express path with an id in the path:
-    // "/asset/v0/:id"
-    // TODO: catch and deal with hash == undefined if content id not found
-    const contentId = req.params.id
-    const hash = await resolve(contentId)
+    const hash = req.params.ipfs_content_id
     return `/ipfs/${hash}`
   }
 }
 
-const createResolver = (storage) => {
-  return async (id) => await storage.resolveContentIdWithTimeout(5000, id)
-}
-
-const createProxy = (storage, ipfsHttpGatewayUrl) => {
-  const pathRewrite = createPathRewriter(createResolver(storage))
+const createProxy = (ipfsHttpGatewayUrl) => {
+  const pathRewrite = createPathRewriter()
 
   return createProxyMiddleware(pathFilter, {
     // Default path to local IPFS HTTP GATEWAY

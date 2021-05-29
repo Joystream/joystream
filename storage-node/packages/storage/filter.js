@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:storage:filter')
 
-const DEFAULT_MAX_FILE_SIZE = 2000 * 1024 * 1024
+const DEFAULT_MAX_FILE_SIZE = 10000 * 1024 * 1024
 const DEFAULT_ACCEPT_TYPES = ['video/*', 'audio/*', 'image/*']
 const DEFAULT_REJECT_TYPES = []
 
@@ -94,13 +94,15 @@ function mimeMatchesAny(accept, reject, provided) {
 function filterFunc(config, headers, mimeType) {
   const filter = configDefaults(config)
 
+  const size = contentLengthFromHeaders(headers)
+
   // Enforce maximum file upload size
   if (filter.max_size) {
-    const size = parseInt(headers['content-length'], 10)
     if (!size) {
       return {
         code: 411,
         message: 'A Content-Length header is required.',
+        content_length: size,
       }
     }
 
@@ -108,21 +110,34 @@ function filterFunc(config, headers, mimeType) {
       return {
         code: 413,
         message: 'The provided Content-Length is too large.',
+        content_length: size,
       }
     }
   }
 
   // Enforce mime type based filtering
-  if (!mimeMatchesAny(filter.mime.accept, filter.mime.reject, mimeType)) {
+  if (mimeType && !mimeMatchesAny(filter.mime.accept, filter.mime.reject, mimeType)) {
     return {
       code: 415,
       message: 'Content has an unacceptable MIME type.',
+      content_length: size,
     }
   }
 
   return {
     code: 200,
+    content_length: size,
   }
+}
+
+function contentLengthFromHeaders(headers) {
+  const content_length = headers['content-length']
+
+  if (!content_length) {
+    return null
+  }
+
+  return parseInt(content_length, 10)
 }
 
 module.exports = filterFunc

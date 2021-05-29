@@ -731,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "3.1.0"
+version = "3.1.1"
 dependencies = [
  "ansi_term 0.12.1",
  "enum-utils",
@@ -2332,7 +2332,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "5.1.0"
+version = "5.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2393,7 +2393,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "9.3.0"
+version = "9.7.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2407,8 +2407,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-common",
- "pallet-content-directory",
- "pallet-content-working-group",
+ "pallet-content",
  "pallet-finality-tracker",
  "pallet-forum",
  "pallet-governance",
@@ -2424,7 +2423,6 @@ dependencies = [
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
  "pallet-recurring-reward",
- "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
  "pallet-stake",
@@ -2437,8 +2435,6 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
- "pallet-versioned-store",
- "pallet-versioned-store-permissions",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -3816,42 +3812,22 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
+ "sp-arithmetic",
  "sp-runtime",
+ "sp-std",
  "strum 0.19.5",
  "strum_macros 0.19.4",
 ]
 
 [[package]]
-name = "pallet-content-directory"
-version = "3.1.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-content-working-group"
+name = "pallet-content"
 version = "3.1.1"
 dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
  "pallet-timestamp",
- "pallet-token-mint",
- "pallet-versioned-store",
- "pallet-versioned-store-permissions",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4140,29 +4116,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-service-discovery"
-version = "3.1.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-hiring",
- "pallet-membership",
- "pallet-recurring-reward",
- "pallet-stake",
- "pallet-timestamp",
- "pallet-token-mint",
- "pallet-working-group",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-session"
 version = "2.0.1"
 source = "git+https://github.com/paritytech/substrate.git?rev=2cd20966cc09b059817c3ebe12fc130cdd850d62#2cd20966cc09b059817c3ebe12fc130cdd850d62"
@@ -4375,40 +4328,6 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-versioned-store"
-version = "3.1.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-common",
- "pallet-timestamp",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-versioned-store-permissions"
-version = "3.1.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-common",
- "pallet-timestamp",
- "pallet-versioned-store",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
  "sp-core",
  "sp-io",
  "sp-runtime",

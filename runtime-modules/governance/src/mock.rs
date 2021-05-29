@@ -71,12 +71,18 @@ impl election::Trait for Test {
 
     type CouncilElected = (Council,);
 }
+
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl membership::Trait for Test {
     type Event = ();
     type MemberId = u64;
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 impl minting::Trait for Test {
     type Currency = Balances;

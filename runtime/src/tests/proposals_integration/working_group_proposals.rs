@@ -12,7 +12,8 @@ use working_group::{OpeningPolicyCommitment, RewardPolicy};
 
 use crate::{
     Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
-    StorageWorkingGroup, StorageWorkingGroupInstance,
+    GatewayWorkingGroup, GatewayWorkingGroupInstance, OperationsWorkingGroup,
+    OperationsWorkingGroupInstance, StorageWorkingGroup, StorageWorkingGroupInstance,
 };
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -49,6 +50,22 @@ fn add_opening(
             assert!(!<working_group::OpeningById<
                 Runtime,
                 StorageWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::Operations => {
+            let opening_id = OperationsWorkingGroup::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                OperationsWorkingGroupInstance,
+            >>::contains_key(opening_id));
+            opening_id
+        }
+        WorkingGroup::Gateway => {
+            let opening_id = GatewayWorkingGroup::next_opening_id();
+            assert!(!<working_group::OpeningById<
+                Runtime,
+                GatewayWorkingGroupInstance,
             >>::contains_key(opening_id));
             opening_id
         }
@@ -330,6 +347,18 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
                     StorageWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Operations => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Gateway => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    GatewayWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 }
@@ -386,6 +415,18 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
                 run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
                 Runtime,
                 StorageWorkingGroupInstance,
+            >(group);
+            }
+            WorkingGroup::Operations => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                OperationsWorkingGroupInstance,
+            >(group);
+            }
+            WorkingGroup::Gateway => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                GatewayWorkingGroupInstance,
             >(group);
             }
         }
@@ -468,6 +509,18 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     StorageWorkingGroupInstance,
                 >(group);
             }
+            WorkingGroup::Operations => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    OperationsWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Gateway => {
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    GatewayWorkingGroupInstance,
+                >(group);
+            }
         }
     }
 
@@ -543,6 +596,18 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
                         StorageWorkingGroupInstance,
+                    >(group);
+                }
+                WorkingGroup::Operations => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstance,
+                    >(group);
+                }
+                WorkingGroup::Gateway => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        GatewayWorkingGroupInstance,
                     >(group);
                 }
             }
@@ -660,6 +725,18 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     run_create_slash_group_leader_stake_proposal_execution_succeeds::<
                         Runtime,
                         StorageWorkingGroupInstance,
+                    >(group)
+                }
+                WorkingGroup::Operations => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstance,
+                    >(group)
+                }
+                WorkingGroup::Gateway => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        GatewayWorkingGroupInstance,
                     >(group)
                 }
             }
@@ -780,6 +857,18 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                         StorageWorkingGroupInstance,
                     >(group);
                 }
+                WorkingGroup::Operations => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        OperationsWorkingGroupInstance,
+                    >(group);
+                }
+                WorkingGroup::Gateway => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        GatewayWorkingGroupInstance,
+                    >(group);
+                }
             }
         }
 
@@ -834,6 +923,18 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                         run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
                             Runtime,
                             StorageWorkingGroupInstance,
+                        >(group);
+                    }
+                    WorkingGroup::Operations => {
+                        run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstance,
+                        >(group);
+                    }
+                    WorkingGroup::Gateway => {
+                        run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                            Runtime,
+                            GatewayWorkingGroupInstance,
                         >(group);
                     }
                 }
@@ -959,6 +1060,18 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                             StorageWorkingGroupInstance,
                         >(group);
                     }
+                    WorkingGroup::Operations => {
+                        run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                            Runtime,
+                            OperationsWorkingGroupInstance,
+                        >(group);
+                    }
+                    WorkingGroup::Gateway => {
+                        run_create_terminate_group_leader_role_proposal_execution_succeeds::<
+                            Runtime,
+                            GatewayWorkingGroupInstance,
+                        >(group);
+                    }
                 }
             }
         }
@@ -1077,6 +1190,12 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                     }
                     WorkingGroup::Storage => {
                         run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, StorageWorkingGroupInstance>(group);
+                    }
+                    WorkingGroup::Operations => {
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, OperationsWorkingGroupInstance>(group);
+                    }
+                    WorkingGroup::Gateway => {
+                        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds::<Runtime, GatewayWorkingGroupInstance>(group);
                     }
                 }
             }

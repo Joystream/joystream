@@ -242,27 +242,12 @@ fn genesis_constructor(
         .map(|path| forum_config::from_json(sudo_account.clone(), path.as_path()))
         .unwrap_or_else(|| forum_config::empty(sudo_account.clone()));
 
-    let (
-        versioned_store_cfg,
-        versioned_store_permissions_cfg,
-        data_directory_config,
-        content_working_group_config,
-    ) = if let Some(path) = initial_content_path {
+    let data_directory_config = if let Some(path) = initial_content_path {
         let path = path.as_path();
 
-        (
-            content_config::versioned_store_config_from_json(path),
-            content_config::versioned_store_permissions_config_from_json(path),
-            content_config::data_directory_config_from_json(path),
-            content_config::content_working_group_config_from_json(path),
-        )
+        content_config::data_directory_config_from_json(path)
     } else {
-        (
-            content_config::empty_versioned_store_config(),
-            content_config::empty_versioned_store_permissions_config(),
-            content_config::empty_data_directory_config(),
-            content_config::empty_content_working_group_config(),
-        )
+        content_config::empty_data_directory_config()
     };
 
     let initial_account_balances = initial_balances_path
@@ -283,10 +268,7 @@ fn genesis_constructor(
         proposals_cfg,
         members,
         forum_cfg,
-        versioned_store_cfg,
-        versioned_store_permissions_cfg,
         data_directory_config,
-        content_working_group_config,
         initial_account_balances,
     )
 }

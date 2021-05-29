@@ -33,7 +33,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
     const workerId = parseInt(args.workerId)
     const groupMember = await this.getWorkerWithStakeForLeadAction(workerId)
 
-    this.log(chalk.white('Current worker stake: ', formatBalance(groupMember.stake)))
+    this.log(chalk.magentaBright('Current worker stake: ', formatBalance(groupMember.stake)))
     const balanceValidator = minMaxInt(1, groupMember.stake.toNumber())
     const balance = (await this.promptForParam(
       'Balance',
@@ -46,8 +46,8 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
 
     this.log(
       chalk.green(
-        `${chalk.white(formatBalance(balance))} from worker ${chalk.white(workerId)} stake ` +
-          `has been returned to worker's role account (${chalk.white(groupMember.roleAccount.toString())})!`
+        `${chalk.magentaBright(formatBalance(balance))} from worker ${chalk.magentaBright(workerId)} stake ` +
+          `has been returned to worker's role account (${chalk.magentaBright(groupMember.roleAccount.toString())})!`
       )
     )
   }

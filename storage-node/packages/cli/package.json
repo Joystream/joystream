@@ -24,15 +24,15 @@
     "linux"
   ],
   "engines": {
-    "node": ">=12.18.0"
+    "node": ">=14.0.0"
   },
   "volta": {
-    "extends": "../package.json"
+    "extends": "../../package.json"
   },
   "scripts": {
     "test": "mocha 'dist/test/**/*.js'",
     "lint": "eslint --ext .js,.ts . && tsc --noEmit --pretty",
-    "build": "tsc --build"
+    "build": "(rm tsconfig.tsbuildinfo || :) && tsc --build"
   },
   "bin": {
     "storage-cli": "./bin/cli.js"
@@ -45,10 +45,9 @@
   },
   "dependencies": {
     "@joystream/storage-runtime-api": "^0.1.0",
-    "@joystream/service-discovery": "^0.1.0",
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.15.0",
-    "axios": "^0.19.2",
+    "@joystream/types": "^0.16.1",
+    "axios": "^0.21.1",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "meow": "^5.0.0",

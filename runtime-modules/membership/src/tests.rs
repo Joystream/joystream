@@ -2,6 +2,7 @@
 
 use super::genesis;
 use super::mock::*;
+use crate::*;
 
 use frame_support::*;
 
@@ -11,12 +12,6 @@ fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     } else {
         panic!("member profile not created");
     }
-}
-
-fn assert_dispatch_error_message(result: Result<(), &'static str>, expected_message: &'static str) {
-    assert!(result.is_err());
-    let message = result.err().unwrap();
-    assert_eq!(message, expected_message);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -149,9 +144,9 @@ fn buy_membership_fails_without_enough_balance() {
             let initial_balance = DEFAULT_FEE - 1;
             set_alice_free_balance(initial_balance);
 
-            assert_dispatch_error_message(
+            assert_err!(
                 buy_default_membership_as_alice(),
-                "not enough balance to buy membership",
+                Error::<Test>::NotEnoughBalanceToBuyMembership,
             );
         });
 }
@@ -173,9 +168,9 @@ fn new_memberships_allowed_flag() {
 
             crate::NewMembershipsAllowed::put(false);
 
-            assert_dispatch_error_message(
+            assert_err!(
                 buy_default_membership_as_alice(),
-                "new members not allowed",
+                Error::<Test>::NewMembershipsNotAllowed,
             );
         });
 }
@@ -200,9 +195,9 @@ fn unique_handles() {
             <crate::MemberIdByHandle<Test>>::insert(get_alice_info().handle.unwrap(), 1);
 
             // should not be allowed to buy membership with that handle
-            assert_dispatch_error_message(
+            assert_err!(
                 buy_default_membership_as_alice(),
-                "handle already registered",
+                Error::<Test>::HandleAlreadyRegistered,
             );
         });
 }
@@ -253,6 +248,7 @@ fn add_screened_member() {
             <crate::ScreeningAuthority<Test>>::put(&screening_authority);
 
             let next_member_id = Members::members_created();
+            let endownment = ScreenedMemberMaxInitialBalance::get() - 1;
 
             let info = get_alice_info();
             assert_ok!(Members::add_screened_member(
@@ -260,7 +256,8 @@ fn add_screened_member() {
                 ALICE_ACCOUNT_ID,
                 info.handle,
                 info.avatar_uri,
-                info.about
+                info.about,
+                Some(endownment),
             ));
 
             let profile = get_membership_by_id(next_member_id);
@@ -272,6 +269,26 @@ fn add_screened_member() {
                 crate::EntryMethod::Screening(screening_authority),
                 profile.entry
             );
+            assert_eq!(Balances::free_balance(ALICE_ACCOUNT_ID), endownment);
+
+            // Transfer should fail because of balance lock
+            assert_err!(
+                Balances::transfer(Origin::signed(ALICE_ACCOUNT_ID), screening_authority, 1),
+                balances::Error::<Test, _>::LiquidityRestrictions
+            );
+
+            // .. but we should be able to slash
+            assert!(Balances::can_slash(&ALICE_ACCOUNT_ID, 1));
+
+            // Deposit more funds to have a surplus above lock limit
+            let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, 10);
+
+            // If free balance above lock limit, transfers should be possible
+            assert_ok!(Balances::transfer(
+                Origin::signed(ALICE_ACCOUNT_ID),
+                screening_authority,
+                1
+            ));
         });
 }
 

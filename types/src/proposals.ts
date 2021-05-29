@@ -8,7 +8,7 @@ import { RoleParameters } from './roles'
 import { StakeId } from './stake'
 import { ElectionParameters } from './council'
 import { ActivateOpeningAt, OpeningId, ApplicationId } from './hiring'
-import { WorkingGroupOpeningPolicyCommitment, WorkerId, RewardPolicy } from './working-group'
+import { OpeningPolicyCommitment, WorkerId, RewardPolicy } from './working-group'
 
 export type IVotingResults = {
   abstensions: u32
@@ -82,7 +82,8 @@ export type IActiveStake = {
   stake_id: StakeId
   source_account_id: AccountId
 }
-export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
+export class ActiveStake
+  extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({
@@ -203,7 +204,7 @@ export class DiscussionPost extends JoyStructDecorated({
 
 export type IAddOpeningParameters = {
   activate_at: ActivateOpeningAt
-  commitment: WorkingGroupOpeningPolicyCommitment
+  commitment: OpeningPolicyCommitment
   human_readable_text: Bytes
   working_group: WorkingGroup
 }
@@ -211,7 +212,7 @@ export type IAddOpeningParameters = {
 export class AddOpeningParameters
   extends JoyStructDecorated({
     activate_at: ActivateOpeningAt,
-    commitment: WorkingGroupOpeningPolicyCommitment,
+    commitment: OpeningPolicyCommitment,
     human_readable_text: Bytes,
     working_group: WorkingGroup,
   })

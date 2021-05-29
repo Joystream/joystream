@@ -30,7 +30,10 @@
     "linux"
   ],
   "engines": {
-    "node": ">=12.18.0"
+    "node": ">=14.0.0"
+  },
+  "volta": {
+    "extends": "../../package.json"
   },
   "scripts": {
     "test": "mocha 'test/**/*.js'",

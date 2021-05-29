@@ -156,7 +156,9 @@ fn test_toggle_ready() {
             System::events().last().unwrap().event,
             MetaEvent::data_object_storage_registry(
                 data_object_storage_registry::RawEvent::DataObjectStorageRelationshipReadyUpdated(
-                    dosr_id, true,
+                    storage_provider_id,
+                    dosr_id,
+                    true,
                 )
             )
         );
