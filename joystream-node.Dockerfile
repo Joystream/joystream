@@ -26,14 +26,6 @@ COPY --from=builder /joystream/target/release/joystream-node /joystream/node
 COPY --from=builder /joystream/target/release/chain-spec-builder /joystream/chain-spec-builder
 COPY --from=builder /joystream/target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm /joystream/runtime.compact.wasm
 
-COPY --from=builder /joystream/target/aarch64-unknown-linux-gnu/release/joystream-node /joystream/node
-COPY --from=builder /joystream/target/aarch64-unknown-linux-gnu/release/chain-spec-builder /joystream/chain-spec-builder
-COPY --from=builder /joystream/target/aarch64-unknown-linux-gnu/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm /joystream/runtime.compact.wasm
-
-COPY --from=builder /joystream/target/arm-unknown-linux-gnueabihf/release/joystream-node /joystream/node
-COPY --from=builder /joystream/target/arm-unknown-linux-gnueabihf/release/chain-spec-builder /joystream/chain-spec-builder
-COPY --from=builder /joystream/target/arm-unknown-linux-gnueabihf/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm /joystream/runtime.compact.wasm
-
 # confirm it works
 RUN /joystream/node --version
 
