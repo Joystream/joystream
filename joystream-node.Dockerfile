@@ -5,7 +5,7 @@ RUN rustup default nightly-2021-03-24
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
 RUN rustup component add --toolchain nightly-2021-03-24 clippy
 RUN apt-get update && \
-  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev-i386
+  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev
 
 FROM rust AS builder
 LABEL description="Compiles all workspace artifacts"
