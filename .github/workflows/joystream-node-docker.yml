@@ -66,7 +66,7 @@ jobs:
         run: |
           if ! [ -f joystream-node-docker-image.tar.gz ]; then
             docker buildx build . --file joystream-node.Dockerfile --tag joystream/node \
-              --platform linux/amd64,linux/arm/v7,linux/arm64 --load
+              --platform linux/amd64,linux/arm64 --load
             docker save --output joystream-node-docker-image.tar joystream/node
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
