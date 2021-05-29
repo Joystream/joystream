@@ -2,22 +2,13 @@
 
 - name: Get latest Joystream code and build it
   hosts: all
-  vars:
-    # branch_name can be sha1, tag, branch
-    branch_name: "master"
   tasks:
-    - name: Creat bash profile file
-      command: "touch /home/ubuntu/.bash_profile"
-    - name: Git checkout
-      ansible.builtin.git:
-        repo: 'https://github.com/Joystream/joystream.git'
-        dest: ~/joystream
-        version: "{{ branch_name }}"
-    - name: Run setup script
-      command: ./setup.sh
-      args:
-        chdir: ~/joystream
-    - name: Build joystream node
-      shell: . ~/.bash_profile && yarn cargo-build
-      args:
-        chdir: ~/joystream
+    - name: Get code from local or git repo
+      include_role:
+        name: common
+        tasks_from: "{{ 'get-code-local' if build_local_code|bool else 'get-code-git' }}"
+
+    - name: Run setup and build
+      include_role:
+        name: common
+        tasks_from: run-setup-build

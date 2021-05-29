@@ -6,17 +6,17 @@ from ansible.module_utils.basic import AnsibleModule
 
 def main():
     fields = {
-        "change_spec_path": {"required": True, "type": "str"},
+        "chain_spec_path": {"required": True, "type": "str"},
         "file_content": {"required": False, "type": "str" },
         "prefix": {"required": False, "type": "str" },
         "all_nodes": {"required": False, "type": "dict" }
     }
     module = AnsibleModule(argument_spec=fields)
     prefix = module.params["prefix"]
-    change_spec_path = module.params["change_spec_path"]
+    chain_spec_path = module.params["chain_spec_path"]
     all_nodes = module.params["all_nodes"]
 
-    with open(change_spec_path) as f:
+    with open(chain_spec_path) as f:
         data = json.load(f)
 
     response = {
@@ -34,7 +34,7 @@ def main():
     response["bootNodes"] = boot_node_list
 
     data.update(response)
-    with open(change_spec_path, 'w') as outfile:
+    with open(chain_spec_path, 'w') as outfile:
         json.dump(data, outfile, indent=4)
     module.exit_json(changed=False, result=response)
 
