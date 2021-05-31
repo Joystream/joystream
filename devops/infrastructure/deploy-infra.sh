@@ -2,7 +2,14 @@
 
 set -e
 
-source bash-config.cfg
+if [ -z "$1" ]; then
+  echo "ERROR: Configuration file not passed"
+  echo "Please use ./deploy-infra.sh PATH/TO/CONFIG to run this script"
+  exit 1
+else
+  echo "Using $1 file for config"
+  source $1
+fi
 
 ACCOUNT_ID=$(aws sts get-caller-identity --profile $CLI_PROFILE --query Account --output text)
 
@@ -34,8 +41,7 @@ aws cloudformation deploy \
   --parameter-overrides \
     EC2InstanceType=$EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
-    EC2AMI=$EC2_AMI_ID \
-    CreateAdminServer=$CREATE_ADMIN_SERVER
+    EC2AMI=$EC2_AMI_ID
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then
@@ -49,18 +55,14 @@ if [ $? -eq 0 ]; then
     --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}RPCPublicIp')].Value" \
     --output text | sed 's/\t\t*/\n/g')
 
-  if [ "$CREATE_ADMIN_SERVER" = true ] ; then
-    ADMIN_SERVER=$(aws cloudformation list-exports \
-      --profile $CLI_PROFILE \
-      --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}AdminPublicIp')].Value" \
-      --output text | sed 's/\t\t*/\n/g')
-    ADMIN_INVENTORY="[admin]\n$ADMIN_SERVER\n\n"
-    HOST="admin"
-  fi
+  BUILD_SERVER=$(aws cloudformation list-exports \
+    --profile $CLI_PROFILE \
+    --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}BuildPublicIp')].Value" \
+    --output text | sed 's/\t\t*/\n/g')
 
   mkdir -p $DATA_PATH
 
-  echo -e "$ADMIN_INVENTORY[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
+  echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
   if [ -z "$EC2_AMI_ID" ]
   then
@@ -68,11 +70,11 @@ if [ $? -eq 0 ]; then
     ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE"
   fi
 
-  echo -e "\n\n=========== Configuring the Admin server ==========="
+  echo -e "\n\n=========== Configuring the Build server ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-admin.yml \
-    --extra-vars "local_dir=$LOCAL_CODE_PATH run_on_admin_server=$CREATE_ADMIN_SERVER build_local_code=$BUILD_LOCAL_CODE"
+    --extra-vars "local_dir=$LOCAL_CODE_PATH build_local_code=$BUILD_LOCAL_CODE"
 
   echo -e "\n\n=========== Configuring the chain spec file ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-configuration.yml \
-    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME run_on_admin_server=$CREATE_ADMIN_SERVER"
+    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME"
 fi

@@ -1,8 +1,8 @@
 ---
-# Setup Admin server, copy code, install subkey
+# Setup Build server install subkey
 
-- name: Setup Admin server, install subkey
-  hosts: admin
+- name: Setup build server, install subkey
+  hosts: build
 
   roles:
     - role: admin
