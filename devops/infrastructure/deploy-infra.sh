@@ -8,6 +8,10 @@ ACCOUNT_ID=$(aws sts get-caller-identity --profile $CLI_PROFILE --query Account 
 
 NEW_STACK_NAME="${STACK_NAME}-${ACCOUNT_ID}"
 
+DATA_PATH="data-$NEW_STACK_NAME"
+
+INVENTORY_PATH="$DATA_PATH/inventory"
+
 if [ $ACCOUNT_ID == None ]; then
     echo "Couldn't find Account ID, please check if AWS Profile $CLI_PROFILE is set"
     exit 1
@@ -54,19 +58,21 @@ if [ $? -eq 0 ]; then
     HOST="admin"
   fi
 
-  echo -e "$ADMIN_INVENTORY[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > inventory
+  mkdir -p $DATA_PATH
+
+  echo -e "$ADMIN_INVENTORY[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Configuring the node servers ==========="
-    ansible-playbook -i inventory --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE"
+    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE"
   fi
 
   echo -e "\n\n=========== Configuring the Admin server ==========="
-  ansible-playbook -i inventory --private-key $KEY_PATH setup-admin.yml \
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-admin.yml \
     --extra-vars "local_dir=$LOCAL_CODE_PATH run_on_admin_server=$CREATE_ADMIN_SERVER build_local_code=$BUILD_LOCAL_CODE"
 
   echo -e "\n\n=========== Configuring the chain spec file ==========="
-  ansible-playbook -i inventory --private-key $KEY_PATH chain-spec-configuration.yml \
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-configuration.yml \
     --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME run_on_admin_server=$CREATE_ADMIN_SERVER"
 fi

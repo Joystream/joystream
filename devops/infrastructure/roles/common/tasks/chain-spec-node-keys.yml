@@ -29,7 +29,7 @@
 
 - name: Save output of chain spec to local file
   copy:
-    content: "{{ chain_spec_output.stdout }}"
+    content: '{{ chain_spec_output.stdout | regex_replace("\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]", "") }}'
     dest: "{{ data_path }}/chain_spec_output.txt"
   delegate_to: "{{ local_or_admin }}"
   run_once: true
