@@ -11,7 +11,7 @@
         name: common
         tasks_from: chain-spec-node-keys
       vars:
-        local_or_admin: "{{ groups['admin'][0] if run_on_admin_server|bool else 'localhost' }}"
+        local_or_admin: "{{ groups['build'][0] if run_on_admin_server|bool else 'localhost' }}"
         admin_code_dir: "{{ remote_code_path if run_on_admin_server|bool else local_dir }}"
 
 - name: Copy secret, auth and start joystream-node service for validators

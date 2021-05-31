@@ -48,6 +48,11 @@
     var: result.result
   run_once: true
 
+- name: Run build-spec to generate raw chainspec file
+  shell: "{{ admin_code_dir }}/target/release/joystream-node build-spec --chain {{ chain_spec_path }} --raw > {{ raw_chain_spec_path }}"
+  delegate_to: "{{ local_or_admin }}"
+  run_once: true
+
 - name: Copying chain spec files to localhost
   synchronize:
     src: "/home/ubuntu/{{ data_path }}/"
@@ -65,7 +70,7 @@
   run_once: true
   when: run_on_admin_server|bool
 
-- name: Copying chain spec file to all servers
+- name: Copying raw chain spec file to all servers
   copy:
-    src: "{{ chain_spec_path }}"
+    src: "{{ raw_chain_spec_path }}"
     dest: "{{ remote_chain_spec_path }}"

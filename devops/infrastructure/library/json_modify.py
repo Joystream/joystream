@@ -31,7 +31,12 @@ def main():
             public_key = all_nodes[key]["subkey_output"]["stderr"]
             boot_node_list.append(f"/ip4/{key}/tcp/30333/p2p/{public_key}")
 
+    telemetry_endpoints = data["telemetryEndpoints"]
+    telemetry_endpoints.append([
+        "/dns/telemetry.joystream.org/tcp/443/x-parity-wss/%2Fsubmit%2F", 0])
+
     response["bootNodes"] = boot_node_list
+    response["telemetryEndpoints"] = telemetry_endpoints
 
     data.update(response)
     with open(chain_spec_path, 'w') as outfile:
