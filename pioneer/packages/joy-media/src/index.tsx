@@ -9,6 +9,7 @@ import translate from './translate';
 import { Button, Grid, Message, Icon, Image } from 'semantic-ui-react';
 
 import AtlasScreenShot from './assets/atlas-screenshot.jpg';
+import JoystreamStudio from './assets/joystream-studio-screenshot.png';
 
 const MediaMain = styled.main`
   display: flex;
@@ -49,6 +50,10 @@ const Screenshot = styled(Image)`
   :hover { opacity: 0.7; }
 `;
 
+const StyledList = styled(Message.List)`
+  margin-top: 0.5em !important;
+`;
+
 interface Props extends AppMainRouteProps, I18nProps {}
 
 const App: React.FC<Props> = () => {
@@ -57,10 +62,10 @@ const App: React.FC<Props> = () => {
       <Header>
         <h1>Hello there!</h1>
         <p>
-          We have now upgraded to the Babylon chain.
+          We have now upgraded to the Sumer chain.
         </p>
         <p>
-          Pioneer consequently <b>no longer supports</b> media uploads and consumption.
+          Pioneer <b>no longer supports</b> media uploads and consumption.
         </p>
       </Header>
       <Grid stackable>
@@ -93,18 +98,28 @@ const App: React.FC<Props> = () => {
             <StyledMessage>
               <Message.Header>Uploading content</Message.Header>
               <Message.Content>
-                Uploading has been migrated over to the Joystream CLI.
-                Instructions on how to use the CLI can be found in our helpdesk.
+                With Sumer, the content uploading process has been streamlined and made accessible through Joystream Studio. To upload a video:
+                <StyledList>
+                  <Message.Item>Go to Joystream Studio</Message.Item>
+                  <Message.Item>Upload video and thumbnail</Message.Item>
+                  <Message.Item>Fill out the associated metadata</Message.Item>
+                  <Message.Item>Publish</Message.Item>
+                </StyledList>
+                <Screenshot
+                  src={JoystreamStudio as string}
+                  href='https://play.joystream.org'
+                  target='_blank'
+                  rel='noopener noreferrer'/>
               </Message.Content>
               <Button
                 size='big'
                 primary
-                href='https://github.com/Joystream/helpdesk/tree/master/roles/content-creators'
+                href='https://play.joystream.org/studio'
                 icon
                 labelPosition='right'
                 target='_blank'
                 rel='noopener noreferrer'>
-                Explore Joystream CLI
+                Explore Joystream Studio
                 <Icon name='arrow right' />
               </Button>
             </StyledMessage>
