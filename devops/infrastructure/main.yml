@@ -6,6 +6,9 @@ Parameters:
   EC2AMI:
     Type: String
     Default: 'ami-09e67e426f25ce0d7'
+  DefaultAMI:
+    Type: String
+    Default: 'ami-09e67e426f25ce0d7'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -21,6 +24,7 @@ Conditions:
   CreateAdminServerCondition: !Equals
     - !Ref CreateAdminServer
     - true
+  HasAMIId: !Not [!Equals [!Ref EC2AMI, ""]]
 
 Resources:
   SecurityGroup:
@@ -75,7 +79,7 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
       LaunchTemplateData:
-        ImageId: !Ref EC2AMI
+        ImageId: !If [HasAMIId, !Ref EC2AMI, !Ref DefaultAMI]
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
