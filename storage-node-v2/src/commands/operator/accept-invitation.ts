@@ -8,7 +8,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
   static flags = {
     worker: flags.integer({
       char: 'w',
-      required: true, //TODO: for dev
+      required: true, // TODO: for dev
       description: 'Storage operator worker ID',
     }),
     bucket: flags.integer({
@@ -22,7 +22,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorAcceptInvitation)
 
-    const worker = flags.worker ?? 0 //TODO: don't require on dev???
+    const worker = flags.worker ?? 0 // TODO: don't require on dev???
     const bucket = flags.bucket ?? 0
 
     this.log('Accepting pending storage bucket invitation...')

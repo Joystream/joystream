@@ -2,9 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import { CLIError } from '@oclif/errors'
 import { Keyring } from '@polkadot/keyring'
-import { KeyringPair } from '@polkadot/keyring/types'
+import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
 
-//TODO:
+// TODO:
 const DefaultExitCode = 12
 
 export function getAccountFromJsonFile(
@@ -18,7 +18,7 @@ export function getAccountFromJsonFile(
       exit: DefaultExitCode,
     })
   }
-  let accountJsonObj: any
+  let accountJsonObj: KeyringPair$Json
   try {
     const accountJson = fs.readFileSync(jsonBackupFilePath)
     accountJsonObj = JSON.parse(accountJson.toString())

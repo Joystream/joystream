@@ -1,30 +1,37 @@
 import express from 'express'
 import path from 'path'
-import {Express} from 'express-serve-static-core'
+import { Express } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
 
-//TODO: add swagger UI
-//TODO: custom errors (including validation errors)
+// TODO: add swagger UI
+// TODO: custom errors (including validation errors)
 
-
-export async function createServer(devMode: boolean, uploadsDir: string): Promise<Express> {
+export async function createServer(
+  devMode: boolean,
+  uploadsDir: string
+): Promise<Express> {
   const server = express()
-  const spec = path.join(__dirname, './../../api-spec/openapi.yaml');
+  const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
 
   if (devMode) {
     // Form for the upload testing.
-    server.get('/', function (_, res) {
-      res.send('<html><head></head><body>\
-                <form method="POST" enctype="multipart/form-data" action="/api/v1/upload">\
-                  <h2>Api development form (upload)</h2>\
-                  <input type="file" name="recfile"><br />\
-                  <input type="submit">\
-                </form>\
-              </body></html>');
-      res.end();
-    });
+    server.get('/', function (req, res) {
+      res.send(
+        `<html>
+          <head/>
+          <body>
+            <form method="POST" enctype="multipart/form-data" action="/api/v1/upload">
+              <h2>Api development form (upload)</h2>
+              <input type="file" name="recfile"><br />
+              <input type="submit">
+            </form>
+          </body><
+        /html>`
+      )
+      res.end()
+    })
     // TODO: localhost only?
-    server.use('/spec', express.static(spec));
+    server.use('/spec', express.static(spec))
   }
 
   server.use(
@@ -34,12 +41,12 @@ export async function createServer(devMode: boolean, uploadsDir: string): Promis
       validateResponses: true,
       validateRequests: true,
       operationHandlers: {
-          basePath: path.join(__dirname, './controllers'),
-          resolver: OpenApiValidator.resolvers.modulePathResolver
+        basePath: path.join(__dirname, './controllers'),
+        resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
-      fileUploader : { dest: uploadsDir },
-    }),
-  );
+      fileUploader: { dest: uploadsDir },
+    })
+  )
 
   return server
 }

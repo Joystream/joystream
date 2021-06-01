@@ -64,8 +64,6 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
     'addOpening',
     [
       { CurrentBlock: nullValue }, // activate_at
-      // Disable lint because of the auto-generated types.
-      // eslint-disable-next-line @typescript-eslint/camelcase
       { max_review_period_length: 9999 }, // OpeningPolicyCommitment
       'storage opening', // human_readable_text
       'Leader', // opening_type
