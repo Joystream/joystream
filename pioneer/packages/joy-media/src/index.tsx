@@ -101,13 +101,13 @@ const App: React.FC<Props> = () => {
                 With Sumer, the content uploading process has been streamlined and made accessible through Joystream Studio. To upload a video:
                 <StyledList>
                   <Message.Item>Go to Joystream Studio</Message.Item>
-                  <Message.Item>Upload video and thumbnail</Message.Item>
-                  <Message.Item>Fill out the associated metadata</Message.Item>
-                  <Message.Item>Publish</Message.Item>
+                  <Message.Item>Create/connect your membership</Message.Item>
+                  <Message.Item>Create a channel</Message.Item>
+                  <Message.Item>Publish content</Message.Item>
                 </StyledList>
                 <Screenshot
                   src={JoystreamStudio as string}
-                  href='https://play.joystream.org'
+                  href='https://play.joystream.org/studio'
                   target='_blank'
                   rel='noopener noreferrer'/>
               </Message.Content>
