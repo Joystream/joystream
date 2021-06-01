@@ -1,5 +1,5 @@
 import { Command, flags } from '@oclif/command'
-import { createApi, getAlicePair } from './../services/api'
+import { createApi, getAlicePair } from '../services/runtimeApi'
 import { getAccountFromJsonFile } from './../services/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 

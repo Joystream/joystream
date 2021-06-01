@@ -8,13 +8,16 @@
   },
   "bugs": "https://github.com/shamil-gadelshin/storage-node-v2/issues",
   "dependencies": {
-    "@joystream/types": "link:../types",
+    "@joystream/types": "0.17.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
     "@polkadot/api": "4.2.1",
     "storage-node-v2": "file:.",
-    "tslib": "^1"
+    "tslib": "^1",
+    "@types/express": "^4.17.11",
+    "express": "^4.17.1",
+    "express-openapi-validator": "^4.12.4"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",
@@ -50,6 +53,7 @@
   "main": "lib/index.js",
   "oclif": {
     "commands": "./lib/commands",
+    "defaultCommand": "server",
     "bin": "storage-node",
     "plugins": [
       "@oclif/plugin-help"

@@ -28,40 +28,40 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`storage-node dev:init [FILE]`](#storage-node-devinit-file)
-* [`storage-node dev:upload [FILE]`](#storage-node-devupload-file)
+* [`storage-node dev:init`](#storage-node-devinit)
+* [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
-* [`storage-node leader:update-bag [FILE]`](#storage-node-leaderupdate-bag-file)
-* [`storage-node operator:accept-invitation [FILE]`](#storage-node-operatoraccept-invitation-file)
+* [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
+* [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
+* [`storage-node server [FILE]`](#storage-node-server-file)
 
-## `storage-node dev:init [FILE]`
+## `storage-node dev:init`
 
-describe the command here
+Initialize development environment. Sets Alice as storage working group leader.
 
 ```
 USAGE
-  $ storage-node dev:init [FILE]
+  $ storage-node dev:init
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help  show CLI help
 ```
 
 _See code: [src/commands/dev/init.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/init.ts)_
 
-## `storage-node dev:upload [FILE]`
+## `storage-node dev:upload`
 
-describe the command here
+Upload data object (development mode only).
 
 ```
 USAGE
-  $ storage-node dev:upload [FILE]
+  $ storage-node dev:upload
 
 OPTIONS
-  -d, --dev   Use development mode
-  -h, --help  show CLI help
+  -c, --cid=cid    (required) Data object IPFS content ID.
+  -h, --help       show CLI help
+  -s, --size=size  (required) Data object size.
 ```
 
 _See code: [src/commands/dev/upload.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/upload.ts)_
@@ -81,7 +81,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.0.1/src/commands/help.ts)_
 
 ## `storage-node leader:create-bucket`
 
@@ -92,47 +92,69 @@ USAGE
   $ storage-node leader:create-bucket
 
 OPTIONS
-  -a, --allow            Accepts new bags
-  -d, --dev              Use development mode
-  -h, --help             show CLI help
-  -i, --invited=invited  Invited storage operator ID (storage WG worker ID)
-  -n, --number=number    Storage bucket max total objects number
-  -s, --size=size        Storage bucket max total objects size
+  -a, --allow              Accepts new bags
+  -d, --dev                Use development mode
+  -h, --help               show CLI help
+  -i, --invited=invited    Invited storage operator ID (storage WG worker ID)
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -n, --number=number      Storage bucket max total objects number
+  -p, --password=password  Key file password (optional).
+  -s, --size=size          Storage bucket max total objects size
 ```
 
 _See code: [src/commands/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
 
-## `storage-node leader:update-bag [FILE]`
+## `storage-node leader:update-bag`
 
 Add/remove a storage bucket from a bag (adds by default).
 
 ```
 USAGE
-  $ storage-node leader:update-bag [FILE]
+  $ storage-node leader:update-bag
 
 OPTIONS
-  -b, --bucket=bucket  (required) Storage bucket ID
-  -d, --dev            Use development mode
-  -h, --help           show CLI help
-  -r, --remove         Remove a bucket from the bag
+  -b, --bucket=bucket      (required) Storage bucket ID
+  -d, --dev                Use development mode
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -p, --password=password  Key file password (optional).
+  -r, --remove             Remove a bucket from the bag
 ```
 
 _See code: [src/commands/leader/update-bag.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag.ts)_
 
-## `storage-node operator:accept-invitation [FILE]`
+## `storage-node operator:accept-invitation`
 
 Accept pending storage bucket invitation.
 
 ```
 USAGE
-  $ storage-node operator:accept-invitation [FILE]
+  $ storage-node operator:accept-invitation
 
 OPTIONS
-  -b, --bucket=bucket  (required) Storage bucket ID
-  -d, --dev            Use development mode
-  -h, --help           show CLI help
-  -w, --worker=worker  (required) Storage operator worker ID
+  -b, --bucket=bucket      (required) Storage bucket ID
+  -d, --dev                Use development mode
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -p, --password=password  Key file password (optional).
+  -w, --worker=worker      (required) Storage operator worker ID
 ```
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
+
+## `storage-node server [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node server [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/server.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/server.ts)_
 <!-- commandsstop -->
