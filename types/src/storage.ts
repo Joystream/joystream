@@ -59,6 +59,8 @@ export class Voucher
 
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
 
+export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+
 export class BagIdType extends u64 {}
 
 export type DataObjectCreationParametersType = {
@@ -108,5 +110,6 @@ export const storageTypes: RegistryTypes = {
     BagIdType,
     UploadParameters,
     StorageBucketIdSet,
+    DataObjectIdSet,
 }
 export default storageTypes

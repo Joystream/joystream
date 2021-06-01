@@ -31,11 +31,26 @@ paths:
               type: object
               required:
                 - recfile
+                - dataObjectId
+                - storageBucketId
+                - workerId
               properties:
                 file:
                   description: Data file
                   type: string
                   format: binary
+                dataObjectId: #TODO: convert to JSON
+                  description: Data object runtime ID
+                  type: string
+                  pattern: '^\d+$' #integer
+                storageBucketId: #TODO: convert to JSON
+                  description: Data object runtime ID
+                  type: string
+                  pattern: '^\d+$' #integer
+                workerId: #TODO: convert to JSON
+                  description: Data object runtime ID
+                  type: string
+                  pattern: '^\d+$' #integer
         required: true
       responses:
         200:
