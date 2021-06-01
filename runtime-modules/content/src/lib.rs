@@ -57,6 +57,9 @@ pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as StorageOwnership>::DAOId,
 >;
 
+/// Type, used for reward payment 
+pub type Value = u128; 
+
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
 
@@ -209,6 +212,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
+    /// Cumulative cashout 
+    cumulative_reward: Value,
 }
 
 // Channel alias type for simplification.
@@ -682,6 +687,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                cumulative_reward: 0, // initial reward set to 0 ? 
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 

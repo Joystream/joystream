@@ -99,6 +99,7 @@ fn curator_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    cumulative_reward: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -179,6 +180,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    cumulative_reward: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -213,6 +215,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    cumulative_reward: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -246,6 +249,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    cumulative_reward: 0,
                 },
                 ChannelUpdateParameters {
                     assets: None,
@@ -386,4 +390,12 @@ fn channel_censoring() {
             vec![]
         ));
     })
+}
+
+#[test]
+fn channel_reward () {
+    let a: Vec<u64> = vec![1,2,3,5];
+    with_default_mock_builder(|| {
+    })
+
 }
