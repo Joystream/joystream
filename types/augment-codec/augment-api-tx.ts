@@ -1,10 +1,10 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import { AnyNumber } from '@polkadot/types/types';
+import { AnyNumber, ITuple } from '@polkadot/types/types';
 import { BTreeMap, BTreeSet, Compact, Option, Vec } from '@polkadot/types/codec';
-import { Bytes, bool, u16, u32, u64 } from '@polkadot/types/primitive';
-import { Actor, ActorId, ApplicationId, ApplyOnOpeningParameters, BalanceKind, BuyMembershipParameters, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, ForumUserId, FundingRequestParameters, GeneralProposalParameters, InputPropertyValue, InputValue, InviteMembershipParameters, MemberId, MemoText, ModeratorId, Nonce, OpeningId, OpeningType, OperationType, ParticipantId, Poll, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, ProposalDetailsOf, ProposalId, ReplyId, SchemaId, StakePolicy, StorageProviderId, ThreadId, ThreadMode, Url, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
+import { Bytes, bool, u16, u32, u64, u8 } from '@polkadot/types/primitive';
+import { Actor, ActorId, ApplicationId, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, ClassId, ClassPermissions, ContentId, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, EntityController, EntityId, EntryId, ForumUserId, FundingRequestParameters, GeneralProposalParameters, InputPropertyValue, InputValue, InviteMembershipParameters, MemberId, MemoText, ModeratorId, Nonce, OpeningId, OpeningType, OperationType, OracleJudgment, ParticipantId, Poll, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, ProposalDetailsOf, ProposalId, ReplyId, ReplyToDelete, SchemaId, StakePolicy, StorageProviderId, ThreadId, ThreadMode, Url, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
 import { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -146,7 +146,20 @@ declare module '@polkadot/api/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      createReply: AugmentedSubmittable<(participantId: ParticipantId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, replyId: Option<ReplyId> | null | object | string | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      createReply: AugmentedSubmittable<(participantId: ParticipantId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, replyId: Option<ReplyId> | null | object | string | Uint8Array, text: Bytes | string | Uint8Array, editable: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Remove reply from storage
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (R)` where
+       * - R is the number of replies to be deleted
+       * - DB:
+       * - O(R)
+       * # </weight>
+       **/
+      deleteReplies: AugmentedSubmittable<(participantId: ParticipantId | AnyNumber | Uint8Array, replies: Vec<ReplyToDelete> | (ReplyToDelete | { post_id?: any; reply_id?: any; hide?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>>;
       /**
        * Blog owner can edit post, related to a given blog (if unlocked)
        * with a new title and/or body
@@ -201,6 +214,126 @@ declare module '@polkadot/api/types/submittable' {
        * # </weight>
        **/
       unlockPost: AugmentedSubmittable<(postId: PostId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+    };
+    bounty: {
+      /**
+       * Announce work entry for a successful bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      announceWorkEntry: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, stakingAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Cancels a bounty.
+       * It returns a cherry to creator and removes bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      cancelBounty: AugmentedSubmittable<(creator: BountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Creates a bounty. Metadata stored in the transaction log but discarded after that.
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` where:
+       * - `W` is the _metadata length.
+       * - `M` is closed contract member list length.
+       * - DB:
+       * - O(M) (O(1) on open contract)
+       * # </weight>
+       **/
+      createBounty: AugmentedSubmittable<(params: BountyCreationParameters | { oracle?: any; contract_type?: any; creator?: any; cherry?: any; entrant_stake?: any; funding_type?: any; work_period?: any; judging_period?: any } | string | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Provides bounty funding.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      fundBounty: AugmentedSubmittable<(funder: BountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, amount: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Submits an oracle judgment for a bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is the work_data length,
+       * - db:
+       * - `O(N)`
+       * # </weight>
+       **/
+      submitOracleJudgment: AugmentedSubmittable<(oracle: BountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, judgment: OracleJudgment | { Winner: any } | { Rejected: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Submit work for a bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is the work_data length,
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      submitWork: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, entryId: EntryId | AnyNumber | Uint8Array, workData: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Vetoes a bounty.
+       * It returns a cherry to creator and removes bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vetoBounty: AugmentedSubmittable<(bountyId: BountyId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Withdraw bounty funding by a member or a council.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawFunding: AugmentedSubmittable<(funder: BountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Withdraw work entrant funds.
+       * Both legitimate participants and winners get their stake unlocked. Winners also get a
+       * bounty reward.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawWorkEntrantFunds: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, entryId: EntryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
+       * Withdraw work entry for a bounty. Existing stake could be partially slashed.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawWorkEntry: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, bountyId: BountyId | AnyNumber | Uint8Array, entryId: EntryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
     };
     constitution: {
       /**
@@ -738,7 +871,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(W)
        * # </weight>
        **/
-      addPost: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addPost: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array, editable: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Add a new category.
        * 
@@ -784,6 +917,22 @@ declare module '@polkadot/api/types/submittable' {
        **/
       deleteCategory: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
+       * Delete post from storage.
+       * You need to provide a vector of posts to delete in the form
+       * (T::CategoryId, T::ThreadId, T::PostId, bool)
+       * where the last bool is whether you want to hide it apart from deleting it
+       * 
+       * ## Weight
+       * `O (W + V + P)` where:
+       * - `W` is the category depth,
+       * - `V` is the length of the rationale
+       * - `P` is the number of posts to delete
+       * - DB:
+       * - O(W + P)
+       * # </weight>
+       **/
+      deletePosts: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, posts: Vec<ITuple<[CategoryId, ThreadId, PostId, bool]>> | ([CategoryId | AnyNumber | Uint8Array, ThreadId | AnyNumber | Uint8Array, PostId | AnyNumber | Uint8Array, bool | boolean | Uint8Array])[], rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
        * Delete thread
        * 
        * <weight>
@@ -795,7 +944,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(W)
        * # </weight>
        **/
-      deleteThread: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      deleteThread: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, hide: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Edit post text
        * 
@@ -918,19 +1067,6 @@ declare module '@polkadot/api/types/submittable' {
        * # </weight>
        **/
       updateCategoryMembershipOfModerator: AugmentedSubmittable<(moderatorId: ModeratorId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, newValue: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
-      /**
-       * Update thread archival status
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (W)` where:
-       * - `W` is the category depth
-       * - DB:
-       * - O(W)
-       * # </weight>
-       **/
-      updateThreadArchivalStatus: AugmentedSubmittable<(actor: PrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newArchivalStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Submit a poll
        * 
@@ -1370,7 +1506,7 @@ declare module '@polkadot/api/types/submittable' {
        **/
       setMembershipPrice: AugmentedSubmittable<(newPrice: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
-       * Updates membership referral cut. Requires root origin.
+       * Updates membership referral cut percent value. Requires root origin.
        * 
        * <weight>
        * 
@@ -1380,7 +1516,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      setReferralCut: AugmentedSubmittable<(value: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      setReferralCut: AugmentedSubmittable<(percentValue: u8 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Transfers invites from one member to another.
        * 
@@ -1672,13 +1808,13 @@ declare module '@polkadot/api/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (W)` where:
-       * - `W` is the number of whitelisted members for `thread_id`
+       * `O (L)` where:
+       * - `L` is the length of `text`
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      addPost: AugmentedSubmittable<(postAuthorId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      addPost: AugmentedSubmittable<(postAuthorId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array, editable: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
        * Changes thread permission mode.
        * 
@@ -1693,12 +1829,26 @@ declare module '@polkadot/api/types/submittable' {
        **/
       changeThreadMode: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, mode: ThreadMode | { Open: any } | { Closed: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>>;
       /**
+       * Remove post from storage, with the last parameter indicating whether to also hide it
+       * in the UI.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      deletePost: AugmentedSubmittable<(deleterId: MemberId | AnyNumber | Uint8Array, postId: PostId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, hide: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>>;
+      /**
        * Updates a post with author origin check. Update attempts number is limited.
        * 
        * <weight>
        * 
        * ## Weight
-       * `O (1)` doesn't depend on the state or parameters
+       * `O (L)` where:
+       * - `L` is the length of `text`
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>

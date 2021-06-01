@@ -12,9 +12,9 @@ use sp_runtime::{
     DispatchResult, Perbill,
 };
 
-pub(crate) const FIRST_OWNER_ORIGIN: u64 = 0;
+pub(crate) const FIRST_OWNER_ORIGIN: u128 = 0;
 pub(crate) const FIRST_OWNER_PARTICIPANT_ID: u64 = 0;
-pub(crate) const SECOND_OWNER_ORIGIN: u64 = 2;
+pub(crate) const SECOND_OWNER_ORIGIN: u128 = 2;
 pub(crate) const SECOND_OWNER_PARTICIPANT_ID: u64 = 2;
 pub(crate) const BAD_MEMBER_ID: u64 = 100000;
 
@@ -55,7 +55,7 @@ impl frame_system::Trait for Runtime {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u64;
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = TestEvent;
@@ -90,6 +90,7 @@ parameter_types! {
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
     pub const StakingCandidateLockId: [u8; 8] = [10; 8];
     pub const MinimumPeriod: u64 = 5;
+    pub const ReferralCutMaximumPercent: u8 = 50;
     pub const CandidateStake: u64 = 100;
 }
 
@@ -100,6 +101,7 @@ impl membership::Trait for Runtime {
     type WorkingGroup = ();
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
@@ -134,7 +136,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -143,7 +145,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
         unimplemented!()
     }
 
@@ -153,7 +155,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!();
     }
@@ -220,17 +222,22 @@ impl membership::WeightInfo for Weights {
 parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
+    pub const ReplyDeposit: u64 = 500;
+    pub const BlogModuleId: ModuleId = ModuleId(*b"m00:blog"); // module : blog
+    pub const ReplyLifetime: <Runtime as frame_system::Trait>::BlockNumber = 10;
 }
 
 impl Trait for Runtime {
     type Event = TestEvent;
 
     type PostsMaxNumber = PostsMaxNumber;
-    type RepliesMaxNumber = RepliesMaxNumber;
     type ParticipantEnsureOrigin = MockEnsureParticipant;
     type WeightInfo = ();
 
     type ReplyId = u64;
+    type ReplyDeposit = ReplyDeposit;
+    type ModuleId = BlogModuleId;
+    type ReplyLifetime = ReplyLifetime;
 }
 
 impl WeightInfo for () {
@@ -253,6 +260,9 @@ impl WeightInfo for () {
         unimplemented!()
     }
     fn edit_reply(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn delete_replies(_: u32) -> Weight {
         unimplemented!()
     }
 }
@@ -280,7 +290,7 @@ impl
     }
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -288,17 +298,17 @@ impl common::Trait for Runtime {
 #[derive(Default)]
 pub struct ExtBuilder;
 
-impl ExtBuilder {
-    fn run_to_block(n: u64) {
-        while System::block_number() < n {
-            <System as OnFinalize<u64>>::on_finalize(System::block_number());
-            <crate::Module<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
-            System::set_block_number(System::block_number() + 1);
-            <System as OnInitialize<u64>>::on_initialize(System::block_number());
-            <crate::Module<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
-        }
+pub(crate) fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <crate::Module<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <crate::Module<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
 
+impl ExtBuilder {
     pub fn build(self) -> TestExternalities {
         let t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
@@ -307,7 +317,7 @@ impl ExtBuilder {
         let mut result: TestExternalities = t.into();
 
         // Make sure we are not in block 0 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
-        result.execute_with(|| Self::run_to_block(1));
+        result.execute_with(|| run_to_block(1));
 
         result
     }
@@ -396,18 +406,24 @@ pub fn get_reply_text() -> Vec<u8> {
 }
 
 pub fn get_reply(
-    owner: <Runtime as frame_system::Trait>::AccountId,
+    owner: ParticipantId<Runtime>,
     parent_id: ParentId<<Runtime as Trait>::ReplyId, PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
-    Reply::new(reply_text, owner, parent_id)
+    Reply::new(
+        reply_text,
+        owner,
+        parent_id,
+        <Runtime as Trait>::ReplyDeposit::get(),
+    )
 }
 
 pub fn create_reply(
-    origin_id: u64,
+    origin_id: u128,
     participant_id: u64,
     post_id: PostId,
     reply_id: Option<<Runtime as Trait>::ReplyId>,
+    editable: bool,
 ) -> DispatchResult {
     let reply = get_reply_text();
     TestBlogModule::create_reply(
@@ -416,11 +432,29 @@ pub fn create_reply(
         post_id,
         reply_id,
         reply,
+        editable,
+    )
+}
+
+pub fn delete_reply(
+    origin_id: u128,
+    participant_id: u64,
+    post_id: PostId,
+    reply_id: <Runtime as Trait>::ReplyId,
+) -> DispatchResult {
+    TestBlogModule::delete_replies(
+        Origin::signed(origin_id),
+        participant_id,
+        vec![ReplyToDelete {
+            post_id,
+            reply_id,
+            hide: false,
+        }],
     )
 }
 
 pub fn edit_reply(
-    origin_id: u64,
+    origin_id: u128,
     participant_id: u64,
     post_id: PostId,
     reply_id: <Runtime as Trait>::ReplyId,

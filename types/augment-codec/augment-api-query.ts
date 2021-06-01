@@ -3,8 +3,8 @@
 
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
-import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, MemberId, Membership, MemoText, ModeratorId, Opening, OpeningId, Post, PostId, PropertyId, ProposalId, ProposalOf, ReferendumStage, Reply, ReplyId, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, ThreadId, ThreadOf, Url, VoteKind, Worker, WorkerId } from './all';
+import { Bytes, bool, u32, u64, u8 } from '@polkadot/types/primitive';
+import { Application, ApplicationId, BountyActor, BountyId, Candidate, CastVoteOf, Category, CategoryId, ClassId, ClassOf, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, EntityController, EntityCreationVoucher, EntityId, EntityOf, Entry, EntryId, ForumUserId, MemberId, Membership, MemoText, ModeratorId, Opening, OpeningId, Post, PostId, PropertyId, ProposalId, ProposalOf, ReferendumStage, Reply, ReplyId, ServiceProviderRecord, StakingAccountMemberBinding, StorageProviderId, ThreadId, ThreadOf, Url, VoteKind, Worker, WorkerId } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -16,6 +16,7 @@ import { AccountId, Balance, BalanceOf, BlockNumber, ExtrinsicsWeight, Hash, Key
 import { Keys, SessionIndex } from '@polkadot/types/interfaces/session';
 import { ActiveEraInfo, ElectionResult, ElectionScore, ElectionStatus, EraIndex, EraRewardPoints, Exposure, Forcing, Nominations, RewardDestination, SlashingSpans, SpanIndex, SpanRecord, StakingLedger, UnappliedSlash, ValidatorPrefs } from '@polkadot/types/interfaces/staking';
 import { AccountInfo, DigestOf, EventIndex, EventRecord, LastRuntimeUpgradeInfo, Phase } from '@polkadot/types/interfaces/system';
+import { Bounty } from '@polkadot/types/interfaces/treasury';
 import { Multiplier } from '@polkadot/types/interfaces/txpayment';
 import { ApiTypes } from '@polkadot/api/types';
 
@@ -141,6 +142,28 @@ declare module '@polkadot/api/types/storage' {
        * Reply by unique blog, post and reply identificators
        **/
       replyById: AugmentedQueryDoubleMap<ApiType, (key1: PostId | AnyNumber | Uint8Array, key2: ReplyId | AnyNumber | Uint8Array) => Observable<Reply>>;
+    };
+    bounty: {
+      /**
+       * Bounty storage.
+       **/
+      bounties: AugmentedQuery<ApiType, (arg: BountyId | AnyNumber | Uint8Array) => Observable<Bounty>>;
+      /**
+       * Double map for bounty funding. It stores a member or council funding for bounties.
+       **/
+      bountyContributions: AugmentedQueryDoubleMap<ApiType, (key1: BountyId | AnyNumber | Uint8Array, key2: BountyActor | { Council: any } | { Member: any } | string | Uint8Array) => Observable<BalanceOf>>;
+      /**
+       * Count of all bounties that have been created.
+       **/
+      bountyCount: AugmentedQuery<ApiType, () => Observable<u32>>;
+      /**
+       * Work entry storage map.
+       **/
+      entries: AugmentedQuery<ApiType, (arg: EntryId | AnyNumber | Uint8Array) => Observable<Entry>>;
+      /**
+       * Count of all work entries that have been created.
+       **/
+      entryCount: AugmentedQuery<ApiType, () => Observable<u32>>;
     };
     constitution: {
       constitution: AugmentedQuery<ApiType, () => Observable<ConstitutionInfo>>;
@@ -337,6 +360,14 @@ declare module '@polkadot/api/types/storage' {
        **/
       nextThreadId: AugmentedQuery<ApiType, () => Observable<ThreadId>>;
       /**
+       * Unique thread poll voters. This private double map prevents double voting.
+       **/
+      pollVotes: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: ForumUserId | AnyNumber | Uint8Array) => Observable<bool>>;
+      /**
+       * Map post identifier to corresponding post.
+       **/
+      postById: AugmentedQueryDoubleMap<ApiType, (key1: ThreadId | AnyNumber | Uint8Array, key2: PostId | AnyNumber | Uint8Array) => Observable<Post>>;
+      /**
        * Map thread identifier to corresponding thread.
        **/
       threadById: AugmentedQueryDoubleMap<ApiType, (key1: CategoryId | AnyNumber | Uint8Array, key2: ThreadId | AnyNumber | Uint8Array) => Observable<ThreadOf>>;
@@ -465,9 +496,9 @@ declare module '@polkadot/api/types/storage' {
        **/
       nextMemberId: AugmentedQuery<ApiType, () => Observable<MemberId>>;
       /**
-       * Referral cut to receive during on buying the membership.
+       * Referral cut percent of the membership fee to receive on buying the membership.
        **/
-      referralCut: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
+      referralCut: AugmentedQuery<ApiType, () => Observable<u8>>;
       /**
        * Double of a staking account id and member id to the confirmation status.
        **/

@@ -158,7 +158,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 
 pub use errors::Error;
 
@@ -170,7 +170,7 @@ pub type MaxNumber = u32;
 /// Type simplification
 pub type EntityOf<T> = Entity<
     <T as Trait>::ClassId,
-    <T as common::Trait>::MemberId,
+    <T as common::membership::Trait>::MemberId,
     <T as frame_system::Trait>::Hash,
     <T as Trait>::EntityId,
     <T as Trait>::Nonce,
@@ -191,7 +191,7 @@ pub type StoredPropertyValueOf<T> = StoredPropertyValue<
 pub type CuratorId<T> = common::ActorId<T>;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: frame_system::Trait + common::Trait {
+pub trait Trait: frame_system::Trait + common::membership::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -2958,10 +2958,14 @@ decl_event!(
         CuratorId = CuratorId<T>,
         ClassId = <T as Trait>::ClassId,
         EntityId = <T as Trait>::EntityId,
-        EntityController = EntityController<<T as common::Trait>::MemberId>,
+        EntityController = EntityController<<T as common::membership::Trait>::MemberId>,
         EntityCreationVoucher = EntityCreationVoucher<T>,
         Status = bool,
-        Actor = Actor<<T as Trait>::CuratorGroupId, CuratorId<T>, <T as common::Trait>::MemberId>,
+        Actor = Actor<
+            <T as Trait>::CuratorGroupId,
+            CuratorId<T>,
+            <T as common::membership::Trait>::MemberId,
+        >,
         Nonce = <T as Trait>::Nonce,
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
         SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,

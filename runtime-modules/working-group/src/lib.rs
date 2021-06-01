@@ -50,13 +50,13 @@ use sp_std::vec::Vec;
 pub use errors::Error;
 pub use types::{
     Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, StakeParameters, StakePolicy, Worker, WorkerId,
+    OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
 
 pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
@@ -92,7 +92,7 @@ pub trait WeightInfo {
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + balances::Trait + common::Trait
+    frame_system::Trait + balances::Trait + common::membership::Trait
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -118,8 +118,11 @@ pub trait Trait<I: Instance = DefaultInstance>:
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    /// Minimum stake required for an opening
-    type MinimumStakeForOpening: Get<Self::Balance>;
+    /// Minimum stake required for applying into an opening
+    type MinimumApplicationStake: Get<Self::Balance>;
+
+    /// Stake needed to create an opening
+    type LeaderOpeningStake: Get<Self::Balance>;
 }
 
 decl_event!(
@@ -178,11 +181,11 @@ decl_event!(
         /// - Rationale.
         WorkerExited(WorkerId),
 
-        /// Emits when worker is leaving immediatly after extrinsic is called
+        /// Emits when worker started leaving their role.
         /// Params:
         /// - Worker id.
         /// - Rationale.
-        WorkerLeft(WorkerId, Option<Vec<u8>>),
+        WorkerStartedLeaving(WorkerId, Option<Vec<u8>>),
 
         /// Emits on terminating the worker.
         /// Params:
@@ -253,10 +256,24 @@ decl_event!(
 
         /// Emits on budget from the working group being spent
         /// Params:
-        /// - Reciever Account Id.
+        /// - Receiver Account Id.
         /// - Balance spent.
         /// - Rationale.
         BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
+
+        /// Emits on paying the reward.
+        /// Params:
+        /// - Id of the worker.
+        /// - Receiver Account Id.
+        /// - Reward
+        /// - Payment type (missed reward or regular one)
+        RewardPaid(WorkerId, AccountId, Balance, RewardPaymentType),
+
+        /// Emits on reaching new missed reward.
+        /// Params:
+        /// - Worker ID.
+        /// - Missed reward (optional). None means 'no missed reward'.
+        NewMissedRewardLevelReached(WorkerId, Option<Balance>),
     }
 );
 
@@ -363,15 +380,30 @@ decl_module! {
             stake_policy: StakePolicy<T::BlockNumber, BalanceOf<T>>,
             reward_per_block: Option<BalanceOf<T>>
         ){
-            checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
+            checks::ensure_origin_for_opening_type::<T, I>(origin.clone(), opening_type)?;
 
             checks::ensure_valid_stake_policy::<T, I>(&stake_policy)?;
 
             checks::ensure_valid_reward_per_block::<T, I>(&reward_per_block)?;
 
+            checks::ensure_stake_for_opening_type::<T, I>(origin, opening_type)?;
+
             //
             // == MUTATION SAFE ==
             //
+
+            let mut creation_stake = BalanceOf::<T>::zero();
+            if opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                creation_stake = T::LeaderOpeningStake::get();
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    creation_stake.saturating_add(current_stake)
+                )?;
+            }
 
             let hashed_description = T::Hashing::hash(&description);
 
@@ -382,6 +414,7 @@ decl_module! {
                 description_hash: hashed_description.as_ref().to_vec(),
                 stake_policy: stake_policy.clone(),
                 reward_per_block,
+                creation_stake,
             };
 
             let new_opening_id = NextOpeningId::<I>::get();
@@ -542,6 +575,17 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            if opening.opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    current_stake.saturating_sub(opening.creation_stake)
+                )?;
+            }
+
             // Process successful applications
             let application_id_to_worker_id = Self::fulfill_successful_applications(
                 &opening,
@@ -623,6 +667,9 @@ decl_module! {
             WorkerById::<T, I>::mutate(worker_id, |worker| {
                 worker.started_leaving_at = Some(Self::current_block())
             });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStartedLeaving(worker_id, rationale));
         }
 
         /// Terminate the active worker by the lead.
@@ -860,6 +907,18 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            // Remove opening stake
+            if opening.opening_type == OpeningType::Regular {
+                // Lead must be set for ensure_origin_for_openig_type in the
+                // case of regular.
+                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
+                T::StakingHandler::set_stake(
+                    &lead.staking_account_id,
+                    current_stake.saturating_sub(opening.creation_stake)
+                )?;
+            }
 
             // Remove the opening.
             <OpeningById::<T, I>>::remove(opening_id);
@@ -1258,7 +1317,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Check whether the budget is not zero.
             if actual_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, actual_reward);
+                Self::pay_reward(
+                    worker_id,
+                    &worker.reward_account_id,
+                    actual_reward,
+                    RewardPaymentType::RegularReward,
+                );
             }
 
             // Check whether the budget is insufficient.
@@ -1281,6 +1345,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
     }
 
+    // Helper-function joining the reward payment with the event.
+    fn pay_reward(
+        worker_id: &WorkerId<T>,
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+        reward_payment_type: RewardPaymentType,
+    ) {
+        Self::pay_from_budget(account_id, amount);
+        Self::deposit_event(RawEvent::RewardPaid(
+            *worker_id,
+            account_id.clone(),
+            amount,
+            reward_payment_type,
+        ));
+    }
+
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of group budget.
     fn try_to_pay_missed_reward(worker_id: &WorkerId<T>, worker: &Worker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
@@ -1289,7 +1369,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Checks if the budget allows any payment.
             if could_be_paid_reward > Zero::zero() {
-                Self::pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+                Self::pay_reward(
+                    worker_id,
+                    &worker.reward_account_id,
+                    could_be_paid_reward,
+                    RewardPaymentType::MissedReward,
+                );
 
                 let new_missed_reward = if insufficient_amount > Zero::zero() {
                     Some(insufficient_amount)
@@ -1297,12 +1382,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                // Update worker missed reward.
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.missed_reward = new_missed_reward;
-                });
+                Self::update_worker_missed_reward(worker_id, new_missed_reward);
             }
         }
+    }
+
+    // Update worker missed reward.
+    fn update_worker_missed_reward(
+        worker_id: &WorkerId<T>,
+        new_missed_reward: Option<BalanceOf<T>>,
+    ) {
+        WorkerById::<T, I>::mutate(worker_id, |worker| {
+            worker.missed_reward = new_missed_reward;
+        });
+
+        Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
+            *worker_id,
+            new_missed_reward,
+        ));
     }
 
     // Saves missed reward for a worker.
@@ -1312,10 +1409,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        // Update worker missed reward.
-        WorkerById::<T, I>::mutate(worker_id, |worker| {
-            worker.missed_reward = Some(new_missed_reward);
-        });
+        Self::update_worker_missed_reward(worker_id, Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment
@@ -1334,7 +1428,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::iter()
             .filter_map(|(worker_id, worker)| {
                 if let Some(started_leaving_at) = worker.started_leaving_at {
-                    if started_leaving_at + worker.job_unstaking_period >= Self::current_block() {
+                    if started_leaving_at + worker.job_unstaking_period <= Self::current_block() {
                         return Some((worker_id, worker).into());
                     }
                 }

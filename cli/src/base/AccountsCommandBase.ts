@@ -25,6 +25,7 @@ export const DEFAULT_ACCOUNT_TYPE = 'sr25519'
 export const KEYRING_OPTIONS: KeyringOptions = {
   type: DEFAULT_ACCOUNT_TYPE,
 }
+export const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
 
 /**
  * Abstract base class for account-related commands.
@@ -392,6 +393,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
             await this.getDecodedPair(stakingAccount),
             this.getOriginalApi().tx.members.addStakingAccountCandidate(memberId)
           )
+          additionalStakingAccountCosts = additionalStakingAccountCosts.add(STAKING_ACCOUNT_CANDIDATE_STAKE)
         }
       }
 
@@ -403,7 +405,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
             formatBalance(missingStakingAccountBalance)
           )}.` +
             (additionalStakingAccountCosts.gtn(0)
-              ? ` (includes ${formatBalance(additionalStakingAccountCosts)} fee for setting new staking account)`
+              ? ` (includes ${formatBalance(
+                  additionalStakingAccountCosts
+                )} which is a required fee and candidate stake for adding a new staking account)`
               : '')
         )
         const transferTokens = await this.simplePrompt({

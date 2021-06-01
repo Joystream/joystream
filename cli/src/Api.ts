@@ -49,6 +49,13 @@ export const apiModuleByGroup = {
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
 } as const
 
+export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
+  [WorkingGroups.StorageProviders]: '0x0606060606060606',
+  [WorkingGroups.Curators]: '0x0707070707070707',
+  [WorkingGroups.Forum]: '0x0808080808080808',
+  [WorkingGroups.Membership]: '0x0909090909090909',
+}
+
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
@@ -232,18 +239,22 @@ export default class Api {
     const leadWorkerId = optLeadId.unwrap()
     const leadWorker = await this.workerByWorkerId(group, leadWorkerId.toNumber())
 
-    return await this.parseGroupMember(leadWorkerId, leadWorker)
+    return await this.parseGroupMember(group, leadWorkerId, leadWorker)
   }
 
-  protected async fetchStake(account: AccountId | string): Promise<Balance> {
+  protected async fetchStake(account: AccountId | string, group: WorkingGroups): Promise<Balance> {
     return this._api.createType(
       'Balance',
-      (await this._api.query.balances.locks(account)).reduce((sum, lock) => sum.add(lock.amount), new BN(0))
+      new BN(
+        (await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(lockIdByWorkingGroup[group]))
+          ?.amount || 0
+      )
     )
   }
 
-  protected async parseGroupMember(id: WorkerId, worker: Worker): Promise<GroupMember> {
+  protected async parseGroupMember(group: WorkingGroups, id: WorkerId, worker: Worker): Promise<GroupMember> {
     const roleAccount = worker.role_account_id
+    const stakingAccount = worker.staking_account_id
     const memberId = worker.member_id
 
     const profile = await this.membershipById(memberId)
@@ -252,7 +263,7 @@ export default class Api {
       throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`)
     }
 
-    const stake = await this.fetchStake(worker.staking_account_id)
+    const stake = await this.fetchStake(worker.staking_account_id, group)
 
     const reward: Reward = {
       valuePerBlock: worker.reward_per_block.unwrapOr(undefined),
@@ -262,6 +273,7 @@ export default class Api {
     return {
       workerId: id,
       roleAccount,
+      stakingAccount,
       memberId,
       profile,
       stake,
@@ -288,14 +300,14 @@ export default class Api {
 
   async groupMember(group: WorkingGroups, workerId: number) {
     const worker = await this.workerByWorkerId(group, workerId)
-    return await this.parseGroupMember(this._api.createType('WorkerId', workerId), worker)
+    return await this.parseGroupMember(group, this._api.createType('WorkerId', workerId), worker)
   }
 
   async groupMembers(group: WorkingGroups): Promise<GroupMember[]> {
     const workerEntries = await this.groupWorkers(group)
 
     const groupMembers: GroupMember[] = await Promise.all(
-      workerEntries.map(([id, worker]) => this.parseGroupMember(id, worker))
+      workerEntries.map(([id, worker]) => this.parseGroupMember(group, id, worker))
     )
 
     return groupMembers.reverse() // Sort by newest

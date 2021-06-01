@@ -201,12 +201,18 @@
         "opening_id": "OpeningId",
         "role_account_id": "AccountId",
         "reward_account_id": "AccountId",
-        "description": "Text",
+        "description": "Bytes",
         "stake_parameters": "StakeParameters"
     },
     "Penalty": {
         "slashing_text": "Text",
         "slashing_amount": "u128"
+    },
+    "RewardPaymentType": {
+        "_enum": [
+            "MissedReward",
+            "RegularReward"
+        ]
     },
     "Url": "Text",
     "IPNSIdentity": "Text",
@@ -252,6 +258,11 @@
         "text_hash": "Hash",
         "owner": "ParticipantId",
         "parent_id": "PostId"
+    },
+    "ReplyToDelete": {
+        "post_id": "PostId",
+        "reply_id": "ReplyId",
+        "hide": "bool"
     },
     "ProposalId": "u32",
     "ProposalStatus": {
@@ -686,5 +697,59 @@
     "VotePower": "u128",
     "ConstitutionInfo": {
         "text_hash": "Hash"
+    },
+    "BountyId": "u32",
+    "EntryId": "u32",
+    "BountyActor": {
+        "_enum": {
+            "Council": "Null",
+            "Member": "MemberId"
+        }
+    },
+    "AssuranceContractType": {
+        "_enum": {
+            "Open": "Null",
+            "Closed": "Vec<MemberId>"
+        }
+    },
+    "FundingType_Limited": {
+        "min_funding_amount": "u128",
+        "max_funding_amount": "u128",
+        "funding_period": "u32"
+    },
+    "FundingType_Perpetual": {
+        "target": "u128"
+    },
+    "FundingType": {
+        "_enum": {
+            "Perpetual": "FundingType_Perpetual",
+            "Limited": "FundingType_Limited"
+        }
+    },
+    "BountyCreationParameters": {
+        "oracle": "BountyActor",
+        "contract_type": "AssuranceContractType",
+        "creator": "BountyActor",
+        "cherry": "u128",
+        "entrant_stake": "u128",
+        "funding_type": "FundingType",
+        "work_period": "u32",
+        "judging_period": "u32"
+    },
+    "OracleJudgment_Winner": {
+        "reward": "u128"
+    },
+    "OracleJudgment": {
+        "_enum": {
+            "Winner": "OracleJudgment_Winner",
+            "Rejected": "Null"
+        }
+    },
+    "Entry": {
+        "member_id": "MemberId",
+        "staking_account_id": "GenericAccountId",
+        "submitted_at": "u32",
+        "work_submitted": "bool",
+        "oracle_judgment_result": "Option<OracleJudgment>"
     }
 }

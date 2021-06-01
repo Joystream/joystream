@@ -3,6 +3,7 @@
 
 import { ITuple } from '@polkadot/types/types';
 import { BTreeMap, BTreeSet, Enum, Option, Struct, U8aFixed, Vec } from '@polkadot/types/codec';
+import { GenericAccountId } from '@polkadot/types/generic';
 import { Bytes, Text, bool, i16, i32, i64, u128, u16, u32, u64 } from '@polkadot/types/primitive';
 import { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
@@ -59,7 +60,7 @@ export interface ApplyOnOpeningParameters extends Struct {
   readonly opening_id: OpeningId;
   readonly role_account_id: AccountId;
   readonly reward_account_id: AccountId;
-  readonly description: Text;
+  readonly description: Bytes;
   readonly stake_parameters: StakeParameters;
 }
 
@@ -67,6 +68,13 @@ export interface ApplyOnOpeningParameters extends Struct {
 export interface Approved extends Enum {
   readonly isPendingExecution: boolean;
   readonly isPendingConstitutionality: boolean;
+}
+
+/** @name AssuranceContractType */
+export interface AssuranceContractType extends Enum {
+  readonly isOpen: boolean;
+  readonly isClosed: boolean;
+  readonly asClosed: Vec<MemberId>;
 }
 
 /** @name BalanceKind */
@@ -80,6 +88,28 @@ export interface BlockAndTime extends Struct {
   readonly block: u32;
   readonly time: u64;
 }
+
+/** @name BountyActor */
+export interface BountyActor extends Enum {
+  readonly isCouncil: boolean;
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+}
+
+/** @name BountyCreationParameters */
+export interface BountyCreationParameters extends Struct {
+  readonly oracle: BountyActor;
+  readonly contract_type: AssuranceContractType;
+  readonly creator: BountyActor;
+  readonly cherry: u128;
+  readonly entrant_stake: u128;
+  readonly funding_type: FundingType;
+  readonly work_period: u32;
+  readonly judging_period: u32;
+}
+
+/** @name BountyId */
+export interface BountyId extends u32 {}
 
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
@@ -318,6 +348,18 @@ export interface EntityReferenceCounterSideEffect extends Struct {
   readonly same_owner: i32;
 }
 
+/** @name Entry */
+export interface Entry extends Struct {
+  readonly member_id: MemberId;
+  readonly staking_account_id: GenericAccountId;
+  readonly submitted_at: u32;
+  readonly work_submitted: bool;
+  readonly oracle_judgment_result: Option<OracleJudgment>;
+}
+
+/** @name EntryId */
+export interface EntryId extends u32 {}
+
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {
   readonly error: Text;
@@ -347,6 +389,26 @@ export interface ForumUserId extends u64 {}
 export interface FundingRequestParameters extends Struct {
   readonly account: AccountId;
   readonly amount: u128;
+}
+
+/** @name FundingType */
+export interface FundingType extends Enum {
+  readonly isPerpetual: boolean;
+  readonly asPerpetual: FundingType_Perpetual;
+  readonly isLimited: boolean;
+  readonly asLimited: FundingType_Limited;
+}
+
+/** @name FundingType_Limited */
+export interface FundingType_Limited extends Struct {
+  readonly min_funding_amount: u128;
+  readonly max_funding_amount: u128;
+  readonly funding_period: u32;
+}
+
+/** @name FundingType_Perpetual */
+export interface FundingType_Perpetual extends Struct {
+  readonly target: u128;
 }
 
 /** @name GeneralProposalParameters */
@@ -483,6 +545,18 @@ export interface OperationType extends Enum {
 export interface OptionResult extends Struct {
   readonly option_id: MemberId;
   readonly vote_power: VotePower;
+}
+
+/** @name OracleJudgment */
+export interface OracleJudgment extends Enum {
+  readonly isWinner: boolean;
+  readonly asWinner: OracleJudgment_Winner;
+  readonly isRejected: boolean;
+}
+
+/** @name OracleJudgment_Winner */
+export interface OracleJudgment_Winner extends Struct {
+  readonly reward: u128;
 }
 
 /** @name ParameterizedEntity */
@@ -791,6 +865,19 @@ export interface Reply extends Struct {
 
 /** @name ReplyId */
 export interface ReplyId extends u64 {}
+
+/** @name ReplyToDelete */
+export interface ReplyToDelete extends Struct {
+  readonly post_id: PostId;
+  readonly reply_id: ReplyId;
+  readonly hide: bool;
+}
+
+/** @name RewardPaymentType */
+export interface RewardPaymentType extends Enum {
+  readonly isMissedReward: boolean;
+  readonly isRegularReward: boolean;
+}
 
 /** @name SameController */
 export interface SameController extends bool {}

@@ -52,7 +52,10 @@ fn funded_account<T: Trait<I>, I: Instance>(name: &'static str, id: u32) -> T::A
 fn make_multiple_votes_for_multiple_options<
     T: Trait<I>
         + membership::Trait
-        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>,
+        + OptionCreator<
+            <T as frame_system::Trait>::AccountId,
+            <T as common::membership::Trait>::MemberId,
+        >,
     I: Instance,
 >(
     number_of_options: u32,
@@ -88,7 +91,10 @@ fn make_multiple_votes_for_multiple_options<
 fn vote_for<
     T: Trait<I>
         + membership::Trait
-        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>,
+        + OptionCreator<
+            <T as frame_system::Trait>::AccountId,
+            <T as common::membership::Trait>::MemberId,
+        >,
     I: Instance,
 >(
     name: &'static str,
@@ -136,7 +142,10 @@ fn vote_for<
 fn create_account_and_vote<
     T: Trait<I>
         + membership::Trait
-        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>,
+        + OptionCreator<
+            <T as frame_system::Trait>::AccountId,
+            <T as common::membership::Trait>::MemberId,
+        >,
     I: Instance,
 >(
     name: &'static str,
@@ -247,8 +256,10 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
 fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     T: Trait<I>
-        + OptionCreator<<T as frame_system::Trait>::AccountId, <T as common::Trait>::MemberId>
-        + membership::Trait,
+        + OptionCreator<
+            <T as frame_system::Trait>::AccountId,
+            <T as common::membership::Trait>::MemberId,
+        > + membership::Trait,
     I: Instance,
 >(
     target_winners: u32,
@@ -324,7 +335,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 benchmarks_instance! {
     where_clause {
         where T: OptionCreator<<T as frame_system::Trait>::AccountId,
-        <T as common::Trait>::MemberId>,
+        <T as common::membership::Trait>::MemberId>,
         T: membership::Trait
     }
     _ { }
@@ -686,12 +697,12 @@ mod tests {
     impl
         OptionCreator<
             <Runtime as frame_system::Trait>::AccountId,
-            <Runtime as common::Trait>::MemberId,
+            <Runtime as common::membership::Trait>::MemberId,
         > for Runtime
     {
         fn create_option(
             _: <Runtime as frame_system::Trait>::AccountId,
-            _: <Runtime as common::Trait>::MemberId,
+            _: <Runtime as common::membership::Trait>::MemberId,
         ) {
         }
     }

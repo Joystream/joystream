@@ -294,8 +294,10 @@ impl_runtime_apis! {
             use crate::ImOnline;
             use crate::Council;
             use crate::Referendum;
+            use crate::Bounty;
             use crate::Blog;
             use crate::JoystreamUtility;
+            use crate::Staking;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -303,8 +305,8 @@ impl_runtime_apis! {
             // we need these two lines below.
             impl pallet_session_benchmarking::Trait for Runtime {}
             impl frame_system_benchmarking::Trait for Runtime {}
-            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::Trait>::MemberId> for Runtime {
-                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::Trait>::MemberId) {
+            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::Trait>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::Trait>::MemberId) {
                     crate::council::Module::<Runtime>::announce_candidacy(
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
@@ -321,15 +323,15 @@ impl_runtime_apis! {
 
             impl membership::MembershipWorkingGroupHelper<
                 <Runtime as frame_system::Trait>::AccountId,
-                <Runtime as common::Trait>::MemberId,
-                <Runtime as common::Trait>::ActorId,
+                <Runtime as common::membership::Trait>::MemberId,
+                <Runtime as common::membership::Trait>::ActorId,
                     > for Runtime
             {
                 fn insert_a_lead(
                     opening_id: u32,
                     caller_id: &<Runtime as frame_system::Trait>::AccountId,
-                    member_id: <Runtime as common::Trait>::MemberId,
-                ) -> <Runtime as common::Trait>::ActorId {
+                    member_id: <Runtime as common::membership::Trait>::MemberId,
+                ) -> <Runtime as common::membership::Trait>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
                         working_group::OpeningType::Leader,
                         opening_id,
@@ -373,6 +375,8 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, pallet_timestamp, Timestamp);
             add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
             add_benchmark!(params, batches, pallet_im_online, ImOnline);
+            add_benchmark!(params, batches, pallet_balances, Balances);
+            add_benchmark!(params, batches, pallet_staking, Staking);
 
             // Joystream Benchmarks
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
@@ -384,6 +388,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
+            add_benchmark!(params, batches, bounty, Bounty);
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
 

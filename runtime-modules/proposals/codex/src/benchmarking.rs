@@ -326,7 +326,7 @@ benchmarks! {
                 stake_policy: working_group::StakePolicy {
                     stake_amount:
                         <T as working_group::Trait<working_group::Instance1>>
-                            ::MinimumStakeForOpening::get(),
+                            ::MinimumApplicationStake::get(),
                     leaving_unstaking_period: Zero::zero(),
                 },
                 reward_per_block: None,

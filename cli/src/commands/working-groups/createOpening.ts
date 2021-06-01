@@ -10,6 +10,10 @@ import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFil
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
 import { AugmentedSubmittables } from '@polkadot/api/types'
+import { formatBalance } from '@polkadot/util'
+import BN from 'bn.js'
+
+const OPENING_STAKE = new BN(2000)
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening (requires lead access)'
@@ -69,6 +73,25 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     return inputParams as OpeningParamsJson
   }
 
+  async promptForStakeTopUp(stakingAccount: string): Promise<void> {
+    this.log(`You need to stake ${chalk.bold(formatBalance(OPENING_STAKE))} in order to create a new opening.`)
+
+    const [balances] = await this.getApi().getAccountsBalancesInfo([stakingAccount])
+    const missingBalance = OPENING_STAKE.sub(balances.availableBalance)
+    if (missingBalance.gtn(0)) {
+      await this.requireConfirmation(
+        `Do you wish to transfer remaining ${chalk.bold(
+          formatBalance(missingBalance)
+        )} to your staking account? (${stakingAccount})`
+      )
+      const account = await this.promptForAccount('Choose account to transfer the funds from')
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(account), 'balances', 'transferKeepAlive', [
+        stakingAccount,
+        missingBalance,
+      ])
+    }
+  }
+
   async run() {
     // lead-only gate
     const lead = await this.getRequiredLeadContext()
@@ -93,6 +116,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Remember the provided/fetched data in a variable
       rememberedInput = openingJson
+
+      await this.promptForStakeTopUp(lead.stakingAccount.toString())
 
       // Generate and ask to confirm tx params
       const txParams = this.createTxParams(openingJson)

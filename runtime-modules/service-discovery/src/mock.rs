@@ -51,9 +51,10 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 impl frame_system::Trait for Test {
@@ -88,7 +89,7 @@ impl Trait for Test {
     type Event = MetaEvent;
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -159,6 +160,7 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
@@ -177,7 +179,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -186,7 +188,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
         unimplemented!();
     }
 
@@ -196,7 +198,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::Trait>::ActorId,
+        _worker_id: &<Test as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -217,8 +219,9 @@ parameter_types! {
     pub const LockId1: [u8; 8] = [1; 8];
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
-    pub const MinimumStakeForOpening: u32 = 50;
     pub const CandidateStake: u64 = 100;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u32 = 20;
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -231,7 +234,8 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = WorkingGroupWeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::WeightInfo for WorkingGroupWeightInfo {
@@ -303,7 +307,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     }
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         _: u64,

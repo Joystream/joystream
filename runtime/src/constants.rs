@@ -112,6 +112,7 @@ parameter_types! {
     pub const MembershipWorkingGroupLockId: LockIdentifier = [9; 8];
     pub const InvitedMemberLockId: LockIdentifier = [10; 8];
     pub const StakingCandidateLockId: LockIdentifier = [11; 8];
+    pub const BountyLockId: LockIdentifier = [12; 8];
 }
 
 // Staking lock ID used by nomination and validation in the staking pallet.
@@ -197,6 +198,11 @@ lazy_static! {
             VotingLockId::get(),
             StakingCandidateLockId::get(),
         ].to_vec()),
+        // Bounty
+        (BountyLockId::get(), [
+            VotingLockId::get(),
+            StakingCandidateLockId::get(),
+        ].to_vec()),
     ]
     .iter()
     .fold(BTreeSet::new(), |mut acc, item| {
@@ -206,6 +212,11 @@ lazy_static! {
 
         acc
     });
+}
+
+// Change it when changing the currency constants!
+parameter_types! {
+    pub const ExistentialDeposit: u128 = 10;
 }
 
 pub mod currency {

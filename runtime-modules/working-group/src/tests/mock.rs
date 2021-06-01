@@ -37,10 +37,11 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const ReferralCutMaximumPercent: u8 = 50;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
 }
@@ -94,7 +95,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::Trait for Test {
+impl common::membership::Trait for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -165,6 +166,7 @@ impl membership::Trait for Test {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
@@ -183,8 +185,9 @@ parameter_types! {
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;
-    pub const MinimumStakeForOpening: u64 = 50;
+    pub const MinimumApplicationStake: u64 = 50;
     pub const LockId: [u8; 8] = [1; 8];
+    pub const LeaderOpeningStake: u64 = 20;
 }
 
 impl Trait for Test {
@@ -196,7 +199,8 @@ impl Trait for Test {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = RewardPeriod;
     type WeightInfo = ();
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl common::StakingAccountValidator<Test> for () {
@@ -276,7 +280,7 @@ impl crate::WeightInfo for () {
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,

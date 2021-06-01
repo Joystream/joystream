@@ -32,7 +32,7 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use common::origin::MemberOriginValidator;
+use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 pub(crate) use common::BlockAndTime;
 

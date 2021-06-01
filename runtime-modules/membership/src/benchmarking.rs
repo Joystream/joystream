@@ -13,6 +13,7 @@ use frame_support::traits::Currency;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
+use sp_arithmetic::Perbill;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
 
@@ -84,7 +85,7 @@ fn handle_from_id<T: Trait>(id: u32) -> Vec<u8> {
 
 benchmarks! {
     where_clause { where T: balances::Trait, T: Trait, T: MembershipWorkingGroupHelper<<T as
-        frame_system::Trait>::AccountId, <T as common::Trait>::MemberId, <T as common::Trait>::ActorId> }
+        frame_system::Trait>::AccountId, <T as common::membership::Trait>::MemberId, <T as common::membership::Trait>::ActorId> }
     _{  }
 
     buy_membership_without_referrer{
@@ -171,7 +172,7 @@ benchmarks! {
 
         Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone()).unwrap();
 
-        let referral_cut: BalanceOf<T> = 1.into();
+        let referral_cut = 10u8; //percents
 
         Module::<T>::set_referral_cut(RawOrigin::Root.into(), referral_cut).unwrap();
 
@@ -187,11 +188,15 @@ benchmarks! {
     }: buy_membership(RawOrigin::Signed(account_id.clone()), params.clone())
     verify {
 
-        // Ensure membership for given member_id is successfully bought
+        // Ensure membership for given member_id is successfully bought.
         assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one() + T::MemberId::one());
 
         // Same account id gets reward for being referral.
-        assert_eq!(Balances::<T>::free_balance(&account_id.clone()), free_balance - fee + referral_cut);
+        let referral_cut_balance = Perbill::from_percent(referral_cut.into()) * fee;
+        assert_eq!(
+            Balances::<T>::free_balance(&account_id.clone()),
+            free_balance - fee + referral_cut_balance
+        );
 
         let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
 
@@ -378,7 +383,7 @@ benchmarks! {
     set_referral_cut {
         let member_id = 0;
 
-        let referral_cut: BalanceOf<T> = 1.into();
+        let referral_cut = 10u8;
 
     }: _(RawOrigin::Root, referral_cut)
 

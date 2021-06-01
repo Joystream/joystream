@@ -29,13 +29,13 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 }
 
 // WorkerId - Worker - helper struct.
-pub(crate) struct WorkerInfo<T: common::Trait + frame_system::Trait + balances::Trait> {
+pub(crate) struct WorkerInfo<T: common::membership::Trait + frame_system::Trait + balances::Trait> {
     pub worker_id: WorkerId<T>,
     pub worker: Worker<T>,
 }
 
-impl<T: common::Trait + frame_system::Trait + balances::Trait> From<(WorkerId<T>, Worker<T>)>
-    for WorkerInfo<T>
+impl<T: common::membership::Trait + frame_system::Trait + balances::Trait>
+    From<(WorkerId<T>, Worker<T>)> for WorkerInfo<T>
 {
     fn from((worker_id, worker): (WorkerId<T>, Worker<T>)) -> Self {
         WorkerInfo { worker_id, worker }
@@ -72,6 +72,9 @@ pub struct Opening<BlockNumber: Ord, Balance> {
 
     /// Reward per block for the job opening.
     pub reward_per_block: Option<Balance>,
+
+    /// Stake used to create the opening.
+    pub creation_stake: Balance,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.
@@ -255,3 +258,14 @@ pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
 >;
+
+/// Reward payment type enum.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+pub enum RewardPaymentType {
+    /// The reward was missed.
+    MissedReward,
+
+    /// The reward was paid in time.
+    RegularReward,
+}

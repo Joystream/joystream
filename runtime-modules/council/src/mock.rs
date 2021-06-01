@@ -69,7 +69,7 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -107,7 +107,7 @@ impl Trait for Runtime {
     type MemberOriginValidator = ();
 }
 
-impl common::origin::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,
@@ -264,6 +264,7 @@ parameter_types! {
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
     pub const MaxWinnerTargetCount: u64 = 10;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 mod balances_mod {
@@ -445,6 +446,7 @@ impl membership::Trait for Runtime {
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
@@ -463,12 +465,12 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
         unimplemented!();
     }
 
@@ -482,7 +484,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -504,7 +506,7 @@ impl Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u64 = 10;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -775,7 +777,7 @@ where
 
     pub fn vote_commitment(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::Trait>::MemberId,
+        vote_option_index: &<T as common::membership::Trait>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let salt = Self::generate_salt();

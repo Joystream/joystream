@@ -55,6 +55,7 @@ export type GroupMember = {
   workerId: WorkerId
   memberId: MemberId
   roleAccount: AccountId
+  stakingAccount: AccountId
   profile: MemberDetails
   stake: Balance
   reward: Reward

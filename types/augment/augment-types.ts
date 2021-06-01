@@ -3,7 +3,7 @@
 
 import { Compact, Option, Raw, Vec } from '@polkadot/types/codec';
 import { BitVec, Bytes, Data, DoNotConstruct, Null, StorageKey, Text, Type, U256, bool, i128, i16, i256, i32, i64, i8, u128, u16, u256, u32, u64, u8, usize } from '@polkadot/types/primitive';
-import { Actor, ActorId, AddSchemaSupportToEntityOperation, Application, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationInfo, ApplyOnOpeningParameters, Approved, BalanceKind, BlockAndTime, BuyMembershipParameters, Candidate, CastVoteOf, Category, CategoryId, Class, ClassId, ClassOf, ClassPermissions, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CreateEntityOperation, CreateOpeningParameters, CuratorGroup, CuratorGroupId, CuratorId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, DiscussionPost, DiscussionThread, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, ExecutionFailed, ExecutionStatus, FailedAt, FillOpeningParameters, ForumUserId, FundingRequestParameters, GeneralProposalParameters, HashedTextMaxLength, IPNSIdentity, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, InviteMembershipParameters, LiaisonJudgement, MemberId, Membership, MemoText, ModeratorId, Nonce, Opening, OpeningId, OpeningType, OperationType, OptionResult, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, ParticipantId, Penalty, Poll, PollAlternative, Post, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecision, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, ReferenceCounterSideEffects, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Reply, ReplyId, SameController, Schema, SchemaId, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, StakeParameters, StakePolicy, StakingAccountMemberBinding, Status, StorageProviderId, StoredPropertyValue, StoredValue, TerminateRoleParameters, TextMaxLength, Thread, ThreadId, ThreadMode, ThreadOf, Title, UpdatePropertyValuesOperation, UpdatedBody, UpdatedTitle, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, VoteKind, VotePower, VotingResults, Worker, WorkerId, WorkerInfo, WorkingGroup } from './all';
+import { Actor, ActorId, AddSchemaSupportToEntityOperation, Application, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationInfo, ApplyOnOpeningParameters, Approved, AssuranceContractType, BalanceKind, BlockAndTime, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, Candidate, CastVoteOf, Category, CategoryId, Class, ClassId, ClassOf, ClassPermissions, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CreateEntityOperation, CreateOpeningParameters, CuratorGroup, CuratorGroupId, CuratorId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, DiscussionPost, DiscussionThread, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, Entry, EntryId, ExecutionFailed, ExecutionStatus, FailedAt, FillOpeningParameters, ForumUserId, FundingRequestParameters, FundingType, FundingType_Limited, FundingType_Perpetual, GeneralProposalParameters, HashedTextMaxLength, IPNSIdentity, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, InviteMembershipParameters, LiaisonJudgement, MemberId, Membership, MemoText, ModeratorId, Nonce, Opening, OpeningId, OpeningType, OperationType, OptionResult, OracleJudgment, OracleJudgment_Winner, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, ParticipantId, Penalty, Poll, PollAlternative, Post, PostId, PostReactionId, PrivilegedActor, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecision, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, ReferenceCounterSideEffects, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Reply, ReplyId, ReplyToDelete, RewardPaymentType, SameController, Schema, SchemaId, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, StakeParameters, StakePolicy, StakingAccountMemberBinding, Status, StorageProviderId, StoredPropertyValue, StoredValue, TerminateRoleParameters, TextMaxLength, Thread, ThreadId, ThreadMode, ThreadOf, Title, UpdatePropertyValuesOperation, UpdatedBody, UpdatedTitle, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, VoteKind, VotePower, VotingResults, Worker, WorkerId, WorkerInfo, WorkingGroup } from './all';
 import { BlockAttestations, IncludedBlocks, MoreAttestations } from '@polkadot/types/interfaces/attestations';
 import { RawAuraPreDigest } from '@polkadot/types/interfaces/aura';
 import { ExtrinsicOrHash, ExtrinsicStatus } from '@polkadot/types/interfaces/author';
@@ -1925,6 +1925,9 @@ declare module '@polkadot/types/types/registry' {
     Penalty: Penalty;
     'Option<Penalty>': Option<Penalty>;
     'Vec<Penalty>': Vec<Penalty>;
+    RewardPaymentType: RewardPaymentType;
+    'Option<RewardPaymentType>': Option<RewardPaymentType>;
+    'Vec<RewardPaymentType>': Vec<RewardPaymentType>;
     Url: Url;
     'Option<Url>': Option<Url>;
     'Vec<Url>': Vec<Url>;
@@ -1980,6 +1983,9 @@ declare module '@polkadot/types/types/registry' {
     Reply: Reply;
     'Option<Reply>': Option<Reply>;
     'Vec<Reply>': Vec<Reply>;
+    ReplyToDelete: ReplyToDelete;
+    'Option<ReplyToDelete>': Option<ReplyToDelete>;
+    'Vec<ReplyToDelete>': Vec<ReplyToDelete>;
     ProposalId: ProposalId;
     'Compact<ProposalId>': Compact<ProposalId>;
     'Option<ProposalId>': Option<ProposalId>;
@@ -2220,5 +2226,40 @@ declare module '@polkadot/types/types/registry' {
     ConstitutionInfo: ConstitutionInfo;
     'Option<ConstitutionInfo>': Option<ConstitutionInfo>;
     'Vec<ConstitutionInfo>': Vec<ConstitutionInfo>;
+    BountyId: BountyId;
+    'Compact<BountyId>': Compact<BountyId>;
+    'Option<BountyId>': Option<BountyId>;
+    'Vec<BountyId>': Vec<BountyId>;
+    EntryId: EntryId;
+    'Compact<EntryId>': Compact<EntryId>;
+    'Option<EntryId>': Option<EntryId>;
+    'Vec<EntryId>': Vec<EntryId>;
+    BountyActor: BountyActor;
+    'Option<BountyActor>': Option<BountyActor>;
+    'Vec<BountyActor>': Vec<BountyActor>;
+    AssuranceContractType: AssuranceContractType;
+    'Option<AssuranceContractType>': Option<AssuranceContractType>;
+    'Vec<AssuranceContractType>': Vec<AssuranceContractType>;
+    FundingType_Limited: FundingType_Limited;
+    'Option<FundingType_Limited>': Option<FundingType_Limited>;
+    'Vec<FundingType_Limited>': Vec<FundingType_Limited>;
+    FundingType_Perpetual: FundingType_Perpetual;
+    'Option<FundingType_Perpetual>': Option<FundingType_Perpetual>;
+    'Vec<FundingType_Perpetual>': Vec<FundingType_Perpetual>;
+    FundingType: FundingType;
+    'Option<FundingType>': Option<FundingType>;
+    'Vec<FundingType>': Vec<FundingType>;
+    BountyCreationParameters: BountyCreationParameters;
+    'Option<BountyCreationParameters>': Option<BountyCreationParameters>;
+    'Vec<BountyCreationParameters>': Vec<BountyCreationParameters>;
+    OracleJudgment_Winner: OracleJudgment_Winner;
+    'Option<OracleJudgment_Winner>': Option<OracleJudgment_Winner>;
+    'Vec<OracleJudgment_Winner>': Vec<OracleJudgment_Winner>;
+    OracleJudgment: OracleJudgment;
+    'Option<OracleJudgment>': Option<OracleJudgment>;
+    'Vec<OracleJudgment>': Vec<OracleJudgment>;
+    Entry: Entry;
+    'Option<Entry>': Option<Entry>;
+    'Vec<Entry>': Vec<Entry>;
   }
 }

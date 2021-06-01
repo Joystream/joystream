@@ -96,8 +96,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 8,
-    spec_version: 0,
-    impl_version: 1,
+    spec_version: 1,
+    impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
 };
@@ -249,9 +249,6 @@ impl pallet_timestamp::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 0;
-    pub const TransferFee: u128 = 0;
-    pub const CreationFee: u128 = 0;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -603,9 +600,6 @@ impl memo::Trait for Runtime {
 
 parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
-    pub const DefaultMembershipPrice: Balance = 100;
-    // The candidate stake should be more than the transaction fee which currently is 53
-    pub const CandidateStake: Balance = 200;
 }
 
 impl storage::data_object_type_registry::Trait for Runtime {
@@ -629,9 +623,17 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-impl common::Trait for Runtime {
+impl common::membership::Trait for Runtime {
     type MemberId = MemberId;
     type ActorId = ActorId;
+}
+
+parameter_types! {
+    pub const DefaultMembershipPrice: Balance = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const DefaultInitialInvitationBalance: Balance = 100;
+    // The candidate stake should be more than the transaction fee which currently is 53
+    pub const CandidateStake: Balance = 200;
 }
 
 impl membership::Trait for Runtime {
@@ -642,11 +644,11 @@ impl membership::Trait for Runtime {
     type StakingCandidateStakingHandler = StakingCandidateStakingHandler;
     type WorkingGroup = MembershipWorkingGroup;
     type WeightInfo = weights::membership::WeightInfo;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type CandidateStake = CandidateStake;
 }
 
 parameter_types! {
-    pub const DefaultInitialInvitationBalance: Balance = 100;
     pub const MaxCategoryDepth: u64 = 6;
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
@@ -657,14 +659,13 @@ parameter_types! {
     pub const ThreadDeposit: u64 = 30;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
+    pub const PostLifeTime: BlockNumber = 3600;
 }
 
 pub struct MapLimits;
 
 impl forum::StorageLimits for MapLimits {
     type MaxSubcategories = MaxSubcategories;
-    type MaxThreadsInCategory = MaxThreadsInCategory;
-    type MaxPostsInThread = MaxPostsInThread;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
@@ -691,6 +692,7 @@ impl forum::Trait for Runtime {
 
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
+    type PostLifeTime = PostLifeTime;
 }
 
 impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
@@ -708,10 +710,14 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = 14400 + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
-    // This should be more costly than `add_opening` fee with the current configuration
-    // the base cost of `add_opening` in tokens is 193. And has a very slight slope
+    // This should be more costly than `apply_on_opening` fee with the current configuration
+    // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const MinimumStakeForOpening: Balance = 2000;
+    pub const MinimumApplicationStake: Balance = 2000;
+    // This should be more costly than `add_opening` fee with the current configuration
+    // the base cost of `add_opening` in tokens is 81. And has a very slight slope
+    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    pub const LeaderOpeningStake: Balance = 2000;
 }
 
 // Staking managers type aliases.
@@ -749,7 +755,8 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -761,7 +768,8 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
@@ -773,7 +781,8 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
@@ -785,7 +794,8 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
     type WeightInfo = weights::working_group::WeightInfo;
-    type MinimumStakeForOpening = MinimumStakeForOpening;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
 impl service_discovery::Trait for Runtime {
@@ -826,6 +836,10 @@ impl Default for Call {
 
 parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
+    pub const ProposalsPostDeposit: Balance = 2000;
+    // module : proposals_discussion
+    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:prdis");
+    pub const ForumPostLifeTime: BlockNumber = 3600;
 }
 
 macro_rules! call_wg {
@@ -847,6 +861,9 @@ impl proposals_discussion::Trait for Runtime {
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;
     type WeightInfo = weights::proposals_discussion::WeightInfo;
+    type PostDeposit = ProposalsPostDeposit;
+    type ModuleId = ProposalsDiscussionModuleId;
+    type PostLifeTime = ForumPostLifeTime;
 }
 
 impl joystream_utility::Trait for Runtime {
@@ -910,8 +927,34 @@ impl pallet_constitution::Trait for Runtime {
 }
 
 parameter_types! {
+    pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+    pub const ClosedContractSizeLimit: u32 = 50;
+    pub const MinCherryLimit: Balance = 10;
+    pub const MinFundingLimit: Balance = 10;
+    pub const MinWorkEntrantStake: Balance = 100;
+}
+
+impl bounty::Trait for Runtime {
+    type Event = Event;
+    type ModuleId = BountyModuleId;
+    type BountyId = u64;
+    type Membership = Members;
+    type WeightInfo = weights::bounty::WeightInfo;
+    type CouncilBudgetManager = Council;
+    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinCherryLimit = MinCherryLimit;
+    type MinFundingLimit = MinFundingLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
+}
+
+parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
+    pub const ReplyDeposit: Balance = 2000;
+    pub const BlogModuleId: ModuleId = ModuleId(*b"mod:blog"); // module : forum
+    pub const ReplyLifetime: BlockNumber = 43_200;
 }
 
 pub type BlogInstance = blog::Instance1;
@@ -919,11 +962,13 @@ impl blog::Trait<BlogInstance> for Runtime {
     type Event = Event;
 
     type PostsMaxNumber = PostsMaxNumber;
-    type RepliesMaxNumber = RepliesMaxNumber;
     type ParticipantEnsureOrigin = Members;
     type WeightInfo = weights::blog::WeightInfo;
 
     type ReplyId = u64;
+    type ReplyDeposit = ReplyDeposit;
+    type ModuleId = BlogModuleId;
+    type ReplyLifetime = ReplyLifetime;
 }
 
 /// Forum identifier for category
@@ -978,6 +1023,7 @@ construct_runtime!(
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
+        Bounty: bounty::{Module, Call, Storage, Event<T>},
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         // --- Storage

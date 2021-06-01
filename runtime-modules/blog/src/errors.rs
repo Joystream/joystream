@@ -25,10 +25,14 @@ decl_error! {
         /// Number of posts exceeds limits.
         PostLimitReached,
 
-        /// Number of maximum replies reached
-        RepliesLimitReached,
-
         /// Reaction doesn't exists
         InvalidReactionIndex,
+
+        /// Insuficient balance for reply creation
+        InsufficientBalanceForReply,
+
+        /// This error represent the invalid state where there is not enough funds in a post
+        /// account to pay off its delete
+        InsufficientBalanceInPostAccount,
     }
 }
