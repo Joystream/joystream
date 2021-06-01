@@ -180,6 +180,19 @@ export default class Api {
     return this._api.query[module]
   }
 
+  protected async graphQLQuery<T>(queryPromise: Promise<T> | undefined): Promise<T | null> {
+    if (!queryPromise) {
+      return null
+    }
+    try {
+      const result = await queryPromise
+      return result
+    } catch (e) {
+      console.warn(e)
+      return null
+    }
+  }
+
   protected async fetchMemberQueryNodeData(
     memberId: MemberId
   ): Promise<GraphQLQueryResult<'membership', 'handle' | 'name'>['membership']> {
@@ -196,12 +209,14 @@ export default class Api {
       return null
     }
 
-    const res = await this._queryNode.query<GraphQLQueryResult<'membership', 'handle' | 'name'>>({
-      query: MEMBER_BY_ID_QUERY,
-      variables: { id: memberId.toNumber() },
-    })
+    const res = await this.graphQLQuery(
+      this._queryNode?.query<GraphQLQueryResult<'membership', 'handle' | 'name'>>({
+        query: MEMBER_BY_ID_QUERY,
+        variables: { id: memberId.toNumber() },
+      })
+    )
 
-    return res.data.membership
+    return res?.data.membership
   }
 
   async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
