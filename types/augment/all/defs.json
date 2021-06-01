@@ -1019,5 +1019,6 @@
         "objectCreationList": "Vec<DataObjectCreationParameters>",
         "deletionPrizeSourceAccountId": "GenericAccountId"
     },
-    "StorageBucketIdSet": "BTreeSet<StorageBucketId>"
+    "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
+    "DataObjectIdSet": "BTreeSet<DataObjectId>"
 }

@@ -115,3 +115,32 @@ export async function uploadDataObjects(
     console.error(`Api Error: ${err}`)
   }
 }
+
+export async function acceptPendingDataObjects(
+  account: KeyringPair,
+  workerId: number,
+  storageBucketId: number,
+  dataObjects: number[]
+): Promise<void> {
+  try {
+    const api = await createApi()
+
+    const bagId = { 'Static': 'Council' }
+
+    const dataObjectSet: CodecArg = api.createType(
+      'DataObjectIdSet',
+      dataObjects
+    )
+
+    await sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'acceptPendingDataObjects',
+      [workerId, storageBucketId, bagId, dataObjectSet]
+    )
+  } catch (err) {
+    console.error(`Api Error: ${err}`)
+    throw err
+  }
+}

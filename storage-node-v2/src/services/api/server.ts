@@ -22,11 +22,14 @@ export async function createServer(
           <body>
             <form method="POST" enctype="multipart/form-data" action="/api/v1/upload">
               <h2>Api development form (upload)</h2>
-              <input type="file" name="recfile"><br />
-              <input type="submit">
+              <table>
+                <tr><td>DataObjectId</td><td><input name="dataObjectId" value="0"</td></tr>
+                <tr><td>WorkerId</td><td><input name="workerId" value="0"></td></tr>
+                <tr><td>StorageBucketId</td><td><input name="storageBucketId" value="0"></td></tr>
+                <tr><td><input type="file" name="recfile"><br /></td><td><input type="submit"></td></tr>
             </form>
-          </body><
-        /html>`
+          </body>
+        </html>`
       )
       res.end()
     })

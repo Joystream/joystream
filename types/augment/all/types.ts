@@ -406,6 +406,9 @@ export interface DataObjectCreationParameters extends Struct {
 /** @name DataObjectId */
 export interface DataObjectId extends u64 {}
 
+/** @name DataObjectIdSet */
+export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
+
 /** @name DataObjectsMap */
 export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
 
