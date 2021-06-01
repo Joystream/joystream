@@ -8,7 +8,6 @@ import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
-import { Query } from './QueryNodeApiSchema.generated'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -121,13 +120,3 @@ export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> 
   tx: { [key: string]: SubmittableModuleExtrinsics<'promise'> }
   consts: { [key: string]: QueryableModuleConsts }
 }
-
-type Maybe<T> = T | null
-
-// Helper for creating partial GraphQL query result type
-export type GraphQLQueryResult<
-  QueryName extends keyof Query,
-  Fields extends keyof NonNullable<Pick<Query, QueryName>[QueryName]>
-> = Pick<Query, QueryName>[QueryName] extends Maybe<Pick<Query, QueryName>[QueryName]>
-  ? { [K in QueryName]?: Maybe<Pick<NonNullable<Pick<Query, QueryName>[QueryName]>, Fields>> }
-  : { [K in QueryName]: Pick<NonNullable<Pick<Query, QueryName>[QueryName]>, Fields> }

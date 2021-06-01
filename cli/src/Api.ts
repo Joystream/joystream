@@ -16,7 +16,6 @@ import {
   OpeningDetails,
   UnaugmentedApiPromise,
   MemberDetails,
-  GraphQLQueryResult,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
@@ -35,8 +34,15 @@ import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '
 import { ContentId, DataObject } from '@joystream/types/media'
 import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
-import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, gql } from '@apollo/client'
+import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client'
 import fetch from 'cross-fetch'
+import { Maybe } from './graphql/generated/schema'
+import {
+  GetMemberById,
+  GetMemberByIdQuery,
+  GetMemberByIdQueryVariables,
+  MembershipFieldsFragment,
+} from './graphql/generated/queries'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)
@@ -119,6 +125,47 @@ export default class Api {
     return new Api(api, chainType.isDevelopment || chainType.isLocal, queryNodeClient)
   }
 
+  // Query-node: get entity by unique input
+  protected async uniqueEntityQuery<
+    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<Required<QueryT>[keyof QueryT] | null | undefined> {
+    if (!this._queryNode) {
+      return
+    }
+    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+  }
+
+  // Query-node: get entities by "non-unique" input and return first result
+  protected async firstEntityQuery<
+    QueryT extends { [k: string]: unknown[] },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<QueryT[keyof QueryT][number] | null | undefined> {
+    if (!this._queryNode) {
+      return
+    }
+    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
+  }
+
+  // Query-node: get multiple entities
+  protected async multipleEntitiesQuery<
+    QueryT extends { [k: string]: unknown[] },
+    VariablesT extends Record<string, unknown>
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | undefined> {
+    if (!this._queryNode) {
+      return
+    }
+    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+  }
+
   async bestNumber(): Promise<number> {
     return (await this._api.derive.chain.bestNumber()).toNumber()
   }
@@ -180,43 +227,14 @@ export default class Api {
     return this._api.query[module]
   }
 
-  protected async graphQLQuery<T>(queryPromise: Promise<T> | undefined): Promise<T | null> {
-    if (!queryPromise) {
-      return null
-    }
-    try {
-      const result = await queryPromise
-      return result
-    } catch (e) {
-      console.warn(e)
-      return null
-    }
-  }
-
-  protected async fetchMemberQueryNodeData(
-    memberId: MemberId
-  ): Promise<GraphQLQueryResult<'membership', 'handle' | 'name'>['membership']> {
-    const MEMBER_BY_ID_QUERY = gql`
-      query($id: ID!) {
-        membership(where: { id: $id }) {
-          handle
-          name
-        }
-      }
-    `
-
-    if (!this._queryNode) {
-      return null
-    }
-
-    const res = await this.graphQLQuery(
-      this._queryNode?.query<GraphQLQueryResult<'membership', 'handle' | 'name'>>({
-        query: MEMBER_BY_ID_QUERY,
-        variables: { id: memberId.toNumber() },
-      })
+  protected async fetchMemberQueryNodeData(memberId: MemberId): Promise<MembershipFieldsFragment | null | undefined> {
+    return this.uniqueEntityQuery<GetMemberByIdQuery, GetMemberByIdQueryVariables>(
+      GetMemberById,
+      {
+        id: memberId.toString(),
+      },
+      'membershipByUniqueInput'
     )
-
-    return res?.data.membership
   }
 
   async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
@@ -224,7 +242,7 @@ export default class Api {
 
     return {
       id: memberId,
-      name: memberData?.name,
+      name: memberData?.metadata.name,
       handle: memberData?.handle,
       membership,
     }
