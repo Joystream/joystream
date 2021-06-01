@@ -208,6 +208,12 @@
         "slashing_text": "Text",
         "slashing_amount": "u128"
     },
+    "RewardPaymentType": {
+        "_enum": [
+            "MissedReward",
+            "RegularReward"
+        ]
+    },
     "Url": "Text",
     "IPNSIdentity": "Text",
     "ServiceProviderRecord": {
@@ -252,6 +258,11 @@
         "text_hash": "Hash",
         "owner": "ParticipantId",
         "parent_id": "PostId"
+    },
+    "ReplyToDelete": {
+        "post_id": "PostId",
+        "reply_id": "ReplyId",
+        "hide": "bool"
     },
     "ProposalId": "u32",
     "ProposalStatus": {
