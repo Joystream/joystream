@@ -50,7 +50,7 @@ export async function acceptStorageBucketInvitation(
   }
 }
 
-//TODO:
+// TODO:
 // export enum BagId {
 //   Static = 'static',
 //   Dynamic = 'dynamic',

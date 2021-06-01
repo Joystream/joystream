@@ -1,8 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import {
-  CodecArg,
-  ISubmittableResult,
-} from '@polkadot/types/types'
+import { CodecArg, ISubmittableResult } from '@polkadot/types/types'
 import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -14,8 +11,7 @@ import {
 } from '@polkadot/types/interfaces/system'
 import { Keyring } from '@polkadot/keyring'
 
-
-//TODO: ApiHelper class container for functions ??? 
+// TODO: ApiHelper class container for functions ???
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -73,7 +69,8 @@ function sendExtrinsic(
                 if (dispatchSuccess.isOk) {
                   resolve(result)
                 } else {
-                  reject(//TODO: print error
+                  reject(
+                    // TODO: print error
                     new ExtrinsicFailedError('Sudo extrinsic execution error!')
                   )
                 }

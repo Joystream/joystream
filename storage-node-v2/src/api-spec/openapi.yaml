@@ -12,12 +12,12 @@ externalDocs:
   description: Storage node API
   url: joystream.org
 servers:
-- url: /api/v1
- 
+  - url: /api/v1
+
 tags:
   - name: storage
     description: Storage node APIs
- 
+
 paths:
   /upload:
     post:
