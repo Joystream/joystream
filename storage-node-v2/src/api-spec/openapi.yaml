@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Storage node API
+  description: Storage node API
+  contact:
+    email: info@joystream.org
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 0.1.0
+externalDocs:
+  description: Storage node API
+  url: joystream.org
+servers:
+- url: /api/v1
+ 
+tags:
+  - name: storage
+    description: Storage node APIs
+ 
+paths:
+  /upload:
+    post:
+      description: Upload data
+      operationId: publicApi.upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              # $ref: '#/components/schemas/NewPhoto'
+              type: object
+              required:
+                - recfile
+              properties:
+                file:
+                  description: Data file
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        200:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean

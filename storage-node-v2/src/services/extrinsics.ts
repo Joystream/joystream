@@ -3,7 +3,7 @@ import {
   sendAndFollowSudoNamedTx,
   sendAndFollowNamedTx,
   getAlicePair,
-} from './api'
+} from './runtimeApi'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
 
