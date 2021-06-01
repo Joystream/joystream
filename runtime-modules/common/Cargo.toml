@@ -5,16 +5,16 @@ authors = ['Joystream contributors']
 edition = '2018'
 
 [dependencies]
-serde = { version = "1.0.124", optional = true, features = ["derive"] }
-strum = {version = "0.19", optional = true}
-strum_macros = {version = "0.19", optional = true}
-codec = { package = 'parity-scale-codec', version = '2.0.0', default-features = false, features = ['derive'] }
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0' }
+serde = { version = "1.0.126", optional = true, features = ["derive"] }
+strum = {version = "0.20", optional = true}
+strum_macros = {version = "0.20", optional = true}
+codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive'] }
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3" }
 
 [features]
 default = ['std']

@@ -5,20 +5,20 @@ authors = ['Joystream contributors']
 edition = '2018'
 
 [dependencies]
-serde = { version = "1.0.124", optional = true, features = ["derive"] }
-codec = { package = 'parity-scale-codec', version = '2.0.0', default-features = false, features = ['derive'] }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
+serde = { version = "1.0.126", optional = true, features = ["derive"] }
+codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive'] }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
 stake = { package = 'pallet-stake', default-features = false, path = '../stake'}
 
 [dev-dependencies]
 mockall = "0.7.1"
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "rococo-v1", version = '3.0.0'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.3"}
 
 [features]
 default = ['std']

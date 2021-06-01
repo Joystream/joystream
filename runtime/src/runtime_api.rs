@@ -45,6 +45,10 @@ use crate::{
     Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
     TransactionPayment,
 };
+
+#[cfg(not(feature = "standalone"))]
+use crate::{Aura, AuraId, ParachainSystem};
+
 use frame_support::weights::Weight;
 
 /// The SignedExtension to the basic transaction logic.
@@ -188,9 +192,9 @@ impl_runtime_apis! {
             data.check_extrinsics(&block)
         }
 
-        fn random_seed() -> <Block as BlockT>::Hash {
-            RandomnessCollectiveFlip::random_seed().0
-        }
+        // fn random_seed() -> <Block as BlockT>::Hash {
+        //     RandomnessCollectiveFlip::random_seed().0
+        // }
     }
 
     impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
@@ -335,6 +339,24 @@ impl_runtime_apis! {
             encoded: Vec<u8>,
         ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
             SessionKeys::decode_into_raw_public_keys(&encoded)
+        }
+    }
+
+    #[cfg(not(feature = "standalone"))]
+    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+        fn slot_duration() -> sp_consensus_aura::SlotDuration {
+            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
+        }
+
+        fn authorities() -> Vec<AuraId> {
+            Aura::authorities()
+        }
+    }
+
+    #[cfg(not(feature = "standalone"))]
+    impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
+        fn collect_collation_info() -> cumulus_primitives_core::CollationInfo {
+            ParachainSystem::collect_collation_info()
         }
     }
 }
