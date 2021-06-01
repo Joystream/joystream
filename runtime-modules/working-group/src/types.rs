@@ -258,3 +258,14 @@ pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
 >;
+
+/// Reward payment type enum.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+pub enum RewardPaymentType {
+    /// The reward was missed.
+    MissedReward,
+
+    /// The reward was paid in time.
+    RegularReward,
+}
