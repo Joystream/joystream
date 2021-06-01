@@ -45,7 +45,8 @@
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
-    "typeorm": "^0.2.31"
+    "typeorm": "^0.2.31",
+    "pg": "^8.4.0"
   },
   "devDependencies": {
     "eslint": "^7.6.0",

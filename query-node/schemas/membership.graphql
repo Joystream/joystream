@@ -1,23 +1,31 @@
-enum Network {
-  BABYLON
-  ALEXANDRIA
-  ROME
-  OLYMPIA
+type MemberMetadata @entity {
+  "Member's name"
+  name: String
+
+  "Avatar data object"
+  avatar: DataObject
+
+  "Short text chosen by member to share information about themselves"
+  about: String
 }
 
-type Block @entity {
-  "Block number as a string"
-  id: ID!
-  block: Int!
-  executedAt: DateTime!
-  network: Network!
+type MembershipEntryPaid @variant {
+  "The event the membership was bought in"
+  # Must be optional because of member.entry <=> membershipBoughtEvent.newMember cross relationship
+  membershipBoughtEvent: MembershipBoughtEvent
 }
 
-enum MembershipEntryMethod {
-  PAID
-  INVITED
-  GENESIS
+type MembershipEntryInvited @variant {
+  "The event the member was invited in"
+  # Must be optional because of member.entry <=> memberInvitedEvent.newMember cross relationship
+  memberInvitedEvent: MemberInvitedEvent
 }
+
+type MembershipEntryGenesis @variant {
+  phantom: Int
+}
+
+union MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited | MembershipEntryGenesis
 
 "Stored information about a registered user"
 type Membership @entity {
@@ -27,26 +35,14 @@ type Membership @entity {
   "The unique handle chosen by member"
   handle: String! @unique @fulltext(query: "membersByHandle")
 
-  "Member's name"
-  name: String
-
-  "A Url to member's Avatar image"
-  avatarUri: String
-
-  "Short text chosen by member to share information about themselves"
-  about: String
+  "Member's metadata"
+  metadata: MemberMetadata!
 
   "Member's controller account id"
   controllerAccount: String!
 
   "Member's root account id"
   rootAccount: String!
-
-  "Blocknumber when member was registered"
-  registeredAtBlock: Block!
-
-  "Timestamp when member was registered"
-  registeredAtTime: DateTime!
 
   "How the member was registered"
   entry: MembershipEntryMethod!
@@ -71,17 +67,26 @@ type Membership @entity {
 
   "A member that referred this member (if any)"
   referredBy: Membership
+
+  "Whether member is founding member."
+  isFoundingMember: Boolean!
+
+  "Member's working group roles (current and past)"
+  roles: [Worker!] @derivedFrom(field: "membership")
 }
 
-type MembershipSystem @entity {
+type MembershipSystemSnapshot @entity {
+  "The snapshot block number"
+  snapshotBlock: Int!
+
   "Initial invitation count of a new member."
   defaultInviteCount: Int!
 
   "Current price to buy a membership."
   membershipPrice: BigInt!
 
-  "Amount of tokens diverted to invitor."
-  referralCut: BigInt!
+  "Percentage of tokens diverted to invitor."
+  referralCut: Int!
 
   "The initial, locked, balance credited to controller account of invitee."
   invitedInitialBalance: BigInt!

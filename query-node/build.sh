@@ -22,12 +22,10 @@ yarn typegen
 yarn codegen:noinstall
 yarn format
 
-# FIXME: Tmp add "declaration": true to query-node tsconfig
-sed -i 's/"compilerOptions": {/"compilerOptions": {\n    "declaration": true,/' ./generated/graphql-server/tsconfig.json
-
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
 
 yarn workspace query-node build:dev
+
 yarn workspace query-node-mappings build

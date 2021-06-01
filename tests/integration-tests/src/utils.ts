@@ -4,7 +4,18 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import fs from 'fs'
 import { decodeAddress } from '@polkadot/keyring'
+import { Bytes } from '@polkadot/types'
+import { createType } from '@joystream/types'
 
+export type AnyMessage<T> = T & {
+  toJSON(): Record<string, unknown>
+}
+
+export type AnyMetadataClass<T> = {
+  decode(binary: Uint8Array): AnyMessage<T>
+  encode(obj: T): { finish(): Uint8Array }
+  toObject(obj: AnyMessage<T>): Record<string, unknown>
+}
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
   private static LENGTH_ERA = 2 // assuming mortals
@@ -44,5 +55,20 @@ export class Utils {
 
   public static camelToSnakeCase(key: string): string {
     return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
+
+  public static metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
+    return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
+  }
+
+  public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): T {
+    // We use `toObject()` to get rid of .prototype defaults for optional fields
+    return metaClass.toObject(metaClass.decode(bytes.toU8a(true))) as T
+  }
+
+  public static assert(condition: any, msg?: string): asserts condition {
+    if (!condition) {
+      throw new Error(msg || 'Assertion failed')
+    }
   }
 }

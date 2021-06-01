@@ -1,14 +1,11 @@
 import { FlowProps } from '../../Flow'
-import {
-  BuyMembershipHappyCaseFixture,
-  BuyMembershipWithInsufficienFundsFixture,
-} from '../../fixtures/membershipModule'
+import { BuyMembershipHappyCaseFixture, BuyMembershipWithInsufficienFundsFixture } from '../../fixtures/membership'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
-export default async function membershipCreation({ api, query, env }: FlowProps): Promise<void> {
+export default async function creatingMemberships({ api, query, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:creating-members')
   debug('Started')
   api.enableDebugTxLogs()
@@ -17,12 +14,12 @@ export default async function membershipCreation({ api, query, env }: FlowProps)
   assert(N > 0)
 
   // Assert membership can be bought if sufficient funds are available
-  const nAccounts = api.createKeyPairs(N).map((key) => key.address)
+  const nAccounts = (await api.createKeyPairs(N)).map((key) => key.address)
   const happyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, nAccounts)
-  await new FixtureRunner(happyCaseFixture).run()
+  await new FixtureRunner(happyCaseFixture).runWithQueryNodeChecks()
 
   // Assert account can not buy the membership with insufficient funds
-  const aAccount = api.createKeyPairs(1)[0].address
+  const aAccount = (await api.createKeyPairs(1))[0].address
   const insufficientFundsFixture = new BuyMembershipWithInsufficienFundsFixture(api, aAccount)
   await new FixtureRunner(insufficientFundsFixture).run()
 

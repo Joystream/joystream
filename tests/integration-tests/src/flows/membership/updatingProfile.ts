@@ -1,15 +1,15 @@
 import { FlowProps } from '../../Flow'
-import { BuyMembershipHappyCaseFixture, UpdateProfileHappyCaseFixture } from '../../fixtures/membershipModule'
+import { BuyMembershipHappyCaseFixture, UpdateProfileHappyCaseFixture } from '../../fixtures/membership'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-export default async function profileUpdate({ api, query }: FlowProps): Promise<void> {
+export default async function updatingProfile({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger('flow:member-profile-update')
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [account] = api.createKeyPairs(1).map((key) => key.address)
+  const [account] = (await api.createKeyPairs(1)).map((key) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
@@ -17,7 +17,7 @@ export default async function profileUpdate({ api, query }: FlowProps): Promise<
     account,
     memberId,
   })
-  await new FixtureRunner(updateProfileHappyCaseFixture).run()
+  await new FixtureRunner(updateProfileHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

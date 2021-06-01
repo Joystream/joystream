@@ -1,15 +1,15 @@
 import { FlowProps } from '../../Flow'
-import { BuyMembershipHappyCaseFixture, TransferInvitesHappyCaseFixture } from '../../fixtures/membershipModule'
+import { BuyMembershipHappyCaseFixture, TransferInvitesHappyCaseFixture } from '../../fixtures/membership'
 
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 
-export default async function membershipCreation({ api, query, env }: FlowProps): Promise<void> {
+export default async function transferringInvites({ api, query, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:transferring-invites')
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [fromAcc, toAcc] = api.createKeyPairs(2).map((key) => key.address)
+  const [fromAcc, toAcc] = (await api.createKeyPairs(2)).map((key) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [fromAcc, toAcc])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
   const [fromMemberId, toMemberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
@@ -20,7 +20,7 @@ export default async function membershipCreation({ api, query, env }: FlowProps)
     { memberId: fromMemberId, account: fromAcc },
     { memberId: toMemberId, account: toAcc }
   )
-  await new FixtureRunner(transferInvitesHappyCaseFixture).run()
+  await new FixtureRunner(transferInvitesHappyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }
