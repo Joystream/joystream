@@ -1,12 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import {
-  EventContext,
-  StoreContext,
-  DatabaseManager,
-  SubstrateEvent
-} from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
 import { Members } from './generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
@@ -95,7 +90,7 @@ async function createNewMemberFromParams(
     handle: handle.unwrap().toString(),
     metadata: metadataEntity,
     entry: entryMethod,
-    referrestorey:
+    referredBy:
       entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrer_id.isSome
         ? new Membership({ id: (params as BuyMembershipParameters).referrer_id.unwrap().toString() })
         : undefined,
@@ -104,7 +99,7 @@ async function createNewMemberFromParams(
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
-    invitestorey:
+    invitedBy:
       entryMethod.isTypeOf === 'MembershipEntryInvited'
         ? new Membership({ id: (params as InviteMembershipParameters).inviting_member_id.toString() })
         : undefined,
@@ -133,7 +128,7 @@ export async function members_MembershipBought({ store, event }: EventContext & 
       ...member.metadata,
       id: undefined,
     }),
-    referrer: member.referrestorey,
+    referrer: member.referredBy,
   })
 
   await store.save<MemberMetadata>(membershipBoughtEvent.metadata)
@@ -341,8 +336,7 @@ export async function members_StakingAccountRemoved({ store, event }: EventConte
   await store.save<StakingAccountRemovedEvent>(stakingAccountRemovedEvent)
 }
 
-export async function members_InitialInvitationCountUpdated(ctx: EventContext & StoreContext
-): Promise<void> {
+export async function members_InitialInvitationCountUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
   const [newDefaultInviteCount] = new Members.InitialInvitationCountUpdatedEvent(event).params
   const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(ctx)
@@ -376,9 +370,10 @@ export async function members_MembershipPriceUpdated(ctx: EventContext & StoreCo
   await store.save<MembershipPriceUpdatedEvent>(membershipPriceUpdatedEvent)
 }
 
-export async function members_ReferralCutUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function members_ReferralCutUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
   const [newReferralCut] = new Members.ReferralCutUpdatedEvent(event).params
-  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(store, event)
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(ctx)
 
   membershipSystemSnapshot.referralCut = newReferralCut.toNumber()
 
@@ -409,7 +404,10 @@ export async function members_InitialInvitationBalanceUpdated(ctx: EventContext 
   await store.save<InitialInvitationBalanceUpdatedEvent>(initialInvitationBalanceUpdatedEvent)
 }
 
-export async function members_LeaderInvitationQuotaUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function members_LeaderInvitationQuotaUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   const [newQuota] = new Members.LeaderInvitationQuotaUpdatedEvent(event).params
 
   const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({

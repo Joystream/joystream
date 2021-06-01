@@ -1,12 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import {
-  EventContext,
-  StoreContext,
-  DatabaseManager,
-  SubstrateEvent
-} from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
 
 import { StorageWorkingGroup as WorkingGroups } from './generated/types'
 import {
@@ -76,7 +71,6 @@ import {
   BudgetSetEvent,
   BudgetSpendingEvent,
   LeaderSetEvent,
-  Event,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 
@@ -130,7 +124,10 @@ async function getApplicationFormQuestions(
   store: DatabaseManager,
   openingstoreId: string
 ): Promise<ApplicationFormQuestion[]> {
-  const openingWithQuestions = await getOpening(store, openingstoreId, ['metadata', 'metadata.applicationFormQuestions'])
+  const openingWithQuestions = await getOpening(store, openingstoreId, [
+    'metadata',
+    'metadata.applicationFormQuestions',
+  ])
 
   if (!openingWithQuestions) {
     throw new Error(`Opening not found by id: ${openingstoreId}`)
@@ -341,7 +338,7 @@ async function handleWorkingGroupMetadataAction(
   }
 }
 
-async function handleTerminatedWorker({ store, event }: EventContext & StoreContext ): Promise<void> {
+async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -380,7 +377,7 @@ export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?
 }
 
 // Mapping functions
-export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   const [
     openingRuntimeId,
     metadataBytes,
@@ -419,7 +416,7 @@ export async function workingGroups_OpeningAdded({ store, event }: EventContext 
   await store.save<OpeningAddedEvent>(openingAddedEvent)
 }
 
-export async function workingGroups_AppliedOnOpening({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_AppliedOnOpening({ store, event }: EventContext & StoreContext): Promise<void> {
   const eventTime = new Date(event.blockTimestamp)
 
   const [
@@ -465,7 +462,7 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
   await store.save<AppliedOnOpeningEvent>(appliedOnOpeningEvent)
 }
 
-export async function workingGroups_LeaderSet({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_LeaderSet({ store, event }: EventContext & StoreContext): Promise<void> {
   const group = await getWorkingGroup(store, event)
 
   const leaderSetEvent = new LeaderSetEvent({
@@ -476,7 +473,7 @@ export async function workingGroups_LeaderSet({ store, event }: EventContext & S
   await store.save<LeaderSetEvent>(leaderSetEvent)
 }
 
-export async function workingGroups_OpeningFilled({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_OpeningFilled({ store, event }: EventContext & StoreContext): Promise<void> {
   const eventTime = new Date(event.blockTimestamp)
 
   const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(
@@ -569,7 +566,7 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
   }
 }
 
-export async function workingGroups_OpeningCanceled({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_OpeningCanceled({ store, event }: EventContext & StoreContext): Promise<void> {
   const [openingRuntimeId] = new WorkingGroups.OpeningCanceledEvent(event).params
 
   const group = await getWorkingGroup(store, event)
@@ -608,7 +605,7 @@ export async function workingGroups_OpeningCanceled({ store, event }: EventConte
   )
 }
 
-export async function workingGroups_ApplicationWithdrawn({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_ApplicationWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
   const [applicationRuntimeId] = new WorkingGroups.ApplicationWithdrawnEvent(event).params
 
   const group = await getWorkingGroup(store, event)
@@ -633,7 +630,7 @@ export async function workingGroups_ApplicationWithdrawn({ store, event }: Event
   await store.save<WorkingGroupApplication>(application)
 }
 
-export async function workingGroups_StatusTextChanged({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_StatusTextChanged({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, optBytes] = new WorkingGroups.StatusTextChangedEvent(event).params
   const group = await getWorkingGroup(store, event)
 
@@ -672,10 +669,10 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
-export async function workingGroups_WorkerRoleAccountUpdated(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
+export async function workingGroups_WorkerRoleAccountUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -696,10 +693,10 @@ export async function workingGroups_WorkerRoleAccountUpdated(
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_WorkerRewardAccountUpdated(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
+export async function workingGroups_WorkerRewardAccountUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -720,7 +717,7 @@ export async function workingGroups_WorkerRewardAccountUpdated(
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_StakeIncreased({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_StakeIncreased({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -741,7 +738,7 @@ export async function workingGroups_StakeIncreased({ store, event }: EventContex
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_RewardPaid({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_RewardPaid({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -765,10 +762,10 @@ export async function workingGroups_RewardPaid({ store, event }: EventContext & 
   await store.save<WorkingGroup>(group)
 }
 
-export async function workingGroups_NewMissedRewardLevelReached(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
+export async function workingGroups_NewMissedRewardLevelReached({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -790,7 +787,7 @@ export async function workingGroups_NewMissedRewardLevelReached(
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId] = new WorkingGroups.WorkerExitedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -811,7 +808,7 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_LeaderUnset({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_LeaderUnset({ store, event }: EventContext & StoreContext): Promise<void> {
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
 
@@ -829,17 +826,17 @@ export async function workingGroups_LeaderUnset({ store, event }: EventContext &
   await store.save<WorkingGroup>(group)
 }
 
-export async function workingGroups_TerminatedWorker(ctx: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_TerminatedWorker(ctx: EventContext & StoreContext): Promise<void> {
   await handleTerminatedWorker(ctx)
 }
-export async function workingGroups_TerminatedLeader(ctx: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_TerminatedLeader(ctx: EventContext & StoreContext): Promise<void> {
   await handleTerminatedWorker(ctx)
 }
 
-export async function workingGroups_WorkerRewardAmountUpdated(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
+export async function workingGroups_WorkerRewardAmountUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -860,7 +857,7 @@ export async function workingGroups_WorkerRewardAmountUpdated(
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_StakeSlashed({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_StakeSlashed({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -883,7 +880,7 @@ export async function workingGroups_StakeSlashed({ store, event }: EventContext 
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_StakeDecreased({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_StakeDecreased({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -904,7 +901,7 @@ export async function workingGroups_StakeDecreased({ store, event }: EventContex
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
@@ -927,7 +924,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_BudgetSet({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_BudgetSet({ store, event }: EventContext & StoreContext): Promise<void> {
   const [newBudget] = new WorkingGroups.BudgetSetEvent(event).params
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
@@ -946,7 +943,7 @@ export async function workingGroups_BudgetSet({ store, event }: EventContext & S
   await store.save<WorkingGroup>(group)
 }
 
-export async function workingGroups_BudgetSpending({ store, event }: EventContext & StoreContext ): Promise<void> {
+export async function workingGroups_BudgetSpending({ store, event }: EventContext & StoreContext): Promise<void> {
   const [reciever, amount, optRationale] = new WorkingGroups.BudgetSpendingEvent(event).params
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
