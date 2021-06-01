@@ -63,6 +63,9 @@ impl_outer_event! {
     }
 }
 
+// to test a sbustrate runtime, construct a mock runtime enviroinment. The configuration
+// type Test is defined as a unit struct with imp lementations for each of the configuration 
+// traits that need to be used in the mock runtime. 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
@@ -255,6 +258,7 @@ pub struct ExtBuilder {
 }
 
 impl Default for ExtBuilder {
+    // init test scenario for ExtBuilder
     fn default() -> Self {
         Self {
             next_channel_category_id: 1,
@@ -276,6 +280,7 @@ impl ExtBuilder {
             .build_storage::<Test>()
             .unwrap();
 
+        // the same as t.top().extend(GenesisConfig::<Test> etc...)
         GenesisConfig::<Test> {
             next_channel_category_id: self.next_channel_category_id,
             next_channel_id: self.next_channel_id,
@@ -295,6 +300,7 @@ impl ExtBuilder {
 }
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
+    // default init + build method above 
     ExtBuilder::default().build().execute_with(|| f())
 }
 
