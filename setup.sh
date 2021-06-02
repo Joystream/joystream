@@ -15,7 +15,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     fi
     # install additional packages
     brew update
-    brew install coreutils gnu-tar jq curl
+    brew install coreutils gnu-tar jq curl llvm || :
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
 fi
 
@@ -27,8 +27,6 @@ source ~/.cargo/env
 
 rustup install nightly-2021-03-24
 rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
-
-rustup default nightly-2021-03-24
 
 rustup component add rustfmt clippy
 
