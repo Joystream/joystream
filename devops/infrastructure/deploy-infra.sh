@@ -45,6 +45,9 @@ aws cloudformation deploy \
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then
+  # Install additional Ansible roles from requirements
+  ansible-galaxy install -r requirements.yml
+
   VALIDATORS=$(aws cloudformation list-exports \
     --profile $CLI_PROFILE \
     --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}PublicIp')].Value" \
