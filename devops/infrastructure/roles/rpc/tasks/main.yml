@@ -20,3 +20,18 @@
     name: joystream-node
     state: started
   become: yes
+
+- name: Install and configure Caddy
+  include_role:
+    name: caddy_ansible.caddy_ansible
+    apply:
+      become: yes
+  vars:
+    caddy_config: "{{ lookup('template', 'templates/Caddyfile.j2') }}"
+    caddy_systemd_capabilities_enabled: true
+    ws_rpc: "{{ inventory_hostname }}.nip.io/ws-rpc"
+    http_rpc: "{{ inventory_hostname }}.nip.io/http-rpc"
+
+- name: Print RPC node DNS
+  debug:
+    msg: "RPC Endpoint: wss://{{ inventory_hostname }}.nip.io/ws-rpc"
