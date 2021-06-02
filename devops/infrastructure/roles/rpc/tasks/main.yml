@@ -29,8 +29,9 @@
   vars:
     caddy_config: "{{ lookup('template', 'templates/Caddyfile.j2') }}"
     caddy_systemd_capabilities_enabled: true
-    public_ip: "{{ inventory_hostname }}"
+    ws_rpc: "{{ inventory_hostname }}.nip.io/ws-rpc"
+    http_rpc: "{{ inventory_hostname }}.nip.io/http-rpc"
 
 - name: Print RPC node DNS
   debug:
-    msg: "RPC Node DNS is: https://{{ inventory_hostname }}.nip.io"
+    msg: "RPC Endpoint: wss://{{ inventory_hostname }}.nip.io/ws-rpc"
