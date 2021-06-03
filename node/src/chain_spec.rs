@@ -22,7 +22,7 @@ use joystream_node_runtime::{
 };
 
 // Exported to be used by chain-spec-builder
-pub use joystream_node_runtime::{AccountId, GenesisConfig, Signature};
+pub use joystream_node_runtime::{AccountId, AuraId, GenesisConfig, Signature};
 
 #[cfg(feature = "standalone")]
 use joystream_node_runtime::{
@@ -131,6 +131,10 @@ pub fn development_config(id: ParaId) -> ChainSpec {
                 vec![get_authority_keys_from_seed("Alice")],
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![
+					get_from_seed::<AuraId>("Alice"),
+					get_from_seed::<AuraId>("Bob"),
+				],
+                vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
                     get_account_id_from_seed::<sr25519::Public>("Bob"),
                     get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
@@ -150,9 +154,7 @@ pub fn development_config(id: ParaId) -> ChainSpec {
         Some(chain_spec_properties()),
         Extensions {
             // TODO fix
-            // relay_chain: "rococo-dev".into(),
-            // Error: Input("Relay chain argument error: Invalid input: Error opening spec file: No such file or directory (os error 2)")
-            relay_chain: "rococo-local".into(),
+            relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: id.into(),
         },
     )
@@ -172,6 +174,10 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
                     get_authority_keys_from_seed("Bob"),
                 ],
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
+                vec![
+					get_from_seed::<AuraId>("Alice"),
+					get_from_seed::<AuraId>("Bob"),
+				],
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
                     get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -199,7 +205,7 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
         None,
         Some(chain_spec_properties()),
         Extensions {
-            relay_chain: "rococo-local".into(),
+            relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: id.into(),
         },
     )
@@ -243,6 +249,7 @@ pub fn testnet_genesis(
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
+    aura_authorities: Vec<AuraId>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: joystream_node_runtime::ProposalsConfigParameters,
@@ -323,6 +330,12 @@ pub fn testnet_genesis(
         },
         #[cfg(not(feature = "standalone"))]
         parachain_info: ParachainInfoConfig { parachain_id: id },
+        #[cfg(not(feature = "standalone"))]
+        pallet_aura: parachain_runtime::AuraConfig {
+			authorities: initial_authorities,
+		},
+        #[cfg(not(feature = "standalone"))]
+		cumulus_pallet_aura_ext: Default::default(),
         council: CouncilConfig {
             active_council: vec![],
             term_ends_at: 1,

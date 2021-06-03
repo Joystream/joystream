@@ -104,7 +104,7 @@ substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", bran
 default = ['std']
 no_std = []
 std = [
-  "codec/std",
+    "codec/std",
 	"serde",
 	"log/std",
 	"sp-api/std",

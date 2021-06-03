@@ -1,33 +1,38 @@
 [package]
-authors = ['Joystream contributors']
-build = 'build.rs'
-edition = '2018'
 name = 'joystream-node'
-version = '5.5.0'
-default-run = "joystream-node"
+authors = ['Anonymous']
+description = 'A new Cumulus FRAME-based Substrate node, ready for hacking.'
+license = 'Unlicense'
+version = '3.0.0'
+homepage = 'https://substrate.dev'
+repository = 'https://github.com/substrate-developer-hub/substrate-parachain-template'
+edition = '2018'
+build = 'build.rs'
+
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
-
-[build-dependencies]
-substrate-build-script-utils = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 
 [[bin]]
 name = 'joystream-node'
 path = 'bin/main.rs'
 
-[lib]
-crate-type = ["cdylib", "rlib"]
+[features]
+default = []
+runtime-benchmarks = ['joystream-node-runtime/runtime-benchmarks']
 
 [dependencies]
 derive_more = '0.15.0'
-log = '0.4.14'
-codec = { package = 'parity-scale-codec', version = '2.1.1' }
-structopt = '0.3.8'
-serde = { version = '1.0.126', features = ['derive'] }
-hex-literal = '0.2.1'
+log = "0.4.13"
+codec = { package = 'parity-scale-codec', version = '2.0.0' }
+hex-literal = "0.2.1"
 
-# RPC related Dependencies
-jsonrpc-core = '15.1.0'
+# RPC related dependencies
+jsonrpc-core = "15.1.0"
+serde = { version = "1.0.124", features = ["derive"] }
+futures = { version = "0.3.1", features = ["compat"] }
+structopt = "0.3.8"
+serde_json = '1.0'
+hex = { package = "hex", version = "0.4.2" }
 
 # Local Dependencies
 joystream-node-runtime = { path = '../runtime' }
@@ -52,7 +57,7 @@ sc-network = { git = 'https://github.com/paritytech/substrate', branch = 'polkad
 sc-keystore = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 sc-rpc = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 sc-rpc-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
-sc-service = { git = 'https://github.com/paritytech/substrate', branch = "polkadot-v0.9.3", version = '0.9.0', features = ['wasmtime'] }
+sc-service = { git = 'https://github.com/paritytech/substrate', branch = "polkadot-v0.9.3", features = ['wasmtime'] }
 sc-telemetry = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 sc-transaction-pool = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 sc-tracing = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
@@ -88,7 +93,3 @@ polkadot-service = { git = 'https://github.com/paritytech/polkadot', branch = 'r
 polkadot-cli = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.3'}
 polkadot-test-service = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.3'}
 polkadot-parachain = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.3'}
-
-[features]
-default = []
-standalone = []
