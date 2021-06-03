@@ -186,6 +186,7 @@ decl_error! {
         SignatureError,
         InsufficientBalanceForSettling,
         NoServiceProviderFallbackAccount,
+        ChannelNotOperational,
     }
 }
 
@@ -401,6 +402,14 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         <ServiceChannelById<T>>::remove(channel_id);
     }
 
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn initiate_refund_channel(origin, channel_id: T::ServiceChannelId) {
+        let mut service_channel = Self::ensure_gateway_caller(origin, channel_id)?;
+        ensure!(service_channel.state == ServiceChannelState::Operational, Error::<T>::ChannelNotOperational);
+
+        service_channel.state = ServiceChannelState::RefundInitiated(system::Module::<T>::block_number());
+        <ServiceChannelById<T>>::insert(channel_id, service_channel);
+    }
 }}
 impl<T: Trait> Module<T> {
     // TODO: the next 2 ensures are almost exactly the same, extract behavior
