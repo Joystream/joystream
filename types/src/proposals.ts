@@ -1,7 +1,7 @@
 import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { AccountId, MemberId, WorkingGroup, JoyEnum, JoyStructDecorated } from './common'
-import { ApplicationId, OpeningId, Penalty, StakePolicy, WorkerId } from './working-group'
+import { AccountId, MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId } from './common'
+import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
 
 export type IVotingResults = {
   abstensions: u32
@@ -191,21 +191,21 @@ export class GeneralProposalParameters
   })
   implements IGeneralProposalParameters {}
 
-export type IAddOpeningParameters = {
+export type ICreateOpeningParameters = {
   description: Text
-  stake_policy: Option<StakePolicy>
+  stake_policy: StakePolicy
   reward_per_block: Option<Balance>
   working_group: WorkingGroup
 }
 
-export class AddOpeningParameters
+export class CreateOpeningParameters
   extends JoyStructDecorated({
     description: Text,
-    stake_policy: Option.with(StakePolicy),
+    stake_policy: StakePolicy,
     reward_per_block: Option.with(u128),
     working_group: WorkingGroup,
   })
-  implements IAddOpeningParameters {}
+  implements ICreateOpeningParameters {}
 
 export type IFillOpeningParameters = {
   opening_id: OpeningId
@@ -223,31 +223,56 @@ export class FillOpeningParameters
 
 export type ITerminateRoleParameters = {
   worker_id: WorkerId
-  penalty: Option<Penalty>
+  slashing_amount: Option<Balance>
   working_group: WorkingGroup
 }
 
 export class TerminateRoleParameters
   extends JoyStructDecorated({
     worker_id: WorkerId,
-    penalty: Option.with(Penalty),
+    slashing_amount: Option.with(u128),
     working_group: WorkingGroup,
   })
   implements ITerminateRoleParameters {}
 
+export type IFundingRequestParameters = {
+  account: AccountId
+  amount: Balance
+}
+
+export class FundingRequestParameters
+  extends JoyStructDecorated({
+    account: AccountId,
+    amount: u128,
+  })
+  implements IFundingRequestParameters {}
+
 export class ProposalDetails extends JoyEnum({
-  Text: Text,
+  Signal: Text,
   RuntimeUpgrade: Bytes,
-  Spending: SpendingParams,
-  SetValidatorCount: u32,
-  AddWorkingGroupLeaderOpening: AddOpeningParameters,
-  FillWorkingGroupLeaderOpening: FillOpeningParameters,
-  SetWorkingGroupBudgetCapacity: Tuple.with(['Balance', WorkingGroup]),
-  DecreaseWorkingGroupLeaderStake: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
-  SlashWorkingGroupLeaderStake: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
-  SetWorkingGroupLeaderReward: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
-  TerminateWorkingGroupLeaderRole: TerminateRoleParameters,
+  FundingRequest: Vec.with(FundingRequestParameters),
+  SetMaxValidatorCount: u32,
+  CreateWorkingGroupLeadOpening: CreateOpeningParameters,
+  FillWorkingGroupLeadOpening: FillOpeningParameters,
+  UpdateWorkingGroupBudget: Tuple.with(['Balance', WorkingGroup, BalanceKind]),
+  DecreaseWorkingGroupLeadStake: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
+  SlashWorkingGroupLead: Tuple.with([WorkerId, 'Balance', WorkingGroup]),
+  SetWorkingGroupLeadReward: Tuple.with([WorkerId, 'Option<Balance>', WorkingGroup]),
+  TerminateWorkingGroupLead: TerminateRoleParameters,
   AmendConstitution: Text,
+  CancelWorkingGroupLeadOpening: Tuple.with([OpeningId, WorkingGroup]),
+  SetMembershipPrice: u128,
+  SetCouncilBudgetIncrement: u128,
+  SetCouncilorReward: u128,
+  SetInitialInvitationBalance: u128,
+  SetInitialInvitationCount: u32,
+  SetMembershipLeadInvitationQuota: u32,
+  SetReferralCut: u128,
+  CreateBlogPost: Tuple.with([Text, Text]),
+  EditBlogPost: Tuple.with([PostId, Option.with(Text), Option.with(Text)]),
+  LockBlogPost: PostId,
+  UnlockBlogPost: PostId,
+  VetoProposal: ProposalId,
 } as const) {}
 
 // Discussions
@@ -283,7 +308,7 @@ export const proposalsTypes = {
   VoteKind,
   DiscussionThread,
   DiscussionPost,
-  AddOpeningParameters,
+  CreateOpeningParameters,
   FillOpeningParameters,
   TerminateRoleParameters,
   ProposalDecision,
@@ -292,6 +317,7 @@ export const proposalsTypes = {
   SetLeadParams,
   ThreadMode,
   ExecutionStatus,
+  FundingRequestParameters,
 }
 
 export default proposalsTypes

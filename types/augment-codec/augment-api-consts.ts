@@ -2,9 +2,9 @@
 /* eslint-disable */
 
 import { Vec } from '@polkadot/types/codec';
-import { u32, u64 } from '@polkadot/types/primitive';
+import { u32, u64, u8 } from '@polkadot/types/primitive';
 import { ProposalParameters } from './all';
-import { Balance, BalanceOf, BlockNumber, LockIdentifier, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
+import { Balance, BalanceOf, BlockNumber, Moment, Perbill, RuntimeDbWeight, Weight } from '@polkadot/types/interfaces/runtime';
 import { SessionIndex } from '@polkadot/types/interfaces/session';
 import { EraIndex } from '@polkadot/types/interfaces/staking';
 import { WeightToFeeCoefficient } from '@polkadot/types/interfaces/support';
@@ -33,6 +33,24 @@ declare module '@polkadot/api/types/consts' {
        **/
       existentialDeposit: Balance & AugmentedConst<ApiType>;
     };
+    bounty: {
+      /**
+       * Exports const - max work entry number for a closed assurance type contract bounty.
+       **/
+      closedContractSizeLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - min cherry value limit for a bounty.
+       **/
+      minCherryLimit: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Exports const - min funding amount limit for a bounty.
+       **/
+      minFundingLimit: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Exports const - min work entrant stake for a bounty.
+       **/
+      minWorkEntrantStake: BalanceOf & AugmentedConst<ApiType>;
+    };
     contentDirectoryWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.
@@ -45,10 +63,6 @@ declare module '@polkadot/api/types/consts' {
        **/
       announcingPeriodDuration: BlockNumber & AugmentedConst<ApiType>;
       /**
-       * Amount that will be added to the budget balance on every refill.
-       **/
-      budgetRefillAmount: Balance & AugmentedConst<ApiType>;
-      /**
        * Interval between automatic budget refills.
        **/
       budgetRefillPeriod: BlockNumber & AugmentedConst<ApiType>;
@@ -56,10 +70,6 @@ declare module '@polkadot/api/types/consts' {
        * Council member count
        **/
       councilSize: u64 & AugmentedConst<ApiType>;
-      /**
-       * The value elected members will be awarded each block of their reign.
-       **/
-      electedMemberRewardPerBlock: Balance & AugmentedConst<ApiType>;
       /**
        * Interval for automatic reward payments.
        **/
@@ -100,6 +110,20 @@ declare module '@polkadot/api/types/consts' {
        **/
       maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
     };
+    members: {
+      /**
+       * Exports const - default balance for the invited member.
+       **/
+      defaultInitialInvitationBalance: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Exports const - default membership fee.
+       **/
+      defaultMembershipPrice: BalanceOf & AugmentedConst<ApiType>;
+      /**
+       * Exports const - maximum percent value of the membership fee for the referral cut.
+       **/
+      referralCutMaximumPercent: u8 & AugmentedConst<ApiType>;
+    };
     membershipWorkingGroup: {
       /**
        * Exports const -  max simultaneous active worker number.
@@ -108,53 +132,81 @@ declare module '@polkadot/api/types/consts' {
     };
     proposalsCodex: {
       /**
-       * Exports 'Add working group opening' proposal parameters.
-       **/
-      addWorkingGroupOpeningProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
-      /**
-       * Exports 'Amend constitution' proposal parameters.
+       * Exports 'Amend Constitution' proposal parameters.
        **/
       amendConstitutionProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Decrease working group leader stake' proposal parameters.
+       * Exports 'Cancel Working Group Lead Opening' proposal parameters.
        **/
-      decreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      cancelWorkingGroupLeadOpeningProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      createBlogPostProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Fill working group opening' proposal parameters.
+       * Exports 'Create Working Group Lead Opening' proposal parameters.
+       **/
+      createWorkingGroupLeadOpeningProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Exports 'Decrease Working Group Lead Stake' proposal parameters.
+       **/
+      decreaseWorkingGroupLeadStakeProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      editBlogPostProoposalParamters: ProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Exports 'Fill Working Group Lead Opening' proposal parameters.
        **/
       fillWorkingGroupOpeningProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Runtime upgrade' proposal parameters.
+       * Exports 'Funding Request' proposal parameters.
+       **/
+      fundingRequestProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      lockBlogPostProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Exports 'Runtime Upgrade' proposal parameters.
        **/
       runtimeUpgradeProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Set validator count' proposal parameters.
+       * Exports `Set Council Budget Increment` proposal parameters.
        **/
-      setValidatorCountProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setCouncilBudgetIncrementProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Set working group budget capacity' proposal parameters.
+       * Exports `Set Councilor Reward Proposal Parameters` proposal parameters.
        **/
-      setWorkingGroupBudgetCapacityProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setCouncilorRewardProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Set working group leader reward' proposal parameters.
+       * Exports `Set Initial Invitation Balance` proposal parameters.
        **/
-      setWorkingGroupLeaderRewardProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setInitialInvitationBalanceProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setInvitationCountProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Slash working group leader stake' proposal parameters.
+       * Exports 'Set Max Validator Count' proposal parameters.
        **/
-      slashWorkingGroupLeaderStakeProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setMaxValidatorCountProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setMembershipLeadInvitationQuotaProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Spending' proposal parameters.
+       * Exports 'Set Membership Price' proposal parameters.
        **/
-      spendingProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setMembershipPriceProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setReferralCutProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Terminate working group leader role' proposal parameters.
+       * Exports 'Set Working Group Lead Reward' proposal parameters.
        **/
-      terminateWorkingGroupLeaderRoleProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      setWorkingGroupLeadRewardProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Exports 'Text' proposal parameters.
+       * Exports 'Signal' proposal parameters.
        **/
-      textProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      signalProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Exports 'Slash Working Group Lead' proposal parameters.
+       **/
+      slashWorkingGroupLeadProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Exports 'Terminate Working Group Lead' proposal parameters.
+       **/
+      terminateWorkingGroupLeadProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      unlockBlogPostProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Exports 'Update Working Group Budget' proposal parameters.
+       **/
+      updateWorkingGroupBudgetProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
+      vetoProposalProposalParameters: ProposalParameters & AugmentedConst<ApiType>;
     };
     proposalsEngine: {
       /**
@@ -170,7 +222,8 @@ declare module '@polkadot/api/types/consts' {
        **/
       maxActiveProposalLimit: u32 & AugmentedConst<ApiType>;
       /**
-       * Exports const -  the fee is applied when the proposal gets rejected. A fee would be slashed (burned).
+       * Exports const -  the fee is applied when the proposal gets rejected. A fee would
+       * be slashed (burned).
        **/
       rejectionFee: BalanceOf & AugmentedConst<ApiType>;
       /**
@@ -180,17 +233,14 @@ declare module '@polkadot/api/types/consts' {
     };
     referendum: {
       /**
-       * Identifier for currency locks used for staking.
-       **/
-      lockId: LockIdentifier & AugmentedConst<ApiType>;
-      /**
-       * Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
+       * Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
+       * e.g. std::u64::MAX.
        **/
       maxSaltLength: u64 & AugmentedConst<ApiType>;
       /**
        * Minimum stake needed for voting
        **/
-      minimumStake: Balance & AugmentedConst<ApiType>;
+      minimumStake: BalanceOf & AugmentedConst<ApiType>;
       /**
        * Duration of revealing stage (number of blocks)
        **/
