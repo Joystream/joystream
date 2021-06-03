@@ -1,4 +1,5 @@
-import { ApiPromise, WsProvider } from '@polkadot/api'
+import { ApiPromise, WsProvider} from '@polkadot/api'
+import type { Index } from '@polkadot/types/interfaces/runtime';
 import { CodecArg, ISubmittableResult } from '@polkadot/types/types'
 import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
@@ -24,11 +25,12 @@ export async function createApi(): Promise<ApiPromise> {
 function sendExtrinsic(
   api: ApiPromise,
   account: KeyringPair,
-  tx: SubmittableExtrinsic<'promise'>
+  tx: SubmittableExtrinsic<'promise'>,
+  nonce: Index
 ): Promise<ISubmittableResult> {
   return new Promise((resolve, reject) => {
     let unsubscribe: () => void
-    tx.signAndSend(account, {}, (result) => {
+    tx.signAndSend(account, { nonce }, (result) => {
       // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
       if (!result || !result.status) {
         return
@@ -103,7 +105,10 @@ export async function sendAndFollowTx(
   warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
 ): Promise<boolean> {
   try {
-    await sendExtrinsic(api, account, tx)
+    // TODO: use async-lock package
+    const nonce = await api.rpc.system.accountNextIndex(account.address);
+
+    await sendExtrinsic(api, account, tx, nonce)
     console.log(chalk.green(`Extrinsic successful!`))
     return true
   } catch (e) {

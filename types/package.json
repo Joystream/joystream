@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@polkadot/typegen": "4.2.1",
-    "ts-node": "^8.6.2",
+    "ts-node": "^8.8.2",
     "typescript": "^3.7.2",
     "madge": "^3.9.2",
     "json-schema-to-typescript": "^9.1.1"

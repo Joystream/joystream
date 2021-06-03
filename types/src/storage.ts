@@ -17,13 +17,14 @@ export class StorageBucketsPerBagValueConstraint
     })
     implements StorageBucketsPerBagValueConstraintType {}
 
+//TODO: implement these types
 export class DynamicBagId extends u64 {}
 export class DynamicBagType extends u64 {}
 export class DynamicBagCreationPolicy extends u64 {}
 export class DynamicBag extends u64 {}
 export class StaticBag extends u64 {}
 export class StorageBucket extends u64 {}
-
+//
 
 export const StaticBagIdDef = {
     Council: Null,
@@ -36,7 +37,7 @@ export class Static extends StaticBagId {}
 
 export const BagIdDef = {
     Static,
-    Dynamic: Null,
+    Dynamic: Null,//TODO: implement dynamic type
 } as const
 export type BagIdKey = keyof typeof BagIdDef
 export class BagId extends JoyEnum(BagIdDef) {}
