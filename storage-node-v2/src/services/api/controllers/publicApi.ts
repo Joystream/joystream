@@ -2,6 +2,7 @@ import * as express from 'express'
 import { acceptPendingDataObjects } from '../../../services/extrinsics'
 import { getAlicePair } from '../../../services/runtimeApi'
 
+//TODO: test api connection
 //TODO: error handling
 //TODO: convert to JSON
 //TODO: bagId
@@ -20,6 +21,8 @@ export async function upload(
   //TODO: remove
   console.log(uploadRequest)
   console.log(req.files)
+
+  //TODO: add file hash check
 
   try {
     //TODO: account
