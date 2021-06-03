@@ -10,7 +10,7 @@ use frame_support::{
     dispatch::DispatchResult,
     sp_runtime::traits::{MaybeSerialize, Member},
 };
-use sp_arithmetic::traits::{BaseArithmetic, One, Saturating};
+use sp_arithmetic::traits::{BaseArithmetic, One, Saturating, Zero};
 use sp_runtime::ModuleId;
 use sp_runtime::{traits::AccountIdConversion, DispatchError};
 use sp_std::fmt::Debug;
@@ -296,31 +296,30 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         let _ = GatewayWorkingGroup::<T>::ensure_worker_signed(origin, &gateway_worker_id)?;
         let service_channel_provider = Self::service_provider_by_id(service_provider_id);
         let gateway_worker = ServiceProviderWorkingGroup::<T>::ensure_worker_exists(
-            &service_channel_provider.service_provider_worker_id.worker_id
+          &service_channel_provider.service_provider_worker_id.worker_id
         )?;
         let account_id = gateway_worker.role_account_id;
         GatewayWorkingGroup::<T>::ensure_worker_exists(&gateway_worker_id)?;
         ensure!(
-            <T as Trait>::Currency::free_balance(&account_id) >= locked_balance,
-            Error::<T>::InsufficientBalanceForChannel
+          <T as Trait>::Currency::free_balance(&account_id) >= locked_balance,
+          Error::<T>::InsufficientBalanceForChannel
         );
-
 
         let channel_id = Self::get_next_channel_id();
 
         Self::reserve_channel_balance(
-            &account_id,
-            channel_id,
-            locked_balance
+          &account_id,
+          channel_id,
+          locked_balance
         )?;
 
         let service_channel = ServiceChannelOf::<T> {
-            gateway_worker_id, service_provider_id,
-            locked_balance,
-            refund_delay_period: <RefundPeriod<T>>::get(),
-            platform_price: service_channel_provider.platform_service_price, state: ServiceChannelState::default(),
+          gateway_worker_id, service_provider_id,
+          locked_balance,
+          refund_delay_period: <RefundPeriod<T>>::get(),
+          platform_price: service_channel_provider.platform_service_price, state: ServiceChannelState::default(),
           gateway_worker_fallback_account: gateway_worker_fallback_account.clone(),
-            service_provider_fallback_account: None,
+          service_provider_fallback_account: None,
         };
 
 
@@ -347,42 +346,64 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
     }
 
-  #[weight = 10_000_000] // TODO: adjust weight
-  pub fn settle_channel(origin, channel_id: T::ServiceChannelId, request_payment_signature: PaymentRequestSignatureOf, signature: T::Signature) {
-    let service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
-    let verification_message = request_payment_signature.get_verification_message::<T>(&channel_id);
-    ensure!(signature.verify(&verification_message, &service_channel.gateway_worker_fallback_account), Error::<T>::SignatureError);
-    let service_channel_provider =
-      Self::service_provider_by_id(service_channel.service_provider_id);
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn settle_channel(origin, channel_id: T::ServiceChannelId, request_payment_signature: PaymentRequestSignatureOf, signature: T::Signature) {
+        let service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
+        let verification_message = request_payment_signature.get_verification_message::<T>(&channel_id);
+        ensure!(signature.verify(&verification_message, &service_channel.gateway_worker_fallback_account), Error::<T>::SignatureError);
+        let service_channel_provider =
+            Self::service_provider_by_id(service_channel.service_provider_id);
 
-    let payoff_balance = service_channel_provider.service_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
-    let burn_balance = service_channel.platform_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
-    ensure!(service_channel.locked_balance > (payoff_balance + burn_balance), Error::<T>::InsufficientBalanceForSettling);
-    let refund_balance = service_channel.locked_balance - (payoff_balance + burn_balance);
-    ensure!(service_channel.locked_balance == <T as Trait>::Currency::free_balance(&Self::get_service_channel_account(channel_id)), Error::<T>::InsufficientBalanceForSettling);
+        let payoff_balance = service_channel_provider.service_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
+        let burn_balance = service_channel.platform_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
+        ensure!(service_channel.locked_balance > (payoff_balance + burn_balance), Error::<T>::InsufficientBalanceForSettling);
+        let refund_balance = service_channel.locked_balance - (payoff_balance + burn_balance);
+        ensure!(service_channel.locked_balance == <T as Trait>::Currency::free_balance(&Self::get_service_channel_account(channel_id)), Error::<T>::InsufficientBalanceForSettling);
 
-    let service_provider_account = if let Some(fallback_account) = service_channel.service_provider_fallback_account
-      {
-        fallback_account
-      } else {
-        return Err(Error::<T>::NoServiceProviderFallbackAccount.into());
-      };
+        let service_provider_account = if let Some(fallback_account) = service_channel.service_provider_fallback_account
+            {
+              fallback_account
+            } else {
+              return Err(Error::<T>::NoServiceProviderFallbackAccount.into());
+            };
 
-    let gateway_account_id = service_channel.gateway_worker_fallback_account;
+        let gateway_account_id = service_channel.gateway_worker_fallback_account;
 
-    Self::settle_channel_balance(
-      &service_provider_account,
-      &gateway_account_id,
-      channel_id,
-      payoff_balance,
-      burn_balance,
-      refund_balance,
-    )?;
+        Self::settle_channel_balance(
+            Some(&service_provider_account),
+            &gateway_account_id,
+            channel_id,
+            payoff_balance,
+            burn_balance,
+            refund_balance,
+        )?;
 
-    <ServiceChannelById<T>>::remove(channel_id);
-  }
+        <ServiceChannelById<T>>::remove(channel_id);
+    }
+
+    #[weight = 10_000_000]  // TODO: adjust weight
+    pub fn cancel_channel(origin, channel_id: T::ServiceChannelId) {
+        let service_channel = Self::ensure_gateway_caller(origin, channel_id)?;
+        ensure!(
+            matches!(service_channel.state, ServiceChannelState::Pending),
+            Error::<T>::ServiceChannelAlreadyConfirmed
+        );
+
+        Self::settle_channel_balance(
+            None,
+            &service_channel.gateway_worker_fallback_account,
+            channel_id,
+            Zero::zero(),
+            Zero::zero(),
+            service_channel.locked_balance
+        )?;
+
+        <ServiceChannelById<T>>::remove(channel_id);
+    }
+
 }}
 impl<T: Trait> Module<T> {
+    // TODO: the next 2 ensures are almost exactly the same, extract behavior
     fn ensure_service_provider_caller(
         origin: T::Origin,
         channel_id: T::ServiceChannelId,
@@ -401,13 +422,23 @@ impl<T: Trait> Module<T> {
                 .worker_id,
         )?;
 
+        Ok(service_channel)
+    }
+
+    fn ensure_gateway_caller(
+        origin: T::Origin,
+        channel_id: T::ServiceChannelId,
+    ) -> Result<ServiceChannelOf<T>, DispatchError> {
         ensure!(
             <ServiceChannelById<T>>::contains_key(channel_id),
             Error::<T>::ChannelNotExists
         );
+        let service_channel = Self::service_channel_by_id(channel_id);
+        GatewayWorkingGroup::<T>::ensure_worker_signed(origin, &service_channel.gateway_worker_id)?;
 
         Ok(service_channel)
     }
+
     fn get_next_service_provider_id() -> T::ServiceProviderId {
         <NextServiceProvider<T>>::mutate(|id| {
             sp_std::mem::replace(id, id.saturating_add(One::one()))
@@ -438,7 +469,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn settle_channel_balance(
-        service_provider_account_id: &T::AccountId,
+        service_provider_account_id: Option<&T::AccountId>,
         gateway_account_id: &T::AccountId,
         service_channel_id: T::ServiceChannelId,
         payoff_balance: BalanceOf<T>,
@@ -450,12 +481,14 @@ impl<T: Trait> Module<T> {
             burn_balance,
         );
 
-        <T as Trait>::Currency::transfer(
-            &Self::get_service_channel_account(service_channel_id),
-            service_provider_account_id,
-            payoff_balance,
-            ExistenceRequirement::AllowDeath,
-        )?;
+        if let Some(service_provider_account_id) = service_provider_account_id {
+            <T as Trait>::Currency::transfer(
+                &Self::get_service_channel_account(service_channel_id),
+                service_provider_account_id,
+                payoff_balance,
+                ExistenceRequirement::AllowDeath,
+            )?;
+        }
 
         <T as Trait>::Currency::transfer(
             &Self::get_service_channel_account(service_channel_id),
