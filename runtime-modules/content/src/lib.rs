@@ -13,6 +13,12 @@ pub use permissions::*;
 
 use core::hash::Hash;
 
+use sp_core::{
+    H256,
+    Hasher,
+    Blake2Hasher,
+};
+
 use codec::Codec;
 use codec::{Decode, Encode};
 
@@ -495,6 +501,8 @@ decl_storage! {
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+
+        pub Root get(fn root): H256;
     }
 }
 
@@ -1259,6 +1267,15 @@ decl_module! {
         ) {
             Self::not_implemented()?;
         }
+
+        #[weight = 10_000_000]
+        pub fn update_root(
+            _origin,
+            new_root: H256,
+            ) {
+            //Self::validate_root(new_root); // needed?
+            <Root>::put(new_root);// verify
+        }
     }
 }
 
@@ -1361,7 +1378,35 @@ impl<T: Trait> Module<T> {
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
-}
+    fn verify_proof<E: Encode>(path: &Vec<Option<H256> >,
+                               value: &E, i: usize) -> Result<bool, &'static str> {
+        let exp = path.len() - 1;
+        if i > 2usize.checked_pow(exp as u32).ok_or("index overflow")? {
+            Err("index out of range or Merkle path insufficient for validation")
+        } else {
+            let mut idx = i.checked_add(1).ok_or("index overflow")?;
+            let mut hash_value = Blake2Hasher::hash(&value.encode()); 
+            for h_el in path.iter() {
+                hash_value = match h_el {
+                    Some(h) => {
+                        if idx % 2 == 1 {
+                            Blake2Hasher::hash(&[hash_value, *h].encode()) 
+                        } else { 
+                            Blake2Hasher::hash(&[*h, hash_value].encode()) 
+                        }
+                    },
+                    None => {
+                        Blake2Hasher::hash(&hash_value.encode())
+                    },
+                };
+                idx = (idx >> 1) + idx.wrapping_rem(2);
+            }
+            let root = <Root>::get(); 
+            let ans = root == hash_value;
+            Ok(ans)
+        }
+    }
+} // impl<T: Trait> Module
 
 // Some initial config for the module on runtime upgrade
 impl<T: Trait> Module<T> {
