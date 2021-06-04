@@ -1,5 +1,5 @@
 ---
-# Configure chain spec and start joystream-node service on the servers
+# Configure chain spec, start joystream-node service on the servers and build Pioneer
 
 - name: Create and copy the chain-spec file
   hosts: all
