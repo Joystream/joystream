@@ -1,5 +1,5 @@
 import { flags } from '@oclif/command'
-import { hireStorageWorkingGroupLead } from '../../services/hireLead'
+import { hireStorageWorkingGroupLead } from '../../services/runtime/hireLead'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 
 export default class DevInit extends ApiCommandBase {

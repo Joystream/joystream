@@ -1,5 +1,5 @@
 import { flags } from '@oclif/command'
-import { acceptStorageBucketInvitation } from '../../services/extrinsics'
+import { acceptStorageBucketInvitation } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 
 export default class OperatorAcceptInvitation extends ApiCommandBase {

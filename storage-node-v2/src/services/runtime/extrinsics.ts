@@ -3,7 +3,7 @@ import {
   sendAndFollowSudoNamedTx,
   sendAndFollowNamedTx,
   getAlicePair,
-} from './runtimeApi'
+} from './api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
 
@@ -50,11 +50,7 @@ export async function acceptStorageBucketInvitation(
   }
 }
 
-// TODO:
-// export enum BagId {
-//   Static = 'static',
-//   Dynamic = 'dynamic',
-// }
+// TODO: Add dynamic bag parameter
 
 export async function updateStorageBucketsForBag(
   account: KeyringPair,

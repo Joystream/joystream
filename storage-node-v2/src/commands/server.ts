@@ -1,8 +1,9 @@
 import { Command, flags } from '@oclif/command'
-import { createServer } from '../../services/api/server'
+import { createServer } from '../services/webApi/server'
 
 // TODO: fix command not found error (error handling)
 // TODO: custom IP address?
+// TODO: parameters for --dev or key file
 
 export default class Server extends Command {
   static description = 'Starts the storage node server.'

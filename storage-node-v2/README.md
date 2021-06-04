@@ -19,7 +19,7 @@ $ npm install -g storage-node-v2
 $ storage-node COMMAND
 running command...
 $ storage-node (-v|--version|version)
-storage-node-v2/0.1.0 darwin-x64 node-v14.8.0
+storage-node-v2/0.1.0 darwin-x64 node-v14.17.0
 $ storage-node --help [COMMAND]
 USAGE
   $ storage-node COMMAND
@@ -144,16 +144,17 @@ _See code: [src/commands/operator/accept-invitation.ts](https://github.com/shami
 
 ## `storage-node server [FILE]`
 
-describe the command here
+Starts the storage node server.
 
 ```
 USAGE
   $ storage-node server [FILE]
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -d, --dev              Use development mode
+  -h, --help             show CLI help
+  -p, --port=port        (required) Server port.
+  -u, --uploads=uploads  (required) Data uploading directory.
 ```
 
 _See code: [src/commands/server.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/server.ts)_
