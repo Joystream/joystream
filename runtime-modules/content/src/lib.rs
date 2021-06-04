@@ -1378,7 +1378,7 @@ impl<T: Trait> Module<T> {
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
-    fn verify_proof<E: Encode>(path: &Vec<Option<H256> >,
+    fn verify_proof<E: Encode>(path: &[Option<H256>],
                                value: &E, i: usize) -> Result<bool, &'static str> {
         let exp = path.len() - 1;
         if i > 2usize.checked_pow(exp as u32).ok_or("index overflow")? {
