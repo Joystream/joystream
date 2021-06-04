@@ -97,8 +97,11 @@ pub use working_group;
 pub use content;
 pub use content::MaxNumber;
 
+pub use pallet_grandpa::AuthorityId as GrandpaId;
+pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 #[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
+pub use sp_consensus_babe::AuthorityId as BabeId;
 
 #[cfg(feature = "standalone")]
 use standalone_use::*;
@@ -106,8 +109,6 @@ use standalone_use::*;
 mod standalone_use {
     pub use frame_election_provider_support::onchain;
     pub use frame_system::EnsureRoot;
-    pub use pallet_grandpa::AuthorityId as GrandpaId;
-    pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
     pub use pallet_session::historical as pallet_session_historical;
     pub use pallet_staking::StakerStatus;
     pub use sp_core::crypto::KeyTypeId;

@@ -61,6 +61,7 @@ sc-service = { git = 'https://github.com/paritytech/substrate', branch = "polkad
 sc-telemetry = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 sc-transaction-pool = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 sc-tracing = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
+sp-authority-discovery = {git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }
 
 ## Substrate Primitive Dependencies
 sp-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.3' }

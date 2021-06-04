@@ -25,7 +25,7 @@ use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
     self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
-    proposals_config, AccountId, Extensions, ParaId,
+    proposals_config, AccountId, AuraId, Extensions, ParaId,
 };
 
 use futures_util::TryFutureExt;
@@ -230,10 +230,18 @@ fn genesis_constructor(
     initial_content_path: &Option<PathBuf>,
     initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
+    #[cfg(feature = "standalone")]
     let authorities = authority_seeds
         .iter()
         .map(AsRef::as_ref)
         .map(chain_spec::get_authority_keys_from_seed)
+        .collect::<Vec<_>>();
+
+    #[cfg(not(feature = "standalone"))]
+    let authorities = authority_seeds
+        .iter()
+        .map(AsRef::as_ref)
+        .map(chain_spec::get_from_seed::<AuraId>)
         .collect::<Vec<_>>();
 
     let members = initial_members_path
@@ -266,6 +274,7 @@ fn genesis_constructor(
     };
 
     chain_spec::testnet_genesis(
+        authorities,
         authorities,
         sudo_account.clone(),
         endowed_accounts.to_vec(),

@@ -4,21 +4,19 @@ pub mod initial_balances;
 pub mod initial_members;
 pub mod proposals_config;
 
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_babe::AuthorityId as BabeId;
-use sp_finality_grandpa::AuthorityId as GrandpaId;
 #[cfg(feature = "standalone")]
 use sp_runtime::Perbill;
 
 pub use cumulus_primitives_core::ParaId;
 use joystream_node_runtime::{
-    membership, wasm_binary_unwrap, Balance, BalancesConfig, ContentConfig,
+    membership, wasm_binary_unwrap, BabeId, Balance, BalancesConfig, ContentConfig,
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
-    GatewayWorkingGroupConfig, MembersConfig, Moment, OperationsWorkingGroupConfig,
-    ProposalsCodexConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
+    GatewayWorkingGroupConfig, GrandpaId, ImOnlineId, MembersConfig, Moment,
+    OperationsWorkingGroupConfig, ProposalsCodexConfig, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -128,12 +126,14 @@ pub fn development_config(id: ParaId) -> ChainSpec {
         ChainType::Development,
         move || {
             testnet_genesis(
+                #[cfg(feature = "standalone")]
                 vec![get_authority_keys_from_seed("Alice")],
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
+                #[cfg(not(feature = "standalone"))]
                 vec![
-					get_from_seed::<AuraId>("Alice"),
-					get_from_seed::<AuraId>("Bob"),
-				],
+                    get_from_seed::<AuraId>("Alice"),
+                    get_from_seed::<AuraId>("Bob"),
+                ],
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
                     get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -169,15 +169,17 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
         ChainType::Local,
         move || {
             testnet_genesis(
+                #[cfg(feature = "standalone")]
                 vec![
                     get_authority_keys_from_seed("Alice"),
                     get_authority_keys_from_seed("Bob"),
                 ],
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
+                #[cfg(not(feature = "standalone"))]
                 vec![
-					get_from_seed::<AuraId>("Alice"),
-					get_from_seed::<AuraId>("Bob"),
-				],
+                    get_from_seed::<AuraId>("Alice"),
+                    get_from_seed::<AuraId>("Bob"),
+                ],
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
                     get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -241,7 +243,7 @@ fn session_keys(
 
 #[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
-    _initial_authorities: Vec<(
+    #[cfg(feature = "standalone")] _initial_authorities: Vec<(
         AccountId,
         AccountId,
         GrandpaId,
@@ -249,7 +251,7 @@ pub fn testnet_genesis(
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
-    aura_authorities: Vec<AuraId>,
+    #[cfg(not(feature = "standalone"))] aura_authorities: Vec<AuraId>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: joystream_node_runtime::ProposalsConfigParameters,
@@ -331,11 +333,11 @@ pub fn testnet_genesis(
         #[cfg(not(feature = "standalone"))]
         parachain_info: ParachainInfoConfig { parachain_id: id },
         #[cfg(not(feature = "standalone"))]
-        pallet_aura: parachain_runtime::AuraConfig {
-			authorities: initial_authorities,
-		},
+        pallet_aura: joystream_node_runtime::AuraConfig {
+            authorities: aura_authorities,
+        },
         #[cfg(not(feature = "standalone"))]
-		cumulus_pallet_aura_ext: Default::default(),
+        cumulus_pallet_aura_ext: Default::default(),
         council: CouncilConfig {
             active_council: vec![],
             term_ends_at: 1,
