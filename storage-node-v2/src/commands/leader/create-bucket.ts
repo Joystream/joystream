@@ -1,4 +1,4 @@
-import { createStorageBucket } from '../../services/extrinsics'
+import { createStorageBucket } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 

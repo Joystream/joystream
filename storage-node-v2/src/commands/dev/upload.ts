@@ -1,5 +1,5 @@
 import { flags } from '@oclif/command'
-import { uploadDataObjects } from '../../services/extrinsics'
+import { uploadDataObjects } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 
 export default class DevUpload extends ApiCommandBase {

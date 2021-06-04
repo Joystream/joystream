@@ -1,6 +1,6 @@
 import { Command, flags } from '@oclif/command'
-import { createApi, getAlicePair } from '../services/runtimeApi'
-import { getAccountFromJsonFile } from './../services/accounts'
+import { createApi, getAlicePair } from '../services/runtime/api'
+import { getAccountFromJsonFile } from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 
 export default abstract class ApiCommandBase extends Command {
