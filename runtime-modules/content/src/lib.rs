@@ -13,11 +13,7 @@ pub use permissions::*;
 
 use core::hash::Hash;
 
-use sp_core::{
-    H256,
-    Hasher,
-    Blake2Hasher,
-};
+use sp_core::Hasher;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -507,7 +503,7 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub Root get(fn root): H256;
+        pub Root get(fn root): <T as frame_system::Trait>::Hash;
     }
 }
 
@@ -1277,10 +1273,10 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn update_root(
             _origin,
-            new_root: H256,
+            new_root: <T as frame_system::Trait>::Hash,
             ) {
             //Self::validate_root(new_root); // needed?
-            <Root>::put(new_root);// verify
+            <Root<T>>::put(new_root);// verify
         }
     }
 }
@@ -1384,30 +1380,34 @@ impl<T: Trait> Module<T> {
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
-    fn verify_proof<E: Encode>(path: &[Option<H256>],
+    fn verify_proof<E: Encode>(path: &[Option< <T as frame_system::Trait>::Hash>],
                                value: &E, i: usize) -> Result<bool, &'static str> {
         let exp = path.len() - 1;
         if i > 2usize.checked_pow(exp as u32).ok_or("index overflow")? {
             Err("index out of range or Merkle path insufficient for validation")
         } else {
             let mut idx = i.checked_add(1).ok_or("index overflow")?;
-            let mut hash_value = Blake2Hasher::hash(&value.encode()); 
+            let mut hash_value = <T as frame_system::Trait>::Hashing::hash(&value.encode()); 
+            //let mut hash_value = Blake2Hasher::hash(&value.encode()); 
             for h_el in path.iter() {
                 hash_value = match h_el {
                     Some(h) => {
                         if idx % 2 == 1 {
-                            Blake2Hasher::hash(&[hash_value, *h].encode()) 
+                            <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h].encode())
+                            //Blake2Hasher::hash(&[hash_value, *h].encode()) 
                         } else { 
-                            Blake2Hasher::hash(&[*h, hash_value].encode()) 
+                            <T as frame_system::Trait>::Hashing::hash(&[*h, hash_value].encode())
+                            //Blake2Hasher::hash(&[*h, hash_value].encode()) 
                         }
                     },
                     None => {
-                        Blake2Hasher::hash(&hash_value.encode())
+                        <T as frame_system::Trait>::Hashing::hash(&hash_value.encode())
+                        //Blake2Hasher::hash(&hash_value.encode())
                     },
                 };
                 idx = (idx >> 1) + idx.wrapping_rem(2);
             }
-            let root = <Root>::get(); 
+            let root = <Root<T>>::get(); 
             let ans = root == hash_value;
             Ok(ans)
         }
