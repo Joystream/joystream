@@ -8,7 +8,7 @@
   },
   "bugs": "https://github.com/shamil-gadelshin/storage-node-v2/issues",
   "dependencies": {
-    "@joystream/types": "^0.15.0",
+    "@joystream/types": "^0.17.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
@@ -71,9 +71,9 @@
   "repository": "shamil-gadelshin/storage-node-v2",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
-    "posttest": "eslint . --ext .ts --config .eslintrc",
+    "posttest": "yarn lint",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
-    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
+    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md",
     "build": "tsc --build tsconfig.json",
     "format": "prettier ./src --write",
