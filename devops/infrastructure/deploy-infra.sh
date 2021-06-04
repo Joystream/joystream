@@ -73,7 +73,7 @@ if [ $? -eq 0 ]; then
     --extra-vars "local_dir=$LOCAL_CODE_PATH build_local_code=$BUILD_LOCAL_CODE"
 
   echo -e "\n\n=========== Configuring the chain spec file and Pioneer app ==========="
-  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-configuration.yml \
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-pioneer.yml \
     --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME bucket_name=$BUCKET_NAME"
 
   echo -e "\n\n Pioneer URL: https://$DOMAIN_NAME"
