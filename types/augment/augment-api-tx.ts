@@ -3,7 +3,7 @@
 
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
 import type { AnyNumber, ITuple } from '@polkadot/types/types';
-import type { ActivateOpeningAt, Actor, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ClassId, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentId, Credential, CredentialSet, CurationActor, CuratorApplicationId, CuratorApplicationIdSet, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagType, ElectionParameters, EntityController, EntityId, EntityPermissions, FillOpeningParameters, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningPolicyCommitment, OpeningType, Operation, OperationType, OptionalText, PaidTermId, PostId, Property, PropertyId, ProposalId, ReferenceConstraint, RewardPolicy, SchemaId, StorageBucketId, TerminateRoleParameters, ThreadId, UploadParameters, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
+import type { ActivateOpeningAt, Actor, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ClassId, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentId, Credential, CredentialSet, CurationActor, CuratorApplicationId, CuratorApplicationIdSet, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagType, ElectionParameters, EntityController, EntityId, EntityPermissions, FillOpeningParameters, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningPolicyCommitment, OpeningType, Operation, OperationType, OptionalText, PaidTermId, PostId, Property, PropertyId, ProposalId, ReferenceConstraint, RewardPolicy, SchemaId, StorageBucketId, TerminateRoleParameters, ThreadId, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
 import type { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import type { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import type { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -1197,10 +1197,6 @@ declare module '@polkadot/api/types/submittable' {
        * Sets storage operator metadata (eg.: storage node URL).
        **/
       setStorageOperatorMetadata: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storageBucketId: StorageBucketId | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, StorageBucketId, Bytes]>;
-      /**
-       * Upload new data objects. Development mode.
-       **/
-      sudoUploadDataObjects: AugmentedSubmittable<(params: UploadParameters | { authenticationKey?: any; bagId?: any; objectCreationList?: any; deletionPrizeSourceAccountId?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [UploadParameters]>;
       /**
        * Add and remove hashes to the current blacklist.
        **/

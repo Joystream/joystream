@@ -2,12 +2,12 @@ import * as express from 'express'
 import { acceptPendingDataObjects } from '../../../services/extrinsics'
 import { getAlicePair } from '../../../services/runtimeApi'
 
-//TODO: test api connection
-//TODO: error handling
-//TODO: convert to JSON
-//TODO: bagId
+// TODO: test api connection
+// TODO: error handling
+// TODO: convert to JSON
+// TODO: bagId
 interface UploadRequest {
-  dataObjectId: number //TODO: to array
+  dataObjectId: number // TODO: to array
   storageBucketId: number
   workerId: number
 }
@@ -18,21 +18,21 @@ export async function upload(
 ): Promise<void> {
   const uploadRequest: UploadRequest = req.body
 
-  //TODO: remove
+  // TODO: remove
   console.log(uploadRequest)
   console.log(req.files)
 
-  //TODO: add file hash check
+  // TODO: add file hash check
 
   try {
-    //TODO: account
+    // TODO: account
     await acceptPendingDataObjects(
       getAlicePair(),
       uploadRequest.workerId,
       uploadRequest.storageBucketId,
       [uploadRequest.dataObjectId]
     )
-    res.status(200).json({ 
+    res.status(200).json({
       file: 'received',
     })
   } catch (err) {

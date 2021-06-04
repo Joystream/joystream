@@ -13,7 +13,7 @@
       "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
     },
     "esModuleInterop": true,
-    "types" : [ "node" ],
+    "types" : [ "node", "mocha" ],
     "noUnusedLocals": true,
     "resolveJsonModule": true
   },

@@ -1,5 +1,5 @@
-import { ApiPromise, WsProvider} from '@polkadot/api'
-import type { Index } from '@polkadot/types/interfaces/runtime';
+import { ApiPromise, WsProvider } from '@polkadot/api'
+import type { Index } from '@polkadot/types/interfaces/runtime'
 import { CodecArg, ISubmittableResult } from '@polkadot/types/types'
 import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
@@ -16,6 +16,7 @@ import { Keyring } from '@polkadot/keyring'
 
 export class ExtrinsicFailedError extends Error {}
 
+// TODO: set URL variable
 export async function createApi(): Promise<ApiPromise> {
   const provider = new WsProvider('ws://localhost:9944')
 
@@ -106,7 +107,7 @@ export async function sendAndFollowTx(
 ): Promise<boolean> {
   try {
     // TODO: use async-lock package
-    const nonce = await api.rpc.system.accountNextIndex(account.address);
+    const nonce = await api.rpc.system.accountNextIndex(account.address)
 
     await sendExtrinsic(api, account, tx, nonce)
     console.log(chalk.green(`Extrinsic successful!`))
