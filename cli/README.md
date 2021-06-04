@@ -45,7 +45,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.5.0 linux-x64 node-v13.12.0
+@joystream/cli/0.5.1 linux-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -100,7 +100,7 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
 * [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
 * [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
-* [`joystream-cli content:videos CHANNELID`](#joystream-cli-contentvideos-channelid)
+* [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
@@ -314,7 +314,7 @@ EXAMPLES
   $ joystream-cli autocomplete --refresh-cache
 ```
 
-_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v0.2.0/src/commands/autocomplete/index.ts)_
+_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v0.2.1/src/commands/autocomplete/index.ts)_
 
 ## `joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`
 
@@ -506,7 +506,7 @@ _See code: [src/commands/content/removeCuratorFromGroup.ts](https://github.com/J
 
 ## `joystream-cli content:reuploadAssets`
 
-Allows reuploading assets that were not succesfully uploaded during channel/video creation
+Allows reuploading assets that were not successfully uploaded during channel/video creation
 
 ```
 USAGE
@@ -667,13 +667,13 @@ ARGUMENTS
 
 _See code: [src/commands/content/video.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/video.ts)_
 
-## `joystream-cli content:videos CHANNELID`
+## `joystream-cli content:videos [CHANNELID]`
 
 List existing content directory videos.
 
 ```
 USAGE
-  $ joystream-cli content:videos CHANNELID
+  $ joystream-cli content:videos [CHANNELID]
 
 ARGUMENTS
   CHANNELID  ID of the Channel
@@ -707,7 +707,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
 
 ## `joystream-cli working-groups:application WGAPPLICATIONID`
 

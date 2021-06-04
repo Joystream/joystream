@@ -45,7 +45,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
       chalk.green(
         `${chalk.magentaBright(formatBalance(balance))} from worker ${chalk.magentaBright(
           workerId
-        )} stake has been succesfully slashed!`
+        )} stake has been successfully slashed!`
       )
     )
   }

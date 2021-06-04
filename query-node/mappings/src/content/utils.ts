@@ -639,6 +639,11 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
     return undefined
   }
 
+  // license is meant to be deleted
+  if (isLicenseEmpty(licenseProtobuf)) {
+    return new License({})
+  }
+
   // crete new license
   const license = new License({
     ...licenseProtobuf,
@@ -649,6 +654,19 @@ async function prepareLicense(licenseProtobuf: LicenseMetadata.AsObject | undefi
 
   return license
 }
+
+/*
+  Checks if protobof contains license with some fields filled or is empty object (`{}` or `{someKey: undefined, ...}`).
+  Empty object means deletion is requested.
+*/
+function isLicenseEmpty(licenseObject: LicenseMetadata.AsObject): boolean {
+    let somePropertySet = Object.entries(licenseObject).reduce((acc, [key, value]) => {
+        return acc || value !== undefined
+    }, false)
+
+    return !somePropertySet
+}
+
 
 function prepareVideoMetadata(videoProtobuf: VideoMetadata.AsObject, videoSize: number | undefined, blockNumber: number): RawVideoMetadata {
   const rawMeta = {

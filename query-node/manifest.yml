@@ -74,6 +74,7 @@ typegen:
     - members.changeMemberHandle
     - members.setRootAccount
     - members.setControllerAccount
+    - members.updateMembership
 
     # content directory
     - content.create_curator_group

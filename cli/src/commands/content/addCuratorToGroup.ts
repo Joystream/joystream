@@ -39,7 +39,7 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
 
     console.log(
       chalk.green(
-        `Curator ${chalk.magentaBright(curatorId)} succesfully added to group ${chalk.magentaBright(groupId)}!`
+        `Curator ${chalk.magentaBright(curatorId)} successfully added to group ${chalk.magentaBright(groupId)}!`
       )
     )
   }

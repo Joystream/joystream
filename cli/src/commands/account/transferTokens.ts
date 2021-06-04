@@ -58,7 +58,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
 
     try {
       const txHash: Hash = await tx.signAndSend(selectedAccount)
-      this.log(chalk.greenBright('Transaction succesfully sent!'))
+      this.log(chalk.greenBright('Transaction successfully sent!'))
       this.log(chalk.magentaBright('Hash:', txHash.toString()))
     } catch (e) {
       this.error('Could not send the transaction.', { exit: ExitCodes.UnexpectedException })
