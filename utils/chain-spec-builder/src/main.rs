@@ -275,7 +275,6 @@ fn genesis_constructor(
 
     chain_spec::testnet_genesis(
         authorities,
-        authorities,
         sudo_account.clone(),
         endowed_accounts.to_vec(),
         proposals_cfg,
