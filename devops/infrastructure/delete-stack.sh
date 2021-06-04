@@ -25,7 +25,7 @@ BUCKET_NAME=$(get_aws_export "S3BucketName")
 
 echo -e "\n\n=========== Emptying bucket $BUCKET_NAME ==========="
 
-aws s3 rm s3://$BUCKET_NAME --recursive --profile $CLI_PROFILE
+aws s3 rm s3://$BUCKET_NAME --recursive --profile $CLI_PROFILE || echo "No bucket"
 
 echo -e "\n\n=========== Deleting stack $NEW_STACK_NAME ==========="
 

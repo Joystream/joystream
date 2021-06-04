@@ -14,6 +14,10 @@ Parameters:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  NumberOfValidators:
+    Description: Number of validator instances to launch
+    Type: Number
+    Default: 2
 
 Conditions:
   HasAMIId: !Not [!Equals [!Ref EC2AMI, ""]]
@@ -109,25 +113,22 @@ Resources:
 
             /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
-  Instance:
-    Type: AWS::EC2::Instance
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
+      MinSize: '0'
+      MaxSize: '10'
+      DesiredCapacity: !Ref NumberOfValidators
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: "AWS::Region"
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_1'
-
-  Instance2:
-    Type: AWS::EC2::Instance
-    Properties:
-      LaunchTemplate:
-        LaunchTemplateId: !Ref InstanceLaunchTemplate
-        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}_2'
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: "true"
 
   RPCInstance:
     Type: AWS::EC2::Instance
@@ -159,7 +160,7 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '600'
-      Count: 4
+      Count: !Ref NumberOfValidators
 
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -200,17 +201,11 @@ Resources:
         HttpVersion: http2
 
 Outputs:
-  PublicIp:
-    Description: The DNS name for the created instance
-    Value:  !Sub "${Instance.PublicIp}"
+  AutoScalingId:
+    Description: The Auto Scaling ID
+    Value:  !Ref AutoScalingGroup
     Export:
-      Name: !Sub "${AWS::StackName}PublicIp"
-
-  PublicIp2:
-    Description: The DNS name for the created instance
-    Value:  !Sub "${Instance2.PublicIp}"
-    Export:
-      Name: !Sub "${AWS::StackName}PublicIp2"
+      Name: !Sub "${AWS::StackName}AutoScalingGroup"
 
   RPCPublicIp:
     Description: The DNS name for the created instance

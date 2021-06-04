@@ -35,20 +35,32 @@ aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
   --stack-name $NEW_STACK_NAME \
-  --template-file main.yml \
+  --template-file infrastructure.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
     EC2InstanceType=$EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
-    EC2AMI=$EC2_AMI_ID
+    EC2AMI=$EC2_AMI_ID \
+    NumberOfValidators=$NUMBER_OF_VALIDATORS
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  VALIDATORS=$(get_aws_export "PublicIp")
+  ASG=$(get_aws_export "AutoScalingGroup")
+
+  VALIDATORS=""
+
+  INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
+    --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
+
+  for ID in $INSTANCES
+  do
+    IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
+    VALIDATORS+="$IP\n"
+  done
 
   RPC_NODES=$(get_aws_export "RPCPublicIp")
 
@@ -60,7 +72,7 @@ if [ $? -eq 0 ]; then
 
   mkdir -p $DATA_PATH
 
-  echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
+  echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
   if [ -z "$EC2_AMI_ID" ]
   then
