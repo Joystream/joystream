@@ -113,7 +113,7 @@ fragment ProposalCancelledEventFields on ProposalCancelledEvent {
   inExtrinsic
   indexInBlock
   proposal {
-   id
+    id
   }
 }
 
