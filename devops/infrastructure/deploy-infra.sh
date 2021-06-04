@@ -11,14 +11,6 @@ else
   source $1
 fi
 
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $CLI_PROFILE --query Account --output text)
-
-NEW_STACK_NAME="${STACK_NAME}-${ACCOUNT_ID}"
-
-DATA_PATH="data-$NEW_STACK_NAME"
-
-INVENTORY_PATH="$DATA_PATH/inventory"
-
 if [ $ACCOUNT_ID == None ]; then
     echo "Couldn't find Account ID, please check if AWS Profile $CLI_PROFILE is set"
     exit 1
