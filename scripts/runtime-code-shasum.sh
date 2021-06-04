@@ -19,4 +19,5 @@ ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mtime='UTC 2020-01-01' \
     runtime \
     runtime-modules \
     utils/chain-spec-builder \
-    joystream-node.Dockerfile | shasum | cut -d " " -f 1
+    joystream-node.Dockerfile \
+    $(echo "$PROPOSALS_PARAMETERS_PATH") | shasum | cut -d " " -f 1

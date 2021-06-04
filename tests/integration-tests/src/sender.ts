@@ -134,11 +134,16 @@ export class Sender {
       try {
         await signedTx.send(handleEvents)
         if (this.logs === LogLevel.Verbose) {
-          this.debug('Submitted tx:', `${section}.${method}`)
+          this.debug('Submitted tx:', `${section}.${method} (nonce: ${nonce})`)
         }
       } catch (err) {
         if (this.logs === LogLevel.Debug) {
-          this.debug('Submitting tx failed:', sentTx, err)
+          this.debug(
+            'Submitting tx failed:',
+            sentTx,
+            err,
+            signedTx.method.args.map((a) => a.toHuman())
+          )
         }
         throw err
       }

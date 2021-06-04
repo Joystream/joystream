@@ -24,6 +24,8 @@ import {
   WorkingGroupModuleName,
   AppliedOnOpeningEventDetails,
   OpeningFilledEventDetails,
+  ProposalsEngineEventName,
+  ProposalCreatedEventDetails,
 } from './types'
 import {
   ApplicationId,
@@ -35,13 +37,7 @@ import {
 } from '@joystream/types/working-group'
 import { DeriveAllSections } from '@polkadot/api/util/decorate'
 import { ExactDerive } from '@polkadot/api-derive'
-
-export enum WorkingGroups {
-  StorageWorkingGroup = 'storageWorkingGroup',
-  ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
-  MembershipWorkingGroup = 'membershipWorkingGroup',
-  ForumWorkingGroup = 'forumWorkingGroup',
-}
+import { ProposalId } from '@joystream/types/proposals'
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -125,6 +121,10 @@ export class Api {
     return this.api.derive
   }
 
+  public get createType(): ApiPromise['createType'] {
+    return this.api.createType.bind(this.api)
+  }
+
   public async signAndSend(
     tx: SubmittableExtrinsic<'promise'>,
     sender: AccountId | string
@@ -133,20 +133,20 @@ export class Api {
   }
 
   public async sendExtrinsicsAndGetResults(
-    txs: SubmittableExtrinsic<'promise'>[],
-    sender: AccountId | string | AccountId[] | string[],
-    preserveOrder = false
+    // Extrinsics can be separated into batches in order to makes sure they are processed in specified order
+    txs: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][],
+    sender: AccountId | string | AccountId[] | string[]
   ): Promise<ISubmittableResult[]> {
     let results: ISubmittableResult[] = []
-    if (preserveOrder) {
-      for (const i in txs) {
-        const tx = txs[i]
-        const result = await this.sender.signAndSend(tx, Array.isArray(sender) ? sender[i] : sender)
-        results.push(result)
-      }
-    } else {
-      results = await Promise.all(
-        txs.map((tx, i) => this.sender.signAndSend(tx, Array.isArray(sender) ? sender[i] : sender))
+    const batches = (Array.isArray(txs[0]) ? txs : [txs]) as SubmittableExtrinsic<'promise'>[][]
+    for (const i in batches) {
+      const batch = batches[i]
+      results = results.concat(
+        await Promise.all(
+          batch.map((tx, j) =>
+            this.sender.signAndSend(tx, Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender)
+          )
+        )
       )
     }
     return results
@@ -179,22 +179,6 @@ export class Api {
       )
     }
     return nKeyPairs
-  }
-
-  // Well known WorkingGroup enum defined in runtime
-  public getWorkingGroupString(workingGroup: WorkingGroups): string {
-    switch (workingGroup) {
-      case WorkingGroups.StorageWorkingGroup:
-        return 'Storage'
-      case WorkingGroups.ContentDirectoryWorkingGroup:
-        return 'Content'
-      case WorkingGroups.ForumWorkingGroup:
-        return 'Forum'
-      case WorkingGroups.MembershipWorkingGroup:
-        return 'Membership'
-      default:
-        throw new Error(`Invalid working group string representation: ${workingGroup}`)
-    }
   }
 
   public getBlockDuration(): BN {
@@ -438,5 +422,79 @@ export class Api {
 
   public async getLeaderStakingKey(group: WorkingGroupModuleName): Promise<string> {
     return (await this.getLeader(group)).staking_account_id.toString()
+  }
+
+  public async retrieveProposalsEngineEventDetails(
+    result: ISubmittableResult,
+    eventName: ProposalsEngineEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'proposalsEngine', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
+  public async retrieveProposalCreatedEventDetails(result: ISubmittableResult): Promise<ProposalCreatedEventDetails> {
+    const details = await this.retrieveProposalsEngineEventDetails(result, 'ProposalCreated')
+    return {
+      ...details,
+      proposalId: details.event.data[1] as ProposalId,
+    }
+  }
+
+  public async getMemberSigners(inputs: { asMember: MemberId }[]): Promise<string[]> {
+    return await Promise.all(
+      inputs.map(async ({ asMember }) => {
+        const membership = await this.query.members.membershipById(asMember)
+        return membership.controller_account.toString()
+      })
+    )
+  }
+
+  public async untilProposalsCanBeCreated(numberOfProposals = 0, intervalMs = 6000, timeoutMs = 180000): Promise<void> {
+    await Utils.until(
+      `${numberOfProposals} proposals can be created`,
+      async ({ debug }) => {
+        const { maxActiveProposalLimit } = this.consts.proposalsEngine
+        const activeProposalsN = await this.query.proposalsEngine.activeProposalCount()
+        debug(`Currently active proposals: ${activeProposalsN.toNumber()}/${maxActiveProposalLimit.toNumber()}`)
+        return activeProposalsN.lt(maxActiveProposalLimit)
+      },
+      intervalMs,
+      timeoutMs
+    )
+  }
+
+  public async untilCouncilStage(
+    targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
+    blocksReserve = 3
+  ): Promise<void> {
+    await Utils.until(`council stage ${targetStage} (+${blocksReserve} blocks reserve)`, async ({ debug }) => {
+      const currentCouncilStage = await this.query.council.stage()
+      const currentElectionStage = await this.query.referendum.stage()
+      const currentStage = currentCouncilStage.stage.isOfType('Election')
+        ? (currentElectionStage.type as 'Voting' | 'Revealing')
+        : (currentCouncilStage.stage.type as 'Announcing' | 'Idle')
+      const currentStageStartedAt = currentCouncilStage.stage.isOfType('Election')
+        ? currentElectionStage.asType(currentElectionStage.type as 'Voting' | 'Revealing').started
+        : currentCouncilStage.changed_at
+
+      const currentBlock = await this.getBestBlock()
+      const { announcingPeriodDuration, idlePeriodDuration } = this.consts.council
+      const { voteStageDuration, revealStageDuration } = this.consts.referendum
+      const durationByStage = {
+        'Announcing': announcingPeriodDuration,
+        'Voting': voteStageDuration,
+        'Revealing': revealStageDuration,
+        'Idle': idlePeriodDuration,
+      } as const
+
+      const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
+
+      debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
+
+      return currentStage === targetStage && currentStageEndsIn.gten(blocksReserve)
+    })
   }
 }

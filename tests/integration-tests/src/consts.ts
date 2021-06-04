@@ -1,3 +1,4 @@
+import { WorkingGroup } from '@joystream/types/common'
 import BN from 'bn.js'
 import { WorkingGroupModuleName } from './types'
 
@@ -19,3 +20,17 @@ export const workingGroups: WorkingGroupModuleName[] = [
   'forumWorkingGroup',
   'membershipWorkingGroup',
 ]
+
+export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
+  if (group.isOfType('Content')) {
+    return 'contentDirectoryWorkingGroup'
+  } else if (group.isOfType('Membership')) {
+    return 'membershipWorkingGroup'
+  } else if (group.isOfType('Forum')) {
+    return 'forumWorkingGroup'
+  } else if (group.isOfType('Storage')) {
+    return 'storageWorkingGroup'
+  }
+
+  throw new Error(`Unsupported working group: ${group}`)
+}

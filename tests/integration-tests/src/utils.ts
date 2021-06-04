@@ -6,6 +6,7 @@ import fs from 'fs'
 import { decodeAddress } from '@polkadot/keyring'
 import { Bytes } from '@polkadot/types'
 import { createType } from '@joystream/types'
+import Debugger from 'debug'
 
 export type AnyMessage<T> = T & {
   toJSON(): Record<string, unknown>
@@ -70,5 +71,29 @@ export class Utils {
     if (!condition) {
       throw new Error(msg || 'Assertion failed')
     }
+  }
+
+  public static async until(
+    name: string,
+    conditionFunc: (props: { debug: Debugger.Debugger }) => Promise<boolean>,
+    intervalMs = 6000,
+    timeoutMs = 10 * 60 * 1000
+  ): Promise<void> {
+    const debug = Debugger(`awaiting:${name}`)
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timoeut reached`)), timeoutMs)
+      const check = async () => {
+        if (await conditionFunc({ debug })) {
+          clearInterval(interval)
+          clearTimeout(timeout)
+          debug('Condition satisfied!')
+          resolve()
+          return
+        }
+        debug('Condition not satisfied, waiting...')
+      }
+      const interval = setInterval(check, intervalMs)
+      check()
+    })
   }
 }

@@ -18,6 +18,7 @@ type ProposalCreatedEvent @entity {
 
   ### SPECIFIC DATA ###
 
+  # FIXME: https://github.com/Joystream/joystream/issues/2457
   "The created proposal"
   proposal: Proposal!
 }

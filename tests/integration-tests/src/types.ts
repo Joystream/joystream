@@ -3,6 +3,8 @@ import { ApplicationId, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@j
 import { Event } from '@polkadot/types/interfaces/system'
 import { BTreeMap } from '@polkadot/types'
 import { MembershipBoughtEvent } from './graphql/generated/schema'
+import { ProposalDetails, ProposalId } from '@joystream/types/proposals'
+import { CreateInterface } from '@joystream/types'
 
 export type MemberContext = {
   account: string
@@ -88,3 +90,22 @@ export type WorkingGroupModuleName =
   | 'contentDirectoryWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
+
+// Proposals:
+
+export interface ProposalCreatedEventDetails extends EventDetails {
+  proposalId: ProposalId
+}
+
+export type ProposalsEngineEventName =
+  | 'ProposalCreated'
+  | 'ProposalStatusUpdated'
+  | 'ProposalDecisionMade'
+  | 'ProposalExecuted'
+  | 'Voted'
+  | 'ProposalCancelled'
+
+export type ProposalType = keyof typeof ProposalDetails.typeDefinitions
+export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<
+  InstanceType<ProposalDetails['typeDefinitions'][T]>
+>

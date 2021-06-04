@@ -147,9 +147,9 @@ function parseQuestionInputType(
   return InputTypeToApplicationFormQuestionType[validType]
 }
 
-async function createOpeningMeta(
+export async function createWorkingGroupOpeningMetadata(
   db: DatabaseManager,
-  event_: SubstrateEvent,
+  eventTime: Date,
   originalMeta: Bytes | IOpeningMetadata
 ): Promise<WorkingGroupOpeningMetadata> {
   let originallyValid: boolean
@@ -162,7 +162,6 @@ async function createOpeningMeta(
     metadata = originalMeta
     originallyValid = true
   }
-  const eventTime = new Date(event_.blockTimestamp)
 
   const {
     applicationFormQuestions,
@@ -241,7 +240,7 @@ async function handleAddUpcomingOpeningAction(
   const upcomingOpeningMeta = action.metadata || {}
   const group = await getWorkingGroup(db, event_)
   const eventTime = new Date(event_.blockTimestamp)
-  const openingMeta = await createOpeningMeta(db, event_, upcomingOpeningMeta.metadata || {})
+  const openingMeta = await createWorkingGroupOpeningMetadata(db, eventTime, upcomingOpeningMeta.metadata || {})
   const { rewardPerBlock, expectedStart, minApplicationStake } = upcomingOpeningMeta
   const upcomingOpening = new UpcomingWorkingGroupOpening({
     createdAt: eventTime,
@@ -399,7 +398,7 @@ export async function workingGroups_OpeningAdded(db: DatabaseManager, event_: Su
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
 
-  const metadata = await createOpeningMeta(db, event_, metadataBytes)
+  const metadata = await createWorkingGroupOpeningMetadata(db, eventTime, metadataBytes)
   opening.metadata = metadata
 
   await db.save<WorkingGroupOpening>(opening)

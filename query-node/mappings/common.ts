@@ -2,6 +2,7 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { Network } from 'query-node/dist/src/modules/enums/enums'
 import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
+import { WorkingGroup } from '@joystream/types/augment/all'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
@@ -44,6 +45,11 @@ export function bytesToString(b: Bytes): string {
   return Buffer.from(b.toU8a(true)).toString()
 }
 
+export function perpareString(s: string): string {
+  // eslint-disable-next-line no-control-regex
+  return s.replace(/\u0000/g, '')
+}
+
 export function hasValuesForProperties<
   T extends Record<string, unknown>,
   P extends keyof T & string,
@@ -55,4 +61,24 @@ export function hasValuesForProperties<
     }
   })
   return true
+}
+
+export type WorkingGroupModuleName =
+  | 'storageWorkingGroup'
+  | 'contentDirectoryWorkingGroup'
+  | 'forumWorkingGroup'
+  | 'membershipWorkingGroup'
+
+export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
+  if (group.isContent) {
+    return 'contentDirectoryWorkingGroup'
+  } else if (group.isMembership) {
+    return 'membershipWorkingGroup'
+  } else if (group.isForum) {
+    return 'forumWorkingGroup'
+  } else if (group.isStorage) {
+    return 'storageWorkingGroup'
+  }
+
+  throw new Error(`Unsupported working group: ${group.type}`)
 }

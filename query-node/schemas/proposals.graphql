@@ -71,15 +71,10 @@ type ProposalStatusCanceledByRuntime @variant {
 union ProposalIntermediateStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant
 
 "Proposal status after the voting stage has finished for the current council."
-union ProposalDecisionStatus =
-    #
-  # Approved:
-  #
+union ProposalDecisionStatus = # Approved:
   ProposalStatusDormant
-  | ProposalStatusGracing #
-  | # Not approved:
-  #
-  ProposalStatusVetoed
+  | ProposalStatusGracing # Not approved:
+  | ProposalStatusVetoed
   | ProposalStatusSlashed
   | ProposalStatusRejected
   | ProposalStatusExpired
@@ -90,16 +85,11 @@ union ProposalDecisionStatus =
 union ProposalExecutionStatus = ProposalStatusExecuted | ProposalStatusExecutionFailed
 
 "All valid proposal statuses"
-union ProposalStatus =
-    #
-  # Intermediate statuses
-  #
+union ProposalStatus = # Intermediate statuses:
   ProposalStatusDeciding
   | ProposalStatusGracing
-  | ProposalStatusDormant #
-  | # Final statuses:
-  #
-  ProposalStatusVetoed
+  | ProposalStatusDormant # Final statuses:
+  | ProposalStatusVetoed
   | ProposalStatusExecuted
   | ProposalStatusExecutionFailed
   | ProposalStatusSlashed
@@ -157,7 +147,7 @@ type Proposal @entity {
   statusSetAtTime: DateTime!
 }
 
-type SingalProposalDetails @variant {
+type SignalProposalDetails @variant {
   "Signal proposal content"
   text: String!
 }
@@ -347,7 +337,7 @@ type VetoProposalDetails @variant {
 }
 
 union ProposalDetails =
-    SingalProposalDetails
+    SignalProposalDetails
   | RuntimeUpgradeProposalDetails
   | FundingRequestProposalDetails
   | SetMaxValidatorCountProposalDetails
