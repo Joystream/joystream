@@ -93,7 +93,7 @@ const OverviewTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerD
         />
         <OverviewTableRow
           item='Weekly Top Ups'
-          value={displayStatusData((Number(statusData?.dollarPool.replenishAmount)).toFixed(2) || '', 'USD')}
+          value={displayStatusData(Number(statusData?.dollarPool.replenishAmount).toFixed(2) || '', 'USD')}
           help={'The current weekly \'Fiat Pool\' replenishment amount. Does not include KPIs, or other potential top ups.'}
         />
       </Table.Body>
