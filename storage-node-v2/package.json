@@ -14,8 +14,11 @@
     "@oclif/plugin-help": "^3",
     "@polkadot/api": "4.2.1",
     "@types/express": "^4.17.11",
+    "@types/swagger-ui-express": "^4.1.2",
     "express": "^4.17.1",
     "express-openapi-validator": "^4.12.4",
+    "openapi-editor": "^0.3.0",
+    "swagger-ui-express": "^4.1.6",
     "tslib": "^1"
   },
   "devDependencies": {
@@ -77,7 +80,8 @@
     "version": "oclif-dev readme && git add README.md",
     "build": "tsc --build tsconfig.json",
     "format": "prettier ./src --write",
-    "lint": "eslint ./src --ext .ts"
+    "lint": "eslint ./src --ext .ts",
+    "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021"
   },
   "types": "lib/index.d.ts"
 }
