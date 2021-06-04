@@ -37,6 +37,7 @@
     "@polkadot/util": "^6.0.5",
     "@polkadot/util-crypto": "^6.0.5",
     "@polkadot/wasm-crypto": "^4.0.2",
+    "@apollographql/graphql-playground-html": "https://gitpkg.now.sh/ondratra/graphql-playground/packages/graphql-playground-html?templates_extension_with_build",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
