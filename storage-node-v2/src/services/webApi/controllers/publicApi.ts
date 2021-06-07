@@ -2,10 +2,8 @@ import * as express from 'express'
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
 import { getAlicePair } from '../../runtime/api'
 import { hashFile } from '../../../services/hashing'
-import fs from 'fs';
-const fsPromises = fs.promises;
-
-//import * as multer from '@types/multer'
+import fs from 'fs'
+const fsPromises = fs.promises
 
 // TODO: test api connection?
 // TODO: error handling
@@ -51,14 +49,14 @@ export async function upload(
   }
 }
 
-function getFileObject(req: express.Request): Express.Multer.File{
+function getFileObject(req: express.Request): Express.Multer.File {
   if (req.file) {
     return req.file
   }
 
-  const files = req.files as Express.Multer.File[];
+  const files = req.files as Express.Multer.File[]
   if (files && files.length > 0) {
-     return files[0]
+    return files[0]
   }
 
   throw new Error('No file uploaded')
