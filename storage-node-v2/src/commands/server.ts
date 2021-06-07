@@ -1,16 +1,14 @@
-import { Command, flags } from '@oclif/command'
-import { createServer } from '../services/webApi/server'
+import { flags } from '@oclif/command'
+import { createApp } from '../services/webApi/app'
+import ApiCommandBase from '../command-base/ApiCommandBase'
 
 // TODO: fix command not found error (error handling)
 // TODO: custom IP address?
-// TODO: parameters for --dev or key file
 
-export default class Server extends Command {
+export default class Server extends ApiCommandBase {
   static description = 'Starts the storage node server.'
 
   static flags = {
-    help: flags.help({ char: 'h' }),
-    dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
     uploads: flags.string({
       char: 'u',
       required: true,
@@ -21,6 +19,7 @@ export default class Server extends Command {
       required: true,
       description: 'Server port.',
     }),
+    ...ApiCommandBase.keyflags,
   }
 
   static args = [{ name: 'file' }]
@@ -28,13 +27,23 @@ export default class Server extends Command {
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
+    if (flags.dev) {
+      await this.ensureDevelopmentChain()
+    }
+
+    const account = this.getAccount(flags)
+
     try {
       const port = flags.port
-      const server = await createServer(flags.dev, flags.uploads)
+      const app = await createApp(account, flags.uploads)
       console.info(`Listening on http://localhost:${port}`)
-      server.listen(port)
+      app.listen(port)
     } catch (err) {
       console.error(`Error: ${err}`)
     }
   }
+
+  // Override exiting.
+  /* eslint-disable @typescript-eslint/no-empty-function */
+  async finally(): Promise<void> {}
 }

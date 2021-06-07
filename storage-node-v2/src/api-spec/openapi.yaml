@@ -10,24 +10,27 @@ info:
   version: 0.1.0
 externalDocs:
   description: Storage node API
-  url: joystream.org
+  url: https://github.com/Joystream/joystream/issues/2224
 servers:
   - url: http://localhost:3333/api/v1/
 
 tags:
-  - name: storage
-    description: Storage node APIs
+  - name: public
+    description: Public storage node API
 
 paths:
   /upload:
     post:
+      security:
+        - UploadAuth: []
       description: Upload data
       operationId: publicApi.upload
+      tags:
+        - public
       requestBody:
         content:
           multipart/form-data:
             schema:
-              # $ref: '#/components/schemas/NewPhoto'
               type: object
               required:
                 - dataObjectId
@@ -38,21 +41,21 @@ paths:
                   description: Data file
                   type: string
                   format: binary
-                dataObjectId: #TODO: convert to JSON
+                dataObjectId:
                   description: Data object runtime ID
                   type: string
                   pattern: '^\d+$' #integer
-                storageBucketId: #TODO: convert to JSON
-                  description: Data object runtime ID
+                storageBucketId:
+                  description: Storage bucket ID
                   type: string
                   pattern: '^\d+$' #integer
-                workerId: #TODO: convert to JSON
-                  description: Data object runtime ID
+                workerId: 
+                  description: Storage provider worker ID
                   type: string
                   pattern: '^\d+$' #integer
         required: true
       responses:
-        200:
+        201:
           description: Created
           content:
             application/json:
@@ -61,3 +64,43 @@ paths:
                 properties:
                   success:
                     type: boolean
+        401:
+          description: Unauthorized
+  /authToken:
+    post:
+      description: Get auth token from a server.
+      operationId: publicApi.authToken
+      tags:
+        - public
+      requestBody:
+        description: Token request parameters,
+        content:
+          application/json:    
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+components:
+  securitySchemes:
+    UploadAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    TokenRequest:
+      type: object
+      required:
+        - dataObjectId
+      properties:
+        dataObjectId:
+          type: integer
+          format: int64    
+
