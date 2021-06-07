@@ -33,6 +33,7 @@ USAGE
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
+* [`storage-node multihash [FILE]`](#storage-node-multihash-file)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
@@ -122,6 +123,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/update-bag.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag.ts)_
+
+## `storage-node multihash [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node multihash [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/multihash.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/multihash.ts)_
 
 ## `storage-node operator:accept-invitation`
 
