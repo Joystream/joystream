@@ -4,8 +4,6 @@ import cors from 'cors'
 import { Express } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
 
-
-
 // TODO: custom errors (including validation errors)
 
 export async function createServer(
@@ -17,9 +15,11 @@ export async function createServer(
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
 
   if (devMode) {
-    // TODO: localhost only?
     server.use('/spec', express.static(spec))
   }
+
+  // TODO: check path
+  server.use('/files', express.static(uploadsDir))
 
   server.use(
     OpenApiValidator.middleware({
