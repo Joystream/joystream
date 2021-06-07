@@ -1275,8 +1275,12 @@ decl_module! {
             _origin,
             new_root: <T as frame_system::Trait>::Hash,
             ) {
-            //Self::validate_root(new_root); // needed?
-            <Root<T>>::put(new_root);// verify
+            // validation?
+            let old_root = <Root<T>>::get();
+            if old_root != new_root {
+                <Root<T>>::put(new_root);
+                Self::deposit_event(RawEvent::RootUpdated(new_root));
+            }
         }
     }
 }
@@ -1382,30 +1386,25 @@ impl<T: Trait> Module<T> {
     }
     fn verify_proof<E: Encode>(path: &[Option< <T as frame_system::Trait>::Hash>],
                                value: &E, i: usize) -> Result<bool, &'static str> {
-        let exp = path.len() - 1;
+        let exp = path.len();
         if i > 2usize.checked_pow(exp as u32).ok_or("index overflow")? {
             Err("index out of range or Merkle path insufficient for validation")
         } else {
             let mut idx = i.checked_add(1).ok_or("index overflow")?;
             let mut hash_value = <T as frame_system::Trait>::Hashing::hash(&value.encode()); 
-            //let mut hash_value = Blake2Hasher::hash(&value.encode()); 
             for h_el in path.iter() {
                 hash_value = match h_el {
                     Some(h) => {
-                        if idx % 2 == 1 {
-                            <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h].encode())
-                            //Blake2Hasher::hash(&[hash_value, *h].encode()) 
-                        } else { 
-                            <T as frame_system::Trait>::Hashing::hash(&[*h, hash_value].encode())
-                            //Blake2Hasher::hash(&[*h, hash_value].encode()) 
+                        match idx % 2 {
+                        1 => <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h].encode()),
+                        _ => <T as frame_system::Trait>::Hashing::hash(&[*h, hash_value].encode()),
                         }
                     },
                     None => {
                         <T as frame_system::Trait>::Hashing::hash(&hash_value.encode())
-                        //Blake2Hasher::hash(&hash_value.encode())
                     },
                 };
-                idx = (idx >> 1) + idx.wrapping_rem(2);
+                idx = (idx >> 1).checked_add(idx.wrapping_rem(2)).ok_or("index overflow")?;
             }
             let root = <Root<T>>::get(); 
             let ans = root == hash_value;
@@ -1454,6 +1453,7 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        HashOutput = <T as frame_system::Trait>::Hash
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1573,5 +1573,6 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
+        RootUpdated(HashOutput),
     }
 );

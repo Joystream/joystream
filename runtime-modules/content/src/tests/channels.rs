@@ -392,10 +392,3 @@ fn channel_censoring() {
     })
 }
 
-#[test]
-fn channel_reward () {
-    let a: Vec<u64> = vec![1,2,3,5];
-    with_default_mock_builder(|| {
-    })
-
-}
