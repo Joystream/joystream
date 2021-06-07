@@ -11,7 +11,7 @@ use sp_runtime::Perbill;
 
 pub use cumulus_primitives_core::ParaId;
 use joystream_node_runtime::{
-    membership, wasm_binary_unwrap, BabeId, Balance, BalancesConfig, ContentConfig,
+    membership, wasm_binary_unwrap, AuraConfig, Balance, BalancesConfig, ContentConfig,
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
     GatewayWorkingGroupConfig, GrandpaId, ImOnlineId, MembersConfig, Moment,
@@ -24,8 +24,8 @@ pub use joystream_node_runtime::{AccountId, AuraId, GenesisConfig, Signature};
 
 #[cfg(feature = "standalone")]
 use joystream_node_runtime::{
-    AuthorityDiscoveryConfig, BabeConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
-    SessionKeys, StakerStatus, StakingConfig, BABE_GENESIS_EPOCH_CONFIG,
+    AuthorityDiscoveryConfig, GrandpaConfig, ImOnlineConfig, SessionConfig, SessionKeys,
+    StakerStatus, StakingConfig,
 };
 
 #[cfg(not(feature = "standalone"))]
@@ -93,7 +93,7 @@ pub fn get_authority_keys_from_seed(
     AccountId,
     AccountId,
     GrandpaId,
-    BabeId,
+    AuraId,
     ImOnlineId,
     AuthorityDiscoveryId,
 ) {
@@ -101,7 +101,7 @@ pub fn get_authority_keys_from_seed(
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
         get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<BabeId>(seed),
+        get_from_seed::<AuraId>(seed),
         get_from_seed::<ImOnlineId>(seed),
         get_from_seed::<AuthorityDiscoveryId>(seed),
     )
@@ -126,13 +126,7 @@ pub fn development_config(id: ParaId) -> ChainSpec {
         ChainType::Development,
         move || {
             testnet_genesis(
-                #[cfg(feature = "standalone")]
                 vec![get_authority_keys_from_seed("Alice")],
-                #[cfg(not(feature = "standalone"))]
-                vec![
-                    get_from_seed::<AuraId>("Alice"),
-                    get_from_seed::<AuraId>("Bob"),
-                ],
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -169,15 +163,9 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
         ChainType::Local,
         move || {
             testnet_genesis(
-                #[cfg(feature = "standalone")]
                 vec![
                     get_authority_keys_from_seed("Alice"),
                     get_authority_keys_from_seed("Bob"),
-                ],
-                #[cfg(not(feature = "standalone"))]
-                vec![
-                    get_from_seed::<AuraId>("Alice"),
-                    get_from_seed::<AuraId>("Bob"),
                 ],
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![
@@ -229,13 +217,13 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
 #[cfg(feature = "standalone")]
 fn session_keys(
     grandpa: GrandpaId,
-    babe: BabeId,
+    aura: AuraId,
     im_online: ImOnlineId,
     authority_discovery: AuthorityDiscoveryId,
 ) -> SessionKeys {
     SessionKeys {
         grandpa,
-        babe,
+        aura,
         im_online,
         authority_discovery,
     }
@@ -243,15 +231,14 @@ fn session_keys(
 
 #[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
-    #[cfg(feature = "standalone")] _initial_authorities: Vec<(
+    initial_authorities: Vec<(
         AccountId,
         AccountId,
         GrandpaId,
-        BabeId,
+        AuraId,
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
-    #[cfg(not(feature = "standalone"))] aura_authorities: Vec<AuraId>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: joystream_node_runtime::ProposalsConfigParameters,
@@ -292,11 +279,6 @@ pub fn testnet_genesis(
         },
         pallet_sudo: SudoConfig { key: root_key },
         #[cfg(feature = "standalone")]
-        pallet_babe: BabeConfig {
-            authorities: vec![],
-            epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
-        },
-        #[cfg(feature = "standalone")]
         pallet_im_online: ImOnlineConfig { keys: vec![] },
         #[cfg(feature = "standalone")]
         pallet_authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
@@ -307,19 +289,19 @@ pub fn testnet_genesis(
         #[cfg(feature = "standalone")]
         pallet_staking: StakingConfig {
             validator_count: 100,
-            minimum_validator_count: _initial_authorities.len() as u32,
-            stakers: _initial_authorities
+            minimum_validator_count: initial_authorities.len() as u32,
+            stakers: initial_authorities
                 .iter()
                 .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))
                 .collect(),
-            invulnerables: _initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             history_depth: 336,
             ..Default::default()
         },
         #[cfg(feature = "standalone")]
         pallet_session: SessionConfig {
-            keys: _initial_authorities
+            keys: initial_authorities
                 .iter()
                 .map(|x| {
                     (
@@ -332,9 +314,9 @@ pub fn testnet_genesis(
         },
         #[cfg(not(feature = "standalone"))]
         parachain_info: ParachainInfoConfig { parachain_id: id },
-        #[cfg(not(feature = "standalone"))]
-        pallet_aura: joystream_node_runtime::AuraConfig {
-            authorities: aura_authorities,
+        // Select AuraIds
+        pallet_aura: AuraConfig {
+            authorities: initial_authorities.iter().map(|x| x.3.clone()).collect(),
         },
         #[cfg(not(feature = "standalone"))]
         cumulus_pallet_aura_ext: Default::default(),

@@ -230,18 +230,10 @@ fn genesis_constructor(
     initial_content_path: &Option<PathBuf>,
     initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
-    #[cfg(feature = "standalone")]
     let authorities = authority_seeds
         .iter()
         .map(AsRef::as_ref)
         .map(chain_spec::get_authority_keys_from_seed)
-        .collect::<Vec<_>>();
-
-    #[cfg(not(feature = "standalone"))]
-    let authorities = authority_seeds
-        .iter()
-        .map(AsRef::as_ref)
-        .map(chain_spec::get_from_seed::<AuraId>)
         .collect::<Vec<_>>();
 
     let members = initial_members_path

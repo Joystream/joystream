@@ -18,6 +18,7 @@ path = 'bin/main.rs'
 
 [features]
 default = []
+standalone = []
 runtime-benchmarks = ['joystream-node-runtime/runtime-benchmarks']
 
 [dependencies]

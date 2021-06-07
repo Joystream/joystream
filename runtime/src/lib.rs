@@ -83,7 +83,7 @@ pub use pallet_grandpa::AuthorityId as GrandpaId;
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 #[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
-pub use sp_consensus_babe::AuthorityId as BabeId;
+pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 
 #[cfg(feature = "standalone")]
 use standalone_use::*;
@@ -156,7 +156,7 @@ pub fn native_version() -> NativeVersion {
 
 #[cfg(not(feature = "standalone"))]
 impl_opaque_keys! {
-    pub struct SessionKeys {}
+    pub struct SessionKeys { pub aura: Aura }
 }
 
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
@@ -247,6 +247,10 @@ impl frame_system::Config for Runtime {
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
 }
 
+impl pallet_aura::Config for Runtime {
+    type AuthorityId = AuraId;
+}
+
 impl pallet_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
@@ -261,7 +265,6 @@ impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = Moment;
     type OnTimestampSet = ();
-    // type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
@@ -572,38 +575,13 @@ mod standalone_impl {
             BondingDuration::get() as u64 * SessionsPerEra::get() as u64 *
     EpochDuration::get(); }
 
-    /// The BABE epoch configuration at genesis.
-    pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
-        sp_consensus_babe::BabeEpochConfiguration {
-            c: PRIMARY_PROBABILITY,
-            allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
-        };
-
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub grandpa: Grandpa,
-            pub babe: Babe,
+            pub aura: Aura,
             pub im_online: ImOnline,
             pub authority_discovery: AuthorityDiscovery,
         }
-    }
-
-    impl pallet_babe::Config for Runtime {
-        type EpochDuration = EpochDuration;
-        type ExpectedBlockTime = ExpectedBlockTime;
-        type EpochChangeTrigger = pallet_babe::ExternalTrigger;
-        type KeyOwnerProofSystem = Historical;
-        type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
-            KeyTypeId,
-            pallet_babe::AuthorityId,
-        )>>::Proof;
-        type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
-            KeyTypeId,
-            pallet_babe::AuthorityId,
-        )>>::IdentificationTuple;
-        type HandleEquivocation =
-            pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, (), ReportLongevity>;
-        type WeightInfo = ();
     }
 
     impl pallet_grandpa::Config for Runtime {
@@ -631,7 +609,7 @@ mod standalone_impl {
     }
 
     impl pallet_authorship::Config for Runtime {
-        type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
+        type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
         type UncleGenerations = UncleGenerations;
         type FilterUncle = ();
         type EventHandler = (Staking, ()); // ImOnline
@@ -639,14 +617,16 @@ mod standalone_impl {
 
     parameter_types! {
         pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+        pub const Period: BlockNumber = DAYS;
+        pub const Offset: BlockNumber = 0;
     }
 
     impl pallet_session::Config for Runtime {
         type Event = Event;
         type ValidatorId = <Self as frame_system::Config>::AccountId;
         type ValidatorIdOf = pallet_staking::StashOf<Self>;
-        type ShouldEndSession = Babe;
-        type NextSessionRotation = Babe;
+        type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+        type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
         type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
         type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
         type Keys = SessionKeys;
@@ -755,8 +735,6 @@ pub use parachain_impl::*;
 mod parachain_impl {
     use super::*;
 
-    pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-
     parameter_types! {
         pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
         pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
@@ -774,10 +752,6 @@ mod parachain_impl {
     }
 
     impl parachain_info::Config for Runtime {}
-
-    impl pallet_aura::Config for Runtime {
-        type AuthorityId = AuraId;
-    }
 
     impl cumulus_pallet_aura_ext::Config for Runtime {}
 
@@ -973,7 +947,6 @@ macro_rules! construct_joystream_runtime {
 construct_joystream_runtime! {
     // Consensus & Staking
     Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent} = 56,
-    Babe: pallet_babe::{Pallet, Call, Storage, Config, ValidateUnsigned} = 57,
     Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event, ValidateUnsigned} = 58,
     Staking: pallet_staking::{Pallet, Call, Config<T>, Storage, Event<T>} = 60,
     Offences: pallet_offences::{Pallet, Call, Storage, Event} = 61,
@@ -981,6 +954,7 @@ construct_joystream_runtime! {
     Historical: pallet_session_historical::{Pallet} = 63,
     AuthorityDiscovery: pallet_authority_discovery::{Pallet, Call, Config} = 64,
     ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>} = 65,
+    Aura: pallet_aura::{Pallet, Config<T>} = 66,
 }
 
 #[cfg(not(feature = "standalone"))]
@@ -992,8 +966,7 @@ construct_joystream_runtime! {
     PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 59,
     XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 60,
     DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 61,
-    Aura: pallet_aura::{Pallet, Config<T>} = 62,
-    AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 63,
+    AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 62,
 }
 
 /// The address format for describing accounts.
