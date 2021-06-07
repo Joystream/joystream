@@ -39,7 +39,8 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    EC2InstanceType=$EC2_INSTANCE_TYPE \
+    EC2InstanceType=$NODE_EC2_INSTANCE_TYPE \
+    BuildEC2InstanceType=$BUILD_EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
     EC2AMI=$EC2_AMI_ID \
     NumberOfValidators=$NUMBER_OF_VALIDATORS
@@ -77,7 +78,8 @@ if [ $? -eq 0 ]; then
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Configuring the node servers ==========="
-    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE"
+    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml \
+      --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE data_path=data-$NEW_STACK_NAME"
   fi
 
   echo -e "\n\n=========== Configuring the Build server ==========="

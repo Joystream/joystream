@@ -1,7 +1,8 @@
 ---
 
-- name: Get latest Joystream code and build it
-  hosts: all
+- name: Get latest Joystream code, build it and copy binary to local
+  hosts: build
+  gather_facts: no
   tasks:
     - name: Get code from local or git repo
       include_role:
@@ -12,3 +13,24 @@
       include_role:
         name: common
         tasks_from: run-setup-build
+
+    - name: Copy joystream-node binary from build to local
+      fetch:
+        src: "{{ remote_code_path }}/target/release/joystream-node"
+        dest: "{{ data_path }}/joystream-node"
+        flat: yes
+
+- name: Copy binary to remote servers
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Create release directory
+      file:
+        path: "{{ remote_code_path }}/target/release"
+        state: directory
+
+    - name: Copying joystream-node binary to all servers
+      copy:
+        src: "{{ data_path }}/joystream-node"
+        dest: "{{ remote_code_path }}/target/release/joystream-node"
+        mode: "0775"

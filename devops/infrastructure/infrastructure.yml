@@ -3,6 +3,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
+  BuildEC2InstanceType:
+    Type: String
   EC2AMI:
     Type: String
     Default: 'ami-09e67e426f25ce0d7'
@@ -145,6 +147,7 @@ Resources:
   BuildInstance:
     Type: AWS::EC2::Instance
     Properties:
+      InstanceType: !Ref BuildEC2InstanceType
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
