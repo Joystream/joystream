@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
 import { Members } from './generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
@@ -29,49 +29,49 @@ import {
   MembershipEntryInvited,
 } from 'query-node/dist/model'
 
-async function getMemberById(db: DatabaseManager, id: MemberId): Promise<Membership> {
-  const member = await db.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
+async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
+  const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
   if (!member) {
     throw new Error(`Member(${id}) not found`)
   }
   return member
 }
 
-async function getLatestMembershipSystemSnapshot(db: DatabaseManager): Promise<MembershipSystemSnapshot> {
-  const membershipSystem = await db.get(MembershipSystemSnapshot, {
+async function getLatestMembershipSystemSnapshot(store: DatabaseManager): Promise<MembershipSystemSnapshot> {
+  const membershipSystem = await store.get(MembershipSystemSnapshot, {
     order: { snapshotBlock: 'DESC' },
   })
   if (!membershipSystem) {
-    throw new Error(`Membership system snapshot not found! Forgot to run "yarn workspace query-node-root db:init"?`)
+    throw new Error(`Membership system snapshot not found! Forgot to run "yarn workspace query-node-root store:init"?`)
   }
   return membershipSystem
 }
 
-async function getOrCreateMembershipSnapshot(db: DatabaseManager, event_: SubstrateEvent) {
-  const latestSnapshot = await getLatestMembershipSystemSnapshot(db)
-  const eventTime = new Date(event_.blockTimestamp)
-  return latestSnapshot.snapshotBlock === event_.blockNumber
+async function getOrCreateMembershipSnapshot({ store, event }: EventContext & StoreContext) {
+  const latestSnapshot = await getLatestMembershipSystemSnapshot(store)
+  const eventTime = new Date(event.blockTimestamp)
+  return latestSnapshot.snapshotBlock === event.blockNumber
     ? latestSnapshot
     : new MembershipSystemSnapshot({
         ...latestSnapshot,
         createdAt: eventTime,
         updatedAt: eventTime,
         id: undefined,
-        snapshotBlock: event_.blockNumber,
+        snapshotBlock: event.blockNumber,
       })
 }
 
 async function createNewMemberFromParams(
-  db: DatabaseManager,
-  event_: SubstrateEvent,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   memberId: MemberId,
   entryMethod: typeof MembershipEntryMethod,
   params: BuyMembershipParameters | InviteMembershipParameters
 ): Promise<Membership> {
-  const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(db)
+  const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(store)
   const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metatadaBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metatadaBytes)
-  const eventTime = new Date(event_.blockTimestamp)
+  const eventTime = new Date(event.blockTimestamp)
 
   const metadataEntity = new MemberMetadata({
     createdAt: eventTime,
@@ -106,20 +106,20 @@ async function createNewMemberFromParams(
     isFoundingMember: false,
   })
 
-  await db.save<MemberMetadata>(member.metadata)
-  await db.save<Membership>(member)
+  await store.save<MemberMetadata>(member.metadata)
+  await store.save<Membership>(member)
 
   return member
 }
 
-export async function members_MembershipBought(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [memberId, buyMembershipParameters] = new Members.MembershipBoughtEvent(event_).params
+export async function members_MembershipBought({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId, buyMembershipParameters] = new Members.MembershipBoughtEvent(event).params
 
   const memberEntry = new MembershipEntryPaid()
-  const member = await createNewMemberFromParams(db, event_, memberId, memberEntry, buyMembershipParameters)
+  const member = await createNewMemberFromParams(store, event, memberId, memberEntry, buyMembershipParameters)
 
   const membershipBoughtEvent = new MembershipBoughtEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newMember: member,
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
@@ -131,22 +131,22 @@ export async function members_MembershipBought(db: DatabaseManager, event_: Subs
     referrer: member.referredBy,
   })
 
-  await db.save<MemberMetadata>(membershipBoughtEvent.metadata)
-  await db.save<MembershipBoughtEvent>(membershipBoughtEvent)
+  await store.save<MemberMetadata>(membershipBoughtEvent.metadata)
+  await store.save<MembershipBoughtEvent>(membershipBoughtEvent)
 
   // Update the other side of event<->membership relation
   memberEntry.membershipBoughtEventId = membershipBoughtEvent.id
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 }
 
-export async function members_MemberProfileUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [memberId] = new Members.MemberProfileUpdatedEvent(event_).params
-  const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event_).args
+export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId] = new Members.MemberProfileUpdatedEvent(event).params
+  const { metadata: metadataBytesOpt, handle } = new Members.UpdateProfileCall(event).args
   const metadata = metadataBytesOpt.isSome
     ? deserializeMetadata(MembershipMetadata, metadataBytesOpt.unwrap())
     : undefined
-  const member = await getMemberById(db, memberId)
-  const eventTime = new Date(event_.blockTimestamp)
+  const member = await getMemberById(store, memberId)
+  const eventTime = new Date(event.blockTimestamp)
 
   if (typeof metadata?.name === 'string') {
     member.metadata.name = metadata.name || undefined
@@ -162,11 +162,11 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
     member.updatedAt = eventTime
   }
 
-  await db.save<MemberMetadata>(member.metadata)
-  await db.save<Membership>(member)
+  await store.save<MemberMetadata>(member.metadata)
+  await store.save<Membership>(member)
 
   const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     member: member,
     newHandle: member.handle,
     newMetadata: new MemberMetadata({
@@ -175,15 +175,15 @@ export async function members_MemberProfileUpdated(db: DatabaseManager, event_: 
     }),
   })
 
-  await db.save<MemberMetadata>(memberProfileUpdatedEvent.newMetadata)
-  await db.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
+  await store.save<MemberMetadata>(memberProfileUpdatedEvent.newMetadata)
+  await store.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
 }
 
-export async function members_MemberAccountsUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [memberId] = new Members.MemberAccountsUpdatedEvent(event_).params
-  const { newRootAccount, newControllerAccount } = new Members.UpdateAccountsCall(event_).args
-  const member = await getMemberById(db, memberId)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function members_MemberAccountsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId] = new Members.MemberAccountsUpdatedEvent(event).params
+  const { newRootAccount, newControllerAccount } = new Members.UpdateAccountsCall(event).args
+  const member = await getMemberById(store, memberId)
+  const eventTime = new Date(event.blockTimestamp)
 
   if (newControllerAccount.isSome) {
     member.controllerAccount = newControllerAccount.unwrap().toString()
@@ -193,78 +193,78 @@ export async function members_MemberAccountsUpdated(db: DatabaseManager, event_:
   }
   member.updatedAt = eventTime
 
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   const memberAccountsUpdatedEvent = new MemberAccountsUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     member: member,
     newRootAccount: member.rootAccount,
     newControllerAccount: member.controllerAccount,
   })
 
-  await db.save<MemberAccountsUpdatedEvent>(memberAccountsUpdatedEvent)
+  await store.save<MemberAccountsUpdatedEvent>(memberAccountsUpdatedEvent)
 }
 
 export async function members_MemberVerificationStatusUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
+  store: DatabaseManager,
+  event: SubstrateEvent
 ): Promise<void> {
-  const [memberId, verificationStatus] = new Members.MemberVerificationStatusUpdatedEvent(event_).params
-  const member = await getMemberById(db, memberId)
-  const eventTime = new Date(event_.blockTimestamp)
+  const [memberId, verificationStatus] = new Members.MemberVerificationStatusUpdatedEvent(event).params
+  const member = await getMemberById(store, memberId)
+  const eventTime = new Date(event.blockTimestamp)
 
   member.isVerified = verificationStatus.valueOf()
   member.updatedAt = eventTime
 
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   const memberVerificationStatusUpdatedEvent = new MemberVerificationStatusUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     member: member,
     isVerified: member.isVerified,
   })
 
-  await db.save<MemberVerificationStatusUpdatedEvent>(memberVerificationStatusUpdatedEvent)
+  await store.save<MemberVerificationStatusUpdatedEvent>(memberVerificationStatusUpdatedEvent)
 }
 
-export async function members_InvitesTransferred(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [sourceMemberId, targetMemberId, numberOfInvites] = new Members.InvitesTransferredEvent(event_).params
-  const sourceMember = await getMemberById(db, sourceMemberId)
-  const targetMember = await getMemberById(db, targetMemberId)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function members_InvitesTransferred({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [sourceMemberId, targetMemberId, numberOfInvites] = new Members.InvitesTransferredEvent(event).params
+  const sourceMember = await getMemberById(store, sourceMemberId)
+  const targetMember = await getMemberById(store, targetMemberId)
+  const eventTime = new Date(event.blockTimestamp)
 
   sourceMember.inviteCount -= numberOfInvites.toNumber()
   sourceMember.updatedAt = eventTime
   targetMember.inviteCount += numberOfInvites.toNumber()
   targetMember.updatedAt = eventTime
 
-  await db.save<Membership>(sourceMember)
-  await db.save<Membership>(targetMember)
+  await store.save<Membership>(sourceMember)
+  await store.save<Membership>(targetMember)
 
   const invitesTransferredEvent = new InvitesTransferredEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     sourceMember,
     targetMember,
     numberOfInvites: numberOfInvites.toNumber(),
   })
 
-  await db.save<InvitesTransferredEvent>(invitesTransferredEvent)
+  await store.save<InvitesTransferredEvent>(invitesTransferredEvent)
 }
 
-export async function members_MemberInvited(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [memberId, inviteMembershipParameters] = new Members.MemberInvitedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
+export async function members_MemberInvited({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId, inviteMembershipParameters] = new Members.MemberInvitedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
   const entryMethod = new MembershipEntryInvited()
-  const invitedMember = await createNewMemberFromParams(db, event_, memberId, entryMethod, inviteMembershipParameters)
+  const invitedMember = await createNewMemberFromParams(store, event, memberId, entryMethod, inviteMembershipParameters)
 
   // Decrease invite count of inviting member
-  const invitingMember = await getMemberById(db, inviteMembershipParameters.inviting_member_id)
+  const invitingMember = await getMemberById(store, inviteMembershipParameters.inviting_member_id)
   invitingMember.inviteCount -= 1
   invitingMember.updatedAt = eventTime
-  await db.save<Membership>(invitingMember)
+  await store.save<Membership>(invitingMember)
 
   const memberInvitedEvent = new MemberInvitedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     invitingMember,
     newMember: invitedMember,
     handle: invitedMember.handle,
@@ -276,48 +276,48 @@ export async function members_MemberInvited(db: DatabaseManager, event_: Substra
     }),
   })
 
-  await db.save<MemberMetadata>(memberInvitedEvent.metadata)
-  await db.save<MemberInvitedEvent>(memberInvitedEvent)
+  await store.save<MemberMetadata>(memberInvitedEvent.metadata)
+  await store.save<MemberInvitedEvent>(memberInvitedEvent)
   // Update the other side of event<->member relationship
   entryMethod.memberInvitedEventId = memberInvitedEvent.id
-  await db.save<Membership>(invitedMember)
+  await store.save<Membership>(invitedMember)
 }
 
-export async function members_StakingAccountAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [accountId, memberId] = new Members.StakingAccountAddedEvent(event_).params
+export async function members_StakingAccountAdded({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [accountId, memberId] = new Members.StakingAccountAddedEvent(event).params
 
   const stakingAccountAddedEvent = new StakingAccountAddedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     member: new Membership({ id: memberId.toString() }),
     account: accountId.toString(),
   })
 
-  await db.save<StakingAccountAddedEvent>(stakingAccountAddedEvent)
+  await store.save<StakingAccountAddedEvent>(stakingAccountAddedEvent)
 }
 
-export async function members_StakingAccountConfirmed(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [accountId, memberId] = new Members.StakingAccountConfirmedEvent(event_).params
-  const member = await getMemberById(db, memberId)
-  const eventTime = new Date(event_.blockTimestamp)
+export async function members_StakingAccountConfirmed({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [accountId, memberId] = new Members.StakingAccountConfirmedEvent(event).params
+  const member = await getMemberById(store, memberId)
+  const eventTime = new Date(event.blockTimestamp)
 
   member.boundAccounts.push(accountId.toString())
   member.updatedAt = eventTime
 
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   const stakingAccountConfirmedEvent = new StakingAccountConfirmedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     member,
     account: accountId.toString(),
   })
 
-  await db.save<StakingAccountConfirmedEvent>(stakingAccountConfirmedEvent)
+  await store.save<StakingAccountConfirmedEvent>(stakingAccountConfirmedEvent)
 }
 
-export async function members_StakingAccountRemoved(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [accountId, memberId] = new Members.StakingAccountRemovedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const member = await getMemberById(db, memberId)
+export async function members_StakingAccountRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [accountId, memberId] = new Members.StakingAccountRemovedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const member = await getMemberById(store, memberId)
 
   member.boundAccounts.splice(
     member.boundAccounts.findIndex((a) => a === accountId.toString()),
@@ -325,94 +325,95 @@ export async function members_StakingAccountRemoved(db: DatabaseManager, event_:
   )
   member.updatedAt = eventTime
 
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   const stakingAccountRemovedEvent = new StakingAccountRemovedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     member,
     account: accountId.toString(),
   })
 
-  await db.save<StakingAccountRemovedEvent>(stakingAccountRemovedEvent)
+  await store.save<StakingAccountRemovedEvent>(stakingAccountRemovedEvent)
 }
 
-export async function members_InitialInvitationCountUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
-): Promise<void> {
-  const [newDefaultInviteCount] = new Members.InitialInvitationCountUpdatedEvent(event_).params
-  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+export async function members_InitialInvitationCountUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [newDefaultInviteCount] = new Members.InitialInvitationCountUpdatedEvent(event).params
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(ctx)
 
   membershipSystemSnapshot.defaultInviteCount = newDefaultInviteCount.toNumber()
 
-  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
+  await store.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationCountUpdatedEvent = new InitialInvitationCountUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newInitialInvitationCount: newDefaultInviteCount.toNumber(),
   })
 
-  await db.save<InitialInvitationCountUpdatedEvent>(initialInvitationCountUpdatedEvent)
+  await store.save<InitialInvitationCountUpdatedEvent>(initialInvitationCountUpdatedEvent)
 }
 
-export async function members_MembershipPriceUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [newMembershipPrice] = new Members.MembershipPriceUpdatedEvent(event_).params
-  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+export async function members_MembershipPriceUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [newMembershipPrice] = new Members.MembershipPriceUpdatedEvent(event).params
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(ctx)
 
   membershipSystemSnapshot.membershipPrice = newMembershipPrice
 
-  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
+  await store.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const membershipPriceUpdatedEvent = new MembershipPriceUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newPrice: newMembershipPrice,
   })
 
-  await db.save<MembershipPriceUpdatedEvent>(membershipPriceUpdatedEvent)
+  await store.save<MembershipPriceUpdatedEvent>(membershipPriceUpdatedEvent)
 }
 
-export async function members_ReferralCutUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [newReferralCut] = new Members.ReferralCutUpdatedEvent(event_).params
-  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+export async function members_ReferralCutUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [newReferralCut] = new Members.ReferralCutUpdatedEvent(event).params
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(ctx)
 
   membershipSystemSnapshot.referralCut = newReferralCut.toNumber()
 
-  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
+  await store.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const referralCutUpdatedEvent = new ReferralCutUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newValue: newReferralCut.toNumber(),
   })
 
-  await db.save<ReferralCutUpdatedEvent>(referralCutUpdatedEvent)
+  await store.save<ReferralCutUpdatedEvent>(referralCutUpdatedEvent)
 }
 
-export async function members_InitialInvitationBalanceUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
-): Promise<void> {
-  const [newInvitedInitialBalance] = new Members.InitialInvitationBalanceUpdatedEvent(event_).params
-  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(db, event_)
+export async function members_InitialInvitationBalanceUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [newInvitedInitialBalance] = new Members.InitialInvitationBalanceUpdatedEvent(event).params
+  const membershipSystemSnapshot = await getOrCreateMembershipSnapshot(ctx)
 
   membershipSystemSnapshot.invitedInitialBalance = newInvitedInitialBalance
 
-  await db.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
+  await store.save<MembershipSystemSnapshot>(membershipSystemSnapshot)
 
   const initialInvitationBalanceUpdatedEvent = new InitialInvitationBalanceUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newInitialBalance: newInvitedInitialBalance,
   })
 
-  await db.save<InitialInvitationBalanceUpdatedEvent>(initialInvitationBalanceUpdatedEvent)
+  await store.save<InitialInvitationBalanceUpdatedEvent>(initialInvitationBalanceUpdatedEvent)
 }
 
-export async function members_LeaderInvitationQuotaUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [newQuota] = new Members.LeaderInvitationQuotaUpdatedEvent(event_).params
+export async function members_LeaderInvitationQuotaUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [newQuota] = new Members.LeaderInvitationQuotaUpdatedEvent(event).params
 
   const leaderInvitationQuotaUpdatedEvent = new LeaderInvitationQuotaUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newInvitationQuota: newQuota.toNumber(),
   })
 
-  await db.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)
+  await store.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)
 }
