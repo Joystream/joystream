@@ -6,22 +6,20 @@
   "bin": {
     "storage-node": "./bin/run"
   },
-  "bugs": "https://github.com/shamil-gadelshin/storage-node-v2/issues",
+  "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
     "@joystream/types": "^0.17.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
     "@polkadot/api": "4.2.1",
-    "@types/express": "^4.17.11",
+    "@types/express": "4.17.1",
     "@types/multer": "^1.4.5",
-    "@types/swagger-ui-express": "^4.1.2",
     "blake3": "^2.1.4",
-    "express": "^4.17.1",
+    "express": "4.17.1",
     "express-openapi-validator": "^4.12.4",
     "multihashes": "^4.0.2",
     "openapi-editor": "^0.3.0",
-    "swagger-ui-express": "^4.1.6",
     "tslib": "^1"
   },
   "devDependencies": {
@@ -30,6 +28,7 @@
     "@types/chai": "^4",
     "@types/mocha": "^5",
     "@types/node": "^10",
+    "@types/swagger-ui-express": "^4.1.2",
     "@typescript-eslint/eslint-plugin": "3.8.0",
     "@typescript-eslint/parser": "3.8.0",
     "chai": "^4",
@@ -41,6 +40,7 @@
     "nyc": "^14",
     "prettier": "^2.3.0",
     "sinon": "^11.1.1",
+    "swagger-ui-express": "^4.1.6",
     "ts-node": "^8.8.2",
     "typescript": "^3.3"
   },
@@ -53,9 +53,10 @@
     "/npm-shrinkwrap.json",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/shamil-gadelshin/storage-node-v2",
+  "homepage": "https://github.com/Joystream/joystream",
   "keywords": [
-    "oclif"
+    "joystream",
+    "storage-node"
   ],
   "license": "GPL-3.0-only",
   "main": "lib/index.js",

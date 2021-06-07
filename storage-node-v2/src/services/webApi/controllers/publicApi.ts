@@ -1,7 +1,8 @@
 import * as express from 'express'
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { getAlicePair } from '../../runtime/api'
+import { TokenRequest, signToken } from '../../auth'
 import { hashFile } from '../../../services/hashing'
+import { KeyringPair } from '@polkadot/keyring/types'
 import fs from 'fs'
 const fsPromises = fs.promises
 
@@ -21,25 +22,24 @@ export async function upload(
 ): Promise<void> {
   const uploadRequest: UploadRequest = req.body
 
+  console.log(uploadRequest)
+
   try {
     const fileObj = getFileObject(req)
-    console.log(fileObj)
 
     const hash = await hashFile(fileObj.path)
     const newPath = fileObj.path.replace(fileObj.filename, hash)
-    console.log(hash)
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
 
-    // TODO: account
     await acceptPendingDataObjects(
-      getAlicePair(),
+      getAccount(res),
       uploadRequest.workerId,
       uploadRequest.storageBucketId,
       [uploadRequest.dataObjectId]
     )
-    res.status(200).json({
+    res.status(201).json({
       file: 'received',
     })
   } catch (err) {
@@ -47,6 +47,19 @@ export async function upload(
       errorMsg: err.toString(),
     })
   }
+}
+
+export async function authToken(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  const account = getAccount(res)
+  const tokenRequest = getTokenRequest(req)
+  const signature = signToken(tokenRequest, account)
+
+  res.status(201).json({
+    token: signature,
+  })
 }
 
 function getFileObject(req: express.Request): Express.Multer.File {
@@ -60,4 +73,21 @@ function getFileObject(req: express.Request): Express.Multer.File {
   }
 
   throw new Error('No file uploaded')
+}
+
+function getAccount(res: express.Response): KeyringPair {
+  if (res.locals.storageProviderAccount) {
+    return res.locals.storageProviderAccount
+  }
+
+  throw new Error('No Joystream account loaded.')
+}
+
+function getTokenRequest(req: express.Request): TokenRequest {
+  const tokenRequest = req.body as TokenRequest
+  if (tokenRequest) {
+    return tokenRequest
+  }
+
+  throw new Error('No token request provided.')
 }
