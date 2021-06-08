@@ -1,0 +1,10 @@
+---
+# Testing github actions with ansible playnook
+
+- name: Print something out
+  hosts: localhost
+
+  tasks:
+    - name: Debug information
+      debug:
+        msg: "Variables are: {{ hostvars }}"
