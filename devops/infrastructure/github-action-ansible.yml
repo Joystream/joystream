@@ -9,12 +9,6 @@
       debug:
         msg: "Variables are: {{ hostvars }}"
 
-    - name: Creating a file with content
-      copy:
-        dest: "~/mytext.txt"
-        content: |
-          line 01
-
     - name: Git checkout
       git:
         repo: "{{ git_repo }}"
@@ -28,3 +22,4 @@
         name: "joystream-{{ branch_name }}"
         launch_permissions:
           group_names: ['all']
+      delegate_to: localhost
