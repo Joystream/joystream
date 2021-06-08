@@ -50,7 +50,9 @@ jobs:
       run: echo "$GITHUB_CONTEXT"
 
     - name: Which Python
-      run: which python
+      run: |
+        which python
+        pip freeze
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
