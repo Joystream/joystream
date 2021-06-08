@@ -25,7 +25,7 @@ jobs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       id: deploy-stack
       with:
-        name: joystream-single-instance-$GITHUB_RUN_NUMBER
+        name: joystream-single-instance-${{ github.run_number }}
         template: devops/infrastructure/single-instance.yml
         no-fail-on-empty-changeset: "1"
         parameter-overrides: "KeyName=anuj-key"
