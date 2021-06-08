@@ -35,10 +35,19 @@ jobs:
     #     echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
     #     echo "Repo is $GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
     #     echo "Branch is $GITHUB_REF"
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
 
     - name: Get env
       run: |
-        echo "Env is ${{ env }}"
+        echo "Env is ${{ toJSON(env) }}"
+
+    - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
@@ -51,5 +60,5 @@ jobs:
           [all]
           3.93.62.190
         options: |
-          --extra-vars "git_repo=https://github.com/${{ github.repository }} branch_name=${{ github.ref##*/ }} instance_id=i-0e145c6b0165844c7"
+          --extra-vars "git_repo=https://github.com/${{ github.repository }} branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=i-0e145c6b0165844c7"
           --verbose
