@@ -90,7 +90,7 @@ export class AddStakingAccountsHappyCaseFixture extends BaseQueryNodeFixture {
     // Check events
     const qAddedEvents = await this.query.getStakingAccountAddedEvents(memberContext.memberId)
     const qConfirmedEvents = await this.query.getStakingAccountConfirmedEvents(memberContext.memberId)
-    accounts.forEach(async (account, i) => {
+    accounts.forEach((account, i) => {
       this.assertQueryNodeAddAccountEventIsValid(addEvents[i], account, addExtrinsics[i].hash.toString(), qAddedEvents)
       this.assertQueryNodeConfirmAccountEventIsValid(
         confirmEvents[i],
