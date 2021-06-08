@@ -75,6 +75,8 @@ jobs:
         inventory: |
           [all]
           3.93.62.190
+          [all:vars]
+          ansible_python_interpreter=/usr/bin/python3
         options: |
           --extra-vars "git_repo=https://github.com/${{ github.repository }} branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=i-0e145c6b0165844c7"
           --verbose
