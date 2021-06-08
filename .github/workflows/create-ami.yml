@@ -21,20 +21,20 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Deploy to AWS CloudFormation
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
-      id: deploy-stack
-      with:
-        name: joystream-single-instance-${{ github.run_number }}
-        template: devops/infrastructure/single-instance.yml
-        no-fail-on-empty-changeset: "1"
-        parameter-overrides: "KeyName=anuj-key"
+    # - name: Deploy to AWS CloudFormation
+    #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+    #   id: deploy-stack
+    #   with:
+    #     name: joystream-single-instance-${{ github.run_number }}
+    #     template: devops/infrastructure/single-instance.yml
+    #     no-fail-on-empty-changeset: "1"
+    #     parameter-overrides: "KeyName=anuj-key"
 
-    - name: Get output from CloudFormation stack
-      run: |
-        echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
-        echo "Repo is $GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
-        echo "Branch is $GITHUB_REF"
+    # - name: Get output from CloudFormation stack
+    #   run: |
+    #     echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
+    #     echo "Repo is $GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+    #     echo "Branch is $GITHUB_REF"
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
@@ -45,7 +45,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         inventory: |
           [all]
-          ${{ steps.deploy-stack.outputs.PublicIp }}
+          3.93.62.190
         options: |
-          --extra-vars git_repo=${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }} branch_name=${{ env.GITHUB_REF }} instance_id=${{ steps.deploy-stack.outputs.InstanceId }}
+          --extra-vars git_repo=${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }} branch_name=${{ env.GITHUB_REF }} instance_id=i-0e145c6b0165844c7
           --verbose
