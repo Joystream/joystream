@@ -156,7 +156,9 @@ pub fn native_version() -> NativeVersion {
 
 #[cfg(not(feature = "standalone"))]
 impl_opaque_keys! {
-    pub struct SessionKeys { pub aura: Aura }
+    pub struct SessionKeys { 
+        pub aura: Aura, 
+    }
 }
 
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
@@ -937,6 +939,9 @@ macro_rules! construct_joystream_runtime {
                 // Dev
 				Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 55,
 
+                // Block authoring logic
+                Aura: pallet_aura::{Pallet, Config<T>} = 56,
+
 				$($Pallets)*
 			}
 		}
@@ -946,7 +951,7 @@ macro_rules! construct_joystream_runtime {
 #[cfg(feature = "standalone")]
 construct_joystream_runtime! {
     // Consensus & Staking
-    Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent} = 56,
+    Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent} = 57,
     Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event, ValidateUnsigned} = 58,
     Staking: pallet_staking::{Pallet, Call, Config<T>, Storage, Event<T>} = 60,
     Offences: pallet_offences::{Pallet, Call, Storage, Event} = 61,
@@ -954,19 +959,18 @@ construct_joystream_runtime! {
     Historical: pallet_session_historical::{Pallet} = 63,
     AuthorityDiscovery: pallet_authority_discovery::{Pallet, Call, Config} = 64,
     ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>} = 65,
-    Aura: pallet_aura::{Pallet, Config<T>} = 66,
 }
 
 #[cfg(not(feature = "standalone"))]
 construct_joystream_runtime! {
     // Parachain
-    ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 56,
-    ParachainInfo: parachain_info::{Pallet, Storage, Config} = 57,
-    XcmHandler: cumulus_pallet_xcm::{Pallet, Call, Event<T>, Origin} = 58,
-    PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 59,
-    XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 60,
-    DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 61,
-    AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 62,
+    ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 57,
+    ParachainInfo: parachain_info::{Pallet, Storage, Config} = 58,
+    XcmHandler: cumulus_pallet_xcm::{Pallet, Call, Event<T>, Origin} = 59,
+    PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 60,
+    XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 61,
+    DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 62,
+    AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 63,
 }
 
 /// The address format for describing accounts.

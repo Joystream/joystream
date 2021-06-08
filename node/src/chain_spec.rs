@@ -109,7 +109,7 @@ pub fn get_authority_keys_from_seed(
 
 impl Alternative {
     /// Get an actual chain config from one of the alternatives.
-    pub(crate) fn load(self, id: ParaId) -> Result<ChainSpec, String> {
+    pub(crate) fn load(self, #[cfg(not(feature = "standalone"))] id: ParaId) -> Result<ChainSpec, String> {
         Ok(match self {
             Alternative::Development => development_config(id),
             Alternative::LocalTestnet => local_testnet_config(id),
@@ -117,7 +117,7 @@ impl Alternative {
     }
 }
 
-pub fn development_config(id: ParaId) -> ChainSpec {
+pub fn development_config(#[cfg(not(feature = "standalone"))] id: ParaId) -> ChainSpec {
     ChainSpec::from_genesis(
         // Name
         "Development",
@@ -154,7 +154,7 @@ pub fn development_config(id: ParaId) -> ChainSpec {
     )
 }
 
-pub fn local_testnet_config(id: ParaId) -> ChainSpec {
+pub fn local_testnet_config(#[cfg(not(feature = "standalone"))] id: ParaId) -> ChainSpec {
     ChainSpec::from_genesis(
         // Name
         "Local Testnet",
@@ -246,7 +246,7 @@ pub fn testnet_genesis(
     forum_config: ForumConfig,
     data_directory_config: DataDirectoryConfig,
     initial_balances: Vec<(AccountId, Balance)>,
-    id: ParaId,
+    #[cfg(not(feature = "standalone"))] id: ParaId,
 ) -> GenesisConfig {
     #[cfg(feature = "standalone")]
     const STASH: Balance = 5_000;

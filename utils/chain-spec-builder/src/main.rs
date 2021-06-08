@@ -25,7 +25,7 @@ use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
     self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
-    proposals_config, AccountId, AuraId, Extensions, ParaId,
+    proposals_config, AccountId, Extensions, ParaId,
 };
 
 use futures_util::TryFutureExt;
@@ -349,7 +349,7 @@ async fn generate_authority_keys_and_store(
         let keystore = Keystore::open(keystore_path.join(format!("auth-{}", n)), None)
             .map_err(|err| err.to_string())?;
 
-        let (_, _, grandpa, babe, im_online, authority_discovery) =
+        let (_, _, grandpa, aura, im_online, authority_discovery) =
             chain_spec::get_authority_keys_from_seed(seed);
 
         let suri = format!("//{}", seed);
@@ -360,7 +360,7 @@ async fn generate_authority_keys_and_store(
                 .map_err(|_| format!("Failed to insert key: {}", grandpa))
         };
 
-        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice()).await?;
+        insert_key(sp_core::crypto::key_types::AURA, aura.as_slice()).await?;
 
         insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice()).await?;
 
