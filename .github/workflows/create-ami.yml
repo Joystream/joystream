@@ -51,5 +51,5 @@ jobs:
           [all]
           3.93.62.190
         options: |
-          --extra-vars "git_repo=https://github.com/${{ github.repository }} branch_name=${{ github.ref }} instance_id=i-0e145c6b0165844c7"
+          --extra-vars "git_repo=https://github.com/${{ github.repository }} branch_name=${{ github.ref##*/ }} instance_id=i-0e145c6b0165844c7"
           --verbose
