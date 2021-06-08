@@ -49,9 +49,10 @@ jobs:
         directory: devops/infrastructure
         requirements: requirements.yml
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        GITHUB_SERVER_URL: hello
         inventory: |
           [all]
           3.93.62.190
         options: |
-          --extra-vars "git_repo=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY branch_name=$GITHUB_REF instance_id=i-0e145c6b0165844c7"
+          --extra-vars "git_repo=$GITHUB_SERVER_URL/${GITHUB_REPOSITORY} branch_name=${GITHUB_REF} instance_id=i-0e145c6b0165844c7"
           --verbose
