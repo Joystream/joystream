@@ -49,10 +49,8 @@ jobs:
         GITHUB_CONTEXT: ${{ toJSON(github) }}
       run: echo "$GITHUB_CONTEXT"
 
-    - name: Install boto
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install boto3
+    - name: Which Python
+      run: which python
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2

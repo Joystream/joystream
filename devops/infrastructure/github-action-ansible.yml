@@ -15,13 +15,13 @@
         dest: "{{ remote_code_path }}"
         version: "{{ branch_name }}"
 
-    - name: install pip3
-      apt: name=python3-pip state=present 
-      become: yes
+    # - name: install pip3
+    #   apt: name=python3-pip state=present 
+    #   become: yes
 
-    - name: Install boto3 python package
-      pip:
-        name: boto3
+    # - name: Install boto3 python package
+    #   pip:
+    #     name: boto3
 
     - name: Basic AMI Creation
       local_action:
