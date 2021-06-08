@@ -43,7 +43,7 @@ jobs:
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
       env:
-        SERVER_URL: ${{ GITHUB_SERVER_URL }}
+        SERVER_URL: ${{ env.GITHUB_SERVER_URL }}
       with:
         playbook: github-action-ansible.yml
         directory: devops/infrastructure
