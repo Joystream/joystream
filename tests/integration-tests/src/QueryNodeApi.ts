@@ -203,12 +203,12 @@ export class QueryNodeApi {
     let lastError: any
     let retryCounter = 0
     const retry = async (error: any) => {
+      lastError = error
       if (retryCounter === retries) {
         debug(`Max number of query retries (${retries}) reached!`)
         throw lastError
       }
       debug(`Retrying query in ${retryTimeMs}ms...`)
-      lastError = error
       ++retryCounter
       await Utils.wait(retryTimeMs)
     }
