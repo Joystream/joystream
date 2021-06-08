@@ -3,6 +3,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
+    Default: t2.xlarge
   EC2AMI:
     Type: String
     Default: 'ami-09e67e426f25ce0d7'
