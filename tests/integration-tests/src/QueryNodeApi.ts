@@ -212,7 +212,7 @@ export class QueryNodeApi {
       ++retryCounter
       await Utils.wait(retryTimeMs)
     }
-    while(true) {
+    while (true) {
       let result: QueryResultT
       try {
         result = await query()
