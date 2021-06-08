@@ -24,7 +24,8 @@
         name: boto3
 
     - name: Basic AMI Creation
-      amazon.aws.ec2_ami:
+      local_action:
+        module: amazon.aws.ec2_ami
         instance_id: "{{ instance_id }}"
         wait: yes
         name: "joystream-{{ branch_name }}"
