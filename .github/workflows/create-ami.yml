@@ -19,7 +19,19 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2
+        aws-region: us-east-1
+
+    - name: Deploy to AWS CloudFormation
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      id: deploy-stack
+      with:
+        name: joystream-single-instance
+        template: devops/infrastructure/single-instance.yml
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: "KeyName=anuj-key"
+
+    - name: Get output from CloudFormation stack
+      run: echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
@@ -27,7 +39,9 @@ jobs:
         playbook: github-action-ansible.yml
         directory: devops/infrastructure
         # key: ${{secrets.SSH_PRIVATE_KEY}}
-        vault_password: ${{secrets.VAULT_PASSWORD}}
+        inventory: |
+          [all]
+          ${{ steps.deploy-stack.outputs.PublicIp }}
         options: |
           --extra-vars hello=there
           --verbose
