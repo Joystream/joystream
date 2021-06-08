@@ -47,5 +47,5 @@ jobs:
           [all]
           ${{ steps.deploy-stack.outputs.PublicIp }}
         options: |
-          --extra-vars git_repo=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY branch_name=$GITHUB_REF instance_id=${{ steps.deploy-stack.outputs.InstanceId }}
+          --extra-vars git_repo=${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }} branch_name=${{ env.GITHUB_REF }} instance_id=${{ steps.deploy-stack.outputs.InstanceId }}
           --verbose
