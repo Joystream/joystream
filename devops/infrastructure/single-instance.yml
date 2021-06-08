@@ -102,3 +102,9 @@ Outputs:
     Value:  !Sub "${Instance.PublicIp}"
     Export:
       Name: !Sub "PublicIp"
+
+  InstanceId:
+    Description: The Instance ID
+    Value:  !Ref Instance
+    Export:
+      Name: !Sub "InstanceId"

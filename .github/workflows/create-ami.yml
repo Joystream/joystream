@@ -25,23 +25,27 @@ jobs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       id: deploy-stack
       with:
-        name: joystream-single-instance
+        name: joystream-single-instance-${{ GITHUB_RUN_NUMBER }}
         template: devops/infrastructure/single-instance.yml
         no-fail-on-empty-changeset: "1"
         parameter-overrides: "KeyName=anuj-key"
 
     - name: Get output from CloudFormation stack
-      run: echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
+      run: |
+        echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
+        echo "Repo is ${{ GITHUB_SERVER_URL }}/${{ GITHUB_REPOSITORY }}"
+        echo "Branch is ${{ GITHUB_REF }}"
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
       with:
         playbook: github-action-ansible.yml
         directory: devops/infrastructure
-        # key: ${{secrets.SSH_PRIVATE_KEY}}
+        requirements: requirements.yml
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         inventory: |
           [all]
           ${{ steps.deploy-stack.outputs.PublicIp }}
         options: |
-          --extra-vars hello=there
+          --extra-vars git_repo=${{ GITHUB_SERVER_URL }}/${{ GITHUB_REPOSITORY }} branch_name=${{ GITHUB_REF }} instance_id=${{ steps.deploy-stack.outputs.InstanceId }}
           --verbose

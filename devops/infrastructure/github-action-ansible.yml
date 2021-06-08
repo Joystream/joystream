@@ -1,10 +1,30 @@
 ---
 # Testing github actions with ansible playnook
 
-- name: Print something out
-  hosts: localhost
+- name: Setup instance
+  hosts: all
 
   tasks:
     - name: Debug information
       debug:
         msg: "Variables are: {{ hostvars }}"
+
+    - name: Creating a file with content
+      copy:
+        dest: "~/mytext.txt"
+        content: |
+          line 01
+
+    - name: Git checkout
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ remote_code_path }}"
+        version: "{{ branch_name }}"
+
+    - name: Basic AMI Creation
+      amazon.aws.ec2_ami:
+        instance_id: "{{ instance_id }}"
+        wait: yes
+        name: "joystream-{{ branch_name }}"
+        launch_permissions:
+          group_names: ['all']
