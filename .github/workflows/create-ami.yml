@@ -33,8 +33,8 @@ jobs:
     - name: Get output from CloudFormation stack
       run: |
         echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
-        echo "Repo is ${{ GITHUB_SERVER_URL }}/${{ GITHUB_REPOSITORY }}"
-        echo "Branch is ${{ GITHUB_REF }}"
+        echo "Repo is $GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+        echo "Branch is $GITHUB_REF"
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
@@ -47,5 +47,5 @@ jobs:
           [all]
           ${{ steps.deploy-stack.outputs.PublicIp }}
         options: |
-          --extra-vars git_repo=${{ GITHUB_SERVER_URL }}/${{ GITHUB_REPOSITORY }} branch_name=${{ GITHUB_REF }} instance_id=${{ steps.deploy-stack.outputs.InstanceId }}
+          --extra-vars git_repo=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY branch_name=$GITHUB_REF instance_id=${{ steps.deploy-stack.outputs.InstanceId }}
           --verbose
