@@ -43,7 +43,7 @@ jobs:
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
       env:
-        GITHUB_SERVER_URL: $GITHUB_SERVER_URL
+        SERVER_URL: ${{ GITHUB_SERVER_URL }}
       with:
         playbook: github-action-ansible.yml
         directory: devops/infrastructure
@@ -54,5 +54,5 @@ jobs:
           [all]
           3.93.62.190
         options: |
-          --extra-vars "git_repo=$GITHUB_SERVER_URL/${GITHUB_REPOSITORY} branch_name=${GITHUB_REF} instance_id=i-0e145c6b0165844c7"
+          --extra-vars "git_repo=${{ SERVER_URL }}/${{ GITHUB_REPOSITORY }} branch_name=${GITHUB_REF} instance_id=i-0e145c6b0165844c7"
           --verbose
