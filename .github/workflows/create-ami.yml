@@ -65,6 +65,9 @@ jobs:
         pip freeze
         python --version
 
+    - name: Install Ansible dependencies
+      run: pipx inject ansible-base boto3 botocore
+
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
       with:
