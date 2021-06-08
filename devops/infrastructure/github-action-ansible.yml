@@ -15,6 +15,10 @@
         dest: "{{ remote_code_path }}"
         version: "{{ branch_name }}"
 
+    - name: Install boto3 python package
+      pip:
+        name: boto3
+
     - name: Basic AMI Creation
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
