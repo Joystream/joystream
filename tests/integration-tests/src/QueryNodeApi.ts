@@ -200,13 +200,11 @@ export class QueryNodeApi {
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const debug = this.tryDebug.extend(label)
-    let lastError: any
     let retryCounter = 0
     const retry = async (error: any) => {
-      lastError = error
       if (retryCounter === retries) {
         debug(`Max number of query retries (${retries}) reached!`)
-        throw lastError
+        throw error
       }
       debug(`Retrying query in ${retryTimeMs}ms...`)
       ++retryCounter
