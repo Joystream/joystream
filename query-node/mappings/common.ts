@@ -41,7 +41,12 @@ export function deserializeMetadata<T>(metadataType: AnyMetadataClass<T>, metada
 }
 
 export function bytesToString(b: Bytes): string {
-  return Buffer.from(b.toU8a(true)).toString()
+  return (
+    Buffer.from(b.toU8a(true))
+      .toString()
+      // eslint-disable-next-line no-control-regex
+      .replace(/\u0000/g, '')
+  )
 }
 
 export function hasValuesForProperties<
