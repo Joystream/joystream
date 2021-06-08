@@ -45,9 +45,9 @@ jobs:
         echo "Env is ${{ toJSON(env) }}"
 
     - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-        run: echo "$GITHUB_CONTEXT"
+      env:
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+      run: echo "$GITHUB_CONTEXT"
 
     - name: Run playbook
       uses: dawidd6/action-ansible-playbook@v2
