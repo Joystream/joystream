@@ -47,6 +47,10 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
 
+pub const PULL_PAYMENTS_COLLECTION: [i32; 5] = [1, 2, 3, 4, 5];
+pub const VALUE_BELONGING_TO_COLLECTION: i32 = 3;
+pub const VALUE_NOT_BELONGING_TO_COLLECTION: i32 = 30;
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -63,9 +67,6 @@ impl_outer_event! {
     }
 }
 
-// to test a sbustrate runtime, construct a mock runtime enviroinment. The configuration
-// type Test is defined as a unit struct with imp lementations for each of the configuration 
-// traits that need to be used in the mock runtime. 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
@@ -300,7 +301,6 @@ impl ExtBuilder {
 }
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
-    // default init + build method above 
     ExtBuilder::default().build().execute_with(|| f())
 }
 

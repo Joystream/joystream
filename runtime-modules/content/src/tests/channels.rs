@@ -391,4 +391,3 @@ fn channel_censoring() {
         ));
     })
 }
-

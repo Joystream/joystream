@@ -53,8 +53,8 @@ pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as StorageOwnership>::DAOId,
 >;
 
-/// Type, used for reward payment 
-pub type Value = u128; 
+/// Type, used for reward payment
+pub type Value = u128;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -208,7 +208,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
-    /// Cumulative cashout 
+    /// Cumulative cashout
     cumulative_reward: Value,
 }
 
@@ -683,7 +683,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                cumulative_reward: 0, // initial reward set to 0 ? 
+                cumulative_reward: 0,
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -1277,10 +1277,19 @@ decl_module! {
             ) {
             // validation?
             let old_root = <Root<T>>::get();
-            if old_root != new_root {
-                <Root<T>>::put(new_root);
-                Self::deposit_event(RawEvent::RootUpdated(new_root));
-            }
+            if old_root == new_root { return Ok(()) }
+            <Root<T>>::put(new_root);
+            Self::deposit_event(RawEvent::RootUpdated(new_root));
+        }
+        #[weight = 10_000_000]
+        pub fn temporary_fix(_origin) {
+            // this is a temporary fix in order to silence the #dead_code warning
+            // from the compiler
+            let value:Option<u64> = None;
+            let collection = [];
+            let idx: usize = 100;
+            // should panic!
+            let _out = Self::verify_proof(&collection, &value, idx);
         }
     }
 }
@@ -1384,29 +1393,27 @@ impl<T: Trait> Module<T> {
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
-    fn verify_proof<E: Encode>(path: &[Option< <T as frame_system::Trait>::Hash>],
-                               value: &E, i: usize) -> Result<bool, &'static str> {
+    fn verify_proof<E: Encode>(
+        path: &[<T as frame_system::Trait>::Hash],
+        value: &E,
+        i: usize,
+    ) -> Result<bool, &'static str> {
         let exp = path.len();
         if i > 2usize.checked_pow(exp as u32).ok_or("index overflow")? {
             Err("index out of range or Merkle path insufficient for validation")
         } else {
             let mut idx = i.checked_add(1).ok_or("index overflow")?;
-            let mut hash_value = <T as frame_system::Trait>::Hashing::hash(&value.encode()); 
+            let mut hash_value = <T as frame_system::Trait>::Hashing::hash(&value.encode());
             for h_el in path.iter() {
-                hash_value = match h_el {
-                    Some(h) => {
-                        match idx % 2 {
-                        1 => <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h].encode()),
-                        _ => <T as frame_system::Trait>::Hashing::hash(&[*h, hash_value].encode()),
-                        }
-                    },
-                    None => {
-                        <T as frame_system::Trait>::Hashing::hash(&hash_value.encode())
-                    },
+                hash_value = match idx % 2 {
+                    1 => <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h_el].encode()),
+                    _ => <T as frame_system::Trait>::Hashing::hash(&[*h_el, hash_value].encode()),
                 };
-                idx = (idx >> 1).checked_add(idx.wrapping_rem(2)).ok_or("index overflow")?;
+                idx = (idx >> 1)
+                    .checked_add(idx.wrapping_rem(2))
+                    .ok_or("index overflow")?;
             }
-            let root = <Root<T>>::get(); 
+            let root = <Root<T>>::get();
             let ans = root == hash_value;
             Ok(ans)
         }
@@ -1453,7 +1460,7 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
-        HashOutput = <T as frame_system::Trait>::Hash
+        HashOutput = <T as frame_system::Trait>::Hash,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
