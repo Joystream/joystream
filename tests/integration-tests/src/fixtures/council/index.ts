@@ -1,1 +1,1 @@
-export { InitializeCouncilFixture } from './InitializeCouncilFixture'
+export { ElectCouncilFixture } from './ElectCouncilFixture'
