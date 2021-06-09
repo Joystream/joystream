@@ -39,7 +39,9 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    EC2InstanceType=$NODE_EC2_INSTANCE_TYPE \
+    EC2InstanceType=$DEFAULT_EC2_INSTANCE_TYPE \
+    ValidatorEC2InstanceType=$VALIDATOR_EC2_INSTANCE_TYPE \
+    RPCEC2InstanceType=$RPC_EC2_INSTANCE_TYPE \
     BuildEC2InstanceType=$BUILD_EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
     EC2AMI=$EC2_AMI_ID \
@@ -88,7 +90,8 @@ if [ $? -eq 0 ]; then
 
   echo -e "\n\n=========== Configuring the chain spec file and Pioneer app ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH chain-spec-pioneer.yml \
-    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX data_path=data-$NEW_STACK_NAME bucket_name=$BUCKET_NAME"
+    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
+                  data_path=data-$NEW_STACK_NAME bucket_name=$BUCKET_NAME number_of_validators=$NUMBER_OF_VALIDATORS"
 
   echo -e "\n\n Pioneer URL: https://$DOMAIN_NAME"
 fi

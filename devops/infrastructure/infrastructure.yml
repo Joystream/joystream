@@ -3,8 +3,16 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
+    Default: t2.micro
+  ValidatorEC2InstanceType:
+    Type: String
+    Default: t2.micro
+  RPCEC2InstanceType:
+    Type: String
+    Default: t2.micro
   BuildEC2InstanceType:
     Type: String
+    Default: t2.micro
   EC2AMI:
     Type: String
     Default: 'ami-09e67e426f25ce0d7'
@@ -124,9 +132,13 @@ Resources:
       AvailabilityZones:
         Fn::GetAZs:
           Ref: "AWS::Region"
-      LaunchTemplate:
-        LaunchTemplateId: !Ref InstanceLaunchTemplate
-        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref ValidatorEC2InstanceType
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
@@ -137,6 +149,7 @@ Resources:
     Properties:
       SecurityGroupIds:
         - !GetAtt RPCSecurityGroup.GroupId
+      InstanceType: !Ref RPCEC2InstanceType
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
