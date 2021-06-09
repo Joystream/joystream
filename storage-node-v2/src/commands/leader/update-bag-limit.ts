@@ -4,7 +4,7 @@ import { flags } from '@oclif/command'
 
 export default class LeaderUpdateBagLimit extends ApiCommandBase {
   static description =
-    'Updates StorageBucketsPerBagLimit variable in Joystream node storage.'
+    'Updates StorageBucketsPerBagLimit variable in the Joystream node storage.'
 
   static flags = {
     limit: flags.integer({
