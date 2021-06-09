@@ -100,11 +100,7 @@ Outputs:
   PublicIp:
     Description: The DNS name for the created instance
     Value:  !Sub "${Instance.PublicIp}"
-    Export:
-      Name: !Sub "PublicIp"
 
   InstanceId:
     Description: The Instance ID
     Value:  !Ref Instance
-    Export:
-      Name: !Sub "InstanceId"

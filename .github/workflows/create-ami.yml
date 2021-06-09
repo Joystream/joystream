@@ -25,7 +25,7 @@ jobs:
 
     - name: Deploy to AWS CloudFormation
       uses: aws-actions/aws-cloudformation-github-deploy@v1
-      id: deploy-stack
+      id: deploy_stack
       with:
         name: ${{ env.STACK_NAME }}
         template: devops/infrastructure/single-instance.yml
@@ -34,7 +34,7 @@ jobs:
 
     # - name: Get output from CloudFormation stack
     #   run: |
-    #     echo "Public IP is ${{ steps.deploy-stack.outputs.PublicIp }}"
+    #     echo "Public IP is ${{ steps.deploy_stack.outputs.PublicIp }}"
     #     echo "Repo is $GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
     #     echo "Branch is $GITHUB_REF"
     - name: Extract branch name
@@ -54,9 +54,9 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         inventory: |
           [all]
-          3.93.62.190
+          ${{ steps.deploy_stack.outputs.PublicIp }}
         options: |
           --extra-vars "git_repo=https://github.com/${{ github.repository }} \
-                        branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=i-0e145c6b0165844c7
+                        branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=${{ steps.deploy_stack.outputs.InstanceId }}
                         stack_name=${{ env.STACK_NAME }}"
           --verbose
