@@ -148,7 +148,6 @@ where
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
 async fn start_node_impl<RuntimeApi, Executor, RB, BIQ, BIC>(
     parachain_config: Configuration,
-    collator_key: CollatorPair,
     polkadot_config: Configuration,
     id: ParaId,
     rpc_ext_builder: RB,
@@ -363,7 +362,6 @@ pub async fn start_node(
 )> {
     start_node_impl::<RuntimeApi, ParachainRuntimeExecutor, _, _, _>(
         parachain_config,
-        collator_key,
         polkadot_config,
         id,
         |_| Default::default(),
