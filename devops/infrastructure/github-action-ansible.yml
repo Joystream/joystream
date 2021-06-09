@@ -19,11 +19,11 @@
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
         wait: yes
-        name: "joystream-{{ branch_name }}"
+        name: "{{ stack_name }}"
         launch_permissions:
           group_names: ['all']
         tags:
-          Name: "joystream-{{ branch_name }}"
+          Name: "{{ stack_name }}"
       register: ami_data
       delegate_to: localhost
 
