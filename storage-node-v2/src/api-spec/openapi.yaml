@@ -49,7 +49,7 @@ paths:
                   description: Storage bucket ID
                   type: string
                   pattern: '^\d+$' #integer
-                workerId: 
+                workerId:
                   description: Storage provider worker ID
                   type: string
                   pattern: '^\d+$' #integer
@@ -75,9 +75,9 @@ paths:
       requestBody:
         description: Token request parameters,
         content:
-          application/json:    
+          application/json:
             schema:
-              $ref: "#/components/schemas/TokenRequest"
+              $ref: '#/components/schemas/TokenRequest'
       responses:
         201:
           description: Created
@@ -102,5 +102,4 @@ components:
       properties:
         dataObjectId:
           type: integer
-          format: int64    
-
+          format: int64

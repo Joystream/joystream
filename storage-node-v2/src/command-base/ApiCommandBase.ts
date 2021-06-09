@@ -10,7 +10,7 @@ export default abstract class ApiCommandBase extends Command {
     keyfile: flags.string({
       char: 'k',
       description:
-        'Key file for the account. Mandatory in non-dev environment.', // TODO: rename
+        'Key file for the account. Mandatory in non-dev environment.',
     }),
     password: flags.string({
       char: 'p',

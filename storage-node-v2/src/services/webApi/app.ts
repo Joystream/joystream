@@ -67,8 +67,10 @@ function validateUpload(account: KeyringPair): ValidateUploadFunction {
   ) => {
     const tokenSignature = req.headers['x-api-key'] as string
 
-//TODO: token construction
-    const sourceTokenRequest: TokenRequest = { dataObjectId: parseInt(req.body.dataObjectId) }
+    // TODO: token construction
+    const sourceTokenRequest: TokenRequest = {
+      dataObjectId: parseInt(req.body.dataObjectId),
+    }
 
     return verifyTokenSignature(sourceTokenRequest, tokenSignature, account)
   }

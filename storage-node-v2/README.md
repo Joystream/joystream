@@ -33,7 +33,8 @@ USAGE
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
-* [`storage-node multihash [FILE]`](#storage-node-multihash-file)
+* [`storage-node leader:update-bag-limit [FILE]`](#storage-node-leaderupdate-bag-limit-file)
+* [`storage-node multihash`](#storage-node-multihash)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
@@ -124,18 +125,33 @@ OPTIONS
 
 _See code: [src/commands/leader/update-bag.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag.ts)_
 
-## `storage-node multihash [FILE]`
+## `storage-node leader:update-bag-limit [FILE]`
 
 describe the command here
 
 ```
 USAGE
-  $ storage-node multihash [FILE]
+  $ storage-node leader:update-bag-limit [FILE]
 
 OPTIONS
   -f, --force
   -h, --help       show CLI help
   -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
+
+## `storage-node multihash`
+
+Creates a multihash (blake3) for a file.
+
+```
+USAGE
+  $ storage-node multihash
+
+OPTIONS
+  -f, --file=file  (required) Path for a hashing file.
+  -h, --help       show CLI help
 ```
 
 _See code: [src/commands/multihash.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/multihash.ts)_
@@ -168,10 +184,12 @@ USAGE
   $ storage-node server [FILE]
 
 OPTIONS
-  -d, --dev              Use development mode
-  -h, --help             show CLI help
-  -p, --port=port        (required) Server port.
-  -u, --uploads=uploads  (required) Data uploading directory.
+  -d, --dev                Use development mode
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -p, --password=password  Key file password (optional).
+  -p, --port=port          (required) Server port.
+  -u, --uploads=uploads    (required) Data uploading directory.
 ```
 
 _See code: [src/commands/server.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/server.ts)_

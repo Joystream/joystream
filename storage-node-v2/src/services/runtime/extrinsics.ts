@@ -140,3 +140,21 @@ export async function acceptPendingDataObjects(
     throw err
   }
 }
+
+export async function updateStorageBucketsPerBagLimit(
+  account: KeyringPair,
+  newLimit: number
+): Promise<void> {
+  try {
+    const api = await createApi()
+    await sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'updateStorageBucketsPerBagLimit',
+      [newLimit]
+    )
+  } catch (err) {
+    console.error(`Api Error: ${err}`)
+  }
+}
