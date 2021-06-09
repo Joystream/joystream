@@ -9,6 +9,8 @@ jobs:
   build:
     name: Build the code and run setup
     runs-on: ubuntu-latest
+    env:
+      STACK_NAME: joystream-github-action-${{ github.run_number }}
 
     steps:
     - name: Checkout
@@ -21,14 +23,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    # - name: Deploy to AWS CloudFormation
-    #   uses: aws-actions/aws-cloudformation-github-deploy@v1
-    #   id: deploy-stack
-    #   with:
-    #     name: joystream-single-instance-${{ github.run_number }}
-    #     template: devops/infrastructure/single-instance.yml
-    #     no-fail-on-empty-changeset: "1"
-    #     parameter-overrides: "KeyName=anuj-key"
+    - name: Deploy to AWS CloudFormation
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      id: deploy-stack
+      with:
+        name: ${{ env.STACK_NAME }}
+        template: devops/infrastructure/single-instance.yml
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: "KeyName=anuj-key"
 
     # - name: Get output from CloudFormation stack
     #   run: |
@@ -39,31 +41,6 @@ jobs:
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
-
-    - name: Get env
-      run: |
-        echo "Env is ${{ toJSON(env) }}"
-
-    - name: Dump GitHub context
-      env:
-        GITHUB_CONTEXT: ${{ toJSON(github) }}
-      run: echo "$GITHUB_CONTEXT"
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python -m pip install boto3
-
-    - name: Which Python
-      run: |
-        which python
-        pip freeze
-        python --version
 
     - name: Install Ansible dependencies
       run: pipx inject ansible-base boto3 botocore
@@ -78,8 +55,8 @@ jobs:
         inventory: |
           [all]
           3.93.62.190
-          [all:vars]
-          ansible_python_interpreter=/usr/bin/python3
         options: |
-          --extra-vars "git_repo=https://github.com/${{ github.repository }} branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=i-0e145c6b0165844c7"
+          --extra-vars "git_repo=https://github.com/${{ github.repository }} \
+                        branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=i-0e145c6b0165844c7
+                        stack_name=${{ env.STACK_NAME }}"
           --verbose

@@ -9,22 +9,35 @@
       debug:
         msg: "Variables are: {{ hostvars }}"
 
-    - name: Git checkout
-      git:
-        repo: "{{ git_repo }}"
-        dest: "{{ remote_code_path }}"
-        version: "{{ branch_name }}"
+    - name: Get code from git repo
+      include_role:
+        name: common
+        tasks_from: get-code-git
 
-    - name: Install boto3 python package
-      pip:
-        name: boto3
-      delegate_to: localhost
+    # - name: Run setup and build
+    #   include_role:
+    #     name: common
+    #     tasks_from: run-setup-build
 
     - name: Basic AMI Creation
-      local_action:
-        module: amazon.aws.ec2_ami
+      amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
         wait: yes
         name: "joystream-{{ branch_name }}"
         launch_permissions:
           group_names: ['all']
+      register: ami_data
+      delegate_to: localhost
+
+    - name: Print AMI Data
+      debug:
+        msg: "AMI Data is: {{ ami_data }}"
+
+    - name: Print AMI ID
+      debug:
+        msg: "AMI ID is: {{ ami_data.image_id }}"
+
+    - name: delete a stack
+      amazon.aws.cloudformation:
+        stack_name: "{{ stack_name }}"
+        state: "absent"
