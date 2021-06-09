@@ -158,3 +158,22 @@ export async function updateStorageBucketsPerBagLimit(
     console.error(`Api Error: ${err}`)
   }
 }
+
+export async function updateStorageBucketsVoucherMaxLimits(
+  account: KeyringPair,
+  newSizeLimit: number,
+  newObjectLimit: number
+): Promise<void> {
+  try {
+    const api = await createApi()
+    await sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'updateStorageBucketsVoucherMaxLimits',
+      [newSizeLimit, newObjectLimit]
+    )
+  } catch (err) {
+    console.error(`Api Error: ${err}`)
+  }
+}
