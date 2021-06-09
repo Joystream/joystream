@@ -83,6 +83,15 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     }
   }
 
+  protected async postExecutionChecks(qProposal: ProposalFieldsFragment): Promise<void> {
+    const { details } = qProposal
+    if (details.__typename === 'VetoProposalDetails') {
+      const [qVetoedProposal] = await this.query.getProposalsByIds([details.proposal!.id])
+      Utils.assert(qVetoedProposal.status.__typename === 'ProposalStatusVetoed', 'Invalid proposal status')
+    }
+    // TODO: Other proposal types
+  }
+
   protected getExpectedProposalStatus(i: number): ResultingProposalStatus {
     const params = this.params[i]
     const proposal = this.proposals[i]
@@ -105,7 +114,27 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     this.params.forEach((params, i) => {
       const qProposal = qProposals.find((p) => p.id === params.proposalId.toString())
       Utils.assert(qProposal, 'Query node: Proposal not found')
-      assert.equal(qProposal.status.__typename, this.getExpectedProposalStatus(i))
+      Utils.assert(qProposal.status.__typename === this.getExpectedProposalStatus(i))
+      if (
+        qProposal.status.__typename === 'ProposalStatusExecuted' ||
+        qProposal.status.__typename === 'ProposalStatusExecutionFailed'
+      ) {
+        Utils.assert(qProposal.status.proposalExecutedEvent?.id, 'Missing proposalExecutedEvent reference')
+        assert.equal(qProposal.status.proposalExecutedEvent?.executionStatus.__typename, qProposal.status.__typename)
+      } else if (
+        qProposal.status.__typename === 'ProposalStatusDormant' ||
+        qProposal.status.__typename === 'ProposalStatusGracing'
+      ) {
+        Utils.assert(qProposal.status.proposalStatusUpdatedEvent?.id, 'Missing proposalStatusUpdatedEvent reference')
+        assert.equal(qProposal.status.proposalStatusUpdatedEvent?.newStatus.__typename, qProposal.status.__typename)
+        assert.include(
+          qProposal.proposalStatusUpdates.map((u) => u.id),
+          qProposal.status.proposalStatusUpdatedEvent?.id
+        )
+      } else {
+        Utils.assert(qProposal.status.proposalDecisionMadeEvent?.id, 'Missing proposalDecisionMadeEvent reference')
+        assert.equal(qProposal.status.proposalDecisionMadeEvent?.decisionStatus.__typename, qProposal.status.__typename)
+      }
     })
   }
 
@@ -135,10 +164,23 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     Utils.assert(this.voteOnProposalsRunner)
     await this.voteOnProposalsRunner.runQueryNodeChecks()
 
-    // TODO: ProposalDecisionStatus / ProposalExecutionStatus events
     const qProposals = await this.query.tryQueryWithTimeout(
       () => this.query.getProposalsByIds(this.params.map((p) => p.proposalId)),
       (res) => this.assertProposalStatusesAreValid(res)
+    )
+
+    await Promise.all(
+      this.proposals.map(async (proposal, i) => {
+        let qProposal = qProposals[i]
+        if (this.getExpectedProposalStatus(i) === 'ProposalStatusGracing') {
+          await this.api.untilBlock(qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber())
+          ;[qProposal] = await this.query.tryQueryWithTimeout(
+            () => this.query.getProposalsByIds([this.params[i].proposalId]),
+            ([p]) => p.status.__typename === 'ProposalStatusExecuted'
+          )
+          await this.postExecutionChecks(qProposal)
+        }
+      })
     )
   }
 }

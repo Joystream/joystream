@@ -6716,7 +6716,7 @@ export type ProposalStatusCanceledByRuntime = {
 
 export type ProposalStatusCancelled = {
   /** The related ProposalCancelledEvent */
-  canelledInEvent?: Maybe<ProposalCancelledEvent>
+  cancelledInEvent?: Maybe<ProposalCancelledEvent>
 }
 
 export type ProposalStatusDeciding = {

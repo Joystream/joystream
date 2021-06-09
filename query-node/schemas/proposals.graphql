@@ -58,7 +58,7 @@ type ProposalStatusExpired @variant {
 "The proposal was cancelled by the original proposer."
 type ProposalStatusCancelled @variant {
   "The related ProposalCancelledEvent"
-  canelledInEvent: ProposalCancelledEvent
+  cancelledInEvent: ProposalCancelledEvent
 }
 
 "The proposal was canceled by the runtime (for example, due to runtime upgrade). No cancellation fee was applied."

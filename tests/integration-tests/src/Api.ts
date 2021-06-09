@@ -454,6 +454,19 @@ export class Api {
     )
   }
 
+  public async untilBlock(blockNumber: number, intervalMs = BLOCKTIME, timeoutMs = 180000): Promise<void> {
+    await Utils.until(
+      `blocknumber ${blockNumber}`,
+      async ({ debug }) => {
+        const best = await this.getBestBlock()
+        debug(`Current block: ${best.toNumber()}`)
+        return best.gten(blockNumber)
+      },
+      intervalMs,
+      timeoutMs
+    )
+  }
+
   public async untilProposalsCanBeCreated(
     numberOfProposals = 1,
     intervalMs = BLOCKTIME,

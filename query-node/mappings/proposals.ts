@@ -450,6 +450,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
   })
   await store.save<ProposalExecutedEvent>(proposalExecutedEvent)
 
+  newStatus.proposalExecutedEventId = proposalExecutedEvent.id
   proposal.status = newStatus
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = eventTime
@@ -499,6 +500,7 @@ export async function proposalsEngine_ProposalCancelled({ store, event }: EventC
   await store.save<ProposalCancelledEvent>(proposalCancelledEvent)
 
   proposal.status = new ProposalStatusCancelled()
+  proposal.status.cancelledInEventId = proposalCancelledEvent.id
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = eventTime
   proposal.updatedAt = eventTime

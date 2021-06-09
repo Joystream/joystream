@@ -3,55 +3,82 @@ fragment ProposalStatusFields on ProposalStatus {
   ... on ProposalStatusDeciding {
     proposalStatusUpdatedEvent {
       id
+      newStatus {
+        __typename
+      }
     }
   }
   ... on ProposalStatusGracing {
     proposalStatusUpdatedEvent {
       id
+      newStatus {
+        __typename
+      }
     }
   }
   ... on ProposalStatusDormant {
     proposalStatusUpdatedEvent {
       id
+      newStatus {
+        __typename
+      }
     }
   }
   ... on ProposalStatusVetoed {
     proposalDecisionMadeEvent {
       id
+      decisionStatus {
+        __typename
+      }
     }
   }
   ... on ProposalStatusExecuted {
     proposalExecutedEvent {
       id
+      executionStatus {
+        __typename
+      }
     }
   }
 
   ... on ProposalStatusExecutionFailed {
     proposalExecutedEvent {
       id
+      executionStatus {
+        __typename
+      }
     }
     errorMessage
   }
   ... on ProposalStatusSlashed {
     proposalDecisionMadeEvent {
       id
+      decisionStatus {
+        __typename
+      }
     }
   }
 
   ... on ProposalStatusRejected {
     proposalDecisionMadeEvent {
       id
+      decisionStatus {
+        __typename
+      }
     }
   }
 
   ... on ProposalStatusExpired {
     proposalDecisionMadeEvent {
       id
+      decisionStatus {
+        __typename
+      }
     }
   }
 
   ... on ProposalStatusCancelled {
-    canelledInEvent {
+    cancelledInEvent {
       id
     }
   }
@@ -59,6 +86,9 @@ fragment ProposalStatusFields on ProposalStatus {
   ... on ProposalStatusCanceledByRuntime {
     proposalDecisionMadeEvent {
       id
+      decisionStatus {
+        __typename
+      }
     }
   }
 }

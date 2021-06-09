@@ -183,6 +183,10 @@ import {
   GetProposalVotedEventsByEventIdsQuery,
   GetProposalVotedEventsByEventIdsQueryVariables,
   GetProposalVotedEventsByEventIds,
+  ProposalCancelledEventFieldsFragment,
+  GetProposalCancelledEventsByEventIdsQuery,
+  GetProposalCancelledEventsByEventIdsQueryVariables,
+  GetProposalCancelledEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -687,7 +691,7 @@ export class QueryNodeApi {
     )
   }
 
-  public async getProposalsByIds(ids: ProposalId[]): Promise<ProposalFieldsFragment[]> {
+  public async getProposalsByIds(ids: (ProposalId | string)[]): Promise<ProposalFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetProposalsByIdsQuery, GetProposalsByIdsQueryVariables>(
       GetProposalsByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -701,5 +705,13 @@ export class QueryNodeApi {
       GetProposalVotedEventsByEventIdsQuery,
       GetProposalVotedEventsByEventIdsQueryVariables
     >(GetProposalVotedEventsByEventIds, { eventIds }, 'proposalVotedEvents')
+  }
+
+  public async getProposalCancelledEvents(events: EventDetails[]): Promise<ProposalCancelledEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalCancelledEventsByEventIdsQuery,
+      GetProposalCancelledEventsByEventIdsQueryVariables
+    >(GetProposalCancelledEventsByEventIds, { eventIds }, 'proposalCancelledEvents')
   }
 }

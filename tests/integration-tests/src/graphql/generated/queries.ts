@@ -292,58 +292,137 @@ export type GetInitialInvitationCountUpdatedEventsByEventIdQuery = {
 
 type ProposalStatusFields_ProposalStatusDeciding_Fragment = {
   __typename: 'ProposalStatusDeciding'
-  proposalStatusUpdatedEvent?: Types.Maybe<{ id: string }>
+  proposalStatusUpdatedEvent?: Types.Maybe<{
+    id: string
+    newStatus:
+      | { __typename: 'ProposalStatusDeciding' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusDormant' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusGracing_Fragment = {
   __typename: 'ProposalStatusGracing'
-  proposalStatusUpdatedEvent?: Types.Maybe<{ id: string }>
+  proposalStatusUpdatedEvent?: Types.Maybe<{
+    id: string
+    newStatus:
+      | { __typename: 'ProposalStatusDeciding' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusDormant' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusDormant_Fragment = {
   __typename: 'ProposalStatusDormant'
-  proposalStatusUpdatedEvent?: Types.Maybe<{ id: string }>
+  proposalStatusUpdatedEvent?: Types.Maybe<{
+    id: string
+    newStatus:
+      | { __typename: 'ProposalStatusDeciding' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusDormant' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusVetoed_Fragment = {
   __typename: 'ProposalStatusVetoed'
-  proposalDecisionMadeEvent?: Types.Maybe<{ id: string }>
+  proposalDecisionMadeEvent?: Types.Maybe<{
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusVetoed' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusExecuted_Fragment = {
   __typename: 'ProposalStatusExecuted'
-  proposalExecutedEvent?: Types.Maybe<{ id: string }>
+  proposalExecutedEvent?: Types.Maybe<{
+    id: string
+    executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusExecutionFailed_Fragment = {
   __typename: 'ProposalStatusExecutionFailed'
   errorMessage: string
-  proposalExecutedEvent?: Types.Maybe<{ id: string }>
+  proposalExecutedEvent?: Types.Maybe<{
+    id: string
+    executionStatus: { __typename: 'ProposalStatusExecuted' } | { __typename: 'ProposalStatusExecutionFailed' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusSlashed_Fragment = {
   __typename: 'ProposalStatusSlashed'
-  proposalDecisionMadeEvent?: Types.Maybe<{ id: string }>
+  proposalDecisionMadeEvent?: Types.Maybe<{
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusVetoed' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusRejected_Fragment = {
   __typename: 'ProposalStatusRejected'
-  proposalDecisionMadeEvent?: Types.Maybe<{ id: string }>
+  proposalDecisionMadeEvent?: Types.Maybe<{
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusVetoed' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusExpired_Fragment = {
   __typename: 'ProposalStatusExpired'
-  proposalDecisionMadeEvent?: Types.Maybe<{ id: string }>
+  proposalDecisionMadeEvent?: Types.Maybe<{
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusVetoed' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+  }>
 }
 
 type ProposalStatusFields_ProposalStatusCancelled_Fragment = {
   __typename: 'ProposalStatusCancelled'
-  canelledInEvent?: Types.Maybe<{ id: string }>
+  cancelledInEvent?: Types.Maybe<{ id: string }>
 }
 
 type ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment = {
   __typename: 'ProposalStatusCanceledByRuntime'
-  proposalDecisionMadeEvent?: Types.Maybe<{ id: string }>
+  proposalDecisionMadeEvent?: Types.Maybe<{
+    id: string
+    decisionStatus:
+      | { __typename: 'ProposalStatusDormant' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusVetoed' }
+      | { __typename: 'ProposalStatusSlashed' }
+      | { __typename: 'ProposalStatusRejected' }
+      | { __typename: 'ProposalStatusExpired' }
+      | { __typename: 'ProposalStatusCancelled' }
+      | { __typename: 'ProposalStatusCanceledByRuntime' }
+  }>
 }
 
 export type ProposalStatusFieldsFragment =
@@ -1604,57 +1683,87 @@ export const ProposalStatusFields = gql`
     ... on ProposalStatusDeciding {
       proposalStatusUpdatedEvent {
         id
+        newStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusGracing {
       proposalStatusUpdatedEvent {
         id
+        newStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusDormant {
       proposalStatusUpdatedEvent {
         id
+        newStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusVetoed {
       proposalDecisionMadeEvent {
         id
+        decisionStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusExecuted {
       proposalExecutedEvent {
         id
+        executionStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusExecutionFailed {
       proposalExecutedEvent {
         id
+        executionStatus {
+          __typename
+        }
       }
       errorMessage
     }
     ... on ProposalStatusSlashed {
       proposalDecisionMadeEvent {
         id
+        decisionStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusRejected {
       proposalDecisionMadeEvent {
         id
+        decisionStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusExpired {
       proposalDecisionMadeEvent {
         id
+        decisionStatus {
+          __typename
+        }
       }
     }
     ... on ProposalStatusCancelled {
-      canelledInEvent {
+      cancelledInEvent {
         id
       }
     }
     ... on ProposalStatusCanceledByRuntime {
       proposalDecisionMadeEvent {
         id
+        decisionStatus {
+          __typename
+        }
       }
     }
   }

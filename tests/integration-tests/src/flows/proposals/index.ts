@@ -10,11 +10,9 @@ import {
 } from '../../fixtures/workingGroups'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
 import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals/AllProposalsOutcomesFixture'
-import { ElectCouncilFixture } from '../../fixtures/council/ElectCouncilFixture'
 
 //   // TODO:
 //   // RuntimeUpgradeProposal
-//   // VetoProposal
 //   // TODO: Blog-related proposals:
 //   // CreateBlogPost
 //   // EditBlogPostProposal
@@ -25,11 +23,6 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
   const debug = Debugger('flow:creating-proposals')
   debug('Started')
   api.enableDebugTxLogs()
-
-  debug('Initializing council...')
-  const electCouncilFixture = new ElectCouncilFixture(api, query)
-  await new FixtureRunner(electCouncilFixture).run()
-  debug('Council initialized')
 
   debug('Creating test lead openings and applications...')
   const createLeadOpeningsFixture = new CreateOpeningsFixture(

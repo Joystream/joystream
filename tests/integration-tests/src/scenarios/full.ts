@@ -12,6 +12,9 @@ import groupStatus from '../flows/working-groups/groupStatus'
 import workerActions from '../flows/working-groups/workerActions'
 import groupBudget from '../flows/working-groups/groupBudget'
 import proposals from '../flows/proposals'
+import cancellingProposals from '../flows/proposals/cancellingProposal'
+import vetoProposal from '../flows/proposals/vetoProposal'
+import electCouncil from '../flows/council/elect'
 import { scenario } from '../Scenario'
 
 scenario(async ({ job }) => {
@@ -25,7 +28,8 @@ scenario(async ({ job }) => {
   job('transferring invites', transferringInvites).after(membershipSystemJob)
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
-  const proposalsJob = job('proposals', proposals)
+  const councilJob = job('electing council', electCouncil)
+  const proposalsJob = job('proposals', [proposals, cancellingProposals, vetoProposal]).requires(councilJob)
 
   const sudoHireLead = job('sudo lead opening', leadOpening).after(proposalsJob)
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
