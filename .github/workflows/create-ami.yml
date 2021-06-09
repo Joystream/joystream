@@ -6,32 +6,25 @@ on:
       - test_branch
 
 jobs:
-  branch_name:
-    name: Output the branch name
-    runs-on: ubuntu-latest
-    outputs:
-      branch_name: ${{ steps.extract_branch.outputs.branch }}
-    steps:
-    - name: Extract branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-      id: extract_branch
-
   build:
     name: Build the code and run setup
     runs-on: ubuntu-latest
-    needs: branch_name
     env:
-      STACK_NAME: joystream-github-action-${{ needs.branch_name.outputs.branch_name }}-${{ github.run_number }}
+      STACK_NAME: joystream-github-action-${{ github.run_number }}
       KEY_NAME: anuj-key
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
     - name: Extract branch name
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
+
+    - name: Set AMI Name environment variable
+      shell: bash
+      run: echo "ami_name=joystream-${{ steps.extract_branch.outputs.branch }}-${{ github.run_number }}" >> $GITHUB_ENV
+      id: ami_name
+
+    - name: Checkout
+      uses: actions/checkout@v2
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -65,5 +58,5 @@ jobs:
         options: |
           --extra-vars "git_repo=https://github.com/${{ github.repository }} \
                         branch_name=${{ steps.extract_branch.outputs.branch }} instance_id=${{ steps.deploy_stack.outputs.InstanceId }}
-                        stack_name=${{ env.STACK_NAME }}"
+                        stack_name=${{ env.STACK_NAME }} ami_name=${{ env.ami_name }}"
           --verbose
