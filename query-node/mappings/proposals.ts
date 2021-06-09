@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
+import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@dzlzv/hydra-common'
 import { ProposalDetails as RuntimeProposalDetails, ProposalId } from '@joystream/types/augment/all'
 import BN from 'bn.js'
 import {
@@ -48,8 +48,15 @@ import {
   ProposalStatusVetoed,
   ProposalDecisionMadeEvent,
   ProposalStatusCanceledByRuntime,
+  ProposalStatusExecuted,
+  ProposalStatusExecutionFailed,
+  ProposalExecutionStatus,
+  ProposalExecutedEvent,
+  ProposalVotedEvent,
+  ProposalVoteKind,
+  ProposalCancelledEvent,
 } from 'query-node/dist/model'
-import { genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
+import { bytesToString, genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
 import { ProposalsEngine, ProposalsCodex } from './generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 
@@ -61,8 +68,8 @@ const proposalsMappingsMemoryCache: ProposalsMappingsMemoryCache = {
   lastCreatedProposalId: null,
 }
 
-async function getProposal(db: DatabaseManager, id: string) {
-  const proposal = await db.get(Proposal, { where: { id } })
+async function getProposal(store: DatabaseManager, id: string) {
+  const proposal = await store.get(Proposal, { where: { id } })
   if (!proposal) {
     throw new Error(`Proposal not found by id: ${id}`)
   }
@@ -71,11 +78,11 @@ async function getProposal(db: DatabaseManager, id: string) {
 }
 
 async function parseProposalDetails(
-  event_: SubstrateEvent,
-  db: DatabaseManager,
+  event: SubstrateEvent,
+  store: DatabaseManager,
   proposalDetails: RuntimeProposalDetails
 ): Promise<typeof ProposalDetails> {
-  const eventTime = new Date(event_.blockTimestamp)
+  const eventTime = new Date(event.blockTimestamp)
 
   // SignalProposalDetails:
   if (proposalDetails.isSignal) {
@@ -95,10 +102,10 @@ async function parseProposalDetails(
   else if (proposalDetails.isFundingRequest) {
     const destinationsList = new FundingRequestDestinationsList()
     const specificDetails = proposalDetails.asFundingRequest
-    await db.save<FundingRequestDestinationsList>(destinationsList)
+    await store.save<FundingRequestDestinationsList>(destinationsList)
     await Promise.all(
       specificDetails.map(({ account, amount }) =>
-        db.save(
+        store.save(
           new FundingRequestDestination({
             createdAt: eventTime,
             updatedAt: eventTime,
@@ -124,7 +131,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isCreateWorkingGroupLeadOpening) {
     const details = new CreateWorkingGroupLeadOpeningProposalDetails()
     const specificDetails = proposalDetails.asCreateWorkingGroupLeadOpening
-    const metadata = await createWorkingGroupOpeningMetadata(db, eventTime, specificDetails.description)
+    const metadata = await createWorkingGroupOpeningMetadata(store, eventTime, specificDetails.description)
     details.groupId = getWorkingGroupModuleName(specificDetails.working_group)
     details.metadataId = metadata.id
     details.rewardPerBlock = new BN(specificDetails.reward_per_block.unwrapOr(0).toString())
@@ -287,17 +294,17 @@ async function parseProposalDetails(
   throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
 }
 
-export async function proposalsEngine_ProposalCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [, proposalId] = new ProposalsEngine.ProposalCreatedEvent(event_).params
+export async function proposalsEngine_ProposalCreated({ event }: EventContext & StoreContext): Promise<void> {
+  const [, proposalId] = new ProposalsEngine.ProposalCreatedEvent(event).params
 
   // Cache the id
   proposalsMappingsMemoryCache.lastCreatedProposalId = proposalId
 }
 
-export async function proposalsCodex_ProposalCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const proposalDetails = await parseProposalDetails(event_, db, runtimeProposalDetails)
+export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
   if (!proposalsMappingsMemoryCache.lastCreatedProposalId) {
     throw new Error('Unexpected state: proposalsMappingsMemoryCache.lastCreatedProposalId is empty')
@@ -315,49 +322,56 @@ export async function proposalsCodex_ProposalCreated(db: DatabaseManager, event_
     exactExecutionBlock: generalProposalParameters.exact_execution_block.unwrapOr(undefined)?.toNumber(),
     stakingAccount: generalProposalParameters.staking_account_id.toString(),
     status: new ProposalStatusDeciding(),
-    statusSetAtBlock: event_.blockNumber,
+    statusSetAtBlock: event.blockNumber,
     statusSetAtTime: eventTime,
   })
-  await db.save<Proposal>(proposal)
+  await store.save<Proposal>(proposal)
 }
 
-export async function proposalsEngine_ProposalStatusUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
-): Promise<void> {
-  const [proposalId, status] = new ProposalsEngine.ProposalStatusUpdatedEvent(event_).params
-  const proposal = await getProposal(db, proposalId.toString())
-  const eventTime = new Date(event_.blockTimestamp)
+export async function proposalsEngine_ProposalStatusUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [proposalId, status] = new ProposalsEngine.ProposalStatusUpdatedEvent(event).params
+  const proposal = await getProposal(store, proposalId.toString())
+  const eventTime = new Date(event.blockTimestamp)
 
   let newStatus: typeof ProposalIntermediateStatus
   if (status.isActive) {
     newStatus = new ProposalStatusDeciding()
   } else if (status.isPendingConstitutionality) {
     newStatus = new ProposalStatusDormant()
+    ++proposal.councilApprovals
   } else if (status.isPendingExecution) {
     newStatus = new ProposalStatusGracing()
+    ++proposal.councilApprovals
   } else {
     throw new Error(`Unexpected proposal status: ${status.type}`)
   }
 
   const proposalStatusUpdatedEvent = new ProposalStatusUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     newStatus,
     proposal,
   })
-  await db.save<ProposalStatusUpdatedEvent>(proposalStatusUpdatedEvent)
+  await store.save<ProposalStatusUpdatedEvent>(proposalStatusUpdatedEvent)
 
   newStatus.proposalStatusUpdatedEventId = proposalStatusUpdatedEvent.id
   proposal.updatedAt = eventTime
   proposal.status = newStatus
+  proposal.statusSetAtBlock = event.blockNumber
+  proposal.statusSetAtTime = eventTime
 
-  await db.save<Proposal>(proposal)
+  await store.save<Proposal>(proposal)
 }
 
-export async function proposalsEngine_ProposalDecisionMade(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [proposalId, decision] = new ProposalsEngine.ProposalDecisionMadeEvent(event_).params
-  const proposal = await getProposal(db, proposalId.toString())
-  const eventTime = new Date(event_.blockTimestamp)
+export async function proposalsEngine_ProposalDecisionMade({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [proposalId, decision] = new ProposalsEngine.ProposalDecisionMadeEvent(event).params
+  const proposal = await getProposal(store, proposalId.toString())
+  const eventTime = new Date(event.blockTimestamp)
 
   let decisionStatus: typeof ProposalDecisionStatus
   if (decision.isApproved) {
@@ -383,11 +397,11 @@ export async function proposalsEngine_ProposalDecisionMade(db: DatabaseManager, 
   }
 
   const proposalDecisionMadeEvent = new ProposalDecisionMadeEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     decisionStatus,
     proposal,
   })
-  await db.save<ProposalDecisionMadeEvent>(proposalDecisionMadeEvent)
+  await store.save<ProposalDecisionMadeEvent>(proposalDecisionMadeEvent)
 
   // We don't handle Cancelled, Dormant and Gracing statuses here, since they emit separate events
   if (
@@ -406,19 +420,87 @@ export async function proposalsEngine_ProposalDecisionMade(db: DatabaseManager, 
       | ProposalStatusSlashed
       | ProposalStatusVetoed).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     proposal.status = decisionStatus
+    proposal.statusSetAtBlock = event.blockNumber
+    proposal.statusSetAtTime = eventTime
     proposal.updatedAt = eventTime
-    await db.save<Proposal>(proposal)
+    await store.save<Proposal>(proposal)
   }
 }
 
-export async function proposalsEngine_ProposalExecuted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+export async function proposalsEngine_ProposalExecuted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [proposalId, executionStatus] = new ProposalsEngine.ProposalExecutedEvent(event).params
+  const proposal = await getProposal(store, proposalId.toString())
+  const eventTime = new Date(event.blockTimestamp)
+
+  let newStatus: typeof ProposalExecutionStatus
+  if (executionStatus.isExecuted) {
+    newStatus = new ProposalStatusExecuted()
+  } else if (executionStatus.isExecutionFailed) {
+    const status = new ProposalStatusExecutionFailed()
+    status.errorMessage = executionStatus.asExecutionFailed.error.toString()
+    newStatus = status
+  } else {
+    throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)
+  }
+
+  const proposalExecutedEvent = new ProposalExecutedEvent({
+    ...genericEventFields(event),
+    executionStatus: newStatus,
+    proposal,
+  })
+  await store.save<ProposalExecutedEvent>(proposalExecutedEvent)
+
+  proposal.status = newStatus
+  proposal.statusSetAtBlock = event.blockNumber
+  proposal.statusSetAtTime = eventTime
+  proposal.updatedAt = eventTime
+  await store.save<Proposal>(proposal)
 }
 
-export async function proposalsEngine_Voted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+export async function proposalsEngine_Voted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalsEngine.VotedEvent(event).params
+  const proposal = await getProposal(store, proposalId.toString())
+
+  let vote: ProposalVoteKind
+  if (voteKind.isApprove) {
+    vote = ProposalVoteKind.APPROVE
+  } else if (voteKind.isReject) {
+    vote = ProposalVoteKind.REJECT
+  } else if (voteKind.isSlash) {
+    vote = ProposalVoteKind.SLASH
+  } else if (voteKind.isAbstain) {
+    vote = ProposalVoteKind.ABSTAIN
+  } else {
+    throw new Error(`Unexpected vote kind: ${voteKind.type}`)
+  }
+
+  const votedEvent = new ProposalVotedEvent({
+    ...genericEventFields(event),
+    proposal,
+    voteKind: vote,
+    voter: new Membership({ id: memberId.toString() }),
+    votingRound: proposal.councilApprovals + 1,
+    rationale: bytesToString(rationaleBytes),
+  })
+
+  await store.save<ProposalVotedEvent>(votedEvent)
 }
 
-export async function proposalsEngine_ProposalCancelled(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  // TODO
+export async function proposalsEngine_ProposalCancelled({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [, proposalId] = new ProposalsEngine.ProposalCancelledEvent(event).params
+  const proposal = await getProposal(store, proposalId.toString())
+  const eventTime = new Date(event.blockTimestamp)
+
+  const proposalCancelledEvent = new ProposalCancelledEvent({
+    ...genericEventFields(event),
+    proposal,
+  })
+
+  await store.save<ProposalCancelledEvent>(proposalCancelledEvent)
+
+  proposal.status = new ProposalStatusCancelled()
+  proposal.statusSetAtBlock = event.blockNumber
+  proposal.statusSetAtTime = eventTime
+  proposal.updatedAt = eventTime
+  await store.save<Proposal>(proposal)
 }

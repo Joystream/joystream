@@ -72,7 +72,7 @@ union ProposalIntermediateStatus = ProposalStatusDeciding | ProposalStatusGracin
 
 "Proposal status after the voting stage has finished for the current council."
 union ProposalDecisionStatus = # Approved:
-  ProposalStatusDormant
+    ProposalStatusDormant
   | ProposalStatusGracing # Not approved:
   | ProposalStatusVetoed
   | ProposalStatusSlashed
@@ -86,7 +86,7 @@ union ProposalExecutionStatus = ProposalStatusExecuted | ProposalStatusExecution
 
 "All valid proposal statuses"
 union ProposalStatus = # Intermediate statuses:
-  ProposalStatusDeciding
+    ProposalStatusDeciding
   | ProposalStatusGracing
   | ProposalStatusDormant # Final statuses:
   | ProposalStatusVetoed
@@ -129,7 +129,7 @@ type Proposal @entity {
   "How many prior councils have already approved the proposal (starts with 0)"
   councilApprovals: Int!
 
-  "List of proposal (intermediate) status update events (to Deciding, Dormand or Gracing status)"
+  "List of proposal (intermediate) status update events (to Deciding, Dormant or Gracing status)"
   proposalStatusUpdates: [ProposalStatusUpdatedEvent!] @derivedFrom(field: "proposal")
 
   "List of proposal votes (in form of ProposalVotedEvents)"

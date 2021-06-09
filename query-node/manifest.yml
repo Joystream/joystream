@@ -288,30 +288,30 @@ mappings:
       handler: workingGroups_WorkerStartedLeaving
     # Proposals
     - event: proposalsCodex.ProposalCreated
-      handler: proposalsCodex_ProposalCreated(DatabaseManager, SubstrateEvent)
+      handler: proposalsCodex_ProposalCreated
     - event: proposalsEngine.ProposalCreated
-      handler: proposalsEngine_ProposalCreated(DatabaseManager, SubstrateEvent)
+      handler: proposalsEngine_ProposalCreated
     - event: proposalsEngine.ProposalStatusUpdated
-      handler: proposalsEngine_ProposalStatusUpdated(DatabaseManager, SubstrateEvent)
+      handler: proposalsEngine_ProposalStatusUpdated
     - event: proposalsEngine.ProposalDecisionMade
-      handler: proposalsEngine_ProposalDecisionMade(DatabaseManager, SubstrateEvent)
+      handler: proposalsEngine_ProposalDecisionMade
     - event: proposalsEngine.ProposalExecuted
-      handler: proposalsEngine_ProposalExecuted(DatabaseManager, SubstrateEvent)
+      handler: proposalsEngine_ProposalExecuted
     - event: proposalsEngine.Voted
-      handler: proposalsEngine_Voted(DatabaseManager, SubstrateEvent)
+      handler: proposalsEngine_Voted
     - event: proposalsEngine.ProposalCancelled
-      handler: proposalsEngine_ProposalCancelled(DatabaseManager, SubstrateEvent)
+      handler: proposalsEngine_ProposalCancelled
     # Proposals discussion
     - event: proposalsDiscussion.ThreadCreated
-      handler: proposalsDiscussion_ThreadCreated(DatabaseManager, SubstrateEvent)
+      handler: proposalsDiscussion_ThreadCreated
     - event: proposalsDiscussion.PostCreated
-      handler: proposalsDiscussion_PostCreated(DatabaseManager, SubstrateEvent)
+      handler: proposalsDiscussion_PostCreated
     - event: proposalsDiscussion.PostUpdated
-      handler: proposalsDiscussion_PostUpdated(DatabaseManager, SubstrateEvent)
+      handler: proposalsDiscussion_PostUpdated
     - event: proposalsDiscussion.ThreadModeChanged
-      handler: proposalsDiscussion_ThreadModeChanged(DatabaseManager, SubstrateEvent)
+      handler: proposalsDiscussion_ThreadModeChanged
     - event: proposalsDiscussion.PostDeleted
-      handler: proposalsDiscussion_PostDeleted(DatabaseManager, SubstrateEvent)
+      handler: proposalsDiscussion_PostDeleted
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
