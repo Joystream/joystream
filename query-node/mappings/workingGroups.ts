@@ -812,7 +812,7 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
 }
 
 export async function workingGroups_LeaderUnset({ store, event }: EventContext & StoreContext): Promise<void> {
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroup(store, event, ['leader'])
   const eventTime = new Date(event.blockTimestamp)
 
   const leaderUnsetEvent = new LeaderUnsetEvent({
