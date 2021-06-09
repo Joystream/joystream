@@ -30,7 +30,7 @@ jobs:
       - id: compute_shasum
         name: Compute runtime code shasum
         env:
-          PROPOSALS_PARAMETERS_PATH: ./tests/integration-tests/proposal-parameters.json
+          TEST_NODE: true
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
@@ -71,7 +71,7 @@ jobs:
             docker build .\
               --file joystream-node.Dockerfile\
               --tag joystream/node\
-              --build-arg PROPOSALS_PARAMETERS="$(cat ./tests/integration-tests/proposal-parameters.json)"
+              --build-arg TEST_NODE=true
             docker save --output joystream-node-docker-image.tar joystream/node
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/

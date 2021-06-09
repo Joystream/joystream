@@ -7,7 +7,7 @@ import { ProposalType, WorkingGroupModuleName } from './types'
 export const validateType = <T>(obj: T) => obj
 
 // Test chain blocktime
-export const BLOCKTIME = 6000
+export const BLOCKTIME = 1000
 
 export const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
 export const MIN_APPLICATION_STAKE = new BN(2000)
