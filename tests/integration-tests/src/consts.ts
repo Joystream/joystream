@@ -1,6 +1,13 @@
 import { WorkingGroup } from '@joystream/types/common'
+import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
-import { WorkingGroupModuleName } from './types'
+import { ProposalType, WorkingGroupModuleName } from './types'
+
+// Dummy const type validation function (see: https://stackoverflow.com/questions/57069802/as-const-is-ignored-when-there-is-a-type-definition)
+export const validateType = <T>(obj: T) => obj
+
+// Test chain blocktime
+export const BLOCKTIME = 6000
 
 export const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
 export const MIN_APPLICATION_STAKE = new BN(2000)
@@ -34,3 +41,36 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
 
   throw new Error(`Unsupported working group: ${group}`)
 }
+
+// Proposals
+
+export const proposalTypeToProposalParamsKey = {
+  'AmendConstitution': 'amendConstitutionProposalParameters',
+  'CancelWorkingGroupLeadOpening': 'cancelWorkingGroupLeadOpeningProposalParameters',
+  'CreateBlogPost': 'createBlogPostProposalParameters',
+  'CreateWorkingGroupLeadOpening': 'createWorkingGroupLeadOpeningProposalParameters',
+  'DecreaseWorkingGroupLeadStake': 'decreaseWorkingGroupLeadStakeProposalParameters',
+  'EditBlogPost': 'editBlogPostProoposalParamters',
+  'FillWorkingGroupLeadOpening': 'fillWorkingGroupOpeningProposalParameters',
+  'FundingRequest': 'fundingRequestProposalParameters',
+  'LockBlogPost': 'lockBlogPostProposalParameters',
+  'RuntimeUpgrade': 'runtimeUpgradeProposalParameters',
+  'SetCouncilBudgetIncrement': 'setCouncilBudgetIncrementProposalParameters',
+  'SetCouncilorReward': 'setCouncilorRewardProposalParameters',
+  'SetInitialInvitationBalance': 'setInitialInvitationBalanceProposalParameters',
+  'SetInitialInvitationCount': 'setInvitationCountProposalParameters',
+  'SetMaxValidatorCount': 'setMaxValidatorCountProposalParameters',
+  'SetMembershipLeadInvitationQuota': 'setMembershipLeadInvitationQuotaProposalParameters',
+  'SetMembershipPrice': 'setMembershipPriceProposalParameters',
+  'SetReferralCut': 'setReferralCutProposalParameters',
+  'SetWorkingGroupLeadReward': 'setWorkingGroupLeadRewardProposalParameters',
+  'Signal': 'signalProposalParameters',
+  'SlashWorkingGroupLead': 'slashWorkingGroupLeadProposalParameters',
+  'TerminateWorkingGroupLead': 'terminateWorkingGroupLeadProposalParameters',
+  'UnlockBlogPost': 'unlockBlogPostProposalParameters',
+  'UpdateWorkingGroupBudget': 'updateWorkingGroupBudgetProposalParameters',
+  'VetoProposal': 'vetoProposalProposalParameters',
+} as const
+
+type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }
+validateType<ProposalTypeToProposalParamsKeyMap>(proposalTypeToProposalParamsKey)

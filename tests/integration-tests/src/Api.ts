@@ -26,6 +26,7 @@ import {
   OpeningFilledEventDetails,
   ProposalsEngineEventName,
   ProposalCreatedEventDetails,
+  ProposalType,
 } from './types'
 import {
   ApplicationId,
@@ -37,7 +38,8 @@ import {
 } from '@joystream/types/working-group'
 import { DeriveAllSections } from '@polkadot/api/util/decorate'
 import { ExactDerive } from '@polkadot/api-derive'
-import { ProposalId } from '@joystream/types/proposals'
+import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
+import { BLOCKTIME, proposalTypeToProposalParamsKey } from './consts'
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -452,14 +454,18 @@ export class Api {
     )
   }
 
-  public async untilProposalsCanBeCreated(numberOfProposals = 0, intervalMs = 6000, timeoutMs = 180000): Promise<void> {
+  public async untilProposalsCanBeCreated(
+    numberOfProposals = 1,
+    intervalMs = BLOCKTIME,
+    timeoutMs = 180000
+  ): Promise<void> {
     await Utils.until(
       `${numberOfProposals} proposals can be created`,
       async ({ debug }) => {
         const { maxActiveProposalLimit } = this.consts.proposalsEngine
         const activeProposalsN = await this.query.proposalsEngine.activeProposalCount()
         debug(`Currently active proposals: ${activeProposalsN.toNumber()}/${maxActiveProposalLimit.toNumber()}`)
-        return activeProposalsN.lt(maxActiveProposalLimit)
+        return maxActiveProposalLimit.sub(activeProposalsN).toNumber() >= numberOfProposals
       },
       intervalMs,
       timeoutMs
@@ -468,33 +474,42 @@ export class Api {
 
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
-    blocksReserve = 3
+    blocksReserve = 3,
+    intervalMs = BLOCKTIME
   ): Promise<void> {
-    await Utils.until(`council stage ${targetStage} (+${blocksReserve} blocks reserve)`, async ({ debug }) => {
-      const currentCouncilStage = await this.query.council.stage()
-      const currentElectionStage = await this.query.referendum.stage()
-      const currentStage = currentCouncilStage.stage.isOfType('Election')
-        ? (currentElectionStage.type as 'Voting' | 'Revealing')
-        : (currentCouncilStage.stage.type as 'Announcing' | 'Idle')
-      const currentStageStartedAt = currentCouncilStage.stage.isOfType('Election')
-        ? currentElectionStage.asType(currentElectionStage.type as 'Voting' | 'Revealing').started
-        : currentCouncilStage.changed_at
+    await Utils.until(
+      `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
+      async ({ debug }) => {
+        const currentCouncilStage = await this.query.council.stage()
+        const currentElectionStage = await this.query.referendum.stage()
+        const currentStage = currentCouncilStage.stage.isOfType('Election')
+          ? (currentElectionStage.type as 'Voting' | 'Revealing')
+          : (currentCouncilStage.stage.type as 'Announcing' | 'Idle')
+        const currentStageStartedAt = currentCouncilStage.stage.isOfType('Election')
+          ? currentElectionStage.asType(currentElectionStage.type as 'Voting' | 'Revealing').started
+          : currentCouncilStage.changed_at
 
-      const currentBlock = await this.getBestBlock()
-      const { announcingPeriodDuration, idlePeriodDuration } = this.consts.council
-      const { voteStageDuration, revealStageDuration } = this.consts.referendum
-      const durationByStage = {
-        'Announcing': announcingPeriodDuration,
-        'Voting': voteStageDuration,
-        'Revealing': revealStageDuration,
-        'Idle': idlePeriodDuration,
-      } as const
+        const currentBlock = await this.getBestBlock()
+        const { announcingPeriodDuration, idlePeriodDuration } = this.consts.council
+        const { voteStageDuration, revealStageDuration } = this.consts.referendum
+        const durationByStage = {
+          'Announcing': announcingPeriodDuration,
+          'Voting': voteStageDuration,
+          'Revealing': revealStageDuration,
+          'Idle': idlePeriodDuration,
+        } as const
 
-      const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
+        const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
 
-      debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
+        debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
 
-      return currentStage === targetStage && currentStageEndsIn.gten(blocksReserve)
-    })
+        return currentStage === targetStage && currentStageEndsIn.gten(blocksReserve)
+      },
+      intervalMs
+    )
+  }
+
+  public proposalParametersByType(type: ProposalType): ProposalParameters {
+    return this.api.consts.proposalsCodex[proposalTypeToProposalParamsKey[type]]
   }
 }

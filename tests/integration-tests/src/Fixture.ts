@@ -9,12 +9,14 @@ import { AnyQueryNodeEvent, EventDetails } from './types'
 
 export abstract class BaseFixture {
   protected readonly api: Api
+  protected debug: Debugger.Debugger
   private _executed = false
   // The reason of the "Unexpected" failure of running the fixture
   private _err: Error | undefined = undefined
 
   constructor(api: Api) {
     this.api = api
+    this.debug = Debugger(`fixture:${this.constructor.name}`)
   }
 
   // Derviced classes must not override this
@@ -89,12 +91,10 @@ export abstract class BaseFixture {
 
 export abstract class BaseQueryNodeFixture extends BaseFixture {
   protected readonly query: QueryNodeApi
-  protected debug: Debugger.Debugger
 
   constructor(api: Api, query: QueryNodeApi) {
     super(api)
     this.query = query
-    this.debug = Debugger(`fixture:${this.constructor.name}`)
   }
 
   public async runQueryNodeChecks(): Promise<void> {

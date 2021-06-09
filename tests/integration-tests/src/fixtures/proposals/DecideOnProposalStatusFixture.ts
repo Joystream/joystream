@@ -1,0 +1,144 @@
+import { Api } from '../../Api'
+import { QueryNodeApi } from '../../QueryNodeApi'
+import { Utils } from '../../utils'
+import { Proposal, ProposalId, VoteKind } from '@joystream/types/proposals'
+import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
+import { ProposalVote } from './index'
+import { CouncilMember } from '@joystream/types/council'
+import { VoteOnProposalsFixture } from './VoteOnProposalsFixture'
+import { ProposalFieldsFragment } from '../../graphql/generated/queries'
+import { assert } from 'chai'
+
+export type DecisionStatus = 'Approved' | 'Rejected' | 'Slashed'
+
+type ResultingProposalStatus =
+  | 'ProposalStatusDormant'
+  | 'ProposalStatusGracing'
+  | 'ProposalStatusExecuted'
+  | 'ProposalStatusExecutionFailed'
+  | 'ProposalStatusSlashed'
+  | 'ProposalStatusRejected'
+
+export type DecideOnProposalStatusParams = {
+  proposalId: ProposalId
+  status: DecisionStatus
+  expectExecutionFailure?: boolean
+}
+
+export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
+  protected params: DecideOnProposalStatusParams[]
+  protected voteOnProposalsRunner?: FixtureRunner
+  protected proposals: Proposal[] = []
+
+  public constructor(api: Api, query: QueryNodeApi, params: DecideOnProposalStatusParams[]) {
+    super(api, query)
+    this.params = params
+  }
+
+  public getDormantProposalsIds(): ProposalId[] {
+    if (!this.executed) {
+      throw new Error('Trying to get dormant proposal ids before the fixture is executed')
+    }
+    return this.params
+      .filter((p, i) => this.getExpectedProposalStatus(i) === 'ProposalStatusDormant')
+      .map((p) => p.proposalId)
+  }
+
+  protected getVotes(
+    proposalId: ProposalId,
+    proposal: Proposal,
+    targetStatus: DecisionStatus,
+    councilMembers: CouncilMember[]
+  ): ProposalVote[] {
+    const councilSize = councilMembers.length
+    const {
+      approvalQuorumPercentage,
+      approvalThresholdPercentage,
+      slashingQuorumPercentage,
+      slashingThresholdPercentage,
+    } = proposal.parameters
+    const vote = (vote: keyof typeof VoteKind['typeDefinitions'], i: number): ProposalVote => ({
+      asMember: councilMembers[i].membership_id,
+      proposalId,
+      rationale: `Vote ${vote} by member ${i}`,
+      vote,
+    })
+    if (targetStatus === 'Approved') {
+      const minVotesN = Math.ceil((councilSize * approvalQuorumPercentage.toNumber()) / 100)
+      const minApproveVotesN = Math.ceil((minVotesN * approvalThresholdPercentage.toNumber()) / 100)
+      return Array.from({ length: minVotesN }, (v, i) =>
+        i < minApproveVotesN ? vote('Approve', i) : vote('Abstain', i)
+      )
+    } else if (targetStatus === 'Slashed') {
+      const minVotesN = Math.ceil((councilSize * slashingQuorumPercentage.toNumber()) / 100)
+      const minSlashVotesN = Math.ceil((minVotesN * slashingThresholdPercentage.toNumber()) / 100)
+      return Array.from({ length: minVotesN }, (v, i) => (i < minSlashVotesN ? vote('Slash', i) : vote('Abstain', i)))
+    } else {
+      const otherResultMinThreshold = Math.min(
+        approvalThresholdPercentage.toNumber(),
+        approvalQuorumPercentage.toNumber()
+      )
+      const minRejectOrAbstainVotesN = Math.ceil((councilSize * (100 - otherResultMinThreshold)) / 100)
+      return Array.from({ length: minRejectOrAbstainVotesN }, (v, i) => vote('Reject', i))
+    }
+  }
+
+  protected getExpectedProposalStatus(i: number): ResultingProposalStatus {
+    const params = this.params[i]
+    const proposal = this.proposals[i]
+    if (params.status === 'Approved') {
+      if (proposal.parameters.constitutionality.toNumber() > proposal.nrOfCouncilConfirmations.toNumber() + 1) {
+        return 'ProposalStatusDormant'
+      } else if (proposal.parameters.gracePeriod.toNumber()) {
+        return 'ProposalStatusGracing'
+      } else {
+        return params.expectExecutionFailure ? 'ProposalStatusExecutionFailed' : 'ProposalStatusExecuted'
+      }
+    } else if (params.status === 'Slashed') {
+      return 'ProposalStatusSlashed'
+    } else {
+      return 'ProposalStatusRejected'
+    }
+  }
+
+  protected assertProposalStatusesAreValid(qProposals: ProposalFieldsFragment[]): void {
+    this.params.forEach((params, i) => {
+      const qProposal = qProposals.find((p) => p.id === params.proposalId.toString())
+      Utils.assert(qProposal, 'Query node: Proposal not found')
+      assert.equal(qProposal.status.__typename, this.getExpectedProposalStatus(i))
+    })
+  }
+
+  public async execute(): Promise<void> {
+    const { api, query } = this
+    this.proposals = await this.api.query.proposalsEngine.proposals.multi<Proposal>(
+      this.params.map((p) => p.proposalId)
+    )
+    const councilMembers = await this.api.query.council.councilMembers()
+    Utils.assert(councilMembers.length, 'Council must be elected in order to cast proposal votes')
+    let votes: ProposalVote[] = []
+    this.params.forEach(({ proposalId, status }, i) => {
+      const proposal = this.proposals[i]
+      votes = votes.concat(this.getVotes(proposalId, proposal, status, councilMembers))
+    })
+    this.debug(
+      'Casting votes:',
+      votes.map((v) => ({ proposalId: v.proposalId.toString(), vote: v.vote.toString() }))
+    )
+    const voteOnProposalsFixture = new VoteOnProposalsFixture(api, query, votes)
+    this.voteOnProposalsRunner = new FixtureRunner(voteOnProposalsFixture)
+    await this.voteOnProposalsRunner.run()
+  }
+
+  public async runQueryNodeChecks(): Promise<void> {
+    await super.runQueryNodeChecks()
+    Utils.assert(this.voteOnProposalsRunner)
+    await this.voteOnProposalsRunner.runQueryNodeChecks()
+
+    // TODO: ProposalDecisionStatus / ProposalExecutionStatus events
+    const qProposals = await this.query.tryQueryWithTimeout(
+      () => this.query.getProposalsByIds(this.params.map((p) => p.proposalId)),
+      (res) => this.assertProposalStatusesAreValid(res)
+    )
+  }
+}

@@ -1,7 +1,7 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { ProposalCreatedEventDetails, ProposalDetailsJsonByType, ProposalType } from '../../types'
-import { AugmentedConsts, SubmittableExtrinsic } from '@polkadot/api/types'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ProposalCreatedEventFieldsFragment, ProposalFieldsFragment } from '../../graphql/generated/queries'
@@ -23,40 +23,6 @@ export type ProposalCreationParams<T extends ProposalType = ProposalType> = {
   details: ProposalDetailsJsonByType<T>
 }
 
-// Dummy const type validation function (see: https://stackoverflow.com/questions/57069802/as-const-is-ignored-when-there-is-a-type-definition)
-const validateType = <T>(obj: T) => obj
-
-const proposalTypeToProposalParamsKey = {
-  'AmendConstitution': 'amendConstitutionProposalParameters',
-  'CancelWorkingGroupLeadOpening': 'cancelWorkingGroupLeadOpeningProposalParameters',
-  'CreateBlogPost': 'createBlogPostProposalParameters',
-  'CreateWorkingGroupLeadOpening': 'createWorkingGroupLeadOpeningProposalParameters',
-  'DecreaseWorkingGroupLeadStake': 'decreaseWorkingGroupLeadStakeProposalParameters',
-  'EditBlogPost': 'editBlogPostProoposalParamters',
-  'FillWorkingGroupLeadOpening': 'fillWorkingGroupOpeningProposalParameters',
-  'FundingRequest': 'fundingRequestProposalParameters',
-  'LockBlogPost': 'lockBlogPostProposalParameters',
-  'RuntimeUpgrade': 'runtimeUpgradeProposalParameters',
-  'SetCouncilBudgetIncrement': 'setCouncilBudgetIncrementProposalParameters',
-  'SetCouncilorReward': 'setCouncilorRewardProposalParameters',
-  'SetInitialInvitationBalance': 'setInitialInvitationBalanceProposalParameters',
-  'SetInitialInvitationCount': 'setInvitationCountProposalParameters',
-  'SetMaxValidatorCount': 'setMaxValidatorCountProposalParameters',
-  'SetMembershipLeadInvitationQuota': 'setMembershipLeadInvitationQuotaProposalParameters',
-  'SetMembershipPrice': 'setMembershipPriceProposalParameters',
-  'SetReferralCut': 'setReferralCutProposalParameters',
-  'SetWorkingGroupLeadReward': 'setWorkingGroupLeadRewardProposalParameters',
-  'Signal': 'signalProposalParameters',
-  'SlashWorkingGroupLead': 'slashWorkingGroupLeadProposalParameters',
-  'TerminateWorkingGroupLead': 'terminateWorkingGroupLeadProposalParameters',
-  'UnlockBlogPost': 'unlockBlogPostProposalParameters',
-  'UpdateWorkingGroupBudget': 'updateWorkingGroupBudgetProposalParameters',
-  'VetoProposal': 'vetoProposalProposalParameters',
-} as const
-
-type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }
-validateType<ProposalTypeToProposalParamsKeyMap>(proposalTypeToProposalParamsKey)
-
 export class CreateProposalsFixture extends StandardizedFixture {
   protected events: ProposalCreatedEventDetails[] = []
 
@@ -77,8 +43,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
 
   protected proposalParams(i: number): ProposalParameters {
     const proposalType = this.proposalsParams[i].type
-    const paramsKey = proposalTypeToProposalParamsKey[proposalType]
-    return this.api.consts.proposalsCodex[paramsKey]
+    return this.api.proposalParametersByType(proposalType)
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {

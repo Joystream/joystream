@@ -7,6 +7,7 @@ import { decodeAddress } from '@polkadot/keyring'
 import { Bytes } from '@polkadot/types'
 import { createType } from '@joystream/types'
 import Debugger from 'debug'
+import { BLOCKTIME } from './consts'
 
 export type AnyMessage<T> = T & {
   toJSON(): Record<string, unknown>
@@ -76,7 +77,7 @@ export class Utils {
   public static async until(
     name: string,
     conditionFunc: (props: { debug: Debugger.Debugger }) => Promise<boolean>,
-    intervalMs = 6000,
+    intervalMs = BLOCKTIME,
     timeoutMs = 10 * 60 * 1000
   ): Promise<void> {
     const debug = Debugger(`awaiting:${name}`)

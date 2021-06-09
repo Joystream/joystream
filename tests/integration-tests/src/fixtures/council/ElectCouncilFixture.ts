@@ -4,13 +4,8 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { assert } from 'chai'
 
-export class InitializeCouncilFixture extends BaseQueryNodeFixture {
+export class ElectCouncilFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
-    // Assert no council exists
-    if ((await this.api.query.council.councilMembers()).length) {
-      return this.error(new Error('Council election fixture expects no council seats to be filled'))
-    }
-
     const { api, query } = this
     const { councilSize, minNumberOfExtraCandidates } = api.consts.council
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
@@ -84,6 +79,9 @@ export class InitializeCouncilFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Idle')
 
     const councilMembers = await api.query.council.councilMembers()
-    assert(councilMembers.length, 'Council initialization failed!')
+    assert.sameMembers(
+      councilMembers.map((m) => m.membership_id.toString()),
+      candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
+    )
   }
 }

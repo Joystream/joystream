@@ -179,10 +179,15 @@ import {
   GetStakingAccountAddedEventsByEventIdsQuery,
   GetStakingAccountAddedEventsByEventIdsQueryVariables,
   GetStakingAccountAddedEventsByEventIds,
+  ProposalVotedEventFieldsFragment,
+  GetProposalVotedEventsByEventIdsQuery,
+  GetProposalVotedEventsByEventIdsQueryVariables,
+  GetProposalVotedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
 import { ProposalId } from '@joystream/types/proposals'
+import { BLOCKTIME } from './consts'
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -200,7 +205,7 @@ export class QueryNodeApi {
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
     timeoutMs = 60000,
-    retryTimeMs = 15000
+    retryTimeMs = BLOCKTIME * 3
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const retryDebug = this.tryDebug.extend(label).extend('retry')
@@ -690,5 +695,13 @@ export class QueryNodeApi {
       { ids: ids.map((id) => id.toString()) },
       'proposals'
     )
+  }
+
+  public async getProposalVotedEvents(events: EventDetails[]): Promise<ProposalVotedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalVotedEventsByEventIdsQuery,
+      GetProposalVotedEventsByEventIdsQueryVariables
+    >(GetProposalVotedEventsByEventIds, { eventIds }, 'proposalVotedEvents')
   }
 }
