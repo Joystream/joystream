@@ -16,6 +16,23 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       char: 'r',
       description: 'Remove a bucket from the bag',
     }),
+    bagId: flags.string({
+      char: 'i',
+      required: true,
+      description: `
+      Bag ID. Format: {bag_type}:{sub_type}:{id}.
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id: 
+        - absent for 'static:council'
+        - working group name for 'static:wg'
+        - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
+      `,
+    }),
     ...ApiCommandBase.keyflags,
   }
 
@@ -31,6 +48,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
 
     const account = this.getAccount(flags)
 
+    // TODO: add bag parameter
     await updateStorageBucketsForBag(account, bucket, flags.remove)
   }
 }
