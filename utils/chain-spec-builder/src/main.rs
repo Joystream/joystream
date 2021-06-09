@@ -25,8 +25,11 @@ use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
     self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
-    proposals_config, AccountId, Extensions, ParaId,
+    proposals_config, AccountId,
 };
+
+#[cfg(not(feature = "standalone"))]
+use joystream_node::chain_spec::{Extensions, ParaId};
 
 use futures_util::TryFutureExt;
 use sc_chain_spec::ChainType;
@@ -40,6 +43,7 @@ use sp_keystore::CryptoStore;
 
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
+#[cfg(not(feature = "standalone"))]
 const JOYSTREAM_PARA_ID: u32 = 100;
 
 #[allow(non_camel_case_types)]
@@ -224,7 +228,7 @@ fn genesis_constructor(
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
-    id: ParaId,
+    #[cfg(not(feature = "standalone"))] id: ParaId,
     initial_members_path: &Option<PathBuf>,
     initial_forum_path: &Option<PathBuf>,
     initial_content_path: &Option<PathBuf>,
@@ -274,6 +278,7 @@ fn genesis_constructor(
         forum_cfg,
         data_directory_config,
         initial_account_balances,
+        #[cfg(not(feature = "standalone"))]
         id,
     )
 }
@@ -286,7 +291,7 @@ fn generate_chain_spec(
     authority_seeds: Vec<String>,
     endowed_accounts: Vec<String>,
     sudo_account: String,
-    id: ParaId,
+    #[cfg(not(feature = "standalone"))] id: ParaId,
     initial_members_path: Option<PathBuf>,
     initial_forum_path: Option<PathBuf>,
     initial_content_path: Option<PathBuf>,
@@ -321,6 +326,7 @@ fn generate_chain_spec(
                 &authority_seeds,
                 &endowed_accounts,
                 &sudo_account,
+                #[cfg(not(feature = "standalone"))]
                 id,
                 &initial_members_path,
                 &initial_forum_path,
@@ -332,10 +338,13 @@ fn generate_chain_spec(
         Some(telemetry_endpoints),
         Some(&*"/joy/testnet/0"),
         Some(chain_spec_properties()),
+        #[cfg(not(feature = "standalone"))]
         Extensions {
             relay_chain: "rococo-local".into(),
             para_id: id.into(),
         },
+        #[cfg(feature = "standalone")]
+        None,
     );
 
     chain_spec.as_json(false).map_err(|err| err)
@@ -464,6 +473,7 @@ async fn main() -> Result<(), String> {
         authority_seeds,
         endowed_accounts,
         sudo_account,
+        #[cfg(not(feature = "standalone"))]
         JOYSTREAM_PARA_ID.into(),
         initial_members_path,
         initial_forum_path,

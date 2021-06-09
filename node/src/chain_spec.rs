@@ -31,15 +31,21 @@ use joystream_node_runtime::{
 #[cfg(not(feature = "standalone"))]
 use joystream_node_runtime::ParachainInfoConfig;
 
+#[cfg(not(feature = "standalone"))]
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
+#[cfg(not(feature = "standalone"))]
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec =
-    sc_service::GenericChainSpec<joystream_node_runtime::GenesisConfig, Extensions>;
+#[cfg(not(feature = "standalone"))]
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
+
+#[cfg(feature = "standalone")]
+/// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
 /// The chain specification option. This is expected to come in from the CLI and
 /// is little more than one of a number of alternatives which can easily be converted
@@ -55,6 +61,7 @@ pub enum Alternative {
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
+#[cfg(not(feature = "standalone"))]
 pub struct Extensions {
     /// The relay chain of the Parachain.
     pub relay_chain: String,
@@ -62,6 +69,7 @@ pub struct Extensions {
     pub para_id: u32,
 }
 
+#[cfg(not(feature = "standalone"))]
 impl Extensions {
     /// Try to get the extension from the given `ChainSpec`.
     pub fn try_get(chain_spec: &dyn sc_service::ChainSpec) -> Option<&Self> {
@@ -109,10 +117,19 @@ pub fn get_authority_keys_from_seed(
 
 impl Alternative {
     /// Get an actual chain config from one of the alternatives.
-    pub(crate) fn load(self, #[cfg(not(feature = "standalone"))] id: ParaId) -> Result<ChainSpec, String> {
+    #[cfg(not(feature = "standalone"))]
+    pub(crate) fn load(self, id: ParaId) -> Result<ChainSpec, String> {
         Ok(match self {
             Alternative::Development => development_config(id),
             Alternative::LocalTestnet => local_testnet_config(id),
+        })
+    }
+
+    #[cfg(feature = "standalone")]
+    pub(crate) fn load(self) -> Result<ChainSpec, String> {
+        Ok(match self {
+            Alternative::Development => development_config(),
+            Alternative::LocalTestnet => local_testnet_config(),
         })
     }
 }
@@ -139,6 +156,7 @@ pub fn development_config(#[cfg(not(feature = "standalone"))] id: ParaId) -> Cha
                 forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                 content_config::empty_data_directory_config(),
                 vec![],
+                #[cfg(not(feature = "standalone"))]
                 id,
             )
         },
@@ -146,11 +164,13 @@ pub fn development_config(#[cfg(not(feature = "standalone"))] id: ParaId) -> Cha
         None,
         None,
         Some(chain_spec_properties()),
+        #[cfg(not(feature = "standalone"))]
         Extensions {
-            // TODO fix
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: id.into(),
         },
+        #[cfg(feature = "standalone")]
+        None,
     )
 }
 
@@ -187,6 +207,7 @@ pub fn local_testnet_config(#[cfg(not(feature = "standalone"))] id: ParaId) -> C
                 forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                 content_config::empty_data_directory_config(),
                 vec![],
+                #[cfg(not(feature = "standalone"))]
                 id,
             )
         },
@@ -194,10 +215,13 @@ pub fn local_testnet_config(#[cfg(not(feature = "standalone"))] id: ParaId) -> C
         None,
         None,
         Some(chain_spec_properties()),
+        #[cfg(not(feature = "standalone"))]
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: id.into(),
         },
+        #[cfg(feature = "standalone")]
+        None,
     )
 }
 

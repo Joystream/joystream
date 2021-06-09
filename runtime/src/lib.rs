@@ -72,7 +72,6 @@ pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use proposals_codex::ProposalsConfigParameters;
-use storage::data_directory::Voucher;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
 
@@ -156,8 +155,8 @@ pub fn native_version() -> NativeVersion {
 
 #[cfg(not(feature = "standalone"))]
 impl_opaque_keys! {
-    pub struct SessionKeys { 
-        pub aura: Aura, 
+    pub struct SessionKeys {
+        pub aura: Aura,
     }
 }
 
@@ -381,10 +380,6 @@ impl memo::Config for Runtime {
     type Event = Event;
 }
 
-parameter_types! {
-    pub const DefaultVoucher: Voucher = Voucher::new(5000, 50);
-}
-
 impl storage::data_object_type_registry::Config for Runtime {
     type Event = Event;
 }
@@ -515,13 +510,6 @@ impl proposals_codex::Config for Runtime {
     type ProposalEncoder = ExtrinsicProposalEncoder;
 }
 
-parameter_types! {
-    pub const TombstoneDeposit: Balance = 1; // TODO: adjust fee
-    pub const RentByteFee: Balance = 1; // TODO: adjust fee
-    pub const RentDepositOffset: Balance = 0; // no rent deposit
-    pub const SurchargeReward: Balance = 0; // no reward
-}
-
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
     Call: From<LocalCall>,
@@ -572,7 +560,6 @@ mod standalone_impl {
 
     parameter_types! {
         pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS;
-        pub const ExpectedBlockTime: Moment = MILLISECS_PER_BLOCK;
         pub const ReportLongevity: u64 =
             BondingDuration::get() as u64 * SessionsPerEra::get() as u64 *
     EpochDuration::get(); }
@@ -648,10 +635,7 @@ mod standalone_impl {
     }
 
     parameter_types! {
-        pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
         pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
-        /// We prioritize im-online heartbeats over election solution submission.
-        pub const StakingUnsignedPriority: TransactionPriority = TransactionPriority::max_value() / 2;
     }
 
     impl pallet_im_online::Config for Runtime {
@@ -672,10 +656,6 @@ mod standalone_impl {
         pub const SlashDeferDuration: pallet_staking::EraIndex = BONDING_DURATION - 1; // 'slightly less' than the bonding duration.
         pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
         pub const MaxNominatorRewardedPerValidator: u32 = 64;
-        pub const ElectionLookahead: BlockNumber = EPOCH_DURATION_IN_BLOCKS / 4;
-        pub const MaxIterations: u32 = 10;
-        // 0.05%. The higher the value, the more strict solution acceptance becomes.
-        pub MinSolutionScoreBump: Perbill = Perbill::from_rational_approximation(5u32, 10_000);
     }
 
     impl onchain::Config for Runtime {
@@ -843,10 +823,6 @@ mod parachain_impl {
         type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
         type Trader = UsingComponents<IdentityFee<Balance>, RelayLocation, AccountId, Balances, ()>;
         type ResponseHandler = (); // Don't handle responses for now.
-    }
-
-    parameter_types! {
-        pub const MaxDownwardMessageWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 10;
     }
 
     /// No local origins on this chain are allowed to dispatch XCM sends/executions.
