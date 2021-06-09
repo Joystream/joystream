@@ -5,10 +5,6 @@
   hosts: all
 
   tasks:
-    - name: Debug information
-      debug:
-        msg: "Variables are: {{ hostvars }}"
-
     - name: Get code from git repo
       include_role:
         name: common
@@ -26,18 +22,17 @@
         name: "joystream-{{ branch_name }}"
         launch_permissions:
           group_names: ['all']
+        tags:
+          Name: "joystream-{{ branch_name }}"
       register: ami_data
       delegate_to: localhost
-
-    - name: Print AMI Data
-      debug:
-        msg: "AMI Data is: {{ ami_data }}"
 
     - name: Print AMI ID
       debug:
         msg: "AMI ID is: {{ ami_data.image_id }}"
 
-    - name: delete a stack
+    - name: Delete the stack
       amazon.aws.cloudformation:
         stack_name: "{{ stack_name }}"
         state: "absent"
+      delegate_to: localhost
