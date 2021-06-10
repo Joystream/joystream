@@ -113,10 +113,14 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
     { details: { DecreaseWorkingGroupLeadStake: [leadId, 100, 'Storage'] } },
     { details: { SetWorkingGroupLeadReward: [leadId, 50, 'Storage'] } },
     { details: { SlashWorkingGroupLead: [leadId, 100, 'Storage'] } },
-    { details: { TerminateWorkingGroupLead: { worker_id: leadId, slashing_amount: null, working_group: 'Storage' } } },
   ]
-  const testAllLeadProposalsOutcomes = new AllProposalsOutcomesFixture(api, query, leadProposalsToTest)
-  await new FixtureRunner(testAllLeadProposalsOutcomes).run()
+  const leadProposalsOutcomesFixture = new AllProposalsOutcomesFixture(api, query, leadProposalsToTest)
+  await new FixtureRunner(leadProposalsOutcomesFixture).run()
+
+  const terminateLeadProposalOutcomesFixture = new AllProposalsOutcomesFixture(api, query, [
+    { details: { TerminateWorkingGroupLead: { worker_id: leadId, working_group: 'Storage', slashing_amount: 100 } } },
+  ])
+  await new FixtureRunner(terminateLeadProposalOutcomesFixture).run()
 
   debug('Done')
 }

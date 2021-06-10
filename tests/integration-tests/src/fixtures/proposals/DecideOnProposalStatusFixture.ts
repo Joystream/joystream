@@ -114,7 +114,10 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     this.params.forEach((params, i) => {
       const qProposal = qProposals.find((p) => p.id === params.proposalId.toString())
       Utils.assert(qProposal, 'Query node: Proposal not found')
-      Utils.assert(qProposal.status.__typename === this.getExpectedProposalStatus(i))
+      Utils.assert(
+        qProposal.status.__typename === this.getExpectedProposalStatus(i),
+        `Exepected ${qProposal.status.__typename} to equal ${this.getExpectedProposalStatus(i)}`
+      )
       if (
         qProposal.status.__typename === 'ProposalStatusExecuted' ||
         qProposal.status.__typename === 'ProposalStatusExecutionFailed'
