@@ -753,7 +753,7 @@ export async function workingGroups_RewardPaid({ store, event }: EventContext & 
     worker,
     amount,
     rewardAccount: rewardAccountId.toString(),
-    type: rewardPaymentType.isRegularReward ? RewardPaymentType.REGULAR : RewardPaymentType.MISSED,
+    paymentType: rewardPaymentType.isRegularReward ? RewardPaymentType.REGULAR : RewardPaymentType.MISSED,
   })
 
   await store.save<RewardPaidEvent>(rewardPaidEvent)

@@ -3,10 +3,11 @@ import { Network } from 'query-node/dist/src/modules/enums/enums'
 import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
 import { WorkingGroup } from '@joystream/types/augment/all'
+import { BaseModel } from 'warthog'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
-export function genericEventFields(substrateEvent: SubstrateEvent): Partial<Event> {
+export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
   const eventTime = new Date(blockTimestamp)
   return {
