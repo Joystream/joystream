@@ -4,10 +4,11 @@ import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
 import { WorkerId } from '@joystream/types/augment/all'
 import { Worker } from 'query-node/dist/model'
+import { BaseModel } from 'warthog'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
-export function genericEventFields(substrateEvent: SubstrateEvent): Partial<Event> {
+export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
   const eventTime = new Date(blockTimestamp)
   return {
@@ -71,12 +72,12 @@ export type WorkingGroupModuleName =
   | 'membershipWorkingGroup'
 
 export async function getWorker(
-  db: DatabaseManager,
+  store: DatabaseManager,
   groupName: WorkingGroupModuleName,
   runtimeId: WorkerId | number
 ): Promise<Worker> {
   const workerDbId = `${groupName}-${runtimeId}`
-  const worker = await db.get(Worker, { where: { id: workerDbId } })
+  const worker = await store.get(Worker, { where: { id: workerDbId } })
   if (!worker) {
     throw new Error(`Worker not found by id ${workerDbId}`)
   }

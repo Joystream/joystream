@@ -255,6 +255,7 @@ import {
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
 import { CategoryId } from '@joystream/types/forum'
+import { Utils } from './utils'
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -268,49 +269,44 @@ export class QueryNodeApi {
     this.tryDebug = this.debug.extend('try')
   }
 
-  public tryQueryWithTimeout<QueryResultT>(
+  public async tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    timeoutMs = 60000,
-    retryTimeMs = 15000
+    retryTimeMs = 15000,
+    retries = 3
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
-    const retryDebug = this.tryDebug.extend(label).extend('retry')
-    const failDebug = this.tryDebug.extend(label).extend('failed')
-    return new Promise((resolve, reject) => {
-      let lastError: any
-      let retryTimeout: NodeJS.Timeout
-      const timeout = setTimeout(() => {
-        clearTimeout(retryTimeout)
-        failDebug(`Query node query is still failing after timeout was reached (${timeoutMs}ms)!`)
-        reject(lastError)
-      }, timeoutMs)
-      const tryQuery = () => {
-        query()
-          .then((result) => {
-            try {
-              assertResultIsValid(result)
-              clearTimeout(timeout)
-              resolve(result)
-            } catch (e) {
-              retryDebug(
-                `Unexpected query result${
-                  e && e.message ? ` (${e.message})` : ''
-                }, retyring query in ${retryTimeMs}ms...`
-              )
-              lastError = e
-              retryTimeout = setTimeout(tryQuery, retryTimeMs)
-            }
-          })
-          .catch((e) => {
-            retryDebug(`Query node unreachable, retyring query in ${retryTimeMs}ms...`)
-            lastError = e
-            retryTimeout = setTimeout(tryQuery, retryTimeMs)
-          })
+    const debug = this.tryDebug.extend(label)
+    let retryCounter = 0
+    const retry = async (error: any) => {
+      if (retryCounter === retries) {
+        debug(`Max number of query retries (${retries}) reached!`)
+        throw error
+      }
+      debug(`Retrying query in ${retryTimeMs}ms...`)
+      ++retryCounter
+      await Utils.wait(retryTimeMs)
+    }
+    while (true) {
+      let result: QueryResultT
+      try {
+        result = await query()
+      } catch (e) {
+        debug(`Query node unreachable`)
+        await retry(e)
+        continue
       }
 
-      tryQuery()
-    })
+      try {
+        assertResultIsValid(result)
+      } catch (e) {
+        debug(`Unexpected query result${e && e.message ? ` (${e.message})` : ''}`)
+        await retry(e)
+        continue
+      }
+
+      return result
+    }
   }
 
   private debugQuery(query: DocumentNode, args: Record<string, unknown>): void {
