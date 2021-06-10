@@ -209,7 +209,7 @@ pub struct Poll<Timestamp, Hash> {
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -1333,13 +1333,16 @@ decl_module! {
             rationale: Vec<u8>,
         ) -> DispatchResult {
 
+            // Check only unique post instances.
+            let unique_posts: BTreeSet<_> = posts.into_iter().collect();
+
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
-            let mut deleting_posts = Vec::new();
-            for (category_id, thread_id, post_id, hide) in &posts {
+            let mut deleting_posts = BTreeSet::new();
+            for (category_id, thread_id, post_id, hide) in &unique_posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
@@ -1350,7 +1353,7 @@ decl_module! {
                     *hide,
                 )?;
 
-                deleting_posts.push((category_id, thread_id, post_id, post));
+                deleting_posts.insert((category_id, thread_id, post_id, post));
             }
 
             //
@@ -1366,7 +1369,7 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(
-                RawEvent::PostDeleted(rationale, forum_user_id, posts)
+                RawEvent::PostDeleted(rationale, forum_user_id, unique_posts.into_iter().collect())
             );
 
             Ok(())
