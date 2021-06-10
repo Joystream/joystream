@@ -7,7 +7,7 @@
   run_once: true
 
 - name: Run chain-spec-builder to generate chainspec.json file
-  command: "{{ admin_code_dir }}/target/release/chain-spec-builder generate -a 2 --chain-spec-path {{ chain_spec_path }} --deployment live --endowed 1 --keystore-path {{ data_path }}"
+  command: "{{ admin_code_dir }}/target/release/chain-spec-builder generate -a {{ number_of_validators }} --chain-spec-path {{ chain_spec_path }} --deployment live --endowed 1 --keystore-path {{ data_path }}"
   register: chain_spec_output
   delegate_to: "{{ local_or_admin }}"
   run_once: true

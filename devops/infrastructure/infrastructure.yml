@@ -3,6 +3,16 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
+    Default: t2.micro
+  ValidatorEC2InstanceType:
+    Type: String
+    Default: t2.micro
+  RPCEC2InstanceType:
+    Type: String
+    Default: t2.micro
+  BuildEC2InstanceType:
+    Type: String
+    Default: t2.micro
   EC2AMI:
     Type: String
     Default: 'ami-09e67e426f25ce0d7'
@@ -14,6 +24,10 @@ Parameters:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  NumberOfValidators:
+    Description: Number of validator instances to launch
+    Type: Number
+    Default: 2
 
 Conditions:
   HasAMIId: !Not [!Equals [!Ref EC2AMI, ""]]
@@ -109,31 +123,33 @@ Resources:
 
             /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
-  Instance:
-    Type: AWS::EC2::Instance
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      LaunchTemplate:
-        LaunchTemplateId: !Ref InstanceLaunchTemplate
-        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      MinSize: '0'
+      MaxSize: '10'
+      DesiredCapacity: !Ref NumberOfValidators
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: "AWS::Region"
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref ValidatorEC2InstanceType
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_1'
-
-  Instance2:
-    Type: AWS::EC2::Instance
-    Properties:
-      LaunchTemplate:
-        LaunchTemplateId: !Ref InstanceLaunchTemplate
-        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}_2'
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: "true"
 
   RPCInstance:
     Type: AWS::EC2::Instance
     Properties:
       SecurityGroupIds:
         - !GetAtt RPCSecurityGroup.GroupId
+      InstanceType: !Ref RPCEC2InstanceType
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
@@ -144,6 +160,7 @@ Resources:
   BuildInstance:
     Type: AWS::EC2::Instance
     Properties:
+      InstanceType: !Ref BuildEC2InstanceType
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
@@ -159,7 +176,7 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '600'
-      Count: 4
+      Count: !Ref NumberOfValidators
 
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -200,17 +217,11 @@ Resources:
         HttpVersion: http2
 
 Outputs:
-  PublicIp:
-    Description: The DNS name for the created instance
-    Value:  !Sub "${Instance.PublicIp}"
+  AutoScalingId:
+    Description: The Auto Scaling ID
+    Value:  !Ref AutoScalingGroup
     Export:
-      Name: !Sub "${AWS::StackName}PublicIp"
-
-  PublicIp2:
-    Description: The DNS name for the created instance
-    Value:  !Sub "${Instance2.PublicIp}"
-    Export:
-      Name: !Sub "${AWS::StackName}PublicIp2"
+      Name: !Sub "${AWS::StackName}AutoScalingGroup"
 
   RPCPublicIp:
     Description: The DNS name for the created instance

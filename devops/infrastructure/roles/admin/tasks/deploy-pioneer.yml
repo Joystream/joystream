@@ -9,6 +9,10 @@
   shell: "WS_URL=wss://{{ ws_rpc }} yarn && yarn workspace @joystream/types build && yarn workspace pioneer build"
   args:
     chdir: "{{ remote_code_path }}"
+  retries: 3
+  delay: 5
+  register: result
+  until: result is not failed
 
 - name: Copying build files to local
   synchronize:
