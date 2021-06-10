@@ -15,9 +15,6 @@ use cumulus_client_service::{
 };
 use cumulus_primitives_core::ParaId;
 
-// Polkadot Imports
-use polkadot_primitives::v1::CollatorPair;
-
 // Substrate Imports
 use sc_client_api::ExecutorProvider;
 use sc_executor::native_executor_instance;
@@ -343,7 +340,7 @@ pub fn parachain_build_import_queue(
 
             Ok((time, slot))
         },
-        registry: config.prometheus_registry().clone(),
+        registry: config.prometheus_registry(),
         can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
         spawner: &task_manager.spawn_essential_handle(),
         telemetry,
@@ -381,7 +378,7 @@ pub async fn start_node(
                 task_manager.spawn_handle(),
                 client.clone(),
                 transaction_pool,
-                prometheus_registry.clone(),
+                prometheus_registry,
                 telemetry.clone(),
             );
 
@@ -429,7 +426,7 @@ pub async fn start_node(
                 block_import: client.clone(),
                 relay_chain_client: relay_chain_node.client.clone(),
                 relay_chain_backend: relay_chain_node.backend.clone(),
-                para_client: client.clone(),
+                para_client: client,
                 backoff_authoring_blocks: Option::<()>::None,
                 sync_oracle,
                 keystore,

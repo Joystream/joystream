@@ -1,6 +1,4 @@
 use crate::chain_spec;
-use cumulus_client_cli;
-use sc_cli;
 use std::path::PathBuf;
 use structopt::StructOpt;
 

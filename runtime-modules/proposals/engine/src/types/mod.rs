@@ -8,8 +8,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-// TODO Switch to PerThing
-use sp_runtime::Perbill;
+use sp_runtime::{PerThing, Perbill};
 use sp_std::boxed::Box;
 use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;
@@ -257,8 +256,8 @@ where
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes count.
     pub fn is_approval_quorum_reached(&self) -> bool {
-        let actual_votes_fraction =
-            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
+        let actual_votes_fraction: Perbill =
+            PerThing::from_rational(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_quorum_percentage);
 
@@ -268,8 +267,8 @@ where
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes count.
     pub fn is_slashing_quorum_reached(&self) -> bool {
-        let actual_votes_fraction =
-            Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
+        let actual_votes_fraction: Perbill =
+            PerThing::from_rational(self.votes_count, self.total_voters_count);
         let slashing_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_quorum_percentage);
 
@@ -279,8 +278,8 @@ where
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_approval_threshold_reached(&self) -> bool {
-        let approval_votes_fraction =
-            Perbill::from_rational_approximation(self.approvals, self.votes_count);
+        let approval_votes_fraction: Perbill =
+            PerThing::from_rational(self.approvals, self.votes_count);
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
 
@@ -290,8 +289,8 @@ where
     // Slashing threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_slashing_threshold_reached(&self) -> bool {
-        let slashing_votes_fraction =
-            Perbill::from_rational_approximation(self.slashes, self.votes_count);
+        let slashing_votes_fraction: Perbill =
+            PerThing::from_rational(self.slashes, self.votes_count);
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
 

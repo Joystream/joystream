@@ -22,7 +22,7 @@ mod standalone_use {
     pub use frame_support::traits::KeyOwnerProofSystem;
 }
 
-use frame_support::traits::{OnRuntimeUpgrade, Randomness};
+use frame_support::traits::OnRuntimeUpgrade;
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
@@ -42,8 +42,8 @@ use crate::{
 };
 
 use crate::{
-    Aura, AuraId, Call, Executive, InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys,
-    System, TransactionPayment,
+    Aura, AuraId, Call, Executive, InherentDataExt, Runtime, SessionKeys, System,
+    TransactionPayment,
 };
 
 #[cfg(not(feature = "standalone"))]
