@@ -13,3 +13,14 @@
   shell: . ~/.bash_profile && yarn cargo-build
   args:
     chdir: "{{ remote_code_path }}"
+  async: 3600
+  poll: 0
+  register: build_result
+
+- name: Check on build async task
+  async_status:
+    jid: "{{ build_result.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 36
+  delay: 100
