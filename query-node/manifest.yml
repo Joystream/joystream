@@ -294,37 +294,37 @@ mappings:
       handler: workingGroups_WorkerStartedLeaving
     # Forum
     - event: forum.CategoryCreated
-      handler: forum_CategoryCreated(DatabaseManager, SubstrateEvent)
+      handler: forum_CategoryCreated
     - event: forum.CategoryUpdated
-      handler: forum_CategoryUpdated(DatabaseManager, SubstrateEvent)
+      handler: forum_CategoryUpdated
     - event: forum.CategoryDeleted
-      handler: forum_CategoryDeleted(DatabaseManager, SubstrateEvent)
+      handler: forum_CategoryDeleted
     - event: forum.ThreadCreated
-      handler: forum_ThreadCreated(DatabaseManager, SubstrateEvent)
+      handler: forum_ThreadCreated
     - event: forum.ThreadModerated
-      handler: forum_ThreadModerated(DatabaseManager, SubstrateEvent)
+      handler: forum_ThreadModerated
     - event: forum.ThreadTitleUpdated
-      handler: forum_ThreadTitleUpdated(DatabaseManager, SubstrateEvent)
+      handler: forum_ThreadTitleUpdated
     - event: forum.ThreadDeleted
-      handler: forum_ThreadDeleted(DatabaseManager, SubstrateEvent)
+      handler: forum_ThreadDeleted
     - event: forum.ThreadMoved
-      handler: forum_ThreadMoved(DatabaseManager, SubstrateEvent)
+      handler: forum_ThreadMoved
     - event: forum.PostAdded
-      handler: forum_PostAdded(DatabaseManager, SubstrateEvent)
+      handler: forum_PostAdded
     - event: forum.PostModerated
-      handler: forum_PostModerated(DatabaseManager, SubstrateEvent)
+      handler: forum_PostModerated
     - event: forum.PostDeleted
-      handler: forum_PostDeleted(DatabaseManager, SubstrateEvent)
+      handler: forum_PostDeleted
     - event: forum.PostTextUpdated
-      handler: forum_PostTextUpdated(DatabaseManager, SubstrateEvent)
+      handler: forum_PostTextUpdated
     - event: forum.PostReacted
-      handler: forum_PostReacted(DatabaseManager, SubstrateEvent)
+      handler: forum_PostReacted
     - event: forum.VoteOnPoll
-      handler: forum_VoteOnPoll(DatabaseManager, SubstrateEvent)
+      handler: forum_VoteOnPoll
     - event: forum.CategoryStickyThreadUpdate
-      handler: forum_CategoryStickyThreadUpdate(DatabaseManager, SubstrateEvent)
+      handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated
-      handler: forum_CategoryMembershipOfModeratorUpdated(DatabaseManager, SubstrateEvent)
+      handler: forum_CategoryMembershipOfModeratorUpdated
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

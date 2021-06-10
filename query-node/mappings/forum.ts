@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
 import { bytesToString, deserializeMetadata, genericEventFields, getWorker } from './common'
 import {
   CategoryCreatedEvent,
@@ -52,8 +52,8 @@ import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
 import { ForumPostMetadata, ForumPostReaction as SupportedPostReactions } from '@joystream/metadata-protobuf'
 import { Not, In } from 'typeorm'
 
-async function getCategory(db: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
-  const category = await db.get(ForumCategory, { where: { id: categoryId }, relations })
+async function getCategory(store: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
+  const category = await store.get(ForumCategory, { where: { id: categoryId }, relations })
   if (!category) {
     throw new Error(`Forum category not found by id: ${categoryId}`)
   }
@@ -61,8 +61,8 @@ async function getCategory(db: DatabaseManager, categoryId: string, relations?: 
   return category
 }
 
-async function getThread(db: DatabaseManager, threadId: string): Promise<ForumThread> {
-  const thread = await db.get(ForumThread, { where: { id: threadId } })
+async function getThread(store: DatabaseManager, threadId: string): Promise<ForumThread> {
+  const thread = await store.get(ForumThread, { where: { id: threadId } })
   if (!thread) {
     throw new Error(`Forum thread not found by id: ${threadId.toString()}`)
   }
@@ -70,8 +70,8 @@ async function getThread(db: DatabaseManager, threadId: string): Promise<ForumTh
   return thread
 }
 
-async function getPost(db: DatabaseManager, postId: string): Promise<ForumPost> {
-  const post = await db.get(ForumPost, { where: { id: postId } })
+async function getPost(store: DatabaseManager, postId: string): Promise<ForumPost> {
+  const post = await store.get(ForumPost, { where: { id: postId } })
   if (!post) {
     throw new Error(`Forum post not found by id: ${postId.toString()}`)
   }
@@ -79,8 +79,8 @@ async function getPost(db: DatabaseManager, postId: string): Promise<ForumPost> 
   return post
 }
 
-async function getPollAlternative(db: DatabaseManager, threadId: string, index: number) {
-  const poll = await db.get(ForumPoll, { where: { thread: { id: threadId } }, relations: ['pollAlternatives'] })
+async function getPollAlternative(store: DatabaseManager, threadId: string, index: number) {
+  const poll = await store.get(ForumPoll, { where: { thread: { id: threadId } }, relations: ['pollAlternatives'] })
   if (!poll) {
     throw new Error(`Forum poll not found by threadId: ${threadId.toString()}`)
   }
@@ -92,8 +92,8 @@ async function getPollAlternative(db: DatabaseManager, threadId: string, index: 
   return pollAlternative
 }
 
-async function getActorWorker(db: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
-  const worker = await db.get(Worker, {
+async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
+  const worker = await store.get(Worker, {
     where: {
       group: { id: 'forumWorkingGroup' },
       ...(actor.isLead ? { isLead: true } : { runtimeId: actor.asModerator.toNumber() }),
@@ -129,9 +129,9 @@ function parseReaction(reactionId: PostReactionId): typeof PostReactionResult {
   }
 }
 
-export async function forum_CategoryCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [categoryId, parentCategoryId, titleBytes, descriptionBytes] = new Forum.CategoryCreatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
+export async function forum_CategoryCreated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [categoryId, parentCategoryId, titleBytes, descriptionBytes] = new Forum.CategoryCreatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
 
   const category = new ForumCategory({
     id: categoryId.toString(),
@@ -143,28 +143,28 @@ export async function forum_CategoryCreated(db: DatabaseManager, event_: Substra
     parent: parentCategoryId.isSome ? new ForumCategory({ id: parentCategoryId.unwrap().toString() }) : undefined,
   })
 
-  await db.save<ForumCategory>(category)
+  await store.save<ForumCategory>(category)
 
   const categoryCreatedEvent = new CategoryCreatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     category,
   })
-  await db.save<CategoryCreatedEvent>(categoryCreatedEvent)
+  await store.save<CategoryCreatedEvent>(categoryCreatedEvent)
 }
 
-export async function forum_CategoryUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [categoryId, newArchivalStatus, privilegedActor] = new Forum.CategoryUpdatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const category = await getCategory(db, categoryId.toString())
-  const actorWorker = await getActorWorker(db, privilegedActor)
+export async function forum_CategoryUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [categoryId, newArchivalStatus, privilegedActor] = new Forum.CategoryUpdatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const category = await getCategory(store, categoryId.toString())
+  const actorWorker = await getActorWorker(store, privilegedActor)
 
   const categoryUpdatedEvent = new CategoryUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     category,
     newArchivalStatus: newArchivalStatus.valueOf(),
     actor: actorWorker,
   })
-  await db.save<CategoryUpdatedEvent>(categoryUpdatedEvent)
+  await store.save<CategoryUpdatedEvent>(categoryUpdatedEvent)
 
   if (newArchivalStatus.valueOf()) {
     const status = new CategoryStatusArchived()
@@ -174,34 +174,34 @@ export async function forum_CategoryUpdated(db: DatabaseManager, event_: Substra
     category.status = new CategoryStatusActive()
   }
   category.updatedAt = eventTime
-  await db.save<ForumCategory>(category)
+  await store.save<ForumCategory>(category)
 }
 
-export async function forum_CategoryDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [categoryId, privilegedActor] = new Forum.CategoryDeletedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const category = await getCategory(db, categoryId.toString())
-  const actorWorker = await getActorWorker(db, privilegedActor)
+export async function forum_CategoryDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [categoryId, privilegedActor] = new Forum.CategoryDeletedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const category = await getCategory(store, categoryId.toString())
+  const actorWorker = await getActorWorker(store, privilegedActor)
 
   const categoryDeletedEvent = new CategoryDeletedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     category,
     actor: actorWorker,
   })
-  await db.save<CategoryDeletedEvent>(categoryDeletedEvent)
+  await store.save<CategoryDeletedEvent>(categoryDeletedEvent)
 
   const newStatus = new CategoryStatusRemoved()
   newStatus.categoryDeletedEventId = categoryDeletedEvent.id
 
   category.updatedAt = eventTime
   category.status = newStatus
-  await db.save<ForumCategory>(category)
+  await store.save<ForumCategory>(category)
 }
 
-export async function forum_ThreadCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const { forumUserId, categoryId, title, text, poll } = new Forum.CreateThreadCall(event_).args
-  const [threadId] = new Forum.ThreadCreatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
+export async function forum_ThreadCreated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const { forumUserId, categoryId, title, text, poll } = new Forum.CreateThreadCall(event).args
+  const [threadId] = new Forum.ThreadCreatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
   const author = new Membership({ id: forumUserId.toString() })
 
   const thread = new ForumThread({
@@ -214,7 +214,7 @@ export async function forum_ThreadCreated(db: DatabaseManager, event_: Substrate
     isSticky: false,
     status: new ThreadStatusActive(),
   })
-  await db.save<ForumThread>(thread)
+  await store.save<ForumThread>(thread)
 
   if (poll.isSome) {
     const threadPoll = new ForumPoll({
@@ -224,7 +224,7 @@ export async function forum_ThreadCreated(db: DatabaseManager, event_: Substrate
       endTime: new Date(poll.unwrap().end_time.toNumber()),
       thread,
     })
-    await db.save<ForumPoll>(threadPoll)
+    await store.save<ForumPoll>(threadPoll)
     await Promise.all(
       poll.unwrap().poll_alternatives.map(async (alt, index) => {
         const alternative = new ForumPollAlternative({
@@ -235,18 +235,18 @@ export async function forum_ThreadCreated(db: DatabaseManager, event_: Substrate
           index,
         })
 
-        await db.save<ForumPollAlternative>(alternative)
+        await store.save<ForumPollAlternative>(alternative)
       })
     )
   }
 
   const threadCreatedEvent = new ThreadCreatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     thread,
     title: bytesToString(title),
     text: bytesToString(text),
   })
-  await db.save<ThreadCreatedEvent>(threadCreatedEvent)
+  await store.save<ThreadCreatedEvent>(threadCreatedEvent)
 
   const postOrigin = new PostOriginThreadInitial()
   postOrigin.threadCreatedEventId = threadCreatedEvent.id
@@ -261,113 +261,113 @@ export async function forum_ThreadCreated(db: DatabaseManager, event_: Substrate
     status: new PostStatusActive(),
     origin: postOrigin,
   })
-  await db.save<ForumPost>(initialPost)
+  await store.save<ForumPost>(initialPost)
 }
 
-export async function forum_ThreadModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [threadId, rationaleBytes, privilegedActor] = new Forum.ThreadModeratedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const actorWorker = await getActorWorker(db, privilegedActor)
-  const thread = await getThread(db, threadId.toString())
+export async function forum_ThreadModerated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [threadId, rationaleBytes, privilegedActor] = new Forum.ThreadModeratedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const actorWorker = await getActorWorker(store, privilegedActor)
+  const thread = await getThread(store, threadId.toString())
 
   const threadModeratedEvent = new ThreadModeratedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     actor: actorWorker,
     thread,
     rationale: bytesToString(rationaleBytes),
   })
 
-  await db.save<ThreadModeratedEvent>(threadModeratedEvent)
+  await store.save<ThreadModeratedEvent>(threadModeratedEvent)
 
   const newStatus = new ThreadStatusModerated()
   newStatus.threadModeratedEventId = threadModeratedEvent.id
 
   thread.updatedAt = eventTime
   thread.status = newStatus
-  await db.save<ForumThread>(thread)
+  await store.save<ForumThread>(thread)
 }
 
-export async function forum_ThreadTitleUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [threadId, , , newTitleBytes] = new Forum.ThreadTitleUpdatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const thread = await getThread(db, threadId.toString())
+export async function forum_ThreadTitleUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [threadId, , , newTitleBytes] = new Forum.ThreadTitleUpdatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const thread = await getThread(store, threadId.toString())
 
   const threadTitleUpdatedEvent = new ThreadTitleUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     thread,
     newTitle: bytesToString(newTitleBytes),
   })
 
-  await db.save<ThreadTitleUpdatedEvent>(threadTitleUpdatedEvent)
+  await store.save<ThreadTitleUpdatedEvent>(threadTitleUpdatedEvent)
 
   thread.updatedAt = eventTime
   thread.title = bytesToString(newTitleBytes)
-  await db.save<ForumThread>(thread)
+  await store.save<ForumThread>(thread)
 }
 
-export async function forum_ThreadDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [threadId, , , hide] = new Forum.ThreadDeletedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const thread = await getThread(db, threadId.toString())
+export async function forum_ThreadDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [threadId, , , hide] = new Forum.ThreadDeletedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const thread = await getThread(store, threadId.toString())
 
   const threadDeletedEvent = new ThreadDeletedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     thread,
   })
 
-  await db.save<ThreadDeletedEvent>(threadDeletedEvent)
+  await store.save<ThreadDeletedEvent>(threadDeletedEvent)
 
   const status = hide.valueOf() ? new ThreadStatusRemoved() : new ThreadStatusLocked()
   status.threadDeletedEventId = threadDeletedEvent.id
   thread.status = status
   thread.updatedAt = eventTime
-  await db.save<ForumThread>(thread)
+  await store.save<ForumThread>(thread)
 }
 
-export async function forum_ThreadMoved(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [threadId, newCategoryId, privilegedActor, oldCategoryId] = new Forum.ThreadMovedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const thread = await getThread(db, threadId.toString())
-  const actorWorker = await getActorWorker(db, privilegedActor)
+export async function forum_ThreadMoved({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [threadId, newCategoryId, privilegedActor, oldCategoryId] = new Forum.ThreadMovedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const thread = await getThread(store, threadId.toString())
+  const actorWorker = await getActorWorker(store, privilegedActor)
 
   const threadMovedEvent = new ThreadMovedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     thread,
     oldCategory: new ForumCategory({ id: oldCategoryId.toString() }),
     newCategory: new ForumCategory({ id: newCategoryId.toString() }),
     actor: actorWorker,
   })
 
-  await db.save<ThreadMovedEvent>(threadMovedEvent)
+  await store.save<ThreadMovedEvent>(threadMovedEvent)
 
   thread.updatedAt = eventTime
   thread.category = new ForumCategory({ id: newCategoryId.toString() })
-  await db.save<ForumThread>(thread)
+  await store.save<ForumThread>(thread)
 }
 
-export async function forum_VoteOnPoll(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [threadId, alternativeIndex, forumUserId] = new Forum.VoteOnPollEvent(event_).params
-  const pollAlternative = await getPollAlternative(db, threadId.toString(), alternativeIndex.toNumber())
+export async function forum_VoteOnPoll({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [threadId, alternativeIndex, forumUserId] = new Forum.VoteOnPollEvent(event).params
+  const pollAlternative = await getPollAlternative(store, threadId.toString(), alternativeIndex.toNumber())
   const votingMember = new Membership({ id: forumUserId.toString() })
 
   const voteOnPollEvent = new VoteOnPollEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     pollAlternative,
     votingMember,
   })
 
-  await db.save<VoteOnPollEvent>(voteOnPollEvent)
+  await store.save<VoteOnPollEvent>(voteOnPollEvent)
 }
 
-export async function forum_PostAdded(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new Forum.PostAddedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
+export async function forum_PostAdded({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new Forum.PostAddedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
 
   const metadata = deserializeMetadata(ForumPostMetadata, metadataBytes)
   const postText = metadata ? metadata.text || '' : bytesToString(metadataBytes)
   const repliesToPost =
     typeof metadata?.repliesTo === 'number' &&
-    (await db.get(ForumPost, { where: { id: metadata.repliesTo.toString() } }))
+    (await store.get(ForumPost, { where: { id: metadata.repliesTo.toString() } }))
 
   const postStatus = isEditable.valueOf() ? new PostStatusActive() : new PostStatusLocked()
   const postOrigin = new PostOriginThreadReply()
@@ -383,122 +383,122 @@ export async function forum_PostAdded(db: DatabaseManager, event_: SubstrateEven
     origin: postOrigin,
     repliesTo: repliesToPost || undefined,
   })
-  await db.save<ForumPost>(post)
+  await store.save<ForumPost>(post)
 
   const postAddedEvent = new PostAddedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     post,
     isEditable: isEditable.valueOf(),
     text: postText,
   })
 
-  await db.save<PostAddedEvent>(postAddedEvent)
+  await store.save<PostAddedEvent>(postAddedEvent)
   // Update the other side of cross-relationship
   postOrigin.postAddedEventId = postAddedEvent.id
-  await db.save<ForumPost>(post)
+  await store.save<ForumPost>(post)
 }
 
-export async function forum_CategoryStickyThreadUpdate(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [categoryId, newStickyThreadsIdsVec, privilegedActor] = new Forum.CategoryStickyThreadUpdateEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const actorWorker = await getActorWorker(db, privilegedActor)
+export async function forum_CategoryStickyThreadUpdate({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [categoryId, newStickyThreadsIdsVec, privilegedActor] = new Forum.CategoryStickyThreadUpdateEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const actorWorker = await getActorWorker(store, privilegedActor)
   const newStickyThreadsIds = newStickyThreadsIdsVec.map((id) => id.toString())
-  const threadsToSetSticky = await db.getMany(ForumThread, {
+  const threadsToSetSticky = await store.getMany(ForumThread, {
     where: { category: { id: categoryId.toString() }, id: In(newStickyThreadsIds) },
   })
-  const threadsToUnsetSticky = await db.getMany(ForumThread, {
+  const threadsToUnsetSticky = await store.getMany(ForumThread, {
     where: { category: { id: categoryId.toString() }, isSticky: true, id: Not(In(newStickyThreadsIds)) },
   })
 
   const setStickyUpdates = (threadsToSetSticky || []).map(async (t) => {
     t.updatedAt = eventTime
     t.isSticky = true
-    await db.save<ForumThread>(t)
+    await store.save<ForumThread>(t)
   })
 
   const unsetStickyUpdates = (threadsToUnsetSticky || []).map(async (t) => {
     t.updatedAt = eventTime
     t.isSticky = false
-    await db.save<ForumThread>(t)
+    await store.save<ForumThread>(t)
   })
 
   await Promise.all(setStickyUpdates.concat(unsetStickyUpdates))
 
   const categoryStickyThreadUpdateEvent = new CategoryStickyThreadUpdateEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     actor: actorWorker,
     category: new ForumCategory({ id: categoryId.toString() }),
     newStickyThreads: threadsToSetSticky,
   })
 
-  await db.save<CategoryStickyThreadUpdateEvent>(categoryStickyThreadUpdateEvent)
+  await store.save<CategoryStickyThreadUpdateEvent>(categoryStickyThreadUpdateEvent)
 }
 
 export async function forum_CategoryMembershipOfModeratorUpdated(
-  db: DatabaseManager,
-  event_: SubstrateEvent
+  store: DatabaseManager,
+  event: SubstrateEvent
 ): Promise<void> {
-  const [moderatorId, categoryId, canModerate] = new Forum.CategoryMembershipOfModeratorUpdatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const moderator = await getWorker(db, 'forumWorkingGroup', moderatorId.toNumber())
-  const category = await getCategory(db, categoryId.toString(), ['moderators'])
+  const [moderatorId, categoryId, canModerate] = new Forum.CategoryMembershipOfModeratorUpdatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const moderator = await getWorker(store, 'forumWorkingGroup', moderatorId.toNumber())
+  const category = await getCategory(store, categoryId.toString(), ['moderators'])
 
   if (canModerate.valueOf()) {
     category.moderators.push(moderator)
     category.updatedAt = eventTime
-    await db.save<ForumCategory>(category)
+    await store.save<ForumCategory>(category)
   } else {
     category.moderators.splice(category.moderators.map((m) => m.id).indexOf(moderator.id), 1)
     category.updatedAt = eventTime
-    await db.save<ForumCategory>(category)
+    await store.save<ForumCategory>(category)
   }
 
   const categoryMembershipOfModeratorUpdatedEvent = new CategoryMembershipOfModeratorUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     category,
     moderator,
     newCanModerateValue: canModerate.valueOf(),
   })
-  await db.save<CategoryMembershipOfModeratorUpdatedEvent>(categoryMembershipOfModeratorUpdatedEvent)
+  await store.save<CategoryMembershipOfModeratorUpdatedEvent>(categoryMembershipOfModeratorUpdatedEvent)
 }
 
-export async function forum_PostModerated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const actorWorker = await getActorWorker(db, privilegedActor)
-  const post = await getPost(db, postId.toString())
+export async function forum_PostModerated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const actorWorker = await getActorWorker(store, privilegedActor)
+  const post = await getPost(store, postId.toString())
 
   const postModeratedEvent = new PostModeratedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     actor: actorWorker,
     post,
     rationale: bytesToString(rationaleBytes),
   })
 
-  await db.save<PostModeratedEvent>(postModeratedEvent)
+  await store.save<PostModeratedEvent>(postModeratedEvent)
 
   const newStatus = new PostStatusModerated()
   newStatus.postModeratedEventId = postModeratedEvent.id
 
   post.updatedAt = eventTime
   post.status = newStatus
-  await db.save<ForumPost>(post)
+  await store.save<ForumPost>(post)
 }
 
-export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [userId, postId, reactionId] = new Forum.PostReactedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
+export async function forum_PostReacted({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [userId, postId, reactionId] = new Forum.PostReactedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
 
   const reactionResult = parseReaction(reactionId)
   const postReactedEvent = new PostReactedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     post: new ForumPost({ id: postId.toString() }),
     reactingMember: new Membership({ id: userId.toString() }),
     reactionResult,
   })
-  await db.save<PostReactedEvent>(postReactedEvent)
+  await store.save<PostReactedEvent>(postReactedEvent)
 
-  const existingUserPostReaction = await db.get(ForumPostReaction, {
+  const existingUserPostReaction = await store.get(ForumPostReaction, {
     where: { post: { id: postId.toString() }, member: { id: userId.toString() } },
   })
 
@@ -508,7 +508,7 @@ export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEv
     if (existingUserPostReaction) {
       existingUserPostReaction.updatedAt = eventTime
       existingUserPostReaction.reaction = reaction
-      await db.save<ForumPostReaction>(existingUserPostReaction)
+      await store.save<ForumPostReaction>(existingUserPostReaction)
     } else {
       const newUserPostReaction = new ForumPostReaction({
         createdAt: eventTime,
@@ -517,52 +517,52 @@ export async function forum_PostReacted(db: DatabaseManager, event_: SubstrateEv
         member: new Membership({ id: userId.toString() }),
         reaction,
       })
-      await db.save<ForumPostReaction>(newUserPostReaction)
+      await store.save<ForumPostReaction>(newUserPostReaction)
     }
   } else if (existingUserPostReaction) {
-    await db.remove<ForumPostReaction>(existingUserPostReaction)
+    await store.remove<ForumPostReaction>(existingUserPostReaction)
   }
 }
 
-export async function forum_PostTextUpdated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [postId, , , , newTextBytes] = new Forum.PostTextUpdatedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
-  const post = await getPost(db, postId.toString())
+export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [postId, , , , newTextBytes] = new Forum.PostTextUpdatedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
+  const post = await getPost(store, postId.toString())
 
   const postTextUpdatedEvent = new PostTextUpdatedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     post,
     newText: bytesToString(newTextBytes),
   })
 
-  await db.save<PostTextUpdatedEvent>(postTextUpdatedEvent)
+  await store.save<PostTextUpdatedEvent>(postTextUpdatedEvent)
 
   post.updatedAt = eventTime
   post.text = bytesToString(newTextBytes)
-  await db.save<ForumPost>(post)
+  await store.save<ForumPost>(post)
 }
 
-export async function forum_PostDeleted(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
-  const [rationaleBytes, userId, postsData] = new Forum.PostDeletedEvent(event_).params
-  const eventTime = new Date(event_.blockTimestamp)
+export async function forum_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [rationaleBytes, userId, postsData] = new Forum.PostDeletedEvent(event).params
+  const eventTime = new Date(event.blockTimestamp)
 
   const postDeletedEvent = new PostDeletedEvent({
-    ...genericEventFields(event_),
+    ...genericEventFields(event),
     actor: new Membership({ id: userId.toString() }),
     rationale: bytesToString(rationaleBytes),
   })
 
-  await db.save<PostDeletedEvent>(postDeletedEvent)
+  await store.save<PostDeletedEvent>(postDeletedEvent)
 
   await Promise.all(
     postsData.map(async ([, , postId, hideFlag]) => {
-      const post = await getPost(db, postId.toString())
+      const post = await getPost(store, postId.toString())
       const newStatus = hideFlag.valueOf() ? new PostStatusRemoved() : new PostStatusLocked()
       newStatus.postDeletedEventId = postDeletedEvent.id
       post.updatedAt = eventTime
       post.status = newStatus
       post.deletedInEvent = postDeletedEvent
-      await db.save<ForumPost>(post)
+      await store.save<ForumPost>(post)
     })
   )
 }
