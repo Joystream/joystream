@@ -42,6 +42,14 @@ native_executor_instance!(
     frame_benchmarking::benchmarking::HostFunctions,
 );
 
+type PartialComponentsList<RuntimeApi, Executor> = PartialComponents<
+    TFullClient<Block, RuntimeApi, Executor>,
+    TFullBackend<Block>,
+    (),
+    sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
+    sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
+    (Option<Telemetry>, Option<TelemetryWorkerHandle>),
+>;
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
@@ -49,17 +57,7 @@ native_executor_instance!(
 pub fn new_partial<RuntimeApi, Executor, BIQ>(
     config: &Configuration,
     build_import_queue: BIQ,
-) -> Result<
-    PartialComponents<
-        TFullClient<Block, RuntimeApi, Executor>,
-        TFullBackend<Block>,
-        (),
-        sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
-        sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
-        (Option<Telemetry>, Option<TelemetryWorkerHandle>),
-    >,
-    sc_service::Error,
->
+) -> Result<PartialComponentsList<RuntimeApi, Executor>, sc_service::Error>
 where
     RuntimeApi: ConstructRuntimeApi<Block, TFullClient<Block, RuntimeApi, Executor>>
         + Send
