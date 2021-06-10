@@ -2,7 +2,7 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { u32, BTreeMap } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, MemberId } from '@joystream/types/common'
+import { AccountId, MemberId, PostId, ThreadId } from '@joystream/types/common'
 
 import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
@@ -27,6 +27,10 @@ import {
   ProposalsEngineEventName,
   ProposalCreatedEventDetails,
   ProposalType,
+  ForumEventName,
+  CategoryCreatedEventDetails,
+  PostAddedEventDetails,
+  ThreadCreatedEventDetails,
 } from './types'
 import {
   ApplicationId,
@@ -40,6 +44,7 @@ import { DeriveAllSections } from '@polkadot/api/util/decorate'
 import { ExactDerive } from '@polkadot/api-derive'
 import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
 import { BLOCKTIME, proposalTypeToProposalParamsKey } from './consts'
+import { CategoryId } from '@joystream/types/forum'
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -437,6 +442,14 @@ export class Api {
     return details
   }
 
+  public async retrieveForumEventDetails(result: ISubmittableResult, eventName: ForumEventName): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'forum', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
   public async retrieveProposalCreatedEventDetails(result: ISubmittableResult): Promise<ProposalCreatedEventDetails> {
     const details = await this.retrieveProposalsEngineEventDetails(result, 'ProposalCreated')
     return {
@@ -524,5 +537,29 @@ export class Api {
 
   public proposalParametersByType(type: ProposalType): ProposalParameters {
     return this.api.consts.proposalsCodex[proposalTypeToProposalParamsKey[type]]
+  }
+
+  public async retrieveCategoryCreatedEventDetails(result: ISubmittableResult): Promise<CategoryCreatedEventDetails> {
+    const details = await this.retrieveForumEventDetails(result, 'CategoryCreated')
+    return {
+      ...details,
+      categoryId: details.event.data[0] as CategoryId,
+    }
+  }
+
+  public async retrieveThreadCreatedEventDetails(result: ISubmittableResult): Promise<ThreadCreatedEventDetails> {
+    const details = await this.retrieveForumEventDetails(result, 'ThreadCreated')
+    return {
+      ...details,
+      threadId: details.event.data[0] as ThreadId,
+    }
+  }
+
+  public async retrievePostAddedEventDetails(result: ISubmittableResult): Promise<PostAddedEventDetails> {
+    const details = await this.retrieveForumEventDetails(result, 'PostAdded')
+    return {
+      ...details,
+      postId: details.event.data[0] as PostId,
+    }
   }
 }
