@@ -7,9 +7,11 @@ use sp_core::Hasher;
 type TestHash = <Test as frame_system::Trait>::Hash;
 type TestHashing = <Test as frame_system::Trait>::Hashing;
 
-fn merkle_path(len: usize, index: usize) -> Vec<usize> {
+fn helper_index_path(len: usize, index: usize) -> Vec<usize> {
+    // used as a helper function to generate the correct sequence of indexes used to
+    // construct the merkle path necessary for membership proof
     let mut idx = index;
-    assert!(idx > 0);
+    assert!(idx > 0); // index starting at 1
     let floor_2 = |x: usize| (x >> 1) + (x % 2);
     let mut path = Vec::new();
     let mut prev_len: usize = 0;
@@ -29,7 +31,12 @@ fn merkle_path(len: usize, index: usize) -> Vec<usize> {
     }
     return path;
 }
-fn gen_proof<E: Encode>(collection: &[E]) -> Result<Vec<TestHash>, &'static str> {
+fn generate_merkle_root<E: Encode>(collection: &[E]) -> Result<Vec<TestHash>, &'static str> {
+    // generates merkle root from the ordered sequence collection.
+    // The resulting vector is structured as follows: elements in range
+    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
+    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
+    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
     if collection.len() == 0 {
         return Err("empty vector");
     }
@@ -70,7 +77,8 @@ fn helper_build_merkle_path<E: Encode>(
     idx: usize,
     out: &[TestHash],
 ) -> Vec<TestHash> {
-    let path = merkle_path(collection.len(), idx + 1);
+    // builds the actual merkle path with the hashes needed for the proof
+    let path = helper_index_path(collection.len(), idx + 1);
     let merkle_proof = path.iter().map(|i| out[*i - 1]).collect();
     merkle_proof
 }
@@ -78,7 +86,7 @@ fn helper_build_merkle_path<E: Encode>(
 #[test]
 fn elements_does_belong_to_collection() {
     with_default_mock_builder(|| {
-        let out = gen_proof(&PULL_PAYMENTS_COLLECTION).unwrap();
+        let out = generate_merkle_root(&PULL_PAYMENTS_COLLECTION).unwrap();
         let root = out.last().copied().unwrap();
         let _x = Content::update_root(Origin::signed(FIRST_CURATOR_ORIGIN), root);
 
@@ -98,7 +106,7 @@ fn elements_does_belong_to_collection() {
 #[test]
 fn elements_doesnt_belong_to_collection() {
     with_default_mock_builder(|| {
-        let out = gen_proof(&PULL_PAYMENTS_COLLECTION).unwrap();
+        let out = generate_merkle_root(&PULL_PAYMENTS_COLLECTION).unwrap();
         let root = out.last().copied().unwrap();
         let _x = Content::update_root(Origin::signed(FIRST_CURATOR_ORIGIN), root);
 
