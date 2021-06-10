@@ -25,7 +25,8 @@ import { scenario } from '../Scenario'
 scenario(async ({ job }) => {
   // Membership:
   const membershipSystemJob = job('membership system', membershipSystem)
-  // All other membership jobs should be executed after membershipSystemJob,
+
+  // All other jobs should be executed after membershipSystemJob,
   // otherwise changing membershipPrice etc. may break them
   job('creating members', creatingMemberships).after(membershipSystemJob)
   job('updating member profile', updatingMemberProfile).after(membershipSystemJob)
@@ -35,7 +36,7 @@ scenario(async ({ job }) => {
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
   // Proposals:
-  const councilJob = job('electing council', electCouncil)
+  const councilJob = job('electing council', electCouncil).after(membershipSystemJob)
   const proposalsJob = job('proposals', [proposals, cancellingProposals, vetoProposal]).requires(councilJob)
 
   // Working groups:

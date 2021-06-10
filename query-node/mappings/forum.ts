@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
 import { bytesToString, deserializeMetadata, genericEventFields, getWorker } from './common'
 import {
   CategoryCreatedEvent,
@@ -434,10 +434,10 @@ export async function forum_CategoryStickyThreadUpdate({ event, store }: EventCo
   await store.save<CategoryStickyThreadUpdateEvent>(categoryStickyThreadUpdateEvent)
 }
 
-export async function forum_CategoryMembershipOfModeratorUpdated(
-  store: DatabaseManager,
-  event: SubstrateEvent
-): Promise<void> {
+export async function forum_CategoryMembershipOfModeratorUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   const [moderatorId, categoryId, canModerate] = new Forum.CategoryMembershipOfModeratorUpdatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const moderator = await getWorker(store, 'forumWorkingGroup', moderatorId.toNumber())

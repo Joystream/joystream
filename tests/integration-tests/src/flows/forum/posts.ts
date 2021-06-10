@@ -174,16 +174,11 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
         {
           ...threadPaths[3],
           postId: postIds[3],
-          hide: true,
-        },
-        {
-          ...threadPaths[3],
-          postId: postIds[3],
           hide: false,
         },
       ],
       asMember: memberIds[3],
-      rationale: 'Lock+remove in one extrinsic test',
+      rationale: 'Hide = false test',
     },
   ]
   const deletePostsFixture = new DeletePostsFixture(api, query, postRemovals)

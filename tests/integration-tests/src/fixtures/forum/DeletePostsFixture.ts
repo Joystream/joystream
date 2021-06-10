@@ -9,6 +9,7 @@ import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { MemberId, PostId, ThreadId } from '@joystream/types/common'
 import { CategoryId } from '@joystream/types/forum'
+import _ from 'lodash'
 
 const DEFAULT_RATIONALE = 'State cleanup'
 
@@ -78,7 +79,7 @@ export class DeletePostsFixture extends StandardizedFixture {
     assert.equal(qEvent.actor.id, this.removals[i].asMember.toString())
     assert.sameMembers(
       qEvent.posts.map((p) => p.id),
-      this.removals[i].posts.map((p) => p.postId.toString())
+      _.uniq(this.removals[i].posts.map((p) => p.postId.toString()))
     )
     assert.equal(qEvent.rationale, this.removals[i].rationale || DEFAULT_RATIONALE)
   }
