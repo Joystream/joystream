@@ -26,6 +26,7 @@ yarn format
 # and are inline with root workspace resolutions
 yarn
 
-yarn workspace query-node build:dev
+yarn workspace query-node codegen
+yarn workspace query-node build:prod
 
 yarn workspace query-node-mappings build
