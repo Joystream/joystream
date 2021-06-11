@@ -11,7 +11,7 @@ import {
   DispatchResult,
 } from '@polkadot/types/interfaces/system'
 import { Keyring } from '@polkadot/keyring'
-
+import { getNonce } from './nonceKeeper'
 // TODO: ApiHelper class container for functions ???
 
 export class ExtrinsicFailedError extends Error {}
@@ -107,7 +107,7 @@ export async function sendAndFollowTx(
 ): Promise<boolean> {
   try {
     // TODO: use async-lock package
-    const nonce = await api.rpc.system.accountNextIndex(account.address)
+    const nonce = await getNonce(api, account)
 
     await sendExtrinsic(api, account, tx, nonce)
     console.log(chalk.green(`Extrinsic successful!`))

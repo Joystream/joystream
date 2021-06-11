@@ -32,10 +32,11 @@ export default class Server extends ApiCommandBase {
     }
 
     const account = this.getAccount(flags)
+    const api = await this.getApi()
 
     try {
       const port = flags.port
-      const app = await createApp(account, flags.uploads)
+      const app = await createApp(api, account, flags.uploads)
       console.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {

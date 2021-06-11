@@ -29,6 +29,7 @@ export default class DevUpload extends ApiCommandBase {
 
     this.log('Uploading data objects...')
 
-    await uploadDataObjects(objectSize, objectCid)
+    const api = await this.getApi()
+    await uploadDataObjects(api, objectSize, objectCid)
   }
 }

@@ -5,12 +5,15 @@ import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
 import { OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { ApiPromise } from '@polkadot/api'
 import { TokenRequest, verifyTokenSignature } from '../auth'
+import { createStorageBucket } from '../runtime/extrinsics'
 
 // TODO: custom errors (including validation errors)
 // TODO: custom authorization errors
 
 export async function createApp(
+  api: ApiPromise,
   account: KeyringPair,
   uploadsDir: string
 ): Promise<Express> {
@@ -24,10 +27,17 @@ export async function createApp(
   // TODO: check path
   app.use('/files', express.static(uploadsDir))
 
+  app.get('/test', async function (req, res) {
+    await createStorageBucket(api, account)
+
+    res.send('ok')
+  })
+
   app.use(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
       res.locals.storageProviderAccount = account
+      res.locals.api = api
       next()
     },
     OpenApiValidator.middleware({

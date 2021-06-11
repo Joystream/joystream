@@ -36,8 +36,10 @@ export default class LeaderCreateBucket extends ApiCommandBase {
     }
 
     const account = this.getAccount(flags)
+    const api = await this.getApi()
 
     await createStorageBucket(
+      api,
       account,
       invitedWorker,
       allowNewBags,
