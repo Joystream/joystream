@@ -24,6 +24,7 @@
     "tslib": "^1"
   },
   "devDependencies": {
+    "@joystream/eslint-config": "^1.0.0",
     "@oclif/dev-cli": "^1",
     "@oclif/test": "^1",
     "@types/chai": "^4",
@@ -33,7 +34,7 @@
     "@typescript-eslint/eslint-plugin": "3.8.0",
     "@typescript-eslint/parser": "3.8.0",
     "chai": "^4",
-    "eslint": "^7.0.0",
+    "eslint": "^7.6.0",
     "eslint-config-oclif": "^3.1",
     "eslint-config-oclif-typescript": "^0.1",
     "globby": "^10",
@@ -76,7 +77,11 @@
       }
     }
   },
-  "repository": "shamil-gadelshin/storage-node-v2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream",
+    "directory": "storage-node-v2"
+  },
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "yarn lint",

@@ -26,13 +26,11 @@ export async function hireStorageWorkingGroupLead(
     LeadKeyPair.address
   )) as Vec<MemberId>
 
-  let memberId: bigint | undefined = (
-    members.toArray()[0] as MemberId
-  )?.toBigInt()
+  let memberId: MemberId | undefined = members.toArray()[0] as MemberId
 
   if (memberId === undefined) {
     console.log('Preparing member account creation extrinsic...')
-    memberId = ((await api.query.members.nextMemberId()) as MemberId).toBigInt()
+    memberId = (await api.query.members.nextMemberId()) as MemberId
     await sendAndFollowNamedTx(api, LeadKeyPair, 'members', 'buyMembership', [
       0,
       'alice',
@@ -51,12 +49,10 @@ export async function hireStorageWorkingGroupLead(
 
   console.log(`Making member id: ${memberId} the content lead.`)
 
-  const newOpeningId = (
+  const newOpeningId =
     (await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId
-  ).toBigInt()
-  const newApplicationId = (
+  const newApplicationId =
     (await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId
-  ).toBigInt()
 
   // Create curator lead opening
   console.log('Preparing Create Storage Lead Opening extrinsic...')
