@@ -183,6 +183,8 @@ class StorageWriteStream extends Transform {
    * Clean up temporary data.
    */
   cleanup() {
+    // Make it safe to call cleanup more than once
+    if (!this.temp) return
     debug('Cleaning up temporary file: ', this.temp.path)
     fs.unlink(this.temp.path, () => {
       /* Ignore errors. */
