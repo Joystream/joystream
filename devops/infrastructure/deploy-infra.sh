@@ -21,14 +21,6 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
-get_aws_export () {
-  RESULT=$(aws cloudformation list-exports \
-    --profile $CLI_PROFILE \
-    --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}$1')].Value" \
-    --output text | sed 's/\t\t*/\n/g')
-  echo -e $RESULT | tr " " "\n"
-}
-
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying main.yml ==========="
 aws cloudformation deploy \
