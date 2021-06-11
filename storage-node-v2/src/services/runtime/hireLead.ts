@@ -1,5 +1,4 @@
 import {
-  createApi,
   getAlicePair,
   sendAndFollowSudoNamedTx,
   sendAndFollowNamedTx,
@@ -12,23 +11,24 @@ import {
   ApplicationId,
 } from '@joystream/types/working-group'
 import { MemberId } from '@joystream/types/members'
+import { ApiPromise } from '@polkadot/api'
 
-export async function hireStorageWorkingGroupLead(): Promise<void> {
-  const api = await createApi()
-
+export async function hireStorageWorkingGroupLead(
+  api: ApiPromise
+): Promise<void> {
   const SudoKeyPair = getAlicePair()
   const LeadKeyPair = getAlicePair()
 
-  const nullValue = (null as unknown) as CodecArg
+  const nullValue = null as unknown as CodecArg
 
   // Create membership if not already created
   const members = (await api.query.members.memberIdsByControllerAccountId(
     LeadKeyPair.address
   )) as Vec<MemberId>
 
-  let memberId:
-    | bigint
-    | undefined = (members.toArray()[0] as MemberId)?.toBigInt()
+  let memberId: bigint | undefined = (
+    members.toArray()[0] as MemberId
+  )?.toBigInt()
 
   if (memberId === undefined) {
     console.log('Preparing member account creation extrinsic...')
@@ -42,9 +42,8 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
   }
 
   // Create a new lead opening.
-  const currentLead = (await api.query.storageWorkingGroup.currentLead()) as Option<
-    WorkerId
-  >
+  const currentLead =
+    (await api.query.storageWorkingGroup.currentLead()) as Option<WorkerId>
   if (currentLead.isSome) {
     console.log('Storage lead already exists, skipping...')
     return
@@ -52,8 +51,12 @@ export async function hireStorageWorkingGroupLead(): Promise<void> {
 
   console.log(`Making member id: ${memberId} the content lead.`)
 
-  const newOpeningId = ((await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId).toBigInt()
-  const newApplicationId = ((await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId).toBigInt()
+  const newOpeningId = (
+    (await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId
+  ).toBigInt()
+  const newApplicationId = (
+    (await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId
+  ).toBigInt()
 
   // Create curator lead opening
   console.log('Preparing Create Storage Lead Opening extrinsic...')

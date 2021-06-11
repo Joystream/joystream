@@ -1,13 +1,14 @@
 import {
-  createApi,
   sendAndFollowSudoNamedTx,
   sendAndFollowNamedTx,
   getAlicePair,
 } from './api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
+import { ApiPromise } from '@polkadot/api'
 
 export async function createStorageBucket(
+  api: ApiPromise,
   account: KeyringPair,
   invitedWorker: number | null = null,
   allowedNewBags = true,
@@ -15,8 +16,6 @@ export async function createStorageBucket(
   objectsLimit = 0
 ): Promise<void> {
   try {
-    const api = await createApi()
-
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
 
     await sendAndFollowNamedTx(api, account, 'storage', 'createStorageBucket', [
@@ -31,13 +30,12 @@ export async function createStorageBucket(
 }
 
 export async function acceptStorageBucketInvitation(
+  api: ApiPromise,
   account: KeyringPair,
   workerId: number,
   storageBucketId: number
 ): Promise<void> {
   try {
-    const api = await createApi()
-
     await sendAndFollowNamedTx(
       api,
       account,
@@ -53,13 +51,12 @@ export async function acceptStorageBucketInvitation(
 // TODO: Add dynamic bag parameter
 
 export async function updateStorageBucketsForBag(
+  api: ApiPromise,
   account: KeyringPair,
   bucketId: number,
   removeBucket: boolean
 ): Promise<void> {
   try {
-    const api = await createApi()
-
     let addBuckets: CodecArg
     let removeBuckets: CodecArg
 
@@ -82,12 +79,11 @@ export async function updateStorageBucketsForBag(
 }
 
 export async function uploadDataObjects(
+  api: ApiPromise,
   objectSize: number,
   objectCid: string
 ): Promise<void> {
   try {
-    const api = await createApi()
-
     const alice = getAlicePair()
 
     const data = api.createType('UploadParameters', {
@@ -113,14 +109,13 @@ export async function uploadDataObjects(
 }
 
 export async function acceptPendingDataObjects(
+  api: ApiPromise,
   account: KeyringPair,
   workerId: number,
   storageBucketId: number,
   dataObjects: number[]
 ): Promise<void> {
   try {
-    const api = await createApi()
-
     const bagId = { 'Static': 'Council' }
 
     const dataObjectSet: CodecArg = api.createType(
@@ -142,11 +137,11 @@ export async function acceptPendingDataObjects(
 }
 
 export async function updateStorageBucketsPerBagLimit(
+  api: ApiPromise,
   account: KeyringPair,
   newLimit: number
 ): Promise<void> {
   try {
-    const api = await createApi()
     await sendAndFollowNamedTx(
       api,
       account,
@@ -160,12 +155,12 @@ export async function updateStorageBucketsPerBagLimit(
 }
 
 export async function updateStorageBucketsVoucherMaxLimits(
+  api: ApiPromise,
   account: KeyringPair,
   newSizeLimit: number,
   newObjectLimit: number
 ): Promise<void> {
   try {
-    const api = await createApi()
     await sendAndFollowNamedTx(
       api,
       account,

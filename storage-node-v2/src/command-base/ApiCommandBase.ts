@@ -2,8 +2,11 @@ import { Command, flags } from '@oclif/command'
 import { createApi, getAlicePair } from '../services/runtime/api'
 import { getAccountFromJsonFile } from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { ApiPromise } from '@polkadot/api'
 
 export default abstract class ApiCommandBase extends Command {
+  private api: ApiPromise | null = null
+
   static keyflags = {
     help: flags.help({ char: 'h' }),
     dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
@@ -25,8 +28,22 @@ export default abstract class ApiCommandBase extends Command {
     super.finally(err)
   }
 
+  protected async getApi(): Promise<ApiPromise> {
+    if (this.api === null) {
+      throw new Error('Runtime Api is uninitialized.')
+    }
+
+    return this.api
+  }
+
+  async init(): Promise<void> {
+    this.api = await createApi()
+
+    await this.getApi()
+  }
+
   async ensureDevelopmentChain(): Promise<void> {
-    const api = await createApi()
+    const api = await this.getApi()
 
     const developmentChainName = 'Development'
     const runningChainName = await api.rpc.system.chain()

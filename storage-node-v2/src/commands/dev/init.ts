@@ -2,7 +2,7 @@ import { flags } from '@oclif/command'
 import { hireStorageWorkingGroupLead } from '../../services/runtime/hireLead'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 
-//TODO: consider renaming the command - DevHireLeader
+// TODO: consider renaming the command - DevHireLeader
 export default class DevInit extends ApiCommandBase {
   static description =
     'Initialize development environment. Sets Alice as storage working group leader.'
@@ -14,6 +14,7 @@ export default class DevInit extends ApiCommandBase {
   async run(): Promise<void> {
     await this.ensureDevelopmentChain()
 
-    await hireStorageWorkingGroupLead()
+    const api = await this.getApi()
+    await hireStorageWorkingGroupLead(api)
   }
 }

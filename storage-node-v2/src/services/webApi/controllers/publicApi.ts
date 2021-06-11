@@ -3,6 +3,7 @@ import { acceptPendingDataObjects } from '../../runtime/extrinsics'
 import { TokenRequest, signToken } from '../../auth'
 import { hashFile } from '../../../services/hashing'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { ApiPromise } from '@polkadot/api'
 import fs from 'fs'
 const fsPromises = fs.promises
 
@@ -34,6 +35,7 @@ export async function upload(
     await fsPromises.rename(fileObj.path, newPath)
 
     await acceptPendingDataObjects(
+      getApi(res),
       getAccount(res),
       uploadRequest.workerId,
       uploadRequest.storageBucketId,
@@ -81,6 +83,14 @@ function getAccount(res: express.Response): KeyringPair {
   }
 
   throw new Error('No Joystream account loaded.')
+}
+
+function getApi(res: express.Response): ApiPromise {
+  if (res.locals.api) {
+    return res.locals.api
+  }
+
+  throw new Error('No Joystream API loaded.')
 }
 
 function getTokenRequest(req: express.Request): TokenRequest {
