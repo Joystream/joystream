@@ -206,7 +206,10 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         })
 
-        stream.on('error', (err) => errorHandler(res, err))
+        stream.on('error', (err) => {
+          stream.cleanup()
+          errorHandler(res, err)
+        })
         req.pipe(stream)
       } catch (err) {
         errorHandler(res, err)

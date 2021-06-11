@@ -99,29 +99,29 @@ class StorageWriteStream extends Transform {
       chunk = Buffer.from(chunk)
     }
 
-    this.temp.write(chunk)
+    this.temp.write(chunk, (err) => {
+      // Try to detect file type during streaming.
+      if (!this.fileInfo && this.buf.byteLength <= fileType.minimumBytes) {
+        this.buf = Buffer.concat([this.buf, chunk])
 
-    // Try to detect file type during streaming.
-    if (!this.fileInfo && this.buf.byteLength <= fileType.minimumBytes) {
-      this.buf = Buffer.concat([this.buf, chunk])
-
-      if (this.buf >= fileType.minimumBytes) {
-        const info = fileType(this.buf)
-        // No info? We will try again at the end of the stream.
-        if (info) {
-          this.fileInfo = fixFileInfo(info)
-          this.emit('fileInfo', this.fileInfo)
+        if (this.buf >= fileType.minimumBytes) {
+          const info = fileType(this.buf)
+          // No info? We will try again at the end of the stream.
+          if (info) {
+            this.fileInfo = fixFileInfo(info)
+            this.emit('fileInfo', this.fileInfo)
+          }
         }
       }
-    }
-
-    callback(null)
+      callback(err)
+    })
   }
 
   _flush(callback) {
     debug('Flushing temporary stream:', this.temp.path)
-    this.temp.end()
-    callback(null)
+    this.temp.end(() => {
+      callback(null)
+    })
   }
 
   /*
