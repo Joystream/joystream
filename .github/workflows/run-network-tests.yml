@@ -193,7 +193,7 @@ jobs:
           docker-compose up -d joystream-node
       - name: Configure and start development storage node
         run: |
-          DEBUG=* yarn storage-cli dev-init
+          DEBUG=joystream:* yarn storage-cli dev-init
           docker-compose up -d colossus
       - name: Test uploading
         run: |
