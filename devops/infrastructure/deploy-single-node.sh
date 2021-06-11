@@ -26,7 +26,7 @@ echo -e "\n\n=========== Deploying single instance ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
-  --stack-name $NEW_STACK_NAME \
+  --stack-name $SINGLE_NODE_STACK_NAME \
   --template-file single-instance.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
