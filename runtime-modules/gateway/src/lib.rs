@@ -182,6 +182,7 @@ decl_error! {
     pub enum Error for Module<T: Trait> {
         InsufficientBalance,
         ChannelNotExists,
+        ServiceProviderNotExist,
         ServiceChannelNotForProvider,
         ServiceChannelAlreadyConfirmed,
         SignatureError,
@@ -190,6 +191,9 @@ decl_error! {
         ChannelNotOperational,
         ChannelRefundNotStarted,
         RefundDelayOnGoing,
+        ServiceTermsUpdateEmpty,
+        ServicePriceIsZero,
+        RefundPeriodIsZero,
     }
 }
 
@@ -495,6 +499,45 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             decreased_amount,
             ExistenceRequirement::AllowDeath,
         )?;
+    }
+
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn update_service_provider_terms(
+        origin,
+        service_provider_id: T::ServiceProviderId,
+        service_price: Option<BalanceOf<T>>,
+        refund_period: Option<T::BlockNumber>
+    ) {
+        GatewayWorkingGroup::<T>::ensure_origin_is_active_leader(origin)?;
+        ensure!(
+            <ServiceProviderById<T>>::contains_key(service_provider_id),
+            Error::<T>::ServiceProviderNotExist
+        );
+        ensure!(
+            service_price.is_some() || refund_period.is_some(),
+            Error::<T>::ServiceTermsUpdateEmpty
+        );
+        if let Some(service_price) = service_price {
+             ensure!(
+                service_price > Zero::zero(),
+                Error::<T>::ServicePriceIsZero
+            );
+        }
+        if let Some(refund_period) = refund_period {
+             ensure!(
+                refund_period > Zero::zero(),
+                Error::<T>::RefundPeriodIsZero
+            );
+        }
+
+        <ServiceProviderById<T>>::mutate(
+            service_provider_id,
+            |sp| *sp = ServiceProvider {
+                refund_period: refund_period.unwrap_or(sp.refund_period),
+                service_price: service_price.unwrap_or(sp.platform_service_price),
+                ..sp.clone()
+            }
+        )
     }
 
 }}
