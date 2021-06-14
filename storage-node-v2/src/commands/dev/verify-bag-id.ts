@@ -1,22 +1,12 @@
 import { flags } from '@oclif/command'
-import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import { parseBagId } from '../../services/helpers/bagIdParser'
 
-export default class LeaderUpdateBag extends ApiCommandBase {
+export default class DevVerifyBagId extends ApiCommandBase {
   static description =
-    'Add/remove a storage bucket from a bag (adds by default).'
+    'The command verifies bag id supported by the storage node. Requires chain connection.'
 
   static flags = {
-    bucket: flags.integer({
-      char: 'b',
-      required: true,
-      description: 'Storage bucket ID',
-    }),
-    remove: flags.boolean({
-      char: 'r',
-      description: 'Remove a bucket from the bag',
-    }),
     bagId: flags.string({
       char: 'i',
       required: true,
@@ -38,19 +28,11 @@ export default class LeaderUpdateBag extends ApiCommandBase {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(LeaderUpdateBag)
+    const { flags } = this.parse(DevVerifyBagId)
 
-    const bucket = flags.bucket ?? 0
-
-    this.log('Update bag - add/remove storage buckets...')
-    if (flags.dev) {
-      await this.ensureDevelopmentChain()
-    }
-
-    const account = this.getAccount(flags)
     const api = await this.getApi()
-    const bagId = parseBagId(api, flags.bagId)
+    parseBagId(api, flags.bagId)
 
-    await updateStorageBucketsForBag(api, bagId, account, bucket, flags.remove)
+    console.log(`Correct bag id: ${flags.bagId}`)
   }
 }
