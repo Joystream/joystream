@@ -16267,7 +16267,7 @@ export type WorkerStartedLeavingEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
+export type WorkerStatus = WorkerStatusActive | WorkerStatusLeaving | WorkerStatusLeft | WorkerStatusTerminated
 
 export type WorkerStatusActive = {
   phantom?: Maybe<Scalars['Int']>
@@ -16320,10 +16320,15 @@ export type WorkerStatusActiveWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type WorkerStatusLeaving = {
+  /** Related event emitted on leaving initialization */
+  workerStartedLeavingEvent?: Maybe<WorkerStartedLeavingEvent>
+}
+
 export type WorkerStatusLeft = {
   /** Related event emitted on leaving initialization */
   workerStartedLeavingEvent?: Maybe<WorkerStartedLeavingEvent>
-  /** Related event emitted (and set) when the unstaking period is finished */
+  /** Related event emitted once the worker has exited the role (after the unstaking period) */
   workerExitedEvent?: Maybe<WorkerExitedEvent>
 }
 

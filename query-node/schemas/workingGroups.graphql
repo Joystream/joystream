@@ -3,12 +3,17 @@ type WorkerStatusActive @variant {
   _phantom: Int
 }
 
+type WorkerStatusLeaving @variant {
+  "Related event emitted on leaving initialization"
+  workerStartedLeavingEvent: WorkerStartedLeavingEvent!
+}
+
 type WorkerStatusLeft @variant {
   "Related event emitted on leaving initialization"
   workerStartedLeavingEvent: WorkerStartedLeavingEvent!
 
-  "Related event emitted (and set) when the unstaking period is finished"
-  workerExitedEvent: WorkerExitedEvent
+  "Related event emitted once the worker has exited the role (after the unstaking period)"
+  workerExitedEvent: WorkerExitedEvent!
 }
 
 type WorkerStatusTerminated @variant {
@@ -16,7 +21,7 @@ type WorkerStatusTerminated @variant {
   terminatedWorkerEvent: TerminatedWorkerEvent!
 }
 
-union WorkerStatus = WorkerStatusActive | WorkerStatusLeft | WorkerStatusTerminated
+union WorkerStatus = WorkerStatusActive | WorkerStatusLeaving | WorkerStatusLeft | WorkerStatusTerminated
 
 # Working Groups
 type Worker @entity {

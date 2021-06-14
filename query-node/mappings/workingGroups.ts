@@ -71,6 +71,7 @@ import {
   BudgetSetEvent,
   BudgetSpendingEvent,
   LeaderSetEvent,
+  WorkerStatusLeaving,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 
@@ -794,9 +795,15 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
   })
 
   await store.save<WorkerExitedEvent>(workerExitedEvent)
-  ;(worker.status as WorkerStatusLeft).workerExitedEventId = workerExitedEvent.id
+
+  const newStatus = new WorkerStatusLeft()
+  newStatus.workerStartedLeavingEventId = (worker.status as WorkerStatusLeaving).workerStartedLeavingEventId
+  newStatus.workerExitedEventId = workerExitedEvent.id
+
+  worker.status = newStatus
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
+  worker.missingRewardAmount = undefined
   worker.updatedAt = eventTime
 
   await store.save<Worker>(worker)
@@ -910,7 +917,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
 
   await store.save<WorkerStartedLeavingEvent>(workerStartedLeavingEvent)
 
-  const status = new WorkerStatusLeft()
+  const status = new WorkerStatusLeaving()
   status.workerStartedLeavingEventId = workerStartedLeavingEvent.id
   worker.status = status
   worker.updatedAt = eventTime
