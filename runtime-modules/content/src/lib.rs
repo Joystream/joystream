@@ -1302,6 +1302,13 @@ decl_module! {
             <Commitment<T>>::put(new_commitment);
             Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
         }
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_reward(
+            _origin,
+            new_commitment: <T as frame_system::Trait>::Hash,
+        ) {
+        Self::not_implemented()?;
+        }
     }
 }
 
