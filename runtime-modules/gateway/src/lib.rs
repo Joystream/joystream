@@ -465,6 +465,19 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
     }
+
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn update_service_provider_fallback_account(
+        origin,
+        channel_id: T::ServiceChannelId,
+        new_fallback_account: T::AccountId
+    ) {
+        let mut service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
+        service_channel.service_provider_fallback_account = Some(new_fallback_account);
+
+        <ServiceChannelById<T>>::insert(channel_id, service_channel);
+    }
+
 }}
 impl<T: Trait> Module<T> {
     // TODO: the next 2 ensures are almost exactly the same, extract behavior
