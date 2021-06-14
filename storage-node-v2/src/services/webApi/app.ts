@@ -6,7 +6,7 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import { OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { TokenRequest, verifyTokenSignature } from '../auth'
+import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
 import { createStorageBucket } from '../runtime/extrinsics'
 
 // TODO: custom errors (including validation errors)

@@ -1,7 +1,7 @@
 import { Command, flags } from '@oclif/command'
-import { hashFile } from '../services/hashing'
+import { hashFile } from '../../services/helpers/hashing'
 
-export default class Multihash extends Command {
+export default class DevMultihash extends Command {
   static description = 'Creates a multihash (blake3) for a file.'
 
   static flags = {
@@ -14,7 +14,7 @@ export default class Multihash extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(Multihash)
+    const { flags } = this.parse(DevMultihash)
 
     console.log(`Hashing ${flags.file}`)
 

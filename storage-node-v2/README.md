@@ -30,11 +30,12 @@ USAGE
 <!-- commands -->
 * [`storage-node dev:init`](#storage-node-devinit)
 * [`storage-node dev:upload`](#storage-node-devupload)
+* [`storage-node dev:verify-bag-id [FILE]`](#storage-node-devverify-bag-id-file)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
-* [`storage-node leader:update-voucher-limits [FILE]`](#storage-node-leaderupdate-voucher-limits-file)
+* [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node multihash`](#storage-node-multihash)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node server [FILE]`](#storage-node-server-file)
@@ -51,7 +52,7 @@ OPTIONS
   -h, --help  show CLI help
 ```
 
-_See code: [src/commands/dev/init.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/init.ts)_
+_See code: [src/commands/dev/init.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/init.ts)_
 
 ## `storage-node dev:upload`
 
@@ -67,7 +68,23 @@ OPTIONS
   -s, --size=size  (required) Data object size.
 ```
 
-_See code: [src/commands/dev/upload.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/dev/upload.ts)_
+_See code: [src/commands/dev/upload.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/upload.ts)_
+
+## `storage-node dev:verify-bag-id [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node dev:verify-bag-id [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/verify-bag-id.ts)_
 
 ## `storage-node help [COMMAND]`
 
@@ -105,7 +122,7 @@ OPTIONS
   -s, --size=size          Storage bucket max total objects size
 ```
 
-_See code: [src/commands/leader/create-bucket.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
 
 ## `storage-node leader:update-bag`
 
@@ -149,11 +166,11 @@ OPTIONS
       Remove a bucket from the bag
 ```
 
-_See code: [src/commands/leader/update-bag.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag.ts)_
+_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag.ts)_
 
 ## `storage-node leader:update-bag-limit`
 
-Updates StorageBucketsPerBagLimit variable in Joystream node storage.
+Updates StorageBucketsPerBagLimit variable in the Joystream node storage.
 
 ```
 USAGE
@@ -167,23 +184,26 @@ OPTIONS
   -p, --password=password  Key file password (optional).
 ```
 
-_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
+_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
 
-## `storage-node leader:update-voucher-limits [FILE]`
+## `storage-node leader:update-voucher-limits`
 
-describe the command here
+Updates VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit the Joystream node storage.
 
 ```
 USAGE
-  $ storage-node leader:update-voucher-limits [FILE]
+  $ storage-node leader:update-voucher-limits
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -d, --dev                Use development mode
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -o, --objects=objects    (required) New 'max voucher object number limit' value
+  -p, --password=password  Key file password (optional).
+  -s, --size=size          (required) New 'max voucher object size limit' value
 ```
 
-_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/leader/update-voucher-limits.ts)_
+_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-voucher-limits.ts)_
 
 ## `storage-node multihash`
 
@@ -198,7 +218,7 @@ OPTIONS
   -h, --help       show CLI help
 ```
 
-_See code: [src/commands/multihash.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/multihash.ts)_
+_See code: [src/commands/multihash.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/multihash.ts)_
 
 ## `storage-node operator:accept-invitation`
 
@@ -217,7 +237,7 @@ OPTIONS
   -w, --worker=worker      (required) Storage operator worker ID
 ```
 
-_See code: [src/commands/operator/accept-invitation.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
 
 ## `storage-node server [FILE]`
 
@@ -236,5 +256,5 @@ OPTIONS
   -u, --uploads=uploads    (required) Data uploading directory.
 ```
 
-_See code: [src/commands/server.ts](https://github.com/shamil-gadelshin/storage-node-v2/blob/v0.1.0/src/commands/server.ts)_
+_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/server.ts)_
 <!-- commandsstop -->

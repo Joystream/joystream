@@ -6,6 +6,7 @@ import {
 import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
 import { ApiPromise } from '@polkadot/api'
+import { BagId } from '@joystream/types/storage'
 
 export async function createStorageBucket(
   api: ApiPromise,
@@ -52,6 +53,7 @@ export async function acceptStorageBucketInvitation(
 
 export async function updateStorageBucketsForBag(
   api: ApiPromise,
+  bagId: BagId,
   account: KeyringPair,
   bucketId: number,
   removeBucket: boolean
@@ -71,7 +73,7 @@ export async function updateStorageBucketsForBag(
       account,
       'storage',
       'updateStorageBucketsForBag',
-      [{ 'Static': 'Council' }, addBuckets, removeBuckets]
+      [bagId, addBuckets, removeBuckets]
     )
   } catch (err) {
     console.error(`Api Error: ${err}`)
@@ -110,14 +112,13 @@ export async function uploadDataObjects(
 
 export async function acceptPendingDataObjects(
   api: ApiPromise,
+  bagId: BagId,
   account: KeyringPair,
   workerId: number,
   storageBucketId: number,
   dataObjects: number[]
 ): Promise<void> {
   try {
-    const bagId = { 'Static': 'Council' }
-
     const dataObjectSet: CodecArg = api.createType(
       'DataObjectIdSet',
       dataObjects

@@ -1,20 +1,22 @@
 import * as express from 'express'
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { TokenRequest, signToken } from '../../auth'
-import { hashFile } from '../../../services/hashing'
+import { TokenRequest, signToken } from '../../helpers/auth'
+import { hashFile } from '../../../services/helpers/hashing'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
+import { parseBagId } from '../../../services/helpers/bagIdParser'
 import fs from 'fs'
 const fsPromises = fs.promises
 
 // TODO: test api connection?
 // TODO: error handling
 // TODO: convert to JSON
-// TODO: bagId
+// TODO: validate bagId
 interface UploadRequest {
   dataObjectId: number
   storageBucketId: number
   workerId: number
+  bagId: string
 }
 
 export async function upload(
@@ -34,8 +36,11 @@ export async function upload(
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
 
+    const api = getApi(res)
+    const bagId = parseBagId(api, uploadRequest.bagId)
     await acceptPendingDataObjects(
-      getApi(res),
+      api,
+      bagId,
       getAccount(res),
       uploadRequest.workerId,
       uploadRequest.storageBucketId,
