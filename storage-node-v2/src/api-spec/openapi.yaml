@@ -35,7 +35,7 @@ paths:
               required:
                 - dataObjectId
                 - storageBucketId
-                - workerId
+                - bagId
               properties:
                 file:
                   description: Data file
@@ -49,10 +49,9 @@ paths:
                   description: Storage bucket ID
                   type: string
                   pattern: '^\d+$' #integer
-                workerId:
-                  description: Storage provider worker ID
+                bagId:
+                  description: Bag ID
                   type: string
-                  pattern: '^\d+$' #integer
         required: true
       responses:
         201:

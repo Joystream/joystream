@@ -22,7 +22,7 @@ export async function getNonce(
     lock.release()
   }
 
-  console.log(`Last nonce:${nonce}`)
+  console.debug(`Last nonce:${nonce}`)
 
   return nonce as Index
 }

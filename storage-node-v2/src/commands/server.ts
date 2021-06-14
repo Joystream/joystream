@@ -9,6 +9,11 @@ export default class Server extends ApiCommandBase {
   static description = 'Starts the storage node server.'
 
   static flags = {
+    worker: flags.integer({
+      char: 'w',
+      required: true, // TODO: for dev
+      description: 'Storage provider worker ID',
+    }),
     uploads: flags.string({
       char: 'u',
       required: true,
@@ -36,7 +41,8 @@ export default class Server extends ApiCommandBase {
 
     try {
       const port = flags.port
-      const app = await createApp(api, account, flags.uploads)
+      const workerId = flags.worker ?? 0 // TODO: don't require on dev???
+      const app = await createApp(api, account, workerId, flags.uploads)
       console.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {

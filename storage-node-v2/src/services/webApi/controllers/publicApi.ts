@@ -8,14 +8,10 @@ import { parseBagId } from '../../../services/helpers/bagIdParser'
 import fs from 'fs'
 const fsPromises = fs.promises
 
-// TODO: test api connection?
 // TODO: error handling
-// TODO: convert to JSON
-// TODO: validate bagId
 interface UploadRequest {
   dataObjectId: number
   storageBucketId: number
-  workerId: number
   bagId: string
 }
 
@@ -24,8 +20,6 @@ export async function upload(
   res: express.Response
 ): Promise<void> {
   const uploadRequest: UploadRequest = req.body
-
-  console.log(uploadRequest)
 
   try {
     const fileObj = getFileObject(req)
@@ -42,7 +36,7 @@ export async function upload(
       api,
       bagId,
       getAccount(res),
-      uploadRequest.workerId,
+      getWorkerId(res),
       uploadRequest.storageBucketId,
       [uploadRequest.dataObjectId]
     )
@@ -80,6 +74,14 @@ function getFileObject(req: express.Request): Express.Multer.File {
   }
 
   throw new Error('No file uploaded')
+}
+
+function getWorkerId(res: express.Response): number {
+  if (res.locals.workerId || res.locals.workerId === 0) {
+    return res.locals.workerId
+  }
+
+  throw new Error('No Joystream worker ID loaded.')
 }
 
 function getAccount(res: express.Response): KeyringPair {
