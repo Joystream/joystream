@@ -8,6 +8,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
 import { createStorageBucket } from '../runtime/extrinsics'
+import { parseBagId } from '../../services/helpers/bagIdParser'
 
 // TODO: custom errors (including validation errors)
 // TODO: custom authorization errors
@@ -15,6 +16,7 @@ import { createStorageBucket } from '../runtime/extrinsics'
 export async function createApp(
   api: ApiPromise,
   account: KeyringPair,
+  workerId: number,
   uploadsDir: string
 ): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
@@ -37,6 +39,7 @@ export async function createApp(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
       res.locals.storageProviderAccount = account
+      res.locals.workerId = workerId
       res.locals.api = api
       next()
     },
@@ -52,7 +55,7 @@ export async function createApp(
       fileUploader: { dest: uploadsDir },
       validateSecurity: {
         handlers: {
-          UploadAuth: validateUpload(account),
+          UploadAuth: validateUpload(api, account),
         },
       },
     })
@@ -67,7 +70,10 @@ type ValidateUploadFunction = (
   schema: OpenAPIV3.SecuritySchemeObject
 ) => boolean | Promise<boolean>
 
-function validateUpload(account: KeyringPair): ValidateUploadFunction {
+function validateUpload(
+  api: ApiPromise,
+  account: KeyringPair
+): ValidateUploadFunction {
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
   return (
@@ -76,6 +82,9 @@ function validateUpload(account: KeyringPair): ValidateUploadFunction {
     schema: OpenAPIV3.SecuritySchemeObject
   ) => {
     const tokenSignature = req.headers['x-api-key'] as string
+
+    // Validate bagId.
+    parseBagId(api, req.body.bagId)
 
     // TODO: token construction
     const sourceTokenRequest: TokenRequest = {
