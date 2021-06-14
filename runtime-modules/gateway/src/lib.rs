@@ -478,6 +478,25 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
     }
 
+
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn decrease_channel_capital(origin, channel_id: T::ServiceChannelId, decreased_amount: BalanceOf<T>) {
+        let service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
+        let service_channel_account_id = &Self::get_service_channel_account(channel_id);
+        ensure!(
+            <T as Trait>::Currency::free_balance(&service_channel_account_id) >
+                decreased_amount,
+            Error::<T>::InsufficientBalance
+        );
+
+        <T as Trait>::Currency::transfer(
+            service_channel_account_id,
+            &service_channel.gateway_worker_fallback_account,
+            decreased_amount,
+            ExistenceRequirement::AllowDeath,
+        )?;
+    }
+
 }}
 impl<T: Trait> Module<T> {
     // TODO: the next 2 ensures are almost exactly the same, extract behavior
