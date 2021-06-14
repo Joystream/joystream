@@ -49,7 +49,7 @@ impl frame_system::Config for Test {
     type Call = Call;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u128; // u64 is not enough to hold bytes used to generate bounty account
+    type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;

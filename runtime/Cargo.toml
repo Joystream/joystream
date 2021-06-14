@@ -17,8 +17,8 @@ sp-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v
 sp-block-builder = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 sp-core = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 sp-consensus-aura = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
-sp-authority-discovery = {git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false}
 sp-consensus-babe = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
+sp-authority-discovery = {git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false}
 sp-inherents = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 sp-io = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 sp-offchain = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
@@ -43,8 +43,8 @@ frame-election-provider-support = { git = 'https://github.com/paritytech/substra
 ## Substrate Pallet Dependencies
 pallet-aura = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4" }
 pallet-grandpa = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
+pallet-babe = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 pallet-staking-reward-curve = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false}
-pallet-babe = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false}
 pallet-balances = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 pallet-im-online = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
 pallet-randomness-collective-flip = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4', default-features = false }
@@ -138,6 +138,7 @@ std = [
 	"xcm-executor/std",
 	"pallet-aura/std",
 	"sp-consensus-aura/std",
+	"pallet-babe/std",
 
     # Joystream
     'common/std',

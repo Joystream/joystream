@@ -4,6 +4,7 @@ pub mod chain_spec;
 pub mod service;
 #[cfg(not(feature = "standalone"))]
 pub mod cli;
+#[macro_use]
 #[cfg(feature = "standalone")]
 pub mod cli_standalone;
 #[cfg(not(feature = "standalone"))]

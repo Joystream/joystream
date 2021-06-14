@@ -48,7 +48,13 @@ sc-cli = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v
 sc-client-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sc-consensus = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sc-consensus-aura = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sc-consensus-babe = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sc-consensus-babe-rpc = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sc-consensus-epochs = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sc-consensus-slots = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sc-finality-grandpa = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sc-finality-grandpa-rpc = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sc-authority-discovery = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sc-executor = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sc-network = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sc-keystore = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
@@ -66,6 +72,7 @@ sp-block-builder = { git = 'https://github.com/paritytech/substrate', branch = '
 sp-blockchain = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sp-consensus = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sp-consensus-aura = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
+sp-consensus-babe = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sp-core = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sp-inherents = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }
 sp-keystore = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.4' }

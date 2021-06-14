@@ -2,16 +2,17 @@
 
 use joystream_node_runtime::{self, RuntimeApi};
 use sc_client_api::{ExecutorProvider, RemoteBackend};
-use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
-use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
+use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
-use sp_consensus::SlotData;
-use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
+use std::time::Duration;
+
+use sc_consensus_babe::SlotProportion;
+use sc_finality_grandpa::FinalityProofProvider;
 
 // Our native executor instance.
 native_executor_instance!(
@@ -21,29 +22,44 @@ native_executor_instance!(
     frame_benchmarking::benchmarking::HostFunctions,
 );
 
+type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
+type FullBackend = sc_service::TFullBackend<Block>;
+type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
+
 // Runtime type overrides
 type BlockNumber = u32;
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 
-type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
-type FullBackend = sc_service::TFullBackend<Block>;
-type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
-
-type PartialComponentsList = PartialComponents<
-    FullClient,
-    FullBackend,
-    FullSelectChain,
-    sp_consensus::DefaultImportQueue<Block, FullClient>,
-    sc_transaction_pool::FullPool<Block, FullClient>,
-    (
-        sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-        sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-        Option<Telemetry>,
-    ),
->;
-
-pub fn new_partial(config: &Configuration) -> Result<PartialComponentsList, ServiceError> {
+// TODO: Result structure is very complex. Consider factoring parts into `type` definitions.
+// After this TODO will be resolved, remove the suppresion of `type-complexity` warnings in the Makefile.
+pub fn new_partial(
+    config: &Configuration,
+) -> Result<
+    sc_service::PartialComponents<
+        FullClient,
+        FullBackend,
+        FullSelectChain,
+        sp_consensus::DefaultImportQueue<Block, FullClient>,
+        sc_transaction_pool::FullPool<Block, FullClient>,
+        (
+            sc_consensus_babe::BabeBlockImport<
+                Block,
+                FullClient,
+                sc_finality_grandpa::GrandpaBlockImport<
+                    FullBackend,
+                    Block,
+                    FullClient,
+                    FullSelectChain,
+                >,
+            >,
+            sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+            sc_consensus_babe::BabeLink<Block>,
+            Option<Telemetry>,
+        ),
+    >,
+    ServiceError,
+> {
     if config.keystore_remote.is_some() {
         return Err(ServiceError::Other(
             "Remote Keystores are not supported.".to_string(),
@@ -90,34 +106,37 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsList, Serv
         telemetry.as_ref().map(|x| x.handle()),
     )?;
 
-    let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
+    let babe_config = sc_consensus_babe::Config::get_or_compute(&*client)?;
 
-    let import_queue =
-        sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
-            block_import: grandpa_block_import.clone(),
-            justification_import: Some(Box::new(grandpa_block_import.clone())),
-            client: client.clone(),
-            create_inherent_data_providers: move |_, ()| async move {
-                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+    let slot_duration = babe_config.slot_duration();
 
-                let slot =
-                    sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-                        *timestamp,
-                        slot_duration,
-                    );
+    let (block_import, babe_link) =
+        sc_consensus_babe::block_import(babe_config, grandpa_block_import.clone(), client.clone())?;
 
-                Ok((timestamp, slot))
-            },
-            spawner: &task_manager.spawn_essential_handle(),
-            can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(
-                client.executor().clone(),
-            ),
-            registry: config.prometheus_registry(),
-            check_for_equivocation: Default::default(),
-            telemetry: telemetry.as_ref().map(|x| x.handle()),
-        })?;
+    let import_queue = sc_consensus_babe::import_queue(
+        babe_link.clone(),
+        block_import.clone(),
+        Some(Box::new(grandpa_block_import)),
+        client.clone(),
+        select_chain.clone(),
+        move |_, ()| async move {
+            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-    Ok(PartialComponents {
+            let slot =
+                sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_duration(
+                    *timestamp,
+                    slot_duration,
+                );
+
+            Ok((timestamp, slot))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
+        telemetry.as_ref().map(|x| x.handle()),
+    )?;
+
+    Ok(sc_service::PartialComponents {
         client,
         backend,
         task_manager,
@@ -125,7 +144,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsList, Serv
         keystore_container,
         select_chain,
         transaction_pool,
-        other: (grandpa_block_import, grandpa_link, telemetry),
+        other: (block_import, grandpa_link, babe_link, telemetry),
     })
 }
 
@@ -138,7 +157,7 @@ fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
 
 /// Builds a new service for a full client.
 pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> {
-    let PartialComponents {
+    let sc_service::PartialComponents {
         client,
         backend,
         mut task_manager,
@@ -146,7 +165,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         mut keystore_container,
         select_chain,
         transaction_pool,
-        other: (block_import, grandpa_link, mut telemetry),
+        other: (block_import, grandpa_link, babe_link, mut telemetry),
     } = new_partial(&config)?;
 
     if let Some(url) = &config.keystore_remote {
@@ -188,20 +207,48 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
     let role = config.role.clone();
     let force_authoring = config.force_authoring;
-    let backoff_authoring_blocks: Option<()> = None;
+    let backoff_authoring_blocks =
+        Some(sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default());
     let name = config.network.node_name.clone();
     let enable_grandpa = !config.disable_grandpa;
     let prometheus_registry = config.prometheus_registry().cloned();
 
+    let justification_stream = grandpa_link.justification_stream();
+    let shared_authority_set = grandpa_link.shared_authority_set().clone();
+    let shared_voter_state = sc_finality_grandpa::SharedVoterState::empty();
+
+    let finality_proof_provider =
+        FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()));
+
+    let babe_config = babe_link.config().clone();
+    let shared_epoch_changes = babe_link.epoch_changes().clone();
+
+    let slot_duration = babe_config.slot_duration();
+
     let rpc_extensions_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
+        let keystore = keystore_container.sync_keystore();
+        let select_chain = select_chain.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        Box::new(move |deny_unsafe, subscription_executor| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: pool.clone(),
+                select_chain: select_chain.clone(),
                 deny_unsafe,
+                babe: crate::rpc::BabeDeps {
+                    babe_config: babe_config.clone(),
+                    shared_epoch_changes: shared_epoch_changes.clone(),
+                    keystore: keystore.clone(),
+                },
+                grandpa: crate::rpc::GrandpaDeps {
+                    shared_voter_state: shared_voter_state.clone(),
+                    shared_authority_set: shared_authority_set.clone(),
+                    justification_stream: justification_stream.clone(),
+                    subscription_executor,
+                    finality_provider: finality_proof_provider.clone(),
+                },
             };
 
             crate::rpc::create_full(deps)
@@ -223,8 +270,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         telemetry: telemetry.as_mut(),
     })?;
 
-    if role.is_authority() {
-        let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+    if let sc_service::config::Role::Authority { .. } = &role {
+        let proposer = sc_basic_authorship::ProposerFactory::new(
             task_manager.spawn_handle(),
             client.clone(),
             transaction_pool,
@@ -235,42 +282,37 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         let can_author_with =
             sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
-        let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
-        let raw_slot_duration = slot_duration.slot_duration();
+        let babe_config = sc_consensus_babe::BabeParams {
+            keystore: keystore_container.sync_keystore(),
+            client,
+            select_chain,
+            env: proposer,
+            block_import,
+            sync_oracle: network.clone(),
+            create_inherent_data_providers: move |_, ()| async move {
+                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-        let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
-            StartAuraParams {
-                slot_duration,
-                client,
-                select_chain,
-                block_import,
-                proposer_factory,
-                create_inherent_data_providers: move |_, ()| async move {
-                    let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+                let slot =
+                    sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_duration(
+                        *timestamp,
+                        slot_duration,
+                    );
 
-                    let slot =
-						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-							*timestamp,
-							raw_slot_duration,
-						);
-
-                    Ok((timestamp, slot))
-                },
-                force_authoring,
-                backoff_authoring_blocks,
-                keystore: keystore_container.sync_keystore(),
-                can_author_with,
-                sync_oracle: network.clone(),
-                block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
-                telemetry: telemetry.as_ref().map(|x| x.handle()),
+                Ok((timestamp, slot))
             },
-        )?;
+            force_authoring,
+            backoff_authoring_blocks,
+            babe_link,
+            can_author_with,
+            // We got around 500ms for proposing
+            block_proposal_slot_portion: SlotProportion::new(1f32 / 24f32),
+            telemetry: telemetry.as_ref().map(|x| x.handle()),
+        };
 
-        // the AURA authoring task is considered essential, i.e. if it
-        // fails we take down the service with it.
+        let babe = sc_consensus_babe::start_babe(babe_config)?;
         task_manager
             .spawn_essential_handle()
-            .spawn_blocking("aura", aura);
+            .spawn_blocking("babe", babe);
     }
 
     // if the node isn't actively participating in consensus then it doesn't
@@ -360,37 +402,43 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
         on_demand.clone(),
     ));
 
-    let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
+    let (grandpa_block_import, _) = sc_finality_grandpa::block_import(
         client.clone(),
         &(client.clone() as Arc<_>),
-        select_chain,
+        select_chain.clone(),
         telemetry.as_ref().map(|x| x.handle()),
     )?;
+    let justification_import = grandpa_block_import.clone();
 
-    let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
+    let babe_config = sc_consensus_babe::Config::get_or_compute(&*client)?;
 
-    let import_queue =
-        sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
-            block_import: grandpa_block_import.clone(),
-            justification_import: Some(Box::new(grandpa_block_import)),
-            client: client.clone(),
-            create_inherent_data_providers: move |_, ()| async move {
-                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+    let slot_duration = babe_config.slot_duration();
 
-                let slot =
-                    sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-                        *timestamp,
-                        slot_duration,
-                    );
+    let (block_import, babe_link) =
+        sc_consensus_babe::block_import(babe_config, grandpa_block_import.clone(), client.clone())?;
 
-                Ok((timestamp, slot))
-            },
-            spawner: &task_manager.spawn_essential_handle(),
-            can_author_with: sp_consensus::NeverCanAuthor,
-            registry: config.prometheus_registry(),
-            check_for_equivocation: Default::default(),
-            telemetry: telemetry.as_ref().map(|x| x.handle()),
-        })?;
+    let import_queue = sc_consensus_babe::import_queue(
+        babe_link,
+        block_import,
+        Some(Box::new(justification_import)),
+        client.clone(),
+        select_chain,
+        move |_, ()| async move {
+            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+            let slot =
+                sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_duration(
+                    *timestamp,
+                    slot_duration,
+                );
+
+            Ok((timestamp, slot))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        sp_consensus::NeverCanAuthor,
+        telemetry.as_ref().map(|x| x.handle()),
+    )?;
 
     let (network, system_rpc_tx, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -412,26 +460,6 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
         );
     }
 
-    let enable_grandpa = !config.disable_grandpa;
-    if enable_grandpa {
-        let name = config.network.node_name.clone();
-
-        let config = sc_finality_grandpa::Config {
-            gossip_duration: std::time::Duration::from_millis(333),
-            justification_period: 512,
-            name: Some(name),
-            observer_enabled: false,
-            keystore: None,
-            local_role: config.role.clone(),
-            telemetry: telemetry.as_ref().map(|x| x.handle()),
-        };
-
-        task_manager.spawn_handle().spawn_blocking(
-            "grandpa-observer",
-            sc_finality_grandpa::run_grandpa_observer(config, grandpa_link, network.clone())?,
-        );
-    }
-
     sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         remote_blockchain: Some(backend.remote_blockchain()),
         transaction_pool,
@@ -448,5 +476,6 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
     })?;
 
     network_starter.start_network();
+
     Ok(task_manager)
 }

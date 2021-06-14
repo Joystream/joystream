@@ -7,7 +7,7 @@ use standalone_use::*;
 mod standalone_use {
     pub use crate::constants::*;
 
-    pub use crate::{AuthorityDiscovery, EpochDuration, Grandpa, Historical};
+    pub use crate::{AuthorityDiscovery, Babe, EpochDuration, Grandpa, Historical};
 
     pub use pallet_grandpa::AuthorityId as GrandpaId;
 
@@ -41,13 +41,10 @@ use crate::{
     Signature, VERSION,
 };
 
-use crate::{
-    Aura, AuraId, Call, Executive, InherentDataExt, Runtime, SessionKeys, System,
-    TransactionPayment,
-};
+use crate::{Call, Executive, InherentDataExt, Runtime, SessionKeys, System, TransactionPayment};
 
 #[cfg(not(feature = "standalone"))]
-use crate::ParachainSystem;
+use crate::{Aura, AuraId, ParachainSystem};
 
 use frame_support::weights::Weight;
 
@@ -288,6 +285,7 @@ impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "standalone"))]
     impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
@@ -302,6 +300,57 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info() -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info()
+        }
+    }
+
+    #[cfg(feature = "standalone")]
+    impl sp_consensus_babe::BabeApi<Block> for Runtime {
+        fn configuration() -> sp_consensus_babe::BabeGenesisConfiguration {
+            // The choice of `c` parameter (where `1 - c` represents the
+            // probability of a slot being empty), is done in accordance to the
+            // slot duration and expected target block time, for safely
+            // resisting network delays of maximum two seconds.
+            // <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
+            sp_consensus_babe::BabeGenesisConfiguration {
+                slot_duration: Babe::slot_duration(),
+                epoch_length: EpochDuration::get(),
+                c: PRIMARY_PROBABILITY,
+                genesis_authorities: Babe::authorities(),
+                randomness: Babe::randomness(),
+                allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
+            }
+        }
+
+        fn generate_key_ownership_proof(
+            _slot_number: sp_consensus_babe::Slot,
+            authority_id: sp_consensus_babe::AuthorityId,
+        ) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
+            use codec::Encode;
+
+            Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
+                .map(|p| p.encode())
+                .map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
+        }
+
+        fn submit_report_equivocation_unsigned_extrinsic(
+            equivocation_proof: sp_consensus_babe::EquivocationProof<<Block as BlockT>::Header>,
+            key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
+        ) -> Option<()> {
+            let key_owner_proof = key_owner_proof.decode()?;
+
+            Babe::submit_unsigned_equivocation_report(equivocation_proof, key_owner_proof)
+        }
+
+        fn current_epoch() -> sp_consensus_babe::Epoch {
+            Babe::current_epoch()
+        }
+
+        fn next_epoch() -> sp_consensus_babe::Epoch {
+            Babe::next_epoch()
+        }
+
+        fn current_epoch_start() -> sp_consensus_babe::Slot {
+            Babe::current_epoch_start()
         }
     }
 }

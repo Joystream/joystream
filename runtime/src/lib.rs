@@ -82,7 +82,6 @@ pub use pallet_grandpa::AuthorityId as GrandpaId;
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 #[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
-pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 
 #[cfg(feature = "standalone")]
 use standalone_use::*;
@@ -122,6 +121,8 @@ mod parachain_use {
         TakeWeightCredit, UsingComponents,
     };
     pub use xcm_executor::{Config, XcmExecutor};
+
+    pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 }
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -248,10 +249,6 @@ impl frame_system::Config for Runtime {
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
 }
 
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
-}
-
 impl pallet_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
@@ -265,7 +262,10 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = Moment;
+    #[cfg(not(feature = "standalone"))]
     type OnTimestampSet = ();
+    #[cfg(feature = "standalone")]
+    type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
@@ -567,10 +567,46 @@ mod standalone_impl {
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub grandpa: Grandpa,
-            pub aura: Aura,
+            pub babe: Babe,
             pub im_online: ImOnline,
             pub authority_discovery: AuthorityDiscovery,
         }
+    }
+
+    parameter_types! {
+        pub const ExpectedBlockTime: Moment = MILLISECS_PER_BLOCK;
+    }
+
+    /// The BABE epoch configuration at genesis.
+    pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
+        sp_consensus_babe::BabeEpochConfiguration {
+            c: PRIMARY_PROBABILITY,
+            allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
+        };
+
+    impl pallet_babe::Config for Runtime {
+        type EpochDuration = EpochDuration;
+        type ExpectedBlockTime = ExpectedBlockTime;
+        type EpochChangeTrigger = pallet_babe::ExternalTrigger;
+        type KeyOwnerProofSystem = Historical;
+
+        type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+            KeyTypeId,
+            pallet_babe::AuthorityId,
+        )>>::Proof;
+
+        type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+            KeyTypeId,
+            pallet_babe::AuthorityId,
+        )>>::IdentificationTuple;
+
+        type HandleEquivocation = pallet_babe::EquivocationHandler<
+            Self::KeyOwnerIdentification,
+            Offences,
+            ReportLongevity,
+        >;
+
+        type WeightInfo = ();
     }
 
     impl pallet_grandpa::Config for Runtime {
@@ -588,7 +624,7 @@ mod standalone_impl {
         )>>::IdentificationTuple;
 
         type HandleEquivocation =
-            pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, (), ReportLongevity>; // Offences
+            pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, (), ReportLongevity>;
 
         type WeightInfo = ();
     }
@@ -598,7 +634,7 @@ mod standalone_impl {
     }
 
     impl pallet_authorship::Config for Runtime {
-        type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+        type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
         type UncleGenerations = UncleGenerations;
         type FilterUncle = ();
         type EventHandler = (Staking, ()); // ImOnline
@@ -606,16 +642,14 @@ mod standalone_impl {
 
     parameter_types! {
         pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
-        pub const Period: BlockNumber = DAYS;
-        pub const Offset: BlockNumber = 0;
     }
 
     impl pallet_session::Config for Runtime {
         type Event = Event;
         type ValidatorId = <Self as frame_system::Config>::AccountId;
         type ValidatorIdOf = pallet_staking::StashOf<Self>;
-        type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-        type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+        type ShouldEndSession = Babe;
+        type NextSessionRotation = Babe;
         type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
         type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
         type Keys = SessionKeys;
@@ -734,6 +768,10 @@ mod parachain_impl {
     }
 
     impl parachain_info::Config for Runtime {}
+
+    impl pallet_aura::Config for Runtime {
+        type AuthorityId = AuraId;
+    }
 
     impl cumulus_pallet_aura_ext::Config for Runtime {}
 
@@ -915,9 +953,6 @@ macro_rules! construct_joystream_runtime {
                 // Dev
 				Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 55,
 
-                // Block authoring logic
-                Aura: pallet_aura::{Pallet, Config<T>} = 56,
-
 				$($Pallets)*
 			}
 		}
@@ -935,6 +970,9 @@ construct_joystream_runtime! {
     Historical: pallet_session_historical::{Pallet} = 63,
     AuthorityDiscovery: pallet_authority_discovery::{Pallet, Call, Config} = 64,
     ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>} = 65,
+
+    // Block authoring logic
+    Babe: pallet_babe::{Pallet, Call, Storage, Config, ValidateUnsigned} = 66,
 }
 
 #[cfg(not(feature = "standalone"))]
@@ -946,7 +984,10 @@ construct_joystream_runtime! {
     PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 60,
     XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 61,
     DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 62,
-    AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 63,
+
+    // Block authoring logic
+    Aura: pallet_aura::{Pallet, Config<T>} = 63,
+    AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 64,
 }
 
 /// The address format for describing accounts.

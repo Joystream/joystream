@@ -29,7 +29,7 @@ use joystream_node::chain_spec::{
 };
 
 #[cfg(not(feature = "standalone"))]
-use joystream_node::chain_spec::{Extensions, ParaId};
+use joystream_node::chain_spec::{AuraId, Extensions, ParaId};
 
 use futures_util::TryFutureExt;
 use sc_chain_spec::ChainType;
@@ -234,10 +234,18 @@ fn genesis_constructor(
     initial_content_path: &Option<PathBuf>,
     initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
+    #[cfg(feature = "standalone")]
     let authorities = authority_seeds
         .iter()
         .map(AsRef::as_ref)
         .map(chain_spec::get_authority_keys_from_seed)
+        .collect::<Vec<_>>();
+
+    #[cfg(not(feature = "standalone"))]
+    let authorities = authority_seeds
+        .iter()
+        .map(AsRef::as_ref)
+        .map(chain_spec::get_from_seed::<AuraId>)
         .collect::<Vec<_>>();
 
     let members = initial_members_path
@@ -358,8 +366,12 @@ async fn generate_authority_keys_and_store(
         let keystore = Keystore::open(keystore_path.join(format!("auth-{}", n)), None)
             .map_err(|err| err.to_string())?;
 
-        let (_, _, grandpa, aura, im_online, authority_discovery) =
+        #[cfg(feature = "standalone")]
+        let (_, _, grandpa, babe, im_online, authority_discovery) =
             chain_spec::get_authority_keys_from_seed(seed);
+
+        #[cfg(not(feature = "standalone"))]
+        let aura = chain_spec::get_from_seed::<AuraId>(seed);
 
         let suri = format!("//{}", seed);
 
@@ -369,12 +381,19 @@ async fn generate_authority_keys_and_store(
                 .map_err(|_| format!("Failed to insert key: {}", grandpa))
         };
 
+        #[cfg(not(feature = "standalone"))]
         insert_key(sp_core::crypto::key_types::AURA, aura.as_slice()).await?;
 
+        #[cfg(feature = "standalone")]
+        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice()).await?;
+
+        #[cfg(feature = "standalone")]
         insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice()).await?;
 
+        #[cfg(feature = "standalone")]
         insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice()).await?;
 
+        #[cfg(feature = "standalone")]
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
