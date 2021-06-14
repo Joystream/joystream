@@ -15,12 +15,25 @@ import proposals from '../flows/proposals'
 import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
 import electCouncil from '../flows/council/elect'
+import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
-  const membershipSystemJob = job('membership system', membershipSystem)
-  // All other membership jobs should be executed after membershipSystemJob,
+scenario(async ({ job, env }) => {
+  // Runtime upgrade should always be first job
+  // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
+  const councilJob = job('electing council', electCouncil)
+  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_IMAGE_TAG
+    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+    : undefined
+
+  const membershipSystemJob = job('membership system', membershipSystem).requires(
+    runtimeUpgradeProposalJob || councilJob
+  )
+
+  // All other jobs should be executed after membershipSystemJob,
   // otherwise changing membershipPrice etc. may break them
+
+  // Membership:
   job('creating members', creatingMemberships).after(membershipSystemJob)
   job('updating member profile', updatingMemberProfile).after(membershipSystemJob)
   job('updating member accounts', updatingMemberAccounts).after(membershipSystemJob)
@@ -28,9 +41,10 @@ scenario(async ({ job }) => {
   job('transferring invites', transferringInvites).after(membershipSystemJob)
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
-  const councilJob = job('electing council', electCouncil)
-  const proposalsJob = job('proposals', [proposals, cancellingProposals, vetoProposal]).requires(councilJob)
+  // Proposals:
+  const proposalsJob = job('proposals', [proposals, cancellingProposals, vetoProposal]).requires(membershipSystemJob)
 
+  // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening).after(proposalsJob)
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)

@@ -442,7 +442,7 @@ type ProposalDetailsFields_SignalProposalDetails_Fragment = { __typename: 'Signa
 
 type ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment = {
   __typename: 'RuntimeUpgradeProposalDetails'
-  wasmBytecode: any
+  wasmBytecodeHash: string
 }
 
 type ProposalDetailsFields_FundingRequestProposalDetails_Fragment = {
@@ -545,13 +545,28 @@ type ProposalDetailsFields_SetReferralCutProposalDetails_Fragment = {
   newReferralCut: number
 }
 
-type ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment = { __typename: 'CreateBlogPostProposalDetails' }
+type ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment = {
+  __typename: 'CreateBlogPostProposalDetails'
+  title: string
+  body: string
+}
 
-type ProposalDetailsFields_EditBlogPostProposalDetails_Fragment = { __typename: 'EditBlogPostProposalDetails' }
+type ProposalDetailsFields_EditBlogPostProposalDetails_Fragment = {
+  __typename: 'EditBlogPostProposalDetails'
+  blogPost: string
+  newTitle?: Types.Maybe<string>
+  newBody?: Types.Maybe<string>
+}
 
-type ProposalDetailsFields_LockBlogPostProposalDetails_Fragment = { __typename: 'LockBlogPostProposalDetails' }
+type ProposalDetailsFields_LockBlogPostProposalDetails_Fragment = {
+  __typename: 'LockBlogPostProposalDetails'
+  blogPost: string
+}
 
-type ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment = { __typename: 'UnlockBlogPostProposalDetails' }
+type ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment = {
+  __typename: 'UnlockBlogPostProposalDetails'
+  blogPost: string
+}
 
 type ProposalDetailsFields_VetoProposalDetails_Fragment = {
   __typename: 'VetoProposalDetails'
@@ -635,6 +650,7 @@ export type ProposalFieldsFragment = {
     | ProposalStatusFields_ProposalStatusExpired_Fragment
     | ProposalStatusFields_ProposalStatusCancelled_Fragment
     | ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment
+  createdInEvent: { id: string; inBlock: number; inExtrinsic?: Types.Maybe<string> }
 }
 
 export type GetProposalsByIdsQueryVariables = Types.Exact<{
@@ -1578,7 +1594,7 @@ export const ProposalDetailsFields = gql`
       text
     }
     ... on RuntimeUpgradeProposalDetails {
-      wasmBytecode
+      wasmBytecodeHash
     }
     ... on FundingRequestProposalDetails {
       destinationsList {
@@ -1668,6 +1684,24 @@ export const ProposalDetailsFields = gql`
     }
     ... on SetReferralCutProposalDetails {
       newReferralCut
+    }
+    ... on SetReferralCutProposalDetails {
+      newReferralCut
+    }
+    ... on CreateBlogPostProposalDetails {
+      title
+      body
+    }
+    ... on EditBlogPostProposalDetails {
+      blogPost
+      newTitle
+      newBody
+    }
+    ... on LockBlogPostProposalDetails {
+      blogPost
+    }
+    ... on UnlockBlogPostProposalDetails {
+      blogPost
     }
     ... on VetoProposalDetails {
       proposal {
@@ -1793,6 +1827,11 @@ export const ProposalFields = gql`
     }
     statusSetAtBlock
     statusSetAtTime
+    createdInEvent {
+      id
+      inBlock
+      inExtrinsic
+    }
   }
   ${ProposalDetailsFields}
   ${ProposalStatusFields}

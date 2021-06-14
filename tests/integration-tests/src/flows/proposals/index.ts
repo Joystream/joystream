@@ -11,14 +11,6 @@ import {
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
 import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals/AllProposalsOutcomesFixture'
 
-//   // TODO:
-//   // RuntimeUpgradeProposal
-//   // TODO: Blog-related proposals:
-//   // CreateBlogPost
-//   // EditBlogPostProposal
-//   // LockBlogPostProposal
-//   // UnlockBlogPostProposal
-
 export default async function creatingProposals({ api, query }: FlowProps): Promise<void> {
   const debug = Debugger('flow:creating-proposals')
   debug('Started')
@@ -28,7 +20,7 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
   const createLeadOpeningsFixture = new CreateOpeningsFixture(
     api,
     query,
-    'storageWorkingGroup',
+    'membershipWorkingGroup',
     [DEFAULT_OPENING_PARAMS, DEFAULT_OPENING_PARAMS],
     true
   )
@@ -45,7 +37,7 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
   ])
   await new FixtureRunner(addStakingAccountsFixture).run()
 
-  const applyOnOpeningFixture = new ApplyOnOpeningsHappyCaseFixture(api, query, 'storageWorkingGroup', [
+  const applyOnOpeningFixture = new ApplyOnOpeningsHappyCaseFixture(api, query, 'membershipWorkingGroup', [
     {
       openingId: openingToFillId,
       applicants: [
@@ -67,17 +59,22 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
   const accountsToFund = (await api.createKeyPairs(5)).map((key) => key.address)
   const proposalsToTest: TestedProposal[] = [
     { details: { AmendConstitution: 'New constitution' } },
-    { details: { FundingRequest: accountsToFund.map((a, i) => ({ account: a, amount: (i + 1) * 1000 })) } },
+    {
+      details: { FundingRequest: accountsToFund.map((a, i) => ({ account: a, amount: (i + 1) * 1000 })) },
+      expectExecutionFailure: true, // InsufficientFunds
+    },
     { details: { Signal: 'Text' } },
     { details: { SetCouncilBudgetIncrement: 1_000_000 } },
     { details: { SetCouncilorReward: 100 } },
     { details: { SetInitialInvitationBalance: 10 } },
     { details: { SetInitialInvitationCount: 5 } },
     { details: { SetMaxValidatorCount: 100 } },
-    { details: { SetMembershipLeadInvitationQuota: 50 } },
     { details: { SetMembershipPrice: 500 } },
     { details: { SetReferralCut: 25 } },
-    { details: { UpdateWorkingGroupBudget: [10_000_000, 'Content', 'Negative'] }, expectExecutionFailure: true },
+    {
+      details: { UpdateWorkingGroupBudget: [10_000_000, 'Content', 'Negative'] },
+      expectExecutionFailure: true, // InsufficientFunds
+    },
     {
       details: {
         CreateWorkingGroupLeadOpening: {
@@ -87,38 +84,46 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
             leaving_unstaking_period: DEFAULT_OPENING_PARAMS.unstakingPeriod,
             stake_amount: DEFAULT_OPENING_PARAMS.stake,
           },
-          working_group: 'Storage',
+          working_group: 'Membership',
         },
       },
     },
-    { details: { CancelWorkingGroupLeadOpening: [openingToCancelId, 'Storage'] } },
+    { details: { CancelWorkingGroupLeadOpening: [openingToCancelId, 'Membership'] } },
     {
       details: {
         FillWorkingGroupLeadOpening: {
           opening_id: openingToFillId,
           successful_application_id: applicationId,
-          working_group: 'Storage',
+          working_group: 'Membership',
         },
       },
     },
+    { details: { CreateBlogPost: ['Blog title', 'Blog text'] } },
+    // Blogs not supported yet, so we currently use invalid id and expect failure
+    { details: { EditBlogPost: [999, 'New title', 'New text'] }, expectExecutionFailure: true },
+    { details: { LockBlogPost: 999 }, expectExecutionFailure: true },
+    { details: { UnlockBlogPost: 999 }, expectExecutionFailure: true },
   ]
 
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, proposalsToTest)
   await new FixtureRunner(testAllOutcomesFixture).run()
 
-  // The storage lead should be hired at this point, so we can test lead-related proposals
+  // The membership lead should be hired at this point, so we can test lead-related proposals
 
-  const leadId = (await api.query.storageWorkingGroup.currentLead()).unwrap()
+  const leadId = (await api.query.membershipWorkingGroup.currentLead()).unwrap()
   const leadProposalsToTest: TestedProposal[] = [
-    { details: { DecreaseWorkingGroupLeadStake: [leadId, 100, 'Storage'] } },
-    { details: { SetWorkingGroupLeadReward: [leadId, 50, 'Storage'] } },
-    { details: { SlashWorkingGroupLead: [leadId, 100, 'Storage'] } },
+    { details: { SetMembershipLeadInvitationQuota: 50 } },
+    { details: { DecreaseWorkingGroupLeadStake: [leadId, 100, 'Membership'] } },
+    { details: { SetWorkingGroupLeadReward: [leadId, 50, 'Membership'] } },
+    { details: { SlashWorkingGroupLead: [leadId, 100, 'Membership'] } },
   ]
   const leadProposalsOutcomesFixture = new AllProposalsOutcomesFixture(api, query, leadProposalsToTest)
   await new FixtureRunner(leadProposalsOutcomesFixture).run()
 
   const terminateLeadProposalOutcomesFixture = new AllProposalsOutcomesFixture(api, query, [
-    { details: { TerminateWorkingGroupLead: { worker_id: leadId, working_group: 'Storage', slashing_amount: 100 } } },
+    {
+      details: { TerminateWorkingGroupLead: { worker_id: leadId, working_group: 'Membership', slashing_amount: 100 } },
+    },
   ])
   await new FixtureRunner(terminateLeadProposalOutcomesFixture).run()
 

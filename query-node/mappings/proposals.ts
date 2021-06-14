@@ -55,10 +55,12 @@ import {
   ProposalVotedEvent,
   ProposalVoteKind,
   ProposalCancelledEvent,
+  ProposalCreatedEvent,
 } from 'query-node/dist/model'
 import { bytesToString, genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
 import { ProposalsEngine, ProposalsCodex } from './generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
+import { blake2AsHex } from '@polkadot/util-crypto'
 
 // FIXME: https://github.com/Joystream/joystream/issues/2457
 type ProposalsMappingsMemoryCache = {
@@ -95,7 +97,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isRuntimeUpgrade) {
     const details = new RuntimeUpgradeProposalDetails()
     const specificDetails = proposalDetails.asRuntimeUpgrade
-    details.wasmBytecode = Buffer.from(specificDetails.toU8a(true))
+    details.wasmBytecodeHash = blake2AsHex(Buffer.from(specificDetails.toU8a(true)))
     return details
   }
   // FundingRequestProposalDetails:
@@ -263,25 +265,34 @@ async function parseProposalDetails(
   else if (proposalDetails.isCreateBlogPost) {
     const details = new CreateBlogPostProposalDetails()
     const specificDetails = proposalDetails.asCreateBlogPost
-    // TODO:
+    const [title, body] = specificDetails
+    details.title = perpareString(title.toString())
+    details.body = perpareString(body.toString())
+    return details
   }
   // EditBlogPostProposalDetails:
   else if (proposalDetails.isEditBlogPost) {
     const details = new EditBlogPostProposalDetails()
     const specificDetails = proposalDetails.asEditBlogPost
-    // TODO:
+    const [postId, optTitle, optBody] = specificDetails
+    details.blogPost = postId.toString()
+    details.newTitle = optTitle.isSome ? perpareString(optTitle.unwrap().toString()) : undefined
+    details.newBody = optBody.isSome ? perpareString(optBody.unwrap().toString()) : undefined
+    return details
   }
   // LockBlogPostProposalDetails:
   else if (proposalDetails.isLockBlogPost) {
     const details = new LockBlogPostProposalDetails()
-    const specificDetails = proposalDetails.asLockBlogPost
-    // TODO:
+    const postId = proposalDetails.asLockBlogPost
+    details.blogPost = postId.toString()
+    return details
   }
   // UnlockBlogPostProposalDetails:
   else if (proposalDetails.isUnlockBlogPost) {
     const details = new UnlockBlogPostProposalDetails()
-    const specificDetails = proposalDetails.asUnlockBlogPost
-    // TODO:
+    const postId = proposalDetails.asUnlockBlogPost
+    details.blogPost = postId.toString()
+    return details
   }
   // VetoProposalDetails:
   else if (proposalDetails.isVetoProposal) {
@@ -289,9 +300,9 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asVetoProposal
     details.proposalId = specificDetails.toString()
     return details
+  } else {
+    throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
   }
-
-  throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
 }
 
 export async function proposalsEngine_ProposalCreated({ event }: EventContext & StoreContext): Promise<void> {
@@ -326,6 +337,12 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     statusSetAtTime: eventTime,
   })
   await store.save<Proposal>(proposal)
+
+  const proposalCreatedEvent = new ProposalCreatedEvent({
+    ...genericEventFields(event),
+    proposal: proposal,
+  })
+  await store.save<ProposalCreatedEvent>(proposalCreatedEvent)
 }
 
 export async function proposalsEngine_ProposalStatusUpdated({

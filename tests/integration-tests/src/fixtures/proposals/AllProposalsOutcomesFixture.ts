@@ -62,7 +62,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
     let batch: ProposalTestCase[]
     let n = 0
     while ((batch = testCases.slice(n * proposalsPerBatch, (n + 1) * proposalsPerBatch)).length) {
-      await api.untilProposalsCanBeCreated(proposalsPerBatch)
+      await api.untilProposalsCanBeCreated(batch.length)
       const createProposalsParams: ProposalCreationParams[] = batch.map(({ type, details, decisionStatus }, i) => ({
         asMember: memberIds[i],
         title: `${_.startCase(type)}`,
