@@ -187,6 +187,8 @@ decl_error! {
         InsufficientBalanceForSettling,
         NoServiceProviderFallbackAccount,
         ChannelNotOperational,
+        ChannelRefundNotStarted,
+        RefundDelayOnGoing,
     }
 }
 
@@ -409,6 +411,30 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
         service_channel.state = ServiceChannelState::RefundInitiated(system::Module::<T>::block_number());
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
+    }
+
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn complete_refund_channel(origin, channel_id: T::ServiceChannelId) {
+        let service_channel = Self::ensure_gateway_caller(origin, channel_id)?;
+        let refund_start = if let ServiceChannelState::RefundInitiated(refund_start) = service_channel.state {
+          refund_start
+        } else {
+          return Err(Error::<T>::ChannelRefundNotStarted.into());
+        };
+        ensure!(
+            system::Module::<T>::block_number() - refund_start >= service_channel.refund_delay_period,
+            Error::<T>::RefundDelayOnGoing
+        );
+
+        Self::settle_channel_balance(
+            None,
+            &service_channel.gateway_worker_fallback_account,
+            channel_id,
+            Zero::zero(),
+            Zero::zero(),
+            service_channel.locked_balance,
+        )?;
+        <ServiceChannelById<T>>::remove(channel_id);
     }
 }}
 impl<T: Trait> Module<T> {
