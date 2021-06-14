@@ -5,34 +5,36 @@
   hosts: all
 
   tasks:
-    - name: Get code from git repo
-      include_role:
-        name: common
-        tasks_from: get-code-git
+    - block:
+      - name: Get code from git repo
+        include_role:
+          name: common
+          tasks_from: get-code-git
 
-    - name: Run setup and build
-      include_role:
-        name: common
-        tasks_from: run-setup-build
+      - name: Run setup and build
+        include_role:
+          name: common
+          tasks_from: run-setup-build
 
-    - name: Basic AMI Creation
-      amazon.aws.ec2_ami:
-        instance_id: "{{ instance_id }}"
-        wait: yes
-        name: "{{ ami_name }}"
-        launch_permissions:
-          group_names: ['all']
-        tags:
-          Name: "{{ ami_name }}"
-      register: ami_data
-      delegate_to: localhost
+      - name: Basic AMI Creation
+        amazon.aws.ec2_ami:
+          instance_id: "{{ instance_id }}"
+          wait: yes
+          name: "{{ ami_name }}"
+          launch_permissions:
+            group_names: ['all']
+          tags:
+            Name: "{{ ami_name }}"
+        register: ami_data
+        delegate_to: localhost
 
-    - name: Delete the stack
-      amazon.aws.cloudformation:
-        stack_name: "{{ stack_name }}"
-        state: "absent"
-      delegate_to: localhost
+      - name: Print AMI ID
+        debug:
+          msg: "AMI ID is: {{ ami_data.image_id }}"
 
-    - name: Print AMI ID
-      debug:
-        msg: "AMI ID is: {{ ami_data.image_id }}"
+      always:
+      - name: Delete the stack
+        amazon.aws.cloudformation:
+          stack_name: "{{ stack_name }}"
+          state: "absent"
+        delegate_to: localhost
