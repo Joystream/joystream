@@ -2,6 +2,6 @@
 
 mod channels;
 mod curators;
-mod merkle;
+//mod merkle;
 mod mock;
 mod videos;

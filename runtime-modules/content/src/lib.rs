@@ -11,7 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::hash::Hash;
+use core::{fmt::Debug, hash::Hash};
 
 use sp_core::Hasher;
 
@@ -29,6 +29,9 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
+
+pub const MAX_ALLOWED_AMOUNT: u128 = 1_000_000;
+pub const MIN_CASHOUT_AMOUNT: u128 = 1_000;
 
 pub use common::storage::{
     ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
@@ -250,6 +253,9 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as frame_system::Trait>::AccountId,
 >;
 
+// hash value type used for payment validation
+pub type HashValue<T> = <T as frame_system::Trait>::Hash;
+
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -463,6 +469,21 @@ pub struct Person<MemberId> {
     controlled_by: PersonController<MemberId>,
 }
 
+/// Payment claim by a channel
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PullPaymentElementRecord<ChannelId, Balance, HashType> {
+    channel_id: ChannelId,
+    amount_due: Balance,
+    reason: HashType,
+}
+
+pub type PullPaymentElement<T> = PullPaymentElementRecord<
+    <T as StorageOwnership>::ChannelId,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
+
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -503,7 +524,7 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub Root get(fn root): <T as frame_system::Trait>::Hash;
+        pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
     }
 }
 
@@ -1270,26 +1291,16 @@ decl_module! {
             Self::not_implemented()?;
         }
 
-        #[weight = 10_000_000]
-        pub fn update_root(
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_commitment(
             _origin,
-            new_root: <T as frame_system::Trait>::Hash,
-            ) {
-            // validation?
-            let old_root = <Root<T>>::get();
-            if old_root == new_root { return Ok(()) }
-            <Root<T>>::put(new_root);
-            Self::deposit_event(RawEvent::RootUpdated(new_root));
-        }
-        #[weight = 10_000_000]
-        pub fn temporary_fix(_origin) {
-            // this is a temporary fix in order to silence the #dead_code warning
-            // from the compiler
-            let value:Option<u64> = None;
-            let collection = [];
-            let idx: usize = 100;
-            // should panic!
-            let _out = Self::verify_proof(&collection, &value, idx);
+            new_commitment: <T as frame_system::Trait>::Hash,
+        ) {
+            // validation of _origin?
+            let old_commitment = <Commitment<T>>::get();
+            if old_commitment == new_commitment { return Ok(()) }
+            <Commitment<T>>::put(new_commitment);
+            Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
         }
     }
 }
@@ -1393,13 +1404,14 @@ impl<T: Trait> Module<T> {
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
+
     fn verify_proof<E: Encode>(
         path: &[<T as frame_system::Trait>::Hash],
         value: &E,
-        i: usize,
+        i: u64,
     ) -> Result<bool, &'static str> {
         let exp = path.len();
-        if i > 2usize.checked_pow(exp as u32).ok_or("index overflow")? {
+        if i > 2u64.checked_pow(exp as u32).ok_or("index overflow")? {
             Err("index out of range or Merkle path insufficient for validation")
         } else {
             let mut idx = i.checked_add(1).ok_or("index overflow")?;
@@ -1409,11 +1421,9 @@ impl<T: Trait> Module<T> {
                     1 => <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h_el].encode()),
                     _ => <T as frame_system::Trait>::Hashing::hash(&[*h_el, hash_value].encode()),
                 };
-                idx = (idx >> 1)
-                    .checked_add(idx.wrapping_rem(2))
-                    .ok_or("index overflow")?;
+                idx = (idx >> 1).checked_add(idx % 2).ok_or("index overflow")?;
             }
-            let root = <Root<T>>::get();
+            let root = <Commitment<T>>::get();
             let ans = root == hash_value;
             Ok(ans)
         }
@@ -1460,7 +1470,8 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
-        HashOutput = <T as frame_system::Trait>::Hash,
+        HashValue = <T as frame_system::Trait>::Hash,
+        Balance = BalanceOf<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1580,6 +1591,9 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
-        RootUpdated(HashOutput),
+
+        // Rewards
+        CommitmentUpdated(HashValue),
+        ChannelRewardUpdated(Balance, ChannelId),
     }
 );

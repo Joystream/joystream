@@ -48,6 +48,7 @@ pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
 
 pub const PULL_PAYMENTS_COLLECTION: [i32; 5] = [1, 2, 3, 4, 5];
+pub const PULL_PAYMENTS_COLLECTION_EMPTY: [i32; 0] = [];
 pub const VALUE_BELONGING_TO_COLLECTION: i32 = 3;
 pub const VALUE_NOT_BELONGING_TO_COLLECTION: i32 = 30;
 

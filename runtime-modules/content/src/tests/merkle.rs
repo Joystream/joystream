@@ -123,6 +123,16 @@ fn elements_doesnt_belong_to_collection() {
     });
 }
 #[test]
+fn no_elements_should_belong_to_empty_collection() {
+    with_default_mock_builder(|| {
+        if let Err(_) = generate_merkle_root(&PULL_PAYMENTS_COLLECTION_EMPTY) {
+            assert!(true); // NON membership proof for empty collection should be true
+        } else {
+            assert!(false);
+        }
+    });
+}
+#[test]
 fn merkle_root_update() {
     with_default_mock_builder(|| {
         let mut root = TestHashing::hash(&PULL_PAYMENTS_COLLECTION.encode());
