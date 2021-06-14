@@ -16,6 +16,7 @@ use sp_runtime::{traits::AccountIdConversion, DispatchError};
 use sp_std::fmt::Debug;
 use sp_std::fmt::Display;
 use sp_std::prelude::Vec;
+use system::ensure_signed;
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -179,7 +180,7 @@ pub trait Trait:
 
 decl_error! {
     pub enum Error for Module<T: Trait> {
-        InsufficientBalanceForChannel,
+        InsufficientBalance,
         ChannelNotExists,
         ServiceChannelNotForProvider,
         ServiceChannelAlreadyConfirmed,
@@ -305,7 +306,7 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         GatewayWorkingGroup::<T>::ensure_worker_exists(&gateway_worker_id)?;
         ensure!(
           <T as Trait>::Currency::free_balance(&account_id) >= locked_balance,
-          Error::<T>::InsufficientBalanceForChannel
+          Error::<T>::InsufficientBalance
         );
 
         let channel_id = Self::get_next_channel_id();
@@ -435,6 +436,22 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             service_channel.locked_balance,
         )?;
         <ServiceChannelById<T>>::remove(channel_id);
+    }
+
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn increase_channel_capital(origin, channel_id: T::ServiceChannelId, increased_amount: BalanceOf<T>) {
+        let account_id = ensure_signed(origin.clone())?;
+        let _ = Self::ensure_gateway_caller(origin, channel_id)?;
+        ensure!(
+            <T as Trait>::Currency::free_balance(&account_id) >= increased_amount,
+            Error::<T>::InsufficientBalance
+        );
+
+        Self::reserve_channel_balance(
+            &account_id,
+            channel_id,
+            increased_amount,
+        )?;
     }
 }}
 impl<T: Trait> Module<T> {
