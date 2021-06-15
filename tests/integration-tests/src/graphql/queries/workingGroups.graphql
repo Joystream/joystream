@@ -71,6 +71,11 @@ fragment WorkerFields on Worker {
   stakeAccount
   status {
     __typename
+    ... on WorkerStatusLeaving {
+      workerStartedLeavingEvent {
+        id
+      }
+    }
     ... on WorkerStatusLeft {
       workerStartedLeavingEvent {
         id

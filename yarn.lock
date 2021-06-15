@@ -7568,9 +7568,9 @@ aws-credstash@^3.0.0:
     debug "^4.3.1"
 
 aws-sdk@^2.567.0:
-  version "2.923.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.923.0.tgz#97a95686e9dba10f628092bfd90f84397c8ad55f"
-  integrity sha512-93YK9Mx32qvH5eLrDRVkvwpEc7GJ6mces1qQugmNZCuQT68baILyDs0IMRtHS6NYxxiM6XNRFc7ubgMlnafYjg==
+  version "2.926.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.926.0.tgz#96f40b3e8400957becc5b8446e2322c0ff0e8a85"
+  integrity sha512-GFdAznnwxBxRPUTLP8gyFG8GhbUQ0sWwNCocYHkS/FB18hr8gmB3xv2m7VVWA/YkPDXvviPnoB680Z47VSEkqA==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
