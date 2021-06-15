@@ -2,6 +2,8 @@
 
 set -e
 
+source common.sh
+
 if [ -z "$1" ]; then
   echo "ERROR: Configuration file not passed"
   echo "Please use ./deploy-infra.sh PATH/TO/CONFIG to run this script"
@@ -32,8 +34,7 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
     EC2InstanceType=$DEFAULT_EC2_INSTANCE_TYPE \
-    KeyName=$AWS_KEY_PAIR_NAME \
-    EC2AMI=$EC2_AMI_ID
+    KeyName=$AWS_KEY_PAIR_NAME
 
 # If the deploy succeeded, get the IP and configure the created instance
 if [ $? -eq 0 ]; then

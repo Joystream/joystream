@@ -7,17 +7,11 @@ Parameters:
   EC2AMI:
     Type: String
     Default: 'ami-09e67e426f25ce0d7'
-  DefaultAMI:
-    Type: String
-    Default: 'ami-09e67e426f25ce0d7'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-
-Conditions:
-  HasAMIId: !Not [!Equals [!Ref EC2AMI, ""]]
 
 Resources:
   SecurityGroup:
@@ -46,7 +40,7 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
       LaunchTemplateData:
-        ImageId: !If [HasAMIId, !Ref EC2AMI, !Ref DefaultAMI]
+        ImageId: !Ref EC2AMI
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
