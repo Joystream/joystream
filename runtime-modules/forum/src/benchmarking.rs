@@ -591,7 +591,7 @@ benchmarks! {
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
         assert_last_event::<T>(
-            RawEvent::CategoryUpdated(
+            RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
                 new_archival_status,
                 PrivilegedActor::Lead
@@ -636,9 +636,191 @@ benchmarks! {
 
         assert_eq!(Module::<T>::category_by_id(category_id), new_category);
         assert_last_event::<T>(
-            RawEvent::CategoryUpdated(
+            RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
                 new_archival_status,
+                PrivilegedActor::Moderator(moderator_id)
+            ).into()
+        );
+    }
+
+    update_category_title_lead{
+        let lead_id = 0;
+
+        let caller_id =
+            insert_a_leader::<T>(lead_id);
+
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+
+        let j in 0 .. MAX_BYTES - 1;
+
+        let new_title = vec![0u8].repeat(j as usize);
+
+        // Generate categories tree
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+
+
+    }: update_category_title(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, new_title.clone())
+    verify {
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let new_title_hash = T::calculate_hash(new_title.as_slice());
+
+        let new_category = Category {
+            title_hash: new_title_hash,
+            description_hash: T::calculate_hash(text.as_slice()),
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators: 0,
+            parent_category_id,
+            sticky_thread_ids: vec![],
+        };
+
+        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert_last_event::<T>(
+            RawEvent::CategoryTitleUpdated(
+                category_id,
+                new_title_hash,
+                PrivilegedActor::Lead
+            ).into()
+        );
+    }
+
+    update_category_title_moderator{
+        let moderator_id = 0;
+
+        let caller_id =
+            insert_a_leader::<T>(moderator_id);
+
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+
+
+        let j in 0 .. MAX_BYTES - 1;
+
+        let new_title = vec![0u8].repeat(j as usize);
+
+        // Generate categories tree
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+
+        let moderator_id = ModeratorId::<T>::from(moderator_id.try_into().unwrap());
+
+        // Set up category membership of moderator.
+        Module::<T>::update_category_membership_of_moderator(
+            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
+        ).unwrap();
+
+    }: update_category_title(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_title.clone())
+    verify {
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let new_title_hash = T::calculate_hash(new_title.as_slice());
+
+        let new_category = Category {
+            title_hash: new_title_hash,
+            description_hash: T::calculate_hash(text.as_slice()),
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators: 1,
+            parent_category_id,
+            sticky_thread_ids: vec![],
+        };
+
+        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert_last_event::<T>(
+            RawEvent::CategoryTitleUpdated(
+                category_id,
+                new_title_hash,
+                PrivilegedActor::Moderator(moderator_id)
+            ).into()
+        );
+    }
+
+    update_category_description_lead{
+        let lead_id = 0;
+
+        let caller_id =
+            insert_a_leader::<T>(lead_id);
+
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+
+        let j in 0 .. MAX_BYTES - 1;
+
+        let new_description = vec![0u8].repeat(j as usize);
+
+        // Generate categories tree
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+
+
+    }: update_category_description(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, new_description.clone())
+    verify {
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let new_description_hash = T::calculate_hash(new_description.as_slice());
+
+        let new_category = Category {
+            title_hash: T::calculate_hash(text.as_slice()),
+            description_hash: new_description_hash,
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators: 0,
+            parent_category_id,
+            sticky_thread_ids: vec![],
+        };
+
+        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert_last_event::<T>(
+            RawEvent::CategoryDescriptionUpdated(
+                category_id,
+                new_description_hash,
+                PrivilegedActor::Lead
+            ).into()
+        );
+    }
+
+    update_category_description_moderator{
+        let moderator_id = 0;
+
+        let caller_id =
+            insert_a_leader::<T>(moderator_id);
+
+        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+
+
+        let j in 0 .. MAX_BYTES - 1;
+
+        let new_description = vec![0u8].repeat(j as usize);
+
+        // Generate categories tree
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+
+        let moderator_id = ModeratorId::<T>::from(moderator_id.try_into().unwrap());
+
+        // Set up category membership of moderator.
+        Module::<T>::update_category_membership_of_moderator(
+            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
+        ).unwrap();
+
+    }: update_category_description(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_description.clone())
+    verify {
+        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let new_description_hash = T::calculate_hash(new_description.as_slice());
+
+        let new_category = Category {
+            title_hash: T::calculate_hash(text.as_slice()),
+            description_hash: new_description_hash,
+            archived: false,
+            num_direct_subcategories: 0,
+            num_direct_threads: 0,
+            num_direct_moderators: 1,
+            parent_category_id,
+            sticky_thread_ids: vec![],
+        };
+
+        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert_last_event::<T>(
+            RawEvent::CategoryDescriptionUpdated(
+                category_id,
+                new_description_hash,
                 PrivilegedActor::Moderator(moderator_id)
             ).into()
         );
@@ -1830,6 +2012,36 @@ mod tests {
     fn test_set_stickied_threads_lead() {
         with_test_externalities(|| {
             assert_ok!(test_benchmark_set_stickied_threads_lead::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_update_category_title_lead() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_category_title_lead::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_update_category_title_moderator() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_category_title_moderator::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_update_category_description_lead() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_category_description_lead::<Runtime>());
+        });
+    }
+
+    #[test]
+    fn test_update_category_description_moderator() {
+        with_test_externalities(|| {
+            assert_ok!(test_benchmark_update_category_description_moderator::<
+                Runtime,
+            >());
         });
     }
 
