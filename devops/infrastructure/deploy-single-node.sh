@@ -40,7 +40,7 @@ if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  SERVER_IP=$(get_aws_export "PublicIp")
+  SERVER_IP=$(get_aws_export $SINGLE_NODE_STACK_NAME "PublicIp")
 
   echo -e "New Node Public IP: $SERVER_IP"
 
