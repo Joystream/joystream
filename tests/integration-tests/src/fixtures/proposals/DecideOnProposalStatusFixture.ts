@@ -98,7 +98,7 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     if (params.status === 'Approved') {
       if (proposal.parameters.constitutionality.toNumber() > proposal.nrOfCouncilConfirmations.toNumber() + 1) {
         return 'ProposalStatusDormant'
-      } else if (proposal.parameters.gracePeriod.toNumber()) {
+      } else if (proposal.parameters.gracePeriod.toNumber() || proposal.exactExecutionBlock.isSome) {
         return 'ProposalStatusGracing'
       } else {
         return params.expectExecutionFailure ? 'ProposalStatusExecutionFailed' : 'ProposalStatusExecuted'
@@ -141,6 +141,24 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
     })
   }
 
+  protected assertProposalExecutedAsExpected(qProposal: ProposalFieldsFragment, i: number): void {
+    const params = this.params[i]
+    const proposal = this.proposals[i]
+
+    assert.equal(
+      qProposal.status.__typename,
+      params.expectExecutionFailure ? 'ProposalStatusExecutionFailed' : 'ProposalStatusExecuted'
+    )
+    if (proposal.exactExecutionBlock.isSome) {
+      assert.equal(qProposal.statusSetAtBlock, proposal.exactExecutionBlock.unwrap().toNumber())
+    } else if (proposal.parameters.gracePeriod.toNumber()) {
+      const gracePriodStartedAt = qProposal.proposalStatusUpdates.find(
+        (u) => u.newStatus.__typename === 'ProposalStatusGracing'
+      )?.inBlock
+      assert.equal(qProposal.statusSetAtBlock, (gracePriodStartedAt || 0) + proposal.parameters.gracePeriod.toNumber())
+    }
+  }
+
   public async execute(): Promise<void> {
     const { api, query } = this
     this.proposals = await this.api.query.proposalsEngine.proposals.multi<Proposal>(
@@ -176,14 +194,13 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       this.proposals.map(async (proposal, i) => {
         let qProposal = qProposals[i]
         if (this.getExpectedProposalStatus(i) === 'ProposalStatusGracing') {
-          await this.api.untilBlock(qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber())
+          const proposalExecutionBlock = proposal.exactExecutionBlock.isSome
+            ? proposal.exactExecutionBlock.unwrap().toNumber()
+            : qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber()
+          await this.api.untilBlock(proposalExecutionBlock)
           ;[qProposal] = await this.query.tryQueryWithTimeout(
             () => this.query.getProposalsByIds([this.params[i].proposalId]),
-            ([p]) =>
-              assert.equal(
-                p.status.__typename,
-                this.params[i].expectExecutionFailure ? 'ProposalStatusExecutionFailed' : 'ProposalStatusExecuted'
-              )
+            ([p]) => this.assertProposalExecutedAsExpected(p, i)
           )
           await this.postExecutionChecks(qProposal)
         }

@@ -1,17 +1,24 @@
 import { FlowProps } from '../../Flow'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
-import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals/AllProposalsOutcomesFixture'
 import { Utils } from '../../utils'
 import fs from 'fs'
-import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
+import {
+  CreateProposalsFixture,
+  DecideOnProposalStatusFixture,
+  AllProposalsOutcomesFixture,
+  TestedProposal,
+} from '../../fixtures/proposals'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { assert } from 'chai'
+import { Resource } from '../../Resources'
 
-export default async function runtimeUpgradeProposal({ api, query, env }: FlowProps): Promise<void> {
+export default async function runtimeUpgradeProposal({ api, query, lock, env }: FlowProps): Promise<void> {
   const debug = Debugger('flow:runtime-upgrade-proposal')
   debug('Started')
   api.enableVerboseTxLogs()
+
+  const unlocks = await Promise.all(Array.from({ length: 2 }, () => lock(Resource.Proposals)))
 
   const runtimeUpgradeWasmPath = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
 
@@ -47,7 +54,7 @@ export default async function runtimeUpgradeProposal({ api, query, env }: FlowPr
   const testedProposals: TestedProposal[] = [
     { details: { RuntimeUpgrade: Utils.readRuntimeFromFile(runtimeUpgradeWasmPath) } },
   ]
-  const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, testedProposals)
+  const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, testedProposals)
   await new FixtureRunner(testAllOutcomesFixture).run()
 
   // Check the "CancelledByRuntime" proposal status
@@ -65,6 +72,8 @@ export default async function runtimeUpgradeProposal({ api, query, env }: FlowPr
       )
     }
   )
+
+  unlocks.map((unlock) => unlock())
 
   debug('Done')
 }

@@ -56,11 +56,13 @@ import {
   ProposalVoteKind,
   ProposalCancelledEvent,
   ProposalCreatedEvent,
+  RuntimeWasmBytecode,
 } from 'query-node/dist/model'
 import { bytesToString, genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
 import { ProposalsEngine, ProposalsCodex } from './generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { Bytes } from '@polkadot/types'
 
 // FIXME: https://github.com/Joystream/joystream/issues/2457
 type ProposalsMappingsMemoryCache = {
@@ -77,6 +79,19 @@ async function getProposal(store: DatabaseManager, id: string) {
   }
 
   return proposal
+}
+
+async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: Bytes) {
+  const bytecodeHash = blake2AsHex(bytecode.toU8a(true))
+  let wasmBytecode = await store.get(RuntimeWasmBytecode, { where: { id: bytecodeHash } })
+  if (!wasmBytecode) {
+    wasmBytecode = new RuntimeWasmBytecode({
+      id: bytecodeHash,
+      bytecode: Buffer.from(bytecode.toU8a(true)),
+    })
+    await store.save<RuntimeWasmBytecode>(wasmBytecode)
+  }
+  return wasmBytecode
 }
 
 async function parseProposalDetails(
@@ -96,8 +111,8 @@ async function parseProposalDetails(
   // RuntimeUpgradeProposalDetails:
   else if (proposalDetails.isRuntimeUpgrade) {
     const details = new RuntimeUpgradeProposalDetails()
-    const specificDetails = proposalDetails.asRuntimeUpgrade
-    details.wasmBytecodeHash = blake2AsHex(Buffer.from(specificDetails.toU8a(true)))
+    const runtimeBytecode = proposalDetails.asRuntimeUpgrade
+    details.newRuntimeBytecodeId = (await getOrCreateRuntimeWasmBytecode(store, runtimeBytecode)).id
     return details
   }
   // FundingRequestProposalDetails:
@@ -216,6 +231,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isSetCouncilBudgetIncrement) {
     const details = new SetCouncilBudgetIncrementProposalDetails()
     const specificDetails = proposalDetails.asSetCouncilBudgetIncrement
+    console.log('SetCouncilBudgetIncrement specificDetails.toString():', new BN(specificDetails.toString()).toString())
     details.newAmount = new BN(specificDetails.toString())
     return details
   }

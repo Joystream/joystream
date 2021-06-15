@@ -13,6 +13,7 @@ import { BuyMembershipHappyCaseFixture } from '../membership'
 import { CreateProposalsFixture, ProposalCreationParams } from './CreateProposalsFixture'
 import { ElectCouncilFixture } from '../council/ElectCouncilFixture'
 import _ from 'lodash'
+import { Resource, ResourceLocker } from '../../Resources'
 
 export type TestedProposal = { details: CreateInterface<ProposalDetails>; expectExecutionFailure?: boolean }
 export type ProposalTestCase = {
@@ -25,10 +26,12 @@ export type ProposalTestCase = {
 export class AllProposalsOutcomesFixture extends BaseFixture {
   protected testedProposals: TestedProposal[]
   protected query: QueryNodeApi
+  protected lock: ResourceLocker
 
-  public constructor(api: Api, query: QueryNodeApi, testedProposals: TestedProposal[]) {
+  public constructor(api: Api, query: QueryNodeApi, lock: ResourceLocker, testedProposals: TestedProposal[]) {
     super(api)
     this.query = query
+    this.lock = lock
     this.testedProposals = testedProposals
   }
 
@@ -62,7 +65,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
     let batch: ProposalTestCase[]
     let n = 0
     while ((batch = testCases.slice(n * proposalsPerBatch, (n + 1) * proposalsPerBatch)).length) {
-      await api.untilProposalsCanBeCreated(batch.length)
+      const unlocks = await Promise.all(batch.map(() => this.lock(Resource.Proposals)))
       const createProposalsParams: ProposalCreationParams[] = batch.map(({ type, details, decisionStatus }, i) => ({
         asMember: memberIds[i],
         title: `${_.startCase(type)}`,
@@ -115,6 +118,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
         await new FixtureRunner(approveProposalsFixture).runWithQueryNodeChecks()
         dormantProposals = approveProposalsFixture.getDormantProposalsIds()
       }
+      unlocks.forEach((unlock) => unlock())
       ++n
     }
   }

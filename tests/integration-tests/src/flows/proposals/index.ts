@@ -9,9 +9,9 @@ import {
   DEFAULT_OPENING_PARAMS,
 } from '../../fixtures/workingGroups'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
-import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals/AllProposalsOutcomesFixture'
+import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals'
 
-export default async function creatingProposals({ api, query }: FlowProps): Promise<void> {
+export default async function creatingProposals({ api, query, lock }: FlowProps): Promise<void> {
   const debug = Debugger('flow:creating-proposals')
   debug('Started')
   api.enableDebugTxLogs()
@@ -105,7 +105,7 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
     { details: { UnlockBlogPost: 999 }, expectExecutionFailure: true },
   ]
 
-  const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, proposalsToTest)
+  const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)
   await new FixtureRunner(testAllOutcomesFixture).run()
 
   // The membership lead should be hired at this point, so we can test lead-related proposals
@@ -117,10 +117,10 @@ export default async function creatingProposals({ api, query }: FlowProps): Prom
     { details: { SetWorkingGroupLeadReward: [leadId, 50, 'Membership'] } },
     { details: { SlashWorkingGroupLead: [leadId, 100, 'Membership'] } },
   ]
-  const leadProposalsOutcomesFixture = new AllProposalsOutcomesFixture(api, query, leadProposalsToTest)
+  const leadProposalsOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, leadProposalsToTest)
   await new FixtureRunner(leadProposalsOutcomesFixture).run()
 
-  const terminateLeadProposalOutcomesFixture = new AllProposalsOutcomesFixture(api, query, [
+  const terminateLeadProposalOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, [
     {
       details: { TerminateWorkingGroupLead: { worker_id: leadId, working_group: 'Membership', slashing_amount: 100 } },
     },

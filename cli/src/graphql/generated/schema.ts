@@ -15,6 +15,8 @@ export type Scalars = {
   BigInt: any
   /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSONObject: any
+  /** GraphQL representation of Bytes */
+  Bytes: any
 }
 
 export type AmendConstitutionProposalDetails = {
@@ -9984,6 +9986,9 @@ export type Query = {
   rewardPaidEvents: Array<RewardPaidEvent>
   rewardPaidEventByUniqueInput?: Maybe<RewardPaidEvent>
   rewardPaidEventsConnection: RewardPaidEventConnection
+  runtimeWasmBytecodes: Array<RuntimeWasmBytecode>
+  runtimeWasmBytecodeByUniqueInput?: Maybe<RuntimeWasmBytecode>
+  runtimeWasmBytecodesConnection: RuntimeWasmBytecodeConnection
   stakeDecreasedEvents: Array<StakeDecreasedEvent>
   stakeDecreasedEventByUniqueInput?: Maybe<StakeDecreasedEvent>
   stakeDecreasedEventsConnection: StakeDecreasedEventConnection
@@ -11329,6 +11334,26 @@ export type QueryRewardPaidEventsConnectionArgs = {
   orderBy?: Maybe<Array<RewardPaidEventOrderByInput>>
 }
 
+export type QueryRuntimeWasmBytecodesArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<RuntimeWasmBytecodeWhereInput>
+  orderBy?: Maybe<Array<RuntimeWasmBytecodeOrderByInput>>
+}
+
+export type QueryRuntimeWasmBytecodeByUniqueInputArgs = {
+  where: RuntimeWasmBytecodeWhereUniqueInput
+}
+
+export type QueryRuntimeWasmBytecodesConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<RuntimeWasmBytecodeWhereInput>
+  orderBy?: Maybe<Array<RuntimeWasmBytecodeOrderByInput>>
+}
+
 export type QueryStakeDecreasedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -12168,19 +12193,54 @@ export enum RewardPaymentType {
 }
 
 export type RuntimeUpgradeProposalDetails = {
-  /** Runtime upgrade WASM bytecode hash */
-  wasmBytecodeHash: Scalars['String']
+  /** Runtime upgrade WASM bytecode */
+  newRuntimeBytecode?: Maybe<RuntimeWasmBytecode>
 }
 
-export type RuntimeUpgradeProposalDetailsCreateInput = {
-  wasmBytecodeHash: Scalars['String']
+export type RuntimeWasmBytecode = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  /** The bytecode itself */
+  bytecode: Scalars['Bytes']
 }
 
-export type RuntimeUpgradeProposalDetailsUpdateInput = {
-  wasmBytecodeHash?: Maybe<Scalars['String']>
+export type RuntimeWasmBytecodeConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<RuntimeWasmBytecodeEdge>
+  pageInfo: PageInfo
 }
 
-export type RuntimeUpgradeProposalDetailsWhereInput = {
+export type RuntimeWasmBytecodeCreateInput = {
+  bytecode: Scalars['Bytes']
+}
+
+export type RuntimeWasmBytecodeEdge = {
+  node: RuntimeWasmBytecode
+  cursor: Scalars['String']
+}
+
+export enum RuntimeWasmBytecodeOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  BytecodeAsc = 'bytecode_ASC',
+  BytecodeDesc = 'bytecode_DESC',
+}
+
+export type RuntimeWasmBytecodeUpdateInput = {
+  bytecode?: Maybe<Scalars['Bytes']>
+}
+
+export type RuntimeWasmBytecodeWhereInput = {
   id_eq?: Maybe<Scalars['ID']>
   id_in?: Maybe<Array<Scalars['ID']>>
   createdAt_eq?: Maybe<Scalars['DateTime']>
@@ -12205,16 +12265,13 @@ export type RuntimeUpgradeProposalDetailsWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  wasmBytecodeHash_eq?: Maybe<Scalars['String']>
-  wasmBytecodeHash_contains?: Maybe<Scalars['String']>
-  wasmBytecodeHash_startsWith?: Maybe<Scalars['String']>
-  wasmBytecodeHash_endsWith?: Maybe<Scalars['String']>
-  wasmBytecodeHash_in?: Maybe<Array<Scalars['String']>>
-  AND?: Maybe<Array<RuntimeUpgradeProposalDetailsWhereInput>>
-  OR?: Maybe<Array<RuntimeUpgradeProposalDetailsWhereInput>>
+  bytecode_eq?: Maybe<Scalars['Bytes']>
+  bytecode_in?: Maybe<Array<Scalars['Bytes']>>
+  AND?: Maybe<Array<RuntimeWasmBytecodeWhereInput>>
+  OR?: Maybe<Array<RuntimeWasmBytecodeWhereInput>>
 }
 
-export type RuntimeUpgradeProposalDetailsWhereUniqueInput = {
+export type RuntimeWasmBytecodeWhereUniqueInput = {
   id: Scalars['ID']
 }
 

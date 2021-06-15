@@ -152,9 +152,17 @@ type SignalProposalDetails @variant {
   text: String!
 }
 
+type RuntimeWasmBytecode @entity {
+  "Blake2b hash of the runtime bytecode"
+  id: ID!
+
+  "The bytecode itself"
+  bytecode: Bytes!
+}
+
 type RuntimeUpgradeProposalDetails @variant {
-  "Runtime upgrade WASM bytecode hash"
-  wasmBytecodeHash: String!
+  "Runtime upgrade WASM bytecode"
+  newRuntimeBytecode: RuntimeWasmBytecode!
 }
 
 type FundingRequestDestination @entity {
