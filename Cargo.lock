@@ -3345,6 +3345,7 @@ dependencies = [
  "derive_more 0.15.0",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "futures 0.3.14",
  "hex",
  "hex-literal 0.2.1",
  "joystream-node-runtime",

@@ -1,11 +1,13 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use futures::prelude::*;
 use joystream_node_runtime::{self, RuntimeApi};
 use sc_client_api::{ExecutorProvider, RemoteBackend};
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
+use sc_network::Event;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use std::sync::Arc;
@@ -281,7 +283,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
         let babe_config = sc_consensus_babe::BabeParams {
             keystore: keystore_container.sync_keystore(),
-            client,
+            client: client.clone(),
             select_chain,
             env: proposer,
             block_import,
@@ -310,6 +312,33 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         task_manager
             .spawn_essential_handle()
             .spawn_blocking("babe", babe);
+    }
+
+    // Spawn authority discovery module.
+    if role.is_authority() {
+        let authority_discovery_role =
+            sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
+        let dht_event_stream =
+            network
+                .event_stream("authority-discovery")
+                .filter_map(|e| async move {
+                    match e {
+                        Event::Dht(e) => Some(e),
+                        _ => None,
+                    }
+                });
+        let (authority_discovery_worker, _service) = sc_authority_discovery::new_worker_and_service(
+            client,
+            network.clone(),
+            Box::pin(dht_event_stream),
+            authority_discovery_role,
+            prometheus_registry.clone(),
+        );
+
+        task_manager.spawn_handle().spawn(
+            "authority-discovery-worker",
+            authority_discovery_worker.run(),
+        );
     }
 
     // if the node isn't actively participating in consensus then it doesn't
