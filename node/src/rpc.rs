@@ -133,7 +133,7 @@ where
 
     io.extend_with(sc_consensus_babe_rpc::BabeApi::to_delegate(
         BabeRpcHandler::new(
-            client.clone(),
+            client,
             shared_epoch_changes,
             keystore,
             babe_config,

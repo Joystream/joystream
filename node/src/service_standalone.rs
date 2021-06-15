@@ -31,35 +31,32 @@ type BlockNumber = u32;
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 
-// TODO: Result structure is very complex. Consider factoring parts into `type` definitions.
-// After this TODO will be resolved, remove the suppresion of `type-complexity` warnings in the Makefile.
-pub fn new_partial(
-    config: &Configuration,
-) -> Result<
-    sc_service::PartialComponents<
-        FullClient,
-        FullBackend,
-        FullSelectChain,
-        sp_consensus::DefaultImportQueue<Block, FullClient>,
-        sc_transaction_pool::FullPool<Block, FullClient>,
-        (
-            sc_consensus_babe::BabeBlockImport<
+type PartialComponentsList = sc_service::PartialComponents<
+    FullClient,
+    FullBackend,
+    FullSelectChain,
+    sp_consensus::DefaultImportQueue<Block, FullClient>,
+    sc_transaction_pool::FullPool<Block, FullClient>,
+    (
+        sc_consensus_babe::BabeBlockImport<
+            Block,
+            FullClient,
+            sc_finality_grandpa::GrandpaBlockImport<
+                FullBackend,
                 Block,
                 FullClient,
-                sc_finality_grandpa::GrandpaBlockImport<
-                    FullBackend,
-                    Block,
-                    FullClient,
-                    FullSelectChain,
-                >,
+                FullSelectChain,
             >,
-            sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-            sc_consensus_babe::BabeLink<Block>,
-            Option<Telemetry>,
-        ),
-    >,
-    ServiceError,
-> {
+        >,
+        sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+        sc_consensus_babe::BabeLink<Block>,
+        Option<Telemetry>,
+    ),
+>;
+
+// TODO: Result structure is very complex. Consider factoring parts into `type` definitions.
+// After this TODO will be resolved, remove the suppresion of `type-complexity` warnings in the Makefile.
+pub fn new_partial(config: &Configuration) -> Result<PartialComponentsList, ServiceError> {
     if config.keystore_remote.is_some() {
         return Err(ServiceError::Other(
             "Remote Keystores are not supported.".to_string(),
@@ -415,7 +412,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
     let slot_duration = babe_config.slot_duration();
 
     let (block_import, babe_link) =
-        sc_consensus_babe::block_import(babe_config, grandpa_block_import.clone(), client.clone())?;
+        sc_consensus_babe::block_import(babe_config, grandpa_block_import, client.clone())?;
 
     let import_queue = sc_consensus_babe::import_queue(
         babe_link,
