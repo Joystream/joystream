@@ -125,7 +125,7 @@ export interface PostAddedEventDetails extends EventDetails {
 
 export type ForumEventName =
   | 'CategoryCreated'
-  | 'CategoryUpdated'
+  | 'CategoryArchivalStatusUpdated'
   | 'CategoryDeleted'
   | 'ThreadCreated'
   | 'ThreadModerated'

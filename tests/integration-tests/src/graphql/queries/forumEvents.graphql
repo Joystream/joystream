@@ -16,7 +16,7 @@ query getCategoryCreatedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
+fragment CategoryArchivalStatusUpdatedEventFields on CategoryArchivalStatusUpdatedEvent {
   id
   createdAt
   inBlock
@@ -32,9 +32,9 @@ fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
   }
 }
 
-query getCategoryUpdatedEventsByEventIds($eventIds: [ID!]) {
-  categoryUpdatedEvents(where: { id_in: $eventIds }) {
-    ...CategoryUpdatedEventFields
+query getCategoryArchivalStatusUpdatedEventsByEventIds($eventIds: [ID!]) {
+  categoryArchivalStatusUpdatedEvents(where: { id_in: $eventIds }) {
+    ...CategoryArchivalStatusUpdatedEventFields
   }
 }
 

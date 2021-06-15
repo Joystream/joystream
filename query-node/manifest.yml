@@ -51,7 +51,7 @@ typegen:
     - storageWorkingGroup.NewMissedRewardLevelReached
   # Forum
     - forum.CategoryCreated
-    - forum.CategoryUpdated
+    - forum.CategoryArchivalStatusUpdated
     - forum.CategoryDeleted
     - forum.ThreadCreated
     - forum.ThreadModerated
@@ -295,8 +295,8 @@ mappings:
     # Forum
     - event: forum.CategoryCreated
       handler: forum_CategoryCreated
-    - event: forum.CategoryUpdated
-      handler: forum_CategoryUpdated
+    - event: forum.CategoryArchivalStatusUpdated
+      handler: forum_CategoryArchivalStatusUpdated
     - event: forum.CategoryDeleted
       handler: forum_CategoryDeleted
     - event: forum.ThreadCreated

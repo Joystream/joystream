@@ -6,7 +6,7 @@ import { bytesToString, deserializeMetadata, genericEventFields, getWorker } fro
 import {
   CategoryCreatedEvent,
   CategoryStatusActive,
-  CategoryUpdatedEvent,
+  CategoryArchivalStatusUpdatedEvent,
   ForumCategory,
   Worker,
   CategoryStatusArchived,
@@ -152,23 +152,26 @@ export async function forum_CategoryCreated({ event, store }: EventContext & Sto
   await store.save<CategoryCreatedEvent>(categoryCreatedEvent)
 }
 
-export async function forum_CategoryUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [categoryId, newArchivalStatus, privilegedActor] = new Forum.CategoryUpdatedEvent(event).params
+export async function forum_CategoryArchivalStatusUpdated({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [categoryId, newArchivalStatus, privilegedActor] = new Forum.CategoryArchivalStatusUpdatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const category = await getCategory(store, categoryId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
-  const categoryUpdatedEvent = new CategoryUpdatedEvent({
+  const categoryArchivalStatusUpdatedEvent = new CategoryArchivalStatusUpdatedEvent({
     ...genericEventFields(event),
     category,
     newArchivalStatus: newArchivalStatus.valueOf(),
     actor: actorWorker,
   })
-  await store.save<CategoryUpdatedEvent>(categoryUpdatedEvent)
+  await store.save<CategoryArchivalStatusUpdatedEvent>(categoryArchivalStatusUpdatedEvent)
 
   if (newArchivalStatus.valueOf()) {
     const status = new CategoryStatusArchived()
-    status.categoryUpdatedEventId = categoryUpdatedEvent.id
+    status.categoryArchivalStatusUpdatedEventId = categoryArchivalStatusUpdatedEvent.id
     category.status = status
   } else {
     category.status = new CategoryStatusActive()
