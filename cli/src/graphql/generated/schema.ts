@@ -15,8 +15,6 @@ export type Scalars = {
   BigInt: any
   /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSONObject: any
-  /** GraphQL representation of Bytes */
-  Bytes: any
 }
 
 export type AmendConstitutionProposalDetails = {
@@ -12170,16 +12168,16 @@ export enum RewardPaymentType {
 }
 
 export type RuntimeUpgradeProposalDetails = {
-  /** Runtime upgrade WASM bytecode */
-  wasmBytecode: Scalars['Bytes']
+  /** Runtime upgrade WASM bytecode hash */
+  wasmBytecodeHash: Scalars['String']
 }
 
 export type RuntimeUpgradeProposalDetailsCreateInput = {
-  wasmBytecode: Scalars['Bytes']
+  wasmBytecodeHash: Scalars['String']
 }
 
 export type RuntimeUpgradeProposalDetailsUpdateInput = {
-  wasmBytecode?: Maybe<Scalars['Bytes']>
+  wasmBytecodeHash?: Maybe<Scalars['String']>
 }
 
 export type RuntimeUpgradeProposalDetailsWhereInput = {
@@ -12207,8 +12205,11 @@ export type RuntimeUpgradeProposalDetailsWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  wasmBytecode_eq?: Maybe<Scalars['Bytes']>
-  wasmBytecode_in?: Maybe<Array<Scalars['Bytes']>>
+  wasmBytecodeHash_eq?: Maybe<Scalars['String']>
+  wasmBytecodeHash_contains?: Maybe<Scalars['String']>
+  wasmBytecodeHash_startsWith?: Maybe<Scalars['String']>
+  wasmBytecodeHash_endsWith?: Maybe<Scalars['String']>
+  wasmBytecodeHash_in?: Maybe<Array<Scalars['String']>>
   AND?: Maybe<Array<RuntimeUpgradeProposalDetailsWhereInput>>
   OR?: Maybe<Array<RuntimeUpgradeProposalDetailsWhereInput>>
 }

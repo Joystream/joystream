@@ -13,6 +13,7 @@ import { AddStakingAccountsHappyCaseFixture } from '../membership'
 import { getWorkingGroupModuleName } from '../../consts'
 import { assertQueriedOpeningMetadataIsValid } from '../workingGroups/utils'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
+import { blake2AsHex } from '@polkadot/util-crypto'
 
 export type ProposalCreationParams<T extends ProposalType = ProposalType> = {
   asMember: MemberId
@@ -115,7 +116,9 @@ export class CreateProposalsFixture extends StandardizedFixture {
       case 'CreateBlogPost': {
         Utils.assert(qProposal.details.__typename === 'CreateBlogPostProposalDetails')
         const details = proposalDetails.asType('CreateBlogPost')
-        // TODO
+        const [title, body] = details
+        assert.equal(qProposal.details.title, title.toString())
+        assert.equal(qProposal.details.body, body.toString())
         break
       }
       case 'CreateWorkingGroupLeadOpening': {
@@ -144,7 +147,10 @@ export class CreateProposalsFixture extends StandardizedFixture {
       case 'EditBlogPost': {
         Utils.assert(qProposal.details.__typename === 'EditBlogPostProposalDetails')
         const details = proposalDetails.asType('EditBlogPost')
-        // TODO
+        const [postId, newTitle, newBody] = details
+        assert.equal(qProposal.details.blogPost, postId.toString())
+        assert.equal(qProposal.details.newTitle, newTitle.unwrapOr(undefined)?.toString())
+        assert.equal(qProposal.details.newBody, newBody.unwrapOr(undefined)?.toString())
         break
       }
       case 'FillWorkingGroupLeadOpening': {
@@ -169,14 +175,14 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'LockBlogPost': {
         Utils.assert(qProposal.details.__typename === 'LockBlogPostProposalDetails')
-        const details = proposalDetails.asType('LockBlogPost')
-        // TODO
+        const postId = proposalDetails.asType('LockBlogPost')
+        assert.equal(qProposal.details.blogPost, postId.toString())
         break
       }
       case 'RuntimeUpgrade': {
         Utils.assert(qProposal.details.__typename === 'RuntimeUpgradeProposalDetails')
         const details = proposalDetails.asType('RuntimeUpgrade')
-        // TODO
+        assert.equal(qProposal.details.wasmBytecodeHash, blake2AsHex(details))
         break
       }
       case 'SetCouncilBudgetIncrement': {
@@ -261,8 +267,8 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'UnlockBlogPost': {
         Utils.assert(qProposal.details.__typename === 'UnlockBlogPostProposalDetails')
-        const details = proposalDetails.asType('UnlockBlogPost')
-        // TODO
+        const postId = proposalDetails.asType('UnlockBlogPost')
+        assert.equal(qProposal.details.blogPost, postId.toString())
         break
       }
       case 'UpdateWorkingGroupBudget': {
@@ -296,19 +302,20 @@ export class CreateProposalsFixture extends StandardizedFixture {
       assert.equal(qProposal.status.__typename, 'ProposalStatusDeciding')
       assert.equal(qProposal.statusSetAtBlock, e.blockNumber)
       assert.equal(new Date(qProposal.statusSetAtTime).getTime(), e.blockTimestamp)
+      assert.equal(qProposal.createdInEvent.inBlock, e.blockNumber)
+      assert.equal(qProposal.createdInEvent.inExtrinsic, this.extrinsics[i].hash.toString())
     })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ProposalCreatedEventFieldsFragment, i: number): void {
-    // TODO
+    // TODO: https://github.com/Joystream/joystream/issues/2457
   }
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
-    // TODO: Events
 
     // Query the proposals
-    const qProposals = await this.query.tryQueryWithTimeout(
+    await this.query.tryQueryWithTimeout(
       () => this.query.getProposalsByIds(this.events.map((e) => e.proposalId)),
       (result) => this.assertQueriedProposalsAreValid(result)
     )

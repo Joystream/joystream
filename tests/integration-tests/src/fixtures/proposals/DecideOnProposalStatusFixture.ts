@@ -179,7 +179,11 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
           await this.api.untilBlock(qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber())
           ;[qProposal] = await this.query.tryQueryWithTimeout(
             () => this.query.getProposalsByIds([this.params[i].proposalId]),
-            ([p]) => p.status.__typename === 'ProposalStatusExecuted'
+            ([p]) =>
+              assert.equal(
+                p.status.__typename,
+                this.params[i].expectExecutionFailure ? 'ProposalStatusExecutionFailed' : 'ProposalStatusExecuted'
+              )
           )
           await this.postExecutionChecks(qProposal)
         }

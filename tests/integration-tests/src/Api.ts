@@ -299,7 +299,7 @@ export class Api {
       return
     }
 
-    const blockHash = status.asInBlock.toString()
+    const blockHash = (status.isInBlock ? status.asInBlock : status.asFinalized).toString()
     const blockNumber = (await this.api.rpc.chain.getHeader(blockHash)).number.toNumber()
     const blockTimestamp = (await this.api.query.timestamp.now.at(blockHash)).toNumber()
     const blockEvents = await this.api.query.system.events.at(blockHash)

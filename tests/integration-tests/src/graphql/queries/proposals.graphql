@@ -99,7 +99,7 @@ fragment ProposalDetailsFields on ProposalDetails {
     text
   }
   ... on RuntimeUpgradeProposalDetails {
-    wasmBytecode
+    wasmBytecodeHash
   }
   ... on FundingRequestProposalDetails {
     destinationsList {
@@ -203,7 +203,28 @@ fragment ProposalDetailsFields on ProposalDetails {
     newReferralCut
   }
 
-  # TODO: Blog proposals
+  ... on SetReferralCutProposalDetails {
+    newReferralCut
+  }
+
+  ... on CreateBlogPostProposalDetails {
+    title
+    body
+  }
+
+  ... on EditBlogPostProposalDetails {
+    blogPost
+    newTitle
+    newBody
+  }
+
+  ... on LockBlogPostProposalDetails {
+    blogPost
+  }
+
+  ... on UnlockBlogPostProposalDetails {
+    blogPost
+  }
 
   ... on VetoProposalDetails {
     proposal {
@@ -236,6 +257,11 @@ fragment ProposalFields on Proposal {
   }
   statusSetAtBlock
   statusSetAtTime
+  createdInEvent {
+    id
+    inBlock
+    inExtrinsic
+  }
 }
 
 query getProposalsByIds($ids: [ID!]) {

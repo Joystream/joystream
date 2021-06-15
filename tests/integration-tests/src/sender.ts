@@ -66,7 +66,7 @@ export class Sender {
         process.exit(-1)
       }
 
-      if (!result.status.isInBlock) {
+      if (!(result.status.isInBlock || result.status.isFinalized)) {
         return
       }
 

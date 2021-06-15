@@ -4,7 +4,7 @@
       "grace_period": 0
   },
   "runtime_upgrade_proposal": {
-    "voting_period": 20,
+    "voting_period": 100,
     "grace_period": 20,
     "constitutionality": 2
   },

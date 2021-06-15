@@ -153,8 +153,8 @@ type SignalProposalDetails @variant {
 }
 
 type RuntimeUpgradeProposalDetails @variant {
-  "Runtime upgrade WASM bytecode"
-  wasmBytecode: Bytes!
+  "Runtime upgrade WASM bytecode hash"
+  wasmBytecodeHash: String!
 }
 
 type FundingRequestDestination @entity {
