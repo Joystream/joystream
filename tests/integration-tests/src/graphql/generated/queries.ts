@@ -442,7 +442,7 @@ type ProposalDetailsFields_SignalProposalDetails_Fragment = { __typename: 'Signa
 
 type ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment = {
   __typename: 'RuntimeUpgradeProposalDetails'
-  wasmBytecodeHash: string
+  newRuntimeBytecode?: Types.Maybe<{ id: string; bytecode: any }>
 }
 
 type ProposalDetailsFields_FundingRequestProposalDetails_Fragment = {
@@ -636,7 +636,14 @@ export type ProposalFieldsFragment = {
     | ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment
     | ProposalDetailsFields_VetoProposalDetails_Fragment
   creator: { id: string }
-  proposalStatusUpdates: Array<{ id: string }>
+  proposalStatusUpdates: Array<{
+    id: string
+    inBlock: number
+    newStatus:
+      | { __typename: 'ProposalStatusDeciding' }
+      | { __typename: 'ProposalStatusGracing' }
+      | { __typename: 'ProposalStatusDormant' }
+  }>
   votes: Array<{ id: string }>
   status:
     | ProposalStatusFields_ProposalStatusDeciding_Fragment
@@ -1594,7 +1601,10 @@ export const ProposalDetailsFields = gql`
       text
     }
     ... on RuntimeUpgradeProposalDetails {
-      wasmBytecodeHash
+      newRuntimeBytecode {
+        id
+        bytecode
+      }
     }
     ... on FundingRequestProposalDetails {
       destinationsList {
@@ -1818,6 +1828,10 @@ export const ProposalFields = gql`
     councilApprovals
     proposalStatusUpdates {
       id
+      inBlock
+      newStatus {
+        __typename
+      }
     }
     votes {
       id

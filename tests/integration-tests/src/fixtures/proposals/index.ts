@@ -5,3 +5,6 @@ export {
   DecideOnProposalStatusParams,
   DecisionStatus,
 } from './DecideOnProposalStatusFixture'
+export { AllProposalsOutcomesFixture, TestedProposal } from './AllProposalsOutcomesFixture'
+export { CancelProposalsFixture } from './CancelProposalsFixture'
+export { ExpireProposalsFixture } from './ExpireProposalsFixture'

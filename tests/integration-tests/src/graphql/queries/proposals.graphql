@@ -99,7 +99,10 @@ fragment ProposalDetailsFields on ProposalDetails {
     text
   }
   ... on RuntimeUpgradeProposalDetails {
-    wasmBytecodeHash
+    newRuntimeBytecode {
+      id
+      bytecode
+    }
   }
   ... on FundingRequestProposalDetails {
     destinationsList {
@@ -248,6 +251,10 @@ fragment ProposalFields on Proposal {
   councilApprovals
   proposalStatusUpdates {
     id
+    inBlock
+    newStatus {
+      __typename
+    }
   }
   votes {
     id

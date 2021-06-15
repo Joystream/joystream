@@ -2,11 +2,11 @@ import { FlowProps } from '../../Flow'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { CreateProposalsFixture, CancelProposalsFixture } from '../../fixtures/proposals'
+import { CreateProposalsFixture, ExpireProposalsFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
 
-export default async function cancellingProposals({ api, query, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:cancelling-proposals')
+export default async function expireProposal({ api, query, lock }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:expire-proposal')
   debug('Started')
   api.enableDebugTxLogs()
 
@@ -20,17 +20,17 @@ export default async function cancellingProposals({ api, query, lock }: FlowProp
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: 'Proposal to cancel',
+      details: `Proposal to be Expired`,
       asMember: memberId,
-      title: 'Proposal to cancel',
-      description: 'Proposal to cancel',
+      title: `Proposal to be Expired`,
+      description: `Proposal to be Expired`,
     },
   ])
   await new FixtureRunner(createProposalFixture).run()
   const [proposalId] = createProposalFixture.getCreatedProposalsIds()
 
-  const cancelProposalsFixture = new CancelProposalsFixture(api, query, [proposalId])
-  await new FixtureRunner(cancelProposalsFixture).runWithQueryNodeChecks()
+  const approveProposalFixture = new ExpireProposalsFixture(api, query, [proposalId])
+  await new FixtureRunner(approveProposalFixture).runWithQueryNodeChecks()
 
   unlock()
 

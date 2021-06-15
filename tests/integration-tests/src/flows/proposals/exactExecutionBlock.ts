@@ -2,11 +2,11 @@ import { FlowProps } from '../../Flow'
 import Debugger from 'debug'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { CreateProposalsFixture, CancelProposalsFixture } from '../../fixtures/proposals'
+import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
 
-export default async function cancellingProposals({ api, query, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:cancelling-proposals')
+export default async function exactExecutionBlock({ api, query, lock }: FlowProps): Promise<void> {
+  const debug = Debugger('flow:proposal-exact-execution-block')
   debug('Started')
   api.enableDebugTxLogs()
 
@@ -17,20 +17,23 @@ export default async function cancellingProposals({ api, query, lock }: FlowProp
   await new FixtureRunner(buyMembershipFixture).run()
   const [memberId] = buyMembershipFixture.getCreatedMembers()
 
+  const currentBlock = (await api.getBestBlock()).toNumber()
+  const exactExecutionBlock = currentBlock + 50
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: 'Proposal to cancel',
+      details: `Proposal to be executed at block ${exactExecutionBlock}`,
       asMember: memberId,
-      title: 'Proposal to cancel',
-      description: 'Proposal to cancel',
+      title: `Executes at #${exactExecutionBlock}`,
+      description: `Proposal to be executed at block ${exactExecutionBlock}`,
+      exactExecutionBlock,
     },
   ])
   await new FixtureRunner(createProposalFixture).run()
   const [proposalId] = createProposalFixture.getCreatedProposalsIds()
 
-  const cancelProposalsFixture = new CancelProposalsFixture(api, query, [proposalId])
-  await new FixtureRunner(cancelProposalsFixture).runWithQueryNodeChecks()
+  const approveProposalFixture = new DecideOnProposalStatusFixture(api, query, [{ proposalId, status: 'Approved' }])
+  await new FixtureRunner(approveProposalFixture).runWithQueryNodeChecks()
 
   unlock()
 

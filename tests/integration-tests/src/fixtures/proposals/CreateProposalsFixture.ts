@@ -97,7 +97,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
     params: ProposalCreationParams<ProposalType>,
     qProposal: ProposalFieldsFragment
   ): void {
-    const proposalDetails = this.api.createType('ProposalDetails', params.details)
+    const proposalDetails = this.api.createType('ProposalDetails', { [params.type]: params.details })
     switch (params.type) {
       case 'AmendConstitution': {
         Utils.assert(qProposal.details.__typename === 'AmendConstitutionProposalDetails')
@@ -167,7 +167,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
       case 'FundingRequest': {
         Utils.assert(qProposal.details.__typename === 'FundingRequestProposalDetails')
         const details = proposalDetails.asType('FundingRequest')
-        assert.sameMembers(
+        assert.sameDeepMembers(
           qProposal.details.destinationsList?.destinations.map(({ amount, account }) => ({ amount, account })) || [],
           details.map((d) => ({ amount: d.amount.toString(), account: d.account.toString() }))
         )
@@ -182,7 +182,19 @@ export class CreateProposalsFixture extends StandardizedFixture {
       case 'RuntimeUpgrade': {
         Utils.assert(qProposal.details.__typename === 'RuntimeUpgradeProposalDetails')
         const details = proposalDetails.asType('RuntimeUpgrade')
-        assert.equal(qProposal.details.wasmBytecodeHash, blake2AsHex(details))
+        Utils.assert(qProposal.details.newRuntimeBytecode, 'Missing newRuntimeBytecode relationship')
+        assert.equal(qProposal.details.newRuntimeBytecode.id, blake2AsHex(details.toU8a(true)))
+        const expectedBytecode = '0x' + Buffer.from(details.toU8a(true)).toString('hex')
+        const actualBytecode = qProposal.details.newRuntimeBytecode.bytecode
+        if (actualBytecode !== expectedBytecode) {
+          const diffStartPos = expectedBytecode.split('').findIndex((c, i) => actualBytecode[i] !== c)
+          const diffSubExpected = expectedBytecode.slice(diffStartPos, diffStartPos + 10)
+          const diffSubActual = actualBytecode.slice(diffStartPos, diffStartPos + 10)
+          throw new Error(
+            `Runtime bytecode doesn't match the expected one! Diff starts at pos ${diffStartPos}. ` +
+              `Expected: ${diffSubExpected}.., Actual: ${diffSubActual}...`
+          )
+        }
         break
       }
       case 'SetCouncilBudgetIncrement': {
@@ -304,6 +316,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
       assert.equal(new Date(qProposal.statusSetAtTime).getTime(), e.blockTimestamp)
       assert.equal(qProposal.createdInEvent.inBlock, e.blockNumber)
       assert.equal(qProposal.createdInEvent.inExtrinsic, this.extrinsics[i].hash.toString())
+      this.assertProposalDetailsAreValid(proposalParams, qProposal)
     })
   }
 

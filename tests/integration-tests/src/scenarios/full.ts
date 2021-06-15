@@ -16,13 +16,15 @@ import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
 import electCouncil from '../flows/council/elect'
 import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
+import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
+import expireProposal from '../flows/proposals/expireProposal'
 import { scenario } from '../Scenario'
 
 scenario(async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
   const councilJob = job('electing council', electCouncil)
-  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_IMAGE_TAG
+  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
 
@@ -42,7 +44,13 @@ scenario(async ({ job, env }) => {
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
 
   // Proposals:
-  const proposalsJob = job('proposals', [proposals, cancellingProposals, vetoProposal]).requires(membershipSystemJob)
+  const proposalsJob = job('proposals', [
+    proposals,
+    cancellingProposals,
+    vetoProposal,
+    exactExecutionBlock,
+    expireProposal,
+  ]).requires(membershipSystemJob)
 
   // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening).after(proposalsJob)
