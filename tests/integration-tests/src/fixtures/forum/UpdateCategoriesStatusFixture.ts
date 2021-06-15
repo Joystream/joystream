@@ -5,7 +5,10 @@ import { WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { CategoryUpdatedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
+import {
+  CategoryArchivalStatusUpdatedEventFieldsFragment,
+  ForumCategoryFieldsFragment,
+} from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
@@ -45,12 +48,12 @@ export class UpdateCategoriesStatusFixture extends WithForumWorkersFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.retrieveForumEventDetails(result, 'CategoryUpdated')
+    return this.api.retrieveForumEventDetails(result, 'CategoryArchivalStatusUpdated')
   }
 
   protected assertQueriedCategoriesAreValid(
     qCategories: ForumCategoryFieldsFragment[],
-    qEvents: CategoryUpdatedEventFieldsFragment[]
+    qEvents: CategoryArchivalStatusUpdatedEventFieldsFragment[]
   ): void {
     // Check against latest update per category
     _.uniqBy([...this.updates].reverse(), (v) => v.categoryId).map((update) => {
@@ -60,15 +63,18 @@ export class UpdateCategoriesStatusFixture extends WithForumWorkersFixture {
       Utils.assert(qCategory, 'Query node: Category not found')
       if (update.archived) {
         Utils.assert(qCategory.status.__typename === 'CategoryStatusArchived', 'Invalid category status')
-        Utils.assert(qCategory.status.categoryUpdatedEvent, 'Query node: Missing CategoryUpdatedEvent ref')
-        assert.equal(qCategory.status.categoryUpdatedEvent.id, qEvent.id)
+        Utils.assert(
+          qCategory.status.categoryArchivalStatusUpdatedEvent,
+          'Query node: Missing CategoryArchivalStatusUpdatedEvent ref'
+        )
+        assert.equal(qCategory.status.categoryArchivalStatusUpdatedEvent.id, qEvent.id)
       } else {
         assert.equal(qCategory.status.__typename, 'CategoryStatusActive')
       }
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: CategoryUpdatedEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: CategoryArchivalStatusUpdatedEventFieldsFragment, i: number): void {
     const { categoryId, archived, asWorker } = this.updates[i]
     assert.equal(qEvent.category.id, categoryId.toString())
     assert.equal(qEvent.newArchivalStatus, archived)
@@ -79,7 +85,7 @@ export class UpdateCategoriesStatusFixture extends WithForumWorkersFixture {
     await super.runQueryNodeChecks()
     // Query the events
     const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getCategoryUpdatedEvents(this.events),
+      () => this.query.getCategoryArchivalStatusUpdatedEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
 

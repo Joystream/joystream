@@ -994,6 +994,145 @@ export type CancelWorkingGroupLeadOpeningProposalDetails = {
   opening?: Maybe<WorkingGroupOpening>
 }
 
+export type CategoryArchivalStatusUpdatedEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  category: ForumCategory
+  categoryId: Scalars['String']
+  /** The new archival status of the category (true = archived) */
+  newArchivalStatus: Scalars['Boolean']
+  actor: Worker
+  actorId: Scalars['String']
+}
+
+export type CategoryArchivalStatusUpdatedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<CategoryArchivalStatusUpdatedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type CategoryArchivalStatusUpdatedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  category: Scalars['ID']
+  newArchivalStatus: Scalars['Boolean']
+  actor: Scalars['ID']
+}
+
+export type CategoryArchivalStatusUpdatedEventEdge = {
+  node: CategoryArchivalStatusUpdatedEvent
+  cursor: Scalars['String']
+}
+
+export enum CategoryArchivalStatusUpdatedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  CategoryAsc = 'category_ASC',
+  CategoryDesc = 'category_DESC',
+  NewArchivalStatusAsc = 'newArchivalStatus_ASC',
+  NewArchivalStatusDesc = 'newArchivalStatus_DESC',
+  ActorAsc = 'actor_ASC',
+  ActorDesc = 'actor_DESC',
+}
+
+export type CategoryArchivalStatusUpdatedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  category?: Maybe<Scalars['ID']>
+  newArchivalStatus?: Maybe<Scalars['Boolean']>
+  actor?: Maybe<Scalars['ID']>
+}
+
+export type CategoryArchivalStatusUpdatedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  category_eq?: Maybe<Scalars['ID']>
+  category_in?: Maybe<Array<Scalars['ID']>>
+  newArchivalStatus_eq?: Maybe<Scalars['Boolean']>
+  newArchivalStatus_in?: Maybe<Array<Scalars['Boolean']>>
+  actor_eq?: Maybe<Scalars['ID']>
+  actor_in?: Maybe<Array<Scalars['ID']>>
+  category?: Maybe<ForumCategoryWhereInput>
+  actor?: Maybe<WorkerWhereInput>
+  AND?: Maybe<Array<CategoryArchivalStatusUpdatedEventWhereInput>>
+  OR?: Maybe<Array<CategoryArchivalStatusUpdatedEventWhereInput>>
+}
+
+export type CategoryArchivalStatusUpdatedEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type CategoryCreatedEvent = BaseGraphQlObject & {
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
@@ -1441,7 +1580,7 @@ export type CategoryStatusActiveWhereUniqueInput = {
 
 export type CategoryStatusArchived = {
   /** Event the category was archived in */
-  categoryUpdatedEvent?: Maybe<CategoryUpdatedEvent>
+  categoryArchivalStatusUpdatedEvent?: Maybe<CategoryArchivalStatusUpdatedEvent>
 }
 
 export type CategoryStatusRemoved = {
@@ -1581,145 +1720,6 @@ export type CategoryStickyThreadUpdateEventWhereInput = {
 }
 
 export type CategoryStickyThreadUpdateEventWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export type CategoryUpdatedEvent = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  /** Hash of the extrinsic which caused the event to be emitted */
-  inExtrinsic?: Maybe<Scalars['String']>
-  /** Blocknumber of the block in which the event was emitted. */
-  inBlock: Scalars['Int']
-  /** Network the block was produced in */
-  network: Network
-  /** Index of event in block from which it was emitted. */
-  indexInBlock: Scalars['Int']
-  category: ForumCategory
-  categoryId: Scalars['String']
-  /** The new archival status of the category (true = archived) */
-  newArchivalStatus: Scalars['Boolean']
-  actor: Worker
-  actorId: Scalars['String']
-}
-
-export type CategoryUpdatedEventConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<CategoryUpdatedEventEdge>
-  pageInfo: PageInfo
-}
-
-export type CategoryUpdatedEventCreateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock: Scalars['Float']
-  network: Network
-  indexInBlock: Scalars['Float']
-  category: Scalars['ID']
-  newArchivalStatus: Scalars['Boolean']
-  actor: Scalars['ID']
-}
-
-export type CategoryUpdatedEventEdge = {
-  node: CategoryUpdatedEvent
-  cursor: Scalars['String']
-}
-
-export enum CategoryUpdatedEventOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  InExtrinsicAsc = 'inExtrinsic_ASC',
-  InExtrinsicDesc = 'inExtrinsic_DESC',
-  InBlockAsc = 'inBlock_ASC',
-  InBlockDesc = 'inBlock_DESC',
-  NetworkAsc = 'network_ASC',
-  NetworkDesc = 'network_DESC',
-  IndexInBlockAsc = 'indexInBlock_ASC',
-  IndexInBlockDesc = 'indexInBlock_DESC',
-  CategoryAsc = 'category_ASC',
-  CategoryDesc = 'category_DESC',
-  NewArchivalStatusAsc = 'newArchivalStatus_ASC',
-  NewArchivalStatusDesc = 'newArchivalStatus_DESC',
-  ActorAsc = 'actor_ASC',
-  ActorDesc = 'actor_DESC',
-}
-
-export type CategoryUpdatedEventUpdateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock?: Maybe<Scalars['Float']>
-  network?: Maybe<Network>
-  indexInBlock?: Maybe<Scalars['Float']>
-  category?: Maybe<Scalars['ID']>
-  newArchivalStatus?: Maybe<Scalars['Boolean']>
-  actor?: Maybe<Scalars['ID']>
-}
-
-export type CategoryUpdatedEventWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  inExtrinsic_eq?: Maybe<Scalars['String']>
-  inExtrinsic_contains?: Maybe<Scalars['String']>
-  inExtrinsic_startsWith?: Maybe<Scalars['String']>
-  inExtrinsic_endsWith?: Maybe<Scalars['String']>
-  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
-  inBlock_eq?: Maybe<Scalars['Int']>
-  inBlock_gt?: Maybe<Scalars['Int']>
-  inBlock_gte?: Maybe<Scalars['Int']>
-  inBlock_lt?: Maybe<Scalars['Int']>
-  inBlock_lte?: Maybe<Scalars['Int']>
-  inBlock_in?: Maybe<Array<Scalars['Int']>>
-  network_eq?: Maybe<Network>
-  network_in?: Maybe<Array<Network>>
-  indexInBlock_eq?: Maybe<Scalars['Int']>
-  indexInBlock_gt?: Maybe<Scalars['Int']>
-  indexInBlock_gte?: Maybe<Scalars['Int']>
-  indexInBlock_lt?: Maybe<Scalars['Int']>
-  indexInBlock_lte?: Maybe<Scalars['Int']>
-  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  category_eq?: Maybe<Scalars['ID']>
-  category_in?: Maybe<Array<Scalars['ID']>>
-  newArchivalStatus_eq?: Maybe<Scalars['Boolean']>
-  newArchivalStatus_in?: Maybe<Array<Scalars['Boolean']>>
-  actor_eq?: Maybe<Scalars['ID']>
-  actor_in?: Maybe<Array<Scalars['ID']>>
-  category?: Maybe<ForumCategoryWhereInput>
-  actor?: Maybe<WorkerWhereInput>
-  AND?: Maybe<Array<CategoryUpdatedEventWhereInput>>
-  OR?: Maybe<Array<CategoryUpdatedEventWhereInput>>
-}
-
-export type CategoryUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -2610,10 +2610,10 @@ export type ForumCategory = BaseGraphQlObject & {
   createdInEvent: CategoryCreatedEvent
   /** Current category status */
   status: CategoryStatus
+  categoryarchivalstatusupdatedeventcategory?: Maybe<Array<CategoryArchivalStatusUpdatedEvent>>
   categorydeletedeventcategory?: Maybe<Array<CategoryDeletedEvent>>
   categorymembershipofmoderatorupdatedeventcategory?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEvent>>
   categorystickythreadupdateeventcategory?: Maybe<Array<CategoryStickyThreadUpdateEvent>>
-  categoryupdatedeventcategory?: Maybe<Array<CategoryUpdatedEvent>>
   forumcategoryparent?: Maybe<Array<ForumCategory>>
   threadmovedeventoldCategory?: Maybe<Array<ThreadMovedEvent>>
   threadmovedeventnewCategory?: Maybe<Array<ThreadMovedEvent>>
@@ -2705,6 +2705,9 @@ export type ForumCategoryWhereInput = {
   moderators_some?: Maybe<WorkerWhereInput>
   moderators_every?: Maybe<WorkerWhereInput>
   createdInEvent?: Maybe<CategoryCreatedEventWhereInput>
+  categoryarchivalstatusupdatedeventcategory_none?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
+  categoryarchivalstatusupdatedeventcategory_some?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
+  categoryarchivalstatusupdatedeventcategory_every?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
   categorydeletedeventcategory_none?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventcategory_some?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventcategory_every?: Maybe<CategoryDeletedEventWhereInput>
@@ -2714,9 +2717,6 @@ export type ForumCategoryWhereInput = {
   categorystickythreadupdateeventcategory_none?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventcategory_some?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventcategory_every?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
-  categoryupdatedeventcategory_none?: Maybe<CategoryUpdatedEventWhereInput>
-  categoryupdatedeventcategory_some?: Maybe<CategoryUpdatedEventWhereInput>
-  categoryupdatedeventcategory_every?: Maybe<CategoryUpdatedEventWhereInput>
   forumcategoryparent_none?: Maybe<ForumCategoryWhereInput>
   forumcategoryparent_some?: Maybe<ForumCategoryWhereInput>
   forumcategoryparent_every?: Maybe<ForumCategoryWhereInput>
@@ -9815,6 +9815,9 @@ export type Query = {
   budgetSpendingEvents: Array<BudgetSpendingEvent>
   budgetSpendingEventByUniqueInput?: Maybe<BudgetSpendingEvent>
   budgetSpendingEventsConnection: BudgetSpendingEventConnection
+  categoryArchivalStatusUpdatedEvents: Array<CategoryArchivalStatusUpdatedEvent>
+  categoryArchivalStatusUpdatedEventByUniqueInput?: Maybe<CategoryArchivalStatusUpdatedEvent>
+  categoryArchivalStatusUpdatedEventsConnection: CategoryArchivalStatusUpdatedEventConnection
   categoryCreatedEvents: Array<CategoryCreatedEvent>
   categoryCreatedEventByUniqueInput?: Maybe<CategoryCreatedEvent>
   categoryCreatedEventsConnection: CategoryCreatedEventConnection
@@ -9827,9 +9830,6 @@ export type Query = {
   categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventByUniqueInput?: Maybe<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventsConnection: CategoryStickyThreadUpdateEventConnection
-  categoryUpdatedEvents: Array<CategoryUpdatedEvent>
-  categoryUpdatedEventByUniqueInput?: Maybe<CategoryUpdatedEvent>
-  categoryUpdatedEventsConnection: CategoryUpdatedEventConnection
   dataObjects: Array<DataObject>
   dataObjectByUniqueInput?: Maybe<DataObject>
   dataObjectsConnection: DataObjectConnection
@@ -10192,6 +10192,26 @@ export type QueryBudgetSpendingEventsConnectionArgs = {
   orderBy?: Maybe<Array<BudgetSpendingEventOrderByInput>>
 }
 
+export type QueryCategoryArchivalStatusUpdatedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<CategoryArchivalStatusUpdatedEventOrderByInput>>
+}
+
+export type QueryCategoryArchivalStatusUpdatedEventByUniqueInputArgs = {
+  where: CategoryArchivalStatusUpdatedEventWhereUniqueInput
+}
+
+export type QueryCategoryArchivalStatusUpdatedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<CategoryArchivalStatusUpdatedEventOrderByInput>>
+}
+
 export type QueryCategoryCreatedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -10270,26 +10290,6 @@ export type QueryCategoryStickyThreadUpdateEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   orderBy?: Maybe<Array<CategoryStickyThreadUpdateEventOrderByInput>>
-}
-
-export type QueryCategoryUpdatedEventsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<CategoryUpdatedEventWhereInput>
-  orderBy?: Maybe<Array<CategoryUpdatedEventOrderByInput>>
-}
-
-export type QueryCategoryUpdatedEventByUniqueInputArgs = {
-  where: CategoryUpdatedEventWhereUniqueInput
-}
-
-export type QueryCategoryUpdatedEventsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<CategoryUpdatedEventWhereInput>
-  orderBy?: Maybe<Array<CategoryUpdatedEventOrderByInput>>
 }
 
 export type QueryDataObjectsArgs = {
@@ -15524,10 +15524,10 @@ export type Worker = BaseGraphQlObject & {
   /** Worker's storage data */
   storage?: Maybe<Scalars['String']>
   managedForumCategories: Array<ForumCategory>
+  categoryarchivalstatusupdatedeventactor?: Maybe<Array<CategoryArchivalStatusUpdatedEvent>>
   categorydeletedeventactor?: Maybe<Array<CategoryDeletedEvent>>
   categorymembershipofmoderatorupdatedeventmoderator?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEvent>>
   categorystickythreadupdateeventactor?: Maybe<Array<CategoryStickyThreadUpdateEvent>>
-  categoryupdatedeventactor?: Maybe<Array<CategoryUpdatedEvent>>
   leaderseteventworker?: Maybe<Array<LeaderSetEvent>>
   leaderunseteventleader?: Maybe<Array<LeaderUnsetEvent>>
   memberverificationstatusupdatedeventworker?: Maybe<Array<MemberVerificationStatusUpdatedEvent>>
@@ -16505,6 +16505,9 @@ export type WorkerWhereInput = {
   managedForumCategories_none?: Maybe<ForumCategoryWhereInput>
   managedForumCategories_some?: Maybe<ForumCategoryWhereInput>
   managedForumCategories_every?: Maybe<ForumCategoryWhereInput>
+  categoryarchivalstatusupdatedeventactor_none?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
+  categoryarchivalstatusupdatedeventactor_some?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
+  categoryarchivalstatusupdatedeventactor_every?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
   categorydeletedeventactor_none?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventactor_some?: Maybe<CategoryDeletedEventWhereInput>
   categorydeletedeventactor_every?: Maybe<CategoryDeletedEventWhereInput>
@@ -16514,9 +16517,6 @@ export type WorkerWhereInput = {
   categorystickythreadupdateeventactor_none?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventactor_some?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   categorystickythreadupdateeventactor_every?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
-  categoryupdatedeventactor_none?: Maybe<CategoryUpdatedEventWhereInput>
-  categoryupdatedeventactor_some?: Maybe<CategoryUpdatedEventWhereInput>
-  categoryupdatedeventactor_every?: Maybe<CategoryUpdatedEventWhereInput>
   leaderseteventworker_none?: Maybe<LeaderSetEventWhereInput>
   leaderseteventworker_some?: Maybe<LeaderSetEventWhereInput>
   leaderseteventworker_every?: Maybe<LeaderSetEventWhereInput>

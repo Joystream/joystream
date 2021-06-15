@@ -5,7 +5,7 @@ type CategoryStatusActive @variant {
 
 type CategoryStatusArchived @variant {
   "Event the category was archived in"
-  categoryUpdatedEvent: CategoryUpdatedEvent!
+  categoryArchivalStatusUpdatedEvent: CategoryArchivalStatusUpdatedEvent!
 }
 
 type CategoryStatusRemoved @variant {

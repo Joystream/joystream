@@ -168,10 +168,9 @@ import {
   GetCategoryCreatedEventsByEventIdsQuery,
   GetCategoryCreatedEventsByEventIdsQueryVariables,
   GetCategoryCreatedEventsByEventIds,
-  CategoryUpdatedEventFieldsFragment,
-  GetCategoryUpdatedEventsByEventIdsQuery,
-  GetCategoryUpdatedEventsByEventIdsQueryVariables,
-  GetCategoryUpdatedEventsByEventIds,
+  GetCategoryArchivalStatusUpdatedEventsByEventIds,
+  GetCategoryArchivalStatusUpdatedEventsByEventIdsQuery,
+  GetCategoryArchivalStatusUpdatedEventsByEventIdsQueryVariables,
   CategoryDeletedEventFieldsFragment,
   GetCategoryDeletedEventsByEventIdsQuery,
   GetCategoryDeletedEventsByEventIdsQueryVariables,
@@ -263,6 +262,7 @@ import {
   GetPostDeletedEventsByEventIdsQuery,
   GetPostDeletedEventsByEventIdsQueryVariables,
   GetPostDeletedEventsByEventIds,
+  CategoryArchivalStatusUpdatedEventFieldsFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -808,12 +808,14 @@ export class QueryNodeApi {
     >(GetCategoryCreatedEventsByEventIds, { eventIds }, 'categoryCreatedEvents')
   }
 
-  public async getCategoryUpdatedEvents(events: EventDetails[]): Promise<CategoryUpdatedEventFieldsFragment[]> {
+  public async getCategoryArchivalStatusUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<CategoryArchivalStatusUpdatedEventFieldsFragment[]> {
     const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
-      GetCategoryUpdatedEventsByEventIdsQuery,
-      GetCategoryUpdatedEventsByEventIdsQueryVariables
-    >(GetCategoryUpdatedEventsByEventIds, { eventIds }, 'categoryUpdatedEvents')
+      GetCategoryArchivalStatusUpdatedEventsByEventIdsQuery,
+      GetCategoryArchivalStatusUpdatedEventsByEventIdsQueryVariables
+    >(GetCategoryArchivalStatusUpdatedEventsByEventIds, { eventIds }, 'categoryArchivalStatusUpdatedEvents')
   }
 
   public async getCategoryDeletedEvents(events: EventDetails[]): Promise<CategoryDeletedEventFieldsFragment[]> {

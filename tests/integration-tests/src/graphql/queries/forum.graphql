@@ -20,7 +20,7 @@ fragment ForumCategoryFields on ForumCategory {
   status {
     __typename
     ... on CategoryStatusArchived {
-      categoryUpdatedEvent {
+      categoryArchivalStatusUpdatedEvent {
         id
       }
     }

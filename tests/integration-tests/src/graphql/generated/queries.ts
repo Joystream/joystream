@@ -13,7 +13,7 @@ export type ForumCategoryFieldsFragment = {
   createdInEvent: { id: string }
   status:
     | { __typename: 'CategoryStatusActive' }
-    | { __typename: 'CategoryStatusArchived'; categoryUpdatedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'CategoryStatusArchived'; categoryArchivalStatusUpdatedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'CategoryStatusRemoved'; categoryDeletedEvent?: Types.Maybe<{ id: string }> }
 }
 
@@ -97,7 +97,7 @@ export type GetCategoryCreatedEventsByEventIdsQuery = {
   categoryCreatedEvents: Array<CategoryCreatedEventFieldsFragment>
 }
 
-export type CategoryUpdatedEventFieldsFragment = {
+export type CategoryArchivalStatusUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
@@ -109,12 +109,12 @@ export type CategoryUpdatedEventFieldsFragment = {
   actor: { id: string }
 }
 
-export type GetCategoryUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+export type GetCategoryArchivalStatusUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetCategoryUpdatedEventsByEventIdsQuery = {
-  categoryUpdatedEvents: Array<CategoryUpdatedEventFieldsFragment>
+export type GetCategoryArchivalStatusUpdatedEventsByEventIdsQuery = {
+  categoryArchivalStatusUpdatedEvents: Array<CategoryArchivalStatusUpdatedEventFieldsFragment>
 }
 
 export type CategoryDeletedEventFieldsFragment = {
@@ -1742,7 +1742,7 @@ export const ForumCategoryFields = gql`
     status {
       __typename
       ... on CategoryStatusArchived {
-        categoryUpdatedEvent {
+        categoryArchivalStatusUpdatedEvent {
           id
         }
       }
@@ -1885,8 +1885,8 @@ export const CategoryCreatedEventFields = gql`
     }
   }
 `
-export const CategoryUpdatedEventFields = gql`
-  fragment CategoryUpdatedEventFields on CategoryUpdatedEvent {
+export const CategoryArchivalStatusUpdatedEventFields = gql`
+  fragment CategoryArchivalStatusUpdatedEventFields on CategoryArchivalStatusUpdatedEvent {
     id
     createdAt
     inBlock
@@ -3332,13 +3332,13 @@ export const GetCategoryCreatedEventsByEventIds = gql`
   }
   ${CategoryCreatedEventFields}
 `
-export const GetCategoryUpdatedEventsByEventIds = gql`
-  query getCategoryUpdatedEventsByEventIds($eventIds: [ID!]) {
-    categoryUpdatedEvents(where: { id_in: $eventIds }) {
-      ...CategoryUpdatedEventFields
+export const GetCategoryArchivalStatusUpdatedEventsByEventIds = gql`
+  query getCategoryArchivalStatusUpdatedEventsByEventIds($eventIds: [ID!]) {
+    categoryArchivalStatusUpdatedEvents(where: { id_in: $eventIds }) {
+      ...CategoryArchivalStatusUpdatedEventFields
     }
   }
-  ${CategoryUpdatedEventFields}
+  ${CategoryArchivalStatusUpdatedEventFields}
 `
 export const GetCategoryDeletedEventsByEventIds = gql`
   query getCategoryDeletedEventsByEventIds($eventIds: [ID!]) {

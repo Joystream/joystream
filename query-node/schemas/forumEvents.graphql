@@ -24,7 +24,7 @@ type CategoryCreatedEvent @entity {
   # The actor is always lead
 }
 
-type CategoryUpdatedEvent @entity {
+type CategoryArchivalStatusUpdatedEvent @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
