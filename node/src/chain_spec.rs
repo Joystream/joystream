@@ -5,6 +5,7 @@ pub mod initial_members;
 pub mod proposals_config;
 
 use serde_json as json;
+#[cfg(feature = "standalone")]
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 #[cfg(feature = "standalone")]
 use sp_runtime::Perbill;
@@ -14,9 +15,8 @@ use joystream_node_runtime::{
     membership, wasm_binary_unwrap, Balance, BalancesConfig, ContentConfig,
     ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
-    GatewayWorkingGroupConfig, GrandpaId, ImOnlineId, MembersConfig, Moment,
-    OperationsWorkingGroupConfig, ProposalsCodexConfig, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, DAYS,
+    GatewayWorkingGroupConfig, MembersConfig, Moment, OperationsWorkingGroupConfig,
+    ProposalsCodexConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -30,8 +30,8 @@ pub use sp_consensus_babe::AuthorityId as BabeId;
 
 #[cfg(feature = "standalone")]
 use joystream_node_runtime::{
-    AuthorityDiscoveryConfig, BabeConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
-    SessionKeys, StakerStatus, StakingConfig, BABE_GENESIS_EPOCH_CONFIG,
+    AuthorityDiscoveryConfig, BabeConfig, GrandpaConfig, GrandpaId, ImOnlineConfig, ImOnlineId,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 
 #[cfg(not(feature = "standalone"))]
@@ -101,6 +101,7 @@ where
 }
 
 /// Helper function to generate stash, controller and session key from seed
+#[cfg(feature = "standalone")]
 pub fn get_authority_keys_from_seed(
     seed: &str,
 ) -> (

@@ -1,5 +1,3 @@
-// std
-use node_executor::ParachainRuntimeExecutor;
 use std::sync::Arc;
 
 // Local Runtime Types
@@ -18,6 +16,7 @@ use cumulus_primitives_core::ParaId;
 
 // Substrate Imports
 use sc_client_api::ExecutorProvider;
+use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_network::NetworkService;
 use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
@@ -33,6 +32,14 @@ type BlockNumber = u32;
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 type Hash = sp_core::H256;
+
+// Our native executor instance.
+native_executor_instance!(
+    pub ParachainRuntimeExecutor,
+    joystream_node_runtime::api::dispatch,
+    joystream_node_runtime::native_version,
+    frame_benchmarking::benchmarking::HostFunctions,
+);
 
 type PartialComponentsList<RuntimeApi, Executor> = PartialComponents<
     TFullClient<Block, RuntimeApi, Executor>,

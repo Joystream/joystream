@@ -378,7 +378,7 @@ async fn generate_authority_keys_and_store(
         let insert_key = |key_type, public| {
             keystore
                 .insert_unknown(key_type, &suri, public)
-                .map_err(|_| format!("Failed to insert key: {}", grandpa))
+                .map_err(move |_| format!("Failed to insert key: {:?} {:?}", key_type, public))
         };
 
         #[cfg(not(feature = "standalone"))]
