@@ -416,6 +416,260 @@ fn update_category_archival_status_lock_works() {
 }
 
 #[test]
+// test if category updator is forum lead
+fn update_category_description_origin() {
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_description_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                category_id,
+                good_category_description_new(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for new setting actually not update category description
+fn update_category_description_no_change() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_description_mock(
+            origin,
+            PrivilegedActor::Lead,
+            category_id,
+            good_category_description(),
+            Err(Error::<Runtime>::CategoryNotBeingUpdated.into()),
+        );
+    });
+}
+
+#[test]
+// test case for editing nonexistent category
+fn update_category_description_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_description_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            good_category_description_new(),
+            Ok(()),
+        );
+        update_category_description_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            2,
+            good_category_description_new(),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can update category description
+fn update_category_description_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_category_title_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_description_new(),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_category_description_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_description_new(),
+            Ok(()),
+        );
+    });
+}
+
+#[test]
+// test if category updator is forum lead
+fn update_category_title_origin() {
+    let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
+
+    for index in 0..origins.len() {
+        let forum_lead = FORUM_LEAD_ORIGIN_ID;
+        let origin = OriginType::Signed(forum_lead);
+        with_test_externalities(|| {
+            let category_id = create_category_mock(
+                origin,
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+            update_category_title_mock(
+                origins[index].clone(),
+                PrivilegedActor::Lead,
+                category_id,
+                good_category_title_new(),
+                results[index],
+            );
+        });
+    }
+}
+
+#[test]
+// test case for new setting actually not update category title
+fn update_category_title_no_change() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_title_mock(
+            origin,
+            PrivilegedActor::Lead,
+            category_id,
+            good_category_title(),
+            Err(Error::<Runtime>::CategoryNotBeingUpdated.into()),
+        );
+    });
+}
+
+#[test]
+// test case for editing nonexistent category
+fn update_category_title_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_title_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            1,
+            good_category_title_new(),
+            Ok(()),
+        );
+        update_category_title_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            2,
+            good_category_title_new(),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+        );
+    });
+}
+
+#[test]
+// test if moderator can update category title
+fn update_category_title_moderator() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // unprivileged moderator will fail to update category
+        update_category_title_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_title_new(),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id,
+            true,
+            Ok(()),
+        );
+
+        // moderator associated with category will succeed
+        update_category_title_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id,
+            good_category_title_new(),
+            Ok(()),
+        );
+    });
+}
+
+#[test]
 // test category can be deleted
 fn delete_category() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
