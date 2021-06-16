@@ -532,11 +532,11 @@ decl_storage! {
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
-    /// threshold for rewards,
-    pub MaxRewardAllowed get(fn max_reward_allowed): BalanceOf<T>;
+    /// threshold for rewards default = 1000,
+    pub MaxRewardAllowed get(fn max_reward_allowed): BalanceOf<T> = BalanceOf::<T>::from(1_000u32);
 
-    // min cashout allowed for a channel
-    pub MinCashoutAllowed get(fn min_cashout_allowed): BalanceOf<T>;
+    // min cashout allowed for a channel, default = 0
+    pub MinCashoutAllowed get(fn min_cashout_allowed): BalanceOf<T> = BalanceOf::<T>::zero();
     }
 }
 
@@ -1320,14 +1320,15 @@ decl_module! {
             origin,
             proof: PullPaymentProof<T>,
     ) {
-    let elem = &proof.data;
             let signing_acc = ensure_signed(origin)?;
-            let mut channel = ChannelById::<T>::get(elem.channel_id);
+        let elem = &proof.data;
+    let mut channel = ChannelById::<T>::get(elem.channel_id);
         if let Some(channel_acc) = channel.reward_account.clone() {
             if channel_acc == signing_acc {
-        let cashout = elem.amount_due.
-            checked_sub(&channel.cumulative_reward).
-            ok_or("uinteger underflow")?;
+        let cashout = elem
+            .amount_due
+            .checked_sub(&channel.cumulative_reward)
+            .ok_or("uinteger underflow")?;
         let membership_proof = proof.verify(<Commitment<T>>::get());
             // if conditions are verified update the ChannelById map
             let conditions = membership_proof && <MaxRewardAllowed<T>>::get() > elem.amount_due &&

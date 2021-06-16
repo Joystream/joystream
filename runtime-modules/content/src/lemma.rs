@@ -8,7 +8,7 @@ use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Side {
     Left,
     Right,
@@ -41,10 +41,10 @@ where
             .path
             .iter()
             .fold(init_hash, |hash_v, el| match el.side {
-                Side::Left => {
+                Side::Right => {
                     <Algorithm as sp_runtime::traits::Hash>::hash(&[hash_v, el.hash].encode())
                 }
-                Side::Right => {
+                Side::Left => {
                     <Algorithm as sp_runtime::traits::Hash>::hash(&[el.hash, hash_v].encode())
                 }
             });
