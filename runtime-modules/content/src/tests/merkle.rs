@@ -108,7 +108,7 @@ fn elements_doesnt_belong_to_collection() {
     with_default_mock_builder(|| {
         let out = generate_merkle_root(&PULL_PAYMENTS_COLLECTION).unwrap();
         let root = out.last().copied().unwrap();
-        let _x = Content::update_root(Origin::signed(FIRST_CURATOR_ORIGIN), root);
+        let _x = Content::update_commitment(Origin::signed(FIRST_CURATOR_ORIGIN), root);
 
         let mut res = true;
         for idx in 0..PULL_PAYMENTS_COLLECTION.len() {
@@ -136,7 +136,7 @@ fn no_elements_should_belong_to_empty_collection() {
 fn merkle_root_update() {
     with_default_mock_builder(|| {
         let mut root = TestHashing::hash(&PULL_PAYMENTS_COLLECTION.encode());
-        let mut _x = Content::update_root(Origin::signed(FIRST_CURATOR_ORIGIN), root);
+        let mut _x = Content::update_commitment(Origin::signed(FIRST_CURATOR_ORIGIN), root);
 
         // no event deposit since block 0
         run_to_block(1);
@@ -148,7 +148,7 @@ fn merkle_root_update() {
                 .collect::<Vec<i32>>()
                 .encode(),
         );
-        _x = Content::update_root(Origin::signed(FIRST_CURATOR_ORIGIN), root);
+        _x = Content::update_commitment(Origin::signed(FIRST_CURATOR_ORIGIN), root);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::RootUpdated(root))

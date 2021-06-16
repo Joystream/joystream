@@ -21,17 +21,15 @@ use codec::{Decode, Encode};
 use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
+
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_arithmetic::traits::{BaseArithmetic, CheckedSub, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
-
-pub const MAX_ALLOWED_AMOUNT: u128 = 1_000_000;
-pub const MIN_CASHOUT_AMOUNT: u128 = 1_000;
 
 pub use common::storage::{
     ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
@@ -55,9 +53,6 @@ pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as StorageOwnership>::ChannelId,
     <T as StorageOwnership>::DAOId,
 >;
-
-/// Type, used for reward payment
-pub type Value = u128;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -197,8 +192,16 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
-{
+pub struct ChannelRecord<
+    MemberId,
+    CuratorGroupId,
+    DAOId,
+    AccountId,
+    VideoId,
+    PlaylistId,
+    SeriesId,
+    Balance,
+> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
@@ -212,7 +215,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// Cumulative cashout
-    cumulative_reward: Value,
+    cumulative_reward: Balance,
 }
 
 // Channel alias type for simplification.
@@ -224,6 +227,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
+    BalanceOf<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -525,6 +529,12 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
+
+    /// threshold for rewards,
+    pub MaxRewardAllowed get(fn max_reward_allowed): BalanceOf<T>;
+
+    // min cashout allowed for a channel
+    pub MinCashoutAllowed get(fn min_cashout_allowed): BalanceOf<T>;
     }
 }
 
@@ -704,7 +714,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                cumulative_reward: 0,
+                cumulative_reward: BalanceOf::<T>::default(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -1293,16 +1303,58 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_commitment(
-            _origin,
+            origin,
             new_commitment: <T as frame_system::Trait>::Hash,
         ) {
-            // validation of _origin?
+        ensure_root(origin)?;
             let old_commitment = <Commitment<T>>::get();
             if old_commitment == new_commitment { return Ok(()) }
             <Commitment<T>>::put(new_commitment);
             Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
         }
+
+    #[weight = 10_000_000]
+    pub fn update_channel_reward(
+            _origin,
+            _elem: PullPaymentElement<T>,
+            _path: Vec<<T as frame_system::Trait>::Hash>,
+            _index: u64,
+    ) {
+            let signing_acc = ensure_signed(_origin)?;
+            let mut channel = ChannelById::<T>::get(_elem.channel_id);
+        if let Some(channel_acc) = channel.reward_account.clone() {
+            if channel_acc == signing_acc {
+        let cashout = _elem.amount_due.
+            checked_sub(&channel.cumulative_reward).
+            ok_or("uinteger underflow")?;
+            let membership_proof = Self::verify_proof(&_path, &_elem, _index).unwrap_or(false);
+            // if conditions are verified update the ChannelById map
+            let conditions = membership_proof && <MaxRewardAllowed<T>>::get() > _elem.amount_due &&
+        <MinCashoutAllowed<T>>::get() < cashout;
+            if conditions {
+        // state of channel is updated
+            channel.cumulative_reward += _elem.amount_due;
+            ChannelById::<T>::take(_elem.channel_id);
+        ChannelById::<T>::insert(_elem.channel_id, channel);
+        // value is transferred to the reward account
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(_elem.amount_due, _elem.channel_id));
+            }
+        }
+        }
     }
+
+    #[weight = 10_000_000]
+    pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
+        ensure_root(origin)?;
+        <MaxRewardAllowed<T>>::put(amount);
+    }
+
+    #[weight = 10_000_000]
+    pub fn update_min_cashout_allowed(origin, amount: BalanceOf<T>) {
+        ensure_root(origin)?;
+        <MinCashoutAllowed<T>>::put(amount);
+    }
+}
 }
 
 impl<T: Trait> Module<T> {
