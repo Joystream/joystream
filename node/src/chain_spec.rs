@@ -298,26 +298,40 @@ pub fn testnet_genesis(
     let default_storage_size_constraint =
         joystream_node_runtime::working_group::default_storage_size_constraint();
 
+    let balances = endowed_accounts
+        .iter()
+        .cloned()
+        .map(|k| (k, ENDOWMENT))
+        .chain(
+            initial_balances
+                .iter()
+                .map(|(account, balance)| (account.clone(), *balance)),
+        )
+        .collect();
+
+    #[cfg(feature = "standalone")]
+    let initial_authorities_accounts = initial_authorities.iter().map(|x| x.0.clone()).collect();
+
+    // Filter duplicates between initial_authorities_accounts & endowed_accounts
+    #[cfg(feature = "standalone")]
+    let endowed_accounts = endowed_accounts
+        .iter()
+        // Filter duplicates between initial_authorities_accounts & endowed_accounts
+        .filter(|k| !initial_authorities_accounts.contains(k))
+        .collect();
+
+    #[cfg(feature = "standalone")]
+    let balances = balances
+        .into_iter()
+        .chain(initial_authorities_accounts.into_iter().map(|x| (x, STASH)))
+        .collect();
+
     GenesisConfig {
         frame_system: SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         },
-        pallet_balances: BalancesConfig {
-            balances: endowed_accounts
-                .iter()
-                .cloned()
-                .map(|k| (k, ENDOWMENT))
-                // TODO Fix dulicates in initial_authorities
-                // Additional duplicates check in new balances pallet crashes runtime
-                //.chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
-                .chain(
-                    initial_balances
-                        .iter()
-                        .map(|(account, balance)| (account.clone(), *balance)),
-                )
-                .collect(),
-        },
+        pallet_balances: BalancesConfig { balances },
         pallet_sudo: SudoConfig { key: root_key },
         #[cfg(feature = "standalone")]
         pallet_im_online: ImOnlineConfig { keys: vec![] },
