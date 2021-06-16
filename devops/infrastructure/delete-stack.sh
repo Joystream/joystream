@@ -2,6 +2,8 @@
 
 set -e
 
+source common.sh
+
 if [ -z "$1" ]; then
   echo "ERROR: Configuration file not passed"
   echo "Please use ./delete-stack.sh PATH/TO/CONFIG to run this script"
@@ -11,15 +13,7 @@ else
   source $1
 fi
 
-get_aws_export () {
-  RESULT=$(aws cloudformation list-exports \
-    --profile $CLI_PROFILE \
-    --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}$1')].Value" \
-    --output text | sed 's/\t\t*/\n/g')
-  echo -e $RESULT | tr " " "\n"
-}
-
-BUCKET_NAME=$(get_aws_export "S3BucketName")
+BUCKET_NAME=$(get_aws_export $NEW_STACK_NAME "S3BucketName")
 
 # Delete the CloudFormation stack
 

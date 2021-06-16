@@ -2,6 +2,8 @@
 
 set -e
 
+source common.sh
+
 if [ -z "$1" ]; then
   echo "ERROR: Configuration file not passed"
   echo "Please use ./deploy-infra.sh PATH/TO/CONFIG to run this script"
@@ -20,14 +22,6 @@ if [ ! -f "$KEY_PATH" ]; then
     echo "Key file not found at $KEY_PATH"
     exit 1
 fi
-
-get_aws_export () {
-  RESULT=$(aws cloudformation list-exports \
-    --profile $CLI_PROFILE \
-    --query "Exports[?starts_with(Name,'${NEW_STACK_NAME}$1')].Value" \
-    --output text | sed 's/\t\t*/\n/g')
-  echo -e $RESULT | tr " " "\n"
-}
 
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying main.yml ==========="
@@ -52,7 +46,7 @@ if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  ASG=$(get_aws_export "AutoScalingGroup")
+  ASG=$(get_aws_export $NEW_STACK_NAME "AutoScalingGroup")
 
   VALIDATORS=""
 
@@ -65,13 +59,13 @@ if [ $? -eq 0 ]; then
     VALIDATORS+="$IP\n"
   done
 
-  RPC_NODES=$(get_aws_export "RPCPublicIp")
+  RPC_NODES=$(get_aws_export $NEW_STACK_NAME "RPCPublicIp")
 
-  BUILD_SERVER=$(get_aws_export "BuildPublicIp")
+  BUILD_SERVER=$(get_aws_export $NEW_STACK_NAME "BuildPublicIp")
 
-  BUCKET_NAME=$(get_aws_export "S3BucketName")
+  BUCKET_NAME=$(get_aws_export $NEW_STACK_NAME "S3BucketName")
 
-  DOMAIN_NAME=$(get_aws_export "DomainName")
+  DOMAIN_NAME=$(get_aws_export $NEW_STACK_NAME "DomainName")
 
   mkdir -p $DATA_PATH
 
