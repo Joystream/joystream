@@ -6,14 +6,14 @@
 mod tests;
 
 mod errors;
+mod lemma;
 mod permissions;
 
 pub use errors::*;
+pub use lemma::*;
 pub use permissions::*;
 
 use core::{fmt::Debug, hash::Hash};
-
-use sp_core::Hasher;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -25,7 +25,7 @@ use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, CheckedSub, One, Zero};
+use sp_arithmetic::traits::{BaseArithmetic, CheckedAdd, CheckedSub, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -487,6 +487,8 @@ pub type PullPaymentElement<T> = PullPaymentElementRecord<
     BalanceOf<T>,
     <T as frame_system::Trait>::Hash,
 >;
+
+pub type PullPaymentProof<T> = Proof<<T as frame_system::Trait>::Hashing, PullPaymentElement<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1315,29 +1317,31 @@ decl_module! {
 
     #[weight = 10_000_000]
     pub fn update_channel_reward(
-            _origin,
-            _elem: PullPaymentElement<T>,
-            _path: Vec<<T as frame_system::Trait>::Hash>,
-            _index: u64,
+            origin,
+            proof: PullPaymentProof<T>,
     ) {
-            let signing_acc = ensure_signed(_origin)?;
-            let mut channel = ChannelById::<T>::get(_elem.channel_id);
+    let elem = &proof.data;
+            let signing_acc = ensure_signed(origin)?;
+            let mut channel = ChannelById::<T>::get(elem.channel_id);
         if let Some(channel_acc) = channel.reward_account.clone() {
             if channel_acc == signing_acc {
-        let cashout = _elem.amount_due.
+        let cashout = elem.amount_due.
             checked_sub(&channel.cumulative_reward).
             ok_or("uinteger underflow")?;
-            let membership_proof = Self::verify_proof(&_path, &_elem, _index).unwrap_or(false);
+        let membership_proof = proof.verify(<Commitment<T>>::get());
             // if conditions are verified update the ChannelById map
-            let conditions = membership_proof && <MaxRewardAllowed<T>>::get() > _elem.amount_due &&
+            let conditions = membership_proof && <MaxRewardAllowed<T>>::get() > elem.amount_due &&
         <MinCashoutAllowed<T>>::get() < cashout;
             if conditions {
         // state of channel is updated
-            channel.cumulative_reward += _elem.amount_due;
-            ChannelById::<T>::take(_elem.channel_id);
-        ChannelById::<T>::insert(_elem.channel_id, channel);
+        channel.cumulative_reward = channel
+            .cumulative_reward
+            .checked_add(&elem.amount_due)
+            .ok_or("balance value overflow")?;
+            ChannelById::<T>::take(elem.channel_id);
+        ChannelById::<T>::insert(elem.channel_id, channel);
         // value is transferred to the reward account
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(_elem.amount_due, _elem.channel_id));
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
             }
         }
         }
@@ -1347,12 +1351,14 @@ decl_module! {
     pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
         ensure_root(origin)?;
         <MaxRewardAllowed<T>>::put(amount);
+    Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
     }
 
     #[weight = 10_000_000]
     pub fn update_min_cashout_allowed(origin, amount: BalanceOf<T>) {
         ensure_root(origin)?;
         <MinCashoutAllowed<T>>::put(amount);
+    Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
     }
 }
 }
@@ -1455,30 +1461,6 @@ impl<T: Trait> Module<T> {
 
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
-    }
-
-    fn verify_proof<E: Encode>(
-        path: &[<T as frame_system::Trait>::Hash],
-        value: &E,
-        i: u64,
-    ) -> Result<bool, &'static str> {
-        let exp = path.len();
-        if i > 2u64.checked_pow(exp as u32).ok_or("index overflow")? {
-            Err("index out of range or Merkle path insufficient for validation")
-        } else {
-            let mut idx = i.checked_add(1).ok_or("index overflow")?;
-            let mut hash_value = <T as frame_system::Trait>::Hashing::hash(&value.encode());
-            for h_el in path.iter() {
-                hash_value = match idx % 2 {
-                    1 => <T as frame_system::Trait>::Hashing::hash(&[hash_value, *h_el].encode()),
-                    _ => <T as frame_system::Trait>::Hashing::hash(&[*h_el, hash_value].encode()),
-                };
-                idx = (idx >> 1).checked_add(idx % 2).ok_or("index overflow")?;
-            }
-            let root = <Commitment<T>>::get();
-            let ans = root == hash_value;
-            Ok(ans)
-        }
     }
 } // impl<T: Trait> Module
 
@@ -1647,5 +1629,7 @@ decl_event!(
         // Rewards
         CommitmentUpdated(HashValue),
         ChannelRewardUpdated(Balance, ChannelId),
+        MaxRewardUpdated(Balance),
+        MinCashoutUpdated(Balance),
     }
 );
