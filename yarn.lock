@@ -75,9 +75,9 @@
   dependencies:
     xss "^1.0.8"
 
-"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-1.7.27.tgz":
+"@apollographql/graphql-playground-react@https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz":
   version "1.7.27"
-  resolved "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-1.7.27.tgz#d19cddaca0be119c1f8a50d8e3b939ae61da7d3d"
+  resolved "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz#f29765a3a182204bf2bb166a3ed10c7273637af9"
   dependencies:
     "@types/lru-cache" "^4.1.1"
     apollo-link "^1.2.13"
@@ -28738,9 +28738,9 @@ warning@^4.0.1, warning@^4.0.2, warning@^4.0.3:
 
 "warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz", "warthog@https://github.com/ondratra/warthog/releases/download/v2.23.1/warthog-v2.23.1.tgz":
   version "2.23.1"
-  resolved "https://github.com/ondratra/warthog/releases/download/v2.23.1/warthog-v2.23.1.tgz#a782a941bc1e09722fb0736a092fe6494cd86615"
+  resolved "https://github.com/ondratra/warthog/releases/download/v2.23.1/warthog-v2.23.1.tgz#06308310382d29697636af862a2fa307d962f25f"
   dependencies:
-    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-1.7.27.tgz"
+    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz"
     "@types/app-root-path" "^1.2.4"
     "@types/bn.js" "^4.11.6"
     "@types/caller" "^1.0.0"
