@@ -475,7 +475,7 @@ pub struct Person<MemberId> {
 
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PullPaymentElementRecord<ChannelId, Balance, HashType> {
     channel_id: ChannelId,
     amount_due: Balance,
@@ -680,6 +680,8 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) {
+
+                println!("********************** About to create channel");
             ensure_actor_authorized_to_create_channel::<T>(
                 origin,
                 &actor,
@@ -1320,11 +1322,16 @@ decl_module! {
             origin,
             proof: PullPaymentProof<T>,
     ) {
+    println!("HA");
             let signing_acc = ensure_signed(origin)?;
         let elem = &proof.data;
     let mut channel = ChannelById::<T>::get(elem.channel_id);
+
+    println!("channel reward account {:?}", channel.reward_account);
         if let Some(channel_acc) = channel.reward_account.clone() {
-            if channel_acc == signing_acc {
+
+            ensure!(channel_acc == signing_acc, "Origin isn't channel's reward account");
+
         let cashout = elem
             .amount_due
             .checked_sub(&channel.cumulative_reward)
@@ -1343,14 +1350,14 @@ decl_module! {
         ChannelById::<T>::insert(elem.channel_id, channel);
         // value is transferred to the reward account
             Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
-            }
+
         }
         }
     }
 
     #[weight = 10_000_000]
     pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
-        ensure_root(origin)?;
+        ensure_root(origin)?; // Root origin which describes a call that comes from within the runtime itself
         <MaxRewardAllowed<T>>::put(amount);
     Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
     }

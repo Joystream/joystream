@@ -94,28 +94,25 @@ fn generate_merkle_root<E: Encode>(collection: &[E]) -> Result<Vec<TestHash>, &'
 fn helper_build_merkle_path<E: Encode + Clone>(
     collection: &[E],
     idx: usize,
-    out: &[TestHash],
-) -> TestProof<E> {
+    merkle_tree: &[TestHash],
+) -> Vec<LemmaItemTest> {
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = helper_index_path(collection.len(), idx + 1);
-    Proof {
-        data: collection[idx].clone(),
-        path: index_path
-            .iter()
-            .map(|idx_item| LemmaItemTest {
-                hash: out[idx_item.index - 1],
-                side: idx_item.side,
-            })
-            .collect(),
-    }
+    index_path
+        .iter()
+        .map(|idx_item| LemmaItemTest {
+            hash: merkle_tree[idx_item.index - 1],
+            side: idx_item.side,
+        })
+        .collect()
 }
 
 #[test]
 fn update_maximum_reward_allowed() {
     with_default_mock_builder(|| {
-        run_to_block(2);
+        run_to_block(1);
         let new_amount = BalanceOf::<Test>::from(2_000u32);
-        Content::update_max_reward_allowed(Origin::signed(FIRST_CURATOR_ORIGIN), new_amount);
+        let _res = Content::update_max_reward_allowed(Origin::root(), new_amount);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::MaxRewardUpdated(new_amount))
@@ -123,74 +120,113 @@ fn update_maximum_reward_allowed() {
     })
 }
 
-// #[test]
-// fn elements_does_belong_to_collection() {
-//     with_default_mock_builder(|| {
-//         let out = generate_merkle_root(&PULL_PAYMENTS_COLLECTION).unwrap();
-//         let merkle_root = out.last().copied().unwrap();
-//         let _x = Content::update_root(Origin::signed(FIRST_CURATOR_origin), merkle_root);
+#[test]
+fn update_minimum_cashout_allowed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        let new_amount = BalanceOf::<Test>::from(10u32);
+        let _res = Content::update_min_cashout_allowed(Origin::root(), new_amount);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::MinCashoutUpdated(new_amount))
+        );
+    })
+}
 
-//         let mut res = false;
-//         for idx in 0..PULL_PAYMENTS_COLLECTION.len() {
-//             let merkle_proof = helper_build_merkle_path(&PULL_PAYMENTS_COLLECTION, idx, &out);
-//             if let Ok(ans) =
+#[test]
+fn update_commitment_value() {
+    with_default_mock_builder(|| {
+        let mut commit = TestHashing::hash(&1.encode());
+        let mut _res = Content::update_commitment(Origin::root(), commit);
+        run_to_block(1);
+        commit = TestHashing::hash(&2.encode());
+        _res = Content::update_commitment(Origin::root(), commit);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::CommitmentUpdated(commit))
+        );
+    })
+}
 
-//             {
-//                 res = res || ans;
-//             };
-//         }
-//         assert_eq!(res, true);
-//     });
-// }
-// #[test]
-// fn elements_doesnt_belong_to_collection() {
-//     with_default_mock_builder(|| {
-//         let out = generate_merkle_root(&PULL_PAYMENTS_COLLECTION).unwrap();
-//         let root = out.last().copied().unwrap();
-//         let _x = Content::update_commitment(Origin::signed(FIRST_CURATOR_ORIGIN), root);
+#[test]
+fn update_commitment_with_same_value() {
+    with_default_mock_builder(|| {
+        let mut commit = TestHashing::hash(&1.encode());
+        let mut _res = Content::update_commitment(Origin::root(), commit);
+        run_to_block(1);
+        commit = TestHashing::hash(&1.encode());
+        _res = Content::update_commitment(Origin::root(), commit);
+        assert_eq!(System::events().last(), None);
+    })
+}
 
-//         let mut res = true;
-//         for idx in 0..PULL_PAYMENTS_COLLECTION.len() {
-//             let merkle_proof = helper_build_merkle_path(&PULL_PAYMENTS_COLLECTION, idx, &out);
-//             if let Ok(ans) =
-//                 Content::verify_proof(&merkle_proof, &VALUE_NOT_BELONGING_TO_COLLECTION, idx)
-//             {
-//                 res = res && ans;
-//             };
-//         }
-//         assert_eq!(res, false);
-//     });
-// }
-// #[test]
-// fn no_elements_should_belong_to_empty_collection() {
-//     with_default_mock_builder(|| {
-//         if let Err(_) = generate_merkle_root(&PULL_PAYMENTS_COLLECTION_EMPTY) {
-//             assert!(true); // NON membership proof for empty collection should be true
-//         } else {
-//             assert!(false);
-//         }
-//     });
-// }
-// #[test]
-// fn merkle_root_update() {
-//     with_default_mock_builder(|| {
-//         let mut root = TestHashing::hash(&PULL_PAYMENTS_COLLECTION.encode());
-//         let mut _x = Content::update_commitment(Origin::signed(FIRST_CURATOR_ORIGIN), root);
+#[test]
+fn channel_reward_update() {
+    with_default_mock_builder(|| {
+        // create payment elements collection
+        let idxs: [u64; 10] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-//         // no event deposit since block 0
-//         run_to_block(1);
+        // create channels
+        let _ok = idxs.iter().map(|&i| {
+            Content::create_channel(
+                Origin::signed(i),
+                ContentActor::Member(MEMBERS_COUNT + 1),
+                ChannelCreationParameters {
+                    assets: vec![],
+                    meta: vec![],
+                    reward_account: Some(i),
+                },
+            )
+        });
 
-//         root = TestHashing::hash(
-//             &PULL_PAYMENTS_COLLECTION
-//                 .iter()
-//                 .map(|x| x + 1)
-//                 .collect::<Vec<i32>>()
-//                 .encode(),
-//         );
-//         _x = Content::update_commitment(Origin::signed(FIRST_CURATOR_ORIGIN), root);
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::RootUpdated(root))
-//         );
-//     })
-// }
+        let pull_payments_collection: Vec<PullPaymentElement<Test>> = idxs
+            .iter()
+            .map(|&i| PullPaymentElement::<Test> {
+                channel_id: Content::next_channel_id(),
+                amount_due: BalanceOf::<Test>::from(i),
+                reason: TestHashing::hash(&i.encode()),
+            })
+            .collect::<Vec<PullPaymentElement<Test>>>();
+
+        println!("{:?}", Content::next_channel_id());
+
+        // generate hash tree and get its root
+        let out = generate_merkle_root(&pull_payments_collection).unwrap();
+        let merkle_root = out.last().copied().unwrap();
+
+        // set the commitment
+        let mut _res = Content::update_commitment(Origin::root(), merkle_root);
+
+        // suppose now channel 1 is trying to collect its payment
+        let reward_element = PullPaymentElement::<Test> {
+            channel_id: ChannelId::from(1u64),
+            amount_due: BalanceOf::<Test>::from(100u32),
+            reason: TestHashing::hash(&1.encode()),
+        };
+
+        let proof_path = helper_build_merkle_path(&pull_payments_collection, 0, &out);
+        let proof = TestProof {
+            data: reward_element,
+            path: proof_path,
+        };
+
+        run_to_block(1); // in order to produce events
+
+        // attempt should succeed
+        _res = Content::update_channel_reward(
+            Origin::signed(
+                Content::channel_by_id(reward_element.channel_id)
+                    .reward_account
+                    .unwrap(),
+            ),
+            proof,
+        );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelRewardUpdated(
+                reward_element.amount_due,
+                reward_element.channel_id,
+            ))
+        );
+    })
+}
