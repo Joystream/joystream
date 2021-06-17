@@ -5,7 +5,7 @@ use codec::{Decode, Encode};
 
 #[cfg(feature = "std")]
 use core::fmt::Debug;
-use serde::{Deserialize, Serialize};
+pub use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
