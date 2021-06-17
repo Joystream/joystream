@@ -27,17 +27,17 @@ fn helper_index_path(len: usize, index: usize) -> Vec<IndexItem> {
         if idx % 2 == 1 && idx == el {
             path.push(IndexItem {
                 index: prev_len + idx,
-                side: Side::Right,
+                side: Side::Left,
             });
         } else {
             match idx % 2 {
                 1 => path.push(IndexItem {
                     index: prev_len + idx + 1,
-                    side: Side::Left,
+                    side: Side::Right,
                 }),
                 _ => path.push(IndexItem {
                     index: prev_len + idx + 1,
-                    side: Side::Right,
+                    side: Side::Left,
                 }),
             };
         }
@@ -161,34 +161,42 @@ fn update_commitment_with_same_value() {
 }
 
 #[test]
-fn channel_reward_update() {
+fn channel_reward_update_test() {
     with_default_mock_builder(|| {
+        run_to_block(1); // in order to produce events
+
         // create payment elements collection
         let idxs: [u64; 10] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
         // create channels
-        let _ok = idxs.iter().map(|&i| {
-            Content::create_channel(
-                Origin::signed(i),
-                ContentActor::Member(MEMBERS_COUNT + 1),
-                ChannelCreationParameters {
-                    assets: vec![],
-                    meta: vec![],
-                    reward_account: Some(i),
-                },
-            )
-        });
+        let _ = Content::create_channel(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: Some(FIRST_MEMBER_ORIGIN),
+            },
+        );
+
+        let _ = Content::create_channel(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: Some(SECOND_MEMBER_ORIGIN),
+            },
+        );
 
         let pull_payments_collection: Vec<PullPaymentElement<Test>> = idxs
             .iter()
             .map(|&i| PullPaymentElement::<Test> {
-                channel_id: Content::next_channel_id(),
+                channel_id: ChannelId::from(FIRST_MEMBER_ID),
                 amount_due: BalanceOf::<Test>::from(i),
                 reason: TestHashing::hash(&i.encode()),
             })
             .collect::<Vec<PullPaymentElement<Test>>>();
-
-        println!("{:?}", Content::next_channel_id());
 
         // generate hash tree and get its root
         let out = generate_merkle_root(&pull_payments_collection).unwrap();
@@ -199,28 +207,20 @@ fn channel_reward_update() {
 
         // suppose now channel 1 is trying to collect its payment
         let reward_element = PullPaymentElement::<Test> {
-            channel_id: ChannelId::from(1u64),
-            amount_due: BalanceOf::<Test>::from(100u32),
-            reason: TestHashing::hash(&1.encode()),
+            channel_id: ChannelId::from(FIRST_MEMBER_ID),
+            amount_due: BalanceOf::<Test>::from(1u64),
+            reason: TestHashing::hash(&1u64.encode()),
         };
 
         let proof_path = helper_build_merkle_path(&pull_payments_collection, 0, &out);
+
         let proof = TestProof {
             data: reward_element,
             path: proof_path,
         };
 
-        run_to_block(1); // in order to produce events
-
         // attempt should succeed
-        _res = Content::update_channel_reward(
-            Origin::signed(
-                Content::channel_by_id(reward_element.channel_id)
-                    .reward_account
-                    .unwrap(),
-            ),
-            proof,
-        );
+        _res = Content::update_channel_reward(Origin::signed(FIRST_MEMBER_ORIGIN), proof);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelRewardUpdated(
