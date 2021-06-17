@@ -9,11 +9,11 @@ version = '3.1.1'
 ansi_term = "0.12.1"
 rand = "0.7.3"
 structopt = "0.3.21"
-sc-keystore = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.4" }
-sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.4" }
-sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.4" }
-sp-core = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.4" }
-sp-keystore = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.4" }
+sc-keystore = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5" }
+sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5" }
+sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5" }
+sp-core = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5" }
+sp-keystore = { git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5" }
 joystream-node = { path = "../../node" }
 
 enum-utils = "0.1.2"

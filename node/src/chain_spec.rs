@@ -327,27 +327,27 @@ pub fn testnet_genesis(
         .collect();
 
     GenesisConfig {
-        frame_system: SystemConfig {
+        system: SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         },
-        pallet_balances: BalancesConfig { balances },
-        pallet_sudo: SudoConfig { key: root_key },
+        balances: BalancesConfig { balances },
+        sudo: SudoConfig { key: root_key },
         #[cfg(feature = "standalone")]
-        pallet_im_online: ImOnlineConfig { keys: vec![] },
+        im_online: ImOnlineConfig { keys: vec![] },
         #[cfg(feature = "standalone")]
-        pallet_authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
+        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
         #[cfg(feature = "standalone")]
-        pallet_grandpa: GrandpaConfig {
+        grandpa: GrandpaConfig {
             authorities: vec![],
         },
         #[cfg(feature = "standalone")]
-        pallet_babe: BabeConfig {
+        babe: BabeConfig {
             authorities: vec![],
             epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
         },
         #[cfg(feature = "standalone")]
-        pallet_staking: StakingConfig {
+        staking: StakingConfig {
             validator_count: 100,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
@@ -360,7 +360,7 @@ pub fn testnet_genesis(
             ..Default::default()
         },
         #[cfg(feature = "standalone")]
-        pallet_session: SessionConfig {
+        session: SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -376,16 +376,16 @@ pub fn testnet_genesis(
         parachain_info: ParachainInfoConfig { parachain_id: id },
         // Select AuraIds
         #[cfg(not(feature = "standalone"))]
-        pallet_aura: AuraConfig {
+        aura: AuraConfig {
             authorities: aura_authorities,
         },
         #[cfg(not(feature = "standalone"))]
-        cumulus_pallet_aura_ext: Default::default(),
+        aura_ext: Default::default(),
         council: CouncilConfig {
             active_council: vec![],
             term_ends_at: 1,
         },
-        election: CouncilElectionConfig {
+        council_election: CouncilElectionConfig {
             auto_start: true,
             election_parameters: ElectionParameters {
                 announcing_period: 4 * DAYS,
@@ -398,7 +398,7 @@ pub fn testnet_genesis(
                 min_voting_stake: 100,
             },
         },
-        membership: MembersConfig {
+        members: MembersConfig {
             default_paid_membership_fee: 100u128,
             members,
         },
@@ -410,7 +410,7 @@ pub fn testnet_genesis(
         data_object_storage_registry: DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
         },
-        working_group_Instance2: StorageWorkingGroupConfig {
+        storage_working_group: StorageWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -418,7 +418,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         },
-        working_group_Instance3: ContentDirectoryWorkingGroupConfig {
+        content_directory_working_group: ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -426,7 +426,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         },
-        working_group_Instance4: OperationsWorkingGroupConfig {
+        operations_working_group: OperationsWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -434,7 +434,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         },
-        working_group_Instance5: GatewayWorkingGroupConfig {
+        gateway_working_group: GatewayWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
