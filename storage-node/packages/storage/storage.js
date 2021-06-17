@@ -113,9 +113,17 @@ class StorageWriteStream extends Transform {
       }
     }
 
-    this.temp.write(chunk, (err) => {
-      callback(err)
-    })
+    // Always waiting for write flush can be slow..
+    // this.temp.write(chunk, (err) => {
+    //   callback(err)
+    // })
+
+    // Respect backpressure
+    if (!this.temp.write(chunk)) {
+      this.temp.once('drain', callback)
+    } else {
+      process.nextTick(callback)
+    }
   }
 
   _flush(callback) {
