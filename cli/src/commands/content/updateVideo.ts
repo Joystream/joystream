@@ -32,11 +32,9 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     } = this.parse(UpdateVideoCommand)
 
     // Context
-    const currentAccount = await this.getRequiredSelectedAccount()
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
-    const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(currentAccount)
+    const [actor, address] = await this.getChannelOwnerActor(channel)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
 
@@ -62,7 +60,11 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideo', [actor, videoId, videoUpdateParameters])
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateVideo', [
+      actor,
+      videoId,
+      videoUpdateParameters,
+    ])
 
     await this.uploadAssets(inputAssets, input)
   }

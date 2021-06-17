@@ -54,7 +54,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
     this.log(
       chalk.green(
         `${chalk.magentaBright(formatBalance(amount))} from worker ${chalk.magentaBright(workerId)} stake ` +
-          `has been returned to worker's role account (${chalk.white(groupMember.roleAccount.toString())})!`
+          `has been returned to worker's role account (${chalk.magentaBright(groupMember.roleAccount.toString())})!`
       )
     )
   }

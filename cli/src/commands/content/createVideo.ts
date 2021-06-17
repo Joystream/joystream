@@ -41,10 +41,8 @@ export default class CreateVideoCommand extends UploadCommandBase {
     const { input, channelId } = this.parse(CreateVideoCommand).flags
 
     // Get context
-    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getChannelOwnerActor(channel)
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
@@ -79,7 +77,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createVideo', [
+    const result = await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'createVideo', [
       actor,
       channelId,
       videoCreationParameters,

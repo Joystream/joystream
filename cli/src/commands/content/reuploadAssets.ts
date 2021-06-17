@@ -19,10 +19,6 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
   async run() {
     const { input } = this.parse(ReuploadVideoAssetsCommand).flags
 
-    // Get context
-    const account = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(account)
-
     // Get input from file
     const inputData = await getInputJson<AssetsInput>(input, AssetsSchema)
     const inputAssets = inputData.map(({ contentId, path }) => ({

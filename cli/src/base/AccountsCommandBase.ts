@@ -83,7 +83,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   ): Promise<NamedKeyringPair> {
     while (!name || this.isAccountNameTaken(name)) {
       if (name) {
-        this.warn(`Account ${chalk.white(name)} already exists... Try different name`)
+        this.warn(`Account ${chalk.magentaBright(name)} already exists... Try different name`)
       }
       name = await this.simplePrompt({ message: 'New account name' })
     }
@@ -93,11 +93,11 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       const mnemonic = mnemonicGenerate()
       keyring.addFromMnemonic(mnemonic, { name, whenCreated: Date.now() }, type)
       masterKey = keyring.getPairs()[0]
-      this.log(chalk.white(`${chalk.bold('New account memonic: ')}${mnemonic}`))
+      this.log(chalk.magentaBright(`${chalk.bold('New account memonic: ')}${mnemonic}`))
     } else {
       const existingAcc = this.getPairs().find((p) => p.address === masterKey!.address)
       if (existingAcc) {
-        this.error(`Account with this key already exists (${chalk.white(existingAcc.meta.name)})`, {
+        this.error(`Account with this key already exists (${chalk.magentaBright(existingAcc.meta.name)})`, {
           exit: ExitCodes.InvalidInput,
         })
       }

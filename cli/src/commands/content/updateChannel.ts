@@ -45,10 +45,8 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     } = this.parse(UpdateChannelCommand)
 
     // Context
-    const currentAccount = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
-    const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(currentAccount)
+    const [actor, address] = await this.getChannelOwnerActor(channel)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
 
@@ -76,7 +74,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateChannel', [
       actor,
       channelId,
       channelUpdateParameters,

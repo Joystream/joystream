@@ -30,10 +30,7 @@ export default class UpdateChannelCategoryCommand extends ContentDirectoryComman
 
     const { channelCategoryId } = this.parse(UpdateChannelCategoryCommand).args
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
-
-    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
+    const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
     const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input, ChannelCategoryInputSchema)
 
@@ -47,7 +44,7 @@ export default class UpdateChannelCategoryCommand extends ContentDirectoryComman
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannelCategory', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateChannelCategory', [
       actor,
       channelCategoryId,
       channelCategoryUpdateParameters,
