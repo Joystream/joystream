@@ -103,7 +103,7 @@ class StorageWriteStream extends Transform {
     if (!this.fileInfo && this.buf.byteLength <= fileType.minimumBytes) {
       this.buf = Buffer.concat([this.buf, chunk])
 
-      if (this.buf >= fileType.minimumBytes) {
+      if (this.buf.byteLength >= fileType.minimumBytes) {
         const info = fileType(this.buf)
         // No info? We will try again at the end of the stream.
         if (info) {
