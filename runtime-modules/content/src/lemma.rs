@@ -3,9 +3,10 @@
 /// item = (hash, side)
 use codec::{Decode, Encode};
 
-#[cfg(feature = "std")]
 use core::fmt::Debug;
+#[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
+
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
