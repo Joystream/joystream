@@ -9,6 +9,7 @@ type TestHashing = <Test as frame_system::Trait>::Hashing;
 type LemmaItemTest = LemmaItem<TestHash>;
 type TestProof<Value> = Proof<TestHashing, Value>;
 
+#[derive(Debug)]
 struct IndexItem {
     index: usize,
     side: Side,
@@ -36,7 +37,7 @@ fn helper_index_path(len: usize, index: usize) -> Vec<IndexItem> {
                     side: Side::Right,
                 }),
                 _ => path.push(IndexItem {
-                    index: prev_len + idx + 1,
+                    index: prev_len + idx - 1,
                     side: Side::Left,
                 }),
             };
@@ -98,6 +99,9 @@ fn helper_build_merkle_path<E: Encode + Clone>(
 ) -> Vec<LemmaItemTest> {
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = helper_index_path(collection.len(), idx + 1);
+    // for el in index_path.iter() {
+    //     println!("{:?}", el)
+    // }
     index_path
         .iter()
         .map(|idx_item| LemmaItemTest {
@@ -166,7 +170,7 @@ fn channel_reward_update_test() {
         run_to_block(1); // in order to produce events
 
         // create payment elements collection
-        let idxs: [u64; 10] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let ids: [u64; 5] = [1, 2, 3, 4, 5];
 
         // create channels
         let _ = Content::create_channel(
@@ -189,7 +193,7 @@ fn channel_reward_update_test() {
             },
         );
 
-        let pull_payments_collection: Vec<PullPaymentElement<Test>> = idxs
+        let pull_payments_collection: Vec<PullPaymentElement<Test>> = ids
             .iter()
             .map(|&i| PullPaymentElement::<Test> {
                 channel_id: ChannelId::from(FIRST_MEMBER_ID),
@@ -206,13 +210,15 @@ fn channel_reward_update_test() {
         let mut _res = Content::update_commitment(Origin::root(), merkle_root);
 
         // suppose now channel 1 is trying to collect its payment
+        let test_id = 2u64;
         let reward_element = PullPaymentElement::<Test> {
             channel_id: ChannelId::from(FIRST_MEMBER_ID),
-            amount_due: BalanceOf::<Test>::from(1u64),
-            reason: TestHashing::hash(&1u64.encode()),
+            amount_due: BalanceOf::<Test>::from(test_id),
+            reason: TestHashing::hash(&test_id.encode()),
         };
 
-        let proof_path = helper_build_merkle_path(&pull_payments_collection, 0, &out);
+        let proof_path =
+            helper_build_merkle_path(&pull_payments_collection, (test_id as usize) - 1, &out);
 
         let proof = TestProof {
             data: reward_element,

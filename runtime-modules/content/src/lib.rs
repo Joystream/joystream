@@ -1335,13 +1335,9 @@ decl_module! {
             .ok_or("uinteger underflow")?;
 
             ensure!(channel_acc == signing_acc, "Origin isn't channel's reward account");
-            println!("Channel account is the same as Origin\n");
             ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
-            println!("Cumulative reward is ok\n");
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
-            println!("Required amount is ok\n");
             ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
-            println!("Cashout does exist\n");
 
         // state of channel is updated
         channel.cumulative_reward = channel
