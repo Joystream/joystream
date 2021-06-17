@@ -1,45 +1,13 @@
-enum Network {
-  BABYLON
-  ALEXANDRIA
-  ROME
-}
+"Asset availability representation"
+enum AssetAvailability {
+  "Asset is available in storage"
+  ACCEPTED
 
-enum MembershipEntryMethod {
-  PAID
-  SCREENING
-  GENESIS
-}
+  "Asset is being uploaded to storage"
+  PENDING
 
-"Stored information about a registered user"
-type Membership @entity {
-  "MemberId: runtime identifier for a user"
-  id: ID!
-
-  "The unique handle chosen by member"
-  handle: String! @unique @fulltext(query: "membersByHandle")
-
-  "A Url to member's Avatar image"
-  avatarUri: String
-
-  "Short text chosen by member to share information about themselves"
-  about: String
-
-  "Member's controller account id"
-  controllerAccount: String!
-
-  "Member's root account id"
-  rootAccount: String!
-
-  "Blocknumber when member was registered"
-  createdInBlock: Int!
-
-  "How the member was registered"
-  entry: MembershipEntryMethod!
-
-  "The type of subscription the member has purchased if any."
-  subscription: Int
-
-  channels: [Channel!]! @derivedFrom(field: "ownerMember")
+  "Invalid storage (meta)data used"
+  INVALID
 }
 
 "Category of media channel"
@@ -53,106 +21,6 @@ type ChannelCategory @entity {
 
   createdInBlock: Int!
 }
-
-"Asset availability representation"
-enum AssetAvailability {
-  "Asset is available in storage"
-  ACCEPTED,
-
-  "Asset is being uploaded to storage"
-  PENDING,
-
-  "Invalid storage (meta)data used"
-  INVALID,
-}
-
-"The decision of the storage provider when it acts as liaison"
-enum LiaisonJudgement {
-  "Content awaits for a judgment"
-  PENDING,
-
-  "Content accepted"
-  ACCEPTED,
-}
-
-"Manages content ids, type and storage provider decision about it"
-type DataObject @entity {
-  "Content owner"
-  owner: DataObjectOwner!
-
-  "Content added at"
-  createdInBlock: Int!
-
-  "Content type id"
-  typeId: Int!
-
-  "Content size in bytes"
-  size: Int!
-
-  "Storage provider id of the liaison"
-  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
-
-  "Storage provider as liaison judgment"
-  liaisonJudgement: LiaisonJudgement!
-
-  "IPFS content id"
-  ipfsContentId: String!
-
-  "Joystream runtime content"
-  joystreamContentId: String!
-}
-
-"Owner type for storage object"
-union DataObjectOwner = DataObjectOwnerMember
-  | DataObjectOwnerChannel
-  | DataObjectOwnerDao
-  | DataObjectOwnerCouncil
-  | DataObjectOwnerWorkingGroup
-
-"Asset owned by a member"
-type DataObjectOwnerMember @variant {
-  # use `Int` instead of `Membership` before variant relations are featured in Hydra
-  # TODO: setup proper relations
-  #"Member identifier"
-  #memberId: Membership!
-  "Member identifier"
-  member: Int!
-
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
-}
-
-"Asset owned by a channel"
-type DataObjectOwnerChannel @variant {
-  # use `Int` instead of `Channel` before variant relations are featured in Hydra
-  #"Channel identifier"
-  #channel: Channel!
-  "Channel identifier"
-  channel: Int!
-
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
-}
-
-"Asset owned by a DAO"
-type DataObjectOwnerDao @variant {
-  "DAO identifier"
-  dao: Int!
-}
-
-"Asset owned by the Council"
-type DataObjectOwnerCouncil @variant {
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
-}
-
-"Asset owned by a WorkingGroup"
-type DataObjectOwnerWorkingGroup @variant {
-  "Working group identifier"
-  workingGroup: Int!
-}
-
-#### High Level Derivative Entities ####
 
 type Language @entity {
   "Runtime entity identifier (EntityId)"
@@ -375,28 +243,4 @@ type License @entity {
 
   "Custom license content"
   custom_text: String
-}
-
-enum WorkerType {
-  GATEWAY
-  STORAGE
-}
-
-type Worker @entity {
-  "Unique identifier"
-  id: ID!
-
-  "Sign of worker still being active"
-  isActive: Boolean!
-
-  "Runtime identifier"
-  workerId: String!
-
-  "Associated working group"
-  type: WorkerType!
-
-  "Custom metadata set by provider"
-  metadata: String
-
-  dataObjects: [DataObject!]! @derivedFrom(field: "liaison")
 }
