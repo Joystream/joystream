@@ -17,7 +17,11 @@ export async function bootWorkers(db: DatabaseManager, workers: IBootstrapWorker
   await bootWorkersInGroup(db, workers.gateway, WorkerType.GATEWAY)
 }
 
-export async function bootWorkersInGroup(db: DatabaseManager, workers: IBootstrapWorker[], workerType: WorkerType): Promise<void> {
+export async function bootWorkersInGroup(
+  db: DatabaseManager,
+  workers: IBootstrapWorker[],
+  workerType: WorkerType
+): Promise<void> {
   if (!workers) {
     return
   }
@@ -39,6 +43,6 @@ export async function bootWorkersInGroup(db: DatabaseManager, workers: IBootstra
     await db.save<Worker>(worker)
 
     // emit log event
-    logger.info('Worker has been bootstrapped', {id: rawWorker.id, workerType})
+    logger.info('Worker has been bootstrapped', { id: rawWorker.id, workerType })
   }
 }
