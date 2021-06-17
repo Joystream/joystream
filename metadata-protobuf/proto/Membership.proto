@@ -1,7 +1,0 @@
-syntax = "proto2";
-
-message MembershipMetadata {
-  optional string name = 1; // Member's real name
-  optional uint32 avatar = 2; // Member's avatar - index into external [assets array](#.Assets)
-  optional string about = 3; // Member's md-formatted about text
-}

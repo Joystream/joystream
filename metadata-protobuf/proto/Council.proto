@@ -1,8 +1,0 @@
-syntax = "proto2";
-
-message CouncilCandidacyNoteMetadata {
-  optional string header = 1; // Candidacy header text
-  repeated string bullet_points = 2; // Candidate program in form of bullet points
-  optional string banner_image_uri = 3; // Image uri of candidate's banner
-  optional string description = 4; // Candidacy description (md-formatted)
-}

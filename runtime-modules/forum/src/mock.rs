@@ -70,11 +70,11 @@ impl frame_system::Trait for Runtime {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Runtime {
@@ -94,7 +94,7 @@ impl balances::Trait for Runtime {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::MembershipTypes for Runtime {
     type MemberId = u128;
     type ActorId = u128;
 }
@@ -394,7 +394,7 @@ impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -403,7 +403,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
         unimplemented!()
     }
 
@@ -413,7 +413,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
     }
@@ -1399,9 +1399,11 @@ pub fn run_to_block(n: u64) {
     }
 }
 
+// pub type System = system::Module<Runtime>;
 pub type System = frame_system::Module<Runtime>;
 
 pub type Timestamp = pallet_timestamp::Module<Runtime>;
+// pub type System = frame_system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;

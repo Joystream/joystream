@@ -1,5 +1,0 @@
-#!/bin/sh
-set -e
-
-echo 'running rust-fmt'
-cargo fmt --all -- --check

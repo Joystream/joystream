@@ -258,6 +258,12 @@ impl<T: Trait> Module<T> {
                 WorkingGroup::Membership => {
                     WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
                 }
+                WorkingGroup::Operations => { //TODO: benchmark it
+                    WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
+                }
+                WorkingGroup::Gateway => { //TODO: benchmark it
+                    WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
+                }
             },
             BalanceKind::Negative => match group {
                 WorkingGroup::Forum => {
@@ -270,6 +276,12 @@ impl<T: Trait> Module<T> {
                     WeightInfoUtilities::<T>::update_working_group_budget_negative_membership()
                 }
                 WorkingGroup::Content => {
+                    WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
+                }
+                WorkingGroup::Operations => { //TODO: benchmark it
+                    WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
+                }
+                WorkingGroup::Gateway => { //TODO: benchmark it
                     WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
                 }
             },

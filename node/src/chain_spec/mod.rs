@@ -18,6 +18,8 @@
 // Disable it because we use such syntax for a code readability.
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
+// Remove after the Antioch release.
+#![allow(clippy::unnecessary_wraps)]
 
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
@@ -30,9 +32,10 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,  StakingConfig, SudoConfig, SystemConfig,
+    ContentConfig,
+    SessionKeys, Signature, StakerStatus,
 };
 
 // Exported to be used by chain-spec-builder
@@ -232,7 +235,7 @@ pub fn testnet_genesis(
                 .collect(),
         }),
         pallet_staking: Some(StakingConfig {
-            validator_count: 20,
+            validator_count: 100,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
                 .iter()
@@ -274,14 +277,17 @@ pub fn testnet_genesis(
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
         }),
-        content_directory: Some({
-            ContentDirectoryConfig {
-                class_by_id: vec![],
-                entity_by_id: vec![],
-                curator_group_by_id: vec![],
-                next_class_id: 1,
-                next_entity_id: 1,
+        content: Some({
+            ContentConfig {
                 next_curator_group_id: 1,
+                next_channel_category_id: 1,
+                next_channel_id: 1,
+                next_video_category_id: 1,
+                next_video_id: 1,
+                next_playlist_id: 1,
+                next_series_id: 1,
+                next_person_id: 1,
+                next_channel_transfer_request_id: 1,
             }
         }),
     }

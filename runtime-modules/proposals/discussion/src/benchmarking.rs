@@ -52,7 +52,7 @@ fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance
         Council::<T>::on_finalize(current_block_number);
         Referendum::<T, ReferendumInstance>::on_finalize(current_block_number);
 
-        current_block_number += 1.into();
+        current_block_number += 1u32.into();
         System::<T>::set_block_number(current_block_number);
 
         System::<T>::on_initialize(current_block_number);
@@ -70,7 +70,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: common::membership::Trait + balances::Trait + membership::Trait>(
+fn member_account<T: common::membership::MembershipTypes + balances::Trait + membership::Trait>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {

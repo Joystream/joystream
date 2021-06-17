@@ -1,10 +1,10 @@
 //! # Proposals codex module
 //! Proposals `codex` module for the Joystream platform.
-//! Component of the proposals system. It contains preset proposal types.
+//! Component of the proposals frame_system. It contains preset proposal types.
 //!
 //! ## Overview
 //!
-//! The proposals codex module serves as a facade and entry point of the proposals system. It uses
+//! The proposals codex module serves as a facade and entry point of the proposals frame_system. It uses
 //! proposals `engine` module to maintain a lifecycle of the proposal and to execute proposals.
 //! During the proposal creation, `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
@@ -67,9 +67,9 @@ pub use types::{
 };
 
 // Max allowed value for 'Funding Request' proposal
-const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
+const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
 // Max validator count for the 'Set Max Validator Count' proposal
-const MAX_VALIDATOR_COUNT: u32 = 100;
+const MAX_VALIDATOR_COUNT: u32 = 300;
 // Max number of account that a fund request accept
 const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
 
@@ -110,7 +110,7 @@ pub trait Trait:
     frame_system::Trait
     + proposals_engine::Trait
     + proposals_discussion::Trait
-    + common::membership::Trait
+    + common::membership::MembershipTypes
     + staking::Trait
     + proposals_engine::Trait
 {
