@@ -2,6 +2,8 @@
 /// (data, path), path = [ item1 item2 ... itemN ]
 /// item = (hash, side)
 use codec::{Decode, Encode};
+
+#[cfg(feature = "std")]
 use core::fmt::Debug;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
