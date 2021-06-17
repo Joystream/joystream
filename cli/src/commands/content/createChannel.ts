@@ -27,9 +27,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
     if (!context) {
       context = await this.promptForOwnerContext()
     }
-    const account = await this.getRequiredSelectedAccount()
-    const actor = await this.getActor(context)
-    await this.requestAccountDecoding(account)
+    const [actor, address] = await this.getContentActor(context)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
 
@@ -56,7 +54,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    const result = await this.sendAndFollowNamedTx(account, 'content', 'createChannel', [
+    const result = await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'createChannel', [
       actor,
       channelCreationParameters,
     ])

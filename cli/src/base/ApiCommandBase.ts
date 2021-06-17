@@ -11,10 +11,10 @@ import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
-import { AugmentedSubmittables, SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedSubmittables, SubmittableExtrinsic, AugmentedEvents } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
-import { DispatchError } from '@polkadot/types/interfaces/system'
+import { DispatchError, Event } from '@polkadot/types/interfaces/system'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
 import _ from 'lodash'
@@ -521,6 +521,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     console.log('Params:', this.humanize(params))
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)
+  }
+
+  public findEvent<
+    S extends keyof AugmentedEvents<'promise'> & string,
+    M extends keyof AugmentedEvents<'promise'>[S] & string
+  >(result: SubmittableResult, section: S, method: M): Event | undefined {
+    return result.findRecord(section, method)?.event
   }
 
   async buildAndSendExtrinsic<

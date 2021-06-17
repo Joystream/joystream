@@ -17,8 +17,7 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
   ]
 
   async run() {
-    const account = await this.getRequiredSelectedAccount()
-    await this.requireLead()
+    const lead = await this.getRequiredLeadContext()
 
     let { groupId, curatorId } = this.parse(RemoveCuratorFromGroupCommand).args
 
@@ -38,8 +37,12 @@ export default class RemoveCuratorFromGroupCommand extends ContentDirectoryComma
       await this.getCurator(curatorId)
     }
 
-    await this.requestAccountDecoding(account)
-    await this.sendAndFollowNamedTx(account, 'content', 'removeCuratorFromGroup', [groupId, curatorId])
+    await this.sendAndFollowNamedTx(
+      await this.getDecodedPair(lead.roleAccount.toString()),
+      'content',
+      'removeCuratorFromGroup',
+      [groupId, curatorId]
+    )
 
     this.log(
       chalk.green(

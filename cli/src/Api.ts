@@ -470,12 +470,12 @@ export default class Api {
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id)).toNumber()
-    return exists ? await this._api.query.contentDirectory.curatorGroupById(id) : null
+    const exists = !!(await this._api.query.content.curatorGroupById.size(id)).toNumber()
+    return exists ? await this._api.query.content.curatorGroupById(id) : null
   }
 
   async nextCuratorGroupId(): Promise<number> {
-    return (await this._api.query.contentDirectory.nextCuratorGroupId()).toNumber()
+    return (await this._api.query.content.nextCuratorGroupId()).toNumber()
   }
 
   async channelById(channelId: ChannelId | number | string): Promise<Channel> {

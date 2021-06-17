@@ -31,10 +31,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
 
     const { videoCategoryId } = this.parse(UpdateVideoCategoryCommand).args
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-    await this.requestAccountDecoding(currentAccount)
-
-    const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
+    const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
     const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input, VideoCategoryInputSchema)
 
@@ -48,7 +45,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCategory', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateVideoCategory', [
       actor,
       videoCategoryId,
       videoCategoryUpdateParameters,
