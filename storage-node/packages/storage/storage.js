@@ -336,22 +336,15 @@ class Storage {
 
     // Write stream
     if (mode === 'w') {
-      return await this.createWriteStream(contentId, timeout)
+      return this.createWriteStream(contentId, timeout)
     }
 
     // Read stream - with file type detection
     return await this.createReadStream(contentId, timeout)
   }
 
-  async createWriteStream() {
-    // IPFS wants us to just dump a stream into its storage, then returns a
-    // content ID (of its own).
-    // We need to instead return a stream immediately, that we eventually
-    // decorate with the content ID when that's available.
-    return new Promise((resolve) => {
-      const stream = new StorageWriteStream(this)
-      resolve(stream)
-    })
+  createWriteStream() {
+    return new StorageWriteStream(this)
   }
 
   async createReadStream(contentId, timeout) {
