@@ -32,10 +32,9 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,  StakingConfig, SudoConfig, SystemConfig,
-    ContentConfig,
-    SessionKeys, Signature, StakerStatus,
+    ContentConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ForumConfig,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys, Signature,
+    StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
@@ -303,7 +302,10 @@ pub(crate) mod tests {
         testnet_genesis(
             vec![get_authority_keys_from_seed("Alice")],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![get_authority_keys_from_seed("Alice").0],
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+            ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],

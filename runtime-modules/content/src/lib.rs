@@ -33,10 +33,7 @@ pub use common::storage::{
     StorageSystem,
 };
 
-pub use common::{
-    working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
-};
+pub use common::{working_group::WorkingGroup, MembershipTypes, StorageOwnership, Url};
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;

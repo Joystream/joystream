@@ -30,17 +30,13 @@ use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupAuthenticator;
 
-use crate::{DataObjectTypeId};
+use crate::DataObjectTypeId;
 
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
 
 /// The _Data object type registry_ main _Trait_.
-pub trait Trait:
-    frame_system::Trait
-    + common::MembershipTypes
-    + common::StorageOwnership
-{
+pub trait Trait: frame_system::Trait + common::MembershipTypes + common::StorageOwnership {
     /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

@@ -17,8 +17,9 @@ use crate::{
     GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
-    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment, DataDirectory
+    AllModules, AuthorityDiscovery, Babe, Balances, Call, DataDirectory, Grandpa, Historical,
+    InherentDataExt, ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
+    TransactionPayment,
 };
 use frame_support::weights::Weight;
 
@@ -79,7 +80,6 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 // Default Executive type without the RuntimeUpgrade
 // pub type Executive =
 //     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
-
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;

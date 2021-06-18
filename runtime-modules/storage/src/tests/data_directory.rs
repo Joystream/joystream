@@ -430,7 +430,13 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
             storage_provider_id,
             content_id,
         );
-        assert_eq!(res, Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
+        assert_eq!(
+            res,
+            Err(
+                working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist
+                    .into()
+            )
+        );
     });
 }
 
