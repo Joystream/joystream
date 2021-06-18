@@ -259,7 +259,7 @@ pub struct ExtBuilder {
     next_curator_group_id: u64,
     max_reward_allowed: minting::BalanceOf<Test>,
     min_cashout_allowed: minting::BalanceOf<Test>,
-    init_capacity: minting::BalanceOf<Test>,
+    init_reward_mint_capacity: minting::BalanceOf<Test>,
 }
 
 impl Default for ExtBuilder {
@@ -277,7 +277,7 @@ impl Default for ExtBuilder {
             next_curator_group_id: 1,
             max_reward_allowed: minting::BalanceOf::<Test>::from(1_000u32),
             min_cashout_allowed: minting::BalanceOf::<Test>::from(1u32),
-            init_capacity: minting::BalanceOf::<Test>::from(10_000u32),
+            init_reward_mint_capacity: minting::BalanceOf::<Test>::from(10_000u32),
         }
     }
 }
@@ -301,7 +301,7 @@ impl ExtBuilder {
             next_curator_group_id: self.next_curator_group_id,
             max_reward_allowed: self.max_reward_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
-            init_capacity: self.init_capacity,
+            init_reward_mint_capacity: self.init_reward_mint_capacity,
         }
         .assimilate_storage(&mut t)
         .unwrap();

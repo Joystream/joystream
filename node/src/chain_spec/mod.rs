@@ -355,7 +355,7 @@ pub fn testnet_genesis(
                 next_channel_transfer_request_id: 1,
                 max_reward_allowed: 1_000,
                 min_cashout_allowed: 1,
-                init_capacity: 10_000,
+                init_reward_mint_capacity: 10_000,
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
