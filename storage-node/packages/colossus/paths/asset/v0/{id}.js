@@ -146,7 +146,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         })
 
-        stream.on('finish', async () => {
+        stream.on('end', async () => {
           if (!aborted) {
             try {
               // try to get file info and compute ipfs hash before committing the stream to ifps node.

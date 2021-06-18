@@ -133,7 +133,9 @@ class StorageWriteStream extends Transform {
   _flush(callback) {
     debug('Flushing temporary stream:', this.temp.path)
     this.temp.end(() => {
+      debug('flushed!')
       callback(null)
+      this.emit('end')
     })
   }
 
