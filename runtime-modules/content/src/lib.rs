@@ -36,6 +36,8 @@ pub use common::storage::{
     StorageSystem,
 };
 
+use minting::{Module as TokenMint, Trait as Mint, TransferError};
+
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
     working_group::WorkingGroup,
@@ -85,6 +87,7 @@ pub trait Trait:
     + StorageOwnership
     + MembershipTypes
     + GovernanceCurrency
+    + Mint
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -227,7 +230,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
-    BalanceOf<T>,
+    minting::BalanceOf<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -484,7 +487,7 @@ pub struct PullPaymentElementRecord<ChannelId, Balance, HashType> {
 
 pub type PullPaymentElement<T> = PullPaymentElementRecord<
     <T as StorageOwnership>::ChannelId,
-    BalanceOf<T>,
+    minting::BalanceOf<T>,
     <T as frame_system::Trait>::Hash,
 >;
 
@@ -533,10 +536,13 @@ decl_storage! {
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
     /// threshold for rewards default = 1000,
-    pub MaxRewardAllowed get(fn max_reward_allowed): BalanceOf<T> = BalanceOf::<T>::from(1_000u32);
+    pub MaxRewardAllowed get(fn max_reward_allowed): minting::BalanceOf<T> = minting::BalanceOf::<T>::from(1_000u32);
 
     // min cashout allowed for a channel, default = 0
-    pub MinCashoutAllowed get(fn min_cashout_allowed): BalanceOf<T> = BalanceOf::<T>::zero();
+    pub MinCashoutAllowed get(fn min_cashout_allowed): minting::BalanceOf<T> = minting::BalanceOf::<T>::zero();
+
+    // mint for rewarding
+    pub RewardMint get(fn reward_mint) config(): <T as Mint>::MintId;
     }
 }
 
@@ -717,7 +723,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                cumulative_reward: BalanceOf::<T>::default(),
+                cumulative_reward: minting::BalanceOf::<T>::default(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -1322,48 +1328,47 @@ decl_module! {
             proof: PullPaymentProof<T>,
     ) {
 
-            let signing_acc = ensure_signed(origin)?;
+        let signing_acc = ensure_signed(origin)?;
         let elem = &proof.data;
 
         let mut channel = ChannelById::<T>::get(elem.channel_id);
 
         if let Some(channel_acc) = channel.reward_account.clone() {
 
-        let cashout = elem
-            .amount_due
-            .checked_sub(&channel.cumulative_reward)
-            .ok_or("uinteger underflow")?;
+            let cashout = elem
+        .amount_due
+        .checked_sub(&channel.cumulative_reward)
+        .ok_or("uinteger underflow")?;
 
             ensure!(channel_acc == signing_acc, "Origin isn't channel's reward account");
             ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
             ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
 
-        // state of channel is updated
-        channel.cumulative_reward = channel
-            .cumulative_reward
-            .checked_add(&elem.amount_due)
-            .ok_or("balance value overflow")?;
-        ChannelById::<T>::take(elem.channel_id);
-        ChannelById::<T>::insert(elem.channel_id, channel);
+            // state of channel is updated
+            channel.cumulative_reward = channel
+        .cumulative_reward
+        .checked_add(&elem.amount_due)
+        .ok_or("balance value overflow")?;
+            ChannelById::<T>::take(elem.channel_id);
+            ChannelById::<T>::insert(elem.channel_id, channel);
 
-        // value is transferred to the reward account
-        let _ = Self::not_implemented();
-
-        // deposit event
-        Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
-            }
+            // value is transferred to the reward account
+            Self::transfer_reward(cashout, &channel_acc).map_err(<&str>::from)?;
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
+    }
     }
 
     #[weight = 10_000_000]
-    pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
+    pub fn update_max_reward_allowed(origin, amount: minting::BalanceOf<T>) {
         ensure_root(origin)?; // Root origin which describes a call that comes from within the runtime itself
         <MaxRewardAllowed<T>>::put(amount);
     Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
     }
 
     #[weight = 10_000_000]
-    pub fn update_min_cashout_allowed(origin, amount: BalanceOf<T>) {
+    pub fn update_min_cashout_allowed(origin, amount: minting::BalanceOf<T>) {
         ensure_root(origin)?;
         <MinCashoutAllowed<T>>::put(amount);
     Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
@@ -1467,6 +1472,14 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn transfer_reward(
+        amount: minting::BalanceOf<T>,
+        address: &<T as frame_system::Trait>::AccountId,
+    ) -> Result<(), TransferError> {
+        let reward_mint_id = <RewardMint<T>>::get();
+        TokenMint::<T>::transfer_tokens(reward_mint_id, amount, address)
+    }
+
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
@@ -1513,7 +1526,7 @@ decl_event!(
         ContentId = ContentId<T>,
         IsCensored = bool,
         HashValue = <T as frame_system::Trait>::Hash,
-        Balance = BalanceOf<T>,
+        Balance = minting::BalanceOf<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),

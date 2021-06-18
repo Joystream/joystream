@@ -1,9 +1,12 @@
 /// lemma structure for the merkle proof path:
-/// (data, path), path = [ item1 item2 ... itemN ]
-/// item = (hash, side)
+/// `(data, path)` with
+/// `path = [ item1 item2 ... itemN ]` and `item = (hash, side)`
+/// `data` is the initial value whose proof membership is to be established
+/// item contains the hash value required for the proof together with the side, that is the provided
+/// hash is to the left or to the right to the current computed hash during verification.
 use codec::{Decode, Encode};
-
 use core::fmt::Debug;
+
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
@@ -16,6 +19,7 @@ pub enum Side {
     Left,
     Right,
 }
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct LemmaItem<HashOutput> {

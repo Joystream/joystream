@@ -165,6 +165,11 @@ impl ContentActorAuthenticator for Test {
         *curator_id == FIRST_CURATOR_ID || *curator_id == SECOND_CURATOR_ID
     }
 }
+impl minting::Trait for Test {
+    // Currency has been already defined
+    type Currency = balances::Module<Self>;
+    type MintId = u64;
+}
 
 pub struct MockStorageSystem {}
 

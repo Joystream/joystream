@@ -115,7 +115,7 @@ fn helper_build_merkle_path<E: Encode + Clone>(
 fn update_maximum_reward_allowed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        let new_amount = BalanceOf::<Test>::from(2_000u32);
+        let new_amount = minting::BalanceOf::<Test>::from(2_000u32);
         let _res = Content::update_max_reward_allowed(Origin::root(), new_amount);
         assert_eq!(
             System::events().last().unwrap().event,
@@ -128,7 +128,7 @@ fn update_maximum_reward_allowed() {
 fn update_minimum_cashout_allowed() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        let new_amount = BalanceOf::<Test>::from(10u32);
+        let new_amount = minting::BalanceOf::<Test>::from(10u32);
         let _res = Content::update_min_cashout_allowed(Origin::root(), new_amount);
         assert_eq!(
             System::events().last().unwrap().event,
@@ -197,7 +197,7 @@ fn channel_reward_update_test() {
             .iter()
             .map(|&i| PullPaymentElement::<Test> {
                 channel_id: ChannelId::from(FIRST_MEMBER_ID),
-                amount_due: BalanceOf::<Test>::from(i),
+                amount_due: minting::BalanceOf::<Test>::from(i),
                 reason: TestHashing::hash(&i.encode()),
             })
             .collect::<Vec<PullPaymentElement<Test>>>();
@@ -213,7 +213,7 @@ fn channel_reward_update_test() {
         let test_id = 2u64;
         let reward_element = PullPaymentElement::<Test> {
             channel_id: ChannelId::from(FIRST_MEMBER_ID),
-            amount_due: BalanceOf::<Test>::from(test_id),
+            amount_due: minting::BalanceOf::<Test>::from(test_id),
             reason: TestHashing::hash(&test_id.encode()),
         };
 
