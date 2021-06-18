@@ -32,14 +32,15 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ForumConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    ContentConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
+pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
@@ -134,6 +135,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -170,6 +172,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -211,6 +214,7 @@ pub fn testnet_genesis(
     members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
+    data_directory_config: DataDirectoryConfig,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
@@ -270,6 +274,7 @@ pub fn testnet_genesis(
         council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
+        data_directory: Some(data_directory_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -305,10 +310,12 @@ pub(crate) mod tests {
             vec![
                 get_authority_keys_from_seed("Alice").0,
                 get_authority_keys_from_seed("Bob").0,
+                get_authority_keys_from_seed("Charlie").0,
             ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::empty_data_directory_config(),
         )
     }
 
@@ -341,6 +348,7 @@ pub(crate) mod tests {
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::empty_data_directory_config(),
         )
     }
 
