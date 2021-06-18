@@ -33,16 +33,16 @@ default = ['std']
 runtime-benchmarks = ['frame-benchmarking', 'membership']
 std = [
     'codec/std',
-    'sp-core/std',
     'serde',
+    'sp-core/std',
     'sp-runtime/std',
     'sp-arithmetic/std',
     'frame-support/std',
-    'referendum/std',
     'frame-system/std',
-    'staking-handler/std',
+    'sp-std/std',
     'common/std',
     'balances/std',
+    'referendum/std',
     'staking-handler/std',
 ]
 
