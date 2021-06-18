@@ -25,7 +25,9 @@ const assert = require('assert')
 
 function errorHandler(response, err, code) {
   debug(err)
-  response.status(err.code || code || 500).send({ message: err.toString() })
+  // Some err types don't have a valid http status code such as one that come from ipfs node for example
+  const statusCode = typeof err.code === 'number' ? err.code : code
+  response.status(statusCode || 500).send({ message: err.toString() })
   response.end()
 }
 
