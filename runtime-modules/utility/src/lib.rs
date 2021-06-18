@@ -258,10 +258,12 @@ impl<T: Trait> Module<T> {
                 WorkingGroup::Membership => {
                     WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
                 }
-                WorkingGroup::Operations => { //TODO: benchmark it
+                WorkingGroup::Operations => {
+                    //TODO: benchmark it
                     WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
                 }
-                WorkingGroup::Gateway => { //TODO: benchmark it
+                WorkingGroup::Gateway => {
+                    //TODO: benchmark it
                     WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
                 }
             },
@@ -278,10 +280,12 @@ impl<T: Trait> Module<T> {
                 WorkingGroup::Content => {
                     WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
                 }
-                WorkingGroup::Operations => { //TODO: benchmark it
+                WorkingGroup::Operations => {
+                    //TODO: benchmark it
                     WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
                 }
-                WorkingGroup::Gateway => { //TODO: benchmark it
+                WorkingGroup::Gateway => {
+                    //TODO: benchmark it
                     WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
                 }
             },

@@ -148,7 +148,6 @@ pub type GatewayWorkingGroupInstance = working_group::Instance5;
 // The operations working group instance alias.
 pub type OperationsWorkingGroupInstance = working_group::Instance6;
 
-
 impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;

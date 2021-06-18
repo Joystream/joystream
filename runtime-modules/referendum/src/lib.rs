@@ -679,8 +679,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     // Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealingOf<T, I>,
-    ) -> Vec<OptionResult<<T as common::membership::MembershipTypes>::MemberId, <T as Trait<I>>::VotePower>>
-    {
+    ) -> Vec<
+        OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            <T as Trait<I>>::VotePower,
+        >,
+    > {
         // reset referendum state
         Stage::<T, I>::put(ReferendumStage::Inactive);
 
@@ -694,7 +698,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         commitment: &T::Hash,
         stake: &BalanceOf<T>,
         current_cycle_id: &u64,
-    ){
+    ) {
         // Should call after `can_vote`
         T::StakingHandler::lock(account_id, *stake);
 
@@ -716,7 +720,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         account_id: &<T as frame_system::Trait>::AccountId,
         option_id: &<T as common::membership::MembershipTypes>::MemberId,
         cast_vote: CastVoteOf<T>,
-    ){
+    ) {
         // prepare new values
         let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
         let option_result = OptionResult {

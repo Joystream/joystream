@@ -75,10 +75,7 @@ fn activate_data_object_type_fails_with_invalid_lead() {
         );
         assert_eq!(
             res,
-            Err(
-                working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount
-                    .into()
-            )
+            Err(working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount.into())
         );
     });
 }
@@ -115,10 +112,7 @@ fn deactivate_data_object_type_fails_with_invalid_lead() {
         );
         assert_eq!(
             res,
-            Err(
-                working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount
-                    .into()
-            )
+            Err(working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount.into())
         );
     });
 }
@@ -160,10 +154,7 @@ fn update_data_object_type_fails_with_invalid_lead() {
         );
         assert_eq!(
             res,
-            Err(
-                working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount
-                    .into()
-            )
+            Err(working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount.into())
         );
     });
 }

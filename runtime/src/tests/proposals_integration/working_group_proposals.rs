@@ -13,7 +13,15 @@ use working_group::StakeParameters;
 
 use crate::primitives::{ActorId, MemberId};
 use crate::tests::run_to_block;
-use crate::{Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance, ContentDirectoryWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance, ForumWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance, MembershipWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance, StorageWorkingGroupStakingManager, GatewayWorkingGroupInstance, OperationsWorkingGroupInstance, GatewayWorkingGroup, OperationsWorkingGroup, GatewayWorkingGroupStakingManager, OperationsWorkingGroupStakingManager};
+use crate::{
+    Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
+    ContentDirectoryWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
+    ForumWorkingGroupStakingManager, GatewayWorkingGroup, GatewayWorkingGroupInstance,
+    GatewayWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance,
+    MembershipWorkingGroupStakingManager, OperationsWorkingGroup, OperationsWorkingGroupInstance,
+    OperationsWorkingGroupStakingManager, StorageWorkingGroup, StorageWorkingGroupInstance,
+    StorageWorkingGroupStakingManager,
+};
 
 type WorkingGroupInstance<T, I> = working_group::Module<T, I>;
 

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::storage::StorageMap;
-use frame_support::traits::{OnFinalize, OnInitialize, LockIdentifier};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -23,10 +23,10 @@ pub use crate::data_directory::{
     DEFAULT_GLOBAL_VOUCHER, DEFAULT_UPLOADING_BLOCKED_STATUS, DEFAULT_VOUCHER,
     DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND, DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
 };
-use frame_support::dispatch::{DispatchResult, DispatchError};
-use staking_handler::LockComparator;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::weights::Weight;
 use frame_system::ensure_signed;
+use staking_handler::LockComparator;
 
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -245,7 +245,7 @@ impl membership::Trait for Test {
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-    staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
 }
 pub struct Weights;
@@ -322,12 +322,18 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
-        if account_id != TEST_MOCK_LIAISON_ACCOUNT_ID{
-            return  Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into())
+        if account_id != TEST_MOCK_LIAISON_ACCOUNT_ID {
+            return Err(
+                working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist
+                    .into(),
+            );
         }
 
         if *worker_id != TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID {
-            return  Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into())
+            return Err(
+                working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist
+                    .into(),
+            );
         }
         Ok(())
     }
@@ -336,8 +342,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         let account_id = ensure_signed(origin)?;
 
         if account_id != DEFAULT_LEADER_ACCOUNT_ID {
-            return Err(working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount
-                .into())
+            return Err(
+                working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount.into(),
+            );
         }
 
         Ok(())
@@ -450,7 +457,6 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
         0
     }
 }
-
 
 #[allow(dead_code)]
 pub struct ExtBuilder {

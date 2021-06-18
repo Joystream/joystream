@@ -73,7 +73,6 @@ impl crate::WeightInfo for () {
     }
 }
 
-
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
