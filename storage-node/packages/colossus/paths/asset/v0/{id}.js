@@ -26,6 +26,7 @@ const assert = require('assert')
 function errorHandler(response, err, code) {
   debug(err)
   response.status(err.code || code || 500).send({ message: err.toString() })
+  response.end()
 }
 
 // The maximum total estimated balance that will be spent submitting transactions
@@ -207,6 +208,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         })
 
         stream.on('error', (err) => {
+          stream.end()
           stream.cleanup()
           errorHandler(res, err)
         })

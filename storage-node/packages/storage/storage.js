@@ -90,6 +90,10 @@ class StorageWriteStream extends Transform {
 
     // Create temp target.
     this.temp = temp.createWriteStream()
+    this.temp.on('error', (err) => this.emit('error', err))
+
+    // Small temporary buffer storing first fileType.minimumBytes of stream
+    // used for early file type detection
     this.buf = Buffer.alloc(0)
   }
 
@@ -118,11 +122,11 @@ class StorageWriteStream extends Transform {
     //   callback(err)
     // })
 
-    // Respect backpressure
+    // Respect backpressure and handle write error
     if (!this.temp.write(chunk)) {
-      this.temp.once('drain', callback)
+      this.temp.once('drain', () => callback(null))
     } else {
-      process.nextTick(callback)
+      process.nextTick(() => callback(null))
     }
   }
 
