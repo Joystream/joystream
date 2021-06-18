@@ -535,14 +535,30 @@ decl_storage! {
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
-    /// threshold for rewards default = 1000,
-    pub MaxRewardAllowed get(fn max_reward_allowed): minting::BalanceOf<T> = minting::BalanceOf::<T>::from(1_000u32);
+    /// threshold for rewards
+    pub MaxRewardAllowed get(fn max_reward_allowed) config(): minting::BalanceOf<T>;
 
-    // min cashout allowed for a channel, default = 0
-    pub MinCashoutAllowed get(fn min_cashout_allowed): minting::BalanceOf<T> = minting::BalanceOf::<T>::zero();
+    // min cashout allowed for a channel
+    pub MinCashoutAllowed get(fn min_cashout_allowed) config(): minting::BalanceOf<T>;
 
     // mint for rewarding
-    pub RewardMint get(fn reward_mint) config(): <T as Mint>::MintId;
+    pub RewardMint get(fn reward_mint) build(|config: &GenesisConfig<T>| {
+            // Create the council mint.
+        let mint_id_result = <minting::Module<T>>::add_mint(
+                config.init_capacity,
+                None,
+            );
+
+            if let Ok(mint_id) = mint_id_result {
+        mint_id
+            } else {
+                panic!("Failed to create a mint for the council");
+            }
+    }): <T as Mint>::MintId;
+    }
+
+    add_extra_genesis {
+    config(init_capacity): minting::BalanceOf<T>;
     }
 }
 
@@ -1355,6 +1371,7 @@ decl_module! {
 
             // value is transferred to the reward account
             Self::transfer_reward(cashout, &channel_acc).map_err(<&str>::from)?;
+        println!("done transferring");
             // deposit event
             Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
     }
@@ -1477,6 +1494,7 @@ impl<T: Trait> Module<T> {
         address: &<T as frame_system::Trait>::AccountId,
     ) -> Result<(), TransferError> {
         let reward_mint_id = <RewardMint<T>>::get();
+        println!("Got mintId");
         TokenMint::<T>::transfer_tokens(reward_mint_id, amount, address)
     }
 
