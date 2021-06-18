@@ -36,7 +36,7 @@ pub use common::storage::{
     StorageSystem,
 };
 
-use minting::{Module as TokenMint, Trait as Mint, TransferError};
+use minting::Trait as MintingTrait;
 
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
@@ -87,7 +87,7 @@ pub trait Trait:
     + StorageOwnership
     + MembershipTypes
     + GovernanceCurrency
-    + Mint
+    + MintingTrait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -541,24 +541,6 @@ decl_storage! {
     // min cashout allowed for a channel
     pub MinCashoutAllowed get(fn min_cashout_allowed) config(): minting::BalanceOf<T>;
 
-    // mint for rewarding
-    pub RewardMint get(fn reward_mint) build(|config: &GenesisConfig<T>| {
-            // Create the council mint.
-        let mint_id_result = <minting::Module<T>>::add_mint(
-                config.init_reward_mint_capacity,
-                None,
-            );
-
-            if let Ok(mint_id) = mint_id_result {
-        mint_id
-            } else {
-                panic!("Failed to create a mint for the council");
-            }
-    }): <T as Mint>::MintId;
-    }
-
-    add_extra_genesis {
-    config(init_reward_mint_capacity): minting::BalanceOf<T>;
     }
 }
 
@@ -1370,7 +1352,7 @@ decl_module! {
             ChannelById::<T>::insert(elem.channel_id, channel);
 
             // value is transferred to the reward account
-            Self::transfer_reward(cashout, &channel_acc).map_err(<&str>::from)?;
+            Self::transfer_reward(cashout, &channel_acc);
             // deposit event
             Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
     }
@@ -1489,11 +1471,10 @@ impl<T: Trait> Module<T> {
     }
 
     fn transfer_reward(
-        amount: minting::BalanceOf<T>,
-        address: &<T as frame_system::Trait>::AccountId,
-    ) -> Result<(), TransferError> {
-        let reward_mint_id = <RewardMint<T>>::get();
-        TokenMint::<T>::transfer_tokens(reward_mint_id, amount, address)
+        _amount: minting::BalanceOf<T>,
+        _address: &<T as frame_system::Trait>::AccountId,
+    ) {
+        // TODO: implement the minting of the reward
     }
 
     fn not_implemented() -> DispatchResult {
