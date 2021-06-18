@@ -21,11 +21,11 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 blog = { package = 'pallet-blog', default-features = false, path = '../../blog'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
 council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -56,4 +56,6 @@ std = [
     'proposals-engine/std',
     'proposals-discussion/std',
     'constitution/std',
+    'membership/std',
+    'blog/std',
 ]

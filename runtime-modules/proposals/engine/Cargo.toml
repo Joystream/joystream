@@ -50,5 +50,4 @@ std = [
 	'balances/std',
     'common/std',
     'staking-handler/std',
-    'balances/std',
 ]
