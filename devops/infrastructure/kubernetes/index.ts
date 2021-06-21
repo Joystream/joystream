@@ -70,7 +70,8 @@ const deployment = new k8s.apps.v1.Deployment(
               env: [
                 {
                   name: 'WS_PROVIDER_ENDPOINT_URI',
-                  value: 'wss://18.209.241.63.nip.io/',
+                  // example 'wss://18.209.241.63.nip.io/'
+                  value: process.env.WS_PROVIDER_ENDPOINT_URI,
                 },
                 {
                   name: 'DEBUG',
