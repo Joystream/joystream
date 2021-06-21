@@ -90,6 +90,10 @@ class StorageWriteStream extends Transform {
 
     // Create temp target.
     this.temp = temp.createWriteStream()
+    this.temp.on('error', (err) => this.emit('error', err))
+
+    // Small temporary buffer storing first fileType.minimumBytes of stream
+    // used for early file type detection
     this.buf = Buffer.alloc(0)
   }
 
@@ -99,13 +103,11 @@ class StorageWriteStream extends Transform {
       chunk = Buffer.from(chunk)
     }
 
-    this.temp.write(chunk)
-
     // Try to detect file type during streaming.
     if (!this.fileInfo && this.buf.byteLength <= fileType.minimumBytes) {
       this.buf = Buffer.concat([this.buf, chunk])
 
-      if (this.buf >= fileType.minimumBytes) {
+      if (this.buf.byteLength >= fileType.minimumBytes) {
         const info = fileType(this.buf)
         // No info? We will try again at the end of the stream.
         if (info) {
@@ -115,13 +117,26 @@ class StorageWriteStream extends Transform {
       }
     }
 
-    callback(null)
+    // Always waiting for write flush can be slow..
+    // this.temp.write(chunk, (err) => {
+    //   callback(err)
+    // })
+
+    // Respect backpressure and handle write error
+    if (!this.temp.write(chunk)) {
+      this.temp.once('drain', () => callback(null))
+    } else {
+      process.nextTick(() => callback(null))
+    }
   }
 
   _flush(callback) {
     debug('Flushing temporary stream:', this.temp.path)
-    this.temp.end()
-    callback(null)
+    this.temp.end(() => {
+      debug('flushed!')
+      callback(null)
+      this.emit('end')
+    })
   }
 
   /*
@@ -183,6 +198,8 @@ class StorageWriteStream extends Transform {
    * Clean up temporary data.
    */
   cleanup() {
+    // Make it safe to call cleanup more than once
+    if (!this.temp) return
     debug('Cleaning up temporary file: ', this.temp.path)
     fs.unlink(this.temp.path, () => {
       /* Ignore errors. */
@@ -333,22 +350,15 @@ class Storage {
 
     // Write stream
     if (mode === 'w') {
-      return await this.createWriteStream(contentId, timeout)
+      return this.createWriteStream(contentId, timeout)
     }
 
     // Read stream - with file type detection
     return await this.createReadStream(contentId, timeout)
   }
 
-  async createWriteStream() {
-    // IPFS wants us to just dump a stream into its storage, then returns a
-    // content ID (of its own).
-    // We need to instead return a stream immediately, that we eventually
-    // decorate with the content ID when that's available.
-    return new Promise((resolve) => {
-      const stream = new StorageWriteStream(this)
-      resolve(stream)
-    })
+  createWriteStream() {
+    return new StorageWriteStream(this)
   }
 
   async createReadStream(contentId, timeout) {
