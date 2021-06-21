@@ -70,6 +70,9 @@ pub type SeriesId = u64;
 /// Content Directory Channel transfer request identifier.
 pub type ChannelOwnershipTransferRequestId = u64;
 
+/// Curator group identifier.
+pub type CuratorGroupId = u64;
+
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
 /// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and

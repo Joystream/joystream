@@ -296,6 +296,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     ) -> bool {
         true
     }
+
+    fn worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!();
+    }
 }
 
 impl common::membership::MembershipTypes for Runtime {

@@ -187,6 +187,10 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     ) -> bool {
         unimplemented!()
     }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
 }
 
 parameter_types! {

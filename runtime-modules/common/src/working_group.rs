@@ -39,6 +39,9 @@ pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {
 
     /// Verifies that given account ID and worker ID belong to the working group member.
     fn is_worker_account_id(account_id: &T::AccountId, worker_id: &T::ActorId) -> bool;
+
+    /// Verifies that a worker belongs to the working group.
+    fn worker_exists(worker_id: &T::ActorId) -> bool;
 }
 
 /// Working group interface to work with the its budget.

@@ -457,6 +457,9 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type StorageSystem = data_directory::Module<Self>;
+    type WorkingGroup = ContentDirectoryWorkingGroup;
+    type Membership = Members;
+    type CuratorGroupId = CuratorGroupId;
 }
 
 // The referendum instance alias.
