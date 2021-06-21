@@ -15,7 +15,8 @@ export default class ApiSetUri extends ApiCommandBase {
   ]
 
   async init() {
-    await super.init()
+    // Pass "skipConnection" arg to prevent command from exiting if current api uri is invalid
+    await super.init(true)
   }
 
   async run() {
@@ -31,6 +32,6 @@ export default class ApiSetUri extends ApiCommandBase {
     } else {
       newUri = await this.promptForApiUri()
     }
-    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.white(newUri))
+    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.magentaBright(newUri))
   }
 }

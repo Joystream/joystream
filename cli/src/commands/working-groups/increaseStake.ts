@@ -40,7 +40,7 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
 
     this.log(
       chalk.green(
-        `Worker ${chalk.white(worker.workerId.toString())} stake has been increased by ${chalk.white(
+        `Worker ${chalk.magentaBright(worker.workerId.toString())} stake has been increased by ${chalk.magentaBright(
           formatBalance(amount)
         )}`
       )

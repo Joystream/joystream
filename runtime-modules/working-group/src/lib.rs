@@ -92,7 +92,7 @@ pub trait WeightInfo {
 
 /// The _Group_ main _Trait_
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + balances::Trait + common::membership::Trait
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;

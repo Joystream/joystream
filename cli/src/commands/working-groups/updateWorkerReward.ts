@@ -45,7 +45,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
     const { reward } = groupMember
 
-    this.log(chalk.white(`Current worker reward: ${this.formatReward(reward)}`))
+    this.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
 
     await this.sendAndFollowNamedTx(
       await this.getDecodedPair(lead.roleAccount.toString()),
@@ -55,7 +55,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     )
 
     const updatedGroupMember = await this.getApi().groupMember(this.group, workerId)
-    this.log(chalk.green(`Worker ${chalk.white(workerId.toString())} reward has been updated!`))
-    this.log(chalk.green(`New worker reward: ${chalk.white(this.formatReward(updatedGroupMember.reward))}`))
+    this.log(chalk.green(`Worker ${chalk.magentaBright(workerId.toString())} reward has been updated!`))
+    this.log(chalk.green(`New worker reward: ${chalk.magentaBright(this.formatReward(updatedGroupMember.reward))}`))
   }
 }

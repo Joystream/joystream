@@ -4,14 +4,12 @@ import members from './members'
 import council from './council'
 import forum from './forum'
 import workingGroup from './working-group'
-import discovery from './discovery'
-import media from './media'
 import blog from './blog'
 import proposals from './proposals'
-import contentDirectory from './content-directory'
 import referendum from './referendum'
 import constitution from './constitution'
 import bounty from './bounty'
+import content from './content'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap, Tuple } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
@@ -19,7 +17,7 @@ import { ExtendedStruct } from './JoyStruct'
 
 import BN from 'bn.js'
 
-export { common, members, council, forum, workingGroup, discovery, media, proposals, contentDirectory }
+export { common, members, council, forum, workingGroup, proposals, content }
 
 export const types: RegistryTypes = {
   ...common,
@@ -27,14 +25,12 @@ export const types: RegistryTypes = {
   ...council,
   ...forum,
   ...workingGroup,
-  ...discovery,
-  ...media,
   ...blog,
   ...proposals,
-  ...contentDirectory,
   ...referendum,
   ...constitution,
   ...bounty,
+  ...content,
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
@@ -82,9 +78,11 @@ export type CreateInterface<T> = T extends Codec
   ? T | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
   : any
 
-export function createType<TypeName extends keyof InterfaceTypes>(
-  type: TypeName,
-  value: CreateInterface<InterfaceTypes[TypeName]>
-): InterfaceTypes[TypeName] {
+export type AnyTypeName = keyof InterfaceTypes
+
+export function createType<TN extends AnyTypeName, T extends InterfaceTypes[TN] = InterfaceTypes[TN]>(
+  type: TN,
+  value: CreateInterface<T>
+): InterfaceTypes[TN] {
   return registry.createType(type, value)
 }

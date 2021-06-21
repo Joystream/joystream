@@ -6,23 +6,24 @@ import * as util from '@polkadot/util'
 import joy, { types as joyTypes } from '@joystream/types'
 import * as hashing from '@polkadot/util-crypto'
 import { Keyring } from '@polkadot/keyring'
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const scripts = require('../scripts')
+import fs from 'fs'
+import path from 'path'
 
 async function main() {
   const scriptArg = process.argv[2]
-  const script = scripts[scriptArg]
 
-  if (!scriptArg || !script) {
-    console.error('Please specify valid script name.')
-    console.error('Available scripts:', Object.keys(scripts))
+  if (!scriptArg) {
+    console.error('Please specify script name.')
+    console.error('Available scripts:', fs.readdirSync(path.join(__dirname, '../scripts')))
     return
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const script = require(`../scripts/${scriptArg}`)
+
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
-  const api = await ApiPromise.create({ provider, types: joyTypes })
+  const api = new ApiPromise({ provider, types: joyTypes })
 
   await api.isReady
 
@@ -32,8 +33,10 @@ async function main() {
 
   // Optional last argument is a SURI for account to use for signing transactions
   const suri = process.argv[3]
+  let userAddress
   if (suri) {
-    keyring.addFromUri(suri, undefined, 'sr25519')
+    userAddress = keyring.addFromUri(suri, undefined, 'sr25519').address
+    console.error('userAddress:', userAddress)
   }
 
   // Add development well known keys to keyring
@@ -43,7 +46,7 @@ async function main() {
   }
 
   try {
-    await script({ api, types, util, hashing, keyring, joy })
+    await script({ api, types, util, hashing, keyring, joy, userAddress })
   } catch (err) {
     console.error(err)
   }

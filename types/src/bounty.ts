@@ -1,5 +1,5 @@
 import { Null, u32, u128, bool, Option } from '@polkadot/types'
-import AccountId from '@polkadot/types/generic/AccountId'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { JoyEnum, JoyStructDecorated, JoyBTreeSet, MemberId } from './common'
 
 export class BountyId extends u32 {}

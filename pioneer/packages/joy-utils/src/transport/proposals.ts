@@ -313,12 +313,10 @@ export default class ProposalsTransport extends BaseTransport {
     }
 
     if (type === 'Text') {
-      details[0] = this.replaceHistoricalProposalLinks(details[0] as string);
+      (details as { Text: string }).Text = this.replaceHistoricalProposalLinks((details as { Text: string }).Text);
     }
 
-    return this.api.createType('ProposalDetails', {
-      [type]: details.length > 1 ? details : details[0]
-    });
+    return this.api.createType('ProposalDetails', details);
   }
 
   // Historical proposals methods

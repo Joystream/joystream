@@ -1,23 +1,11 @@
-import {
-  GenericAccountId,
-  Struct,
-  Option,
-  Text,
-  bool,
-  u16,
-  u32,
-  u64,
-  Null,
-  U8aFixed,
-  BTreeSet,
-  UInt,
-} from '@polkadot/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, UInt } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
@@ -43,6 +31,10 @@ export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructo
 
 export class ActorId extends u64 {}
 export class MemberId extends u64 {}
+export class Url extends Text {}
+
+export class ChannelId extends u64 {}
+export class DAOId extends u64 {}
 
 // Indentical type names for Forum and Proposal Discussions modules
 // Ensure they are both configured in runtime to have same type
@@ -111,6 +103,8 @@ export const WorkingGroupDef = {
   Storage: Null,
   Content: Null,
   Membership: Null,
+  Operations: Null,
+  Gateway: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
@@ -124,7 +118,6 @@ export class BalanceKind extends JoyEnum({
 
 // @polkadot/types overrides required since migration to Substrate 2.0,
 // see: https://polkadot.js.org/docs/api/FAQ#i-cannot-send-transactions-sending-yields-address-decoding-failures
-export class AccountId extends GenericAccountId {}
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
 
@@ -141,6 +134,9 @@ export const commonTypes: RegistryTypes = {
   // Customize Address type for joystream chain
   Address,
   LookupSource,
+  ChannelId,
+  DAOId,
+  Url,
 }
 
 export default commonTypes

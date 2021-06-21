@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
-    "@joystream/types": "^0.15.0",
-    "@polkadot/api": "^2.4.1",
-    "@polkadot/keyring": "^3.6.1",
+    "@joystream/types": "^0.17.0",
+    "@polkadot/api": "4.2.1",
+    "@polkadot/keyring": "^6.0.5",
     "@types/async-lock": "^1.1.2",
     "@types/bn.js": "^4.11.5",
     "@types/lowdb": "^1.0.9",

@@ -5,7 +5,7 @@ import Api from '../Api'
 import { getTypeDef, Option, Tuple } from '@polkadot/types'
 import { Registry, Codec, TypeDef, TypeDefInfo } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { WsProvider } from '@polkadot/api'
+import { SubmittableResult, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
@@ -49,30 +49,32 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return this.getOriginalApi().createType(typeName, value)
   }
 
-  async init() {
+  async init(skipConnection = false): Promise<void> {
     await super.init()
-    let apiUri: string = this.getPreservedState().apiUri
+    if (!skipConnection) {
+      let apiUri: string = this.getPreservedState().apiUri
 
-    if (!apiUri) {
-      this.warn("You haven't provided a Joystream node websocket api uri for the CLI to connect to yet!")
-      apiUri = await this.promptForApiUri()
-    }
+      if (!apiUri) {
+        this.warn("You haven't provided a Joystream node websocket api uri for the CLI to connect to yet!")
+        apiUri = await this.promptForApiUri()
+      }
 
-    let queryNodeUri: string = this.getPreservedState().queryNodeUri
-    if (!queryNodeUri) {
-      this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
-      queryNodeUri = await this.promptForQueryNodeUri()
-    }
+      let queryNodeUri: string = this.getPreservedState().queryNodeUri
+      if (!queryNodeUri) {
+        this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
+        queryNodeUri = await this.promptForQueryNodeUri()
+      }
 
-    const { metadataCache } = this.getPreservedState()
-    this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri)
+      const { metadataCache } = this.getPreservedState()
+      this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri)
 
-    const { genesisHash, runtimeVersion } = this.getOriginalApi()
-    const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
-    if (!metadataCache[metadataKey]) {
-      // Add new entry to metadata cache
-      metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
-      await this.setPreservedState({ metadataCache })
+      const { genesisHash, runtimeVersion } = this.getOriginalApi()
+      const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
+      if (!metadataCache[metadataKey]) {
+        // Add new entry to metadata cache
+        metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
+        await this.setPreservedState({ metadataCache })
+      }
     }
   }
 
@@ -188,7 +190,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return (
       '{\n' +
       Object.keys(obj)
-        .map((prop) => `  ${prop}${chalk.white(':' + obj[prop])}`)
+        .map((prop) => `  ${prop}${chalk.magentaBright(':' + obj[prop])}`)
         .join('\n') +
       '\n}'
     )
@@ -414,7 +416,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<void> {
+  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(account, {}, (result) => {
@@ -442,7 +444,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 }
                 reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
               } else if (event.method === 'ExtrinsicSuccess') {
-                resolve()
+                resolve(result)
               }
             })
         } else if (result.isError) {
@@ -460,7 +462,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,
     warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
-  ): Promise<boolean> {
+  ): Promise<SubmittableResult | false> {
     // Calculate fee and ask for confirmation
     const fee = await this.getApi().estimateFee(account, tx)
 
@@ -469,9 +471,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     )
 
     try {
-      await this.sendExtrinsic(account, tx)
+      const res = await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
-      return true
+      return res
     } catch (e) {
       if (e instanceof ExtrinsicFailedError && warnOnly) {
         this.warn(`Extrinsic failed! ${e.message}`)
@@ -510,9 +512,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: Method,
     params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : [],
     warnOnly = false
-  ): Promise<boolean> {
+  ): Promise<SubmittableResult | false> {
     this.log(
-      chalk.white(
+      chalk.magentaBright(
         `\nSending ${module}.${method} extrinsic from ${account.meta.name ? account.meta.name : account.address}...`
       )
     )

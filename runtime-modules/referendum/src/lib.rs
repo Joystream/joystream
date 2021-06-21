@@ -137,17 +137,17 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 pub type CastVoteOf<T> = CastVote<
     <T as frame_system::Trait>::Hash,
     BalanceOf<T>,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 pub type ReferendumStageVotingOf<T> =
     ReferendumStageVoting<<T as frame_system::Trait>::BlockNumber>;
 pub type ReferendumStageRevealingOf<T, I> = ReferendumStageRevealing<
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
     <T as Trait<I>>::VotePower,
 >;
 pub type OptionResultOf<T, I> =
-    OptionResult<<T as common::membership::Trait>::MemberId, <T as Trait<I>>::VotePower>;
+    OptionResult<<T as common::membership::MembershipTypes>::MemberId, <T as Trait<I>>::VotePower>;
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
@@ -185,6 +185,8 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
         + MaybeSerialize
         + PartialEq;
 
+    // TODO: Disabled during the 'Olympia - Sumer' merge. Refactor on the next pallet change.
+    #[allow(clippy::result_unit_err)]
     /// Start a new referendum.
     fn start_referendum(
         origin: Origin,
@@ -210,7 +212,7 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
 
 /// The main Referendum module's trait.
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + common::membership::Trait + balances::Trait
+    frame_system::Trait + common::membership::MembershipTypes + balances::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
@@ -298,7 +300,7 @@ decl_event! {
         <T as frame_system::Trait>::Hash,
         <T as frame_system::Trait>::AccountId,
         <T as Trait<I>>::VotePower,
-        <T as common::membership::Trait>::MemberId,
+        <T as common::membership::MembershipTypes>::MemberId,
     {
         /// Referendum started
         ReferendumStarted(u64),
@@ -433,7 +435,7 @@ decl_module! {
             //
 
             // start revealing phase - it can return error when stake fails to lock
-            Mutations::<T, I>::vote(&account_id, &commitment, &stake, &current_cycle_id)?;
+            Mutations::<T, I>::vote(&account_id, &commitment, &stake, &current_cycle_id);
 
             // emit event
             Self::deposit_event(RawEvent::VoteCast(account_id, commitment, stake));
@@ -458,7 +460,7 @@ decl_module! {
         pub fn reveal_vote(
             origin,
             salt: Vec<u8>,
-            vote_option_id: <T as common::membership::Trait>::MemberId
+            vote_option_id: <T as common::membership::MembershipTypes>::MemberId
         ) -> Result<(), Error<T, I>> {
             let (stage_data, account_id, cast_vote) =
                 EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
@@ -468,7 +470,7 @@ decl_module! {
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote)?;
+            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote);
 
             // emit event
             Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id, salt));
@@ -626,7 +628,7 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
         account_id: &<T as frame_system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_id: &<T as common::membership::Trait>::MemberId,
+        vote_option_id: &<T as common::membership::MembershipTypes>::MemberId,
     ) -> T::Hash {
         let mut payload = account_id.encode();
         let mut mut_option_id = vote_option_id.encode();
@@ -677,7 +679,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     // Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealingOf<T, I>,
-    ) -> Vec<OptionResult<<T as common::membership::Trait>::MemberId, <T as Trait<I>>::VotePower>>
+    ) -> Vec<OptionResult<<T as common::membership::MembershipTypes>::MemberId, <T as Trait<I>>::VotePower>>
     {
         // reset referendum state
         Stage::<T, I>::put(ReferendumStage::Inactive);
@@ -692,7 +694,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         commitment: &T::Hash,
         stake: &BalanceOf<T>,
         current_cycle_id: &u64,
-    ) -> Result<(), Error<T, I>> {
+    ){
         // Should call after `can_vote`
         T::StakingHandler::lock(account_id, *stake);
 
@@ -706,17 +708,15 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 vote_for: None,
             },
         );
-
-        Ok(())
     }
 
     // Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
         account_id: &<T as frame_system::Trait>::AccountId,
-        option_id: &<T as common::membership::Trait>::MemberId,
+        option_id: &<T as common::membership::MembershipTypes>::MemberId,
         cast_vote: CastVoteOf<T>,
-    ) -> Result<(), Error<T, I>> {
+    ){
         // prepare new values
         let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
         let option_result = OptionResult {
@@ -742,8 +742,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
         // remove user commitment to prevent repeated revealing
         Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
-
-        Ok(())
     }
 
     // Release stake associated to the user's last vote.
@@ -928,7 +926,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(
         origin: T::Origin,
         salt: &[u8],
-        vote_option_id: &<T as common::membership::Trait>::MemberId,
+        vote_option_id: &<T as common::membership::MembershipTypes>::MemberId,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;

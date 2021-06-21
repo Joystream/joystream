@@ -103,7 +103,7 @@ use common::membership::{
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + common::membership::MembershipTypes {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -148,7 +148,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 /// Defines who can submit the work.
@@ -321,7 +321,7 @@ impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 /// Crowdfunded bounty record.
@@ -383,7 +383,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
 /// Alias type for the Entry.
 pub type Entry<T> = EntryRecord<
     <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
 >;

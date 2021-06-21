@@ -36,6 +36,6 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
       [worker.workerId, address]
     )
 
-    this.log(chalk.green(`Succesfully updated the role account to: ${chalk.white(address)})`))
+    this.log(chalk.green(`Succesfully updated the role account to: ${chalk.magentaBright(address)})`))
   }
 }

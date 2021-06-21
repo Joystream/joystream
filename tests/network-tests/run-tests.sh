@@ -29,13 +29,13 @@ echo "{
 # Make Alice a member
 echo '
   [{
-    "member_id": 0,
-    "root_account": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "controller_account": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "member_id":0,
+    "root_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "controller_account":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
     "handle":"alice",
     "avatar_uri":"https://alice.com/avatar.png",
     "about":"Alice",
-    "name": "Alice"
+    "registered_at_time":0
   }]
 ' > ${DATA_PATH}/initial-members.json
 
@@ -83,18 +83,16 @@ else
   docker rm $id
 
   # Display runtime version before runtime upgrade
-  sleep 5
   yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
   echo "Performing runtime upgrade."
-  DEBUG=* yarn workspace api-scripts tsnode-strict \
+  yarn workspace api-scripts tsnode-strict \
     src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
 
   echo "Runtime upgraded."
 fi
 
 # Display runtime version
-sleep 5
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
 ./run-test-scenario.sh $1

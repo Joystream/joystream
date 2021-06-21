@@ -41,7 +41,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
 
     const groupMember = await this.getWorkerWithStakeForLeadAction(parseInt(workerId))
 
-    this.log(chalk.white('Current worker stake: ', formatBalance(groupMember.stake)))
+    this.log(chalk.magentaBright('Current worker stake: ', formatBalance(groupMember.stake)))
 
     if (!isValidBalance(amount) || groupMember.stake.lt(new BN(amount))) {
       this.error('Invalid slash amount', { exit: ExitCodes.InvalidInput })
@@ -56,7 +56,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
 
     this.log(
       chalk.green(
-        `${chalk.white(formatBalance(amount))} from worker ${chalk.white(
+        `${chalk.magentaBright(formatBalance(amount))} from worker ${chalk.magentaBright(
           workerId.toString()
         )} stake has been succesfully slashed!`
       )

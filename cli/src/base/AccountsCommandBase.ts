@@ -9,15 +9,16 @@ import { formatBalance } from '@polkadot/util'
 import { MemberDetails, NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { memberHandle, toFixedLength } from '../helpers/display'
-import { AccountId, MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/common'
 import { KeyringPair, KeyringInstance, KeyringOptions } from '@polkadot/keyring/types'
 import { KeypairType } from '@polkadot/util-crypto/types'
-import createDevelopmentKeyring from '@polkadot/keyring/testing'
+import { createTestKeyring } from '@polkadot/keyring/testing'
 import chalk from 'chalk'
 import { mnemonicGenerate } from '@polkadot/util-crypto'
 import { validateAddress } from '../helpers/validation'
 import slug from 'slug'
 import { Membership } from '@joystream/types/members'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import BN from 'bn.js'
 
 const ACCOUNTS_DIRNAME = 'accounts'
@@ -240,9 +241,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   initKeyring(): void {
-    this.keyring = this.getApi().isDevelopment
-      ? createDevelopmentKeyring(KEYRING_OPTIONS)
-      : new Keyring(KEYRING_OPTIONS)
+    this.keyring = this.getApi().isDevelopment ? createTestKeyring(KEYRING_OPTIONS) : new Keyring(KEYRING_OPTIONS)
     const accounts = this.fetchAccounts()
     accounts.forEach((a) => this.getKeyring().addPair(a))
   }

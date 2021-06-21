@@ -28,6 +28,6 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
       [worker.workerId, rationale || null]
     )
 
-    this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.white(worker.workerId.toString())})`))
+    this.log(chalk.green(`Succesfully left the role! (worker id: ${chalk.magentaBright(worker.workerId.toString())})`))
   }
 }

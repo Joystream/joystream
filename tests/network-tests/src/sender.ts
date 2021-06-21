@@ -5,7 +5,7 @@ import { AccountId, EventRecord } from '@polkadot/types/interfaces'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import Debugger from 'debug'
+import { Debugger, extendDebug } from './Debugger'
 import AsyncLock from 'async-lock'
 import { assert } from 'chai'
 
@@ -26,7 +26,7 @@ export class Sender {
   constructor(api: ApiPromise, keyring: Keyring, label: string) {
     this.api = api
     this.keyring = keyring
-    this.debug = Debugger(`Sender:${Sender.instance++}:${label}`)
+    this.debug = extendDebug(`sender:${Sender.instance++}:${label}`)
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read
@@ -81,17 +81,10 @@ export class Sender {
           } = record
           const err = data[0] as DispatchError
           if (err.isModule) {
-            try {
-              const { name } = this.api.registry.findMetaError(err.asModule)
-              this.debug('Dispatch Error:', name, sentTx)
-            } catch (findmetaerror) {
-              // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
-              // Happens for dispatchable calls that don't explicitly use `-> DispatchResult` return value even
-              // if they return an error enum variant from the decl_error! macro
-              this.debug('Dispatch Error (error details not found):', err.asModule.toHuman(), sentTx)
-            }
+            const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
+            this.debug('Dispatch Error:', name, sentTx)
           } else {
-            this.debug('Dispatch Error:', err.toHuman(), sentTx)
+            this.debug('Dispatch Error:', sentTx)
           }
         } else {
           assert(success)
@@ -102,15 +95,10 @@ export class Sender {
             if (dispatchResult.isError) {
               const err = dispatchResult.asError
               if (err.isModule) {
-                try {
-                  const { name } = this.api.registry.findMetaError(err.asModule)
-                  this.debug('Sudo Dispatch Failed', name, sentTx)
-                } catch (findmetaerror) {
-                  // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
-                  this.debug('Sudo Dispatch Failed (error details not found)', err.asModule.toHuman(), sentTx)
-                }
+                const { name } = (this.api.registry as TypeRegistry).findMetaError(err.asModule)
+                this.debug('Sudo Dispatch Failed', name, sentTx)
               } else {
-                this.debug('Sudo Dispatch Failed', err.toHuman(), sentTx)
+                this.debug('Sudo Dispatch Failed', sentTx)
               }
             }
           }

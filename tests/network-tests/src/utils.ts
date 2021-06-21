@@ -4,6 +4,7 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import fs from 'fs'
 import { decodeAddress } from '@polkadot/keyring'
+import { Seat } from '@joystream/types/council'
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
@@ -36,6 +37,10 @@ export class Utils {
 
   public static wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  public static getTotalStake(seat: Seat): BN {
+    return new BN(+seat.stake.toString() + seat.backers.reduce((a, baker) => a + +baker.stake.toString(), 0))
   }
 
   public static readRuntimeFromFile(path: string): string {

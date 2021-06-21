@@ -19,7 +19,7 @@ import { ProposalId } from '@joystream/types/proposals'
 import { WorkerId } from '@joystream/types/working-group'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { Resource, ResourceLocker } from '../../Resources'
 
 export default {
@@ -32,7 +32,7 @@ export default {
 }
 
 async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
-  const debug = Debugger(`flow:managerLeaderRole:${group}`)
+  const debug = extendDebug(`flow:managerLeaderRole:${group}`)
   debug('Started')
   await lock(Resource.Proposals)
 

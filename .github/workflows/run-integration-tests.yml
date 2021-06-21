@@ -101,7 +101,11 @@ jobs:
           docker load --input joystream-node-docker-image.tar.gz
           docker images
       - name: Install packages and dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace @joystream/types build
+          yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/content-metadata-protobuf build:ts
       - name: Ensure tests are runnable
         run: yarn workspace integration-tests build
       # Bring up hydra query-node development instance, then run integration tests

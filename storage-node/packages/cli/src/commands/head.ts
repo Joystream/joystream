@@ -4,14 +4,12 @@ import { BaseCommand } from './base'
 
 // Head command class. Validates input parameters and obtains the asset headers.
 export class HeadCommand extends BaseCommand {
-  private readonly api: any
   private readonly storageNodeUrl: string
   private readonly contentId: string
 
   constructor(api: any, storageNodeUrl: string, contentId: string) {
-    super()
+    super(api)
 
-    this.api = api
     this.storageNodeUrl = storageNodeUrl
     this.contentId = contentId
   }

@@ -8,6 +8,15 @@ import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
+import {
+  VideoMetadata,
+  ChannelMetadata,
+  ChannelCategoryMetadata,
+  VideoCategoryMetadata,
+} from '@joystream/content-metadata-protobuf'
+import { ContentId, ContentParameters } from '@joystream/types/storage'
+
+import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -119,4 +128,77 @@ export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> 
   query: { [key: string]: QueryableModuleStorage<'promise'> }
   tx: { [key: string]: SubmittableModuleExtrinsics<'promise'> }
   consts: { [key: string]: QueryableModuleConsts }
+}
+
+// Content-related
+export enum AssetType {
+  AnyAsset = 1,
+}
+
+export type InputAsset = {
+  path: string
+  contentId: ContentId
+}
+
+export type InputAssetDetails = InputAsset & {
+  parameters: ContentParameters
+}
+
+export type VideoFFProbeMetadata = {
+  width?: number
+  height?: number
+  codecName?: string
+  codecFullName?: string
+  duration?: number
+}
+
+export type VideoFileMetadata = VideoFFProbeMetadata & {
+  size: number
+  container: string
+  mimeType: string
+}
+
+export type VideoInputParameters = Omit<VideoMetadata.AsObject, 'video' | 'thumbnailPhoto'> & {
+  videoPath?: string
+  thumbnailPhotoPath?: string
+}
+
+export type ChannelInputParameters = Omit<ChannelMetadata.AsObject, 'coverPhoto' | 'avatarPhoto'> & {
+  coverPhotoPath?: string
+  avatarPhotoPath?: string
+  rewardAccount?: string
+}
+
+export type ChannelCategoryInputParameters = ChannelCategoryMetadata.AsObject
+
+export type VideoCategoryInputParameters = VideoCategoryMetadata.AsObject
+
+// JSONSchema utility types
+export type JSONTypeName<T> = T extends string
+  ? 'string' | ['string', 'null']
+  : T extends number
+  ? 'number' | ['number', 'null']
+  : T extends any[]
+  ? 'array' | ['array', 'null']
+  : T extends Record<string, unknown>
+  ? 'object' | ['object', 'null']
+  : T extends boolean
+  ? 'boolean' | ['boolean', 'null']
+  : never
+
+export type PropertySchema<P> = Omit<
+  JSONSchema7Definition & {
+    type: JSONTypeName<P>
+    properties: P extends Record<string, unknown> ? JsonSchemaProperties<P> : never
+  },
+  P extends Record<string, unknown> ? '' : 'properties'
+>
+
+export type JsonSchemaProperties<T extends Record<string, unknown>> = {
+  [K in keyof Required<T>]: PropertySchema<Required<T>[K]>
+}
+
+export type JsonSchema<T extends Record<string, unknown>> = JSONSchema7 & {
+  type: 'object'
+  properties: JsonSchemaProperties<T>
 }

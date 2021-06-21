@@ -20,10 +20,5 @@
   },
   "include": [
     "src/**/*"
-  ],
-  /* Temporary exclude before merging `Sumer` */
-  "exclude": [
-    "src/commands/content-directory/*",
-    "src/commands/media/*"
   ]
 }

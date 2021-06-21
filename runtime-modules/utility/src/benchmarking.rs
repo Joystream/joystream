@@ -169,7 +169,7 @@ benchmarks! {
     burn_account_tokens {
         let account_id = account::<T::AccountId>("caller", 0, 0);
         let initial_issuance = Balances::<T>::total_issuance();
-        let initial_balance: BalanceOf<T> = 15.into();
+        let initial_balance: BalanceOf<T> = 15u32.into();
         let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance);
 
         assert_eq!(Balances::<T>::free_balance(&account_id), initial_balance);

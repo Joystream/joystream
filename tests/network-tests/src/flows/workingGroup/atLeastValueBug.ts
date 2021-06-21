@@ -3,12 +3,12 @@ import { FlowProps } from '../../Flow'
 import { AddWorkerOpeningFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
 import { assert } from 'chai'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 
 // Zero at least value bug scenario
 export default async function zeroAtLeastValueBug({ api, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:atLeastValueBug')
+  const debug = extendDebug('flow:atLeastValueBug')
   debug('Started')
   api.enableDebugTxLogs()
 

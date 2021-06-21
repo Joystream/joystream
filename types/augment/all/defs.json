@@ -224,16 +224,15 @@
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
-            "Accepted",
-            "Rejected"
+            "Accepted"
         ]
     },
     "DataObject": {
-        "owner": "MemberId",
+        "owner": "StorageObjectOwner",
         "added_at": "BlockAndTime",
         "type_id": "DataObjectTypeId",
         "size": "u64",
-        "liaison": "StorageProviderId",
+        "liaison": "Option<StorageProviderId>",
         "liaison_judgement": "LiaisonJudgement",
         "ipfs_content_id": "Text"
     },
@@ -437,238 +436,139 @@
     "ClassId": "u64",
     "CuratorId": "u64",
     "CuratorGroupId": "u64",
-    "VecMaxLength": "u16",
-    "TextMaxLength": "u16",
-    "HashedTextMaxLength": "Option<u16>",
-    "PropertyId": "u16",
-    "SchemaId": "u16",
-    "SameController": "bool",
-    "ClassPermissions": {
-        "any_member": "bool",
-        "entity_creation_blocked": "bool",
-        "all_entity_property_values_locked": "bool",
-        "maintainers": "Vec<CuratorGroupId>"
-    },
-    "PropertyTypeSingle": {
-        "_enum": {
-            "Bool": "Null",
-            "Uint16": "Null",
-            "Uint32": "Null",
-            "Uint64": "Null",
-            "Int16": "Null",
-            "Int32": "Null",
-            "Int64": "Null",
-            "Text": "TextMaxLength",
-            "Hash": "HashedTextMaxLength",
-            "Reference": "(ClassId,SameController)"
-        }
-    },
-    "PropertyTypeVector": {
-        "vec_type": "PropertyTypeSingle",
-        "max_length": "VecMaxLength"
-    },
-    "PropertyType": {
-        "_enum": {
-            "Single": "PropertyTypeSingle",
-            "Vector": "PropertyTypeVector"
-        }
-    },
-    "PropertyLockingPolicy": {
-        "is_locked_from_maintainer": "bool",
-        "is_locked_from_controller": "bool"
-    },
-    "Property": {
-        "property_type": "PropertyType",
-        "required": "bool",
-        "unique": "bool",
-        "name": "Text",
-        "description": "Text",
-        "locking_policy": "PropertyLockingPolicy"
-    },
-    "Schema": {
-        "properties": "Vec<PropertyId>",
-        "is_active": "bool"
-    },
-    "Class": {
-        "class_permissions": "ClassPermissions",
-        "properties": "Vec<Property>",
-        "schemas": "Vec<Schema>",
-        "name": "Text",
-        "description": "Text",
-        "maximum_entities_count": "EntityId",
-        "current_number_of_entities": "EntityId",
-        "default_entity_creation_voucher_upper_bound": "EntityId"
-    },
-    "ClassOf": {
-        "class_permissions": "ClassPermissions",
-        "properties": "Vec<Property>",
-        "schemas": "Vec<Schema>",
-        "name": "Text",
-        "description": "Text",
-        "maximum_entities_count": "EntityId",
-        "current_number_of_entities": "EntityId",
-        "default_entity_creation_voucher_upper_bound": "EntityId"
-    },
-    "EntityController": {
-        "_enum": {
-            "Maintainers": "Null",
-            "Member": "MemberId",
-            "Lead": "Null"
-        }
-    },
-    "EntityPermissions": {
-        "controller": "EntityController",
-        "frozen": "bool",
-        "referenceable": "bool"
-    },
-    "StoredValue": {
-        "_enum": {
-            "Bool": "bool",
-            "Uint16": "u16",
-            "Uint32": "u32",
-            "Uint64": "u64",
-            "Int16": "i16",
-            "Int32": "i32",
-            "Int64": "i64",
-            "Text": "Text",
-            "Hash": "Hash",
-            "Reference": "EntityId"
-        }
-    },
-    "VecStoredValue": {
-        "_enum": {
-            "Bool": "Vec<bool>",
-            "Uint16": "Vec<u16>",
-            "Uint32": "Vec<u32>",
-            "Uint64": "Vec<u64>",
-            "Int16": "Vec<i16>",
-            "Int32": "Vec<i32>",
-            "Int64": "Vec<i64>",
-            "Hash": "Vec<Hash>",
-            "Text": "Vec<Text>",
-            "Reference": "Vec<EntityId>"
-        }
-    },
-    "VecStoredPropertyValue": {
-        "vec_value": "VecStoredValue",
-        "nonce": "Nonce"
-    },
-    "StoredPropertyValue": {
-        "_enum": {
-            "Single": "StoredValue",
-            "Vector": "VecStoredPropertyValue"
-        }
-    },
-    "InboundReferenceCounter": {
-        "total": "u32",
-        "same_owner": "u32"
-    },
-    "Entity": {
-        "entity_permissions": "EntityPermissions",
-        "class_id": "ClassId",
-        "supported_schemas": "Vec<SchemaId>",
-        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
-        "reference_counter": "InboundReferenceCounter"
-    },
-    "EntityOf": {
-        "entity_permissions": "EntityPermissions",
-        "class_id": "ClassId",
-        "supported_schemas": "Vec<SchemaId>",
-        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
-        "reference_counter": "InboundReferenceCounter"
-    },
     "CuratorGroup": {
         "curators": "Vec<CuratorId>",
-        "active": "bool",
-        "number_of_classes_maintained": "u32"
+        "active": "bool"
     },
-    "EntityCreationVoucher": {
-        "maximum_entities_count": "EntityId",
-        "entities_created": "EntityId"
-    },
-    "Actor": {
+    "ContentActor": {
         "_enum": {
             "Curator": "(CuratorGroupId,CuratorId)",
             "Member": "MemberId",
             "Lead": "Null"
         }
     },
-    "EntityReferenceCounterSideEffect": {
-        "total": "i32",
-        "same_owner": "i32"
-    },
-    "ReferenceCounterSideEffects": "BTreeMap<EntityId,EntityReferenceCounterSideEffect>",
-    "SideEffects": "Option<ReferenceCounterSideEffects>",
-    "SideEffect": "Option<(EntityId,EntityReferenceCounterSideEffect)>",
-    "Status": "bool",
-    "InputValue": {
+    "NewAsset": {
         "_enum": {
-            "Bool": "bool",
-            "Uint16": "u16",
-            "Uint32": "u32",
-            "Uint64": "u64",
-            "Int16": "i16",
-            "Int32": "i32",
-            "Int64": "i64",
-            "Text": "Text",
-            "TextToHash": "Text",
-            "Reference": "EntityId"
+            "Upload": "ContentParameters",
+            "Urls": "Vec<Url>"
         }
     },
-    "VecInputValue": {
+    "Channel": {
+        "owner": "ChannelOwner",
+        "videos": "Vec<VideoId>",
+        "playlists": "Vec<PlaylistId>",
+        "series": "Vec<SeriesId>",
+        "is_censored": "bool",
+        "reward_account": "Option<GenericAccountId>"
+    },
+    "ChannelOwner": {
         "_enum": {
-            "Bool": "Vec<bool>",
-            "Uint16": "Vec<u16>",
-            "Uint32": "Vec<u32>",
-            "Uint64": "Vec<u64>",
-            "Int16": "Vec<i16>",
-            "Int32": "Vec<i32>",
-            "Int64": "Vec<i64>",
-            "TextToHash": "Vec<Text>",
-            "Text": "Vec<Text>",
-            "Reference": "Vec<EntityId>"
+            "Member": "MemberId",
+            "Curators": "CuratorGroupId",
+            "Dao": "DAOId"
         }
     },
-    "InputPropertyValue": {
+    "ChannelCategoryId": "u64",
+    "ChannelCategory": {},
+    "ChannelCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "ChannelCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "ChannelCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes",
+        "reward_account": "Option<GenericAccountId>"
+    },
+    "ChannelUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "new_meta": "Option<Bytes>",
+        "reward_account": "Option<Option<GenericAccountId>>"
+    },
+    "ChannelOwnershipTransferRequestId": "u64",
+    "ChannelOwnershipTransferRequest": {
+        "channel_id": "ChannelId",
+        "new_owner": "ChannelOwner",
+        "payment": "u128",
+        "new_reward_account": "Option<GenericAccountId>"
+    },
+    "Video": {
+        "in_channel": "ChannelId",
+        "in_series": "Option<SeriesId>",
+        "is_censored": "bool"
+    },
+    "VideoId": "u64",
+    "VideoCategoryId": "u64",
+    "VideoCategory": {},
+    "VideoCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "VideoCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "CuratorGroup": {
+        "curators": "Vec<CuratorId>",
+        "active": "bool",
+        "number_of_classes_maintained": "u32"
+    },
+    "Person": {
+        "controlled_by": "PersonController"
+    },
+    "PersonId": "u64",
+    "PersonController": {
         "_enum": {
-            "Single": "InputValue",
-            "Vector": "VecInputValue"
+            "Curator": "(CuratorGroupId,CuratorId)",
+            "Member": "MemberId",
+            "Curators": "Null"
         }
     },
-    "ParameterizedEntity": {
+    "PersonActor": {
         "_enum": {
-            "InternalEntityJustAdded": "u32",
-            "ExistingEntity": "EntityId"
+            "Member": "MemberId",
+            "Curator": "CuratorId"
         }
     },
-    "ParametrizedPropertyValue": {
+    "PersonCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes"
+    },
+    "PersonUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "meta": "Option<Bytes>"
+    },
+    "Playlist": {
+        "in_channel": "ChannelId"
+    },
+    "PlaylistId": "u64",
+    "PlaylistCreationParameters": {
+        "meta": "Bytes"
+    },
+    "PlaylistUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "SeriesId": "u64",
+    "Series": {
+        "in_channel": "ChannelId",
+        "seasons": "Vec<Season>"
+    },
+    "Season": {
+        "episodes": "Vec<VideoId>"
+    },
+    "SeriesParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "seasons": "Option<Vec<Option<SeasonParameters>>>",
+        "meta": "Option<Bytes>"
+    },
+    "SeasonParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "episodes": "Option<Vec<Option<EpisodeParemters>>>",
+        "meta": "Option<Bytes>"
+    },
+    "EpisodeParemters": {
         "_enum": {
-            "InputPropertyValue": "InputPropertyValue",
-            "InternalEntityJustAdded": "u32",
-            "InternalEntityVec": "Vec<ParameterizedEntity>"
-        }
-    },
-    "ParametrizedClassPropertyValue": {
-        "in_class_index": "PropertyId",
-        "value": "ParametrizedPropertyValue"
-    },
-    "CreateEntityOperation": {
-        "class_id": "ClassId"
-    },
-    "UpdatePropertyValuesOperation": {
-        "entity_id": "ParameterizedEntity",
-        "new_parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
-    },
-    "AddSchemaSupportToEntityOperation": {
-        "entity_id": "ParameterizedEntity",
-        "schema_id": "SchemaId",
-        "parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
-    },
-    "OperationType": {
-        "_enum": {
-            "CreateEntity": "CreateEntityOperation",
-            "UpdatePropertyValues": "UpdatePropertyValuesOperation",
-            "AddSchemaSupportToEntity": "AddSchemaSupportToEntityOperation"
+            "NewVideo": "VideoCreationParameters",
+            "ExistingVideo": "VideoId"
         }
     },
     "InputEntityValuesMap": "BTreeMap<PropertyId,InputPropertyValue>",

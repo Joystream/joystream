@@ -38,7 +38,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
 
     const groupMember = await this.getWorkerWithStakeForLeadAction(parseInt(workerId))
 
-    this.log(chalk.white('Current worker stake: ', formatBalance(groupMember.stake)))
+    this.log(chalk.magentaBright('Current worker stake: ', formatBalance(groupMember.stake)))
 
     if (!isValidBalance(amount) || groupMember.stake.lt(new BN(amount))) {
       this.error('Invalid amount', { exit: ExitCodes.InvalidInput })
@@ -53,7 +53,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
 
     this.log(
       chalk.green(
-        `${chalk.white(formatBalance(amount))} from worker ${chalk.white(workerId)} stake ` +
+        `${chalk.magentaBright(formatBalance(amount))} from worker ${chalk.magentaBright(workerId)} stake ` +
           `has been returned to worker's role account (${chalk.white(groupMember.roleAccount.toString())})!`
       )
     )

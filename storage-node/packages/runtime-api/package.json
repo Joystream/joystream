@@ -30,7 +30,10 @@
     "linux"
   ],
   "engines": {
-    "node": ">=12.18.0"
+    "node": ">=14.0.0"
+  },
+  "volta": {
+    "extends": "../../package.json"
   },
   "scripts": {
     "test": "mocha 'test/**/*.js' --exit",
@@ -46,8 +49,8 @@
   },
   "dependencies": {
     "@joystream/storage-utils": "^0.1.0",
-    "@joystream/types": "^0.15.0",
-    "@polkadot/api": "^2.4.1",
+    "@joystream/types": "^0.17.0",
+    "@polkadot/api": "4.2.1",
     "async-lock": "^1.2.0",
     "lodash": "^4.17.11",
     "password-prompt": "^1.1.2"

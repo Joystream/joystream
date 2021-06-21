@@ -1,10 +1,9 @@
 import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
+import Ajv from 'ajv'
 import ExitCodes from '../ExitCodes'
 import fs from 'fs'
 import path from 'path'
-import Ajv from 'ajv'
-import $RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import chalk from 'chalk'
 
 export const IOFlags = {
@@ -21,35 +20,33 @@ export const IOFlags = {
   }),
 }
 
-export async function getInputJson<T>(inputPath?: string, schema?: JSONSchema, schemaPath?: string): Promise<T | null> {
-  if (inputPath) {
-    let content, jsonObj
-    try {
-      content = fs.readFileSync(inputPath).toString()
-    } catch (e) {
-      throw new CLIError(`Cannot access the input file at: ${inputPath}`, { exit: ExitCodes.FsOperationFailed })
-    }
-    try {
-      jsonObj = JSON.parse(content)
-    } catch (e) {
-      throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
-    }
-    if (schema) {
-      await validateInput(jsonObj, schema, schemaPath)
-    }
-
-    return jsonObj as T
+export async function getInputJson<T>(inputPath: string, schema?: unknown): Promise<T> {
+  let content, jsonObj
+  try {
+    content = fs.readFileSync(inputPath).toString()
+  } catch (e) {
+    throw new CLIError(`Cannot access the input file at: ${inputPath}`, { exit: ExitCodes.FsOperationFailed })
+  }
+  try {
+    jsonObj = JSON.parse(content)
+  } catch (e) {
+    throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
+  }
+  if (schema) {
+    await validateInput(jsonObj, schema)
   }
 
-  return null
+  return jsonObj as T
 }
 
-export async function validateInput(input: unknown, schema: JSONSchema, schemaPath?: string): Promise<void> {
+export async function validateInput(input: unknown, schema: unknown): Promise<void> {
   const ajv = new Ajv({ allErrors: true })
-  schema = await $RefParser.dereference(schemaPath || '.', schema, {})
-  const valid = ajv.validate(schema, input) as boolean
+  const valid = ajv.validate(schema as any, input) as boolean
   if (!valid) {
-    throw new CLIError(`Input JSON file is not valid: ${ajv.errorsText()}`)
+    throw new CLIError(
+      `Input JSON file is not valid:\n` +
+        ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${JSON.stringify(e.params)})`).join('\n')
+    )
   }
 }
 
@@ -63,7 +60,7 @@ export function saveOutputJson(outputPath: string | undefined, fileName: string,
     }
     saveOutputJsonToFile(outputFilePath, data)
 
-    console.log(`${chalk.green('Output succesfully saved to:')} ${chalk.white(outputFilePath)}`)
+    console.log(`${chalk.green('Output successfully saved to:')} ${chalk.magentaBright(outputFilePath)}`)
   }
 }
 

@@ -6,7 +6,7 @@ import { formatBalance } from '@polkadot/util'
 import { Balance } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec, Observable } from '@polkadot/types/types'
-import { UInt } from '@polkadot/types'
+import { UInt, Bytes } from '@polkadot/types'
 import {
   AccountSummary,
   WorkingGroups,
@@ -29,10 +29,19 @@ import {
   Opening,
 } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { AccountId, MemberId } from '@joystream/types/common'
-import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
-import { ServiceProviderRecord } from '@joystream/types/discovery'
+import { MemberId, ChannelId } from '@joystream/types/common'
+import {
+  Channel,
+  Video,
+  ChannelCategoryId,
+  VideoId,
+  CuratorGroupId,
+  CuratorGroup,
+  ChannelCategory,
+  VideoCategoryId,
+  VideoCategory,
+} from '@joystream/types/content'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import _ from 'lodash'
 import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client'
 import fetch from 'cross-fetch'
@@ -43,9 +52,9 @@ import {
   GetMemberByIdQueryVariables,
   MembershipFieldsFragment,
 } from './graphql/generated/queries'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
-const DEFAULT_DECIMALS = new BN(12)
 
 // Mapping of working group to api module
 export const apiModuleByGroup = {
@@ -66,7 +75,6 @@ export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
 export default class Api {
   private _api: ApiPromise
   private _queryNode?: ApolloClient<NormalizedCacheObject>
-  private _cdClassesCache: [ClassId, Class][] | null = null
   public isDevelopment = false
 
   private constructor(
@@ -90,13 +98,14 @@ export default class Api {
 
   private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
+    const api = new ApiPromise({ provider: wsProvider, types, metadata: metadataCache })
+    await api.isReadyOrError
 
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
-    const tokenSymbol = properties.tokenSymbol.unwrapOr('DEV').toString()
-    const tokenDecimals = properties.tokenDecimals.unwrapOr(DEFAULT_DECIMALS).toNumber()
+    const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
+    const tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber()
 
     // formatBlanace config
     formatBalance.setDefaults({
@@ -448,14 +457,16 @@ export default class Api {
   }
 
   // Content directory
-  async availableClasses(useCache = true): Promise<[ClassId, Class][]> {
-    return useCache && this._cdClassesCache
-      ? this._cdClassesCache
-      : (this._cdClassesCache = await this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById))
+  async availableChannels(): Promise<[ChannelId, Channel][]> {
+    return await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById)
+  }
+
+  async availableVideos(): Promise<[VideoId, Video][]> {
+    return await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
-    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.contentDirectory.curatorGroupById)
+    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.content.curatorGroupById)
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
@@ -467,31 +478,62 @@ export default class Api {
     return (await this._api.query.contentDirectory.nextCuratorGroupId()).toNumber()
   }
 
-  async classById(id: number): Promise<Class | null> {
-    const c = await this._api.query.contentDirectory.classById(id)
-    return c.isEmpty ? null : c
+  async channelById(channelId: ChannelId | number | string): Promise<Channel> {
+    // isEmpty will not work for { MemmberId: 0 } ownership
+    const exists = !!(await this._api.query.content.channelById.size(channelId)).toNumber()
+    if (!exists) {
+      throw new CLIError(`Channel by id ${channelId.toString()} not found!`)
+    }
+    const channel = await this._api.query.content.channelById(channelId)
+
+    return channel
   }
 
-  async entitiesByClassId(classId: number): Promise<[EntityId, Entity][]> {
-    const entityEntries = await this.entriesByIds<EntityId, Entity>(this._api.query.contentDirectory.entityById)
-    return entityEntries.filter(([, entity]) => entity.class_id.toNumber() === classId)
+  async videosByChannelId(channelId: ChannelId | number | string): Promise<[VideoId, Video][]> {
+    const channel = await this.channelById(channelId)
+    if (channel) {
+      return Promise.all(
+        channel.videos.map(
+          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
+        )
+      )
+    } else {
+      return []
+    }
   }
 
-  async entityById(id: number): Promise<Entity | null> {
-    const exists = !!(await this._api.query.contentDirectory.entityById.size(id)).toNumber()
-    return exists ? await this._api.query.contentDirectory.entityById(id) : null
+  async videoById(videoId: VideoId | number | string): Promise<Video> {
+    const video = await this._api.query.content.videoById<Video>(videoId)
+    if (video.isEmpty) {
+      throw new CLIError(`Video by id ${videoId.toString()} not found!`)
+    }
+
+    return video
   }
 
-  async dataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this._api.query.dataDirectory.dataObjectByContentId(contentId)
-    return dataObject.unwrapOr(null)
+  async channelCategoryIds(): Promise<ChannelCategoryId[]> {
+    // There is currently no way to differentiate between unexisting and existing category
+    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
+    return (
+      await this.entriesByIds<ChannelCategoryId, ChannelCategory>(this._api.query.content.channelCategoryById)
+    ).map(([id]) => id)
   }
 
-  async ipnsIdentity(storageProviderId: number): Promise<string | null> {
-    const accountInfo = await this._api.query.discovery.accountInfoByStorageProviderId(storageProviderId)
-    return accountInfo.isEmpty || accountInfo.expires_at.toNumber() <= (await this.bestNumber())
-      ? null
-      : accountInfo.identity.toString()
+  async videoCategoryIds(): Promise<VideoCategoryId[]> {
+    // There is currently no way to differentiate between unexisting and existing category
+    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
+    return (await this.entriesByIds<VideoCategoryId, VideoCategory>(this._api.query.content.videoCategoryById)).map(
+      ([id]) => id
+    )
+  }
+
+  async dataObjectsByContentIds(contentIds: ContentId[]): Promise<DataObject[]> {
+    const dataObjects = await this._api.query.dataDirectory.dataByContentId.multi<DataObject>(contentIds)
+    const notFoundIndex = dataObjects.findIndex((o) => o.isEmpty)
+    if (notFoundIndex !== -1) {
+      throw new CLIError(`DataObject not found by id ${contentIds[notFoundIndex].toString()}`)
+    }
+    return dataObjects
   }
 
   async getRandomBootstrapEndpoint(): Promise<string | null> {
@@ -500,13 +542,15 @@ export default class Api {
     return randomEndpoint ? randomEndpoint.toString() : null
   }
 
-  async isAnyProviderAvailable(): Promise<boolean> {
-    const accounInfoEntries = await this.entriesByIds<StorageProviderId, ServiceProviderRecord>(
-      this._api.query.discovery.accountInfoByStorageProviderId
-    )
+  async storageProviderEndpoint(storageProviderId: StorageProviderId | number): Promise<string> {
+    const value = await this._api.query.storageWorkingGroup.workerStorage(storageProviderId)
+    return this._api.createType('Text', value).toString()
+  }
 
-    const bestNumber = await this.bestNumber()
-    return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
+  async allStorageProviderEndpoints(): Promise<string[]> {
+    const workerIds = (await this.groupWorkers(WorkingGroups.StorageProviders)).map(([id]) => id)
+    const workerStorages = await this._api.query.storageWorkingGroup.workerStorage.multi<Bytes>(workerIds)
+    return workerStorages.map((storage) => this._api.createType('Text', storage).toString())
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {

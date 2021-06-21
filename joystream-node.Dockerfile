@@ -1,9 +1,9 @@
-FROM liuchong/rustup:1.47.0 AS rustup
-RUN rustup component add rustfmt clippy
-RUN rustup install nightly-2020-10-06 --force
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-06
+FROM liuchong/rustup:nightly AS rustup
+RUN rustup install nightly-2021-03-24
+RUN rustup default nightly-2021-03-24
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-24
 RUN apt-get update && \
-  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
+  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev
 
 FROM rustup AS builder
 LABEL description="Compiles all workspace artifacts"
@@ -12,7 +12,7 @@ COPY . /joystream
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
-ENV WASM_BUILD_TOOLCHAIN=nightly-2020-10-06
+ENV WASM_BUILD_TOOLCHAIN=nightly-2021-03-24
 ARG TEST_NODE
 RUN echo "TEST_NODE=$TEST_NODE"
 RUN test -n "$TEST_NODE" && sed -i 's/MILLISECS_PER_BLOCK: Moment = 6000/MILLISECS_PER_BLOCK: Moment = 1000/' ./runtime/src/constants.rs
@@ -22,7 +22,7 @@ RUN export ALL_PROPOSALS_PARAMETERS_JSON="$(test -n "$TEST_NODE" && cat ./tests/
     cargo test --release --all && \
     cargo build --release
 
-FROM debian:stretch
+FROM debian:buster
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node

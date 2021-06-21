@@ -1,8 +1,7 @@
 #![cfg(test)]
 
 use frame_support::storage::StorageMap;
-use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::weights::Weight;
+use frame_support::traits::{OnFinalize, OnInitialize, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -10,16 +9,24 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use staking_handler::LockComparator;
 
 use crate::data_directory::ContentIdExists;
+pub use crate::data_directory::Voucher;
+pub use crate::data_directory::{ContentParameters, StorageObjectOwner};
 use crate::data_object_type_registry::IsActiveDataObjectType;
-
+use crate::ContentId;
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
-use frame_support::sp_runtime::DispatchResult;
-
-use frame_support::dispatch::DispatchError;
+use frame_support::StorageValue;
 use membership;
+
+pub use crate::data_directory::{
+    DEFAULT_GLOBAL_VOUCHER, DEFAULT_UPLOADING_BLOCKED_STATUS, DEFAULT_VOUCHER,
+    DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND, DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+};
+use frame_support::dispatch::{DispatchResult, DispatchError};
+use staking_handler::LockComparator;
+use frame_support::weights::Weight;
+use frame_system::ensure_signed;
 
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -48,12 +55,37 @@ impl_outer_event! {
     }
 }
 
-pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
-pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
-pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
-pub const TEST_FIRST_METADATA_ID: u64 = 4000;
+pub const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
+pub const DEFAULT_LEADER_WORKER_ID: u64 = 1;
 
-pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
+pub struct SetLeadFixture;
+impl SetLeadFixture {
+    pub fn set_default_lead() {
+        let worker = working_group::Worker::<Test> {
+            member_id: DEFAULT_LEADER_MEMBER_ID,
+            role_account_id: DEFAULT_LEADER_ACCOUNT_ID,
+            ..Default::default()
+        };
+
+        // Create the worker.
+        <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
+            DEFAULT_LEADER_WORKER_ID,
+            worker,
+        );
+
+        // Update current lead.
+        <working_group::CurrentLead<Test, StorageWorkingGroupInstance>>::put(
+            DEFAULT_LEADER_WORKER_ID,
+        );
+    }
+}
+
+pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
+pub const TEST_FIRST_RELATIONSHIP_ID: u64 = 3000;
+
+pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u64 = 1;
+pub const TEST_MOCK_LIAISON_ACCOUNT_ID: u64 = 2;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
 
 pub struct AnyDataObjectTypeIsActive {}
@@ -65,13 +97,13 @@ impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataO
 
 pub struct MockContent {}
 impl ContentIdExists<Test> for MockContent {
-    fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
+    fn has_content(which: &ContentId<Test>) -> bool {
         *which == TEST_MOCK_EXISTING_CID
     }
 
     fn get_data_object(
-        which: &<Test as data_directory::Trait>::ContentId,
-    ) -> Result<data_directory::DataObject<Test>, &'static str> {
+        which: &ContentId<Test>,
+    ) -> Result<data_directory::DataObject<Test>, data_directory::Error<Test>> {
         match *which {
             TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
                 type_id: 1,
@@ -80,12 +112,12 @@ impl ContentIdExists<Test> for MockContent {
                     block: 10,
                     time: 1024,
                 },
-                owner: 1,
-                liaison: TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID,
+                owner: StorageObjectOwner::Member(1),
+                liaison: Some(TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID),
                 liaison_judgement: data_directory::LiaisonJudgement::Pending,
                 ipfs_content_id: vec![],
             }),
-            _ => Err("nope, missing"),
+            _ => Err(data_directory::Error::<Test>::CidNotFound),
         }
     }
 }
@@ -99,8 +131,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const MaxObjectsPerInjection: u32 = 5;
-    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 impl frame_system::Trait for Test {
@@ -124,11 +154,11 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -138,8 +168,30 @@ impl pallet_timestamp::Trait for Test {
     type WeightInfo = ();
 }
 
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+impl common::StorageOwnership for Test {
+    type ChannelId = u64;
+    type DAOId = u64;
+    type ContentId = u64;
+    type DataObjectTypeId = u64;
+}
+
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 10;
+    pub const ExistentialDeposit: u32 = 0;
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: LockIdentifier = [2; 8];
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
+    pub const MinimumApplicationStake: u32 = 50;
+    pub const LeaderOpeningStake: u64 = 20;
 }
 
 impl balances::Trait for Test {
@@ -152,16 +204,168 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 3;
-    pub const LockId: LockIdentifier = [2; 8];
-    pub const DefaultMembershipPrice: u64 = 100;
-    pub const DefaultInitialInvitationBalance: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
-    pub const CandidateStake: u64 = 100;
-    pub const MinimumApplicationStake: u32 = 50;
-    pub const LeaderOpeningStake: u64 = 20;
+impl data_object_type_registry::Trait for Test {
+    type Event = MetaEvent;
+    type WorkingGroup = ();
+}
+
+impl data_directory::Trait for Test {
+    type Event = MetaEvent;
+    type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
+    type MembershipOriginValidator = ();
+}
+
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _: u64,
+    ) -> Result<u64, DispatchError> {
+        let account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
+    }
+}
+
+impl data_object_storage_registry::Trait for Test {
+    type Event = MetaEvent;
+    type DataObjectStorageRelationshipId = u64;
+    type ContentIdExists = MockContent;
+}
+
+impl membership::Trait for Test {
+    type Event = MetaEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type WorkingGroup = ();
+    type WeightInfo = Weights;
+    type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+    staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
+}
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_profile(_: u32) -> Weight {
+        0
+    }
+    fn update_accounts_none() -> Weight {
+        0
+    }
+    fn update_accounts_root() -> Weight {
+        0
+    }
+    fn update_accounts_controller() -> Weight {
+        0
+    }
+    fn update_accounts_both() -> Weight {
+        0
+    }
+    fn set_referral_cut() -> Weight {
+        0
+    }
+    fn transfer_invites() -> Weight {
+        0
+    }
+    fn invite_member(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_membership_price() -> Weight {
+        0
+    }
+    fn update_profile_verification() -> Weight {
+        0
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        0
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        0
+    }
+    fn set_initial_invitation_count() -> Weight {
+        0
+    }
+    fn add_staking_account_candidate() -> Weight {
+        0
+    }
+    fn confirm_staking_account() -> Weight {
+        0
+    }
+    fn remove_staking_account() -> Weight {
+        0
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        if account_id != TEST_MOCK_LIAISON_ACCOUNT_ID{
+            return  Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into())
+        }
+
+        if *worker_id != TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID {
+            return  Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into())
+        }
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        if account_id != DEFAULT_LEADER_ACCOUNT_ID {
+            return Err(working_group::Error::<Test, StorageWorkingGroupInstance>::IsNotLeadAccount
+                .into())
+        }
+
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!();
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(
+        _new_lock: &LockIdentifier,
+        _existing_locks: &[LockIdentifier],
+    ) -> bool {
+        false
+    }
 }
 
 pub struct WorkingGroupWeightInfo;
@@ -247,186 +451,28 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     }
 }
 
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-}
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_controller_account_origin(
-        origin: Origin,
-        _: u64,
-    ) -> Result<u64, DispatchError> {
-        let account_id = frame_system::ensure_signed(origin)?;
-
-        Ok(account_id)
-    }
-
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
-        unimplemented!()
-    }
-}
-
-impl data_object_type_registry::Trait for Test {
-    type Event = MetaEvent;
-    type DataObjectTypeId = u64;
-    type WorkingGroup = StorageWorkingGroup;
-}
-
-impl data_directory::Trait for Test {
-    type Event = MetaEvent;
-    type ContentId = u64;
-    type StorageProviderHelper = ();
-    type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
-    type MemberOriginValidator = ();
-    type MaxObjectsPerInjection = MaxObjectsPerInjection;
-}
-
-impl crate::data_directory::StorageProviderHelper<Test> for () {
-    fn get_random_storage_provider() -> Result<u32, &'static str> {
-        Ok(1)
-    }
-}
-
-impl data_object_storage_registry::Trait for Test {
-    type Event = MetaEvent;
-    type DataObjectStorageRelationshipId = u64;
-    type ContentIdExists = MockContent;
-}
-
-impl common::membership::Trait for Test {
-    type MemberId = u64;
-    type ActorId = u32;
-}
-
-impl membership::Trait for Test {
-    type Event = MetaEvent;
-    type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
-    type WeightInfo = Weights;
-    type DefaultInitialInvitationBalance = ();
-    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
-    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
-    type CandidateStake = CandidateStake;
-}
-
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
-    fn get_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget(_new_value: u64) {
-        unimplemented!()
-    }
-}
-
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
-    fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
-    ) -> DispatchResult {
-        unimplemented!();
-    }
-
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
-        unimplemented!()
-    }
-
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
-        unimplemented!();
-    }
-
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
-        unimplemented!()
-    }
-
-    fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
-    ) -> bool {
-        unimplemented!()
-    }
-}
-
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
-    fn are_locks_conflicting(
-        _new_lock: &LockIdentifier,
-        _existing_locks: &[LockIdentifier],
-    ) -> bool {
-        false
-    }
-}
-
+#[allow(dead_code)]
 pub struct ExtBuilder {
+    voucher_objects_limit_upper_bound: u64,
+    voucher_size_limit_upper_bound: u64,
+    global_voucher: Voucher,
+    default_voucher: Voucher,
     first_data_object_type_id: u64,
-    first_content_id: u64,
     first_relationship_id: u64,
-    first_metadata_id: u64,
+    uploading_blocked: bool,
 }
 
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
+            voucher_objects_limit_upper_bound: DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            voucher_size_limit_upper_bound: DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            global_voucher: DEFAULT_GLOBAL_VOUCHER,
+            default_voucher: DEFAULT_VOUCHER,
             first_data_object_type_id: 1,
-            first_content_id: 2,
             first_relationship_id: 3,
-            first_metadata_id: 4,
+            uploading_blocked: DEFAULT_UPLOADING_BLOCKED_STATUS,
         }
     }
 }
@@ -436,22 +482,38 @@ impl ExtBuilder {
         self.first_data_object_type_id = first_data_object_type_id;
         self
     }
-    pub fn first_content_id(mut self, first_content_id: u64) -> Self {
-        self.first_content_id = first_content_id;
-        self
-    }
+
     pub fn first_relationship_id(mut self, first_relationship_id: u64) -> Self {
         self.first_relationship_id = first_relationship_id;
         self
     }
-    pub fn first_metadata_id(mut self, first_metadata_id: u64) -> Self {
-        self.first_metadata_id = first_metadata_id;
+
+    pub fn uploading_blocked_status(mut self, uploading_blocked: bool) -> Self {
+        self.uploading_blocked = uploading_blocked;
         self
     }
+
+    pub fn global_voucher(mut self, global_voucher: Voucher) -> Self {
+        self.global_voucher = global_voucher;
+        self
+    }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
+
+        data_directory::GenesisConfig::<Test> {
+            voucher_size_limit_upper_bound: self.voucher_size_limit_upper_bound,
+            voucher_objects_limit_upper_bound: self.voucher_objects_limit_upper_bound,
+            global_voucher: self.global_voucher,
+            default_voucher: self.default_voucher,
+            data_object_by_content_id: vec![],
+            vouchers: vec![],
+            uploading_blocked: self.uploading_blocked,
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
         data_object_type_registry::GenesisConfig::<Test> {
             first_data_object_type_id: self.first_data_object_type_id,
@@ -484,8 +546,6 @@ impl ExtBuilder {
 }
 
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
-
-pub type StorageWorkingGroup = working_group::Module<Test, StorageWorkingGroupInstance>;
 pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;
@@ -494,27 +554,19 @@ pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Te
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default()
         .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
-        .first_content_id(TEST_FIRST_CONTENT_ID)
         .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
-        .first_metadata_id(TEST_FIRST_METADATA_ID)
         .build()
         .execute_with(|| f())
 }
 
-pub(crate) fn hire_storage_provider() -> (u64, u32) {
-    let storage_provider_id = 1;
-    let role_account_id = 1;
+pub(crate) fn hire_storage_provider() -> (u64, u64) {
+    let storage_provider_id = TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID;
+    let role_account_id = TEST_MOCK_LIAISON_ACCOUNT_ID;
 
     let storage_provider = working_group::Worker::<Test> {
         member_id: 1,
         role_account_id,
-        staking_account_id: 1,
-        reward_account_id: role_account_id,
-        started_leaving_at: None,
-        job_unstaking_period: 0,
-        reward_per_block: None,
-        missed_reward: None,
-        created_at: 1,
+        ..Default::default()
     };
 
     <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(

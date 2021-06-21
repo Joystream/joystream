@@ -56,9 +56,9 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       [workerId, penalty || null, rationale || null]
     )
 
-    this.log(chalk.green(`Worker ${chalk.white(workerId.toString())} has been evicted!`))
+    this.log(chalk.green(`Worker ${chalk.magentaBright(workerId.toString())} has been evicted!`))
     if (penalty) {
-      this.log(chalk.green(`${chalk.white(formatBalance(penalty))} of worker's stake has been slashed!`))
+      this.log(chalk.green(`${chalk.magentaBright(formatBalance(penalty))} of worker's stake has been slashed!`))
     }
   }
 }

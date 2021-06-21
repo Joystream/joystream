@@ -4,8 +4,9 @@ import { u32, u64, u128, Null } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyStructDecorated } from '../JoyStruct'
 import { JoyEnum } from '../JoyEnum'
-import { AccountId, MemberId, Hash } from '../common'
+import { MemberId, Hash } from '../common'
 import { VotePower, CastVote } from '../referendum'
+import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export type ICouncilStageAnnouncing = {
   candidatesCount: u64

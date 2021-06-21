@@ -36,10 +36,10 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
       [openingId, new (JoyBTreeSet(ApplicationId))(this.getTypesRegistry(), applicationIds)]
     )
 
-    this.log(chalk.green(`Opening ${chalk.white(openingId.toString())} succesfully filled!`))
+    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId.toString())} succesfully filled!`))
     this.log(
       chalk.green('Accepted working group application IDs: ') +
-        chalk.white(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')
+        chalk.magentaBright(applicationIds.length ? applicationIds.join(chalk.green(', ')) : 'NONE')
     )
   }
 }

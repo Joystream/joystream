@@ -23,7 +23,7 @@ export class JsonSchemaPrompter<JsonResult> {
     schema: JSONSchema,
     defaults?: Partial<JsonResult>,
     customPrompts?: JsonSchemaCustomPrompts,
-    schemaPath = '.'
+    schemaPath = ''
   ) {
     this.customPropmpts = customPrompts
     this.schema = schema

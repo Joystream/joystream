@@ -36,10 +36,10 @@ class BalancesApi {
   }
 
   /*
-   * Return true/false if the account has the minimum balance given.
+   * Return true/false if the account has a minimum spendable balance.
    */
   async hasMinimumBalanceOf(accountId, min) {
-    const balance = await this.freeBalance(accountId)
+    const balance = await this.availableBalance(accountId)
     if (typeof min === 'number') {
       return balance.cmpn(min) >= 0
     }
@@ -47,9 +47,9 @@ class BalancesApi {
   }
 
   /*
-   * Return the account's current free balance.
+   * Return the account's available balance which can be spent.
    */
-  async freeBalance(accountId) {
+  async availableBalance(accountId) {
     const decoded = this.base.identities.keyring.decodeAddress(accountId, true)
     return (await this.base.api.derive.balances.all(decoded)).availableBalance
   }

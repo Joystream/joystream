@@ -13,7 +13,7 @@ import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import BN from 'bn.js'
 import { OpeningId } from '@joystream/types/hiring'
 import { assert } from 'chai'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 
 export default {
@@ -26,7 +26,7 @@ export default {
 }
 
 async function manageWorkerAsLead(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<void> {
-  const debug = Debugger(`flow:manageWorkerAsLead:${group}`)
+  const debug = extendDebug(`flow:manageWorkerAsLead:${group}`)
   debug('Started')
 
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)

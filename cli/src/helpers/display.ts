@@ -17,8 +17,8 @@ export function displayNameValueTable(rows: NameValueObj[]) {
   cli.table(
     rows,
     {
-      name: { minWidth: 30, get: (row) => chalk.bold.white(row.name) },
-      value: { get: (row) => chalk.white(row.value) },
+      name: { minWidth: 30, get: (row) => chalk.bold.magentaBright(row.name) },
+      value: { get: (row) => chalk.magentaBright(row.value) },
     },
     { 'no-header': true }
   )
@@ -49,7 +49,7 @@ export function displayTable(rows: { [k: string]: string | number }[], cellHoriz
     }, columnName.length)
   const columnDef = (columnName: string) => ({
     header: columnName,
-    get: (row: typeof rows[number]) => chalk.white(`${row[columnName]}`),
+    get: (row: typeof rows[number]) => chalk.magentaBright(`${row[columnName]}`),
     minWidth: maxLength(columnName) + cellHorizontalPadding,
   })
   const columns: Table.table.Columns<{ [k: string]: string }> = {}

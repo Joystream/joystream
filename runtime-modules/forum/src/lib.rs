@@ -12,7 +12,7 @@ use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_signed};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
@@ -53,6 +53,7 @@ pub type ThreadOf<T> = Thread<
 
 type Balances<T> = balances::Module<T>;
 
+
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
@@ -86,7 +87,7 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::membership::Trait + balances::Trait
+    frame_system::Trait + pallet_timestamp::Trait + common::membership::MembershipTypes + balances::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
