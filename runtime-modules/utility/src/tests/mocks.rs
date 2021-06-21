@@ -194,28 +194,10 @@ impl WeightInfo for () {
     fn execute_signal_proposal(_: u32) -> Weight {
         0
     }
-    fn update_working_group_budget_positive_forum() -> Weight {
+    fn update_working_group_budget_positive() -> Weight {
         0
     }
-    fn update_working_group_budget_negative_forum() -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_storage() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_storage() -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_content() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_content() -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive_membership() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative_membership() -> Weight {
+    fn update_working_group_budget_negative() -> Weight {
         0
     }
     fn burn_account_tokens() -> Weight {
