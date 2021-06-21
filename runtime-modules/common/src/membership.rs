@@ -2,7 +2,7 @@ use codec::Codec;
 use frame_support::dispatch::DispatchError;
 use frame_support::Parameter;
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
 
 /// Member id type alias
 pub type MemberId<T> = <T as MembershipTypes>::MemberId;
@@ -31,6 +31,7 @@ pub trait MembershipTypes: frame_system::Trait {
         + Default
         + Copy
         + MaybeSerialize
+        + MaybeSerializeDeserialize
         + Ord
         + PartialEq;
 }

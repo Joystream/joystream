@@ -3,9 +3,13 @@ use super::*;
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct CuratorGroup<T: Trait> {
+pub struct CuratorGroup<T>
+where
+    T: common::membership::MembershipTypes,
+    T::ActorId: Ord,
+{
     /// Curators set, associated with a iven curator group
-    curators: BTreeSet<T::CuratorId>,
+    curators: BTreeSet<CuratorId<T>>,
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
@@ -23,7 +27,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
 
 impl<T: Trait> CuratorGroup<T> {
     /// Check if `CuratorGroup` contains curator under given `curator_id`
-    pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
+    pub fn has_curator(&self, curator_id: &CuratorId<T>) -> bool {
         self.curators.contains(curator_id)
     }
 
@@ -38,12 +42,12 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by reference
-    pub fn get_curators(&self) -> &BTreeSet<T::CuratorId> {
+    pub fn get_curators(&self) -> &BTreeSet<CuratorId<T>> {
         &self.curators
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by mutable  reference
-    pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
+    pub fn get_curators_mut(&mut self) -> &mut BTreeSet<CuratorId<T>> {
         &mut self.curators
     }
 
@@ -57,7 +61,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure curator under given `curator_id` exists in `CuratorGroup`
-    pub fn ensure_curator_in_group_exists(&self, curator_id: &T::CuratorId) -> DispatchResult {
+    pub fn ensure_curator_in_group_exists(&self, curator_id: &CuratorId<T>) -> DispatchResult {
         ensure!(
             self.has_curator(curator_id),
             Error::<T>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -68,7 +72,7 @@ impl<T: Trait> CuratorGroup<T> {
     /// Ensure curator under given `curator_id` does not exist yet in `CuratorGroup`
     pub fn ensure_curator_in_group_does_not_exist(
         &self,
-        curator_id: &T::CuratorId,
+        curator_id: &CuratorId<T>,
     ) -> DispatchResult {
         ensure!(
             !self.has_curator(curator_id),
@@ -79,7 +83,7 @@ impl<T: Trait> CuratorGroup<T> {
 
     /// Authorize curator, performing all checks to ensure curator can act
     pub fn perform_curator_in_group_auth(
-        curator_id: &T::CuratorId,
+        curator_id: &CuratorId<T>,
         curator_group_id: &T::CuratorGroupId,
         account_id: &T::AccountId,
     ) -> DispatchResult {

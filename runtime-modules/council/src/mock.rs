@@ -489,6 +489,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     ) -> bool {
         unimplemented!()
     }
+
+    fn worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!();
+    }
 }
 
 impl pallet_timestamp::Trait for Runtime {

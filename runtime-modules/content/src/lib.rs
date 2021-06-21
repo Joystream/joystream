@@ -33,7 +33,9 @@ pub use common::storage::{
     StorageSystem,
 };
 
-pub use common::{working_group::WorkingGroup, MembershipTypes, StorageOwnership, Url};
+use common::membership::MemberOriginValidator;
+pub use common::working_group::{WorkingGroup, WorkingGroupAuthenticator};
+pub use common::{MemberId, MembershipTypes, StorageOwnership, Url};
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Trait>::Balance;
@@ -73,14 +75,12 @@ pub trait NumericIdentifier:
 
 impl NumericIdentifier for u64 {}
 
+/// Curator ID alias for the actor of the system.
+pub type CuratorId<T> = common::ActorId<T>;
+
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    frame_system::Trait
-    + balances::Trait
-    + ContentActorAuthenticator
-    + Clone
-    + StorageOwnership
-    + MembershipTypes
+    frame_system::Trait + balances::Trait + Clone + StorageOwnership + MembershipTypes
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -114,6 +114,25 @@ pub trait Trait:
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem: StorageSystem<Self>;
+
+    /// Working group pallet integration.
+    type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>;
+
+    /// Validates member ID and origin combination.
+    type Membership: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    /// Curator group identifier
+    type CuratorGroupId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + Clone
+        + MaybeSerializeDeserialize
+        + Eq
+        + PartialEq
+        + Ord;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -144,7 +163,7 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
 pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
         <T as MembershipTypes>::MemberId,
-        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as Trait>::CuratorGroupId,
         <T as StorageOwnership>::DAOId,
     >,
     Error<T>,
@@ -207,7 +226,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
     <T as MembershipTypes>::MemberId,
-    <T as ContentActorAuthenticator>::CuratorGroupId,
+    <T as Trait>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
@@ -236,7 +255,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
     <T as StorageOwnership>::ChannelId,
     <T as MembershipTypes>::MemberId,
-    <T as ContentActorAuthenticator>::CuratorGroupId,
+    <T as Trait>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
@@ -569,7 +588,7 @@ decl_module! {
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
-            curator_id: T::CuratorId,
+            curator_id: CuratorId<T>,
         ) {
 
             // Ensure given origin is lead
@@ -605,7 +624,7 @@ decl_module! {
         pub fn remove_curator_from_group(
             origin,
             curator_group_id: T::CuratorGroupId,
-            curator_id: T::CuratorId,
+            curator_id: CuratorId<T>,
         ) {
 
             // Ensure given origin is lead
@@ -634,7 +653,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
@@ -683,7 +702,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<ContentParameters<T>, T::AccountId>,
         ) {
@@ -744,7 +763,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_channel_assets(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             channel_id: T::ChannelId,
             assets: Vec<ContentId<T>>,
         ) {
@@ -771,7 +790,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_censorship_status(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             channel_id: T::ChannelId,
             is_censored: bool,
             rationale: Vec<u8>,
@@ -808,7 +827,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel_category(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             params: ChannelCategoryCreationParameters,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
@@ -832,7 +851,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_category(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             category_id: T::ChannelCategoryId,
             params: ChannelCategoryUpdateParameters,
         ) {
@@ -849,7 +868,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel_category(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             category_id: T::ChannelCategoryId,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
@@ -867,7 +886,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn request_channel_transfer(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _request: ChannelOwnershipTransferRequest<T>,
         ) {
             // requester must be new_owner
@@ -886,7 +905,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _request_id: T::ChannelOwnershipTransferRequestId,
         ) {
             // only current owner of channel can approve
@@ -896,7 +915,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             channel_id: T::ChannelId,
             params: VideoCreationParameters<ContentParameters<T>>,
         ) {
@@ -953,7 +972,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             video_id: T::VideoId,
             params: VideoUpdateParameters<ContentParameters<T>>,
         ) {
@@ -1003,7 +1022,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             video_id: T::VideoId,
         ) {
 
@@ -1042,7 +1061,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_playlist(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _channel_id: T::ChannelId,
             _params: PlaylistCreationParameters,
         ) {
@@ -1052,7 +1071,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_playlist(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _playlist: T::PlaylistId,
             _params: PlaylistUpdateParameters,
         ) {
@@ -1062,7 +1081,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_playlist(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _channel_id: T::ChannelId,
             _playlist: T::PlaylistId,
         ) {
@@ -1072,7 +1091,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_featured_videos(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             list: Vec<T::VideoId>
         ) {
             // can only be set by lead
@@ -1091,7 +1110,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video_category(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             params: VideoCategoryCreationParameters,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
@@ -1115,7 +1134,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_category(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             category_id: T::VideoCategoryId,
             params: VideoCategoryUpdateParameters,
         ) {
@@ -1132,7 +1151,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_video_category(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             category_id: T::VideoCategoryId,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
@@ -1150,7 +1169,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_person(
             _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _actor: PersonActor<T::MemberId, CuratorId<T>>,
             _params: PersonCreationParameters<ContentParameters<T>>,
         ) {
             Self::not_implemented()?;
@@ -1159,7 +1178,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_person(
             _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _actor: PersonActor<T::MemberId, CuratorId<T>>,
             _person: T::PersonId,
             _params: PersonUpdateParameters<ContentParameters<T>>,
         ) {
@@ -1169,7 +1188,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_person(
             _origin,
-            _actor: PersonActor<T::MemberId, T::CuratorId>,
+            _actor: PersonActor<T::MemberId, CuratorId<T>>,
             _person: T::PersonId,
         ) {
             Self::not_implemented()?;
@@ -1178,7 +1197,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_person_to_video(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _video_id: T::VideoId,
             _person: T::PersonId
         ) {
@@ -1188,7 +1207,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_person_from_video(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _video_id: T::VideoId
         ) {
             Self::not_implemented()?;
@@ -1197,7 +1216,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_video_censorship_status(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             video_id: T::VideoId,
             is_censored: bool,
             rationale: Vec<u8>,
@@ -1233,7 +1252,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_series(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _channel_id: T::ChannelId,
             _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) {
@@ -1243,7 +1262,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_series(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _channel_id: T::ChannelId,
             _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
         ) {
@@ -1253,7 +1272,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_series(
             _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _actor: ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
             _series: T::SeriesId,
         ) {
             Self::not_implemented()?;
@@ -1338,7 +1357,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn actor_to_channel_owner(
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
     ) -> ActorToChannelOwnerResult<T> {
         match actor {
             // Lead should use their member or curator role to create channels
@@ -1380,12 +1399,12 @@ decl_event!(
     pub enum Event<T>
     where
         ContentActor = ContentActor<
-            <T as ContentActorAuthenticator>::CuratorGroupId,
-            <T as ContentActorAuthenticator>::CuratorId,
+            <T as Trait>::CuratorGroupId,
+            CuratorId<T>,
             <T as MembershipTypes>::MemberId,
         >,
-        CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
-        CuratorId = <T as ContentActorAuthenticator>::CuratorId,
+        CuratorGroupId = <T as Trait>::CuratorGroupId,
+        CuratorId = CuratorId<T>,
         VideoId = <T as Trait>::VideoId,
         VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as StorageOwnership>::ChannelId,

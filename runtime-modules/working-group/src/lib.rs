@@ -54,8 +54,6 @@ pub use types::{
 };
 use types::{ApplicationInfo, WorkerInfo};
 
-pub use checks::{ensure_worker_exists, ensure_worker_signed};
-
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
@@ -1497,6 +1495,10 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
         checks::ensure_worker_exists::<T, I>(worker_id)
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
+    }
+
+    fn worker_exists(worker_id: &T::ActorId) -> bool {
+        checks::ensure_worker_exists::<T, I>(worker_id).is_ok()
     }
 }
 

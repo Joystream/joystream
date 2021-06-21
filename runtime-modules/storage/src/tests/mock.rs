@@ -364,6 +364,10 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     ) -> bool {
         unimplemented!()
     }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
 }
 
 impl LockComparator<<Test as balances::Trait>::Balance> for Test {
