@@ -870,7 +870,7 @@ impl<T: Config> Module<T> {
         new_validator_count: u32,
     ) -> DispatchResult {
         ensure!(
-            new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
+            new_validator_count >= <staking::Pallet<T>>::minimum_validator_count(),
             Error::<T>::InvalidValidatorCount
         );
 

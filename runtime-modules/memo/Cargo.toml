@@ -6,10 +6,10 @@ edition = '2018'
 
 [dependencies]
 codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive'] }
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5"}
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5"}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5"}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.5"}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.6"}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.6"}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.6"}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = "polkadot-v0.9.6"}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 
 [features]

@@ -162,4 +162,10 @@ impl pallet_staking::WeightInfo for WeightInfo {
     fn get_npos_targets(_: u32) -> u64 {
         todo!()
     }
+    fn update_staking_limits() -> u64 {
+        todo!()
+    }
+    fn chill_other() -> u64 {
+        todo!()
+    }
 }
