@@ -116,38 +116,13 @@ frame-benchmarking-cli = { git = 'https://github.com/paritytech/substrate.git', 
 substrate-build-script-utils = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true }
 
 [features]
-default = [
-	'cli',
-
-	# Cumulus
-	'cumulus-client-consensus-aura',
-	'cumulus-client-consensus-common',
-	'cumulus-client-collator',
-	'cumulus-client-cli',
-	'cumulus-client-network',
-	'cumulus-client-service',
-	'cumulus-primitives-core',
-	'cumulus-primitives-parachain-inherent',
-
-	# Polkadot
-	'polkadot-primitives',
-	'polkadot-service',
-	'polkadot-cli',
-	'polkadot-test-service',
-	'polkadot-parachain'
-]
-# --no-default-features
-standalone = ['cli', 'joystream-node-runtime/standalone']
-
-browser = [
-	"browser-utils",
-	"wasm-bindgen",
-	"wasm-bindgen-futures",
-]
+default = []
+standalone = ["joystream-node-runtime/standalone"]
 cli = [
 	"node-inspect",
 	"sc-cli",
 	"frame-benchmarking-cli",
+	"sc-service/db",
 	"structopt",
 	"substrate-build-script-utils",
 ]
