@@ -1,3 +1,9 @@
 name: eks-cluster
 runtime: nodejs
 description: A minimal AWS TypeScript Pulumi program
+template:
+  config:
+    aws:profile:
+      default: joystream-user
+    aws:region:
+      default: us-east-1
