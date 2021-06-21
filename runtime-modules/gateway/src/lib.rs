@@ -540,6 +540,13 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         )
     }
 
+    #[weight = 10_000_000] // TODO: adjust weight
+    pub fn remove_service_provider(origin, service_provider_id: T::ServiceProviderId) {
+        GatewayWorkingGroup::<T>::ensure_origin_is_active_leader(origin)?;
+        ensure!(<ServiceProviderById<T>>::contains_key(service_provider_id), Error::<T>::ServiceProviderNotExist);
+
+        <ServiceProviderById<T>>::remove(service_provider_id);
+    }
 }}
 impl<T: Trait> Module<T> {
     // TODO: the next 2 ensures are almost exactly the same, extract behavior
