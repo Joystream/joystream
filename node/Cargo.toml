@@ -19,16 +19,16 @@ path = 'bin/main.rs'
 [dependencies]
 derive_more = '0.15.0'
 log = "0.4.13"
-codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive']}
+codec = { package = 'parity-scale-codec', version = '2.1.3', default-features = false, features = ['derive']}
 hex-literal = "0.2.1"
 
 # RPC related dependencies
 jsonrpc-core = "15.1.0"
 serde = { version = "1.0.126", features = ["derive"] }
-futures = { version = "0.3.9", features = ["compat"] }
-structopt = "0.3.8"
+futures = { version = "0.3.15", features = ["compat"] }
+structopt = "0.3.21"
 serde_json = '1.0'
-hex = { package = "hex", version = "0.4.2" }
+hex = { package = "hex", version = "0.4.3" }
 
 # Local Dependencies
 joystream-node-runtime = { path = '../runtime' }
@@ -84,47 +84,51 @@ sp-timestamp = { git = 'https://github.com/paritytech/substrate', branch = 'polk
 sp-transaction-pool = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.6' }
 
 # Cumulus dependencies
-cumulus-client-consensus-aura = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-client-consensus-common = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-client-collator = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-client-cli = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-client-network = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-client-service = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-primitives-core = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
-cumulus-primitives-parachain-inherent = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6', optional = true }
+cumulus-client-consensus-aura = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-client-consensus-common = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-client-collator = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-client-cli = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-client-network = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-client-service = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-primitives-core = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
+cumulus-primitives-parachain-inherent = { git = 'https://github.com/paritytech/cumulus', branch = 'polkadot-v0.9.6' }
 
 # Polkadot dependencies
-polkadot-primitives = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6', optional = true}
-polkadot-service = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6', optional = true}
-polkadot-cli = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6', optional = true}
-polkadot-test-service = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6', optional = true}
-polkadot-parachain = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6', optional = true}
+polkadot-primitives = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6' }
+polkadot-service = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6' }
+polkadot-cli = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6' }
+polkadot-test-service = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6' }
+polkadot-parachain = { git = 'https://github.com/paritytech/polkadot', branch = 'release-v0.9.6' }
 
 # CLI-specific dependencies
 node-inspect = { package = 'node-inspect', git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true }
 
 # WASM-specific dependencies
-wasm-bindgen = { version = "0.2.57", optional = true }
-wasm-bindgen-futures = { version = "0.4.7", optional = true }
+wasm-bindgen = { version = "0.2.74", optional = true }
+wasm-bindgen-futures = { version = "0.4.24", optional = true }
 browser-utils = { package = 'substrate-browser-utils', git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true}
 
 [build-dependencies]
-structopt = { version = "0.3.8", optional = true }
+structopt = { version = "0.3.21", optional = true }
 node-inspect = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true}
 sc-cli = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true}
 frame-benchmarking-cli = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true }
 substrate-build-script-utils = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.6', optional = true }
 
 [features]
-default = []
-standalone = ["joystream-node-runtime/standalone"]
-cli = [
+default = [
 	"node-inspect",
 	"sc-cli",
 	"frame-benchmarking-cli",
 	"sc-service/db",
 	"structopt",
 	"substrate-build-script-utils",
+]
+standalone = ["joystream-node-runtime/standalone"]
+browser = [
+	"browser-utils",
+	"wasm-bindgen",
+	"wasm-bindgen-futures",
 ]
 runtime-benchmarks = [
 	"joystream-node-runtime/runtime-benchmarks",
