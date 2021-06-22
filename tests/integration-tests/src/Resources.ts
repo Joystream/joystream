@@ -1,8 +1,8 @@
 import { assert } from 'chai'
 import { Utils } from './utils'
-import Debugger from 'debug'
+import { extendDebug } from './Debugger'
 
-const debug = Debugger('resources')
+const debug = extendDebug('resources')
 
 type NamedLocks = Record<Resource, Lock>
 export type ResourceLocker = (resource: Resource, timeout?: number) => Promise<() => void>

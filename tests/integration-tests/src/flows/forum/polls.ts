@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
   CategoryParams,
@@ -12,7 +12,7 @@ import {
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 
 export default async function polls({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger(`flow:polls`)
+  const debug = extendDebug(`flow:polls`)
   debug('Started')
   api.enableDebugTxLogs()
 

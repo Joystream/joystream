@@ -12,7 +12,7 @@ import { Utils } from './utils'
 import { types } from '@joystream/types'
 
 import { v4 as uuid } from 'uuid'
-import Debugger from 'debug'
+import { extendDebug } from './Debugger'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import {
   EventDetails,
@@ -57,7 +57,7 @@ export class ApiFactory {
     treasuryAccountUri: string,
     sudoAccountUri: string
   ): Promise<ApiFactory> {
-    const debug = Debugger('api-factory')
+    const debug = extendDebug('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++

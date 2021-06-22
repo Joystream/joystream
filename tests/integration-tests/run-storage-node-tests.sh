@@ -49,4 +49,4 @@ yes | yarn joystream-cli media:uploadVideo ./assets/joystream.MOV \
   --input ./assets/TestVideo.json \
   --confirm
 
-time DEBUG=* yarn workspace integration-tests run-test-scenario storage-node
+time DEBUG=integration-tests:* yarn workspace integration-tests run-test-scenario storage-node

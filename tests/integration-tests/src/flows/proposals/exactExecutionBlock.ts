@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
 
 export default async function exactExecutionBlock({ api, query, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:proposal-exact-execution-block')
+  const debug = extendDebug('flow:proposal-exact-execution-block')
   debug('Started')
   api.enableDebugTxLogs()
 

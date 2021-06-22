@@ -1,7 +1,7 @@
 import { FlowProps } from '../../Flow'
 import { UpdateGroupStatusFixture } from '../../fixtures/workingGroups'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
 import { IWorkingGroupMetadata } from '@joystream/metadata-protobuf'
@@ -51,7 +51,7 @@ export default async function groupStatus({ api, query, env }: FlowProps): Promi
         },
       ]
 
-      const debug = Debugger(`flow:group-status:${group}`)
+      const debug = extendDebug(`flow:group-status:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 

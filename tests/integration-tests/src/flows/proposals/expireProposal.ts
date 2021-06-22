@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { CreateProposalsFixture, ExpireProposalsFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
 
 export default async function expireProposal({ api, query, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:expire-proposal')
+  const debug = extendDebug('flow:expire-proposal')
   debug('Started')
   api.enableDebugTxLogs()
 

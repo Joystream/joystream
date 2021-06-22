@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
   AddPostsFixture,
@@ -15,7 +15,7 @@ import {
 import { ForumPostReaction } from '@joystream/metadata-protobuf'
 
 export default async function threads({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger(`flow:threads`)
+  const debug = extendDebug(`flow:threads`)
   debug('Started')
   api.enableDebugTxLogs()
 

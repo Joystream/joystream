@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { Utils } from '../../utils'
 import fs from 'fs'
@@ -14,7 +14,7 @@ import { assert } from 'chai'
 import { Resource } from '../../Resources'
 
 export default async function runtimeUpgradeProposal({ api, query, lock, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:runtime-upgrade-proposal')
+  const debug = extendDebug('flow:runtime-upgrade-proposal')
   debug('Started')
   api.enableVerboseTxLogs()
 
