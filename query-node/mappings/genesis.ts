@@ -24,7 +24,8 @@ export async function loadGenesisData({ store }: StoreContext): Promise<void> {
           createdAt: new Date(0),
           updatedAt: new Date(0),
           id: group.name,
-          ...group,
+          name: group.name,
+          budget: new BN(group.budget),
         })
       )
     )

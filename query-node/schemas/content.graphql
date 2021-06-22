@@ -1,14 +1,15 @@
-"Asset availability representation"
-enum AssetAvailability {
-  "Asset is available in storage"
-  ACCEPTED
-
-  "Asset is being uploaded to storage"
-  PENDING
-
-  "Invalid storage (meta)data used"
-  INVALID
+type AssetExternal @variant {
+  # FIXME: [String!] currnetly not supported in variants
+  "JSON array of the urls"
+  urls: String!
 }
+
+type AssetJoystreamStorage @variant {
+  "Related DataObject entity"
+  dataObject: DataObject!
+}
+
+union Asset = AssetExternal | AssetJoystreamStorage
 
 "Category of media channel"
 type ChannelCategory @entity {
@@ -53,31 +54,11 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
-  ### Cover photo asset ###
+  "Channel's cover (background) photo asset. Recommended ratio: 16:9."
+  coverPhoto: Asset
 
-  # Channel's cover (background) photo. Recommended ratio: 16:9.
-
-  "Asset's data object"
-  coverPhotoDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  coverPhotoUrls: [String!]
-
-  "Availability meta information"
-  coverPhotoAvailability: AssetAvailability!
-
-  ### Avatar photo asset ###
-
-  # Channel's avatar photo.
-
-  "Asset's data object"
-  avatarPhotoDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  avatarPhotoUrls: [String!]
-
-  "Availability meta information"
-  avatarPhotoAvailability: AssetAvailability!
+  "Channel's avatar photo asset."
+  avatarPhoto: Asset
 
   ##########################
 
@@ -139,18 +120,8 @@ type Video @entity {
   "Video duration in seconds"
   duration: Int
 
-  ### Thumbnail asset ###
-
-  # Video thumbnail (recommended ratio: 16:9)
-
-  "Asset's data object"
-  thumbnailPhotoDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  thumbnailPhotoUrls: [String!]
-
-  "Availability meta information"
-  thumbnailPhotoAvailability: AssetAvailability!
+  "Video thumbnail asset (recommended ratio: 16:9)"
+  thumbnailPhoto: Asset
 
   ##########################
 
@@ -175,18 +146,8 @@ type Video @entity {
   "License under the video is published"
   license: License
 
-  ### Media asset ###
-
-  # Reference to video asset
-
-  "Asset's data object"
-  mediaDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  mediaUrls: [String!]
-
-  "Availability meta information"
-  mediaAvailability: AssetAvailability!
+  "Video media asset"
+  media: Asset
 
   ##########################
 
