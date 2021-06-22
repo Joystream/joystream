@@ -24,9 +24,7 @@ export const kubeconfig = cluster.kubeconfig
 // Create a repository
 const repo = new awsx.ecr.Repository('my-repo')
 
-// Build an image from the "./app" directory
-// and publish it to our ECR repository.
-export const ipfsImage = repo.buildAndPushImage('./app')
+// Build an image and publish it to our ECR repository.
 
 export const colossusImage = repo.buildAndPushImage({
   dockerfile: '../../../colossus.Dockerfile',
@@ -61,7 +59,7 @@ const deployment = new k8s.apps.v1.Deployment(
           containers: [
             {
               name: 'ipfs',
-              image: ipfsImage,
+              image: 'ipfs/go-ipfs:latest',
               ports: [{ containerPort: 5001 }, { containerPort: 8080 }],
             },
             {
@@ -128,5 +126,3 @@ const service = new k8s.core.v1.Service(
 // Export the Service name and public LoadBalancer Endpoint
 export const serviceName = service.metadata.name
 export const serviceHostname = service.status.loadBalancer.ingress[0].hostname
-
-console.log(serviceHostname)

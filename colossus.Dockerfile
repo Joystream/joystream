@@ -11,8 +11,6 @@ RUN yarn --frozen-lockfile
 RUN yarn workspace @joystream/types build
 RUN yarn workspace storage-node build
 
-# ENV WS_PROVIDER_ENDPOINT_URI=ws://host.docker.internal:9944/
-
 RUN yarn
 
 ENTRYPOINT yarn colossus --dev --ws-provider $WS_PROVIDER_ENDPOINT_URI
