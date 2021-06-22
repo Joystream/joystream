@@ -1,7 +1,14 @@
-import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@dzlzv/hydra-common'
+import {
+  DatabaseManager,
+  SubstrateEvent,
+  SubstrateExtrinsic,
+  ExtrinsicArg,
+  EventContext,
+  StoreContext,
+} from '@dzlzv/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { WorkingGroup, WorkerId, ContentParameters } from '@joystream/types/augment/all'
-import { Worker, DataObjectOwner, DataObject, LiaisonJudgement, Event, Network } from 'query-node/dist/model'
+import { Worker, Event, Network, DataObject, LiaisonJudgement, DataObjectOwner } from 'query-node/dist/model'
 import { BaseModel } from 'warthog'
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
@@ -65,28 +72,33 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
   logger.info(errorMessage, data)
 }
 
-/*
-  Prepares data object from content parameters.
-*/
-export async function prepareDataObject(
+export async function createDataObject(
+  { event, store }: EventContext & StoreContext,
   contentParameters: ContentParameters,
-  blockNumber: number,
   owner: typeof DataObjectOwner
 ): Promise<DataObject> {
-  // convert generic content parameters coming from processor to custom Joystream data type
-  const customContentParameters = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
-
+  const {
+    size_in_bytes: sizeInBytes,
+    type_id: typeId,
+    content_id: contentId,
+    ipfs_content_id: ipfsContentId,
+  } = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
+  const dataObjectId = contentId.encode()
   const dataObject = new DataObject({
+    id: dataObjectId,
     owner,
-    createdInBlock: blockNumber,
-    typeId: contentParameters.type_id.toNumber(),
-    size: customContentParameters.size_in_bytes.toNumber(),
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
+    createdInBlock: event.blockNumber,
+    typeId: typeId.toNumber(),
+    size: sizeInBytes.toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
-    ipfsContentId: contentParameters.ipfs_content_id.toUtf8(),
-    joystreamContentId: customContentParameters.content_id.encode(),
+    ipfsContentId: ipfsContentId.toUtf8(),
+    joystreamContentId: dataObjectId,
     createdById: '1',
     updatedById: '1',
   })
+  await store.save<DataObject>(dataObject)
 
   return dataObject
 }
@@ -111,12 +123,13 @@ export interface ISudoCallArgs<T> extends ExtrinsicArg {
 */
 export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExtrinsicObject<DataParams>>(
   rawEvent: SubstrateEvent,
-  callFactory: new (event: SubstrateEvent) => EventObject,
+  callFactoryConstructor: new (event: SubstrateEvent) => EventObject,
 
   // in ideal world this parameter would not be needed, but there is no way to associate parameters
   // used in sudo to extrinsic parameters without it
   argsIndeces: Record<keyof DataParams, number>
 ): EventObject['args'] {
+  const CallFactory = callFactoryConstructor
   // this is equal to DataParams but only this notation works properly
   // escape when extrinsic info is not available
   if (!rawEvent.extrinsic) {
@@ -125,7 +138,7 @@ export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExt
 
   // regural extrinsic call?
   if (rawEvent.extrinsic.section !== 'sudo') {
-    return new callFactory(rawEvent).args
+    return new CallFactory(rawEvent).args
   }
 
   // sudo extrinsic call
@@ -155,7 +168,7 @@ export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExt
   } as SubstrateEvent
 
   // create event object and extract processed args
-  const finalArgs = new callFactory(partialEvent).args
+  const finalArgs = new CallFactory(partialEvent).args
 
   return finalArgs
 }
@@ -217,7 +230,7 @@ export function deserializeMetadata<T>(metadataType: AnyMetadataClass<T>, metada
     // We use `toObject()` to get rid of .prototype defaults for optional fields
     return metadataType.toObject(metadataType.decode(metadataBytes.toU8a(true))) as T
   } catch (e) {
-    console.error(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
+    invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
   }
 }
@@ -234,6 +247,23 @@ export function bytesToString(b: Bytes): string {
 export function perpareString(s: string): string {
   // eslint-disable-next-line no-control-regex
   return s.replace(/\u0000/g, '')
+}
+
+export function isSet<T>(v: T | null | undefined): v is T {
+  return v !== null && v !== undefined
+}
+
+export function integrateMeta<
+  T extends BaseModel,
+  Props extends readonly (keyof T & keyof M & string)[],
+  M extends { [K in Props[number]]?: T[K] | null }
+>(object: T, meta: M, props: Props): void {
+  props.forEach((prop) => {
+    const metaPropVal = meta[prop] as T[Props[number]] | null | undefined
+    if (isSet(metaPropVal)) {
+      object[prop] = metaPropVal
+    }
+  })
 }
 
 export function hasValuesForProperties<

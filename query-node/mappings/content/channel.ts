@@ -2,31 +2,19 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@dzlzv/hydra-common'
-import { FindConditions, In } from 'typeorm'
+import { In } from 'typeorm'
 import { AccountId } from '@polkadot/types/interfaces'
 import { Option } from '@polkadot/types/codec'
 import { Content } from '../generated/types'
-import {
-  readProtobuf,
-  readProtobufWithAssets,
-  convertContentActorToChannelOwner,
-  convertContentActorToDataObjectOwner,
-} from './utils'
-import { Channel, ChannelCategory, DataObject, AssetAvailability } from 'query-node/dist/model'
-import { inconsistentState, logger } from '../common'
+import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
+import { Channel, ChannelCategory, DataObject } from 'query-node/dist/model'
+import { deserializeMetadata, inconsistentState, integrateMeta, logger } from '../common'
+import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf/compiled'
 
-export async function content_ChannelCreated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
+  const { store, event } = ctx
   // read event data
-  const { channelId, channelCreationParameters, contentActor } = new Content.ChannelCreatedEvent(event).data
-
-  // read metadata
-  const protobufContent = await readProtobufWithAssets(new Channel(), {
-    metadata: channelCreationParameters.meta,
-    store,
-    blockNumber: event.blockNumber,
-    assets: channelCreationParameters.assets,
-    contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
-  })
+  const [contentActor, channelId, , channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
 
   // create entity
   const channel = new Channel({
@@ -36,22 +24,17 @@ export async function content_ChannelCreated({ store, event }: EventContext & St
     videos: [],
     createdInBlock: event.blockNumber,
 
-    // default values for properties that might or might not be filled by metadata
-    coverPhotoUrls: [],
-    coverPhotoAvailability: AssetAvailability.INVALID,
-    avatarPhotoUrls: [],
-    avatarPhotoAvailability: AssetAvailability.INVALID,
-
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
 
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOwner(store, contentActor)),
-
-    // integrate metadata
-    ...protobufContent,
   })
+
+  // deserialize & process metadata
+  const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta) || {}
+  await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets)
 
   // save entity
   await store.save<Channel>(channel)
@@ -60,12 +43,13 @@ export async function content_ChannelCreated({ store, event }: EventContext & St
   logger.info('Channel has been created', { id: channel.id })
 }
 
-export async function content_ChannelUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { store, event } = ctx
   // read event data
-  const { channelId, channelUpdateParameters, contentActor } = new Content.ChannelUpdatedEvent(event).data
+  const [, channelId, , channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
 
   // ensure channel exists
   if (!channel) {
@@ -73,22 +57,12 @@ export async function content_ChannelUpdated({ store, event }: EventContext & St
   }
 
   // prepare changed metadata
-  const newMetadata = channelUpdateParameters.new_meta.unwrapOr(null)
+  const newMetadataBytes = channelUpdateParameters.new_meta.unwrapOr(null)
 
   //  update metadata if it was changed
-  if (newMetadata) {
-    const protobufContent = await readProtobufWithAssets(new Channel(), {
-      metadata: newMetadata,
-      store,
-      blockNumber: event.blockNumber,
-      assets: channelUpdateParameters.assets.unwrapOr([]),
-      contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
-    })
-
-    // update all fields read from protobuf
-    for (const [key, value] of Object.entries(protobufContent)) {
-      channel[key] = value
-    }
+  if (newMetadataBytes) {
+    const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
+    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assets.unwrapOr([]))
   }
 
   // prepare changed reward account
@@ -112,19 +86,17 @@ export async function content_ChannelUpdated({ store, event }: EventContext & St
 
 export async function content_ChannelAssetsRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { contentId: contentIds } = new Content.ChannelAssetsRemovedEvent(event).data
+  const [, , contentIds] = new Content.ChannelAssetsRemovedEvent(event).params
 
   // load channel
   const assets = await store.getMany(DataObject, {
     where: {
       id: In(contentIds.toArray().map((item) => item.toString())),
-    } as FindConditions<DataObject>,
+    },
   })
 
   // delete assets
-  for (const asset of assets) {
-    await store.remove<DataObject>(asset)
-  }
+  await Promise.all(assets.map((a) => store.remove<DataObject>(a)))
 
   // emit log event
   logger.info('Channel assets have been removed', { ids: contentIds })
@@ -135,10 +107,10 @@ export async function content_ChannelCensorshipStatusUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelId, isCensored } = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
+  const [, channelId, isCensored] = new Content.ChannelCensorshipStatusUpdatedEvent(event).params
 
   // load event
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
 
   // ensure channel exists
   if (!channel) {
@@ -162,14 +134,10 @@ export async function content_ChannelCensorshipStatusUpdated({
 
 export async function content_ChannelCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelCategoryCreationParameters, channelCategoryId } = new Content.ChannelCategoryCreatedEvent(event).data
+  const [channelCategoryId, , channelCategoryCreationParameters] = new Content.ChannelCategoryCreatedEvent(event).params
 
   // read metadata
-  const protobufContent = await readProtobuf(new ChannelCategory(), {
-    metadata: channelCategoryCreationParameters.meta,
-    store,
-    blockNumber: event.blockNumber,
-  })
+  const metadata = deserializeMetadata(ChannelCategoryMetadata, channelCategoryCreationParameters.meta) || {}
 
   // create new channel category
   const channelCategory = new ChannelCategory({
@@ -181,10 +149,8 @@ export async function content_ChannelCategoryCreated({ store, event }: EventCont
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
-
-    // integrate metadata
-    ...protobufContent,
   })
+  integrateMeta(channelCategory, metadata, ['name'])
 
   // save channel
   await store.save<ChannelCategory>(channelCategory)
@@ -195,13 +161,13 @@ export async function content_ChannelCategoryCreated({ store, event }: EventCont
 
 export async function content_ChannelCategoryUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelCategoryId, channelCategoryUpdateParameters } = new Content.ChannelCategoryUpdatedEvent(event).data
+  const [, channelCategoryId, channelCategoryUpdateParameters] = new Content.ChannelCategoryUpdatedEvent(event).params
 
   // load channel category
   const channelCategory = await store.get(ChannelCategory, {
     where: {
       id: channelCategoryId.toString(),
-    } as FindConditions<ChannelCategory>,
+    },
   })
 
   // ensure channel exists
@@ -210,16 +176,8 @@ export async function content_ChannelCategoryUpdated({ store, event }: EventCont
   }
 
   // read metadata
-  const protobufContent = await readProtobuf(new ChannelCategory(), {
-    metadata: channelCategoryUpdateParameters.new_meta,
-    store,
-    blockNumber: event.blockNumber,
-  })
-
-  // update all fields read from protobuf
-  for (const [key, value] of Object.entries(protobufContent)) {
-    channelCategory[key] = value
-  }
+  const newMeta = deserializeMetadata(ChannelCategoryMetadata, channelCategoryUpdateParameters.new_meta) || {}
+  integrateMeta(channelCategory, newMeta, ['name'])
 
   // set last update time
   channelCategory.updatedAt = new Date(event.blockTimestamp)
@@ -233,13 +191,13 @@ export async function content_ChannelCategoryUpdated({ store, event }: EventCont
 
 export async function content_ChannelCategoryDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelCategoryId } = new Content.ChannelCategoryDeletedEvent(event).data
+  const [, channelCategoryId] = new Content.ChannelCategoryDeletedEvent(event).params
 
   // load channel category
   const channelCategory = await store.get(ChannelCategory, {
     where: {
       id: channelCategoryId.toString(),
-    } as FindConditions<ChannelCategory>,
+    },
   })
 
   // ensure channel category exists

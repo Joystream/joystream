@@ -9,7 +9,7 @@ import { inconsistentState, logger } from '../common'
 
 export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId } = new Content.CuratorGroupCreatedEvent(event).data
+  const [curatorGroupId] = new Content.CuratorGroupCreatedEvent(event).params
 
   // create new curator group
   const curatorGroup = new CuratorGroup({
@@ -32,7 +32,7 @@ export async function content_CuratorGroupCreated({ store, event }: EventContext
 
 export async function content_CuratorGroupStatusSet({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId, bool: isActive } = new Content.CuratorGroupStatusSetEvent(event).data
+  const [curatorGroupId, isActive] = new Content.CuratorGroupStatusSetEvent(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -59,7 +59,7 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 
 export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId, curatorId } = new Content.CuratorAddedEvent(event).data
+  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -86,7 +86,7 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
 export async function content_CuratorRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId, curatorId } = new Content.CuratorAddedEvent(event).data
+  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {

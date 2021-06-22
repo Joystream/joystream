@@ -2,13 +2,13 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
-import { FindConditions, In } from 'typeorm'
+import { FindConditions, In, Raw } from 'typeorm'
 import {
+  createDataObject,
   getWorker,
   getWorkingGroupModuleName,
   inconsistentState,
   logger,
-  prepareDataObject,
   unexpectedData,
 } from './common'
 import { DataDirectory } from './generated/types'
@@ -18,7 +18,6 @@ import { registry } from '@joystream/types'
 import {
   Channel,
   Video,
-  AssetAvailability,
   DataObject,
   DataObjectOwner,
   DataObjectOwnerMember,
@@ -27,22 +26,18 @@ import {
   DataObjectOwnerCouncil,
   DataObjectOwnerWorkingGroup,
   LiaisonJudgement,
+  AssetJoystreamStorage,
 } from 'query-node/dist/model'
 
-export async function dataDirectory_ContentAdded({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function dataDirectory_ContentAdded(ctx: EventContext & StoreContext): Promise<void> {
+  const { event } = ctx
   // read event data
-  const { contentParameters, storageObjectOwner } = new DataDirectory.ContentAddedEvent(event).data
+  const [contentParameters, storageObjectOwner] = new DataDirectory.ContentAddedEvent(event).params
 
   // save all content objects
   for (const parameters of contentParameters) {
     const owner = convertStorageObjectOwner(storageObjectOwner)
-    const dataObject = await prepareDataObject(parameters, event.blockNumber, owner)
-
-    // fill in auto-generated fields
-    dataObject.createdAt = new Date(event.blockTimestamp)
-    dataObject.updatedAt = new Date(event.blockTimestamp)
-
-    await store.save<DataObject>(dataObject)
+    await createDataObject(ctx, parameters, owner)
   }
 
   // emit log event
@@ -53,7 +48,7 @@ export async function dataDirectory_ContentAdded({ store, event }: EventContext 
 
 export async function dataDirectory_ContentRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { contentId: contentIds } = new DataDirectory.ContentRemovedEvent(event).data
+  const [contentIds] = new DataDirectory.ContentRemovedEvent(event).params
 
   // load assets
   const dataObjects = await store.getMany(DataObject, {
@@ -68,7 +63,7 @@ export async function dataDirectory_ContentRemoved({ store, event }: EventContex
   // remove assets from database
   for (const item of dataObjects) {
     // ensure dataObject is nowhere used to prevent db constraint error
-    await disconnectDataObjectRelations(store, item)
+    await unsetDataObjectRelations(store, item)
 
     // remove data object
     await store.remove<DataObject>(item)
@@ -80,7 +75,7 @@ export async function dataDirectory_ContentRemoved({ store, event }: EventContex
 
 export async function dataDirectory_ContentAccepted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { contentId, storageProviderId } = new DataDirectory.ContentAcceptedEvent(event).data
+  const [contentId, storageProviderId] = new DataDirectory.ContentAcceptedEvent(event).params
   const encodedContentId = encodeContentId(contentId)
 
   // load asset
@@ -108,119 +103,54 @@ export async function dataDirectory_ContentAccepted({ store, event }: EventConte
 
   // emit log event
   logger.info('Storage content has been accepted', { id: encodedContentId })
-
-  // update asset availability for all connected channels and videos
-  // this will not be needed after redudant AssetAvailability will be removed (after some Hydra upgrades)
-  await updateConnectedAssets(store, dataObject)
 }
+// TODO: use ON DELETE SET null on database/typeorm level instead?
+async function unsetDataObjectRelations(store: DatabaseManager, dataObject: DataObject) {
+  const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
+  const videoAssets = ['thumbnailPhoto', 'media'] as const
 
-/// //////////////// Updating connected entities ////////////////////////////////
-
-async function updateConnectedAssets(store: DatabaseManager, dataObject: DataObject) {
-  await updateSingleConnectedAsset(store, new Channel(), 'avatarPhoto', dataObject)
-  await updateSingleConnectedAsset(store, new Channel(), 'coverPhoto', dataObject)
-
-  await updateSingleConnectedAsset(store, new Video(), 'thumbnailPhoto', dataObject)
-  await updateSingleConnectedAsset(store, new Video(), 'media', dataObject)
-}
-
-// async function updateSingleConnectedAsset(store: DatabaseManager, type: typeof Channel | typeof Video, propertyName: string, dataObject: DataObject) {
-async function updateSingleConnectedAsset<T extends Channel | Video>(
-  store: DatabaseManager,
-  type: T,
-  propertyName: string,
-  dataObject: DataObject
-) {
-  // prepare lookup condition
-  const condition = {
-    where: {
-      [propertyName + 'DataObject']: dataObject,
-    },
-  } // as FindConditions<T>
-
+  // TODO: FIXME: Queries to be verified!
   // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
   //       is allowed to be associated only with one channel/video in runtime
+  const channel = await store.get(Channel, {
+    where: channelAssets.map((assetName) => ({
+      [assetName]: Raw((alias) => `${alias}::json->'dataObjectId' = :id`, {
+        id: dataObject.id,
+      }),
+    })),
+  })
+  const video = await store.get(Video, {
+    where: videoAssets.map((assetName) => ({
+      [assetName]: Raw((alias) => `${alias}::json->'dataObjectId' = :id`, {
+        id: dataObject.id,
+      }),
+    })),
+  })
 
-  // in therory the following condition(s) can be generalized `... store.get(type, ...` but in practice it doesn't work :-\
-  const item = type instanceof Channel ? await store.get(Channel, condition) : await store.get(Video, condition)
-
-  // escape when no dataObject association found
-  if (!item) {
-    return
-  }
-
-  item[propertyName + 'Availability'] = AssetAvailability.ACCEPTED
-
-  if (type instanceof Channel) {
-    await store.save<Channel>(item)
-
-    // emit log event
-    logger.info('Channel using Content has been accepted', {
-      channelId: item.id.toString(),
-      joystreamContentId: dataObject.joystreamContentId,
+  if (channel) {
+    channelAssets.forEach((assetName) => {
+      if (channel[assetName] && (channel[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
+        channel[assetName] = undefined
+      }
     })
-  } else {
-    await store.save<Video>(item)
-
-    // emit log event
-    logger.info('Video using Content has been accepted', {
-      videoId: item.id.toString(),
-      joystreamContentId: dataObject.joystreamContentId,
-    })
-  }
-}
-
-// removes connection between dataObject and other entities
-async function disconnectDataObjectRelations(store: DatabaseManager, dataObject: DataObject) {
-  await disconnectSingleDataObjectRelation(store, new Channel(), 'avatarPhoto', dataObject)
-  await disconnectSingleDataObjectRelation(store, new Channel(), 'coverPhoto', dataObject)
-
-  await disconnectSingleDataObjectRelation(store, new Video(), 'thumbnailPhoto', dataObject)
-  await disconnectSingleDataObjectRelation(store, new Video(), 'media', dataObject)
-}
-
-async function disconnectSingleDataObjectRelation<T extends Channel | Video>(
-  store: DatabaseManager,
-  type: T,
-  propertyName: string,
-  dataObject: DataObject
-) {
-  // prepare lookup condition
-  const condition = {
-    where: {
-      [propertyName + 'DataObject']: dataObject,
-    },
-  } // as FindConditions<T>
-
-  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
-  //       is allowed to be associated only with one channel/video in runtime
-
-  // in therory the following condition(s) can be generalized `... store.get(type, ...` but in practice it doesn't work :-\
-  const item = type instanceof Channel ? await store.get(Channel, condition) : await store.get(Video, condition)
-
-  // escape when no dataObject association found
-  if (!item) {
-    return
-  }
-
-  item[propertyName + 'Availability'] = AssetAvailability.INVALID
-  item[propertyName + 'DataObject'] = null
-
-  if (type instanceof Channel) {
-    await store.save<Channel>(item)
+    await store.save<Channel>(channel)
 
     // emit log event
     logger.info('Content has been disconnected from Channel', {
-      channelId: item.id.toString(),
+      channelId: channel.id.toString(),
       joystreamContentId: dataObject.joystreamContentId,
     })
-  } else {
-    // type instanceof Video
-    await store.save<Video>(item)
+  } else if (video) {
+    videoAssets.forEach((assetName) => {
+      if (video[assetName] && (video[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
+        video[assetName] = undefined
+      }
+    })
+    await store.save<Video>(video)
 
     // emit log event
     logger.info('Content has been disconnected from Video', {
-      videoId: item.id.toString(),
+      videoId: video.id.toString(),
       joystreamContentId: dataObject.joystreamContentId,
     })
   }
