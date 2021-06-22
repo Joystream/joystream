@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { DeletePostsFixture, InitializeForumFixture, PostsRemovalInput } from '../../fixtures/forum'
 import { POST_DEPOSIT } from '../../consts'
 import { formatBalance } from '@polkadot/util'
 
 export default async function threads({ api, query, env }: FlowProps): Promise<void> {
-  const debug = Debugger(`flow:multiple-post-deletions-bug`)
+  const debug = extendDebug(`flow:multiple-post-deletions-bug`)
   debug('Started')
   api.enableDebugTxLogs()
 

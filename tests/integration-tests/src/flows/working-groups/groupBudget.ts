@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
 import { SetBudgetFixture } from '../../fixtures/workingGroups/SetBudgetFixture'
@@ -11,7 +11,7 @@ export default async function groupBudget({ api, query }: FlowProps): Promise<vo
     workingGroups.map(async (group) => {
       const budgets: BN[] = [new BN(1000000)]
 
-      const debug = Debugger(`flow:group-budget:${group}`)
+      const debug = extendDebug(`flow:group-budget:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 

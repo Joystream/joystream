@@ -4,7 +4,7 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchResult } from '@polkadot/types/interfaces/system'
 import { QueryNodeApi } from './QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import Debugger from 'debug'
+import { extendDebug, Debugger } from './Debugger'
 import { AnyQueryNodeEvent, EventDetails } from './types'
 
 export abstract class BaseFixture {
@@ -16,7 +16,7 @@ export abstract class BaseFixture {
 
   constructor(api: Api) {
     this.api = api
-    this.debug = Debugger(`fixture:${this.constructor.name}`)
+    this.debug = extendDebug(`fixture:${this.constructor.name}`)
   }
 
   // Derviced classes must not override this

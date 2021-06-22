@@ -1,6 +1,6 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
 import { MemberId, PostId, ThreadId } from '@joystream/types/common'
-import Debugger from 'debug'
+import { extendDebug, Debugger } from './Debugger'
 import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
 import {
@@ -278,7 +278,7 @@ export class QueryNodeApi {
 
   constructor(queryNodeProvider: ApolloClient<NormalizedCacheObject>) {
     this.queryNodeProvider = queryNodeProvider
-    this.debug = Debugger('query-node-api')
+    this.debug = extendDebug('query-node-api')
     this.queryDebug = this.debug.extend('query')
     this.tryDebug = this.debug.extend('try')
   }

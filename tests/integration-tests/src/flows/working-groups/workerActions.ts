@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
 import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
@@ -18,7 +18,7 @@ import { TerminateWorkersFixture } from '../../fixtures/workingGroups/TerminateW
 export default async function workerActions({ api, query, env }: FlowProps): Promise<void> {
   await Promise.all(
     workingGroups.map(async (group) => {
-      const debug = Debugger(`flow:worker-actions:${group}`)
+      const debug = extendDebug(`flow:worker-actions:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 

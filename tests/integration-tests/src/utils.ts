@@ -6,7 +6,7 @@ import fs from 'fs'
 import { decodeAddress } from '@polkadot/keyring'
 import { Bytes } from '@polkadot/types'
 import { createType } from '@joystream/types'
-import Debugger from 'debug'
+import { extendDebug, Debugger } from './Debugger'
 import { BLOCKTIME } from './consts'
 import { MetadataInput } from './types'
 
@@ -114,7 +114,7 @@ export class Utils {
     intervalMs = BLOCKTIME,
     timeoutMs = 10 * 60 * 1000
   ): Promise<void> {
-    const debug = Debugger(`awaiting:${name}`)
+    const debug = extendDebug(`awaiting:${name}`)
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timoeut reached`)), timeoutMs)
       const check = async () => {

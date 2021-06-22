@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
 import { SudoUpdateMembershipSystem } from '../../fixtures/membership'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import BN from 'bn.js'
 
 export default async function membershipSystem({ api, query, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:membership-system')
+  const debug = extendDebug('flow:membership-system')
   debug('Started')
   api.enableDebugTxLogs()
 
