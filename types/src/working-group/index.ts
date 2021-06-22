@@ -1,8 +1,7 @@
 import { Bytes, BTreeMap, Option, Text } from '@polkadot/types'
 import { Null, u32, u64, u128 } from '@polkadot/types/primitive'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { ActorId, MemberId, JoyEnum, JoyStructDecorated, JoyBTreeSet } from '../common'
+import { ActorId, MemberId, JoyEnum, JoyStructDecorated, JoyBTreeSet, AccountId } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class ApplicationId extends u64 {}

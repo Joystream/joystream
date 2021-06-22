@@ -1,9 +1,8 @@
 import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'
-import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId } from './common'
+import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export type IVotingResults = {
   abstensions: u32

@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, Option, Struct, Text, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
@@ -13,9 +13,9 @@ export interface Address extends AccountId {}
 
 /** @name Application */
 export interface Application extends Struct {
-  readonly role_account_id: GenericAccountId;
-  readonly reward_account_id: GenericAccountId;
-  readonly staking_account_id: GenericAccountId;
+  readonly role_account_id: AccountId;
+  readonly reward_account_id: AccountId;
+  readonly staking_account_id: AccountId;
   readonly member_id: MemberId;
   readonly description_hash: Bytes;
   readonly opening_id: OpeningId;
@@ -40,8 +40,8 @@ export interface ApplicationInfo extends Struct {
 export interface ApplyOnOpeningParameters extends Struct {
   readonly member_id: MemberId;
   readonly opening_id: OpeningId;
-  readonly role_account_id: GenericAccountId;
-  readonly reward_account_id: GenericAccountId;
+  readonly role_account_id: AccountId;
+  readonly reward_account_id: AccountId;
   readonly description: Bytes;
   readonly stake_parameters: StakeParameters;
 }
@@ -95,8 +95,8 @@ export interface BountyId extends u32 {}
 
 /** @name BuyMembershipParameters */
 export interface BuyMembershipParameters extends Struct {
-  readonly root_account: GenericAccountId;
-  readonly controller_account: GenericAccountId;
+  readonly root_account: AccountId;
+  readonly controller_account: AccountId;
   readonly handle: Option<Text>;
   readonly metadata: Bytes;
   readonly referrer_id: Option<MemberId>;
@@ -104,8 +104,8 @@ export interface BuyMembershipParameters extends Struct {
 
 /** @name Candidate */
 export interface Candidate extends Struct {
-  readonly staking_account_id: GenericAccountId;
-  readonly reward_account_id: GenericAccountId;
+  readonly staking_account_id: AccountId;
+  readonly reward_account_id: AccountId;
   readonly cycle_id: u64;
   readonly stake: u32;
   readonly vote_power: VotePower;
@@ -142,7 +142,7 @@ export interface Channel extends Struct {
   readonly playlists: Vec<PlaylistId>;
   readonly series: Vec<SeriesId>;
   readonly is_censored: bool;
-  readonly reward_account: Option<GenericAccountId>;
+  readonly reward_account: Option<AccountId>;
 }
 
 /** @name ChannelCategory */
@@ -165,7 +165,7 @@ export interface ChannelCategoryUpdateParameters extends Struct {
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Vec<NewAsset>;
   readonly meta: Bytes;
-  readonly reward_account: Option<GenericAccountId>;
+  readonly reward_account: Option<AccountId>;
 }
 
 /** @name ChannelId */
@@ -186,7 +186,7 @@ export interface ChannelOwnershipTransferRequest extends Struct {
   readonly channel_id: ChannelId;
   readonly new_owner: ChannelOwner;
   readonly payment: u128;
-  readonly new_reward_account: Option<GenericAccountId>;
+  readonly new_reward_account: Option<AccountId>;
 }
 
 /** @name ChannelOwnershipTransferRequestId */
@@ -196,7 +196,7 @@ export interface ChannelOwnershipTransferRequestId extends u64 {}
 export interface ChannelUpdateParameters extends Struct {
   readonly assets: Option<Vec<NewAsset>>;
   readonly new_meta: Option<Bytes>;
-  readonly reward_account: Option<Option<GenericAccountId>>;
+  readonly reward_account: Option<Option<AccountId>>;
 }
 
 /** @name ConstitutionInfo */
@@ -225,8 +225,8 @@ export interface ContentParameters extends Struct {
 
 /** @name CouncilMemberOf */
 export interface CouncilMemberOf extends Struct {
-  readonly staking_account_id: GenericAccountId;
-  readonly reward_account_id: GenericAccountId;
+  readonly staking_account_id: AccountId;
+  readonly reward_account_id: AccountId;
   readonly membership_id: MemberId;
   readonly stake: u128;
   readonly last_payment_block: u32;
@@ -328,7 +328,7 @@ export interface DiscussionThread extends Struct {
 /** @name Entry */
 export interface Entry extends Struct {
   readonly member_id: MemberId;
-  readonly staking_account_id: GenericAccountId;
+  readonly staking_account_id: AccountId;
   readonly submitted_at: u32;
   readonly work_submitted: bool;
   readonly oracle_judgment_result: Option<OracleJudgment>;
@@ -369,7 +369,7 @@ export interface ForumUserId extends u64 {}
 
 /** @name FundingRequestParameters */
 export interface FundingRequestParameters extends Struct {
-  readonly account: GenericAccountId;
+  readonly account: AccountId;
   readonly amount: u128;
 }
 
@@ -398,7 +398,7 @@ export interface GeneralProposalParameters extends Struct {
   readonly member_id: MemberId;
   readonly title: Text;
   readonly description: Text;
-  readonly staking_account_id: Option<GenericAccountId>;
+  readonly staking_account_id: Option<AccountId>;
   readonly exact_execution_block: Option<u32>;
 }
 
@@ -411,8 +411,8 @@ export interface InputValidationLengthConstraint extends Struct {
 /** @name InviteMembershipParameters */
 export interface InviteMembershipParameters extends Struct {
   readonly inviting_member_id: MemberId;
-  readonly root_account: GenericAccountId;
-  readonly controller_account: GenericAccountId;
+  readonly root_account: AccountId;
+  readonly controller_account: AccountId;
   readonly handle: Option<Text>;
   readonly metadata: Bytes;
 }
@@ -438,8 +438,8 @@ export interface MemberId extends u64 {}
 /** @name Membership */
 export interface Membership extends Struct {
   readonly handle_hash: Bytes;
-  readonly root_account: GenericAccountId;
-  readonly controller_account: GenericAccountId;
+  readonly root_account: AccountId;
+  readonly controller_account: AccountId;
   readonly verified: bool;
   readonly invites: u32;
 }
@@ -734,7 +734,7 @@ export interface ProposalOf extends Struct {
   readonly votingResults: VotingResults;
   readonly exactExecutionBlock: Option<u32>;
   readonly nrOfCouncilConfirmations: u32;
-  readonly stakingAccountId: Option<GenericAccountId>;
+  readonly stakingAccountId: Option<AccountId>;
 }
 
 /** @name ProposalParameters */
@@ -833,12 +833,12 @@ export interface SeriesParameters extends Struct {
 }
 
 /** @name SetLeadParams */
-export interface SetLeadParams extends ITuple<[MemberId, GenericAccountId]> {}
+export interface SetLeadParams extends ITuple<[MemberId, AccountId]> {}
 
 /** @name StakeParameters */
 export interface StakeParameters extends Struct {
   readonly stake: u128;
-  readonly staking_account_id: GenericAccountId;
+  readonly staking_account_id: AccountId;
 }
 
 /** @name StakePolicy */
@@ -992,9 +992,9 @@ export interface VoucherLimit extends u64 {}
 /** @name Worker */
 export interface Worker extends Struct {
   readonly member_id: MemberId;
-  readonly role_account_id: GenericAccountId;
-  readonly staking_account_id: GenericAccountId;
-  readonly reward_account_id: GenericAccountId;
+  readonly role_account_id: AccountId;
+  readonly staking_account_id: AccountId;
+  readonly reward_account_id: AccountId;
   readonly started_leaving_at: Option<u32>;
   readonly job_unstaking_period: u32;
   readonly reward_per_block: Option<u128>;
