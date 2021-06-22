@@ -1,8 +1,9 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { Bytes, Option, Vec, bool, u32, u64 } from '@polkadot/types';
-import type { ApplicationId, ApplicationIdToWorkerIdMap, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryMethod, IsCensored, MemberId, MintBalanceOf, MintId, NewAsset, OpeningId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, ProposalStatus, RationaleText, Series, SeriesId, SeriesParameters, StorageObjectOwner, StorageProviderId, ThreadId, UploadingStatus, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VoucherLimit, WorkerId } from './all';
+import type { BTreeSet, Bytes, Option, Text, Vec, bool, u32, u64, u8 } from '@polkadot/types';
+import type { ITuple } from '@polkadot/types/types';
+import type { ActorId, ApplicationId, ApplicationIdToWorkerIdMap, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ExecutionStatus, ForumUserId, GeneralProposalParameters, InviteMembershipParameters, IsCensored, MemberId, MemoText, ModeratorId, NewAsset, OpeningId, OpeningType, OptionResult, OracleJudgment, ParticipantId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Poll, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetailsOf, ProposalId, ProposalStatus, ReplyId, RewardPaymentType, Series, SeriesId, SeriesParameters, StakePolicy, StorageObjectOwner, StorageProviderId, ThreadId, ThreadMode, Title, UpdatedBody, UpdatedTitle, UploadingStatus, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VoucherLimit, WorkerId, WorkingGroup } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -52,6 +53,155 @@ declare module '@polkadot/api/types/events' {
        **/
       Unreserved: AugmentedEvent<ApiType, [AccountId, Balance]>;
     };
+    blog: {
+      /**
+       * A reply to a reply was created
+       **/
+      DirectReplyCreated: AugmentedEvent<ApiType, [ParticipantId, PostId, ReplyId, ReplyId, Text, bool]>;
+      /**
+       * A post was created
+       **/
+      PostCreated: AugmentedEvent<ApiType, [PostId, Title, Text]>;
+      /**
+       * A post was edited
+       **/
+      PostEdited: AugmentedEvent<ApiType, [PostId, UpdatedTitle, UpdatedBody]>;
+      /**
+       * A post was locked
+       **/
+      PostLocked: AugmentedEvent<ApiType, [PostId]>;
+      /**
+       * A post was unlocked
+       **/
+      PostUnlocked: AugmentedEvent<ApiType, [PostId]>;
+      /**
+       * A reply to a post was created
+       **/
+      ReplyCreated: AugmentedEvent<ApiType, [ParticipantId, PostId, ReplyId, Text, bool]>;
+      /**
+       * A reply was deleted from storage
+       **/
+      ReplyDeleted: AugmentedEvent<ApiType, [ParticipantId, PostId, ReplyId, bool]>;
+      /**
+       * A reply was edited
+       **/
+      ReplyEdited: AugmentedEvent<ApiType, [ParticipantId, PostId, ReplyId, Text]>;
+    };
+    bounty: {
+      /**
+       * A bounty was canceled.
+       * Params:
+       * - bounty ID
+       * - bounty creator
+       **/
+      BountyCanceled: AugmentedEvent<ApiType, [BountyId, BountyActor]>;
+      /**
+       * A bounty was created.
+       * Params:
+       * - bounty ID
+       * - creation parameters
+       * - bounty metadata
+       **/
+      BountyCreated: AugmentedEvent<ApiType, [BountyId, BountyCreationParameters, Bytes]>;
+      /**
+       * A bounty creator has withdrawn the cherry (member or council).
+       * Params:
+       * - bounty ID
+       * - bounty creator
+       **/
+      BountyCreatorCherryWithdrawal: AugmentedEvent<ApiType, [BountyId, BountyActor]>;
+      /**
+       * A bounty was funded by a member or a council.
+       * Params:
+       * - bounty ID
+       * - bounty funder
+       * - funding amount
+       **/
+      BountyFunded: AugmentedEvent<ApiType, [BountyId, BountyActor, Balance]>;
+      /**
+       * A member or a council has withdrawn the funding.
+       * Params:
+       * - bounty ID
+       * - bounty funder
+       **/
+      BountyFundingWithdrawal: AugmentedEvent<ApiType, [BountyId, BountyActor]>;
+      /**
+       * A bounty has reached its maximum funding amount.
+       * Params:
+       * - bounty ID
+       **/
+      BountyMaxFundingReached: AugmentedEvent<ApiType, [BountyId]>;
+      /**
+       * A bounty was removed.
+       * Params:
+       * - bounty ID
+       **/
+      BountyRemoved: AugmentedEvent<ApiType, [BountyId]>;
+      /**
+       * A bounty was vetoed.
+       * Params:
+       * - bounty ID
+       **/
+      BountyVetoed: AugmentedEvent<ApiType, [BountyId]>;
+      /**
+       * Submit oracle judgment.
+       * Params:
+       * - bounty ID
+       * - oracle
+       * - judgment data
+       **/
+      OracleJudgmentSubmitted: AugmentedEvent<ApiType, [BountyId, BountyActor, OracleJudgment]>;
+      /**
+       * Work entry was slashed.
+       * Params:
+       * - bounty ID
+       * - entry ID
+       * - entrant member ID
+       **/
+      WorkEntrantFundsWithdrawn: AugmentedEvent<ApiType, [BountyId, EntryId, MemberId]>;
+      /**
+       * Work entry was announced.
+       * Params:
+       * - bounty ID
+       * - created entry ID
+       * - entrant member ID
+       * - staking account ID
+       **/
+      WorkEntryAnnounced: AugmentedEvent<ApiType, [BountyId, EntryId, MemberId, AccountId]>;
+      /**
+       * Work entry was slashed.
+       * Params:
+       * - bounty ID
+       * - entry ID
+       **/
+      WorkEntrySlashed: AugmentedEvent<ApiType, [BountyId, EntryId]>;
+      /**
+       * Work entry was withdrawn.
+       * Params:
+       * - bounty ID
+       * - entry ID
+       * - entrant member ID
+       **/
+      WorkEntryWithdrawn: AugmentedEvent<ApiType, [BountyId, EntryId, MemberId]>;
+      /**
+       * Submit work.
+       * Params:
+       * - bounty ID
+       * - created entry ID
+       * - entrant member ID
+       * - work data (description, URL, BLOB, etc.)
+       **/
+      WorkSubmitted: AugmentedEvent<ApiType, [BountyId, EntryId, MemberId, Bytes]>;
+    };
+    constitution: {
+      /**
+       * Emits on constitution amendment.
+       * Parameters:
+       * - constitution text hash
+       * - constitution text
+       **/
+      ConstutionAmended: AugmentedEvent<ApiType, [Bytes, Bytes]>;
+    };
     content: {
       ChannelAssetsRemoved: AugmentedEvent<ApiType, [ContentActor, ChannelId, Vec<ContentId>]>;
       ChannelCategoryCreated: AugmentedEvent<ApiType, [ChannelCategoryId, ChannelCategory, ChannelCategoryCreationParameters]>;
@@ -87,110 +237,139 @@ declare module '@polkadot/api/types/events' {
     };
     contentDirectoryWorkingGroup: {
       /**
-       * Emits on accepting application for the worker opening.
+       * Emits on withdrawing the application for the regular worker/lead opening.
        * Params:
-       * - Opening id
-       **/
-      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
-      /**
-       * Emits on terminating the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
-       **/
-      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
-      /**
-       * Emits on withdrawing the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
+       * - Job application id
        **/
       ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
       /**
        * Emits on adding the application for the worker opening.
        * Params:
-       * - Opening id
+       * - Opening parameteres
        * - Application id
        **/
-      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      AppliedOnOpening: AugmentedEvent<ApiType, [ApplyOnOpeningParameters, ApplicationId]>;
       /**
-       * Emits on beginning the application review for the worker/lead opening.
+       * Emits on setting the budget for the working group.
        * Params:
-       * - Opening id
+       * - new budget
        **/
-      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      BudgetSet: AugmentedEvent<ApiType, [Balance]>;
       /**
-       * Emits on setting the leader.
+       * Emits on budget from the working group being spent
        * Params:
-       * - Worker id.
+       * - Receiver Account Id.
+       * - Balance spent.
+       * - Rationale.
+       **/
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId, Balance, Option<Bytes>]>;
+      /**
+       * Emits on setting the group leader.
+       * Params:
+       * - Group worker id.
        **/
       LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on un-setting the leader.
-       * Params:
        **/
       LeaderUnset: AugmentedEvent<ApiType, []>;
       /**
-       * Emits on changing working group mint capacity.
+       * Emits on reaching new missed reward.
        * Params:
-       * - mint id.
-       * - new mint balance.
+       * - Worker ID.
+       * - Missed reward (optional). None means 'no missed reward'.
        **/
-      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      NewMissedRewardLevelReached: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
-       * Emits on adding new worker opening.
+       * Emits on adding new job opening.
+       * Params:
+       * - Opening id
+       * - Description
+       * - Opening Type(Lead or Worker)
+       * - Stake Policy for the opening
+       * - Reward per block
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId, Bytes, OpeningType, StakePolicy, Option<Balance>]>;
+      /**
+       * Emits on canceling the job opening.
        * Params:
        * - Opening id
        **/
-      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      OpeningCanceled: AugmentedEvent<ApiType, [OpeningId]>;
       /**
-       * Emits on filling the worker opening.
+       * Emits on filling the job opening.
        * Params:
        * - Worker opening id
        * - Worker application id to the worker id dictionary
+       * - Applicationd ids used to fill the opening
        **/
-      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>]>;
       /**
-       * Emits on decreasing the worker/lead stake.
+       * Emits on paying the reward.
        * Params:
-       * - worker/lead id.
+       * - Id of the worker.
+       * - Receiver Account Id.
+       * - Reward
+       * - Payment type (missed reward or regular one)
        **/
-      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      RewardPaid: AugmentedEvent<ApiType, [WorkerId, AccountId, Balance, RewardPaymentType]>;
       /**
-       * Emits on increasing the worker/lead stake.
+       * Emits on decreasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
       /**
-       * Emits on slashing the worker/lead stake.
+       * Emits on increasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on slashing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - actual slashed balance.
+       * - Requested slashed balance.
+       * - Rationale.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId, Balance, Balance, Option<Bytes>]>;
+      /**
+       * Emits on updating the status text of the working group.
+       * Params:
+       * - status text hash
+       * - status text
+       **/
+      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
        * - leader worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on terminating the worker.
        * Params:
        * - worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
        * - worker id.
-       * - exit rationale text
+       * - Rationale.
        **/
-      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on updating the reward account of the worker.
        * Params:
-       * - Member id of the worker.
+       * - Id of the worker.
        * - Reward account id of the worker.
        **/
       WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
@@ -198,8 +377,9 @@ declare module '@polkadot/api/types/events' {
        * Emits on updating the reward amount of the worker.
        * Params:
        * - Id of the worker.
+       * - Reward per block
        **/
-      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
        * Emits on updating the role account of the worker.
        * Params:
@@ -208,32 +388,78 @@ declare module '@polkadot/api/types/events' {
        **/
       WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
       /**
-       * Emits on updating the worker storage role.
+       * Emits when worker started leaving their role.
        * Params:
-       * - Id of the worker.
-       * - Raw storage field.
+       * - Worker id.
+       * - Rationale.
        **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
+      WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
     };
     council: {
-      CouncilTermEnded: AugmentedEvent<ApiType, [BlockNumber]>;
-      NewCouncilTermStarted: AugmentedEvent<ApiType, [BlockNumber]>;
-    };
-    councilElection: {
-      AnnouncingEnded: AugmentedEvent<ApiType, []>;
-      AnnouncingStarted: AugmentedEvent<ApiType, [u32]>;
-      Applied: AugmentedEvent<ApiType, [AccountId]>;
-      CouncilElected: AugmentedEvent<ApiType, [BlockNumber]>;
       /**
-       * A new election started
+       * New council was elected
        **/
-      ElectionStarted: AugmentedEvent<ApiType, []>;
-      Revealed: AugmentedEvent<ApiType, [AccountId, Hash, AccountId]>;
-      RevealingEnded: AugmentedEvent<ApiType, []>;
-      RevealingStarted: AugmentedEvent<ApiType, []>;
-      Voted: AugmentedEvent<ApiType, [AccountId, Hash]>;
-      VotingEnded: AugmentedEvent<ApiType, []>;
-      VotingStarted: AugmentedEvent<ApiType, []>;
+      AnnouncingPeriodStarted: AugmentedEvent<ApiType, []>;
+      /**
+       * Budget balance was changed by the root.
+       **/
+      BudgetBalanceSet: AugmentedEvent<ApiType, [Balance]>;
+      /**
+       * Budget increment has been updated.
+       **/
+      BudgetIncrementUpdated: AugmentedEvent<ApiType, [Balance]>;
+      /**
+       * Budget balance was increased by automatic refill.
+       **/
+      BudgetRefill: AugmentedEvent<ApiType, [Balance]>;
+      /**
+       * The next budget refill was planned.
+       **/
+      BudgetRefillPlanned: AugmentedEvent<ApiType, [BlockNumber]>;
+      /**
+       * The candidate has set a new note for their candidacy
+       **/
+      CandidacyNoteSet: AugmentedEvent<ApiType, [MemberId, Bytes]>;
+      /**
+       * Candidacy stake that was no longer needed was released
+       **/
+      CandidacyStakeRelease: AugmentedEvent<ApiType, [MemberId]>;
+      /**
+       * Candidate has withdrawn his candidacy
+       **/
+      CandidacyWithdraw: AugmentedEvent<ApiType, [MemberId]>;
+      /**
+       * Councilor reward has been updated.
+       **/
+      CouncilorRewardUpdated: AugmentedEvent<ApiType, [Balance]>;
+      /**
+       * New candidate announced
+       **/
+      NewCandidate: AugmentedEvent<ApiType, [MemberId, AccountId, AccountId, Balance]>;
+      /**
+       * New council was elected and appointed
+       **/
+      NewCouncilElected: AugmentedEvent<ApiType, [Vec<MemberId>]>;
+      /**
+       * New council was elected and appointed
+       **/
+      NewCouncilNotElected: AugmentedEvent<ApiType, []>;
+      /**
+       * Announcing period can't finish because of insufficient candidtate count
+       **/
+      NotEnoughCandidates: AugmentedEvent<ApiType, []>;
+      /**
+       * Request has been funded
+       **/
+      RequestFunded: AugmentedEvent<ApiType, [AccountId, Balance]>;
+      /**
+       * The whole reward was paid to the council member.
+       **/
+      RewardPayment: AugmentedEvent<ApiType, [MemberId, AccountId, Balance, Balance]>;
+      /**
+       * Candidates are announced and voting starts
+       **/
+      VotingPeriodStarted: AugmentedEvent<ApiType, [u64]>;
     };
     dataDirectory: {
       /**
@@ -352,147 +578,222 @@ declare module '@polkadot/api/types/events' {
     };
     forum: {
       /**
+       * An arhical status of category with given id was updated.
+       * The second argument reflects the new archival status of the category.
+       **/
+      CategoryArchivalStatusUpdated: AugmentedEvent<ApiType, [CategoryId, bool, PrivilegedActor]>;
+      /**
        * A category was introduced
        **/
-      CategoryCreated: AugmentedEvent<ApiType, [CategoryId]>;
+      CategoryCreated: AugmentedEvent<ApiType, [CategoryId, Option<CategoryId>, Bytes, Bytes]>;
       /**
-       * A category with given id was updated.
-       * The second argument reflects the new archival status of the category, if changed.
-       * The third argument reflects the new deletion status of the category, if changed.
+       * A category was deleted
        **/
-      CategoryUpdated: AugmentedEvent<ApiType, [CategoryId, Option<bool>, Option<bool>]>;
+      CategoryDeleted: AugmentedEvent<ApiType, [CategoryId, PrivilegedActor]>;
       /**
-       * Given account was set as forum sudo.
+       * A discription of category with given id was updated.
+       * The second argument reflects the new description hash of the category.
        **/
-      ForumSudoSet: AugmentedEvent<ApiType, [Option<AccountId>, Option<AccountId>]>;
+      CategoryDescriptionUpdated: AugmentedEvent<ApiType, [CategoryId, Hash, PrivilegedActor]>;
+      /**
+       * An moderator ability to moderate a category and its subcategories updated
+       **/
+      CategoryMembershipOfModeratorUpdated: AugmentedEvent<ApiType, [ModeratorId, CategoryId, bool]>;
+      /**
+       * Sticky thread updated for category
+       **/
+      CategoryStickyThreadUpdate: AugmentedEvent<ApiType, [CategoryId, Vec<ThreadId>, PrivilegedActor]>;
+      /**
+       * A title of category with given id was updated.
+       * The second argument reflects the new title hash of the category.
+       **/
+      CategoryTitleUpdated: AugmentedEvent<ApiType, [CategoryId, Hash, PrivilegedActor]>;
       /**
        * Post with given id was created.
        **/
-      PostAdded: AugmentedEvent<ApiType, [PostId]>;
+      PostAdded: AugmentedEvent<ApiType, [PostId, ForumUserId, CategoryId, ThreadId, Bytes, bool]>;
+      /**
+       * Post with givne id was deleted.
+       **/
+      PostDeleted: AugmentedEvent<ApiType, [Bytes, ForumUserId, Vec<ITuple<[CategoryId, ThreadId, PostId, bool]>>]>;
       /**
        * Post with givne id was moderated.
        **/
-      PostModerated: AugmentedEvent<ApiType, [PostId]>;
+      PostModerated: AugmentedEvent<ApiType, [PostId, Bytes, PrivilegedActor, CategoryId, ThreadId]>;
+      /**
+       * Thumb up post
+       **/
+      PostReacted: AugmentedEvent<ApiType, [ForumUserId, PostId, PostReactionId, CategoryId, ThreadId]>;
       /**
        * Post with given id had its text updated.
        * The second argument reflects the number of total edits when the text update occurs.
        **/
-      PostTextUpdated: AugmentedEvent<ApiType, [PostId, u64]>;
+      PostTextUpdated: AugmentedEvent<ApiType, [PostId, ForumUserId, CategoryId, ThreadId, Bytes]>;
       /**
        * A thread with given id was created.
        **/
-      ThreadCreated: AugmentedEvent<ApiType, [ThreadId]>;
+      ThreadCreated: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, Bytes, Bytes, Option<Poll>]>;
+      /**
+       * A thread was deleted.
+       **/
+      ThreadDeleted: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, bool]>;
       /**
        * A thread with given id was moderated.
        **/
-      ThreadModerated: AugmentedEvent<ApiType, [ThreadId]>;
+      ThreadModerated: AugmentedEvent<ApiType, [ThreadId, Bytes, PrivilegedActor, CategoryId]>;
+      /**
+       * A thread was moved to new category
+       **/
+      ThreadMoved: AugmentedEvent<ApiType, [ThreadId, CategoryId, PrivilegedActor, CategoryId]>;
+      /**
+       * A thread with given id was moderated.
+       **/
+      ThreadTitleUpdated: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, Bytes]>;
+      /**
+       * A thread with given id was updated.
+       * The second argument reflects the new archival status of the thread.
+       **/
+      ThreadUpdated: AugmentedEvent<ApiType, [ThreadId, bool, PrivilegedActor, CategoryId]>;
+      /**
+       * Vote on poll
+       **/
+      VoteOnPoll: AugmentedEvent<ApiType, [ThreadId, u32, ForumUserId, CategoryId]>;
     };
-    gatewayWorkingGroup: {
+    forumWorkingGroup: {
       /**
-       * Emits on accepting application for the worker opening.
+       * Emits on withdrawing the application for the regular worker/lead opening.
        * Params:
-       * - Opening id
-       **/
-      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
-      /**
-       * Emits on terminating the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
-       **/
-      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
-      /**
-       * Emits on withdrawing the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
+       * - Job application id
        **/
       ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
       /**
        * Emits on adding the application for the worker opening.
        * Params:
-       * - Opening id
+       * - Opening parameteres
        * - Application id
        **/
-      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      AppliedOnOpening: AugmentedEvent<ApiType, [ApplyOnOpeningParameters, ApplicationId]>;
       /**
-       * Emits on beginning the application review for the worker/lead opening.
+       * Emits on setting the budget for the working group.
        * Params:
-       * - Opening id
+       * - new budget
        **/
-      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      BudgetSet: AugmentedEvent<ApiType, [Balance]>;
       /**
-       * Emits on setting the leader.
+       * Emits on budget from the working group being spent
        * Params:
-       * - Worker id.
+       * - Receiver Account Id.
+       * - Balance spent.
+       * - Rationale.
+       **/
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId, Balance, Option<Bytes>]>;
+      /**
+       * Emits on setting the group leader.
+       * Params:
+       * - Group worker id.
        **/
       LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on un-setting the leader.
-       * Params:
        **/
       LeaderUnset: AugmentedEvent<ApiType, []>;
       /**
-       * Emits on changing working group mint capacity.
+       * Emits on reaching new missed reward.
        * Params:
-       * - mint id.
-       * - new mint balance.
+       * - Worker ID.
+       * - Missed reward (optional). None means 'no missed reward'.
        **/
-      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      NewMissedRewardLevelReached: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
-       * Emits on adding new worker opening.
+       * Emits on adding new job opening.
+       * Params:
+       * - Opening id
+       * - Description
+       * - Opening Type(Lead or Worker)
+       * - Stake Policy for the opening
+       * - Reward per block
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId, Bytes, OpeningType, StakePolicy, Option<Balance>]>;
+      /**
+       * Emits on canceling the job opening.
        * Params:
        * - Opening id
        **/
-      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      OpeningCanceled: AugmentedEvent<ApiType, [OpeningId]>;
       /**
-       * Emits on filling the worker opening.
+       * Emits on filling the job opening.
        * Params:
        * - Worker opening id
        * - Worker application id to the worker id dictionary
+       * - Applicationd ids used to fill the opening
        **/
-      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>]>;
       /**
-       * Emits on decreasing the worker/lead stake.
+       * Emits on paying the reward.
        * Params:
-       * - worker/lead id.
+       * - Id of the worker.
+       * - Receiver Account Id.
+       * - Reward
+       * - Payment type (missed reward or regular one)
        **/
-      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      RewardPaid: AugmentedEvent<ApiType, [WorkerId, AccountId, Balance, RewardPaymentType]>;
       /**
-       * Emits on increasing the worker/lead stake.
+       * Emits on decreasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
       /**
-       * Emits on slashing the worker/lead stake.
+       * Emits on increasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on slashing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - actual slashed balance.
+       * - Requested slashed balance.
+       * - Rationale.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId, Balance, Balance, Option<Bytes>]>;
+      /**
+       * Emits on updating the status text of the working group.
+       * Params:
+       * - status text hash
+       * - status text
+       **/
+      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
        * - leader worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on terminating the worker.
        * Params:
        * - worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
        * - worker id.
-       * - exit rationale text
+       * - Rationale.
        **/
-      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on updating the reward account of the worker.
        * Params:
-       * - Member id of the worker.
+       * - Id of the worker.
        * - Reward account id of the worker.
        **/
       WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
@@ -500,8 +801,9 @@ declare module '@polkadot/api/types/events' {
        * Emits on updating the reward amount of the worker.
        * Params:
        * - Id of the worker.
+       * - Reward per block
        **/
-      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
        * Emits on updating the role account of the worker.
        * Params:
@@ -510,12 +812,172 @@ declare module '@polkadot/api/types/events' {
        **/
       WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
       /**
-       * Emits on updating the worker storage role.
+       * Emits when worker started leaving their role.
+       * Params:
+       * - Worker id.
+       * - Rationale.
+       **/
+      WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Emits on withdrawing the application for the regular worker/lead opening.
+       * Params:
+       * - Job application id
+       **/
+      ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on adding the application for the worker opening.
+       * Params:
+       * - Opening parameteres
+       * - Application id
+       **/
+      AppliedOnOpening: AugmentedEvent<ApiType, [ApplyOnOpeningParameters, ApplicationId]>;
+      /**
+       * Emits on setting the budget for the working group.
+       * Params:
+       * - new budget
+       **/
+      BudgetSet: AugmentedEvent<ApiType, [Balance]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Balance spent.
+       * - Rationale.
+       **/
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId, Balance, Option<Bytes>]>;
+      /**
+       * Emits on setting the group leader.
+       * Params:
+       * - Group worker id.
+       **/
+      LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on un-setting the leader.
+       **/
+      LeaderUnset: AugmentedEvent<ApiType, []>;
+      /**
+       * Emits on reaching new missed reward.
+       * Params:
+       * - Worker ID.
+       * - Missed reward (optional). None means 'no missed reward'.
+       **/
+      NewMissedRewardLevelReached: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
+      /**
+       * Emits on adding new job opening.
+       * Params:
+       * - Opening id
+       * - Description
+       * - Opening Type(Lead or Worker)
+       * - Stake Policy for the opening
+       * - Reward per block
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId, Bytes, OpeningType, StakePolicy, Option<Balance>]>;
+      /**
+       * Emits on canceling the job opening.
+       * Params:
+       * - Opening id
+       **/
+      OpeningCanceled: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on filling the job opening.
+       * Params:
+       * - Worker opening id
+       * - Worker application id to the worker id dictionary
+       * - Applicationd ids used to fill the opening
+       **/
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>]>;
+      /**
+       * Emits on paying the reward.
        * Params:
        * - Id of the worker.
-       * - Raw storage field.
+       * - Receiver Account Id.
+       * - Reward
+       * - Payment type (missed reward or regular one)
        **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
+      RewardPaid: AugmentedEvent<ApiType, [WorkerId, AccountId, Balance, RewardPaymentType]>;
+      /**
+       * Emits on decreasing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - stake delta amount
+       **/
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on increasing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - stake delta amount
+       **/
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on slashing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - actual slashed balance.
+       * - Requested slashed balance.
+       * - Rationale.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId, Balance, Balance, Option<Bytes>]>;
+      /**
+       * Emits on updating the status text of the working group.
+       * Params:
+       * - status text hash
+       * - status text
+       **/
+      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      /**
+       * Emits on terminating the leader.
+       * Params:
+       * - leader worker id.
+       * - Penalty.
+       * - Rationale.
+       **/
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
+      /**
+       * Emits on terminating the worker.
+       * Params:
+       * - worker id.
+       * - Penalty.
+       * - Rationale.
+       **/
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
+      /**
+       * Emits on exiting the worker.
+       * Params:
+       * - worker id.
+       * - Rationale.
+       **/
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on updating the reward account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Reward account id of the worker.
+       **/
+      WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the reward amount of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Reward per block
+       **/
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
+      /**
+       * Emits on updating the role account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Role account id of the worker.
+       **/
+      WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits when worker started leaving their role.
+       * Params:
+       * - Worker id.
+       * - Rationale.
+       **/
+      WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
     };
     grandpa: {
       /**
@@ -545,16 +1007,214 @@ declare module '@polkadot/api/types/events' {
        **/
       SomeOffline: AugmentedEvent<ApiType, [Vec<IdentificationTuple>]>;
     };
+    joystreamUtility: {
+      /**
+       * A runtime upgrade was executed
+       * Params:
+       * - New code encoded in bytes
+       **/
+      RuntimeUpgraded: AugmentedEvent<ApiType, [Bytes]>;
+      /**
+       * A signal proposal was executed
+       * Params:
+       * - Signal given when creating the corresponding proposal
+       **/
+      Signaled: AugmentedEvent<ApiType, [Bytes]>;
+      /**
+       * An account burned tokens
+       * Params:
+       * - Account Id of the burning tokens
+       * - Balance burned from that account
+       **/
+      TokensBurned: AugmentedEvent<ApiType, [AccountId, Balance]>;
+      /**
+       * An `Update Working Group Budget` proposal was executed
+       * Params:
+       * - Working group which budget is being updated
+       * - Amount of balance being moved
+       * - Enum variant with positive indicating funds moved torwards working group and negative
+       * and negative funds moving from the working group
+       **/
+      UpdatedWorkingGroupBudget: AugmentedEvent<ApiType, [WorkingGroup, Balance, BalanceKind]>;
+    };
     members: {
-      MemberRegistered: AugmentedEvent<ApiType, [MemberId, AccountId, EntryMethod]>;
-      MemberSetControllerAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
-      MemberSetRootAccount: AugmentedEvent<ApiType, [MemberId, AccountId]>;
-      MemberUpdatedAboutText: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedAvatar: AugmentedEvent<ApiType, [MemberId]>;
-      MemberUpdatedHandle: AugmentedEvent<ApiType, [MemberId]>;
+      InitialInvitationBalanceUpdated: AugmentedEvent<ApiType, [Balance]>;
+      InitialInvitationCountUpdated: AugmentedEvent<ApiType, [u32]>;
+      InvitesTransferred: AugmentedEvent<ApiType, [MemberId, MemberId, u32]>;
+      LeaderInvitationQuotaUpdated: AugmentedEvent<ApiType, [u32]>;
+      MemberAccountsUpdated: AugmentedEvent<ApiType, [MemberId, Option<AccountId>, Option<AccountId>]>;
+      MemberInvited: AugmentedEvent<ApiType, [MemberId, InviteMembershipParameters]>;
+      MemberProfileUpdated: AugmentedEvent<ApiType, [MemberId, Option<Bytes>, Option<Bytes>]>;
+      MembershipBought: AugmentedEvent<ApiType, [MemberId, BuyMembershipParameters]>;
+      MembershipPriceUpdated: AugmentedEvent<ApiType, [Balance]>;
+      MemberVerificationStatusUpdated: AugmentedEvent<ApiType, [MemberId, bool, ActorId]>;
+      ReferralCutUpdated: AugmentedEvent<ApiType, [u8]>;
+      StakingAccountAdded: AugmentedEvent<ApiType, [AccountId, MemberId]>;
+      StakingAccountConfirmed: AugmentedEvent<ApiType, [AccountId, MemberId]>;
+      StakingAccountRemoved: AugmentedEvent<ApiType, [AccountId, MemberId]>;
+    };
+    membershipWorkingGroup: {
+      /**
+       * Emits on withdrawing the application for the regular worker/lead opening.
+       * Params:
+       * - Job application id
+       **/
+      ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on adding the application for the worker opening.
+       * Params:
+       * - Opening parameteres
+       * - Application id
+       **/
+      AppliedOnOpening: AugmentedEvent<ApiType, [ApplyOnOpeningParameters, ApplicationId]>;
+      /**
+       * Emits on setting the budget for the working group.
+       * Params:
+       * - new budget
+       **/
+      BudgetSet: AugmentedEvent<ApiType, [Balance]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Balance spent.
+       * - Rationale.
+       **/
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId, Balance, Option<Bytes>]>;
+      /**
+       * Emits on setting the group leader.
+       * Params:
+       * - Group worker id.
+       **/
+      LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on un-setting the leader.
+       **/
+      LeaderUnset: AugmentedEvent<ApiType, []>;
+      /**
+       * Emits on reaching new missed reward.
+       * Params:
+       * - Worker ID.
+       * - Missed reward (optional). None means 'no missed reward'.
+       **/
+      NewMissedRewardLevelReached: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
+      /**
+       * Emits on adding new job opening.
+       * Params:
+       * - Opening id
+       * - Description
+       * - Opening Type(Lead or Worker)
+       * - Stake Policy for the opening
+       * - Reward per block
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId, Bytes, OpeningType, StakePolicy, Option<Balance>]>;
+      /**
+       * Emits on canceling the job opening.
+       * Params:
+       * - Opening id
+       **/
+      OpeningCanceled: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on filling the job opening.
+       * Params:
+       * - Worker opening id
+       * - Worker application id to the worker id dictionary
+       * - Applicationd ids used to fill the opening
+       **/
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>]>;
+      /**
+       * Emits on paying the reward.
+       * Params:
+       * - Id of the worker.
+       * - Receiver Account Id.
+       * - Reward
+       * - Payment type (missed reward or regular one)
+       **/
+      RewardPaid: AugmentedEvent<ApiType, [WorkerId, AccountId, Balance, RewardPaymentType]>;
+      /**
+       * Emits on decreasing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - stake delta amount
+       **/
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on increasing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - stake delta amount
+       **/
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on slashing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - actual slashed balance.
+       * - Requested slashed balance.
+       * - Rationale.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId, Balance, Balance, Option<Bytes>]>;
+      /**
+       * Emits on updating the status text of the working group.
+       * Params:
+       * - status text hash
+       * - status text
+       **/
+      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      /**
+       * Emits on terminating the leader.
+       * Params:
+       * - leader worker id.
+       * - Penalty.
+       * - Rationale.
+       **/
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
+      /**
+       * Emits on terminating the worker.
+       * Params:
+       * - worker id.
+       * - Penalty.
+       * - Rationale.
+       **/
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
+      /**
+       * Emits on exiting the worker.
+       * Params:
+       * - worker id.
+       * - Rationale.
+       **/
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on updating the reward account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Reward account id of the worker.
+       **/
+      WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the reward amount of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Reward per block
+       **/
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
+      /**
+       * Emits on updating the role account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Role account id of the worker.
+       **/
+      WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits when worker started leaving their role.
+       * Params:
+       * - Worker id.
+       * - Rationale.
+       **/
+      WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
     };
     memo: {
-      MemoUpdated: AugmentedEvent<ApiType, [AccountId]>;
+      MemoUpdated: AugmentedEvent<ApiType, [AccountId, MemoText]>;
     };
     offences: {
       /**
@@ -567,110 +1227,139 @@ declare module '@polkadot/api/types/events' {
     };
     operationsWorkingGroup: {
       /**
-       * Emits on accepting application for the worker opening.
+       * Emits on withdrawing the application for the regular worker/lead opening.
        * Params:
-       * - Opening id
-       **/
-      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
-      /**
-       * Emits on terminating the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
-       **/
-      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
-      /**
-       * Emits on withdrawing the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
+       * - Job application id
        **/
       ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
       /**
        * Emits on adding the application for the worker opening.
        * Params:
-       * - Opening id
+       * - Opening parameteres
        * - Application id
        **/
-      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      AppliedOnOpening: AugmentedEvent<ApiType, [ApplyOnOpeningParameters, ApplicationId]>;
       /**
-       * Emits on beginning the application review for the worker/lead opening.
+       * Emits on setting the budget for the working group.
        * Params:
-       * - Opening id
+       * - new budget
        **/
-      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      BudgetSet: AugmentedEvent<ApiType, [Balance]>;
       /**
-       * Emits on setting the leader.
+       * Emits on budget from the working group being spent
        * Params:
-       * - Worker id.
+       * - Receiver Account Id.
+       * - Balance spent.
+       * - Rationale.
+       **/
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId, Balance, Option<Bytes>]>;
+      /**
+       * Emits on setting the group leader.
+       * Params:
+       * - Group worker id.
        **/
       LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on un-setting the leader.
-       * Params:
        **/
       LeaderUnset: AugmentedEvent<ApiType, []>;
       /**
-       * Emits on changing working group mint capacity.
+       * Emits on reaching new missed reward.
        * Params:
-       * - mint id.
-       * - new mint balance.
+       * - Worker ID.
+       * - Missed reward (optional). None means 'no missed reward'.
        **/
-      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      NewMissedRewardLevelReached: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
-       * Emits on adding new worker opening.
+       * Emits on adding new job opening.
+       * Params:
+       * - Opening id
+       * - Description
+       * - Opening Type(Lead or Worker)
+       * - Stake Policy for the opening
+       * - Reward per block
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId, Bytes, OpeningType, StakePolicy, Option<Balance>]>;
+      /**
+       * Emits on canceling the job opening.
        * Params:
        * - Opening id
        **/
-      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      OpeningCanceled: AugmentedEvent<ApiType, [OpeningId]>;
       /**
-       * Emits on filling the worker opening.
+       * Emits on filling the job opening.
        * Params:
        * - Worker opening id
        * - Worker application id to the worker id dictionary
+       * - Applicationd ids used to fill the opening
        **/
-      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>]>;
       /**
-       * Emits on decreasing the worker/lead stake.
+       * Emits on paying the reward.
        * Params:
-       * - worker/lead id.
+       * - Id of the worker.
+       * - Receiver Account Id.
+       * - Reward
+       * - Payment type (missed reward or regular one)
        **/
-      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      RewardPaid: AugmentedEvent<ApiType, [WorkerId, AccountId, Balance, RewardPaymentType]>;
       /**
-       * Emits on increasing the worker/lead stake.
+       * Emits on decreasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
       /**
-       * Emits on slashing the worker/lead stake.
+       * Emits on increasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on slashing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - actual slashed balance.
+       * - Requested slashed balance.
+       * - Rationale.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId, Balance, Balance, Option<Bytes>]>;
+      /**
+       * Emits on updating the status text of the working group.
+       * Params:
+       * - status text hash
+       * - status text
+       **/
+      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
        * - leader worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on terminating the worker.
        * Params:
        * - worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
        * - worker id.
-       * - exit rationale text
+       * - Rationale.
        **/
-      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on updating the reward account of the worker.
        * Params:
-       * - Member id of the worker.
+       * - Id of the worker.
        * - Reward account id of the worker.
        **/
       WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
@@ -678,8 +1367,9 @@ declare module '@polkadot/api/types/events' {
        * Emits on updating the reward amount of the worker.
        * Params:
        * - Id of the worker.
+       * - Reward per block
        **/
-      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
        * Emits on updating the role account of the worker.
        * Params:
@@ -688,28 +1378,52 @@ declare module '@polkadot/api/types/events' {
        **/
       WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
       /**
-       * Emits on updating the worker storage role.
+       * Emits when worker started leaving their role.
        * Params:
-       * - Id of the worker.
-       * - Raw storage field.
+       * - Worker id.
+       * - Rationale.
        **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
+      WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+    };
+    proposalsCodex: {
+      /**
+       * A proposal was created
+       * Params:
+       * - General proposal parameter. Parameters shared by all proposals
+       * - Proposal Details. Parameter of proposal with a variant for each kind of proposal
+       **/
+      ProposalCreated: AugmentedEvent<ApiType, [GeneralProposalParameters, ProposalDetailsOf]>;
     };
     proposalsDiscussion: {
       /**
        * Emits on post creation.
        **/
-      PostCreated: AugmentedEvent<ApiType, [PostId, MemberId]>;
+      PostCreated: AugmentedEvent<ApiType, [PostId, MemberId, ThreadId, Bytes]>;
+      /**
+       * Emits on post deleted
+       **/
+      PostDeleted: AugmentedEvent<ApiType, [MemberId, ThreadId, PostId, bool]>;
       /**
        * Emits on post update.
        **/
-      PostUpdated: AugmentedEvent<ApiType, [PostId, MemberId]>;
+      PostUpdated: AugmentedEvent<ApiType, [PostId, MemberId, ThreadId, Bytes]>;
       /**
        * Emits on thread creation.
        **/
       ThreadCreated: AugmentedEvent<ApiType, [ThreadId, MemberId]>;
+      /**
+       * Emits on thread mode change.
+       **/
+      ThreadModeChanged: AugmentedEvent<ApiType, [ThreadId, ThreadMode, MemberId]>;
     };
     proposalsEngine: {
+      /**
+       * Emits on a proposal being cancelled
+       * Params:
+       * - Member Id of the proposer
+       * - Id of the proposal
+       **/
+      ProposalCancelled: AugmentedEvent<ApiType, [MemberId, ProposalId]>;
       /**
        * Emits on proposal creation.
        * Params:
@@ -718,10 +1432,24 @@ declare module '@polkadot/api/types/events' {
        **/
       ProposalCreated: AugmentedEvent<ApiType, [MemberId, ProposalId]>;
       /**
-       * Emits on proposal status change.
+       * Emits on getting a proposal status decision.
+       * Params:
+       * - Id of a proposal.
+       * - Proposal decision
+       **/
+      ProposalDecisionMade: AugmentedEvent<ApiType, [ProposalId, ProposalDecision]>;
+      /**
+       * Emits on proposal execution.
        * Params:
        * - Id of a updated proposal.
-       * - New proposal status
+       * - Proposal execution status.
+       **/
+      ProposalExecuted: AugmentedEvent<ApiType, [ProposalId, ExecutionStatus]>;
+      /**
+       * Emits on proposal creation.
+       * Params:
+       * - Id of a proposal.
+       * - New proposal status.
        **/
       ProposalStatusUpdated: AugmentedEvent<ApiType, [ProposalId, ProposalStatus]>;
       /**
@@ -730,8 +1458,39 @@ declare module '@polkadot/api/types/events' {
        * - Voter - member id of a voter.
        * - Id of a proposal.
        * - Kind of vote.
+       * - Rationale.
        **/
-      Voted: AugmentedEvent<ApiType, [MemberId, ProposalId, VoteKind]>;
+      Voted: AugmentedEvent<ApiType, [MemberId, ProposalId, VoteKind, Bytes]>;
+    };
+    referendum: {
+      /**
+       * Referendum ended and winning option was selected
+       **/
+      ReferendumFinished: AugmentedEvent<ApiType, [Vec<OptionResult>]>;
+      /**
+       * Referendum started
+       **/
+      ReferendumStarted: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * Referendum started
+       **/
+      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * Revealing phase has begun
+       **/
+      RevealingStageStarted: AugmentedEvent<ApiType, []>;
+      /**
+       * User released his stake
+       **/
+      StakeReleased: AugmentedEvent<ApiType, [AccountId]>;
+      /**
+       * User cast a vote in referendum
+       **/
+      VoteCast: AugmentedEvent<ApiType, [AccountId, Hash, Balance]>;
+      /**
+       * User revealed his vote
+       **/
+      VoteRevealed: AugmentedEvent<ApiType, [AccountId, MemberId, Bytes]>;
     };
     session: {
       /**
@@ -788,110 +1547,139 @@ declare module '@polkadot/api/types/events' {
     };
     storageWorkingGroup: {
       /**
-       * Emits on accepting application for the worker opening.
+       * Emits on withdrawing the application for the regular worker/lead opening.
        * Params:
-       * - Opening id
-       **/
-      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
-      /**
-       * Emits on terminating the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
-       **/
-      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
-      /**
-       * Emits on withdrawing the application for the worker/lead opening.
-       * Params:
-       * - Worker application id
+       * - Job application id
        **/
       ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
       /**
        * Emits on adding the application for the worker opening.
        * Params:
-       * - Opening id
+       * - Opening parameteres
        * - Application id
        **/
-      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      AppliedOnOpening: AugmentedEvent<ApiType, [ApplyOnOpeningParameters, ApplicationId]>;
       /**
-       * Emits on beginning the application review for the worker/lead opening.
+       * Emits on setting the budget for the working group.
        * Params:
-       * - Opening id
+       * - new budget
        **/
-      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      BudgetSet: AugmentedEvent<ApiType, [Balance]>;
       /**
-       * Emits on setting the leader.
+       * Emits on budget from the working group being spent
        * Params:
-       * - Worker id.
+       * - Receiver Account Id.
+       * - Balance spent.
+       * - Rationale.
+       **/
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId, Balance, Option<Bytes>]>;
+      /**
+       * Emits on setting the group leader.
+       * Params:
+       * - Group worker id.
        **/
       LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on un-setting the leader.
-       * Params:
        **/
       LeaderUnset: AugmentedEvent<ApiType, []>;
       /**
-       * Emits on changing working group mint capacity.
+       * Emits on reaching new missed reward.
        * Params:
-       * - mint id.
-       * - new mint balance.
+       * - Worker ID.
+       * - Missed reward (optional). None means 'no missed reward'.
        **/
-      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      NewMissedRewardLevelReached: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
-       * Emits on adding new worker opening.
+       * Emits on adding new job opening.
+       * Params:
+       * - Opening id
+       * - Description
+       * - Opening Type(Lead or Worker)
+       * - Stake Policy for the opening
+       * - Reward per block
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId, Bytes, OpeningType, StakePolicy, Option<Balance>]>;
+      /**
+       * Emits on canceling the job opening.
        * Params:
        * - Opening id
        **/
-      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      OpeningCanceled: AugmentedEvent<ApiType, [OpeningId]>;
       /**
-       * Emits on filling the worker opening.
+       * Emits on filling the job opening.
        * Params:
        * - Worker opening id
        * - Worker application id to the worker id dictionary
+       * - Applicationd ids used to fill the opening
        **/
-      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap, BTreeSet<ApplicationId>]>;
       /**
-       * Emits on decreasing the worker/lead stake.
+       * Emits on paying the reward.
        * Params:
-       * - worker/lead id.
+       * - Id of the worker.
+       * - Receiver Account Id.
+       * - Reward
+       * - Payment type (missed reward or regular one)
        **/
-      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      RewardPaid: AugmentedEvent<ApiType, [WorkerId, AccountId, Balance, RewardPaymentType]>;
       /**
-       * Emits on increasing the worker/lead stake.
+       * Emits on decreasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
       /**
-       * Emits on slashing the worker/lead stake.
+       * Emits on increasing the regular worker/lead stake.
        * Params:
-       * - worker/lead id.
+       * - regular worker/lead id.
+       * - stake delta amount
        **/
-      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId, Balance]>;
+      /**
+       * Emits on slashing the regular worker/lead stake.
+       * Params:
+       * - regular worker/lead id.
+       * - actual slashed balance.
+       * - Requested slashed balance.
+       * - Rationale.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId, Balance, Balance, Option<Bytes>]>;
+      /**
+       * Emits on updating the status text of the working group.
+       * Params:
+       * - status text hash
+       * - status text
+       **/
+      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
        * - leader worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on terminating the worker.
        * Params:
        * - worker id.
-       * - termination rationale text
+       * - Penalty.
+       * - Rationale.
        **/
-      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, Option<Balance>, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
        * - worker id.
-       * - exit rationale text
+       * - Rationale.
        **/
-      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId]>;
       /**
        * Emits on updating the reward account of the worker.
        * Params:
-       * - Member id of the worker.
+       * - Id of the worker.
        * - Reward account id of the worker.
        **/
       WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
@@ -899,8 +1687,9 @@ declare module '@polkadot/api/types/events' {
        * Emits on updating the reward amount of the worker.
        * Params:
        * - Id of the worker.
+       * - Reward per block
        **/
-      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId, Option<Balance>]>;
       /**
        * Emits on updating the role account of the worker.
        * Params:
@@ -909,12 +1698,12 @@ declare module '@polkadot/api/types/events' {
        **/
       WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
       /**
-       * Emits on updating the worker storage role.
+       * Emits when worker started leaving their role.
        * Params:
-       * - Id of the worker.
-       * - Raw storage field.
+       * - Worker id.
+       * - Rationale.
        **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
+      WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
     };
     sudo: {
       /**

@@ -16,7 +16,9 @@
             "Forum",
             "Storage",
             "Content",
-            "Membership"
+            "Membership",
+            "Operations",
+            "Gateway"
         ]
     },
     "MemoText": "Text",
@@ -28,10 +30,13 @@
     },
     "Address": "AccountId",
     "LookupSource": "AccountId",
+    "ChannelId": "u64",
+    "DAOId": "u64",
+    "Url": "Text",
     "Membership": {
         "handle_hash": "Bytes",
-        "root_account": "AccountId",
-        "controller_account": "AccountId",
+        "root_account": "GenericAccountId",
+        "controller_account": "GenericAccountId",
         "verified": "bool",
         "invites": "u32"
     },
@@ -40,16 +45,16 @@
         "confirmed": "bool"
     },
     "BuyMembershipParameters": {
-        "root_account": "AccountId",
-        "controller_account": "AccountId",
+        "root_account": "GenericAccountId",
+        "controller_account": "GenericAccountId",
         "handle": "Option<Text>",
         "metadata": "Bytes",
         "referrer_id": "Option<MemberId>"
     },
     "InviteMembershipParameters": {
         "inviting_member_id": "MemberId",
-        "root_account": "AccountId",
-        "controller_account": "AccountId",
+        "root_account": "GenericAccountId",
+        "controller_account": "GenericAccountId",
         "handle": "Option<Text>",
         "metadata": "Bytes"
     },
@@ -71,16 +76,16 @@
         }
     },
     "Candidate": {
-        "staking_account_id": "AccountId",
-        "reward_account_id": "AccountId",
+        "staking_account_id": "GenericAccountId",
+        "reward_account_id": "GenericAccountId",
         "cycle_id": "u64",
         "stake": "u32",
         "vote_power": "VotePower",
         "note_hash": "Option<Hash>"
     },
     "CouncilMemberOf": {
-        "staking_account_id": "AccountId",
-        "reward_account_id": "AccountId",
+        "staking_account_id": "GenericAccountId",
+        "reward_account_id": "GenericAccountId",
         "membership_id": "MemberId",
         "stake": "u128",
         "last_payment_block": "u32",
@@ -144,9 +149,9 @@
     },
     "ApplicationId": "u64",
     "Application": {
-        "role_account_id": "AccountId",
-        "reward_account_id": "AccountId",
-        "staking_account_id": "AccountId",
+        "role_account_id": "GenericAccountId",
+        "reward_account_id": "GenericAccountId",
+        "staking_account_id": "GenericAccountId",
         "member_id": "MemberId",
         "description_hash": "Bytes",
         "opening_id": "OpeningId"
@@ -160,9 +165,9 @@
     "WorkerId": "u64",
     "Worker": {
         "member_id": "MemberId",
-        "role_account_id": "AccountId",
-        "staking_account_id": "AccountId",
-        "reward_account_id": "AccountId",
+        "role_account_id": "GenericAccountId",
+        "staking_account_id": "GenericAccountId",
+        "reward_account_id": "GenericAccountId",
         "started_leaving_at": "Option<u32>",
         "job_unstaking_period": "u32",
         "reward_per_block": "Option<u128>",
@@ -187,7 +192,7 @@
     },
     "StakeParameters": {
         "stake": "u128",
-        "staking_account_id": "AccountId"
+        "staking_account_id": "GenericAccountId"
     },
     "StorageProviderId": "u64",
     "OpeningType": {
@@ -199,8 +204,8 @@
     "ApplyOnOpeningParameters": {
         "member_id": "MemberId",
         "opening_id": "OpeningId",
-        "role_account_id": "AccountId",
-        "reward_account_id": "AccountId",
+        "role_account_id": "GenericAccountId",
+        "reward_account_id": "GenericAccountId",
         "description": "Bytes",
         "stake_parameters": "StakeParameters"
     },
@@ -213,12 +218,6 @@
             "MissedReward",
             "RegularReward"
         ]
-    },
-    "Url": "Text",
-    "IPNSIdentity": "Text",
-    "ServiceProviderRecord": {
-        "identity": "IPNSIdentity",
-        "expires_at": "u32"
     },
     "ContentId": "[u8;32]",
     "LiaisonJudgement": {
@@ -248,6 +247,38 @@
         "active": "bool"
     },
     "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
+    "ContentParameters": {
+        "content_id": "ContentId",
+        "type_id": "DataObjectTypeId",
+        "size": "u64",
+        "ipfs_content_id": "Bytes"
+    },
+    "StorageObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "ObjectOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId",
+            "DAO": "DAOId",
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Voucher": {
+        "size_limit": "u64",
+        "objects_limit": "u64",
+        "size_used": "u64",
+        "objects_used": "u64"
+    },
+    "VoucherLimit": "u64",
+    "UploadingStatus": "bool",
     "ParticipantId": "u64",
     "Title": "Text",
     "UpdatedTitle": "Option<Text>",
@@ -279,7 +310,7 @@
         "votingResults": "VotingResults",
         "exactExecutionBlock": "Option<u32>",
         "nrOfCouncilConfirmations": "u32",
-        "stakingAccountId": "Option<AccountId>"
+        "stakingAccountId": "Option<GenericAccountId>"
     },
     "ProposalDetails": {
         "_enum": {
@@ -359,7 +390,7 @@
         "member_id": "MemberId",
         "title": "Text",
         "description": "Text",
-        "staking_account_id": "Option<AccountId>",
+        "staking_account_id": "Option<GenericAccountId>",
         "exact_execution_block": "Option<u32>"
     },
     "VoteKind": {
@@ -414,7 +445,7 @@
             "PendingConstitutionality"
         ]
     },
-    "SetLeadParams": "(MemberId,AccountId)",
+    "SetLeadParams": "(MemberId,GenericAccountId)",
     "ThreadMode": {
         "_enum": {
             "Open": "Null",
@@ -428,151 +459,9 @@
         }
     },
     "FundingRequestParameters": {
-        "account": "AccountId",
+        "account": "GenericAccountId",
         "amount": "u128"
     },
-    "Nonce": "u64",
-    "EntityId": "u64",
-    "ClassId": "u64",
-    "CuratorId": "u64",
-    "CuratorGroupId": "u64",
-    "CuratorGroup": {
-        "curators": "Vec<CuratorId>",
-        "active": "bool"
-    },
-    "ContentActor": {
-        "_enum": {
-            "Curator": "(CuratorGroupId,CuratorId)",
-            "Member": "MemberId",
-            "Lead": "Null"
-        }
-    },
-    "NewAsset": {
-        "_enum": {
-            "Upload": "ContentParameters",
-            "Urls": "Vec<Url>"
-        }
-    },
-    "Channel": {
-        "owner": "ChannelOwner",
-        "videos": "Vec<VideoId>",
-        "playlists": "Vec<PlaylistId>",
-        "series": "Vec<SeriesId>",
-        "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>"
-    },
-    "ChannelOwner": {
-        "_enum": {
-            "Member": "MemberId",
-            "Curators": "CuratorGroupId",
-            "Dao": "DAOId"
-        }
-    },
-    "ChannelCategoryId": "u64",
-    "ChannelCategory": {},
-    "ChannelCategoryCreationParameters": {
-        "meta": "Bytes"
-    },
-    "ChannelCategoryUpdateParameters": {
-        "new_meta": "Bytes"
-    },
-    "ChannelCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes",
-        "reward_account": "Option<GenericAccountId>"
-    },
-    "ChannelUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "new_meta": "Option<Bytes>",
-        "reward_account": "Option<Option<GenericAccountId>>"
-    },
-    "ChannelOwnershipTransferRequestId": "u64",
-    "ChannelOwnershipTransferRequest": {
-        "channel_id": "ChannelId",
-        "new_owner": "ChannelOwner",
-        "payment": "u128",
-        "new_reward_account": "Option<GenericAccountId>"
-    },
-    "Video": {
-        "in_channel": "ChannelId",
-        "in_series": "Option<SeriesId>",
-        "is_censored": "bool"
-    },
-    "VideoId": "u64",
-    "VideoCategoryId": "u64",
-    "VideoCategory": {},
-    "VideoCategoryCreationParameters": {
-        "meta": "Bytes"
-    },
-    "VideoCategoryUpdateParameters": {
-        "new_meta": "Bytes"
-    },
-    "CuratorGroup": {
-        "curators": "Vec<CuratorId>",
-        "active": "bool",
-        "number_of_classes_maintained": "u32"
-    },
-    "Person": {
-        "controlled_by": "PersonController"
-    },
-    "PersonId": "u64",
-    "PersonController": {
-        "_enum": {
-            "Curator": "(CuratorGroupId,CuratorId)",
-            "Member": "MemberId",
-            "Curators": "Null"
-        }
-    },
-    "PersonActor": {
-        "_enum": {
-            "Member": "MemberId",
-            "Curator": "CuratorId"
-        }
-    },
-    "PersonCreationParameters": {
-        "assets": "Vec<NewAsset>",
-        "meta": "Bytes"
-    },
-    "PersonUpdateParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "meta": "Option<Bytes>"
-    },
-    "Playlist": {
-        "in_channel": "ChannelId"
-    },
-    "PlaylistId": "u64",
-    "PlaylistCreationParameters": {
-        "meta": "Bytes"
-    },
-    "PlaylistUpdateParameters": {
-        "new_meta": "Bytes"
-    },
-    "SeriesId": "u64",
-    "Series": {
-        "in_channel": "ChannelId",
-        "seasons": "Vec<Season>"
-    },
-    "Season": {
-        "episodes": "Vec<VideoId>"
-    },
-    "SeriesParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "seasons": "Option<Vec<Option<SeasonParameters>>>",
-        "meta": "Option<Bytes>"
-    },
-    "SeasonParameters": {
-        "assets": "Option<Vec<NewAsset>>",
-        "episodes": "Option<Vec<Option<EpisodeParemters>>>",
-        "meta": "Option<Bytes>"
-    },
-    "EpisodeParemters": {
-        "_enum": {
-            "NewVideo": "VideoCreationParameters",
-            "ExistingVideo": "VideoId"
-        }
-    },
-    "InputEntityValuesMap": "BTreeMap<PropertyId,InputPropertyValue>",
-    "FailedAt": "u32",
     "ReferendumStageVoting": {
         "started": "u32",
         "winning_target_count": "u64",
@@ -652,5 +541,146 @@
         "submitted_at": "u32",
         "work_submitted": "bool",
         "oracle_judgment_result": "Option<OracleJudgment>"
-    }
+    },
+    "CuratorId": "u64",
+    "CuratorGroupId": "u64",
+    "CuratorGroup": {
+        "curators": "Vec<CuratorId>",
+        "active": "bool"
+    },
+    "ContentActor": {
+        "_enum": {
+            "Curator": "(CuratorGroupId,CuratorId)",
+            "Member": "MemberId",
+            "Lead": "Null"
+        }
+    },
+    "NewAsset": {
+        "_enum": {
+            "Upload": "ContentParameters",
+            "Urls": "Vec<Url>"
+        }
+    },
+    "Channel": {
+        "owner": "ChannelOwner",
+        "videos": "Vec<VideoId>",
+        "playlists": "Vec<PlaylistId>",
+        "series": "Vec<SeriesId>",
+        "is_censored": "bool",
+        "reward_account": "Option<GenericAccountId>"
+    },
+    "ChannelOwner": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curators": "CuratorGroupId",
+            "Dao": "DAOId"
+        }
+    },
+    "ChannelCategoryId": "u64",
+    "ChannelCategory": {},
+    "ChannelCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "ChannelCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "ChannelCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes",
+        "reward_account": "Option<GenericAccountId>"
+    },
+    "ChannelUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "new_meta": "Option<Bytes>",
+        "reward_account": "Option<Option<GenericAccountId>>"
+    },
+    "ChannelOwnershipTransferRequestId": "u64",
+    "ChannelOwnershipTransferRequest": {
+        "channel_id": "ChannelId",
+        "new_owner": "ChannelOwner",
+        "payment": "u128",
+        "new_reward_account": "Option<GenericAccountId>"
+    },
+    "Video": {
+        "in_channel": "ChannelId",
+        "in_series": "Option<SeriesId>",
+        "is_censored": "bool"
+    },
+    "VideoId": "u64",
+    "VideoCategoryId": "u64",
+    "VideoCategory": {},
+    "VideoCategoryCreationParameters": {
+        "meta": "Bytes"
+    },
+    "VideoCategoryUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "VideoCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes"
+    },
+    "VideoUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "new_meta": "Option<Bytes>"
+    },
+    "Person": {
+        "controlled_by": "PersonController"
+    },
+    "PersonId": "u64",
+    "PersonController": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curators": "Null"
+        }
+    },
+    "PersonActor": {
+        "_enum": {
+            "Member": "MemberId",
+            "Curator": "CuratorId"
+        }
+    },
+    "PersonCreationParameters": {
+        "assets": "Vec<NewAsset>",
+        "meta": "Bytes"
+    },
+    "PersonUpdateParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "meta": "Option<Bytes>"
+    },
+    "Playlist": {
+        "in_channel": "ChannelId"
+    },
+    "PlaylistId": "u64",
+    "PlaylistCreationParameters": {
+        "meta": "Bytes"
+    },
+    "PlaylistUpdateParameters": {
+        "new_meta": "Bytes"
+    },
+    "SeriesId": "u64",
+    "Series": {
+        "in_channel": "ChannelId",
+        "seasons": "Vec<Season>"
+    },
+    "Season": {
+        "episodes": "Vec<VideoId>"
+    },
+    "SeriesParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "seasons": "Option<Vec<Option<SeasonParameters>>>",
+        "meta": "Option<Bytes>"
+    },
+    "SeasonParameters": {
+        "assets": "Option<Vec<NewAsset>>",
+        "episodes": "Option<Vec<Option<EpisodeParemters>>>",
+        "meta": "Option<Bytes>"
+    },
+    "EpisodeParemters": {
+        "_enum": {
+            "NewVideo": "VideoCreationParameters",
+            "ExistingVideo": "VideoId"
+        }
+    },
+    "MaxNumber": "u32",
+    "IsCensored": "bool"
 }
