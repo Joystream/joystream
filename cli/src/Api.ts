@@ -29,7 +29,7 @@ import {
   Opening,
 } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { MemberId, ChannelId } from '@joystream/types/common'
+import { MemberId, ChannelId, AccountId } from '@joystream/types/common'
 import {
   Channel,
   Video,
@@ -52,7 +52,6 @@ import {
   GetMemberByIdQueryVariables,
   MembershipFieldsFragment,
 } from './graphql/generated/queries'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 

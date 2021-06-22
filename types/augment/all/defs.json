@@ -35,8 +35,8 @@
     "Url": "Text",
     "Membership": {
         "handle_hash": "Bytes",
-        "root_account": "GenericAccountId",
-        "controller_account": "GenericAccountId",
+        "root_account": "AccountId",
+        "controller_account": "AccountId",
         "verified": "bool",
         "invites": "u32"
     },
@@ -45,16 +45,16 @@
         "confirmed": "bool"
     },
     "BuyMembershipParameters": {
-        "root_account": "GenericAccountId",
-        "controller_account": "GenericAccountId",
+        "root_account": "AccountId",
+        "controller_account": "AccountId",
         "handle": "Option<Text>",
         "metadata": "Bytes",
         "referrer_id": "Option<MemberId>"
     },
     "InviteMembershipParameters": {
         "inviting_member_id": "MemberId",
-        "root_account": "GenericAccountId",
-        "controller_account": "GenericAccountId",
+        "root_account": "AccountId",
+        "controller_account": "AccountId",
         "handle": "Option<Text>",
         "metadata": "Bytes"
     },
@@ -76,16 +76,16 @@
         }
     },
     "Candidate": {
-        "staking_account_id": "GenericAccountId",
-        "reward_account_id": "GenericAccountId",
+        "staking_account_id": "AccountId",
+        "reward_account_id": "AccountId",
         "cycle_id": "u64",
         "stake": "u32",
         "vote_power": "VotePower",
         "note_hash": "Option<Hash>"
     },
     "CouncilMemberOf": {
-        "staking_account_id": "GenericAccountId",
-        "reward_account_id": "GenericAccountId",
+        "staking_account_id": "AccountId",
+        "reward_account_id": "AccountId",
         "membership_id": "MemberId",
         "stake": "u128",
         "last_payment_block": "u32",
@@ -149,9 +149,9 @@
     },
     "ApplicationId": "u64",
     "Application": {
-        "role_account_id": "GenericAccountId",
-        "reward_account_id": "GenericAccountId",
-        "staking_account_id": "GenericAccountId",
+        "role_account_id": "AccountId",
+        "reward_account_id": "AccountId",
+        "staking_account_id": "AccountId",
         "member_id": "MemberId",
         "description_hash": "Bytes",
         "opening_id": "OpeningId"
@@ -165,9 +165,9 @@
     "WorkerId": "u64",
     "Worker": {
         "member_id": "MemberId",
-        "role_account_id": "GenericAccountId",
-        "staking_account_id": "GenericAccountId",
-        "reward_account_id": "GenericAccountId",
+        "role_account_id": "AccountId",
+        "staking_account_id": "AccountId",
+        "reward_account_id": "AccountId",
         "started_leaving_at": "Option<u32>",
         "job_unstaking_period": "u32",
         "reward_per_block": "Option<u128>",
@@ -192,7 +192,7 @@
     },
     "StakeParameters": {
         "stake": "u128",
-        "staking_account_id": "GenericAccountId"
+        "staking_account_id": "AccountId"
     },
     "StorageProviderId": "u64",
     "OpeningType": {
@@ -204,8 +204,8 @@
     "ApplyOnOpeningParameters": {
         "member_id": "MemberId",
         "opening_id": "OpeningId",
-        "role_account_id": "GenericAccountId",
-        "reward_account_id": "GenericAccountId",
+        "role_account_id": "AccountId",
+        "reward_account_id": "AccountId",
         "description": "Bytes",
         "stake_parameters": "StakeParameters"
     },
@@ -310,7 +310,7 @@
         "votingResults": "VotingResults",
         "exactExecutionBlock": "Option<u32>",
         "nrOfCouncilConfirmations": "u32",
-        "stakingAccountId": "Option<GenericAccountId>"
+        "stakingAccountId": "Option<AccountId>"
     },
     "ProposalDetails": {
         "_enum": {
@@ -390,7 +390,7 @@
         "member_id": "MemberId",
         "title": "Text",
         "description": "Text",
-        "staking_account_id": "Option<GenericAccountId>",
+        "staking_account_id": "Option<AccountId>",
         "exact_execution_block": "Option<u32>"
     },
     "VoteKind": {
@@ -445,7 +445,7 @@
             "PendingConstitutionality"
         ]
     },
-    "SetLeadParams": "(MemberId,GenericAccountId)",
+    "SetLeadParams": "(MemberId,AccountId)",
     "ThreadMode": {
         "_enum": {
             "Open": "Null",
@@ -459,7 +459,7 @@
         }
     },
     "FundingRequestParameters": {
-        "account": "GenericAccountId",
+        "account": "AccountId",
         "amount": "u128"
     },
     "ReferendumStageVoting": {
@@ -537,7 +537,7 @@
     },
     "Entry": {
         "member_id": "MemberId",
-        "staking_account_id": "GenericAccountId",
+        "staking_account_id": "AccountId",
         "submitted_at": "u32",
         "work_submitted": "bool",
         "oracle_judgment_result": "Option<OracleJudgment>"
@@ -567,7 +567,7 @@
         "playlists": "Vec<PlaylistId>",
         "series": "Vec<SeriesId>",
         "is_censored": "bool",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<AccountId>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -587,19 +587,19 @@
     "ChannelCreationParameters": {
         "assets": "Vec<NewAsset>",
         "meta": "Bytes",
-        "reward_account": "Option<GenericAccountId>"
+        "reward_account": "Option<AccountId>"
     },
     "ChannelUpdateParameters": {
         "assets": "Option<Vec<NewAsset>>",
         "new_meta": "Option<Bytes>",
-        "reward_account": "Option<Option<GenericAccountId>>"
+        "reward_account": "Option<Option<AccountId>>"
     },
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {
         "channel_id": "ChannelId",
         "new_owner": "ChannelOwner",
         "payment": "u128",
-        "new_reward_account": "Option<GenericAccountId>"
+        "new_reward_account": "Option<AccountId>"
     },
     "Video": {
         "in_channel": "ChannelId",
