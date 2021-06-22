@@ -4,6 +4,7 @@ import members from './members'
 import council from './council'
 import forum from './forum'
 import workingGroup from './working-group'
+import storage from './storage'
 import blog from './blog'
 import proposals from './proposals'
 import referendum from './referendum'
@@ -25,6 +26,7 @@ export const types: RegistryTypes = {
   ...council,
   ...forum,
   ...workingGroup,
+  ...storage,
   ...blog,
   ...proposals,
   ...referendum,
