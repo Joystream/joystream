@@ -116,7 +116,6 @@ services:
     volumes:
       - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
-      - graphql-server
       - hydra-indexer-gateway
     command: ["workspace", "query-node-root", "processor:start"]
 
