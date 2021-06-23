@@ -123,6 +123,10 @@ pub trait Trait:
 
     /// Type of ReplyId
     type ReplyId: NumericIdentifier;
+
+    /// Type of ReplyId
+    type PostReactionId: NumericIdentifier;
+
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -1374,10 +1378,71 @@ decl_module! {
             _video: T::VideoId,
         _category: T::VideoCategoryId,
         ) {
-        // ensure that origin is signed by the channel ownerr of the video
-
+            // ensure that origin is signed by the channel ownerr of the video
+            Self::not_implemented()?;
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
+      pub fn create_reply(
+      _origin,
+      _owner: PartecipantId<T>,
+      _post_id: T::PostId,
+      _reply_id: Option<T::ReplyId>,
+      _text: <T as frame_system::Trait>::Hash,
+      ) -> {
+          Self::not_implemented()?;
+      }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+    pub fn edit_post(
+            _origin,
+            _post_id: T::PostId,
+            _new_title: Option<<T as frame_system::Trait>::Hash>
+        _new_video: Option<T::VideoId>
+    ) {
+            Self::not_implemented()?;
+    }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+      pub fn edit_reply(
+          _origin,
+          _owner: PartecipantId<T>,
+          _post_id: T::PostId,
+          _reply_id: T::ReplyId,
+          _new_text: <T as frame_system::Trait>::Hash
+      ) {
+          Self::not_implemented()?;
+      }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+    pub fn delete_post(
+        _origin,
+        _owner: ChannelOwner<
+            <T as MembershipTypes>::MemberId,
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            <T as StorageOwnership>::DAOId,
+        >,
+        _post: PostId,
+    ) {
+        Self::not_implemented()?;n
+    }
+        #[weight = 10_000_000] // TODO: adjust weight
+      pub fn delete_replies(
+      origin,
+      owner: UserId,
+      reply: ReplyId,
+      ) {
+          Self::not_implemented()?;
+      }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+    fn react_post(
+        _origin,
+        _post: T::PostId,
+        _react: T::PostReactionId
+    ) {
+        Self::not_implemented()?;
+    }
     }
 }
 
