@@ -5,7 +5,7 @@ use frame_system::RawOrigin;
 use crate::tests::fixtures::{
     AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
-use crate::tests::mock::{Test, TestWorkingGroup};
+use crate::tests::mock::{Test, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID};
 use crate::types::StakeParameters;
 use crate::{OpeningType, StakePolicy, Trait};
 
@@ -94,7 +94,12 @@ impl HiringWorkflow {
     }
 
     pub fn add_application(self, worker_handle: Vec<u8>) -> Self {
-        self.add_application_full(worker_handle, RawOrigin::Signed(2), 2, 2)
+        self.add_application_full(
+            worker_handle,
+            RawOrigin::Signed(DEFAULT_WORKER_ACCOUNT_ID),
+            2,
+            2,
+        )
     }
 
     pub fn add_application_full(

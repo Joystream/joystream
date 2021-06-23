@@ -2,14 +2,15 @@ mod fixtures;
 mod hiring_workflow;
 mod mock;
 
-pub use mock::{build_test_externalities, Test};
+pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
     CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
     SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
-    UpdateRewardAccountFixture, UpdateRewardAmountFixture, WithdrawApplicationFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, UpdateWorkerStorageFixture,
+    WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
@@ -17,7 +18,8 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    DefaultInstance, Error, OpeningType, RawEvent, RewardPaymentType, StakePolicy, Trait, Worker,
+    default_storage_size_constraint, DefaultInstance, Error, OpeningType, RawEvent,
+    RewardPaymentType, StakePolicy, Trait, Worker,
 };
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
@@ -2503,5 +2505,109 @@ fn is_worker_account_id_works_correctly() {
             TestWorkingGroup::is_worker_account_id(&account_id, &worker_id),
             true
         );
+    });
+}
+
+#[test]
+fn update_worker_storage_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let storage_field = vec![0u8].repeat(10);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerStorageUpdated(
+            worker_id,
+            storage_field,
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(10);
+
+        let leader_account_id = 1;
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        )
+        .with_origin(RawOrigin::Signed(leader_account_id));
+
+        update_storage_fixture.call_and_assert(Ok(()));
+
+        let worker_storage = TestWorkingGroup::worker_storage(worker_id);
+
+        assert_eq!(storage_field, worker_storage);
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        let invalid_account_id = 44;
+        let storage_field = vec![0u8].repeat(10);
+
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field)
+                .with_origin(RawOrigin::Signed(invalid_account_id));
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(10);
+        HireRegularWorkerFixture::default().hire();
+
+        let invalid_worker_id = 111;
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            invalid_worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_worker_storage_fails_with_too_long_text() {
+    build_test_externalities().execute_with(|| {
+        let storage_field = vec![0u8].repeat(default_storage_size_constraint() as usize + 1);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
+            worker_id,
+            storage_field.clone(),
+        );
+
+        update_storage_fixture.call_and_assert(Err(
+            Error::<Test, DefaultInstance>::WorkerStorageValueTooLong.into(),
+        ));
     });
 }

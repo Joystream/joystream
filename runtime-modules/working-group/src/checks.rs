@@ -263,3 +263,14 @@ pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
         .reward_per_block
         .map_or(Err(Error::<T, I>::WorkerHasNoReward.into()), |_| Ok(()))
 }
+
+// Validates storage text.
+pub(crate) fn ensure_worker_role_storage_text_is_valid<T: Trait<I>, I: Instance>(
+    text: &[u8],
+) -> DispatchResult {
+    ensure!(
+        text.len() as u16 <= <crate::WorkerStorageSize>::get(),
+        Error::<T, I>::WorkerStorageValueTooLong
+    );
+    Ok(())
+}
