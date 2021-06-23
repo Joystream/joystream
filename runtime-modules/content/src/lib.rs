@@ -51,6 +51,8 @@ pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as StorageOwnership>::DAOId,
 >;
 
+pub type PartecipantId<T> = common::MemberId<T>;
+
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
 
@@ -115,6 +117,12 @@ pub trait Trait:
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem: StorageSystem<Self>;
+
+    /// Type of PostId
+    type PostId: NumericIdentifier;
+
+    /// Type of ReplyId
+    type ReplyId: NumericIdentifier;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -456,6 +464,102 @@ pub struct Person<MemberId> {
     controlled_by: PersonController<MemberId>,
 }
 
+/// A Post associated to a video
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PostRecord<
+    MemberId,
+    CuratorGroupId,
+    DAOId,
+    Hash,
+    Balance,
+    BlockNumber,
+    ReplyId,
+    VideoId,
+    VideoCategoryId,
+> {
+    /// Hash of current text
+    pub title_hash: Hash,
+
+    /// Author of post.
+    pub author: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+
+    /// Cleanup pay off
+    pub cleanup_pay_off: Balance,
+
+    /// When it was created or last edited
+    pub last_edited: BlockNumber,
+
+    /// Overall replies counter
+    pub replies_count: ReplyId,
+
+    /// video associated to the post (instead of the body hash as in the blog module)
+    pub video: VideoId,
+
+    /// category for this video
+    pub category: VideoCategoryId,
+}
+
+// Needed for nested comments
+/// A Post associated to a video
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum ParentId<ReplyId, PostId: Default> {
+    Reply(ReplyId),
+    Post(PostId),
+}
+
+/// Default parent representation
+impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
+    fn default() -> Self {
+        ParentId::Post(PostId::default())
+    }
+}
+
+/// Reply
+/// A Post associated to a video
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct ReplyRecord<BlockNumber, ReplyId, PostId: Default, PartecipantId, Balance, Hash> {
+    /// Reply text hash
+    text_hash: Hash,
+
+    /// Associated with reply owner
+    owner: PartecipantId,
+
+    /// Reply`s parent id
+    parent_id: ParentId<ReplyId, PostId>,
+
+    /// Pay off by deleting post
+    cleanup_pay_off: Balance,
+
+    /// Last time reply was edited
+    last_edited: BlockNumber,
+}
+
+/// alias for Post
+pub type Post<T> = PostRecord<
+    <T as MembershipTypes>::MemberId,
+    <T as ContentActorAuthenticator>::CuratorGroupId,
+    <T as StorageOwnership>::DAOId,
+    <T as frame_system::Trait>::Hash,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::BlockNumber,
+    <T as Trait>::ReplyId,
+    <T as Trait>::VideoId,
+    <T as Trait>::VideoCategoryId,
+>;
+
+/// alias for Reply
+pub type Reply<T> = ReplyRecord<
+    <T as frame_system::Trait>::BlockNumber,
+    <T as Trait>::ReplyId,
+    <T as Trait>::PostId,
+    PartecipantId<T>,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
+
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -495,6 +599,9 @@ decl_storage! {
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+
+        pub PostById get(fn post_by_id) config() : map hasher(blake2_128_concat) T::PostId => Post<T>;
+        pub ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T>;
     }
 }
 
@@ -1259,6 +1366,18 @@ decl_module! {
         ) {
             Self::not_implemented()?;
         }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_video_post(
+            _origin,
+            _title: <T as frame_system::Trait>::Hash,
+            _video: T::VideoId,
+        _category: T::VideoCategoryId,
+        ) {
+        // ensure that origin is signed by the channel ownerr of the video
+
+        }
+
     }
 }
 
