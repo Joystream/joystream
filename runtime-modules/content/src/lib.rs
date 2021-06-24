@@ -1324,41 +1324,46 @@ decl_module! {
     pub fn claim_channel_reward(
             origin,
             proof: PullPaymentProof<T>,
+        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) {
 
-        let signing_acc = ensure_signed(origin)?;
         let elem = &proof.leaf;
+        let channel = Self::ensure_channel_exists(&elem.channel_id)?;
 
-        let mut channel = ChannelById::<T>::get(elem.channel_id);
+        ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
 
-        if let Some(channel_acc) = channel.reward_account.clone() {
+        let cashout = elem
+            .amount_due
+            .checked_sub(&channel.cumulative_reward)
+            .ok_or("uinteger underflow")?;
 
-            let cashout = elem
-        .amount_due
-        .checked_sub(&channel.cumulative_reward)
-        .ok_or("uinteger underflow")?;
+        ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
+        ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
+        ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
 
-            ensure!(channel_acc == signing_acc, "Origin isn't channel's reward account");
-            ensure!(<MaxRewardAllowed<T>>::get() > elem.amount_due, "total reward too high");
-            ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
-            ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
+        // value is transferred to the reward account if Some
+        let reward_acc = channel.reward_account.clone().ok_or("No reward account found")?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+        // new reward computation
+        let new_reward = channel
+            .cumulative_reward
+            .checked_add(&elem.amount_due)
+            .ok_or("balance value overflow")?;
 
-            channel.cumulative_reward = channel
-        .cumulative_reward
-        .checked_add(&elem.amount_due)
-        .ok_or("balance value overflow")?;
-            ChannelById::<T>::take(elem.channel_id);
-            ChannelById::<T>::insert(elem.channel_id, channel);
+        //
+        // == MUTATION SAFE ==
+        //
 
-            // value is transferred to the reward account
-            Self::transfer_reward(cashout, &channel_acc);
-            // deposit event
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
-    }
+        // update
+        let mut channel = channel;
+        channel.cumulative_reward = new_reward;
+
+        Self::transfer_reward(cashout, &reward_acc);
+        ChannelById::<T>::take(elem.channel_id);
+        ChannelById::<T>::insert(elem.channel_id, channel);
+
+        // deposit event
+        Self::deposit_event(RawEvent::ChannelRewardUpdated(elem.amount_due, elem.channel_id));
     }
 
     #[weight = 10_000_000]

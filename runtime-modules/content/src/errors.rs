@@ -62,6 +62,9 @@ decl_error! {
         VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels
+        CannotCensoreCuratorGroupOwnedChannels,
+
+        /// Actor is not A Member
+        ActorNotAMember
     }
 }
