@@ -1321,7 +1321,7 @@ decl_module! {
         }
 
     #[weight = 10_000_000]
-    pub fn update_channel_reward(
+    pub fn claim_channel_reward(
             origin,
             proof: PullPaymentProof<T>,
     ) {
@@ -1343,7 +1343,10 @@ decl_module! {
             ensure!(<MinCashoutAllowed<T>>::get() < cashout, "Requested cashout too low");
             ensure!(proof.verify(<Commitment<T>>::get()), "claimed cashout doesn't exists");
 
-            // state of channel is updated
+            //
+            // == MUTATION SAFE ==
+            //
+
             channel.cumulative_reward = channel
         .cumulative_reward
         .checked_add(&elem.amount_due)

@@ -226,7 +226,7 @@ fn channel_reward_update_test() {
         };
 
         // attempt should succeed
-        _res = Content::update_channel_reward(Origin::signed(FIRST_MEMBER_ORIGIN), proof);
+        _res = Content::claim_channel_reward(Origin::signed(FIRST_MEMBER_ORIGIN), proof);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelRewardUpdated(
