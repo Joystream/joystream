@@ -15,9 +15,10 @@ COPY . /joystream
 ENV WASM_BUILD_TOOLCHAIN=nightly-2021-03-24
 ARG TEST_NODE
 RUN echo "TEST_NODE=$TEST_NODE"
-RUN test -n "$TEST_NODE" && sed -i 's/MILLISECS_PER_BLOCK: Moment = 6000/MILLISECS_PER_BLOCK: Moment = 1000/' ./runtime/src/constants.rs
-RUN test -n "$TEST_NODE" && sed -i 's/SLOT_DURATION: Moment = 6000/SLOT_DURATION: Moment = 1000/' ./runtime/src/constants.rs
-RUN export ALL_PROPOSALS_PARAMETERS_JSON="$(test -n "$TEST_NODE" && cat ./tests/integration-tests/proposal-parameters.json)" &&\
+RUN test -n "$TEST_NODE" && sed -i 's/MILLISECS_PER_BLOCK: Moment = 6000/MILLISECS_PER_BLOCK: Moment = 1000/' ./runtime/src/constants.rs; exit 0
+RUN test -n "$TEST_NODE" && sed -i 's/SLOT_DURATION: Moment = 6000/SLOT_DURATION: Moment = 1000/' ./runtime/src/constants.rs; exit 0
+RUN test -n "$TEST_NODE" && export ALL_PROPOSALS_PARAMETERS_JSON="$(cat ./tests/integration-tests/proposal-parameters.json)";\
+    echo "ALL_PROPOSALS_PARAMETERS_JSON=$ALL_PROPOSALS_PARAMETERS_JSON" && \
     BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all && \
     cargo build --release
