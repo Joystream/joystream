@@ -55,7 +55,9 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
     }
 
     if (rationale === undefined) {
-      rationale = await this.simplePrompt({ message: 'Please provide the rationale for updating the status' })
+      rationale = (await this.simplePrompt({
+        message: 'Please provide the rationale for updating the status',
+      })) as string
     }
 
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateVideoCensorshipStatus', [
