@@ -16,15 +16,8 @@ import {
   IMediaType,
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
-import {
-  invalidMetadata,
-  inconsistentState,
-  logger,
-  isSet,
-  integrateMeta,
-  unexpectedData,
-  createDataObject,
-} from '../common'
+import { integrateMeta, isSet } from '@joystream/metadata-protobuf/utils'
+import { invalidMetadata, inconsistentState, logger, unexpectedData, createDataObject } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -49,11 +42,12 @@ import {
 import { ContentParameters, NewAsset, ContentActor } from '@joystream/types/augment'
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
-  meta: IChannelMetadata,
+  meta: DecodedMetadataObject<IChannelMetadata>,
   assets: NewAsset[]
 ): Promise<Channel> {
   const assetsOwner = new DataObjectOwnerChannel()
@@ -65,7 +59,7 @@ export async function processChannelMetadata(
 
   // prepare channel category if needed
   if (isSet(meta.category)) {
-    channel.category = await processChannelCategory(ctx, channel.category, meta.category.toNumber())
+    channel.category = await processChannelCategory(ctx, channel.category, parseInt(meta.category))
   }
 
   // prepare cover photo asset if needed
@@ -96,7 +90,7 @@ export async function processVideoMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   video: Video,
-  meta: IVideoMetadata,
+  meta: DecodedMetadataObject<IVideoMetadata>,
   assets: NewAsset[]
 ): Promise<Video> {
   const assetsOwner = new DataObjectOwnerChannel()
@@ -108,7 +102,7 @@ export async function processVideoMetadata(
 
   // prepare video category if needed
   if (meta.category) {
-    video.category = await processVideoCategory(ctx, video.category, meta.category.toNumber())
+    video.category = await processVideoCategory(ctx, video.category, parseInt(meta.category))
   }
 
   // prepare media meta information if needed
@@ -171,7 +165,7 @@ function findAssetByIndex(assets: typeof Asset[], index: number, name?: string):
 async function processVideoMediaEncoding(
   { store, event }: StoreContext & EventContext,
   existingVideoMediaEncoding: VideoMediaEncoding | undefined,
-  metadata: IMediaType
+  metadata: DecodedMetadataObject<IMediaType>
 ): Promise<VideoMediaEncoding> {
   const encoding =
     existingVideoMediaEncoding ||
@@ -191,7 +185,7 @@ async function processVideoMediaEncoding(
 async function processVideoMediaMetadata(
   ctx: StoreContext & EventContext,
   existingVideoMedia: VideoMediaMetadata | undefined,
-  metadata: IVideoMetadata,
+  metadata: DecodedMetadataObject<IVideoMetadata>,
   videoSize: number | undefined
 ): Promise<VideoMediaMetadata> {
   const { store, event } = ctx
@@ -266,7 +260,7 @@ export async function convertContentActorToChannelOwner(
 function processPublishedBeforeJoystream(
   ctx: EventContext & StoreContext,
   currentValue: Date | undefined,
-  metadata: IPublishedBeforeJoystream
+  metadata: DecodedMetadataObject<IPublishedBeforeJoystream>
 ): Date | undefined {
   if (!isSet(metadata)) {
     return currentValue

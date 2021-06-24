@@ -9,16 +9,9 @@ import { createType } from '@joystream/types'
 import { extendDebug, Debugger } from './Debugger'
 import { BLOCKTIME } from './consts'
 import { MetadataInput } from './types'
+import { encodeDecode, metaToObject } from '@joystream/metadata-protobuf/utils'
+import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
-export type AnyMessage<T> = T & {
-  toJSON(): Record<string, unknown>
-}
-
-export type AnyMetadataClass<T> = {
-  decode(binary: Uint8Array): AnyMessage<T>
-  encode(obj: T): { finish(): Uint8Array }
-  toObject(obj: AnyMessage<T>): Record<string, unknown>
-}
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
   private static LENGTH_ERA = 2 // assuming mortals
@@ -64,15 +57,15 @@ export class Utils {
     return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
   }
 
-  public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): T {
+  public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): DecodedMetadataObject<T> {
     // We use `toObject()` to get rid of .prototype defaults for optional fields
-    return metaClass.toObject(metaClass.decode(bytes.toU8a(true))) as T
+    return metaToObject(metaClass, metaClass.decode(bytes.toU8a(true)))
   }
 
   public static getDeserializedMetadataFormInput<T>(
     metadataClass: AnyMetadataClass<T>,
     input: MetadataInput<T>
-  ): T | null {
+  ): DecodedMetadataObject<T> | null {
     if (typeof input.value === 'string') {
       try {
         return Utils.metadataFromBytes(metadataClass, createType('Bytes', input.value))
@@ -84,7 +77,7 @@ export class Utils {
       }
     }
 
-    return input.value
+    return encodeDecode(metadataClass, input.value)
   }
 
   public static getMetadataBytesFromInput<T>(metadataClass: AnyMetadataClass<T>, input: MetadataInput<T>): Bytes {

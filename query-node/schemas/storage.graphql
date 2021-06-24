@@ -23,7 +23,6 @@ type DataObject @entity {
 
   "Storage provider id of the liaison"
   liaison: Worker # liaison is unset until storage provider accepts or rejects the content
-
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
 

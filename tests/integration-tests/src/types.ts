@@ -99,6 +99,8 @@ export type WorkingGroupModuleName =
   | 'contentDirectoryWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
+  | 'operationsWorkingGroup'
+  | 'gatewayWorkingGroup'
 
 // Proposals:
 

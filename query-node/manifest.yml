@@ -368,6 +368,96 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    # Operations working group
+    - event: operationsWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: operationsWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: operationsWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: operationsWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: operationsWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: operationsWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: operationsWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: operationsWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: operationsWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: operationsWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: operationsWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: operationsWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: operationsWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: operationsWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: operationsWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: operationsWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: operationsWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: operationsWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: operationsWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: operationsWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: operationsWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
+    # Gateway working group
+    - event: gatewayWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: gatewayWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: gatewayWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: gatewayWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: gatewayWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: gatewayWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: gatewayWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: gatewayWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: gatewayWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: gatewayWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: gatewayWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: gatewayWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: gatewayWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: gatewayWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: gatewayWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: gatewayWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: gatewayWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: gatewayWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: gatewayWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: gatewayWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: gatewayWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: gatewayWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
     # Proposals
     - event: proposalsCodex.ProposalCreated
       handler: proposalsCodex_ProposalCreated

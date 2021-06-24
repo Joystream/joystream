@@ -12,6 +12,8 @@ import { Worker, Event, Network, DataObject, LiaisonJudgement, DataObjectOwner }
 import { BaseModel } from 'warthog'
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
+import { metaToObject } from '@joystream/metadata-protobuf/utils'
+import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 /*
@@ -213,22 +215,12 @@ export function genericEventFields(substrateEvent: SubstrateEvent): Partial<Base
     indexInBlock,
   }
 }
-
-type AnyMessage<T> = T & {
-  toJSON(): Record<string, unknown>
-}
-
-type AnyMetadataClass<T> = {
-  name: string
-  decode(binary: Uint8Array): AnyMessage<T>
-  encode(obj: T): { finish(): Uint8Array }
-  toObject(obj: AnyMessage<T>): Record<string, unknown>
-}
-
-export function deserializeMetadata<T>(metadataType: AnyMetadataClass<T>, metadataBytes: Bytes): T | null {
+export function deserializeMetadata<T>(
+  metadataType: AnyMetadataClass<T>,
+  metadataBytes: Bytes
+): DecodedMetadataObject<T> | null {
   try {
-    // We use `toObject()` to get rid of .prototype defaults for optional fields
-    return metadataType.toObject(metadataType.decode(metadataBytes.toU8a(true))) as T
+    return metaToObject(metadataType, metadataType.decode(metadataBytes.toU8a(true)))
   } catch (e) {
     invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
     return null
@@ -249,23 +241,6 @@ export function perpareString(s: string): string {
   return s.replace(/\u0000/g, '')
 }
 
-export function isSet<T>(v: T | null | undefined): v is T {
-  return v !== null && v !== undefined
-}
-
-export function integrateMeta<
-  T extends BaseModel,
-  Props extends readonly (keyof T & keyof M & string)[],
-  M extends { [K in Props[number]]?: T[K] | null }
->(object: T, meta: M, props: Props): void {
-  props.forEach((prop) => {
-    const metaPropVal = meta[prop] as T[Props[number]] | null | undefined
-    if (isSet(metaPropVal)) {
-      object[prop] = metaPropVal
-    }
-  })
-}
-
 export function hasValuesForProperties<
   T extends Record<string, unknown>,
   P extends keyof T & string,
@@ -284,6 +259,8 @@ export type WorkingGroupModuleName =
   | 'contentDirectoryWorkingGroup'
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
+  | 'operationsWorkingGroup'
+  | 'gatewayWorkingGroup'
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
   if (group.isContent) {
@@ -294,6 +271,10 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
     return 'forumWorkingGroup'
   } else if (group.isStorage) {
     return 'storageWorkingGroup'
+  } else if (group.isOperations) {
+    return 'operationsWorkingGroup'
+  } else if (group.isGateway) {
+    return 'gatewayWorkingGroup'
   }
 
   unexpectedData('Unsupported working group encountered:', group.type)

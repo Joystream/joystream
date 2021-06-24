@@ -8,8 +8,9 @@ import { Option } from '@polkadot/types/codec'
 import { Content } from '../generated/types'
 import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
 import { Channel, ChannelCategory, DataObject } from 'query-node/dist/model'
-import { deserializeMetadata, inconsistentState, integrateMeta, logger } from '../common'
-import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf/compiled'
+import { deserializeMetadata, inconsistentState, logger } from '../common'
+import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
