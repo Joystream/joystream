@@ -1,4 +1,4 @@
-name: content-metadata
+name: metadata-protobuf
 on: [pull_request, push]
 
 jobs:
@@ -16,13 +16,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: test protobuf
       run: |
-        # # Install protoc compiler
-        # sudo apt-get install -y protobuf-compiler
-        # protoc --version
-        # # Install documentation plugin
-        # sudo apt-get install -y golang-go
-        # go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
         yarn install --frozen-lockfile
-        yarn workspace @joystream/content-metadata-protobuf build:ts
-        yarn workspace @joystream/content-metadata-protobuf checks --quiet
-        yarn workspace @joystream/content-metadata-protobuf test
+        yarn workspace @joystream/metadata-protobuf build
+        yarn workspace @joystream/metadata-protobuf checks --quiet
+        yarn workspace @joystream/metadata-protobuf test
