@@ -26,8 +26,7 @@
     "query-node",
     "query-node/mappings",
     "query-node/generated/*",
-    "metadata-protobuf",
-    "content-metadata-protobuf"
+    "metadata-protobuf"
   ],
   "resolutions": {
     "@polkadot/api": "4.2.1",

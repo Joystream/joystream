@@ -12,7 +12,6 @@
     "cross-fetch": "^3.0.6",
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
-    "@joystream/content-metadata-protobuf": "^1.1.0",
     "@joystream/types": "^0.17.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
