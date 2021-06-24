@@ -491,7 +491,8 @@ pub type PullPaymentElement<T> = PullPaymentElementRecord<
     <T as frame_system::Trait>::Hash,
 >;
 
-pub type PullPaymentProof<T> = Proof<<T as frame_system::Trait>::Hashing, PullPaymentElement<T>>;
+pub type PullPaymentProof<T> =
+    MerkleProof<<T as frame_system::Trait>::Hashing, PullPaymentElement<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1327,7 +1328,7 @@ decl_module! {
     ) {
 
         let signing_acc = ensure_signed(origin)?;
-        let elem = &proof.data;
+        let elem = &proof.leaf;
 
         let mut channel = ChannelById::<T>::get(elem.channel_id);
 

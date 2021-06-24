@@ -7,7 +7,7 @@ use sp_runtime::traits::Hash;
 type TestHash = <Test as frame_system::Trait>::Hash;
 type TestHashing = <Test as frame_system::Trait>::Hashing;
 type LemmaItemTest = LemmaItem<TestHash>;
-type TestProof<Value> = Proof<TestHashing, Value>;
+type TestProof<Value> = MerkleProof<TestHashing, Value>;
 
 #[derive(Debug)]
 struct IndexItem {
@@ -221,7 +221,7 @@ fn channel_reward_update_test() {
             helper_build_merkle_path(&pull_payments_collection, (test_id as usize) - 1, &out);
 
         let proof = TestProof {
-            data: reward_element,
+            leaf: reward_element,
             path: proof_path,
         };
 

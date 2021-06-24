@@ -1,7 +1,7 @@
 /// lemma structure for the merkle proof path:
-/// `(data, path)` with
+/// `(leaf, path)` with
 /// `path = [ item1 item2 ... itemN ]` and `item = (hash, side)`
-/// `data` is the initial value whose proof membership is to be established
+/// `leaf` is the initial value whose proof membership is to be established
 /// item contains the hash value required for the proof together with the side, that is the provided
 /// hash is to the left or to the right to the current computed hash during verification.
 use codec::{Decode, Encode};
@@ -29,8 +29,8 @@ pub struct LemmaItem<HashOutput> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Proof<Algorithm: Hash, Value> {
-    pub data: Value,
+pub struct MerkleProof<Algorithm: Hash, Value> {
+    pub leaf: Value,
     pub path: Vec<LemmaItem<Algorithm::Output>>,
 }
 
@@ -38,12 +38,12 @@ pub trait CommitmentProof<Algorithm: Hash> {
     fn verify(&self, root: Algorithm::Output) -> bool;
 }
 
-impl<Algorithm: Hash, Value> CommitmentProof<Algorithm> for Proof<Algorithm, Value>
+impl<Algorithm: Hash, Value> CommitmentProof<Algorithm> for MerkleProof<Algorithm, Value>
 where
     Value: Encode + Decode,
 {
     fn verify(&self, root: Algorithm::Output) -> bool {
-        let init_hash = <Algorithm as sp_runtime::traits::Hash>::hash(&self.data.encode());
+        let init_hash = <Algorithm as sp_runtime::traits::Hash>::hash(&self.leaf.encode());
         let candidate = self
             .path
             .iter()
