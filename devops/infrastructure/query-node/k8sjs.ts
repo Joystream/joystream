@@ -23,7 +23,9 @@ export class ServiceDeployment extends pulumi.ComponentResource {
       image: args.image,
       resources: args.resources || { requests: { cpu: '100m', memory: '100Mi' } },
       env: currentEnv,
+      command: args.command,
       ports: args.ports && args.ports.map((p) => ({ containerPort: p })),
+      volumeMounts: args.volumeMounts,
     }
     this.deployment = new k8s.apps.v1.Deployment(
       name,
@@ -33,11 +35,11 @@ export class ServiceDeployment extends pulumi.ComponentResource {
           replicas: args.replicas || 1,
           template: {
             metadata: { labels: labels },
-            spec: { containers: [container] },
+            spec: { containers: [container], volumes: args.volumes },
           },
         },
       },
-      { parent: this }
+      { provider: args.provider, parent: this }
     )
 
     this.service = new k8s.core.v1.Service(
@@ -55,7 +57,7 @@ export class ServiceDeployment extends pulumi.ComponentResource {
           type: args.allocateIpAddress ? (args.isMinikube ? 'ClusterIP' : 'LoadBalancer') : undefined,
         },
       },
-      { parent: this }
+      { provider: args.provider, parent: this }
     )
 
     if (args.allocateIpAddress) {
@@ -70,11 +72,15 @@ interface EnvironmentType {
 }
 
 export interface ServiceDeploymentArgs {
-  image: string
+  image: string | pulumi.Output<string>
+  provider: k8s.Provider
   resources?: k8stypes.core.v1.ResourceRequirements
   replicas?: number
   ports?: number[]
   env?: EnvironmentType[]
+  command?: string[]
+  volumeMounts?: any[]
+  volumes?: any[]
   allocateIpAddress?: boolean
   isMinikube?: boolean
 }
