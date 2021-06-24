@@ -1,11 +1,15 @@
-import { SubstrateEvent } from '@dzlzv/hydra-common'
+import { DatabaseManager, SubstrateEvent } from '@dzlzv/hydra-common'
 import { Network } from 'query-node/dist/src/modules/enums/enums'
 import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
+import { WorkingGroup, WorkerId } from '@joystream/types/augment/all'
+
+import { Worker } from 'query-node/dist/model'
+import { BaseModel } from 'warthog'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
-export function genericEventFields(substrateEvent: SubstrateEvent): Partial<Event> {
+export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
   const eventTime = new Date(blockTimestamp)
   return {
@@ -49,6 +53,11 @@ export function bytesToString(b: Bytes): string {
   )
 }
 
+export function perpareString(s: string): string {
+  // eslint-disable-next-line no-control-regex
+  return s.replace(/\u0000/g, '')
+}
+
 export function hasValuesForProperties<
   T extends Record<string, unknown>,
   P extends keyof T & string,
@@ -60,4 +69,38 @@ export function hasValuesForProperties<
     }
   })
   return true
+}
+
+export type WorkingGroupModuleName =
+  | 'storageWorkingGroup'
+  | 'contentDirectoryWorkingGroup'
+  | 'forumWorkingGroup'
+  | 'membershipWorkingGroup'
+
+export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
+  if (group.isContent) {
+    return 'contentDirectoryWorkingGroup'
+  } else if (group.isMembership) {
+    return 'membershipWorkingGroup'
+  } else if (group.isForum) {
+    return 'forumWorkingGroup'
+  } else if (group.isStorage) {
+    return 'storageWorkingGroup'
+  }
+
+  throw new Error(`Unsupported working group: ${group.type}`)
+}
+
+export async function getWorker(
+  store: DatabaseManager,
+  groupName: WorkingGroupModuleName,
+  runtimeId: WorkerId | number
+): Promise<Worker> {
+  const workerDbId = `${groupName}-${runtimeId}`
+  const worker = await store.get(Worker, { where: { id: workerDbId } })
+  if (!worker) {
+    throw new Error(`Worker not found by id ${workerDbId}`)
+  }
+
+  return worker
 }

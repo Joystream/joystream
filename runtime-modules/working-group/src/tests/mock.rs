@@ -95,7 +95,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }

@@ -47,6 +47,7 @@ enum ChainDeployment {
     live,
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<ChainType> for ChainDeployment {
     fn into(self) -> ChainType {
         match self {

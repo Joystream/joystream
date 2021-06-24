@@ -22,13 +22,7 @@ fn add_relationship_fails_with_invalid_authorization() {
             storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(
-            res,
-            Err(
-                working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist
-                    .into()
-            )
-        );
+        assert_eq!(res, Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
@@ -50,13 +44,7 @@ fn set_relationship_ready_fails_with_invalid_authorization() {
             invalid_storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(
-            res,
-            Err(
-                working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist
-                    .into()
-            )
-        );
+        assert_eq!(res, Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
@@ -78,13 +66,7 @@ fn unset_relationship_ready_fails_with_invalid_authorization() {
             invalid_storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(
-            res,
-            Err(
-                working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist
-                    .into()
-            )
-        );
+        assert_eq!(res, Err(working_group::Error::<Test, StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
@@ -149,7 +131,7 @@ fn test_toggle_ready() {
 
         // Toggling from a different account should fail
         let res = TestDataObjectStorageRegistry::set_relationship_ready(
-            Origin::signed(2),
+            Origin::signed(55),
             storage_provider_id,
             dosr_id,
         );
@@ -174,9 +156,9 @@ fn test_toggle_ready() {
             System::events().last().unwrap().event,
             MetaEvent::data_object_storage_registry(
                 data_object_storage_registry::RawEvent::DataObjectStorageRelationshipReadyUpdated(
+                    storage_provider_id,
                     dosr_id,
                     true,
-                    storage_provider_id
                 )
             )
         );

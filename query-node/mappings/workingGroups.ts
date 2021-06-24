@@ -16,7 +16,7 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { deserializeMetadata, bytesToString, genericEventFields } from './common'
+import { deserializeMetadata, bytesToString, genericEventFields, getWorker, WorkingGroupModuleName } from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -112,15 +112,6 @@ async function getApplication(store: DatabaseManager, applicationstoreId: string
   return application
 }
 
-async function getWorker(store: DatabaseManager, workerstoreId: string): Promise<Worker> {
-  const worker = await store.get(Worker, { where: { id: workerstoreId } })
-  if (!worker) {
-    throw new Error(`Worker not found by id ${workerstoreId}`)
-  }
-
-  return worker
-}
-
 async function getApplicationFormQuestions(
   store: DatabaseManager,
   openingstoreId: string
@@ -151,9 +142,9 @@ function parseQuestionInputType(
   return InputTypeToApplicationFormQuestionType[validType]
 }
 
-async function createOpeningMeta(
+export async function createWorkingGroupOpeningMetadata(
   store: DatabaseManager,
-  event: SubstrateEvent,
+  eventTime: Date,
   originalMeta: Bytes | IOpeningMetadata
 ): Promise<WorkingGroupOpeningMetadata> {
   let originallyValid: boolean
@@ -166,7 +157,6 @@ async function createOpeningMeta(
     metadata = originalMeta
     originallyValid = true
   }
-  const eventTime = new Date(event.blockTimestamp)
 
   const {
     applicationFormQuestions,
@@ -245,7 +235,11 @@ async function handleAddUpcomingOpeningAction(
   const upcomingOpeningMeta = action.metadata || {}
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
-  const openingMeta = await createOpeningMeta(store, event, upcomingOpeningMeta.metadata || {})
+  const openingMeta = await await createWorkingGroupOpeningMetadata(
+    store,
+    eventTime,
+    upcomingOpeningMeta.metadata || {}
+  )
   const { rewardPerBlock, expectedStart, minApplicationStake } = upcomingOpeningMeta
   const upcomingOpening = new UpcomingWorkingGroupOpening({
     createdAt: eventTime,
@@ -342,7 +336,7 @@ async function handleWorkingGroupMetadataAction(
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
@@ -403,7 +397,7 @@ export async function workingGroups_OpeningAdded({ store, event }: EventContext 
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
 
-  const metadata = await createOpeningMeta(store, event, metadataBytes)
+  const metadata = await createWorkingGroupOpeningMetadata(store, eventTime, metadataBytes)
   opening.metadata = metadata
 
   await store.save<WorkingGroupOpening>(opening)
@@ -676,7 +670,7 @@ export async function workingGroups_WorkerRoleAccountUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
@@ -700,7 +694,7 @@ export async function workingGroups_WorkerRewardAccountUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
@@ -721,7 +715,7 @@ export async function workingGroups_WorkerRewardAccountUpdated({
 export async function workingGroups_StakeIncreased({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const stakeIncreasedEvent = new StakeIncreasedEvent({
@@ -742,7 +736,7 @@ export async function workingGroups_StakeIncreased({ store, event }: EventContex
 export async function workingGroups_RewardPaid({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const rewardPaidEvent = new RewardPaidEvent({
@@ -751,7 +745,7 @@ export async function workingGroups_RewardPaid({ store, event }: EventContext & 
     worker,
     amount,
     rewardAccount: rewardAccountId.toString(),
-    type: rewardPaymentType.isRegularReward ? RewardPaymentType.REGULAR : RewardPaymentType.MISSED,
+    paymentType: rewardPaymentType.isRegularReward ? RewardPaymentType.REGULAR : RewardPaymentType.MISSED,
   })
 
   await store.save<RewardPaidEvent>(rewardPaidEvent)
@@ -769,7 +763,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
@@ -791,7 +785,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
 export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId] = new WorkingGroups.WorkerExitedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
@@ -816,7 +810,7 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
 }
 
 export async function workingGroups_LeaderUnset({ store, event }: EventContext & StoreContext): Promise<void> {
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroup(store, event, ['leader'])
   const eventTime = new Date(event.blockTimestamp)
 
   const leaderUnsetEvent = new LeaderUnsetEvent({
@@ -846,7 +840,7 @@ export async function workingGroups_WorkerRewardAmountUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
@@ -867,7 +861,7 @@ export async function workingGroups_WorkerRewardAmountUpdated({
 export async function workingGroups_StakeSlashed({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerStakeSlashedEvent = new StakeSlashedEvent({
@@ -890,7 +884,7 @@ export async function workingGroups_StakeSlashed({ store, event }: EventContext 
 export async function workingGroups_StakeDecreased({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerStakeDecreasedEvent = new StakeDecreasedEvent({
@@ -911,7 +905,7 @@ export async function workingGroups_StakeDecreased({ store, event }: EventContex
 export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, `${group.name}-${workerId.toString()}`)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
   const eventTime = new Date(event.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({

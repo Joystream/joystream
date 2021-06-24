@@ -89,7 +89,7 @@ type BlogWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
 
 // The pallet's configuration trait.
 pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + common::membership::Trait + balances::Trait
+    frame_system::Trait + common::membership::MembershipTypes + balances::Trait
 {
     /// Origin from which participant must come.
     type ParticipantEnsureOrigin: MemberOriginValidator<

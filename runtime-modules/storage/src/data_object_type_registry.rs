@@ -1,51 +1,48 @@
 //! # Data object type registry module
-//! Data object type registry module for the Joystream platform allows to set constraints for the
-//! data objects. All extrinsics require leader.
+//! Data object type registry module for the Joystream platform allows to set constraints for the data objects. All extrinsics require leader.
 //!
 //! ## Comments
 //!
-//! Data object type registry module uses  working group module to authorize actions. Only leader
-//! can call extrinsics.
+//! Data object type registry module uses  working group module to authorize actions. Only leader can
+//! call extrinsics.
 //!
 //! ## Supported extrinsics
 //!
-//! - [register_data_object_type](./struct.Module.html#method.register_data_object_type) - Registers
-//! the new data object type.
-//! - [update_data_object_type](./struct.Module.html#method.update_data_object_type)- Updates
-//! existing data object type.
-//! - [activate_data_object_type](./struct.Module.html#method.activate_data_object_type) - Activates
-//! existing data object type.
-//! - [deactivate_data_object_type](./struct.Module.html#method.deactivate_data_object_type) -
-//! Deactivates existing data object type.
+//! - [register_data_object_type](./struct.Module.html#method.register_data_object_type) - Registers the new data object type.
+//! - [update_data_object_type](./struct.Module.html#method.update_data_object_type)- Updates existing data object type.
+//! - [activate_data_object_type](./struct.Module.html#method.activate_data_object_type) -  Activates existing data object type.
+//! - [deactivate_data_object_type](./struct.Module.html#method.deactivate_data_object_type) -  Deactivates existing data object type.
 //!
 
-use codec::{Codec, Decode, Encode};
+// Clippy linter requirement.
+// Disable it because of the substrate lib design. Example:
+//   NextDataObjectTypeId get(next_data_object_type_id) build(|config: &GenesisConfig<T>|
+#![allow(clippy::redundant_closure_call)]
+
+// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
+//#![warn(missing_docs)]
+
+use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
 use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter};
-use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage};
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroupAuthenticator;
+
+use crate::{DataObjectTypeId};
 
 const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and video content.";
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
 
 /// The _Data object type registry_ main _Trait_.
-pub trait Trait: frame_system::Trait + common::membership::Trait {
+pub trait Trait:
+    frame_system::Trait
+    + common::MembershipTypes
+    + common::StorageOwnership
+{
     /// _Data object type registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-
-    /// _Data object type id_ type
-    type DataObjectTypeId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>;
@@ -63,7 +60,7 @@ decl_error! {
 }
 
 /// Contains description and constrains for the data object.
-#[derive(Clone, Encode, Decode, PartialEq, Debug, Eq)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub struct DataObjectType {
     /// Data object description.
     pub description: Vec<u8>,
@@ -84,41 +81,35 @@ impl Default for DataObjectType {
 decl_storage! {
     trait Store for Module<T: Trait> as DataObjectTypeRegistry {
         /// Data object type ids should start at this value.
-        pub FirstDataObjectTypeId get(fn first_data_object_type_id)
-            config(first_data_object_type_id): T::DataObjectTypeId =
-                T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+        pub FirstDataObjectTypeId get(fn first_data_object_type_id) config(first_data_object_type_id):
+            DataObjectTypeId<T> = DataObjectTypeId::<T>::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         /// Provides id counter for the data object types.
         pub NextDataObjectTypeId get(fn next_data_object_type_id) build(|config: &GenesisConfig<T>|
-            config.first_data_object_type_id): T::DataObjectTypeId =
-                T::DataObjectTypeId::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
+            config.first_data_object_type_id): DataObjectTypeId<T> = DataObjectTypeId::<T>::from(DEFAULT_FIRST_DATA_OBJECT_TYPE_ID);
 
         /// Mapping of Data object types.
         pub DataObjectTypes get(fn data_object_types): map hasher(blake2_128_concat)
-            T::DataObjectTypeId => Option<DataObjectType>;
+            DataObjectTypeId<T> => Option<DataObjectType>;
     }
 }
 
 decl_event! {
     /// _Data object type registry_ events
     pub enum Event<T> where
-        <T as Trait>::DataObjectTypeId {
+        DataObjectTypeId = DataObjectTypeId<T>
+    {
         /// Emits on the data object type registration.
         /// Params:
+        /// - DataObjectType
         /// - Id of the new data object type.
-        /// - Object type parameter
-        DataObjectTypeRegistered(DataObjectTypeId, DataObjectType),
+        DataObjectTypeRegistered(DataObjectType, DataObjectTypeId),
 
         /// Emits on the data object type update.
         /// Params:
         /// - Id of the updated data object type.
-        /// - Objet type parameter
+        /// - DataObjectType
         DataObjectTypeUpdated(DataObjectTypeId, DataObjectType),
-
-        /// Emits on the datata type activation status changed.
-        /// Params:
-        /// - Id of the updated data object type.
-        DataObjectTypeActivationChanged(DataObjectTypeId),
     }
 }
 
@@ -162,18 +153,12 @@ decl_module! {
             <DataObjectTypes<T>>::insert(new_do_type_id, do_type);
             <NextDataObjectTypeId<T>>::mutate(|n| { *n += T::DataObjectTypeId::from(1); });
 
-            Self::deposit_event(
-                RawEvent::DataObjectTypeRegistered(new_do_type_id, data_object_type)
-            );
+            Self::deposit_event(RawEvent::DataObjectTypeRegistered(data_object_type, new_do_type_id));
         }
 
         /// Updates existing data object type. Requires leader privileges.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_data_object_type(
-            origin,
-            id: T::DataObjectTypeId,
-            data_object_type: DataObjectType
-        ) {
+        pub fn update_data_object_type(origin, id: T::DataObjectTypeId, data_object_type: DataObjectType) {
             T::WorkingGroup::ensure_leader_origin(origin)?;
 
             let mut do_type = Self::ensure_data_object_type(id)?;
@@ -203,9 +188,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <DataObjectTypes<T>>::insert(id, do_type);
+            <DataObjectTypes<T>>::insert(id, do_type.clone());
 
-            Self::deposit_event(RawEvent::DataObjectTypeActivationChanged(id));
+            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id, do_type));
         }
 
         /// Deactivates existing data object type. Requires leader privileges.
@@ -221,9 +206,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <DataObjectTypes<T>>::insert(id, do_type);
+            <DataObjectTypes<T>>::insert(id, do_type.clone());
 
-            Self::deposit_event(RawEvent::DataObjectTypeActivationChanged(id));
+            Self::deposit_event(RawEvent::DataObjectTypeUpdated(id, do_type));
         }
     }
 }

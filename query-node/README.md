@@ -17,13 +17,13 @@ NB! Don't use in production, as it will delete all the existing records.
 
 ## 2. Generate Types for events and extrinsics
 
-A separate tool Hydra Typegen can be used for generating Typescript classes for the event handlers (the _mappings_).  
+A separate tool Hydra Typegen can be used for generating Typescript classes for the event handlers (the _mappings_).
 Run
 
 ```bash
 yarn typegen
 ```
-to run the [typegen](https://github.com/Joystream/hydra/tree/master/packages/hydra-typegen/README.md) for events and extrinsics defined in `manifest.yml` (it fetches the metadata from an RPC endpoint and blockhash defined there). 
+to run the [typegen](https://github.com/Joystream/hydra/tree/master/packages/hydra-typegen/README.md) for events and extrinsics defined in `manifest.yml` (it fetches the metadata from an RPC endpoint and blockhash defined there).
 
 
 ## 3. Build Mappings

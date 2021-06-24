@@ -11,13 +11,14 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
+
 use crate::{
-    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
-    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    content, data_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
+    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
-    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment, DataDirectory
 };
 use frame_support::weights::Weight;
 
@@ -53,6 +54,7 @@ pub type SignedExtra = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
+
 /// We don't use specific Address types (like Indices).
 pub type Address = AccountId;
 
@@ -75,19 +77,28 @@ pub type BlockId = generic::BlockId<Block>;
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
 // Default Executive type without the RuntimeUpgrade
-// pub type Executive = frame_executive::Executive<
-//     Runtime,
-//     Block,
-//     frame_system::ChainContext<Runtime>,
-//     Runtime,
-//     AllModules,
-// >;
+// pub type Executive =
+//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
+
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
-        ProposalsEngine::cancel_active_and_pending_proposals()
+        ProposalsEngine::cancel_active_and_pending_proposals();
+
+        content::Module::<Runtime>::on_runtime_upgrade();
+
+        DataDirectory::initialize_data_directory(
+            Vec::new(),
+            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
+            data_directory::DEFAULT_GLOBAL_VOUCHER,
+            data_directory::DEFAULT_VOUCHER,
+            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
+        );
+
+        10_000_000 // TODO: adjust weight
     }
 }
 

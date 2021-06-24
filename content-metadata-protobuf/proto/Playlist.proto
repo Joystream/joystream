@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+message PlaylistMetadata {
+    optional string title = 1;
+    // Videos in the playlist
+    repeated uint64 videos = 2;
+}

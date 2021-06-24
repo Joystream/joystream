@@ -69,7 +69,7 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::MembershipTypes for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -465,12 +465,12 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
         unimplemented!();
     }
 
@@ -484,7 +484,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -777,7 +777,7 @@ where
 
     pub fn vote_commitment(
         account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::membership::Trait>::MemberId,
+        vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let salt = Self::generate_salt();

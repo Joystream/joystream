@@ -14,7 +14,7 @@ import { useApi, useToggle } from '@polkadot/react-hooks';
 
 import { useTranslation } from '../translate';
 
-const MAX_BATCH_SIZE = 40;
+const MAX_BATCH_SIZE = 30;
 
 interface Props {
   className?: string;
@@ -126,7 +126,7 @@ function PayButton ({ className, isAll, isDisabled, payout }: Props): React.Reac
               </Modal.Column>
               <Modal.Column>
                 <p>{t<string>('All the listed validators and all their nominators will receive their rewards.')}</p>
-                <p>{t<string>('The UI puts a limit of 40 payouts at a time, where each payout is a single validator for a single era.')}</p>
+                <p>{t<string>('The UI puts a limit of 30 payouts at a time, where each payout is a single validator for a single era.')}</p>
               </Modal.Column>
             </Modal.Columns>
           </Modal.Content>

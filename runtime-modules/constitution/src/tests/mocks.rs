@@ -58,8 +58,8 @@ impl frame_system::Trait for Test {
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = ();
     type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 impl Trait for Test {
@@ -72,6 +72,7 @@ impl crate::WeightInfo for () {
         0
     }
 }
+
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()

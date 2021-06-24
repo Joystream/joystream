@@ -25,6 +25,8 @@ const debug = require('debug')('joystream:storage:storage')
 
 const Promise = require('bluebird')
 
+const Hash = require('ipfs-only-hash')
+
 Promise.config({
   cancellation: true,
 })
@@ -97,17 +99,15 @@ class StorageWriteStream extends Transform {
       chunk = Buffer.from(chunk)
     }
 
-    // Logging this all the time is too verbose
-    // debug('Writing temporary chunk', chunk.length, chunk);
     this.temp.write(chunk)
 
     // Try to detect file type during streaming.
-    if (!this.fileInfo && this.buf < fileType.minimumBytes) {
+    if (!this.fileInfo && this.buf.byteLength <= fileType.minimumBytes) {
       this.buf = Buffer.concat([this.buf, chunk])
 
       if (this.buf >= fileType.minimumBytes) {
         const info = fileType(this.buf)
-        // No info? We can try again at the end of the stream.
+        // No info? We will try again at the end of the stream.
         if (info) {
           this.fileInfo = fixFileInfo(info)
           this.emit('fileInfo', this.fileInfo)
@@ -121,29 +121,43 @@ class StorageWriteStream extends Transform {
   _flush(callback) {
     debug('Flushing temporary stream:', this.temp.path)
     this.temp.end()
+    callback(null)
+  }
 
-    // Since we're finished, we can try to detect the file type again.
-    if (!this.fileInfo) {
-      const read = fs.createReadStream(this.temp.path)
-      fileType
-        .stream(read)
-        .then((stream) => {
-          this.fileInfo = fixFileInfoOnStream(stream).fileInfo
-          this.emit('fileInfo', this.fileInfo)
-        })
-        .catch((err) => {
-          debug('Error trying to detect file type at end-of-stream:', err)
-        })
+  /*
+   * Get file info
+   */
+
+  async info() {
+    if (!this.temp) {
+      throw new Error('Cannot get info on temporary stream that does not exist. Did you call cleanup()?')
     }
 
-    callback(null)
+    if (!this.fileInfo) {
+      const read = fs.createReadStream(this.temp.path)
+
+      const stream = await fileType.stream(read)
+
+      this.fileInfo = fixFileInfoOnStream(stream).fileInfo
+    }
+
+    if (!this.hash) {
+      const read = fs.createReadStream(this.temp.path)
+      this.hash = await Hash.of(read)
+    }
+
+    this.emit('info', this.fileInfo, this.hash)
+
+    return {
+      info: this.fileInfo,
+      hash: this.hash,
+    }
   }
 
   /*
    * Commit this stream to the IPFS backend.
    */
   commit() {
-    // Create a read stream from the temp file.
     if (!this.temp) {
       throw new Error('Cannot commit a temporary stream that does not exist. Did you call cleanup()?')
     }
@@ -156,10 +170,12 @@ class StorageWriteStream extends Transform {
         debug('Stream committed as', hash)
         this.emit('committed', hash)
         await this.storage.ipfs.pin.add(hash)
+        this.cleanup()
       })
       .catch((err) => {
         debug('Error committing stream', err)
         this.emit('error', err)
+        this.cleanup()
       })
   }
 

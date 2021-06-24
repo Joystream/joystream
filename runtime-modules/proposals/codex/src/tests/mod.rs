@@ -100,9 +100,16 @@ where
         );
     }
 
+    fn check_for_insufficient_balance(&self) {
+        assert_eq!(
+            (self.successful_call)(),
+            Err(proposals_engine::Error::<Test>::InsufficientBalanceForStake.into())
+        );
+    }
+
     fn check_for_successful_call(&self) {
         let account_id = 1;
-        let _imbalance = Balances::deposit_creating(&account_id, 150000);
+        increase_total_balance_issuance_using_account_id(account_id, 150000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -127,6 +134,7 @@ where
         self.check_call_for_insufficient_rights();
         self.check_for_invalid_stakes();
         self.check_call_for_invalid_stake_account();
+        self.check_for_insufficient_balance();
         self.check_for_successful_call();
     }
 }
@@ -134,8 +142,6 @@ where
 #[test]
 fn create_signal_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -224,8 +230,6 @@ fn create_signal_proposal_codex_call_fails_without_text() {
 #[test]
 fn create_runtime_upgrade_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 5000000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -512,8 +516,6 @@ fn create_funding_request_proposal_call_fails_repeated_account() {
 #[test]
 fn create_set_max_validator_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -581,8 +583,6 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
 #[test]
 fn create_veto_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -649,13 +649,16 @@ fn create_veto_proposal_common_checks_succeed() {
 #[test]
 fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count() {
     initial_test_ext().execute_with(|| {
+        let account_id = 1;
+        increase_total_balance_issuance_using_account_id(account_id, 15000000);
+
         staking::MinimumValidatorCount::put(10);
 
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
             description: b"body".to_vec(),
-            staking_account_id: Some(<BalanceOf<Test>>::from(100_000_u32)),
+            staking_account_id: Some(account_id),
             exact_execution_block: None,
         };
 
@@ -704,7 +707,6 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
             staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
             exact_execution_block: None,
         };
-
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -726,8 +728,6 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
 
         let proposal_details =
             ProposalDetails::CreateWorkingGroupLeadOpening(add_opening_parameters);
-
-        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -813,8 +813,6 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
 
         let proposal_details =
             ProposalDetails::FillWorkingGroupLeadOpening(fill_opening_parameters);
-
-        increase_total_balance_issuance_using_account_id(1, 500000);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -1383,8 +1381,6 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
 #[test]
 fn create_amend_constitution_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1_500_000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1451,8 +1447,6 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
 #[test]
 fn create_set_council_budget_increment_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1_500_000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1668,8 +1662,6 @@ fn create_set_councilor_reward_proposal_common_checks_succeed() {
 #[test]
 fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1_500_000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1737,8 +1729,6 @@ fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
 #[test]
 fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1_500_000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1806,8 +1796,6 @@ fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
 #[test]
 fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1_500_000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1875,8 +1863,6 @@ fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
 #[test]
 fn create_set_referral_cut_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 1_500_000);
-
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),

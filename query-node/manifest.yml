@@ -11,6 +11,7 @@ typegen:
   metadata:
     source: ${TYPEGEN_WS_URI}
   events:
+    # Membership
     - members.MembershipBought
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
@@ -25,7 +26,7 @@ typegen:
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
     - members.LeaderInvitationQuotaUpdated
-    # Use Storage Working Group as a reference group (all groups emit the same events)
+    # Working groups - use Storage Working Group as a reference group (all groups emit the same events)
     - storageWorkingGroup.OpeningAdded
     - storageWorkingGroup.AppliedOnOpening
     - storageWorkingGroup.OpeningFilled
@@ -48,9 +49,104 @@ typegen:
     - storageWorkingGroup.BudgetSpending
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
+    # Proposals
+    - proposalsCodex.ProposalCreated
+    - proposalsEngine.ProposalCreated
+    - proposalsEngine.ProposalStatusUpdated
+    - proposalsEngine.ProposalDecisionMade
+    - proposalsEngine.ProposalExecuted
+    - proposalsEngine.Voted
+    - proposalsEngine.ProposalCancelled
+    # Proposals discussion
+    - proposalsDiscussion.ThreadCreated
+    - proposalsDiscussion.PostCreated
+    - proposalsDiscussion.PostUpdated
+    - proposalsDiscussion.ThreadModeChanged
+    - proposalsDiscussion.PostDeleted
+  # Forum
+    - forum.CategoryCreated
+    - forum.CategoryArchivalStatusUpdated
+    - forum.CategoryDeleted
+    - forum.ThreadCreated
+    - forum.ThreadModerated
+    # - forum.ThreadUpdated FIXME: Not emitted by the runtime
+    - forum.ThreadTitleUpdated
+    - forum.ThreadDeleted
+    - forum.ThreadMoved
+    - forum.VoteOnPoll
+    - forum.PostAdded
+    - forum.PostModerated
+    - forum.PostDeleted
+    - forum.PostTextUpdated
+    - forum.PostReacted
+    - forum.CategoryStickyThreadUpdate
+    - forum.CategoryMembershipOfModeratorUpdated
+  # Content directory
+    - content.CuratorGroupCreated
+    - content.CuratorGroupStatusSet
+    - content.CuratorAdded
+    - content.CuratorRemoved
+    - content.ChannelCreated
+    - content.ChannelUpdated
+    - content.ChannelAssetsRemoved
+    - content.ChannelCensorshipStatusUpdated
+    - content.ChannelOwnershipTransferRequested
+    - content.ChannelOwnershipTransferRequestWithdrawn
+    - content.ChannelOwnershipTransferred
+    - content.ChannelCategoryCreated
+    - content.ChannelCategoryUpdated
+    - content.ChannelCategoryDeleted
+    - content.VideoCategoryCreated
+    - content.VideoCategoryUpdated
+    - content.VideoCategoryDeleted
+    - content.VideoCreated
+    - content.VideoUpdated
+    - content.VideoDeleted
+    - content.VideoCensorshipStatusUpdated
+    - content.FeaturedVideosSet
+    # Storage
+    - data_directory.ContentAdded
+    - data_directory.ContentRemoved
+    - data_directory.ContentAccepted
+    - data_directory.ContentRejected
+    - data_directory.ContentUploadingStatusUpdated
   calls:
+    # Memberships
     - members.updateProfile
     - members.updateAccounts
+    - forum.createThread
+    # Content directory
+    - content.create_curator_group
+    - content.set_curator_group_status
+    - content.add_curator_to_group
+    - content.remove_curator_from_group
+    - content.create_channel
+    - content.update_channel
+    - content.remove_channel_assets
+    - content.update_channel_censorship_status
+    - content.create_channel_category
+    - content.update_channel_category
+    - content.delete_channel_category
+    - content.request_channel_transfer
+    - content.cancel_channel_transfer_request
+    - content.accept_channel_transfer
+    - content.create_video
+    - content.update_video
+    - content.delete_video
+    - content.create_playlist
+    - content.update_playlist
+    - content.delete_playlist
+    - content.set_featured_videos
+    - content.create_video_category
+    - content.update_video_category
+    - content.delete_video_category
+    - content.remove_person_from_video
+    - content.update_video_censorship_status
+    # Storage
+    - data_directory.add_content
+    - data_directory.remove_content
+    - data_directory.accept_content
+    - data_directory.update_content_uploading_status
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'
@@ -272,6 +368,121 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    # Proposals
+    - event: proposalsCodex.ProposalCreated
+      handler: proposalsCodex_ProposalCreated
+    - event: proposalsEngine.ProposalCreated
+      handler: proposalsEngine_ProposalCreated
+    - event: proposalsEngine.ProposalStatusUpdated
+      handler: proposalsEngine_ProposalStatusUpdated
+    - event: proposalsEngine.ProposalDecisionMade
+      handler: proposalsEngine_ProposalDecisionMade
+    - event: proposalsEngine.ProposalExecuted
+      handler: proposalsEngine_ProposalExecuted
+    - event: proposalsEngine.Voted
+      handler: proposalsEngine_Voted
+    - event: proposalsEngine.ProposalCancelled
+      handler: proposalsEngine_ProposalCancelled
+    # Proposals discussion
+    - event: proposalsDiscussion.ThreadCreated
+      handler: proposalsDiscussion_ThreadCreated
+    - event: proposalsDiscussion.PostCreated
+      handler: proposalsDiscussion_PostCreated
+    - event: proposalsDiscussion.PostUpdated
+      handler: proposalsDiscussion_PostUpdated
+    - event: proposalsDiscussion.ThreadModeChanged
+      handler: proposalsDiscussion_ThreadModeChanged
+    - event: proposalsDiscussion.PostDeleted
+      handler: proposalsDiscussion_PostDeleted
+    # Forum
+    - event: forum.CategoryCreated
+      handler: forum_CategoryCreated
+    - event: forum.CategoryArchivalStatusUpdated
+      handler: forum_CategoryArchivalStatusUpdated
+    - event: forum.CategoryDeleted
+      handler: forum_CategoryDeleted
+    - event: forum.ThreadCreated
+      handler: forum_ThreadCreated
+    - event: forum.ThreadModerated
+      handler: forum_ThreadModerated
+    - event: forum.ThreadTitleUpdated
+      handler: forum_ThreadTitleUpdated
+    - event: forum.ThreadDeleted
+      handler: forum_ThreadDeleted
+    - event: forum.ThreadMoved
+      handler: forum_ThreadMoved
+    - event: forum.PostAdded
+      handler: forum_PostAdded
+    - event: forum.PostModerated
+      handler: forum_PostModerated
+    - event: forum.PostDeleted
+      handler: forum_PostDeleted
+    - event: forum.PostTextUpdated
+      handler: forum_PostTextUpdated
+    - event: forum.PostReacted
+      handler: forum_PostReacted
+    - event: forum.VoteOnPoll
+      handler: forum_VoteOnPoll
+    - event: forum.CategoryStickyThreadUpdate
+      handler: forum_CategoryStickyThreadUpdate
+    - event: forum.CategoryMembershipOfModeratorUpdated
+      handler: forum_CategoryMembershipOfModeratorUpdated
+    # Content directory
+    - event: content.CuratorGroupCreated
+      handler: content_CuratorGroupCreated(DatabaseManager, SubstrateEvent)
+    - event: content.CuratorGroupStatusSet
+      handler: content_CuratorGroupStatusSet(DatabaseManager, SubstrateEvent)
+    - event: content.CuratorAdded
+      handler: content_CuratorAdded(DatabaseManager, SubstrateEvent)
+    - event: content.CuratorRemoved
+      handler: content_CuratorRemoved(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelCreated
+      handler: content_ChannelCreated(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelUpdated
+      handler: content_ChannelUpdated(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelAssetsRemoved
+      handler: content_ChannelAssetsRemoved(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelCensorshipStatusUpdated
+      handler: content_ChannelCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
+    # these events are defined in runtime but never calles (at the time of writing)
+    #- event: content.ChannelOwnershipTransferRequested
+    #  handler: content_ChannelOwnershipTransferRequested(DatabaseManager, SubstrateEvent)
+    #- event: content.ChannelOwnershipTransferRequestWithdrawn
+    #  handler: content_ChannelOwnershipTransferRequestWithdrawn(DatabaseManager, SubstrateEvent)
+    #- event: content.ChannelOwnershipTransferred
+    #  handler: content_ChannelOwnershipTransferred(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelCategoryCreated
+      handler: content_ChannelCategoryCreated(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelCategoryUpdated
+      handler: content_ChannelCategoryUpdated(DatabaseManager, SubstrateEvent)
+    - event: content.ChannelCategoryDeleted
+      handler: content_ChannelCategoryDeleted(DatabaseManager, SubstrateEvent)
+    - event: content.VideoCategoryCreated
+      handler: content_VideoCategoryCreated(DatabaseManager, SubstrateEvent)
+    - event: content.VideoCategoryUpdated
+      handler: content_VideoCategoryUpdated(DatabaseManager, SubstrateEvent)
+    - event: content.VideoCategoryDeleted
+      handler: content_VideoCategoryDeleted(DatabaseManager, SubstrateEvent)
+    - event: content.VideoCreated
+      handler: content_VideoCreated(DatabaseManager, SubstrateEvent)
+    - event: content.VideoUpdated
+      handler: content_VideoUpdated(DatabaseManager, SubstrateEvent)
+    - event: content.VideoDeleted
+      handler: content_VideoDeleted(DatabaseManager, SubstrateEvent)
+    - event: content.VideoCensorshipStatusUpdated
+      handler: content_VideoCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
+    - event: content.FeaturedVideosSet
+      handler: content_FeaturedVideosSet(DatabaseManager, SubstrateEvent)
+    # Storage
+    - event: dataDirectory.ContentAdded
+      handler: dataDirectory_ContentAdded(DatabaseManager, SubstrateEvent)
+    - event: dataDirectory.ContentRemoved
+      handler: dataDirectory_ContentRemoved(DatabaseManager, SubstrateEvent)
+    - event: dataDirectory.ContentAccepted
+      handler: dataDirectory_ContentAccepted(DatabaseManager, SubstrateEvent)
+    # not handled at the moment
+    #- event: dataDirectory.ContentUploadingStatusUpdated
+    #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

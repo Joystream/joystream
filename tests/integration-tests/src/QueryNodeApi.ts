@@ -1,5 +1,5 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
-import { MemberId } from '@joystream/types/common'
+import { MemberId, PostId, ThreadId } from '@joystream/types/common'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
@@ -16,12 +16,6 @@ import {
   GetInvitesTransferredEventsBySourceMemberIdQuery,
   GetInvitesTransferredEventsBySourceMemberIdQueryVariables,
   GetInvitesTransferredEventsBySourceMemberId,
-  GetStakingAccountAddedEventsByMemberIdQuery,
-  GetStakingAccountAddedEventsByMemberIdQueryVariables,
-  GetStakingAccountAddedEventsByMemberId,
-  GetStakingAccountConfirmedEventsByMemberIdQuery,
-  GetStakingAccountConfirmedEventsByMemberIdQueryVariables,
-  GetStakingAccountConfirmedEventsByMemberId,
   GetStakingAccountRemovedEventsByMemberIdQuery,
   GetStakingAccountRemovedEventsByMemberIdQueryVariables,
   GetStakingAccountRemovedEventsByMemberId,
@@ -166,6 +160,37 @@ import {
   GetLeaderSetEventsByEventIdsQuery,
   GetLeaderSetEventsByEventIdsQueryVariables,
   GetLeaderSetEventsByEventIds,
+  ForumCategoryFieldsFragment,
+  GetCategoriesByIdsQuery,
+  GetCategoriesByIdsQueryVariables,
+  GetCategoriesByIds,
+  CategoryCreatedEventFieldsFragment,
+  GetCategoryCreatedEventsByEventIdsQuery,
+  GetCategoryCreatedEventsByEventIdsQueryVariables,
+  GetCategoryCreatedEventsByEventIds,
+  GetCategoryArchivalStatusUpdatedEventsByEventIds,
+  GetCategoryArchivalStatusUpdatedEventsByEventIdsQuery,
+  GetCategoryArchivalStatusUpdatedEventsByEventIdsQueryVariables,
+  CategoryDeletedEventFieldsFragment,
+  GetCategoryDeletedEventsByEventIdsQuery,
+  GetCategoryDeletedEventsByEventIdsQueryVariables,
+  GetCategoryDeletedEventsByEventIds,
+  ThreadCreatedEventFieldsFragment,
+  GetThreadCreatedEventsByEventIdsQuery,
+  GetThreadCreatedEventsByEventIds,
+  GetThreadCreatedEventsByEventIdsQueryVariables,
+  VoteOnPollEventFieldsFragment,
+  GetVoteOnPollEventsByEventIdsQuery,
+  GetVoteOnPollEventsByEventIdsQueryVariables,
+  GetVoteOnPollEventsByEventIds,
+  ThreadDeletedEventFieldsFragment,
+  GetThreadDeletedEventsByEventIdsQuery,
+  GetThreadDeletedEventsByEventIdsQueryVariables,
+  GetThreadDeletedEventsByEventIds,
+  ForumThreadWithPostsFieldsFragment,
+  GetThreadsWithPostsByIdsQuery,
+  GetThreadsWithPostsByIdsQueryVariables,
+  GetThreadsWithPostsByIds,
   GetMembershipBoughtEventsByEventIdsQuery,
   GetMembershipBoughtEventsByEventIdsQueryVariables,
   GetMembershipBoughtEventsByEventIds,
@@ -175,9 +200,75 @@ import {
   GetMemberInvitedEventsByEventIdsQuery,
   GetMemberInvitedEventsByEventIdsQueryVariables,
   GetMemberInvitedEventsByEventIds,
+  ProposalFieldsFragment,
+  GetProposalsByIdsQuery,
+  GetProposalsByIdsQueryVariables,
+  GetProposalsByIds,
+  GetStakingAccountConfirmedEventsByEventIdsQuery,
+  GetStakingAccountConfirmedEventsByEventIdsQueryVariables,
+  GetStakingAccountConfirmedEventsByEventIds,
+  GetStakingAccountAddedEventsByEventIdsQuery,
+  GetStakingAccountAddedEventsByEventIdsQueryVariables,
+  GetStakingAccountAddedEventsByEventIds,
+  ProposalVotedEventFieldsFragment,
+  GetProposalVotedEventsByEventIdsQuery,
+  GetProposalVotedEventsByEventIdsQueryVariables,
+  GetProposalVotedEventsByEventIds,
+  ProposalCancelledEventFieldsFragment,
+  GetProposalCancelledEventsByEventIdsQuery,
+  GetProposalCancelledEventsByEventIdsQueryVariables,
+  GetProposalCancelledEventsByEventIds,
+  ForumPostFieldsFragment,
+  GetPostsByIdsQuery,
+  GetPostsByIdsQueryVariables,
+  GetPostsByIds,
+  PostAddedEventFieldsFragment,
+  GetPostAddedEventsByEventIdsQuery,
+  GetPostAddedEventsByEventIdsQueryVariables,
+  GetPostAddedEventsByEventIds,
+  ThreadTitleUpdatedEventFieldsFragment,
+  GetThreadTitleUpdatedEventsByEventIdsQuery,
+  GetThreadTitleUpdatedEventsByEventIdsQueryVariables,
+  GetThreadTitleUpdatedEventsByEventIds,
+  ThreadMovedEventFieldsFragment,
+  GetThreadMovedEventsByEventIdsQuery,
+  GetThreadMovedEventsByEventIdsQueryVariables,
+  GetThreadMovedEventsByEventIds,
+  CategoryStickyThreadUpdateEventFieldsFragment,
+  GetCategoryStickyThreadUpdateEventsByEventIdsQuery,
+  GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables,
+  GetCategoryStickyThreadUpdateEventsByEventIds,
+  CategoryMembershipOfModeratorUpdatedEventFieldsFragment,
+  GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery,
+  GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables,
+  GetCategoryMembershipOfModeratorUpdatedEventsByEventIds,
+  ThreadModeratedEventFieldsFragment,
+  GetThreadModeratedEventsByEventIdsQuery,
+  GetThreadModeratedEventsByEventIdsQueryVariables,
+  GetThreadModeratedEventsByEventIds,
+  PostModeratedEventFieldsFragment,
+  GetPostModeratedEventsByEventIdsQuery,
+  GetPostModeratedEventsByEventIdsQueryVariables,
+  GetPostModeratedEventsByEventIds,
+  PostReactedEventFieldsFragment,
+  GetPostReactedEventsByEventIdsQuery,
+  GetPostReactedEventsByEventIdsQueryVariables,
+  GetPostReactedEventsByEventIds,
+  PostTextUpdatedEventFieldsFragment,
+  GetPostTextUpdatedEventsByEventIdsQuery,
+  GetPostTextUpdatedEventsByEventIdsQueryVariables,
+  GetPostTextUpdatedEventsByEventIds,
+  PostDeletedEventFieldsFragment,
+  GetPostDeletedEventsByEventIdsQuery,
+  GetPostDeletedEventsByEventIdsQueryVariables,
+  GetPostDeletedEventsByEventIds,
+  CategoryArchivalStatusUpdatedEventFieldsFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
+import { ProposalId } from '@joystream/types/proposals'
+import { BLOCKTIME } from './consts'
+import { CategoryId } from '@joystream/types/forum'
 import { Utils } from './utils'
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
@@ -195,8 +286,8 @@ export class QueryNodeApi {
   public async tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    retryTimeMs = 15000,
-    retries = 3
+    retryTimeMs = BLOCKTIME * 3,
+    retries = 6
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const debug = this.tryDebug.extend(label)
@@ -333,20 +424,22 @@ export class QueryNodeApi {
     )
   }
 
-  public async getStakingAccountAddedEvents(memberId: MemberId): Promise<StakingAccountAddedEventFieldsFragment[]> {
+  public async getStakingAccountAddedEvents(events: EventDetails[]): Promise<StakingAccountAddedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
-      GetStakingAccountAddedEventsByMemberIdQuery,
-      GetStakingAccountAddedEventsByMemberIdQueryVariables
-    >(GetStakingAccountAddedEventsByMemberId, { memberId: memberId.toString() }, 'stakingAccountAddedEvents')
+      GetStakingAccountAddedEventsByEventIdsQuery,
+      GetStakingAccountAddedEventsByEventIdsQueryVariables
+    >(GetStakingAccountAddedEventsByEventIds, { ids: eventIds }, 'stakingAccountAddedEvents')
   }
 
   public async getStakingAccountConfirmedEvents(
-    memberId: MemberId
+    events: EventDetails[]
   ): Promise<StakingAccountConfirmedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
-      GetStakingAccountConfirmedEventsByMemberIdQuery,
-      GetStakingAccountConfirmedEventsByMemberIdQueryVariables
-    >(GetStakingAccountConfirmedEventsByMemberId, { memberId: memberId.toString() }, 'stakingAccountConfirmedEvents')
+      GetStakingAccountConfirmedEventsByEventIdsQuery,
+      GetStakingAccountConfirmedEventsByEventIdsQueryVariables
+    >(GetStakingAccountConfirmedEventsByEventIds, { ids: eventIds }, 'stakingAccountConfirmedEvents')
   }
 
   public async getStakingAccountRemovedEvents(memberId: MemberId): Promise<StakingAccountRemovedEventFieldsFragment[]> {
@@ -673,5 +766,193 @@ export class QueryNodeApi {
       { eventIds: [eventId] },
       'leaderUnsetEvents'
     )
+  }
+
+  public async getProposalsByIds(ids: (ProposalId | string)[]): Promise<ProposalFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetProposalsByIdsQuery, GetProposalsByIdsQueryVariables>(
+      GetProposalsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'proposals'
+    )
+  }
+
+  public async getProposalVotedEvents(events: EventDetails[]): Promise<ProposalVotedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalVotedEventsByEventIdsQuery,
+      GetProposalVotedEventsByEventIdsQueryVariables
+    >(GetProposalVotedEventsByEventIds, { eventIds }, 'proposalVotedEvents')
+  }
+
+  public async getProposalCancelledEvents(events: EventDetails[]): Promise<ProposalCancelledEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalCancelledEventsByEventIdsQuery,
+      GetProposalCancelledEventsByEventIdsQueryVariables
+    >(GetProposalCancelledEventsByEventIds, { eventIds }, 'proposalCancelledEvents')
+  }
+
+  public async getCategoriesByIds(ids: CategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCategoriesByIdsQuery, GetCategoriesByIdsQueryVariables>(
+      GetCategoriesByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'forumCategories'
+    )
+  }
+
+  public async getCategoryCreatedEvents(events: EventDetails[]): Promise<CategoryCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryCreatedEventsByEventIdsQuery,
+      GetCategoryCreatedEventsByEventIdsQueryVariables
+    >(GetCategoryCreatedEventsByEventIds, { eventIds }, 'categoryCreatedEvents')
+  }
+
+  public async getCategoryArchivalStatusUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<CategoryArchivalStatusUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryArchivalStatusUpdatedEventsByEventIdsQuery,
+      GetCategoryArchivalStatusUpdatedEventsByEventIdsQueryVariables
+    >(GetCategoryArchivalStatusUpdatedEventsByEventIds, { eventIds }, 'categoryArchivalStatusUpdatedEvents')
+  }
+
+  public async getCategoryDeletedEvents(events: EventDetails[]): Promise<CategoryDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryDeletedEventsByEventIdsQuery,
+      GetCategoryDeletedEventsByEventIdsQueryVariables
+    >(GetCategoryDeletedEventsByEventIds, { eventIds }, 'categoryDeletedEvents')
+  }
+
+  public async getThreadCreatedEvents(events: EventDetails[]): Promise<ThreadCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadCreatedEventsByEventIdsQuery,
+      GetThreadCreatedEventsByEventIdsQueryVariables
+    >(GetThreadCreatedEventsByEventIds, { eventIds }, 'threadCreatedEvents')
+  }
+
+  public async getThreadTitleUpdatedEvents(events: EventDetails[]): Promise<ThreadTitleUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadTitleUpdatedEventsByEventIdsQuery,
+      GetThreadTitleUpdatedEventsByEventIdsQueryVariables
+    >(GetThreadTitleUpdatedEventsByEventIds, { eventIds }, 'threadTitleUpdatedEvents')
+  }
+
+  public async getThreadsWithPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithPostsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetThreadsWithPostsByIdsQuery, GetThreadsWithPostsByIdsQueryVariables>(
+      GetThreadsWithPostsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'forumThreads'
+    )
+  }
+
+  public async getVoteOnPollEvents(events: EventDetails[]): Promise<VoteOnPollEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetVoteOnPollEventsByEventIdsQuery, GetVoteOnPollEventsByEventIdsQueryVariables>(
+      GetVoteOnPollEventsByEventIds,
+      { eventIds },
+      'voteOnPollEvents'
+    )
+  }
+
+  public async getThreadDeletedEvents(events: EventDetails[]): Promise<ThreadDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadDeletedEventsByEventIdsQuery,
+      GetThreadDeletedEventsByEventIdsQueryVariables
+    >(GetThreadDeletedEventsByEventIds, { eventIds }, 'threadDeletedEvents')
+  }
+
+  public async getPostsByIds(ids: PostId[]): Promise<ForumPostFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetPostsByIdsQuery, GetPostsByIdsQueryVariables>(
+      GetPostsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'forumPosts'
+    )
+  }
+
+  public async getPostAddedEvents(events: EventDetails[]): Promise<PostAddedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetPostAddedEventsByEventIdsQuery, GetPostAddedEventsByEventIdsQueryVariables>(
+      GetPostAddedEventsByEventIds,
+      { eventIds },
+      'postAddedEvents'
+    )
+  }
+
+  public async getThreadMovedEvents(events: EventDetails[]): Promise<ThreadMovedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadMovedEventsByEventIdsQuery,
+      GetThreadMovedEventsByEventIdsQueryVariables
+    >(GetThreadMovedEventsByEventIds, { eventIds }, 'threadMovedEvents')
+  }
+
+  public async getCategoryStickyThreadUpdateEvents(
+    events: EventDetails[]
+  ): Promise<CategoryStickyThreadUpdateEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryStickyThreadUpdateEventsByEventIdsQuery,
+      GetCategoryStickyThreadUpdateEventsByEventIdsQueryVariables
+    >(GetCategoryStickyThreadUpdateEventsByEventIds, { eventIds }, 'categoryStickyThreadUpdateEvents')
+  }
+
+  public async getCategoryMembershipOfModeratorUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<CategoryMembershipOfModeratorUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQuery,
+      GetCategoryMembershipOfModeratorUpdatedEventsByEventIdsQueryVariables
+    >(
+      GetCategoryMembershipOfModeratorUpdatedEventsByEventIds,
+      { eventIds },
+      'categoryMembershipOfModeratorUpdatedEvents'
+    )
+  }
+
+  public async getThreadModeratedEvents(events: EventDetails[]): Promise<ThreadModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetThreadModeratedEventsByEventIdsQuery,
+      GetThreadModeratedEventsByEventIdsQueryVariables
+    >(GetThreadModeratedEventsByEventIds, { eventIds }, 'threadModeratedEvents')
+  }
+
+  public async getPostModeratedEvents(events: EventDetails[]): Promise<PostModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetPostModeratedEventsByEventIdsQuery,
+      GetPostModeratedEventsByEventIdsQueryVariables
+    >(GetPostModeratedEventsByEventIds, { eventIds }, 'postModeratedEvents')
+  }
+
+  public async getPostReactedEvents(events: EventDetails[]): Promise<PostReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetPostReactedEventsByEventIdsQuery,
+      GetPostReactedEventsByEventIdsQueryVariables
+    >(GetPostReactedEventsByEventIds, { eventIds }, 'postReactedEvents')
+  }
+
+  public async getPostTextUpdatedEvents(events: EventDetails[]): Promise<PostTextUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetPostTextUpdatedEventsByEventIdsQuery,
+      GetPostTextUpdatedEventsByEventIdsQueryVariables
+    >(GetPostTextUpdatedEventsByEventIds, { eventIds }, 'postTextUpdatedEvents')
+  }
+
+  public async getPostDeletedEvents(events: EventDetails[]): Promise<PostDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetPostDeletedEventsByEventIdsQuery,
+      GetPostDeletedEventsByEventIdsQueryVariables
+    >(GetPostDeletedEventsByEventIds, { eventIds }, 'postDeletedEvents')
   }
 }

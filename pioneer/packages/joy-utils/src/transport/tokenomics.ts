@@ -227,7 +227,8 @@ export default class TokenomicsTransport extends BaseTransport {
       await this.getCouncilData();
     const workingGroupsData = {
       storageProviders: await this.getWorkingGroupData('Storage'),
-      curators: await this.getWorkingGroupData('Content')
+      curators: await this.getWorkingGroupData('Content'),
+      operations: await this.getWorkingGroupData('Operations')
     };
     const { numberOfValidators, numberOfNominators, totalValidatorStake, validatorRewardsPerWeek, totalIssuance } =
       await this.getValidatorData();
@@ -291,7 +292,8 @@ export default class TokenomicsTransport extends BaseTransport {
         stakeShare: totalCouncilStake / currentlyStakedTokens
       },
       storageProviders: resolveGroupData(workingGroupsData.storageProviders),
-      contentCurators: resolveGroupData(workingGroupsData.curators)
+      contentCurators: resolveGroupData(workingGroupsData.curators),
+      operations: resolveGroupData(workingGroupsData.operations)
     };
   }
 }

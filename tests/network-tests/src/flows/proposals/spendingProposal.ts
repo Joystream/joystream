@@ -3,11 +3,11 @@ import { FlowProps } from '../../Flow'
 import { SpendingProposalFixture } from '../../fixtures/proposalsModule'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { Resource } from '../../Resources'
 
 export default async function spendingProposal({ api, env, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:spendingProposals')
+  const debug = extendDebug('flow:spendingProposals')
   debug('Started')
   await lock(Resource.Proposals)
 

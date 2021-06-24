@@ -101,13 +101,6 @@ const init = async (api: RuntimeApi): Promise<any> => {
     debug('Alice is already a member.')
   }
 
-  // set localhost colossus as discovery provider
-  // assuming pioneer dev server is running on port 3000 we should run
-  // the storage dev server on a different port than the default for colossus which is also
-  // 3000
-  debug('Setting Local development node as bootstrap endpoint.')
-  await api.discovery.setBootstrapEndpoints(alice, [`http://localhost:${developmentPort()}/`])
-
   debug('Transferring tokens to storage role account.')
   // Give role account some tokens to work with
   api.balances.transfer(alice, roleAccount, 100000)
@@ -143,7 +136,7 @@ const init = async (api: RuntimeApi): Promise<any> => {
 // Using sudo to create initial storage lead and worker with given keys taken from env variables.
 // Used to quickly setup a storage provider on a new chain before a council is ready.
 const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise<any> => {
-  if (api.workers.getLeadRoleAccount()) {
+  if (await api.workers.getLeadRoleAccount()) {
     throw new Error('The Storage Lead is already set!')
   }
 

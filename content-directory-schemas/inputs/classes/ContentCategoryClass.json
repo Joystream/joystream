@@ -1,6 +1,0 @@
-{
-  "name": "ContentCategory",
-  "description": "A category the content may be published under",
-  "maximum_entities_count": 500,
-  "default_entity_creation_voucher_upper_bound": 500
-}
