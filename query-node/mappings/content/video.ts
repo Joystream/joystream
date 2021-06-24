@@ -102,6 +102,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
 
   const video = new Video({
     id: videoId.toString(),
+    channel,
     isCensored: false,
     isFeatured: false,
     createdInBlock: event.blockNumber,
@@ -141,7 +142,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video.channel!, video, newMetadata, videoUpdateParameters.assets.unwrapOr([]))
+    await processVideoMetadata(ctx, video.channel, video, newMetadata, videoUpdateParameters.assets.unwrapOr([]))
   }
 
   // set last update time

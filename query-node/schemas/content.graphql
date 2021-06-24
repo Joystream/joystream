@@ -106,7 +106,7 @@ type Video @entity {
   id: ID!
 
   "Reference to member's channel"
-  channel: Channel
+  channel: Channel!
 
   "Reference to a video category"
   category: VideoCategory
