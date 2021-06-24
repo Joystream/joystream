@@ -1,6 +1,7 @@
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import { updateStorageBucketsPerBagLimit } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
+import logger from '../../services/logger'
 
 export default class LeaderUpdateBagLimit extends ApiCommandBase {
   static description =
@@ -18,7 +19,7 @@ export default class LeaderUpdateBagLimit extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateBagLimit)
 
-    this.log('Update "Storage buckets per bag" number limit....')
+    logger.info('Update "Storage buckets per bag" number limit....')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }

@@ -3,6 +3,7 @@ import { createApi, getAlicePair } from '../services/runtime/api'
 import { getAccountFromJsonFile } from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
+import logger from '../services/logger'
 
 export default abstract class ApiCommandBase extends Command {
   private api: ApiPromise | null = null
@@ -52,7 +53,7 @@ export default abstract class ApiCommandBase extends Command {
       throw new Error('This command should only be run on a Development chain.')
     }
 
-    this.log('Development mode is ON.')
+    logger.info('Development mode is ON.')
   }
 
   getAccount(flags: {

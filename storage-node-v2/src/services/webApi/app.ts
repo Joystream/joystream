@@ -9,6 +9,7 @@ import { ApiPromise } from '@polkadot/api'
 import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
 import { createStorageBucket } from '../runtime/extrinsics'
 import { parseBagId } from '../../services/helpers/bagIdParser'
+import { getHttpLogger } from '../../services/logger'
 
 // TODO: custom errors (including validation errors)
 // TODO: custom authorization errors
@@ -25,6 +26,7 @@ export async function createApp(
 
   app.use(cors())
   app.use(express.json())
+  app.use(getHttpLogger())
 
   // TODO: check path
   app.use('/files', express.static(uploadsDir))

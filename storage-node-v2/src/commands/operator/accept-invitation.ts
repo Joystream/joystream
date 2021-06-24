@@ -1,6 +1,7 @@
 import { flags } from '@oclif/command'
 import { acceptStorageBucketInvitation } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
+import logger from '../../services/logger'
 
 export default class OperatorAcceptInvitation extends ApiCommandBase {
   static description = 'Accept pending storage bucket invitation.'
@@ -25,7 +26,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
     const worker = flags.worker ?? 0 // TODO: don't require on dev???
     const bucket = flags.bucket ?? 0
 
-    this.log('Accepting pending storage bucket invitation...')
+    logger.info('Accepting pending storage bucket invitation...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }

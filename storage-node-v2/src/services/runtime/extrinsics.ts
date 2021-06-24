@@ -7,6 +7,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
 import { ApiPromise } from '@polkadot/api'
 import { BagId } from '@joystream/types/storage'
+import logger from '../../services/logger'
 
 export async function createStorageBucket(
   api: ApiPromise,
@@ -26,7 +27,7 @@ export async function createStorageBucket(
       objectsLimit,
     ])
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
   }
 }
 
@@ -45,7 +46,7 @@ export async function acceptStorageBucketInvitation(
       [workerId, storageBucketId]
     )
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
   }
 }
 
@@ -76,7 +77,7 @@ export async function updateStorageBucketsForBag(
       [bagId, addBuckets, removeBuckets]
     )
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
   }
 }
 
@@ -106,7 +107,7 @@ export async function uploadDataObjects(
       [data]
     )
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
   }
 }
 
@@ -132,7 +133,7 @@ export async function acceptPendingDataObjects(
       [workerId, storageBucketId, bagId, dataObjectSet]
     )
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
     throw err
   }
 }
@@ -151,7 +152,7 @@ export async function updateStorageBucketsPerBagLimit(
       [newLimit]
     )
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
   }
 }
 
@@ -170,6 +171,6 @@ export async function updateStorageBucketsVoucherMaxLimits(
       [newSizeLimit, newObjectLimit]
     )
   } catch (err) {
-    console.error(`Api Error: ${err}`)
+    logger.error(`Api Error: ${err}`)
   }
 }
