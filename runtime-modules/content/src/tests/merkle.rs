@@ -193,14 +193,14 @@ fn channel_reward_update_test() {
             },
         );
 
-        let pull_payments_collection: Vec<PullPaymentElement<Test>> = ids
+        let pull_payments_collection: Vec<PullPayment<Test>> = ids
             .iter()
-            .map(|&i| PullPaymentElement::<Test> {
+            .map(|&i| PullPayment::<Test> {
                 channel_id: ChannelId::from(FIRST_MEMBER_ID),
                 amount_due: minting::BalanceOf::<Test>::from(i),
                 reason: TestHashing::hash(&i.encode()),
             })
-            .collect::<Vec<PullPaymentElement<Test>>>();
+            .collect::<Vec<PullPayment<Test>>>();
 
         // generate hash tree and get its root
         let out = generate_merkle_root(&pull_payments_collection).unwrap();
@@ -211,7 +211,7 @@ fn channel_reward_update_test() {
 
         // suppose now channel 1 is trying to collect its payment
         let test_id = 2u64;
-        let reward_element = PullPaymentElement::<Test> {
+        let reward_element = PullPayment::<Test> {
             channel_id: ChannelId::from(FIRST_MEMBER_ID),
             amount_due: minting::BalanceOf::<Test>::from(test_id),
             reason: TestHashing::hash(&test_id.encode()),

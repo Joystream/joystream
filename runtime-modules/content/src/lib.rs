@@ -479,20 +479,19 @@ pub struct Person<MemberId> {
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
-pub struct PullPaymentElementRecord<ChannelId, Balance, HashType> {
+pub struct PullPaymentElement<ChannelId, Balance, HashType> {
     channel_id: ChannelId,
     amount_due: Balance,
     reason: HashType,
 }
 
-pub type PullPaymentElement<T> = PullPaymentElementRecord<
+pub type PullPayment<T> = PullPaymentElement<
     <T as StorageOwnership>::ChannelId,
     minting::BalanceOf<T>,
     <T as frame_system::Trait>::Hash,
 >;
 
-pub type PullPaymentProof<T> =
-    MerkleProof<<T as frame_system::Trait>::Hashing, PullPaymentElement<T>>;
+pub type PullPaymentProof<T> = MerkleProof<<T as frame_system::Trait>::Hashing, PullPayment<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
