@@ -12,6 +12,7 @@ import {
 } from '@joystream/types/working-group'
 import { MemberId } from '@joystream/types/members'
 import { ApiPromise } from '@polkadot/api'
+import logger from '../../services/logger'
 
 export async function hireStorageWorkingGroupLead(
   api: ApiPromise
@@ -29,7 +30,7 @@ export async function hireStorageWorkingGroupLead(
   let memberId: MemberId | undefined = members.toArray()[0] as MemberId
 
   if (memberId === undefined) {
-    console.log('Preparing member account creation extrinsic...')
+    logger.info('Preparing member account creation extrinsic...')
     memberId = (await api.query.members.nextMemberId()) as MemberId
     await sendAndFollowNamedTx(api, LeadKeyPair, 'members', 'buyMembership', [
       0,
@@ -43,11 +44,11 @@ export async function hireStorageWorkingGroupLead(
   const currentLead =
     (await api.query.storageWorkingGroup.currentLead()) as Option<WorkerId>
   if (currentLead.isSome) {
-    console.log('Storage lead already exists, skipping...')
+    logger.info('Storage lead already exists, skipping...')
     return
   }
 
-  console.log(`Making member id: ${memberId} the content lead.`)
+  logger.info(`Making member id: ${memberId} the content lead.`)
 
   const newOpeningId =
     (await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId
@@ -55,7 +56,7 @@ export async function hireStorageWorkingGroupLead(
     (await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId
 
   // Create curator lead opening
-  console.log('Preparing Create Storage Lead Opening extrinsic...')
+  logger.info('Preparing Create Storage Lead Opening extrinsic...')
   await sendAndFollowSudoNamedTx(
     api,
     SudoKeyPair,
@@ -70,7 +71,7 @@ export async function hireStorageWorkingGroupLead(
   )
 
   // Apply to lead opening
-  console.log('Preparing Apply to Storage Lead Opening extrinsic...')
+  logger.info('Preparing Apply to Storage Lead Opening extrinsic...')
   await sendAndFollowNamedTx(
     api,
     LeadKeyPair,
@@ -87,7 +88,7 @@ export async function hireStorageWorkingGroupLead(
   )
 
   // Begin review period
-  console.log('Preparing Begin Applicant Review extrinsic...')
+  logger.info('Preparing Begin Applicant Review extrinsic...')
   await sendAndFollowSudoNamedTx(
     api,
     SudoKeyPair,
@@ -97,7 +98,7 @@ export async function hireStorageWorkingGroupLead(
   )
 
   // Fill opening
-  console.log('Preparing Fill Opening extrinsic...')
+  logger.info('Preparing Fill Opening extrinsic...')
   await sendAndFollowSudoNamedTx(
     api,
     SudoKeyPair,

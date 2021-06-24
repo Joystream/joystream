@@ -1,6 +1,7 @@
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import { parseBagId } from '../../services/helpers/bagIdParser'
+import logger from '../../services/logger'
 
 export default class DevVerifyBagId extends ApiCommandBase {
   static description =
@@ -33,6 +34,6 @@ export default class DevVerifyBagId extends ApiCommandBase {
     const api = await this.getApi()
     parseBagId(api, flags.bagId)
 
-    console.log(`Correct bag id: ${flags.bagId}`)
+    logger.info(`Correct bag id: ${flags.bagId}`)
   }
 }

@@ -1,6 +1,7 @@
 import { createStorageBucket } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
+import logger from '../../services/logger'
 
 export default class LeaderCreateBucket extends ApiCommandBase {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
@@ -30,7 +31,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
     const allowNewBags = flags.allow ?? false
     const invitedWorker = flags.invited
 
-    this.log('Creating storage bucket...')
+    logger.info('Creating storage bucket...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }

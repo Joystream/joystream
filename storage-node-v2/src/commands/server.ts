@@ -1,6 +1,7 @@
 import { flags } from '@oclif/command'
 import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
+import logger from '../services/logger'
 
 // TODO: fix command not found error (error handling)
 // TODO: custom IP address?
@@ -43,10 +44,10 @@ export default class Server extends ApiCommandBase {
       const port = flags.port
       const workerId = flags.worker ?? 0 // TODO: don't require on dev???
       const app = await createApp(api, account, workerId, flags.uploads)
-      console.info(`Listening on http://localhost:${port}`)
+      logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {
-      console.error(`Error: ${err}`)
+      logger.error(`Error: ${err}`)
     }
   }
 

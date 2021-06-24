@@ -3,6 +3,7 @@ import type { Index } from '@polkadot/types/interfaces/runtime'
 import BN from 'bn.js'
 import AwaitLock from 'await-lock'
 import { ApiPromise } from '@polkadot/api'
+import logger from '../../services/logger'
 
 let nonce: Index | null = null
 const lock = new AwaitLock()
@@ -22,7 +23,7 @@ export async function getNonce(
     lock.release()
   }
 
-  console.debug(`Last nonce:${nonce}`)
+  logger.debug(`Last transaction nonce:${nonce}`)
 
   return nonce as Index
 }

@@ -4,7 +4,6 @@ import { CodecArg, ISubmittableResult } from '@polkadot/types/types'
 import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import chalk from 'chalk'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import {
   DispatchError,
@@ -12,6 +11,8 @@ import {
 } from '@polkadot/types/interfaces/system'
 import { Keyring } from '@polkadot/keyring'
 import { getNonce } from './nonceKeeper'
+import logger from '../../services/logger'
+
 // TODO: ApiHelper class container for functions ???
 
 export class ExtrinsicFailedError extends Error {}
@@ -102,21 +103,16 @@ function sendExtrinsic(
 export async function sendAndFollowTx(
   api: ApiPromise,
   account: KeyringPair,
-  tx: SubmittableExtrinsic<'promise'>,
-  warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
+  tx: SubmittableExtrinsic<'promise'>
 ): Promise<boolean> {
   try {
-    // TODO: use async-lock package
     const nonce = await getNonce(api, account)
 
     await sendExtrinsic(api, account, tx, nonce)
-    console.log(chalk.green(`Extrinsic successful!`))
+    logger.debug(`Extrinsic successful!`)
     return true
   } catch (e) {
-    if (e instanceof ExtrinsicFailedError && warnOnly) {
-      console.warn(`Extrinsic failed! ${e.message}`)
-      return false
-    } else if (e instanceof ExtrinsicFailedError) {
+    if (e instanceof ExtrinsicFailedError) {
       throw new ExtrinsicFailedError(`Extrinsic failed! ${e.message}`)
     } else {
       throw e
@@ -129,12 +125,11 @@ export async function sendAndFollowNamedTx(
   account: KeyringPair,
   module: string,
   method: string,
-  params: CodecArg[],
-  warnOnly = false
+  params: CodecArg[]
 ): Promise<boolean> {
-  console.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+  logger.debug(`Sending ${module}.${method} extrinsic...`)
   const tx = api.tx[module][method](...params)
-  return await sendAndFollowTx(api, account, tx, warnOnly)
+  return await sendAndFollowTx(api, account, tx)
 }
 
 export async function sendAndFollowSudoNamedTx(
@@ -142,12 +137,11 @@ export async function sendAndFollowSudoNamedTx(
   account: KeyringPair,
   module: string,
   method: string,
-  params: CodecArg[],
-  warnOnly = false
+  params: CodecArg[]
 ): Promise<boolean> {
-  console.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+  logger.debug(`Sending ${module}.${method} extrinsic...`)
   const tx = api.tx.sudo.sudo(api.tx[module][method](...params))
-  return await sendAndFollowTx(api, account, tx, warnOnly)
+  return await sendAndFollowTx(api, account, tx)
 }
 
 export function getAlicePair(): KeyringPair {
