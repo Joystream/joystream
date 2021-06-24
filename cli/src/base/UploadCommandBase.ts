@@ -249,6 +249,11 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     multiBar.stop()
   }
 
+  public assetsIndexes(originalPaths: (string | undefined)[], filteredPaths: string[]): (number | undefined)[] {
+    let lastIndex = -1
+    return originalPaths.map((path) => (filteredPaths.includes(path as string) ? ++lastIndex : undefined))
+  }
+
   private handleRejectedUploads(
     assets: InputAsset[],
     results: boolean[],

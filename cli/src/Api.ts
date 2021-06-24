@@ -61,6 +61,8 @@ export const apiModuleByGroup = {
   [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
+  [WorkingGroups.Operations]: 'operationsWorkingGroup',
+  [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
 } as const
 
 export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
@@ -68,6 +70,8 @@ export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
   [WorkingGroups.Curators]: '0x0707070707070707',
   [WorkingGroups.Forum]: '0x0808080808080808',
   [WorkingGroups.Membership]: '0x0909090909090909',
+  [WorkingGroups.Operations]: '0x0d0d0d0d0d0d0d0d',
+  [WorkingGroups.Gateway]: '0x0e0e0e0e0e0e0e0e',
 }
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future

@@ -8,15 +8,15 @@ import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
-import {
-  VideoMetadata,
-  ChannelMetadata,
-  ChannelCategoryMetadata,
-  VideoCategoryMetadata,
-} from '@joystream/content-metadata-protobuf'
 import { ContentId, ContentParameters } from '@joystream/types/storage'
 
 import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
+import {
+  IChannelMetadata,
+  IVideoMetadata,
+  IVideoCategoryMetadata,
+  IChannelCategoryMetadata,
+} from '@joystream/metadata-protobuf'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -43,6 +43,8 @@ export enum WorkingGroups {
   Curators = 'curators',
   Forum = 'forum',
   Membership = 'membership',
+  Operations = 'operations',
+  Gateway = 'gateway',
 }
 
 // In contrast to Pioneer, currently only StorageProviders group is available in CLI
@@ -51,6 +53,8 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.Curators,
   WorkingGroups.Forum,
   WorkingGroups.Membership,
+  WorkingGroups.Operations,
+  WorkingGroups.Gateway,
 ] as const
 
 export type Reward = {
@@ -158,47 +162,49 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
   mimeType: string
 }
 
-export type VideoInputParameters = Omit<VideoMetadata.AsObject, 'video' | 'thumbnailPhoto'> & {
+export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
 }
 
-export type ChannelInputParameters = Omit<ChannelMetadata.AsObject, 'coverPhoto' | 'avatarPhoto'> & {
+export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
   rewardAccount?: string
 }
 
-export type ChannelCategoryInputParameters = ChannelCategoryMetadata.AsObject
+export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 
-export type VideoCategoryInputParameters = VideoCategoryMetadata.AsObject
+export type VideoCategoryInputParameters = IVideoCategoryMetadata
+
+type AnyNonObject = string | number | boolean | any[] | Long
 
 // JSONSchema utility types
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
   ? 'number' | ['number', 'null']
-  : T extends any[]
-  ? 'array' | ['array', 'null']
-  : T extends Record<string, unknown>
-  ? 'object' | ['object', 'null']
   : T extends boolean
   ? 'boolean' | ['boolean', 'null']
-  : never
+  : T extends any[]
+  ? 'array' | ['array', 'null']
+  : T extends Long
+  ? 'number' | ['number', 'null']
+  : 'object' | ['object', 'null']
 
 export type PropertySchema<P> = Omit<
   JSONSchema7Definition & {
     type: JSONTypeName<P>
-    properties: P extends Record<string, unknown> ? JsonSchemaProperties<P> : never
+    properties: P extends AnyNonObject ? never : JsonSchemaProperties<P>
   },
-  P extends Record<string, unknown> ? '' : 'properties'
+  P extends AnyNonObject ? 'properties' : ''
 >
 
-export type JsonSchemaProperties<T extends Record<string, unknown>> = {
+export type JsonSchemaProperties<T> = {
   [K in keyof Required<T>]: PropertySchema<Required<T>[K]>
 }
 
-export type JsonSchema<T extends Record<string, unknown>> = JSONSchema7 & {
+export type JsonSchema<T> = JSONSchema7 & {
   type: 'object'
   properties: JsonSchemaProperties<T>
 }
