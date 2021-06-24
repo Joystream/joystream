@@ -1,3 +1,4 @@
+import { Long } from 'long'
 import * as $protobuf from "protobufjs";
 /** Properties of a ChannelMetadata. */
 export interface IChannelMetadata {
