@@ -14,5 +14,13 @@
   {
     "name": "forumWorkingGroup",
     "budget": 0
+  },
+  {
+    "name": "operationsWorkingGroup",
+    "budget": 0
+  },
+  {
+    "name": "gatewayWorkingGroup",
+    "budget": 0
   }
 ]

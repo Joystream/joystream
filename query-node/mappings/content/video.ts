@@ -4,10 +4,11 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext } from '@dzlzv/hydra-common'
 import { In } from 'typeorm'
 import { Content } from '../generated/types'
-import { deserializeMetadata, inconsistentState, integrateMeta, logger } from '../common'
+import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { processVideoMetadata } from './utils'
 import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data

@@ -21,6 +21,8 @@ export const lockIdByWorkingGroup: { [K in WorkingGroupModuleName]: string } = {
   contentDirectoryWorkingGroup: '0x0707070707070707',
   forumWorkingGroup: '0x0808080808080808',
   membershipWorkingGroup: '0x0909090909090909',
+  operationsWorkingGroup: '0x0d0d0d0d0d0d0d0d',
+  gatewayWorkingGroup: '0x0e0e0e0e0e0e0e0e',
 }
 
 export const workingGroups: WorkingGroupModuleName[] = [
@@ -28,6 +30,8 @@ export const workingGroups: WorkingGroupModuleName[] = [
   'contentDirectoryWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
+  'operationsWorkingGroup',
+  'gatewayWorkingGroup',
 ]
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
@@ -39,6 +43,10 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
     return 'forumWorkingGroup'
   } else if (group.isOfType('Storage')) {
     return 'storageWorkingGroup'
+  } else if (group.isOfType('Operations')) {
+    return 'operationsWorkingGroup'
+  } else if (group.isOfType('Gateway')) {
+    return 'gatewayWorkingGroup'
   }
 
   throw new Error(`Unsupported working group: ${group}`)
