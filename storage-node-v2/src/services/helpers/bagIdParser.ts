@@ -1,11 +1,15 @@
 import { BagId, Static } from '@joystream/types/storage'
 import { ApiPromise } from '@polkadot/api'
+import ExitCodes from '../../command-base/ExitCodes'
+import { CLIError } from '@oclif/errors'
 
 export function parseBagId(api: ApiPromise, bagId: string): BagId {
   const bagIdParts = bagId.toLowerCase().split(':')
 
   if (bagIdParts.length > 3 || bagIdParts.length < 2) {
-    throw new Error(`Invalid bagId: ${bagId}`)
+    throw new CLIError(`Invalid bagId: ${bagId}`, {
+      exit: ExitCodes.InvalidParameters,
+    })
   }
 
   if (bagIdParts[0] === 'static') {
@@ -16,7 +20,9 @@ export function parseBagId(api: ApiPromise, bagId: string): BagId {
     return parseDynamicBagId()
   }
 
-  throw new Error(`Invalid bagId: ${bagId}`)
+  throw new CLIError(`Invalid bagId: ${bagId}`, {
+    exit: ExitCodes.InvalidParameters,
+  })
 }
 
 function parseStaticBagId(
@@ -35,9 +41,13 @@ function parseStaticBagId(
     }
   }
 
-  throw new Error(`Invalid bagId: ${bagId}`)
+  throw new CLIError(`Invalid bagId: ${bagId}`, {
+    exit: ExitCodes.InvalidParameters,
+  })
 }
 
 function parseDynamicBagId(): BagId {
-  throw new Error('Function not implemented.')
+  throw new CLIError('Function not implemented.', {
+    exit: ExitCodes.InvalidParameters,
+  })
 }

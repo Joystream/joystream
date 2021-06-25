@@ -12,10 +12,12 @@ import {
 import { Keyring } from '@polkadot/keyring'
 import { getNonce } from './nonceKeeper'
 import logger from '../../services/logger'
+import ExitCodes from '../../command-base/ExitCodes'
+import { CLIError } from '@oclif/errors'
 
 // TODO: ApiHelper class container for functions ???
 
-export class ExtrinsicFailedError extends Error {}
+export class ExtrinsicFailedError extends CLIError {}
 
 // TODO: set URL variable
 export async function createApi(): Promise<ApiPromise> {
@@ -62,7 +64,10 @@ function sendExtrinsic(
               }
               reject(
                 new ExtrinsicFailedError(
-                  `Extrinsic execution error: ${errorMsg}`
+                  `Extrinsic execution error: ${errorMsg}`,
+                  {
+                    exit: ExitCodes.ApiError,
+                  }
                 )
               )
             } else if (event.method === 'ExtrinsicSuccess') {
@@ -75,7 +80,12 @@ function sendExtrinsic(
                 } else {
                   reject(
                     // TODO: print error
-                    new ExtrinsicFailedError('Sudo extrinsic execution error!')
+                    new ExtrinsicFailedError(
+                      'Sudo extrinsic execution error!',
+                      {
+                        exit: ExitCodes.ApiError,
+                      }
+                    )
                   )
                 }
               } else {
@@ -84,16 +94,23 @@ function sendExtrinsic(
             }
           })
       } else if (result.isError) {
-        reject(new ExtrinsicFailedError('Extrinsic execution error!'))
+        reject(
+          new ExtrinsicFailedError('Extrinsic execution error!', {
+            exit: ExitCodes.ApiError,
+          })
+        )
       }
     })
       .then((unsubFunc) => (unsubscribe = unsubFunc))
       .catch((e) =>
         reject(
-          new Error(
+          new ExtrinsicFailedError(
             `Cannot send the extrinsic: ${
               e.message ? e.message : JSON.stringify(e)
-            }`
+            }`,
+            {
+              exit: ExitCodes.ApiError,
+            }
           )
         )
       )
@@ -113,7 +130,12 @@ export async function sendAndFollowTx(
     return true
   } catch (e) {
     if (e instanceof ExtrinsicFailedError) {
-      throw new ExtrinsicFailedError(`Extrinsic failed! ${e.message}`)
+      throw new ExtrinsicFailedError(
+        `Extrinsic failed! Message: ${e.message}`,
+        {
+          exit: ExitCodes.ApiError,
+        }
+      )
     } else {
       throw e
     }

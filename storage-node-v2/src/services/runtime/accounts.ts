@@ -3,19 +3,19 @@ import path from 'path'
 import { CLIError } from '@oclif/errors'
 import { Keyring } from '@polkadot/keyring'
 import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
-
-// TODO:
-const DefaultExitCode = 12
+import ExitCodes from '../../command-base/ExitCodes'
 
 export function getAccountFromJsonFile(
   jsonBackupFilePath: string
 ): KeyringPair {
   if (!fs.existsSync(jsonBackupFilePath)) {
-    throw new CLIError('Input file does not exist!', { exit: DefaultExitCode })
+    throw new CLIError('Input file does not exist!', {
+      exit: ExitCodes.FileError,
+    })
   }
   if (path.extname(jsonBackupFilePath) !== '.json') {
     throw new CLIError('Invalid input file: File extension should be .json', {
-      exit: DefaultExitCode,
+      exit: ExitCodes.FileError,
     })
   }
   let accountJsonObj: KeyringPair$Json
@@ -25,12 +25,12 @@ export function getAccountFromJsonFile(
   } catch (e) {
     throw new CLIError(
       'Provided backup file is not valid or cannot be accessed',
-      { exit: DefaultExitCode }
+      { exit: ExitCodes.FileError }
     )
   }
   if (typeof accountJsonObj !== 'object' || accountJsonObj === null) {
     throw new CLIError('Provided backup file is not valid', {
-      exit: DefaultExitCode,
+      exit: ExitCodes.FileError,
     })
   }
 
@@ -42,7 +42,7 @@ export function getAccountFromJsonFile(
     account = keyring.getPair(accountJsonObj.address)
   } catch (e) {
     throw new CLIError('Provided backup file is not valid', {
-      exit: DefaultExitCode,
+      exit: ExitCodes.FileError,
     })
   }
 
