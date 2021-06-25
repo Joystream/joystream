@@ -51,7 +51,7 @@ pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as StorageOwnership>::DAOId,
 >;
 
-pub type PartecipantId<T> = common::MemberId<T>;
+pub type ParticipantId<T> = common::MemberId<T>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -507,9 +507,9 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Reply_<BlockNumber, ReplyId, PostId: Default, PartecipantId, Balance> {
+pub struct Reply_<BlockNumber, ReplyId, PostId: Default, ParticipantId, Balance> {
     /// Associated with reply owner
-    owner: PartecipantId,
+    owner: ParticipantId,
 
     /// Reply`s parent id
     parent_id: ParentId<ReplyId, PostId>,
@@ -537,7 +537,7 @@ pub type Reply<T> = Reply_<
     <T as frame_system::Trait>::BlockNumber,
     <T as Trait>::ReplyId,
     <T as Trait>::PostId,
-    PartecipantId<T>,
+    ParticipantId<T>,
     BalanceOf<T>,
 >;
 
@@ -1398,7 +1398,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_reply(
             _origin,
-            _owner: PartecipantId<T>,
+            _owner: ParticipantId<T>,
             _post_id: T::PostId,
             _reply_id: Option<T::ReplyId>,
         ) {
@@ -1437,7 +1437,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn edit_reply(
           _origin,
-          _owner: PartecipantId<T>,
+          _owner: ParticipantId<T>,
           _post_id: T::PostId,
           _reply_id: T::ReplyId,
           _new_text: <T as frame_system::Trait>::Hash
@@ -1471,7 +1471,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_replies(
         _origin,
-        _owner: PartecipantId<T>,
+        _owner: ParticipantId<T>,
         _reply: T::ReplyId,
         ) {
             Self::not_implemented()?;
@@ -1479,12 +1479,14 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
     fn react_post(
-            _origin,
-            _post: T::PostId,
-            _react: T::PostReactionId
+        _origin,
+        participant_id: ParticipantId<T>,
+        post_id: T::PostId,
+        reaction_id: T::PostReactionId,
     ) {
-            Self::not_implemented()?;
-    }
+           // ensure origin is signed by a member
+           Self::deposit_event(RawEvent::ReactionToPost(participant_id, post_id, reaction_id));
+        }
     }
 }
 
@@ -1639,6 +1641,8 @@ decl_event!(
         IsCensored = bool,
         PostId = <T as Trait>::PostId,
         ReplyId = <T as Trait>::ReplyId,
+        ParticipantId = ParticipantId<T>,
+        ReactionId = <T as Trait>::PostReactionId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1764,5 +1768,6 @@ decl_event!(
         ReplyCreated(ContentActor, ReplyId),
         PostModified(ContentActor, VideoId, PostId),
         PostDeleted(ContentActor, PostId),
+        ReactionToPost(ParticipantId, PostId, ReactionId),
     }
 );

@@ -65,7 +65,10 @@ decl_error! {
         CannotCensoreCuratorGroupOwnedChannels,
 
         /// Post does not exists
-        PostDoesNotExists
+        PostDoesNotExists,
+
+        /// Partecipant is not a member
+        MembershipError
 
     }
 }
