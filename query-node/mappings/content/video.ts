@@ -66,7 +66,7 @@ export async function content_VideoCategoryUpdated({ store, event }: EventContex
 
 export async function content_VideoCategoryDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [videoCategoryId] = new Content.VideoCategoryDeletedEvent(event).params
+  const [, videoCategoryId] = new Content.VideoCategoryDeletedEvent(event).params
 
   // load video category
   const videoCategory = await store.get(VideoCategory, {
