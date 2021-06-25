@@ -42,7 +42,6 @@ import {
   VideoCategory,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
-import _ from 'lodash'
 import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client'
 import fetch from 'cross-fetch'
 import { Maybe } from './graphql/generated/schema'
@@ -497,7 +496,7 @@ export default class Api {
     if (channel) {
       return Promise.all(
         channel.videos.map(
-          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
+          async (videoId) => [videoId, await this._api.query.content.videoById(videoId)] as [VideoId, Video]
         )
       )
     } else {
@@ -506,7 +505,7 @@ export default class Api {
   }
 
   async videoById(videoId: VideoId | number | string): Promise<Video> {
-    const video = await this._api.query.content.videoById<Video>(videoId)
+    const video = await this._api.query.content.videoById(videoId)
     if (video.isEmpty) {
       throw new CLIError(`Video by id ${videoId.toString()} not found!`)
     }

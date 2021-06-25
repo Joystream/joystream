@@ -1,6 +1,5 @@
 import { Long } from 'long'
 import { IConversionOptions } from 'protobufjs'
-import { IWorkingGroupMetadataAction } from '../compiled'
 
 export type AnyMessage<T> = T & {
   toJSON(): Record<string, unknown>
