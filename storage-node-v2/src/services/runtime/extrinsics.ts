@@ -1,8 +1,5 @@
-import {
-  sendAndFollowSudoNamedTx,
-  sendAndFollowNamedTx,
-  getAlicePair,
-} from './api'
+import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx } from './api'
+import { getAlicePair } from './accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
 import { ApiPromise } from '@polkadot/api'
