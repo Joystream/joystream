@@ -117,31 +117,20 @@ function sendExtrinsic(
   })
 }
 
+// TODO: Refactor sendTx* methods.
 export async function sendAndFollowTx(
   api: ApiPromise,
   account: KeyringPair,
   tx: SubmittableExtrinsic<'promise'>
 ): Promise<boolean> {
-  try {
-    const nonce = await getNonce(api, account)
+  const nonce = await getNonce(api, account)
 
-    await sendExtrinsic(api, account, tx, nonce)
-    logger.debug(`Extrinsic successful!`)
-    return true
-  } catch (e) {
-    if (e instanceof ExtrinsicFailedError) {
-      throw new ExtrinsicFailedError(
-        `Extrinsic failed! Message: ${e.message}`,
-        {
-          exit: ExitCodes.ApiError,
-        }
-      )
-    } else {
-      throw e
-    }
-  }
+  await sendExtrinsic(api, account, tx, nonce)
+  logger.debug(`Extrinsic successful!`)
+  return true
 }
 
+// TODO: Refactor sendTx* methods.
 export async function sendAndFollowNamedTx(
   api: ApiPromise,
   account: KeyringPair,
@@ -154,6 +143,7 @@ export async function sendAndFollowNamedTx(
   return await sendAndFollowTx(api, account, tx)
 }
 
+// TODO: Refactor sendTx* methods.
 export async function sendAndFollowSudoNamedTx(
   api: ApiPromise,
   account: KeyringPair,
@@ -166,6 +156,7 @@ export async function sendAndFollowSudoNamedTx(
   return await sendAndFollowTx(api, account, tx)
 }
 
+// TODO: Move to accounts.ts
 export function getAlicePair(): KeyringPair {
   const keyring = new Keyring({ type: 'sr25519' })
   return keyring.addFromUri('//Alice')

@@ -51,7 +51,7 @@ const Logger = createDefaultLogger()
 export default Logger
 
 // Creates Express-Winston logger handler.
-export function getHttpLogger(): Handler {
+export function httpLogger(): Handler {
   const opts: expressWinston.LoggerOptions = {
     transports: [new winston.transports.Console()],
     format: winston.format.combine(

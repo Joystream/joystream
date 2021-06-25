@@ -65,6 +65,13 @@ paths:
                     type: boolean
         401:
           description: Unauthorized
+        410:
+          description: Upload request problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /authToken:
     post:
       description: Get auth token from a server.
@@ -87,6 +94,13 @@ paths:
                 properties:
                   token:
                     type: string
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     UploadAuth:
@@ -102,3 +116,12 @@ components:
         dataObjectId:
           type: integer
           format: int64
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        type:
+          type: string
+        message:
+          type: string
