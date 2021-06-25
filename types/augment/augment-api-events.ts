@@ -394,6 +394,13 @@ declare module '@polkadot/api/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
     };
     council: {
       /**
@@ -818,6 +825,13 @@ declare module '@polkadot/api/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
     };
     gatewayWorkingGroup: {
       /**
@@ -978,6 +992,13 @@ declare module '@polkadot/api/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
     };
     grandpa: {
       /**
@@ -1212,6 +1233,13 @@ declare module '@polkadot/api/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
     };
     memo: {
       MemoUpdated: AugmentedEvent<ApiType, [AccountId, MemoText]>;
@@ -1384,6 +1412,13 @@ declare module '@polkadot/api/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
     };
     proposalsCodex: {
       /**
@@ -1704,6 +1739,13 @@ declare module '@polkadot/api/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [WorkerId, Option<Bytes>]>;
+      /**
+       * Emits on updating the worker storage role.
+       * Params:
+       * - Id of the worker.
+       * - Raw storage field.
+       **/
+      WorkerStorageUpdated: AugmentedEvent<ApiType, [WorkerId, Bytes]>;
     };
     sudo: {
       /**

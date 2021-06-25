@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { Bytes, Option, Vec, bool, u32, u64, u8 } from '@polkadot/types';
+import type { Bytes, Option, Vec, bool, u16, u32, u64, u8 } from '@polkadot/types';
 import type { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import type { Application, ApplicationId, BountyActor, BountyId, Candidate, CastVoteOf, Category, CategoryId, Channel, ChannelCategory, ChannelCategoryId, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ConstitutionInfo, ContentId, CouncilMemberOf, CouncilStageUpdate, CuratorGroup, CuratorGroupId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, Entry, EntryId, ForumUserId, MemberId, Membership, MemoText, ModeratorId, ObjectOwner, Opening, OpeningId, Person, PersonId, Playlist, PlaylistId, Post, PostId, ProposalId, ProposalOf, ReferendumStage, Reply, ReplyId, Series, SeriesId, StakingAccountMemberBinding, ThreadId, ThreadOf, Video, VideoCategory, VideoCategoryId, VideoId, VoteKind, Voucher, Worker, WorkerId } from './all';
 import type { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
@@ -231,6 +231,14 @@ declare module '@polkadot/api/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>, [WorkerId]>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     council: {
       /**
@@ -416,6 +424,14 @@ declare module '@polkadot/api/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>, [WorkerId]>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     gatewayWorkingGroup: {
       /**
@@ -458,6 +474,14 @@ declare module '@polkadot/api/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>, [WorkerId]>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     grandpa: {
       /**
@@ -590,6 +614,14 @@ declare module '@polkadot/api/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>, [WorkerId]>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     memo: {
       maxMemoLength: AugmentedQuery<ApiType, () => Observable<u32>, []>;
@@ -660,6 +692,14 @@ declare module '@polkadot/api/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>, [WorkerId]>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     proposalsCodex: {
       /**
@@ -1001,6 +1041,14 @@ declare module '@polkadot/api/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Worker>, [WorkerId]>;
+      /**
+       * Maps identifier to corresponding worker storage.
+       **/
+      workerStorage: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<Bytes>, [WorkerId]>;
+      /**
+       * Worker storage size upper bound.
+       **/
+      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     sudo: {
       /**

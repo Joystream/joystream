@@ -432,6 +432,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation - worker is leaving.
        **/
       WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
     };
     council: {
       /**
@@ -844,6 +848,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation - worker is leaving.
        **/
       WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
     };
     gatewayWorkingGroup: {
       /**
@@ -954,6 +962,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation - worker is leaving.
        **/
       WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
     };
     grandpa: {
       /**
@@ -1199,6 +1211,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation - worker is leaving.
        **/
       WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
     };
     operationsWorkingGroup: {
       /**
@@ -1309,6 +1325,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation - worker is leaving.
        **/
       WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
     };
     proposalsCodex: {
       /**
@@ -1822,6 +1842,10 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation - worker is leaving.
        **/
       WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
     };
     sudo: {
       /**
