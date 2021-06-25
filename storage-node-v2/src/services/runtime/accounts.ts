@@ -48,3 +48,9 @@ export function getAccountFromJsonFile(
 
   return account
 }
+
+// Returns 'Alice' keypair. Should be use in dev-mode only.
+export function getAlicePair(): KeyringPair {
+  const keyring = new Keyring({ type: 'sr25519' })
+  return keyring.addFromUri('//Alice')
+}

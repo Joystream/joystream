@@ -1,8 +1,5 @@
-import {
-  getAlicePair,
-  sendAndFollowSudoNamedTx,
-  sendAndFollowNamedTx,
-} from './api'
+import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx } from './api'
+import { getAlicePair } from './accounts'
 import { CodecArg } from '@polkadot/types/types'
 import { Option, Vec } from '@polkadot/types'
 import {

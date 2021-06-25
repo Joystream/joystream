@@ -1,6 +1,9 @@
 import { Command, flags } from '@oclif/command'
-import { createApi, getAlicePair } from '../services/runtime/api'
-import { getAccountFromJsonFile } from '../services/runtime/accounts'
+import { createApi } from '../services/runtime/api'
+import {
+  getAccountFromJsonFile,
+  getAlicePair,
+} from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../services/logger'

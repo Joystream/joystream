@@ -9,13 +9,10 @@ import {
   DispatchError,
   DispatchResult,
 } from '@polkadot/types/interfaces/system'
-import { Keyring } from '@polkadot/keyring'
 import { getNonce } from './nonceKeeper'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
-
-// TODO: ApiHelper class container for functions ???
 
 export class ExtrinsicFailedError extends CLIError {}
 
@@ -117,47 +114,33 @@ function sendExtrinsic(
   })
 }
 
-// TODO: Refactor sendTx* methods.
-export async function sendAndFollowTx(
-  api: ApiPromise,
-  account: KeyringPair,
-  tx: SubmittableExtrinsic<'promise'>
-): Promise<boolean> {
-  const nonce = await getNonce(api, account)
-
-  await sendExtrinsic(api, account, tx, nonce)
-  logger.debug(`Extrinsic successful!`)
-  return true
-}
-
-// TODO: Refactor sendTx* methods.
+// Sends and follows a transaction.
 export async function sendAndFollowNamedTx(
   api: ApiPromise,
   account: KeyringPair,
   module: string,
   method: string,
-  params: CodecArg[]
-): Promise<boolean> {
+  params: CodecArg[],
+  sudoCall: boolean = false
+): Promise<void> {
   logger.debug(`Sending ${module}.${method} extrinsic...`)
-  const tx = api.tx[module][method](...params)
-  return await sendAndFollowTx(api, account, tx)
+  let tx = api.tx[module][method](...params)
+  if (sudoCall) {
+    tx = api.tx.sudo.sudo(tx)
+  }
+  const nonce = await getNonce(api, account)
+
+  await sendExtrinsic(api, account, tx, nonce)
+  logger.debug(`Extrinsic successful!`)
 }
 
-// TODO: Refactor sendTx* methods.
+// Sends a transactions wrapped in sudo call.
 export async function sendAndFollowSudoNamedTx(
   api: ApiPromise,
   account: KeyringPair,
   module: string,
   method: string,
   params: CodecArg[]
-): Promise<boolean> {
-  logger.debug(`Sending ${module}.${method} extrinsic...`)
-  const tx = api.tx.sudo.sudo(api.tx[module][method](...params))
-  return await sendAndFollowTx(api, account, tx)
-}
-
-// TODO: Move to accounts.ts
-export function getAlicePair(): KeyringPair {
-  const keyring = new Keyring({ type: 'sr25519' })
-  return keyring.addFromUri('//Alice')
+): Promise<void> {
+  return sendAndFollowNamedTx(api, account, module, method, params, true)
 }
