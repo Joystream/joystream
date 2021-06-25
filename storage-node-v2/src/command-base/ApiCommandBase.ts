@@ -4,6 +4,8 @@ import { getAccountFromJsonFile } from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../services/logger'
+import ExitCodes from './ExitCodes'
+import { CLIError } from '@oclif/errors'
 
 export default abstract class ApiCommandBase extends Command {
   private api: ApiPromise | null = null
@@ -50,7 +52,10 @@ export default abstract class ApiCommandBase extends Command {
     const runningChainName = await api.rpc.system.chain()
 
     if (runningChainName.toString() !== developmentChainName) {
-      throw new Error('This command should only be run on a Development chain.')
+      throw new CLIError(
+        'This command should only be run on a Development chain.',
+        { exit: ExitCodes.DevelopmentModeOnly }
+      )
     }
 
     logger.info('Development mode is ON.')
