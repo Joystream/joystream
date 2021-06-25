@@ -539,12 +539,6 @@ export default class Api {
     return dataObjects
   }
 
-  async getRandomBootstrapEndpoint(): Promise<string | null> {
-    const endpoints = await this._api.query.discovery.bootstrapEndpoints()
-    const randomEndpoint = _.sample(endpoints.toArray())
-    return randomEndpoint ? randomEndpoint.toString() : null
-  }
-
   async storageProviderEndpoint(storageProviderId: StorageProviderId | number): Promise<string> {
     const value = await this._api.query.storageWorkingGroup.workerStorage(storageProviderId)
     return this._api.createType('Text', value).toString()
