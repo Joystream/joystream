@@ -28,13 +28,4 @@ describe('Channel Metadata', () => {
     assert.deepEqual(metaToObject(ChannelMetadata, channelMessage), { ...channel, category: '100' })
     assert.deepEqual(encodeDecode(ChannelMetadata, channel), { ...channel, category: '100' })
   })
-
-  it('Channel Metadata: Category as string', () => {
-    const channel = { category: '100' as any }
-    const channelMessage = new ChannelMetadata(channel)
-    ChannelMetadata.verify(channelMessage)
-
-    assert.deepEqual(metaToObject(ChannelMetadata, channelMessage), { ...channel, category: '100' })
-    assert.deepEqual(encodeDecode(ChannelMetadata, channel), { ...channel, category: '100' })
-  })
 })
