@@ -23,7 +23,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{CheckedAdd, MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -470,20 +470,7 @@ pub struct Person<MemberId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Post_<
-    MemberId,
-    CuratorGroupId,
-    DAOId,
-    Hash,
-    Balance,
-    BlockNumber,
-    ReplyId,
-    VideoId,
-    VideoCategoryId,
-> {
-    /// Hash of current text
-    pub title_hash: Hash,
-
+pub struct Post_<MemberId, CuratorGroupId, DAOId, Balance, BlockNumber, ReplyId, VideoId> {
     /// Author of post.
     pub author: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
 
@@ -498,9 +485,6 @@ pub struct Post_<
 
     /// video associated to the post (instead of the body hash as in the blog module)
     pub video: VideoId,
-
-    /// category for this video
-    pub category: VideoCategoryId,
 }
 
 // Needed for nested comments
@@ -523,10 +507,7 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Reply_<BlockNumber, ReplyId, PostId: Default, PartecipantId, Balance, Hash> {
-    /// Reply text hash
-    text_hash: Hash,
-
+pub struct Reply_<BlockNumber, ReplyId, PostId: Default, PartecipantId, Balance> {
     /// Associated with reply owner
     owner: PartecipantId,
 
@@ -545,12 +526,10 @@ pub type Post<T> = Post_<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
-    <T as frame_system::Trait>::Hash,
     BalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as Trait>::ReplyId,
     <T as Trait>::VideoId,
-    <T as Trait>::VideoCategoryId,
 >;
 
 /// alias for Reply
@@ -560,7 +539,6 @@ pub type Reply<T> = Reply_<
     <T as Trait>::PostId,
     PartecipantId<T>,
     BalanceOf<T>,
-    <T as frame_system::Trait>::Hash,
 >;
 
 decl_storage! {
@@ -606,7 +584,10 @@ decl_storage! {
         pub PostById get(fn post_by_id) config(): map hasher(blake2_128_concat) T::PostId => Post<T>;
         pub ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T>;
 
-        pub PostCount get(fn post_count): T::PostId;
+        pub NextPostId get(fn next_post_id): T::PostId;
+
+        pub NextReplyId get(fn next_reply_id): T::ReplyId;
+
     }
 }
 
@@ -1374,13 +1355,45 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_post(
-            _origin,
-            _title: <T as frame_system::Trait>::Hash,
-            _video: T::VideoId,
-            _category: T::VideoCategoryId,
+            origin,
+            video_id: T::VideoId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
             // ensure that origin is signed by the channel ownerr of the video
-            Self::not_implemented()?;
+
+            let video = Self::ensure_video_exists(&video_id)?;
+            let channel_id = video.in_channel;
+            let channel_owner = Self::channel_by_id(channel_id).owner;
+
+
+            ensure_actor_authorized_to_update_channel::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &channel_owner,
+            )?;
+
+            let post_id = <NextPostId<T>>::get();
+            let next_post_id = post_id.checked_add(&T::PostId::one()).ok_or("PostId overflow")?;
+
+            let post: Post<T> = Post_ {
+                author: channel_owner,
+                cleanup_pay_off: BalanceOf::<T>::zero(),
+                replies_count: T::ReplyId::zero(),
+                last_edited: frame_system::Module::<T>::block_number(),
+                video: video_id,
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            PostById::<T>::insert(post_id, post);
+            <NextPostId<T>>::put(next_post_id);
+
+            // deposit event
+            Self::deposit_event(RawEvent::PostCreated(actor, video_id, post_id));
+
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1590,6 +1603,8 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        PostId = <T as Trait>::PostId,
+        ReplyId = <T as Trait>::ReplyId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1709,5 +1724,9 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
+
+        // Posts & Replies
+        PostCreated(ContentActor, VideoId, PostId),
+        ReplyCreated(ContentActor, ReplyId),
     }
 );
