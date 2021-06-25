@@ -412,8 +412,7 @@ async function updateVideoLicense(
 
   // Update license (and potentially remove foreign key reference)
   // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
-  // even though the model typings itself are not aware that "null" is a valid value.
-  // See: https://github.com/typeorm/typeorm/issues/2934
+  // See: https://github.com/Joystream/hydra/issues/435
   video.license = license as License | undefined
   video.updatedAt = new Date(ctx.event.blockTimestamp)
   await store.save<Video>(video)

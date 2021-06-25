@@ -17,6 +17,10 @@ export default async function membershipSystem({ api, query, env }: FlowProps): 
       referralCut: 5,
       invitedInitialBalance: new BN(500),
     },
+    // BigInt above Int32 case:
+    {
+      membershipPrice: new BN(100_000_000_000),
+    },
     {
       defaultInviteCount: 5,
       membershipPrice: new BN(500),
