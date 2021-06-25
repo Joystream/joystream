@@ -1359,14 +1359,13 @@ decl_module! {
             video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
-            // ensure that origin is signed by the channel ownerr of the video
 
             let video = Self::ensure_video_exists(&video_id)?;
             let channel_id = video.in_channel;
             let channel_owner = Self::channel_by_id(channel_id).owner;
 
-
-            ensure_actor_authorized_to_update_channel::<T>(
+        // permissions: only channel owner is allowed to create posts
+            ensure_actor_authorized_to_create_post::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
@@ -1402,20 +1401,37 @@ decl_module! {
             _owner: PartecipantId<T>,
             _post_id: T::PostId,
             _reply_id: Option<T::ReplyId>,
-            _text: <T as frame_system::Trait>::Hash,
         ) {
            Self::not_implemented()?;
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn edit_post(
-            _origin,
-            _post_id: T::PostId,
-            _new_title: Option<<T as frame_system::Trait>::Hash>,
-            _new_video: Option<T::VideoId>,
+            origin,
+            post_id: T::PostId,
+            new_video_id: T::VideoId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
-        // test
-            Self::not_implemented()?;
+
+        // ensure channel exists
+            let post = Self::ensure_post_exists(post_id)?;
+            let post_author = post.author.clone();
+
+        // ensure actor is valid
+            ensure_actor_authorized_to_edit_post::<T>(origin, &actor, &post_author)?;
+
+            let mut post = post;
+            post.video = new_video_id;
+
+        //
+        // == MUTATION_SAFE ==
+        //
+
+            PostById::<T>::insert(post_id, post);
+
+            // deposit event
+            Self::deposit_event(RawEvent::PostModified(actor, new_video_id, post_id));
+
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1431,15 +1447,25 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_post(
-        _origin,
-        _owner: ChannelOwner<
-            <T as MembershipTypes>::MemberId,
-            <T as ContentActorAuthenticator>::CuratorGroupId,
-            <T as StorageOwnership>::DAOId,
-        >,
-        _post: T::PostId,
+            origin,
+            post_id: T::PostId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
-            Self::not_implemented()?;
+            // ensure post exists
+            let post = Self::ensure_post_exists(post_id)?;
+            let post_author = post.author.clone();
+
+            // ensure actor is valid
+            ensure_actor_authorized_to_edit_post::<T>(origin, &actor, &post_author)?;
+
+        //
+        // == MUTATION_SAFE ==
+        //
+
+            PostById::<T>::remove(post_id);
+
+            // deposit event
+            Self::deposit_event(RawEvent::PostDeleted(actor, post_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1556,6 +1582,14 @@ impl<T: Trait> Module<T> {
             // TODO:
             // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
         }
+    }
+
+    fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T>, Error<T>> {
+        ensure!(
+            PostById::<T>::contains_key(post_id),
+            Error::<T>::PostDoesNotExists
+        );
+        Ok(PostById::<T>::get(post_id))
     }
 
     fn not_implemented() -> DispatchResult {
@@ -1728,5 +1762,7 @@ decl_event!(
         // Posts & Replies
         PostCreated(ContentActor, VideoId, PostId),
         ReplyCreated(ContentActor, ReplyId),
+        PostModified(ContentActor, VideoId, PostId),
+        PostDeleted(ContentActor, PostId),
     }
 );

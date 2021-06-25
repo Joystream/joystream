@@ -263,6 +263,24 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     }
 }
 
+// Enure actor can create post: same rules as if he is trying to update channel
+pub fn ensure_actor_authorized_to_create_post<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
+}
+
+// Enure actor can edit post
+pub fn ensure_actor_authorized_to_edit_post<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
+}
+
 // pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
 //     origin: T::Origin,
 //     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
