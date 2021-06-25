@@ -44,8 +44,9 @@ export async function upload(
       file: 'received',
     })
   } catch (err) {
-    res.status(500).json({
-      errorMsg: err.toString(),
+    res.status(410).json({
+      type: 'Upload error',
+      message: err.toString(),
     })
   }
 }

@@ -3,17 +3,20 @@ import path from 'path'
 import cors from 'cors'
 import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
-import { OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
+import {
+  HttpError,
+  OpenAPIV3,
+} from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
 import { createStorageBucket } from '../runtime/extrinsics'
-import { parseBagId } from '../../services/helpers/bagIdParser'
-import { getHttpLogger } from '../../services/logger'
+import { httpLogger } from '../../services/logger'
 
 // TODO: custom errors (including validation errors)
 // TODO: custom authorization errors
 
+// Creates web API application.
 export async function createApp(
   api: ApiPromise,
   account: KeyringPair,
@@ -26,7 +29,7 @@ export async function createApp(
 
   app.use(cors())
   app.use(express.json())
-  app.use(getHttpLogger())
+  app.use(httpLogger())
 
   // TODO: check path
   app.use('/files', express.static(uploadsDir))
@@ -45,6 +48,7 @@ export async function createApp(
       res.locals.api = api
       next()
     },
+    // Setup OpenAPiValidator
     OpenApiValidator.middleware({
       apiSpec: spec,
       validateApiSpec: true,
@@ -63,15 +67,35 @@ export async function createApp(
     })
   )
 
+  // Request validation error handler.
+  /* eslint-disable @typescript-eslint/no-unused-vars */ // Required signature.
+  app.use(
+    (
+      err: HttpError,
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
+      res.status(err.status).json({
+        type: 'request_validation',
+        message: err.message,
+        errors: err.errors,
+      })
+      next(err)
+    }
+  )
+
   return app
 }
 
+// Defines a signature for a upload validation function.
 type ValidateUploadFunction = (
   req: express.Request,
   scopes: string[],
   schema: OpenAPIV3.SecuritySchemeObject
 ) => boolean | Promise<boolean>
 
+// Creates upload validation function.
 function validateUpload(
   api: ApiPromise,
   account: KeyringPair
@@ -84,9 +108,6 @@ function validateUpload(
     schema: OpenAPIV3.SecuritySchemeObject
   ) => {
     const tokenSignature = req.headers['x-api-key'] as string
-
-    // Validate bagId.
-    parseBagId(api, req.body.bagId)
 
     // TODO: token construction
     const sourceTokenRequest: TokenRequest = {
