@@ -127,12 +127,20 @@ class IdentitiesApi {
     return memberIds.length > 0 // true if at least one member id exists for the acccount
   }
 
+  async getMembersEntries() {
+    const memberEntries = await this.base.api.query.members.membershipById.entries()
+    memberEntries.map(([storageKey, member]) => [storageKey.args[0], member])
+  }
+
   /*
    * Return all the member IDs of an account by the root account id
    */
   async memberIdsOf(accountId) {
     const decoded = this.keyring.decodeAddress(accountId)
-    return this.base.api.query.members.memberIdsByRootAccountId(decoded)
+    // FIXME: Very slow, but probably the only way to retrieve this data now
+    return this.getMembersEntries()
+      .filter(([, member]) => member.root_account.eq(decoded))
+      .map(([id]) => id)
   }
 
   /*
@@ -140,16 +148,17 @@ class IdentitiesApi {
    */
   async memberIdsOfController(accountId) {
     const decoded = this.keyring.decodeAddress(accountId)
-    return this.base.api.query.members.memberIdsByControllerAccountId(decoded)
+    // FIXME: Very slow, but probably the only way to retrieve this data now
+    return this.getMembersEntries()
+      .filter(([, member]) => member.controller_account.eq(decoded))
+      .map(([id]) => id)
   }
 
   /*
    * Return the first member ID of an account, or undefined if not a member root account.
    */
   async firstMemberIdOf(accountId) {
-    const decoded = this.keyring.decodeAddress(accountId)
-    const ids = await this.base.api.query.members.memberIdsByRootAccountId(decoded)
-    return ids[0]
+    return this.memberIdsOf(accountId)[0]
   }
 
   /*
@@ -194,13 +203,12 @@ class IdentitiesApi {
     const tx = this.base.api.tx.members.buyMembership({
       root_account: accountId,
       controller_account: accountId,
-      name: userInfo.handle,
       handle: userInfo.handle,
     })
 
     return this.base.signAndSendThenGetEventResult(accountId, tx, {
       module: 'members',
-      event: 'MemberRegistered',
+      event: 'MembershipBought',
       type: 'MemberId',
       index: 0,
     })

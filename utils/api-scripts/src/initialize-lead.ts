@@ -6,6 +6,17 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
 import BN from 'bn.js'
 
+const workingGroupModules = [
+  'storageWorkingGroup',
+  'contentDirectoryWorkingGroup',
+  'forumWorkingGroup',
+  'membershipWorkingGroup',
+  'operationsWorkingGroup',
+  'gatewayWorkingGroup',
+] as const
+
+type WorkingGroupModuleName = typeof workingGroupModules[number]
+
 const MIN_APPLICATION_STAKE = new BN(2000)
 const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
 
@@ -16,9 +27,15 @@ async function main() {
   const provider = new WsProvider(WS_URI)
   const api = await ApiPromise.create({ provider, types })
 
+  const Group = process.env.GROUP || 'contentDirectoryWorkingGroup'
   const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
   const SudoKeyPair = process.env.SUDO_URI ? getKeyFromSuri(process.env.SUDO_URI) : getAlicePair()
   const StakeKeyPair = LeadKeyPair.derive(`//stake${Date.now()}`)
+
+  if (!workingGroupModules.includes(Group as WorkingGroupModuleName)) {
+    throw new Error(`Invalid working group: ${Group}`)
+  }
+  const groupModule = Group as WorkingGroupModuleName
 
   const txHelper = new ExtrinsicsHelper(api)
 
@@ -53,17 +70,17 @@ async function main() {
   }
 
   // Create a new lead opening
-  if ((await api.query.contentDirectoryWorkingGroup.currentLead()).isSome) {
-    console.log('Curators lead already exists, aborting...')
+  if ((await api.query[groupModule].currentLead()).isSome) {
+    console.log(`${groupModule} lead already exists, aborting...`)
   } else {
-    console.log(`Making member id: ${memberId} the content lead.`)
-    // Create curator lead opening
-    console.log('Creating curator lead opening...')
+    console.log(`Making member id: ${memberId} the ${groupModule} lead.`)
+    // Create lead opening
+    console.log(`Creating ${groupModule} lead opening...`)
     const [openingRes] = await txHelper.sendAndCheck(
       SudoKeyPair,
       [
         sudo(
-          api.tx.contentDirectoryWorkingGroup.addOpening(
+          api.tx[groupModule].addOpening(
             '',
             'Leader',
             {
@@ -74,9 +91,9 @@ async function main() {
           )
         ),
       ],
-      'Failed to create Content Curators Lead opening!'
+      `Failed to create ${groupModule} lead opening!`
     )
-    const openingId = openingRes.findRecord('contentDirectoryWorkingGroup', 'OpeningAdded')!.event.data[0] as OpeningId
+    const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
 
     // Set up stake account
     const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
@@ -98,11 +115,11 @@ async function main() {
     console.log((await api.query.system.account(StakeKeyPair.address)).toHuman())
 
     // Apply to lead opening
-    console.log('Applying to curator lead opening...')
+    console.log(`Applying to ${groupModule} lead opening...`)
     const [applicationRes] = await txHelper.sendAndCheck(
       LeadKeyPair,
       [
-        api.tx.contentDirectoryWorkingGroup.applyOnOpening({
+        api.tx[groupModule].applyOnOpening({
           member_id: memberId,
           role_account_id: LeadKeyPair.address,
           opening_id: openingId,
@@ -115,21 +132,13 @@ async function main() {
       'Failed to apply on lead opening!'
     )
 
-    const applicationId = applicationRes.findRecord('contentDirectoryWorkingGroup', 'AppliedOnOpening')!.event
-      .data[1] as ApplicationId
+    const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as ApplicationId
 
     // Fill opening
     console.log('Filling the opening...')
     await txHelper.sendAndCheck(
       LeadKeyPair,
-      [
-        sudo(
-          api.tx.contentDirectoryWorkingGroup.fillOpening(
-            openingId,
-            new (JoyBTreeSet(ApplicationId))(registry, [applicationId])
-          )
-        ),
-      ],
+      [sudo(api.tx[groupModule].fillOpening(openingId, new (JoyBTreeSet(ApplicationId))(registry, [applicationId])))],
       'Failed to fill the opening'
     )
   }
