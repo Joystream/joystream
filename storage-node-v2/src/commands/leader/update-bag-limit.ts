@@ -13,7 +13,7 @@ export default class LeaderUpdateBagLimit extends ApiCommandBase {
       required: true,
       description: 'New StorageBucketsPerBagLimit value',
     }),
-    ...ApiCommandBase.keyflags,
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {

@@ -20,7 +20,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       description: 'Invited storage operator ID (storage WG worker ID)',
     }),
     allow: flags.boolean({ char: 'a', description: 'Accepts new bags' }),
-    ...ApiCommandBase.keyflags,
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {

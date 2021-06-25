@@ -17,7 +17,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
       required: true,
       description: 'Storage bucket ID',
     }),
-    ...ApiCommandBase.keyflags,
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {

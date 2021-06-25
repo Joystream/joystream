@@ -18,7 +18,7 @@ export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
       required: true,
       description: `New 'max voucher object size limit' value`,
     }),
-    ...ApiCommandBase.keyflags,
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {

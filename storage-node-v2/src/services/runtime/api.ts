@@ -16,9 +16,9 @@ import { CLIError } from '@oclif/errors'
 
 export class ExtrinsicFailedError extends CLIError {}
 
-// TODO: set URL variable
-export async function createApi(): Promise<ApiPromise> {
-  const provider = new WsProvider('ws://localhost:9944')
+// Initialize the runtime API.
+export async function createApi(apiUrl: string): Promise<ApiPromise> {
+  const provider = new WsProvider(apiUrl)
 
   return await ApiPromise.create({ provider, types })
 }
@@ -121,7 +121,7 @@ export async function sendAndFollowNamedTx(
   module: string,
   method: string,
   params: CodecArg[],
-  sudoCall: boolean = false
+  sudoCall = false
 ): Promise<void> {
   logger.debug(`Sending ${module}.${method} extrinsic...`)
   let tx = api.tx[module][method](...params)
