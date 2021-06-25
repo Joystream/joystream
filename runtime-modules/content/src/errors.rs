@@ -68,7 +68,10 @@ decl_error! {
         PostDoesNotExists,
 
         /// Partecipant is not a member
-        MembershipError
+        MembershipError,
+
+        /// Partecipant is not a member
+        ReplyDoesNotExists
 
     }
 }

@@ -23,7 +23,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{CheckedAdd, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{CheckedAdd, CheckedSub, MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -507,7 +507,7 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Reply_<BlockNumber, ReplyId, PostId: Default, ParticipantId, Balance> {
+pub struct Reply_<BlockNumber, ReplyId, PostId: Default, ParticipantId, Balance, Hash> {
     /// Associated with reply owner
     owner: ParticipantId,
 
@@ -519,6 +519,9 @@ pub struct Reply_<BlockNumber, ReplyId, PostId: Default, ParticipantId, Balance>
 
     /// Last time reply was edited
     last_edited: BlockNumber,
+
+    /// actual text (hash) of the reply
+    text: Hash,
 }
 
 /// alias for Post
@@ -539,6 +542,7 @@ pub type Reply<T> = Reply_<
     <T as Trait>::PostId,
     ParticipantId<T>,
     BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
 >;
 
 decl_storage! {
@@ -1398,11 +1402,57 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_reply(
             _origin,
-            _owner: ParticipantId<T>,
-            _post_id: T::PostId,
-            _reply_id: Option<T::ReplyId>,
+            participant_id: ParticipantId<T>,
+            post_id: T::PostId,
+            reply_id: Option<T::ReplyId>,
+            text: <T as frame_system::Trait>::Hash,
         ) {
-           Self::not_implemented()?;
+        // ensure that origin is signed by a Member
+        Self::not_implemented()?;
+
+            // Ensure post with given id exists
+            let post = Self::ensure_post_exists(post_id)?;
+
+
+        // If this is a reply to an existing one, ensure that parent reply is existed
+            if let Some(reply_id) = reply_id {
+                // Check parent existed at some point in time(whether it is in storage or not)
+                ensure!(reply_id < post.replies_count, Error::<T>::ReplyDoesNotExists);
+            }
+
+            let new_replies_count = post
+        .replies_count
+        .checked_add(&T::ReplyId::one())
+        .ok_or("Replies count overflow")?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut post = post;
+            post.replies_count = new_replies_count;
+            PostById::<T>::insert(post_id, post);
+
+            // parent id for the new reply
+            let parent_id = if let Some(reply_id) = reply_id {
+        ParentId::Reply(reply_id)
+            } else {
+        ParentId::Post(post_id)
+            };
+
+            let reply = Reply_ {
+        owner: participant_id,
+        parent_id: parent_id,
+        cleanup_pay_off: BalanceOf::<T>::zero(),
+        last_edited: frame_system::Module::<T>::block_number(),
+        text: text,
+            };
+
+        // insert the reply into storage
+            ReplyById::<T>::insert(post_id, new_replies_count, reply);
+
+        // deposit event
+        Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, new_replies_count));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1437,12 +1487,31 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn edit_reply(
           _origin,
-          _owner: ParticipantId<T>,
-          _post_id: T::PostId,
-          _reply_id: T::ReplyId,
-          _new_text: <T as frame_system::Trait>::Hash
+          participant_id: ParticipantId<T>,
+          post_id: T::PostId,
+          reply_id: T::ReplyId,
+          new_text: <T as frame_system::Trait>::Hash
         ) {
-          Self::not_implemented()?;
+
+            // ensure that origin is signed by owner and owner is the original author of the reply
+            Self::not_implemented()?;
+
+            // Ensure reply with given id exists
+            let reply = Self::ensure_reply_exists(post_id, reply_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut reply = reply;
+            reply.text = new_text;
+
+            // insert the reply into storage
+            ReplyById::<T>::insert(post_id, reply_id, reply);
+
+        // reply updated
+            Self::deposit_event(RawEvent::ReplyModified(participant_id, post_id, reply_id));
+
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1469,23 +1538,54 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_replies(
-        _origin,
-        _owner: ParticipantId<T>,
-        _reply: T::ReplyId,
+        pub fn delete_reply(
+            _origin,
+            participant_id: ParticipantId<T>,
+            post_id: T::PostId,
+            reply_id: T::ReplyId,
         ) {
+            // ensure that origin is signed by owner and owner is the original author of the reply
             Self::not_implemented()?;
+
+            // Ensure reply with given id exists
+            let _reply = Self::ensure_reply_exists(post_id, reply_id)?;
+
+            // decrease replies count for post
+            let post = Self::ensure_post_exists(post_id)?;
+
+            let new_replies_count = post
+                .replies_count
+                .checked_sub(&T::ReplyId::one())
+                .ok_or("Reply count underflow")?;
+
+        // the reply_id field is nonetheless kept for all the Replies that are subreplies of this
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut post = post;
+            post.replies_count = new_replies_count;
+
+            // delete reply from storage
+            ReplyById::<T>::remove(post_id, reply_id);
+
+            // update post
+            PostById::<T>::insert(post_id, post);
+
+        // deposit event
+        Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-    fn react_post(
-        _origin,
-        participant_id: ParticipantId<T>,
-        post_id: T::PostId,
-        reaction_id: T::PostReactionId,
-    ) {
-           // ensure origin is signed by a member
-           Self::deposit_event(RawEvent::ReactionToPost(participant_id, post_id, reaction_id));
+        fn react_post(
+            _origin,
+            participant_id: ParticipantId<T>,
+            post_id: T::PostId,
+            reaction_id: T::PostReactionId,
+        ) {
+            // ensure origin is signed by a member
+            Self::deposit_event(RawEvent::ReactionToPost(participant_id, post_id, reaction_id));
         }
     }
 }
@@ -1592,6 +1692,14 @@ impl<T: Trait> Module<T> {
             Error::<T>::PostDoesNotExists
         );
         Ok(PostById::<T>::get(post_id))
+    }
+
+    fn ensure_reply_exists(post_id: T::PostId, reply_id: T::ReplyId) -> Result<Reply<T>, Error<T>> {
+        ensure!(
+            ReplyById::<T>::contains_key(post_id, reply_id),
+            Error::<T>::ReplyDoesNotExists
+        );
+        Ok(ReplyById::<T>::get(post_id, reply_id))
     }
 
     fn not_implemented() -> DispatchResult {
@@ -1765,9 +1873,11 @@ decl_event!(
 
         // Posts & Replies
         PostCreated(ContentActor, VideoId, PostId),
-        ReplyCreated(ContentActor, ReplyId),
+        ReplyCreated(ParticipantId, PostId, ReplyId),
         PostModified(ContentActor, VideoId, PostId),
+        ReplyModified(ParticipantId, PostId, ReplyId),
         PostDeleted(ContentActor, PostId),
+        ReplyDeleted(ParticipantId, PostId, ReplyId),
         ReactionToPost(ParticipantId, PostId, ReactionId),
     }
 );
