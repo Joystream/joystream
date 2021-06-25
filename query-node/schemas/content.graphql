@@ -9,7 +9,12 @@ type AssetJoystreamStorage @variant {
   dataObject: DataObject!
 }
 
-union Asset = AssetExternal | AssetJoystreamStorage
+# FIXME: https://github.com/Joystream/hydra/issues/434
+type AssetNone @variant {
+  _phantom: Int
+}
+
+union Asset = AssetExternal | AssetJoystreamStorage | AssetNone
 
 "Category of media channel"
 type ChannelCategory @entity {
@@ -174,7 +179,7 @@ type VideoMediaMetadata @entity {
   pixelHeight: Int
 
   "Video media size in bytes"
-  size: Int
+  size: BigInt
 
   video: Video @derivedFrom(field: "mediaMetadata")
 

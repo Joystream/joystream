@@ -19,7 +19,7 @@ type DataObject @entity {
   typeId: Int!
 
   "Content size in bytes"
-  size: Int!
+  size: BigInt!
 
   "Storage provider id of the liaison"
   liaison: Worker # liaison is unset until storage provider accepts or rejects the content

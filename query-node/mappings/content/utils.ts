@@ -43,6 +43,7 @@ import { ContentParameters, NewAsset, ContentActor } from '@joystream/types/augm
 import { ContentParameters as Custom_ContentParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import BN from 'bn.js'
 
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
@@ -114,7 +115,7 @@ export async function processVideoMetadata(
 
   // prepare license if needed
   if (isSet(meta.license)) {
-    video.license = await processLicense(ctx, video.license, meta.license)
+    await updateVideoLicense(ctx, video, meta.license)
   }
 
   // prepare thumbnail photo asset if needed
@@ -200,7 +201,7 @@ async function processVideoMediaMetadata(
 
   // integrate media-related data
   const mediaMetadata = {
-    size: videoSize,
+    size: isSet(videoSize) ? new BN(videoSize.toString()) : undefined,
     pixelWidth: metadata.mediaPixelWidth,
     pixelHeight: metadata.mediaPixelHeight,
   }
@@ -381,39 +382,46 @@ async function processLanguage(
   return newLanguage
 }
 
-async function processLicense(
+async function updateVideoLicense(
   ctx: StoreContext & EventContext,
-  existingLicense: License | undefined,
-  metadata: ILicense | null | undefined
-): Promise<License | undefined> {
+  video: Video,
+  licenseMetadata: ILicense | null | undefined
+): Promise<void> {
   const { store, event } = ctx
 
-  if (!isSet(metadata)) {
-    return existingLicense
+  if (!isSet(licenseMetadata)) {
+    return
   }
 
-  if (isLicenseEmpty(metadata)) {
-    // license is meant to be deleted
-    if (existingLicense) {
-      await store.remove<License>(existingLicense)
-    }
-    return undefined
+  const previousLicense = video.license
+  let license: License | null = null
+
+  if (!isLicenseEmpty(licenseMetadata)) {
+    // license is meant to be created/updated
+    license =
+      previousLicense ||
+      new License({
+        createdAt: new Date(event.blockTimestamp),
+        createdById: '1',
+        updatedById: '1',
+      })
+    license.updatedAt = new Date(event.blockTimestamp)
+    integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])
+    await store.save<License>(license)
   }
 
-  // license is meant to be created/updated
-  const license =
-    existingLicense ||
-    new License({
-      createdAt: new Date(event.blockTimestamp),
-      createdById: '1',
-      updatedById: '1',
-    })
-  license.updatedAt = new Date(event.blockTimestamp)
-  integrateMeta(license, metadata, ['attribution', 'code', 'customText'])
+  // Update license (and potentially remove foreign key reference)
+  // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
+  // even though the model typings itself are not aware that "null" is a valid value.
+  // See: https://github.com/typeorm/typeorm/issues/2934
+  video.license = license as License | undefined
+  video.updatedAt = new Date(ctx.event.blockTimestamp)
+  await store.save<Video>(video)
 
-  await store.save<License>(license)
-
-  return license
+  // Safely remove previous license if needed
+  if (previousLicense && !license) {
+    await store.remove<License>(previousLicense)
+  }
 }
 
 /*

@@ -14,6 +14,7 @@ import { ContentParameters as Custom_ContentParameters } from '@joystream/types/
 import { registry } from '@joystream/types'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 /*
@@ -93,7 +94,7 @@ export async function createDataObject(
     updatedAt: new Date(event.blockTimestamp),
     createdInBlock: event.blockNumber,
     typeId: typeId.toNumber(),
-    size: sizeInBytes.toNumber(),
+    size: new BN(sizeInBytes.toString()),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
     ipfsContentId: ipfsContentId.toUtf8(),
     joystreamContentId: dataObjectId,

@@ -7,7 +7,7 @@ import { AccountId } from '@polkadot/types/interfaces'
 import { Option } from '@polkadot/types/codec'
 import { Content } from '../generated/types'
 import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
-import { Channel, ChannelCategory, DataObject } from 'query-node/dist/model'
+import { AssetNone, Channel, ChannelCategory, DataObject } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
@@ -24,11 +24,12 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
-
+    // assets
+    coverPhoto: new AssetNone(),
+    avatarPhoto: new AssetNone(),
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
-
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOwner(store, contentActor)),
   })
