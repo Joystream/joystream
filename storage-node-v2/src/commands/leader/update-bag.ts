@@ -35,7 +35,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       - dynamic:member:4
       `,
     }),
-    ...ApiCommandBase.keyflags,
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {

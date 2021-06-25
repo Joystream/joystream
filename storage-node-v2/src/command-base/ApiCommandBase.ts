@@ -13,9 +13,14 @@ import { CLIError } from '@oclif/errors'
 export default abstract class ApiCommandBase extends Command {
   private api: ApiPromise | null = null
 
-  static keyflags = {
+  static flags = {
     help: flags.help({ char: 'h' }),
     dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
+    apiUrl: flags.string({
+      char: 'u',
+      description:
+        'Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944',
+    }),
     keyfile: flags.string({
       char: 'k',
       description:
@@ -36,14 +41,20 @@ export default abstract class ApiCommandBase extends Command {
 
   protected async getApi(): Promise<ApiPromise> {
     if (this.api === null) {
-      throw new Error('Runtime Api is uninitialized.')
+      throw new CLIError('Runtime Api is uninitialized.', {
+        exit: ExitCodes.ApiError,
+      })
     }
 
     return this.api
   }
 
   async init(): Promise<void> {
-    this.api = await createApi()
+    const { flags } = this.parse(ApiCommandBase)
+
+    const apiUrl = flags.apiUrl ?? 'ws://localhost:9944'
+
+    this.api = await createApi(apiUrl)
 
     await this.getApi()
   }

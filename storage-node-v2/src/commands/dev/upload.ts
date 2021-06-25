@@ -7,7 +7,6 @@ export default class DevUpload extends ApiCommandBase {
   static description = 'Upload data object (development mode only).'
 
   static flags = {
-    help: flags.help({ char: 'h' }),
     size: flags.integer({
       char: 's',
       required: true,
@@ -18,6 +17,7 @@ export default class DevUpload extends ApiCommandBase {
       required: true,
       description: 'Data object IPFS content ID.',
     }),
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {

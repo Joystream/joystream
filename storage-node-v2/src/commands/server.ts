@@ -25,7 +25,7 @@ export default class Server extends ApiCommandBase {
       required: true,
       description: 'Server port.',
     }),
-    ...ApiCommandBase.keyflags,
+    ...ApiCommandBase.flags,
   }
 
   static args = [{ name: 'file' }]
