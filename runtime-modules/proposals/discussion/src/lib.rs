@@ -121,7 +121,9 @@ pub trait CouncilMembership<AccountId, MemberId> {
 }
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::MembershipTypes {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+{
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

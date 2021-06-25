@@ -147,7 +147,8 @@ where
     )
     .unwrap();
 
-    let actor_id = <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
+    let actor_id =
+        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
     assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
         actor_id
     ));
@@ -184,7 +185,8 @@ where
     )
     .unwrap();
 
-    let actor_id = <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
+    let actor_id =
+        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
     assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
         actor_id
     ));

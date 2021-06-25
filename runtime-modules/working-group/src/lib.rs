@@ -29,6 +29,11 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+// TODO after Olympia-master (Sumer) merge:
+// - change module comment
+// - benchmark new extrinsics
+// - fix `ensure_worker_role_storage_text_is_valid` incorrect cast
+
 pub mod benchmarking;
 
 mod checks;
@@ -53,8 +58,6 @@ pub use types::{
     OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
-
-pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
@@ -274,6 +277,12 @@ decl_event!(
         /// - Worker ID.
         /// - Missed reward (optional). None means 'no missed reward'.
         NewMissedRewardLevelReached(WorkerId, Option<Balance>),
+
+        /// Emits on updating the worker storage role.
+        /// Params:
+        /// - Id of the worker.
+        /// - Raw storage field.
+        WorkerStorageUpdated(WorkerId, Vec<u8>),
     }
 );
 
@@ -311,6 +320,13 @@ decl_storage! {
 
         /// Status text hash.
         pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
+
+        /// Maps identifier to corresponding worker storage.
+        pub WorkerStorage get(fn worker_storage): map hasher(blake2_128_concat)
+            WorkerId<T> => Vec<u8>;
+
+        /// Worker storage size upper bound.
+        pub WorkerStorageSize get(fn worker_storage_size) : u16 = default_storage_size_constraint();
     }
 }
 
@@ -1104,6 +1120,31 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
         }
+
+        /// Update the associated role storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_storage(
+            origin,
+            worker_id: WorkerId<T>,
+            storage: Vec<u8>
+        ) {
+
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            checks::ensure_worker_signed::<T,I>(origin, &worker_id)?;
+
+            // Ensure valid text.
+            checks::ensure_worker_role_storage_text_is_valid::<T,I>(&storage)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Complete the role storage update
+            WorkerStorage::<T, I>::insert(worker_id, storage.clone());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
+        }
     }
 }
 
@@ -1498,6 +1539,10 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
     }
+
+    fn worker_exists(worker_id: &T::ActorId) -> bool {
+        checks::ensure_worker_exists::<T, I>(worker_id).is_ok()
+    }
 }
 
 impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
@@ -1510,4 +1555,9 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<
     fn set_budget(new_value: BalanceOf<T>) {
         Self::set_working_group_budget(new_value);
     }
+}
+
+// Creates default storage size constraint.
+pub(crate) fn default_storage_size_constraint() -> u16 {
+    2048
 }

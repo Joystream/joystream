@@ -7,57 +7,13 @@ use crate::*;
 pub use codec::{Codec, Decode, Encode};
 pub use common::MembershipTypes;
 use core::fmt::Debug;
-use frame_support::{ensure, Parameter};
+use frame_support::ensure;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
-// use frame_system::ensure_root;
 
-/// Model of authentication manager.
-pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
-    /// Curator identifier
-    type CuratorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
-    /// Curator group identifier
-    type CuratorGroupId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + Clone
-        + MaybeSerializeDeserialize
-        + Eq
-        + PartialEq
-        + Ord;
-
-    /// Authorize actor as lead
-    fn is_lead(account_id: &Self::AccountId) -> bool;
-
-    /// Checks if Id represents a worker id in the working group
-    fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool;
-
-    /// Authorize actor as curator
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool;
-
-    /// Authorize actor as member
-    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
-}
-
-pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
+pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &CuratorId<T>) -> DispatchResult {
     ensure!(
-        T::is_valid_curator_id(curator_id),
+        T::WorkingGroup::worker_exists(curator_id),
         Error::<T>::CuratorIdInvalid
     );
     Ok(())
@@ -65,11 +21,11 @@ pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> Dispat
 
 /// Ensure curator authorization performed succesfully
 pub fn ensure_curator_auth_success<T: Trait>(
-    curator_id: &T::CuratorId,
+    curator_id: &CuratorId<T>,
     account_id: &T::AccountId,
 ) -> DispatchResult {
     ensure!(
-        T::is_curator(curator_id, account_id),
+        T::WorkingGroup::is_worker_account_id(account_id, curator_id),
         Error::<T>::CuratorAuthFailed
     );
     Ok(())
@@ -81,7 +37,7 @@ pub fn ensure_member_auth_success<T: Trait>(
     account_id: &T::AccountId,
 ) -> DispatchResult {
     ensure!(
-        T::is_member(member_id, account_id),
+        T::Membership::is_member_controller_account(member_id, account_id),
         Error::<T>::MemberAuthFailed
     );
     Ok(())
@@ -89,7 +45,10 @@ pub fn ensure_member_auth_success<T: Trait>(
 
 /// Ensure lead authorization performed succesfully
 pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> DispatchResult {
-    ensure!(T::is_lead(account_id), Error::<T>::LeadAuthFailed);
+    ensure!(
+        T::WorkingGroup::is_leader_account_id(account_id),
+        Error::<T>::LeadAuthFailed
+    );
     Ok(())
 }
 
@@ -101,7 +60,7 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
 
 pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
 ) -> DispatchResult {
     match actor {
         // Lead should use their member or curator role to create or update channel assets.
@@ -131,7 +90,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 // Enure actor can update channels and videos in the channel
 pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     // Only owner of a channel can update and delete channel assets.
@@ -185,7 +144,7 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
 // Enure actor can update or delete channels and videos
 pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
 ) -> DispatchResult {
     // Only Lead authorized to set featured videos
     if let ContentActor::Lead = actor {
@@ -198,7 +157,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
 
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     // Only lead and curators can censor channels and videos
@@ -236,7 +195,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
 
 pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
 ) -> DispatchResult {
     // Only lead and curators can manage categories
     match actor {
@@ -265,7 +224,7 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
 
 // pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
 //     origin: T::Origin,
-//     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+//     actor: &ContentActor<T::CuratorGroupId, CuratorId<T>, T::MemberId>,
 // ) -> DispatchResult {
 //     // Only Lead and (sudo) can delete assets no longer associated with a channel or person.
 //     if let ContentActor::Lead = actor {

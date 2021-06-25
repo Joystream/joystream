@@ -70,7 +70,7 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
-use council::{ReferendumConnection};
+use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 use storage::data_object_storage_registry;
@@ -89,7 +89,6 @@ pub use referendum;
 use storage::data_directory::Voucher;
 pub use storage::{data_directory, data_object_type_registry};
 pub use working_group;
-
 
 pub use content;
 pub use content::MaxNumber;
@@ -458,6 +457,9 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type StorageSystem = data_directory::Module<Self>;
+    type WorkingGroup = ContentDirectoryWorkingGroup;
+    type Membership = Members;
+    type CuratorGroupId = CuratorGroupId;
 }
 
 // The referendum instance alias.
@@ -562,7 +564,6 @@ impl common::StorageOwnership for Runtime {
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }
-
 
 impl memo::Trait for Runtime {
     type Event = Event;
@@ -698,9 +699,9 @@ pub type InvitedMemberStakingManager =
 pub type StakingCandidateStakingHandler =
     staking_handler::StakingManager<Runtime, StakingCandidateLockId>;
 pub type GatewayWorkingGroupStakingManager =
-staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
+    staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
 pub type OperationsWorkingGroupStakingManager =
-staking_handler::StakingManager<Runtime, OperationsWorkingGroupLockId>;
+    staking_handler::StakingManager<Runtime, OperationsWorkingGroupLockId>;
 
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
@@ -1024,7 +1025,7 @@ construct_runtime!(
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},

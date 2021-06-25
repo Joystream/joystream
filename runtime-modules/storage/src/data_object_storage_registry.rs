@@ -40,11 +40,7 @@ type WorkingGroup<T> = <T as data_object_type_registry::Trait>::WorkingGroup;
 const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
 /// The _Data object storage registry_ main _Trait_.
-pub trait Trait:
-    pallet_timestamp::Trait
-    + frame_system::Trait
-    + data_directory::Trait
-{
+pub trait Trait: pallet_timestamp::Trait + frame_system::Trait + data_directory::Trait {
     /// _Data object storage registry_ event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

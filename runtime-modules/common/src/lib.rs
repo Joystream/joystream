@@ -11,8 +11,8 @@ use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-pub use membership::{ActorId, MemberId, StakingAccountValidator, MembershipTypes};
 use frame_support::Parameter;
+pub use membership::{ActorId, MemberId, MembershipTypes, StakingAccountValidator};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;

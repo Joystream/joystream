@@ -2,6 +2,7 @@
 
 use crate::*;
 
+use frame_support::dispatch::DispatchError;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
@@ -11,15 +12,12 @@ use sp_runtime::{
     Perbill,
 };
 
-use crate::ContentActorAuthenticator;
 use crate::Trait;
 use common::storage::StorageSystem;
 
-pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
-pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
+pub type CuratorGroupId = <Test as Trait>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
-// pub type DAOId = <Test as StorageOwnership>::DAOId;
 
 /// Origins
 
@@ -37,8 +35,8 @@ pub const MEMBERS_COUNT: MemberId = 10;
 
 /// Runtime Id's
 
-pub const FIRST_CURATOR_ID: CuratorId = 1;
-pub const SECOND_CURATOR_ID: CuratorId = 2;
+pub const FIRST_CURATOR_ID: CuratorId<Test> = 1;
+pub const SECOND_CURATOR_ID: CuratorId<Test> = 2;
 
 pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 // pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
@@ -134,33 +132,6 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl ContentActorAuthenticator for Test {
-    type CuratorId = u64;
-    type CuratorGroupId = u64;
-
-    fn is_lead(account_id: &Self::AccountId) -> bool {
-        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
-        *account_id == lead_account_id
-    }
-
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
-        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
-        let second_curator_account_id =
-            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
-        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *curator_id)
-            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *curator_id)
-    }
-
-    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
-        *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
-    }
-
-    fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
-        *curator_id == FIRST_CURATOR_ID || *curator_id == SECOND_CURATOR_ID
-    }
-}
-
 pub struct MockStorageSystem {}
 
 // Anyone can upload and delete without restriction
@@ -230,8 +201,70 @@ impl Trait for Test {
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
 
-    // Type that handles asset uploads to storage frame_system
+    /// Type that handles asset uploads to storage frame_system
     type StorageSystem = MockStorageSystem;
+
+    /// Working group pallet integration.
+    type WorkingGroup = ();
+
+    /// Validates member ID and origin combination.
+    type Membership = ();
+
+    /// Curator group identifier
+    type CuratorGroupId = u64;
+}
+
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        _member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let signed_account_id = frame_system::ensure_signed(origin)?;
+
+        Ok(signed_account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
+        *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
+        *account_id == lead_account_id
+    }
+
+    fn is_worker_account_id(
+        account_id: &<Test as frame_system::Trait>::AccountId,
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
+        let second_curator_account_id =
+            ensure_signed(Origin::signed(SECOND_CURATOR_ORIGIN)).unwrap();
+        (first_curator_account_id == *account_id && FIRST_CURATOR_ID == *worker_id)
+            || (second_curator_account_id == *account_id && SECOND_CURATOR_ID == *worker_id)
+    }
+
+    fn worker_exists(worker_id: &<Test as MembershipTypes>::ActorId) -> bool {
+        *worker_id == FIRST_CURATOR_ID || *worker_id == SECOND_CURATOR_ID
+    }
 }
 
 pub type System = frame_system::Module<Test>;

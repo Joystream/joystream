@@ -97,7 +97,10 @@ pub trait WeightInfo {
 }
 
 pub trait Trait:
-frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::membership::MembershipTypes
+    frame_system::Trait
+    + balances::Trait
+    + pallet_timestamp::Trait
+    + common::membership::MembershipTypes
 {
     /// Membership module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -110,7 +113,7 @@ frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::member
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
-    + common::working_group::WorkingGroupBudgetHandler<Self>;
+        + common::working_group::WorkingGroupBudgetHandler<Self>;
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;

@@ -470,7 +470,8 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!();
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
+    {
         unimplemented!();
     }
 
@@ -487,6 +488,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!();
     }
 }
 

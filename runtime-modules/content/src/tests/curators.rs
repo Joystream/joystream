@@ -4,7 +4,7 @@ use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-pub fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
+pub fn add_curator_to_new_group(curator_id: CuratorId<Test>) -> CuratorGroupId {
     let curator_group_id = Content::next_curator_group_id();
     // create new group and add curator id to it
     assert_ok!(Content::create_curator_group(Origin::signed(LEAD_ORIGIN)));
