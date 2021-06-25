@@ -470,7 +470,7 @@ pub struct Person<MemberId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostRecord<
+pub struct Post_<
     MemberId,
     CuratorGroupId,
     DAOId,
@@ -523,7 +523,7 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ReplyRecord<BlockNumber, ReplyId, PostId: Default, PartecipantId, Balance, Hash> {
+pub struct Reply_<BlockNumber, ReplyId, PostId: Default, PartecipantId, Balance, Hash> {
     /// Reply text hash
     text_hash: Hash,
 
@@ -541,7 +541,7 @@ pub struct ReplyRecord<BlockNumber, ReplyId, PostId: Default, PartecipantId, Bal
 }
 
 /// alias for Post
-pub type Post<T> = PostRecord<
+pub type Post<T> = Post_<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
@@ -554,7 +554,7 @@ pub type Post<T> = PostRecord<
 >;
 
 /// alias for Reply
-pub type Reply<T> = ReplyRecord<
+pub type Reply<T> = Reply_<
     <T as frame_system::Trait>::BlockNumber,
     <T as Trait>::ReplyId,
     <T as Trait>::PostId,
@@ -1431,9 +1431,9 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_replies(
-        origin,
-        owner: PartecipantId<T>,
-        reply: T::ReplyId,
+        _origin,
+        _owner: PartecipantId<T>,
+        _reply: T::ReplyId,
         ) {
             Self::not_implemented()?;
         }
