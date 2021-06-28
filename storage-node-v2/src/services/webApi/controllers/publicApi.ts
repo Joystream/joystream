@@ -68,7 +68,7 @@ export async function authToken(
     await validateTokenRequest(api, tokenRequest)
 
     const tokenBody: UploadTokenBody = {
-      timestamp: Date.now(),
+      validUntil: getTokenExpirationTime(),
       ...tokenRequest.data,
     }
     const signedToken = createUploadToken(tokenBody, account)
@@ -149,4 +149,10 @@ async function validateTokenRequest(
   ) {
     throw new Error(`Provided controller account and member id don't match.`)
   }
+}
+
+// TODO: move to config or set to 10 seconds
+const TokenExpirationPeriod: number = 100 * 1000 // seconds
+function getTokenExpirationTime(): number {
+  return Date.now() + TokenExpirationPeriod
 }

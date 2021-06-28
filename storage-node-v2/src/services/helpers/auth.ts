@@ -20,7 +20,7 @@ export interface RequestData {
 }
 
 export interface UploadTokenBody extends RequestData {
-  timestamp: number
+  validUntil: number // timestamp
 }
 
 export interface UploadToken {
@@ -81,5 +81,9 @@ export function verifyUploadTokenData(
 
   if (token.data.bagId !== request.bagId) {
     throw new Error('Unexpected bagId')
+  }
+
+  if (token.data.validUntil < Date.now()) {
+    throw new Error('Token expired')
   }
 }
