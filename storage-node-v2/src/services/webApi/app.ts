@@ -10,7 +10,6 @@ import {
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
-import { createStorageBucket } from '../runtime/extrinsics'
 import { httpLogger } from '../../services/logger'
 
 // TODO: custom errors (including validation errors)
@@ -33,12 +32,6 @@ export async function createApp(
 
   // TODO: check path
   app.use('/files', express.static(uploadsDir))
-
-  app.get('/test', async function (req, res) {
-    await createStorageBucket(api, account)
-
-    res.send('ok')
-  })
 
   app.use(
     // Set parameters for each request.
@@ -112,6 +105,8 @@ function validateUpload(
     // TODO: token construction
     const sourceTokenRequest: TokenRequest = {
       dataObjectId: parseInt(req.body.dataObjectId),
+      storageBucketId: parseInt(req.body.storageBucketId),
+      bagId: req.body.bagId,
     }
 
     return verifyTokenSignature(sourceTokenRequest, tokenSignature, account)
