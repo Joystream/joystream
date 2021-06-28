@@ -21,6 +21,7 @@ export interface RequestData {
 
 export interface UploadTokenBody extends RequestData {
   validUntil: number // timestamp
+  nonce: string
 }
 
 export interface UploadToken {
@@ -64,26 +65,4 @@ export function createUploadToken(
   }
 
   return base64url.encode(JSON.stringify(token))
-}
-
-// Throws exceptions on errors.
-export function verifyUploadTokenData(
-  token: UploadToken,
-  request: RequestData
-): void {
-  if (token.data.dataObjectId !== request.dataObjectId) {
-    throw new Error('Unexpected dataObjectId')
-  }
-
-  if (token.data.storageBucketId !== request.storageBucketId) {
-    throw new Error('Unexpected storageBucketId')
-  }
-
-  if (token.data.bagId !== request.bagId) {
-    throw new Error('Unexpected bagId')
-  }
-
-  if (token.data.validUntil < Date.now()) {
-    throw new Error('Token expired')
-  }
 }

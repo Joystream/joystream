@@ -7,11 +7,16 @@ import {
   verifyTokenSignature,
 } from '../../helpers/auth'
 import { hashFile } from '../../../services/helpers/hashing'
+import {
+  createNonce,
+  TokenExpirationPeriod,
+} from '../../../services/helpers/tokenNonceKeeper'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { parseBagId } from '../../../services/helpers/bagIdParser'
 import fs from 'fs'
 import { Membership } from '@joystream/types/members'
+
 const fsPromises = fs.promises
 
 interface UploadRequest {
@@ -68,6 +73,7 @@ export async function authToken(
     await validateTokenRequest(api, tokenRequest)
 
     const tokenBody: UploadTokenBody = {
+      nonce: createNonce(),
       validUntil: getTokenExpirationTime(),
       ...tokenRequest.data,
     }
@@ -151,8 +157,6 @@ async function validateTokenRequest(
   }
 }
 
-// TODO: move to config or set to 10 seconds
-const TokenExpirationPeriod: number = 100 * 1000 // seconds
 function getTokenExpirationTime(): number {
   return Date.now() + TokenExpirationPeriod
 }
