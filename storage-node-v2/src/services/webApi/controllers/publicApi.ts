@@ -1,11 +1,17 @@
 import * as express from 'express'
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { TokenRequest, TokenBody, signToken } from '../../helpers/auth'
+import {
+  UploadTokenRequest,
+  UploadTokenBody,
+  createUploadToken,
+  verifyTokenSignature,
+} from '../../helpers/auth'
 import { hashFile } from '../../../services/helpers/hashing'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { parseBagId } from '../../../services/helpers/bagIdParser'
 import fs from 'fs'
+import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
 
 interface UploadRequest {
@@ -44,7 +50,7 @@ export async function upload(
     })
   } catch (err) {
     res.status(410).json({
-      type: 'Upload error',
+      type: 'upload',
       message: err.toString(),
     })
   }
@@ -54,17 +60,28 @@ export async function authToken(
   req: express.Request,
   res: express.Response
 ): Promise<void> {
-  const account = getAccount(res)
-  const tokenRequest = getTokenRequest(req)
-  const tokenBody: TokenBody = {
-    timestamp: Date.now(),
-    ...tokenRequest,
-  }
-  const signedToken = signToken(tokenBody, account)
+  try {
+    const account = getAccount(res)
+    const tokenRequest = getTokenRequest(req)
+    const api = getApi(res)
 
-  res.status(201).json({
-    token: signedToken,
-  })
+    await validateTokenRequest(api, tokenRequest)
+
+    const tokenBody: UploadTokenBody = {
+      timestamp: Date.now(),
+      ...tokenRequest.data,
+    }
+    const signedToken = createUploadToken(tokenBody, account)
+
+    res.status(201).json({
+      token: signedToken,
+    })
+  } catch (err) {
+    res.status(410).json({
+      type: 'authtoken',
+      message: err.toString(),
+    })
+  }
 }
 
 function getFileObject(req: express.Request): Express.Multer.File {
@@ -104,11 +121,32 @@ function getApi(res: express.Response): ApiPromise {
   throw new Error('No Joystream API loaded.')
 }
 
-function getTokenRequest(req: express.Request): TokenRequest {
-  const tokenRequest = req.body as TokenRequest
+function getTokenRequest(req: express.Request): UploadTokenRequest {
+  const tokenRequest = req.body as UploadTokenRequest
   if (tokenRequest) {
     return tokenRequest
   }
 
   throw new Error('No token request provided.')
+}
+
+async function validateTokenRequest(
+  api: ApiPromise,
+  tokenRequest: UploadTokenRequest
+): Promise<void> {
+  const result = verifyTokenSignature(tokenRequest, tokenRequest.data.accountId)
+
+  if (!result) {
+    throw new Error('Invalid upload token request signature.')
+  }
+
+  const membership = (await api.query.members.membershipById(
+    tokenRequest.data.memberId
+  )) as Membership
+
+  if (
+    membership.controller_account.toString() !== tokenRequest.data.accountId
+  ) {
+    throw new Error(`Provided controller account and member id don't match.`)
+  }
 }

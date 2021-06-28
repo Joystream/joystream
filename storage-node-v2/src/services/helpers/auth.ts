@@ -3,43 +3,62 @@ import { u8aToHex } from '@polkadot/util'
 import { signatureVerify } from '@polkadot/util-crypto'
 import base64url from 'base64url'
 
-export interface TokenRequest {
-  dataObjectId: number
-  storageBucketId: number
-  bagId: string
-}
-
-export interface TokenBody {
-  dataObjectId: number
-  storageBucketId: number
-  bagId: string
-  timestamp: number
-}
-
-export interface Token {
-  data: TokenBody
+export interface UploadTokenRequest {
+  data: UploadTokenRequestBody
   signature: string
 }
 
-export function parseToken(tokenString: string): Token {
+export interface UploadTokenRequestBody extends RequestData {
+  memberId: number
+  accountId: string
+}
+
+export interface RequestData {
+  dataObjectId: number
+  storageBucketId: number
+  bagId: string
+}
+
+export interface UploadTokenBody extends RequestData {
+  timestamp: number
+}
+
+export interface UploadToken {
+  data: UploadTokenBody
+  signature: string
+}
+
+export function parseUploadToken(tokenString: string): UploadToken {
   return JSON.parse(base64url.decode(tokenString))
 }
 
 export function verifyTokenSignature(
-  token: Token,
-  account: KeyringPair
+  token: UploadToken | UploadTokenRequest,
+  address: string
 ): boolean {
   const message = JSON.stringify(token.data)
-  const { isValid } = signatureVerify(message, token.signature, account.address)
+  const { isValid } = signatureVerify(message, token.signature, address)
 
   return isValid
 }
 
-export function signToken(tokenBody: TokenBody, account: KeyringPair): string {
+export function signTokenBody(
+  tokenBody: UploadTokenBody | UploadTokenRequestBody,
+  account: KeyringPair
+): string {
   const message = JSON.stringify(tokenBody)
   const signature = u8aToHex(account.sign(message))
 
-  const token: Token = {
+  return signature
+}
+
+export function createUploadToken(
+  tokenBody: UploadTokenBody,
+  account: KeyringPair
+): string {
+  const signature = signTokenBody(tokenBody, account)
+
+  const token = {
     data: tokenBody,
     signature,
   }
@@ -48,16 +67,19 @@ export function signToken(tokenBody: TokenBody, account: KeyringPair): string {
 }
 
 // Throws exceptions on errors.
-export function verifyTokenData(token: Token, data: TokenRequest): void {
-  if (token.data.dataObjectId !== data.dataObjectId) {
+export function verifyUploadTokenData(
+  token: UploadToken,
+  request: RequestData
+): void {
+  if (token.data.dataObjectId !== request.dataObjectId) {
     throw new Error('Unexpected dataObjectId')
   }
 
-  if (token.data.storageBucketId !== data.storageBucketId) {
+  if (token.data.storageBucketId !== request.storageBucketId) {
     throw new Error('Unexpected storageBucketId')
   }
 
-  if (token.data.bagId !== data.bagId) {
+  if (token.data.bagId !== request.bagId) {
     throw new Error('Unexpected bagId')
   }
 }
