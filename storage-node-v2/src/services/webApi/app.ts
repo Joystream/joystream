@@ -12,9 +12,6 @@ import { ApiPromise } from '@polkadot/api'
 import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
 import { httpLogger } from '../../services/logger'
 
-// TODO: custom errors (including validation errors)
-// TODO: custom authorization errors
-
 // Creates web API application.
 export async function createApp(
   api: ApiPromise,

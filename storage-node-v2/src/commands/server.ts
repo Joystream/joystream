@@ -3,16 +3,13 @@ import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger from '../services/logger'
 
-// TODO: fix command not found error (error handling)
-// TODO: custom IP address?
-
 export default class Server extends ApiCommandBase {
   static description = 'Starts the storage node server.'
 
   static flags = {
     worker: flags.integer({
       char: 'w',
-      required: true, // TODO: for dev
+      required: true,
       description: 'Storage provider worker ID',
     }),
     uploads: flags.string({
@@ -42,7 +39,7 @@ export default class Server extends ApiCommandBase {
 
     try {
       const port = flags.port
-      const workerId = flags.worker ?? 0 // TODO: don't require on dev???
+      const workerId = flags.worker ?? 0
       const app = await createApp(api, account, workerId, flags.uploads)
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
