@@ -76,7 +76,6 @@ function sendExtrinsic(
                   resolve(result)
                 } else {
                   reject(
-                    // TODO: print error
                     new ExtrinsicFailedError(
                       'Sudo extrinsic execution error!',
                       {
