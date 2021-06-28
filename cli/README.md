@@ -45,7 +45,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.5.1 linux-x64 node-v14.16.1
+@joystream/cli/0.6.0 linux-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -66,15 +66,17 @@ When using the CLI for the first time there are a few common steps you might wan
 
 # Commands
 <!-- commands -->
-* [`joystream-cli account:choose`](#joystream-cli-accountchoose)
-* [`joystream-cli account:create NAME`](#joystream-cli-accountcreate-name)
-* [`joystream-cli account:current`](#joystream-cli-accountcurrent)
-* [`joystream-cli account:export PATH`](#joystream-cli-accountexport-path)
+* [`joystream-cli account:create`](#joystream-cli-accountcreate)
+* [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
 * [`joystream-cli account:forget`](#joystream-cli-accountforget)
-* [`joystream-cli account:import BACKUPFILEPATH`](#joystream-cli-accountimport-backupfilepath)
-* [`joystream-cli account:transferTokens RECIPIENT AMOUNT`](#joystream-cli-accounttransfertokens-recipient-amount)
+* [`joystream-cli account:import`](#joystream-cli-accountimport)
+* [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
+* [`joystream-cli account:list`](#joystream-cli-accountlist)
+* [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
+* [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
 * [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
 * [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
+* [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
 * [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
 * [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
 * [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
@@ -101,85 +103,55 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
 * [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 * [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
-* [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
+* [`joystream-cli working-groups:apply [OPENINGID]`](#joystream-cli-working-groupsapply-openingid)
+* [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
 * [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
-* [`joystream-cli working-groups:decreaseWorkerStake WORKERID`](#joystream-cli-working-groupsdecreaseworkerstake-workerid)
+* [`joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`](#joystream-cli-working-groupsdecreaseworkerstake-workerid-amount)
 * [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
 * [`joystream-cli working-groups:fillOpening WGOPENINGID`](#joystream-cli-working-groupsfillopening-wgopeningid)
-* [`joystream-cli working-groups:increaseStake`](#joystream-cli-working-groupsincreasestake)
+* [`joystream-cli working-groups:increaseStake AMOUNT`](#joystream-cli-working-groupsincreasestake-amount)
 * [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
 * [`joystream-cli working-groups:opening WGOPENINGID`](#joystream-cli-working-groupsopening-wgopeningid)
 * [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
 * [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
 * [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
-* [`joystream-cli working-groups:slashWorker WORKERID`](#joystream-cli-working-groupsslashworker-workerid)
-* [`joystream-cli working-groups:startAcceptingApplications WGOPENINGID`](#joystream-cli-working-groupsstartacceptingapplications-wgopeningid)
-* [`joystream-cli working-groups:startReviewPeriod WGOPENINGID`](#joystream-cli-working-groupsstartreviewperiod-wgopeningid)
-* [`joystream-cli working-groups:terminateApplication WGAPPLICATIONID`](#joystream-cli-working-groupsterminateapplication-wgapplicationid)
-* [`joystream-cli working-groups:updateRewardAccount [ACCOUNTADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-accountaddress)
-* [`joystream-cli working-groups:updateRoleAccount [ACCOUNTADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-accountaddress)
+* [`joystream-cli working-groups:slashWorker WORKERID AMOUNT`](#joystream-cli-working-groupsslashworker-workerid-amount)
+* [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
+* [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
 * [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
-* [`joystream-cli working-groups:updateWorkerReward WORKERID`](#joystream-cli-working-groupsupdateworkerreward-workerid)
+* [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
 
-## `joystream-cli account:choose`
+## `joystream-cli account:create`
 
-Choose default account to use in the CLI
+Create a new account
 
 ```
 USAGE
-  $ joystream-cli account:choose
+  $ joystream-cli account:create
 
 OPTIONS
-  -S, --showSpecial      Whether to show special (DEV chain) accounts
-  -a, --address=address  Select account by address (if available)
-```
-
-_See code: [src/commands/account/choose.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/choose.ts)_
-
-## `joystream-cli account:create NAME`
-
-Create new account
-
-```
-USAGE
-  $ joystream-cli account:create NAME
-
-ARGUMENTS
-  NAME  Account name
+  --name=name               Account name
+  --type=(sr25519|ed25519)  Account type (defaults to sr25519)
 ```
 
 _See code: [src/commands/account/create.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/create.ts)_
 
-## `joystream-cli account:current`
-
-Display information about currently choosen default account
-
-```
-USAGE
-  $ joystream-cli account:current
-
-ALIASES
-  $ joystream-cli account:info
-  $ joystream-cli account:default
-```
-
-_See code: [src/commands/account/current.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/current.ts)_
-
-## `joystream-cli account:export PATH`
+## `joystream-cli account:export DESTPATH`
 
 Export account(s) to given location
 
 ```
 USAGE
-  $ joystream-cli account:export PATH
+  $ joystream-cli account:export DESTPATH
 
 ARGUMENTS
-  PATH  Path where the exported files should be placed
+  DESTPATH  Path where the exported files should be placed
 
 OPTIONS
-  -a, --all  If provided, exports all existing accounts into "exported_accounts" folder inside given path
+  -a, --all        If provided, exports all existing accounts into "exported_accounts" folder inside given path
+  -n, --name=name  Name of the account to export
 ```
 
 _See code: [src/commands/account/export.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/export.ts)_
@@ -195,34 +167,79 @@ USAGE
 
 _See code: [src/commands/account/forget.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/forget.ts)_
 
-## `joystream-cli account:import BACKUPFILEPATH`
+## `joystream-cli account:import`
 
-Import account using JSON backup file
+Import account using mnemonic phrase, seed, suri or json backup file
 
 ```
 USAGE
-  $ joystream-cli account:import BACKUPFILEPATH
+  $ joystream-cli account:import
 
-ARGUMENTS
-  BACKUPFILEPATH  Path to account backup JSON file
+OPTIONS
+  --backupFilePath=backupFilePath  Path to account backup JSON file
+  --mnemonic=mnemonic              Mnemonic phrase
+  --name=name                      Account name
+  --seed=seed                      Secret seed
+  --suri=suri                      Substrate uri
+  --type=(sr25519|ed25519)         Account type (defaults to sr25519)
 ```
 
 _See code: [src/commands/account/import.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/import.ts)_
 
-## `joystream-cli account:transferTokens RECIPIENT AMOUNT`
+## `joystream-cli account:info [ADDRESS]`
 
-Transfer tokens from currently choosen account
+Display detailed information about specified account
 
 ```
 USAGE
-  $ joystream-cli account:transferTokens RECIPIENT AMOUNT
+  $ joystream-cli account:info [ADDRESS]
 
 ARGUMENTS
-  RECIPIENT  Address of the transfer recipient
-  AMOUNT     Amount of tokens to transfer
+  ADDRESS  An address to inspect (can also be provided interavtively)
+
+ALIASES
+  $ joystream-cli account:inspect
+```
+
+_See code: [src/commands/account/info.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/info.ts)_
+
+## `joystream-cli account:list`
+
+List all available accounts
+
+```
+USAGE
+  $ joystream-cli account:list
+```
+
+_See code: [src/commands/account/list.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/list.ts)_
+
+## `joystream-cli account:transferTokens`
+
+Transfer tokens from any of the available accounts
+
+```
+USAGE
+  $ joystream-cli account:transferTokens
+
+OPTIONS
+  --amount=amount  (required) Amount of tokens to transfer
+  --from=from      Address of the sender (can also be provided interactively)
+  --to=to          Address of the recipient (can also be provided interactively)
 ```
 
 _See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
+
+## `joystream-cli api:getQueryNodeEndpoint`
+
+Get current query node endpoint
+
+```
+USAGE
+  $ joystream-cli api:getQueryNodeEndpoint
+```
+
+_See code: [src/commands/api/getQueryNodeEndpoint.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/getQueryNodeEndpoint.ts)_
 
 ## `joystream-cli api:getUri`
 
@@ -278,6 +295,20 @@ EXAMPLES
 ```
 
 _See code: [src/commands/api/inspect.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/inspect.ts)_
+
+## `joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`
+
+Set query node endpoint
+
+```
+USAGE
+  $ joystream-cli api:setQueryNodeEndpoint [ENDPOINT]
+
+ARGUMENTS
+  ENDPOINT  Query node endpoint for the CLI to use
+```
+
+_See code: [src/commands/api/setQueryNodeEndpoint.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/setQueryNodeEndpoint.ts)_
 
 ## `joystream-cli api:setUri [URI]`
 
@@ -681,17 +712,6 @@ ARGUMENTS
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
 
-## `joystream-cli council:info`
-
-Get current council and council elections information
-
-```
-USAGE
-  $ joystream-cli council:info
-```
-
-_See code: [src/commands/council/info.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/council/info.ts)_
-
 ## `joystream-cli help [COMMAND]`
 
 display help for joystream-cli
@@ -721,11 +741,56 @@ ARGUMENTS
   WGAPPLICATIONID  Working Group Application ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/application.ts)_
+
+## `joystream-cli working-groups:apply [OPENINGID]`
+
+Apply to a working group opening (requires a membership)
+
+```
+USAGE
+  $ joystream-cli working-groups:apply [OPENINGID]
+
+ARGUMENTS
+  OPENINGID  Opening ID
+
+OPTIONS
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
+```
+
+_See code: [src/commands/working-groups/apply.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/apply.ts)_
+
+## `joystream-cli working-groups:cancelOpening OPENINGID`
+
+Cancels (removes) an active opening
+
+```
+USAGE
+  $ joystream-cli working-groups:cancelOpening OPENINGID
+
+ARGUMENTS
+  OPENINGID  Opening ID
+
+OPTIONS
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
+```
+
+_See code: [src/commands/working-groups/cancelOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/cancelOpening.ts)_
 
 ## `joystream-cli working-groups:createOpening`
 
@@ -736,39 +801,50 @@ USAGE
   $ joystream-cli working-groups:createOpening
 
 OPTIONS
-  -e, --edit                                          If provided along with --input - launches in edit mode allowing to
-                                                      modify the input before sending the exstinsic
+  -e, --edit                                                                   If provided along with --input - launches
+                                                                               in edit mode allowing to modify the input
+                                                                               before sending the exstinsic
 
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 
-  -i, --input=input                                   Path to JSON file to use as input (if not specified - the input
-                                                      can be provided interactively)
+  -i, --input=input                                                            Path to JSON file to use as input (if not
+                                                                               specified - the input can be provided
+                                                                               interactively)
 
-  -o, --output=output                                 Path to the file where the output JSON should be saved (this
-                                                      output can be then reused as input)
+  -o, --output=output                                                          Path to the file where the output JSON
+                                                                               should be saved (this output can be then
+                                                                               reused as input)
 
-  --dryRun                                            If provided along with --output - skips sending the actual
-                                                      extrinsic(can be used to generate a "draft" which can be provided
-                                                      as input later)
+  --dryRun                                                                     If provided along with --output - skips
+                                                                               sending the actual extrinsic(can be used
+                                                                               to generate a "draft" which can be
+                                                                               provided as input later)
 ```
 
 _See code: [src/commands/working-groups/createOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/createOpening.ts)_
 
-## `joystream-cli working-groups:decreaseWorkerStake WORKERID`
+## `joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`
 
 Decreases given worker stake by an amount that will be returned to the worker role account. Requires lead access.
 
 ```
 USAGE
-  $ joystream-cli working-groups:decreaseWorkerStake WORKERID
+  $ joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT
 
 ARGUMENTS
   WORKERID  Worker ID
+  AMOUNT    Amount of JOY to decrease the current worker stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/decreaseWorkerStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/decreaseWorkerStake.ts)_
@@ -785,8 +861,15 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
+
+  --penalty=penalty                                                            Optional penalty in JOY
+
+  --rationale=rationale                                                        Optional rationale
 ```
 
 _See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
@@ -803,23 +886,32 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/fillOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/fillOpening.ts)_
 
-## `joystream-cli working-groups:increaseStake`
+## `joystream-cli working-groups:increaseStake AMOUNT`
 
 Increases current role (lead/worker) stake. Requires active role account to be selected.
 
 ```
 USAGE
-  $ joystream-cli working-groups:increaseStake
+  $ joystream-cli working-groups:increaseStake AMOUNT
+
+ARGUMENTS
+  AMOUNT  Amount of JOY to increase the current stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/increaseStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/increaseStake.ts)_
@@ -833,8 +925,13 @@ USAGE
   $ joystream-cli working-groups:leaveRole
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
+
+  --rationale=rationale
 ```
 
 _See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
@@ -851,8 +948,11 @@ ARGUMENTS
   WGOPENINGID  Working Group Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/opening.ts)_
@@ -866,8 +966,11 @@ USAGE
   $ joystream-cli working-groups:openings
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/openings.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/openings.ts)_
@@ -881,8 +984,11 @@ USAGE
   $ joystream-cli working-groups:overview
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
@@ -896,116 +1002,77 @@ USAGE
   $ joystream-cli working-groups:setDefaultGroup
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/setDefaultGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/setDefaultGroup.ts)_
 
-## `joystream-cli working-groups:slashWorker WORKERID`
+## `joystream-cli working-groups:slashWorker WORKERID AMOUNT`
 
 Slashes given worker stake. Requires lead access.
 
 ```
 USAGE
-  $ joystream-cli working-groups:slashWorker WORKERID
+  $ joystream-cli working-groups:slashWorker WORKERID AMOUNT
 
 ARGUMENTS
   WORKERID  Worker ID
+  AMOUNT    Slash amount
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
+
+  --rationale=rationale
 ```
 
 _See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
 
-## `joystream-cli working-groups:startAcceptingApplications WGOPENINGID`
-
-Changes the status of pending opening to "Accepting applications". Requires lead access.
-
-```
-USAGE
-  $ joystream-cli working-groups:startAcceptingApplications WGOPENINGID
-
-ARGUMENTS
-  WGOPENINGID  Working Group Opening ID
-
-OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
-```
-
-_See code: [src/commands/working-groups/startAcceptingApplications.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startAcceptingApplications.ts)_
-
-## `joystream-cli working-groups:startReviewPeriod WGOPENINGID`
-
-Changes the status of active opening to "In review". Requires lead access.
-
-```
-USAGE
-  $ joystream-cli working-groups:startReviewPeriod WGOPENINGID
-
-ARGUMENTS
-  WGOPENINGID  Working Group Opening ID
-
-OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
-```
-
-_See code: [src/commands/working-groups/startReviewPeriod.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startReviewPeriod.ts)_
-
-## `joystream-cli working-groups:terminateApplication WGAPPLICATIONID`
-
-Terminates given working group application. Requires lead access.
-
-```
-USAGE
-  $ joystream-cli working-groups:terminateApplication WGAPPLICATIONID
-
-ARGUMENTS
-  WGAPPLICATIONID  Working Group Application ID
-
-OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
-```
-
-_See code: [src/commands/working-groups/terminateApplication.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/terminateApplication.ts)_
-
-## `joystream-cli working-groups:updateRewardAccount [ACCOUNTADDRESS]`
+## `joystream-cli working-groups:updateRewardAccount [ADDRESS]`
 
 Updates the worker/lead reward account (requires current role account to be selected)
 
 ```
 USAGE
-  $ joystream-cli working-groups:updateRewardAccount [ACCOUNTADDRESS]
+  $ joystream-cli working-groups:updateRewardAccount [ADDRESS]
 
 ARGUMENTS
-  ACCOUNTADDRESS  New reward account address (if omitted, one of the existing CLI accounts can be selected)
+  ADDRESS  New reward account address (if omitted, one of the existing CLI accounts can be selected)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/updateRewardAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRewardAccount.ts)_
 
-## `joystream-cli working-groups:updateRoleAccount [ACCOUNTADDRESS]`
+## `joystream-cli working-groups:updateRoleAccount [ADDRESS]`
 
 Updates the worker/lead role account. Requires member controller account to be selected
 
 ```
 USAGE
-  $ joystream-cli working-groups:updateRoleAccount [ACCOUNTADDRESS]
+  $ joystream-cli working-groups:updateRoleAccount [ADDRESS]
 
 ARGUMENTS
-  ACCOUNTADDRESS  New role account address (if omitted, one of the existing CLI accounts can be selected)
+  ADDRESS  New role account address (if omitted, can be provided interactively)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
@@ -1022,26 +1089,33 @@ ARGUMENTS
   STORAGE  Worker storage
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/updateRoleStorage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleStorage.ts)_
 
-## `joystream-cli working-groups:updateWorkerReward WORKERID`
+## `joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`
 
 Change given worker's reward (amount only). Requires lead access.
 
 ```
 USAGE
-  $ joystream-cli working-groups:updateWorkerReward WORKERID
+  $ joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD
 
 ARGUMENTS
-  WORKERID  Worker ID
+  WORKERID   Worker ID
+  NEWREWARD  New reward
 
 OPTIONS
-  -g, --group=(storageProviders|curators|operations)  The working group context in which the command should be executed
-                                                      Available values are: storageProviders, curators, operations.
+  -g, --group=(storageProviders|curators|forum|membership|operations|gateway)  The working group context in which the
+                                                                               command should be executed
+                                                                               Available values are: storageProviders,
+                                                                               curators, forum, membership, operations,
+                                                                               gateway.
 ```
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
