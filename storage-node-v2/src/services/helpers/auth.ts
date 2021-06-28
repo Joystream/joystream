@@ -4,6 +4,8 @@ import { signatureVerify } from '@polkadot/util-crypto'
 
 export interface TokenRequest {
   dataObjectId: number
+  storageBucketId: number
+  bagId: string
 }
 
 export function verifyTokenSignature(

@@ -9,13 +9,14 @@ import { ApiPromise } from '@polkadot/api'
 import logger from '../services/logger'
 import ExitCodes from './ExitCodes'
 import { CLIError } from '@oclif/errors'
+import { Input } from '@oclif/parser'
 
 export default abstract class ApiCommandBase extends Command {
   private api: ApiPromise | null = null
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    dev: flags.boolean({ char: 'd', description: 'Use development mode' }),
+    dev: flags.boolean({ char: 'm', description: 'Use development mode' }),
     apiUrl: flags.string({
       char: 'u',
       description:
@@ -50,7 +51,9 @@ export default abstract class ApiCommandBase extends Command {
   }
 
   async init(): Promise<void> {
-    const { flags } = this.parse(ApiCommandBase)
+    // Oclif hack: https://github.com/oclif/oclif/issues/225#issuecomment-490555119
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { flags } = this.parse(<Input<any>>this.constructor)
 
     const apiUrl = flags.apiUrl ?? 'ws://localhost:9944'
 

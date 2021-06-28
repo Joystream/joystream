@@ -8,7 +8,6 @@ import { parseBagId } from '../../../services/helpers/bagIdParser'
 import fs from 'fs'
 const fsPromises = fs.promises
 
-// TODO: error handling
 interface UploadRequest {
   dataObjectId: number
   storageBucketId: number

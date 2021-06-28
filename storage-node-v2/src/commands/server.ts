@@ -16,12 +16,12 @@ export default class Server extends ApiCommandBase {
       description: 'Storage provider worker ID',
     }),
     uploads: flags.string({
-      char: 'u',
+      char: 'd',
       required: true,
       description: 'Data uploading directory.',
     }),
     port: flags.integer({
-      char: 'p',
+      char: 'o',
       required: true,
       description: 'Server port.',
     }),

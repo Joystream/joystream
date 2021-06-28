@@ -112,10 +112,17 @@ components:
       type: object
       required:
         - dataObjectId
+        - storageBucketId
+        - bagId
       properties:
         dataObjectId:
           type: integer
           format: int64
+        storageBucketId:
+          type: integer
+          format: int64
+        bagId:
+          type: string
     ErrorResponse:
       type: object
       required:
