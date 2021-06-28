@@ -157,17 +157,21 @@ std = [
     'content/std',
 ]
 runtime-benchmarks = [
+    "hex-literal",
     "frame-support/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
+    "frame-benchmarking",
+    "frame-system-benchmarking",
+    "frame-system/runtime-benchmarks",
+    "pallet-offences-benchmarking",
+    "pallet-session-benchmarking",
     "pallet-balances/runtime-benchmarks",
     "pallet-im-online/runtime-benchmarks",
     "pallet-staking/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",
-    "frame-benchmarking",
-    "frame-system-benchmarking",
-    "pallet-offences-benchmarking",
-	"pallet-session-benchmarking",
     "substrate-utility/runtime-benchmarks",
+
+    # Joystream
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "proposals-codex/runtime-benchmarks",
@@ -180,7 +184,6 @@ runtime-benchmarks = [
     "referendum/runtime-benchmarks",
     "bounty/runtime-benchmarks",
     "blog/runtime-benchmarks",
-    "hex-literal",
 ]
 
 

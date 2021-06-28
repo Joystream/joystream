@@ -56,14 +56,8 @@ pub trait Trait: frame_system::Trait + balances::Trait + council::Trait {
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
 pub trait WeightInfo {
     fn execute_signal_proposal(i: u32) -> Weight;
-    fn update_working_group_budget_positive_forum() -> Weight;
-    fn update_working_group_budget_negative_forum() -> Weight;
-    fn update_working_group_budget_positive_storage() -> Weight;
-    fn update_working_group_budget_negative_storage() -> Weight;
-    fn update_working_group_budget_positive_content() -> Weight;
-    fn update_working_group_budget_negative_content() -> Weight;
-    fn update_working_group_budget_positive_membership() -> Weight;
-    fn update_working_group_budget_negative_membership() -> Weight;
+    fn update_working_group_budget_positive() -> Weight;
+    fn update_working_group_budget_negative() -> Weight;
     fn burn_account_tokens() -> Weight;
 }
 
@@ -177,7 +171,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T>::get_update_working_group_budget_weight(&working_group, &balance_kind)]
+        #[weight = Module::<T>::get_update_working_group_budget_weight(&balance_kind)]
         pub fn update_working_group_budget(
             origin,
             working_group: WorkingGroup,
@@ -185,7 +179,6 @@ decl_module! {
             balance_kind: BalanceKind,
         ) {
             ensure_root(origin.clone())?;
-
 
             let wg_budget = T::get_working_group_budget(working_group);
             let current_budget = Council::<T>::budget();
@@ -240,51 +233,15 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     // Returns the weigt for update_working_group_budget extrinsic according to parameters
-    fn get_update_working_group_budget_weight(
-        group: &WorkingGroup,
-        balance_kind: &BalanceKind,
-    ) -> Weight {
+    fn get_update_working_group_budget_weight(balance_kind: &BalanceKind) -> Weight {
         match balance_kind {
-            BalanceKind::Positive => match group {
-                WorkingGroup::Forum => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_positive_forum()
-                }
-                WorkingGroup::Storage => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_positive_storage()
-                }
-                WorkingGroup::Content => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_positive_content()
-                }
-                WorkingGroup::Membership => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
-                }
-                WorkingGroup::Operations => { //TODO: benchmark it
-                    WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
-                }
-                WorkingGroup::Gateway => { //TODO: benchmark it
-                    WeightInfoUtilities::<T>::update_working_group_budget_positive_membership()
-                }
-            },
-            BalanceKind::Negative => match group {
-                WorkingGroup::Forum => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_negative_forum()
-                }
-                WorkingGroup::Storage => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_negative_storage()
-                }
-                WorkingGroup::Membership => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_negative_membership()
-                }
-                WorkingGroup::Content => {
-                    WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
-                }
-                WorkingGroup::Operations => { //TODO: benchmark it
-                    WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
-                }
-                WorkingGroup::Gateway => { //TODO: benchmark it
-                    WeightInfoUtilities::<T>::update_working_group_budget_negative_content()
-                }
-            },
+            BalanceKind::Positive => {
+                WeightInfoUtilities::<T>::update_working_group_budget_positive()
+            }
+
+            BalanceKind::Negative => {
+                WeightInfoUtilities::<T>::update_working_group_budget_negative()
+            }
         }
     }
 }

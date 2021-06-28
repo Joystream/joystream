@@ -141,7 +141,6 @@ mod benchmarking;
 mod tests;
 
 use codec::Decode;
-use frame_system::{RawOrigin, ensure_root};
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::Get;
@@ -149,6 +148,7 @@ use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
+use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
@@ -175,7 +175,10 @@ type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
 
 /// Proposals engine trait.
 pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::membership::MembershipTypes + balances::Trait
+    frame_system::Trait
+    + pallet_timestamp::Trait
+    + common::membership::MembershipTypes
+    + balances::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;

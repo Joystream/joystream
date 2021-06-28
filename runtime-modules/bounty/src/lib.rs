@@ -103,7 +103,9 @@ use common::membership::{
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::MembershipTypes {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+{
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 

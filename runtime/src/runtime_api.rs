@@ -17,8 +17,9 @@ use crate::{
     GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
-    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment, DataDirectory
+    AllModules, AuthorityDiscovery, Babe, Balances, Call, DataDirectory, Grandpa, Historical,
+    InherentDataExt, ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
+    TransactionPayment,
 };
 use frame_support::weights::Weight;
 
@@ -79,7 +80,6 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signa
 // Default Executive type without the RuntimeUpgrade
 // pub type Executive =
 //     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
-
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
@@ -316,8 +316,8 @@ impl_runtime_apis! {
             // we need these two lines below.
             impl pallet_session_benchmarking::Trait for Runtime {}
             impl frame_system_benchmarking::Trait for Runtime {}
-            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::Trait>::MemberId> for Runtime {
-                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::Trait>::MemberId) {
+            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
                     crate::council::Module::<Runtime>::announce_candidacy(
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
@@ -334,15 +334,15 @@ impl_runtime_apis! {
 
             impl membership::MembershipWorkingGroupHelper<
                 <Runtime as frame_system::Trait>::AccountId,
-                <Runtime as common::membership::Trait>::MemberId,
-                <Runtime as common::membership::Trait>::ActorId,
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::ActorId,
                     > for Runtime
             {
                 fn insert_a_lead(
                     opening_id: u32,
                     caller_id: &<Runtime as frame_system::Trait>::AccountId,
-                    member_id: <Runtime as common::membership::Trait>::MemberId,
-                ) -> <Runtime as common::membership::Trait>::ActorId {
+                    member_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+                ) -> <Runtime as common::membership::MembershipTypes>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
                         working_group::OpeningType::Leader,
                         opening_id,

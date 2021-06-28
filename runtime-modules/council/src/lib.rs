@@ -222,7 +222,9 @@ pub trait WeightInfo {
 type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
 
 /// The main council trait.
-pub trait Trait: frame_system::Trait + common::membership::MembershipTypes + balances::Trait {
+pub trait Trait:
+    frame_system::Trait + common::membership::MembershipTypes + balances::Trait
+{
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -276,7 +278,10 @@ pub trait ReferendumConnection<T: Trait> {
     /// Process referendum results. This function MUST be called in runtime's implementation of
     /// referendum's `process_results()`.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::membership::MembershipTypes>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            VotePowerOf<T>,
+        >],
     );
 
     /// Process referendum results. This function MUST be called in runtime's implementation of
@@ -892,7 +897,10 @@ impl<T: Trait> Module<T> {
 
     // Conclude election period and elect new council if possible.
     fn end_election_period(
-        winners: &[OptionResult<<T as common::membership::MembershipTypes>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            VotePowerOf<T>,
+        >],
     ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
@@ -1070,7 +1078,10 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> ReferendumConnection<T> for Module<T> {
     // Process candidates' results recieved from the referendum.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::membership::MembershipTypes>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<
+            <T as common::membership::MembershipTypes>::MemberId,
+            VotePowerOf<T>,
+        >],
     ) {
         //
         // == MUTATION SAFE ==

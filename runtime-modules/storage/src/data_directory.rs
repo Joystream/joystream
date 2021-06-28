@@ -31,9 +31,9 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use common::working_group::WorkingGroupAuthenticator;
 use common::membership::MemberOriginValidator;
 pub use common::storage::{ContentParameters, StorageObjectOwner};
+use common::working_group::WorkingGroupAuthenticator;
 pub(crate) use common::BlockAndTime;
 
 use crate::data_object_type_registry;
@@ -70,7 +70,11 @@ pub trait Trait:
     type IsActiveDataObjectType: data_object_type_registry::IsActiveDataObjectType<Self>;
 
     /// Validates member id and origin combination.
-    type MembershipOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MembershipOriginValidator: MemberOriginValidator<
+        Self::Origin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 }
 
 decl_error! {
@@ -707,7 +711,9 @@ impl<T: Trait> Module<T> {
         owner: &ObjectOwner<T>,
     ) -> DispatchResult {
         if let StorageObjectOwner::Member(member_id) = owner {
-            T::MembershipOriginValidator::ensure_member_controller_account_origin(origin, *member_id)?;
+            T::MembershipOriginValidator::ensure_member_controller_account_origin(
+                origin, *member_id,
+            )?;
         } else {
             ensure_root(origin)?;
         };
