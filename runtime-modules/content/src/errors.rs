@@ -71,7 +71,11 @@ decl_error! {
         MembershipError,
 
         /// Partecipant is not a member
-        ReplyDoesNotExists
+        ReplyDoesNotExists,
+
+        /// Member is not authorized to perform the operation
+        MemberNotAuthorized
+
 
     }
 }

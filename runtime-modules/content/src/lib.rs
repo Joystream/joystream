@@ -1486,18 +1486,19 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn edit_reply(
-          _origin,
+          origin,
           participant_id: ParticipantId<T>,
           post_id: T::PostId,
           reply_id: T::ReplyId,
           new_text: <T as frame_system::Trait>::Hash
         ) {
 
-            // ensure that origin is signed by owner and owner is the original author of the reply
-            Self::not_implemented()?;
-
             // Ensure reply with given id exists
             let reply = Self::ensure_reply_exists(post_id, reply_id)?;
+
+            // ensure that origin is signed by owner and owner is the original author of the reply
+        let reply_owner = &reply.owner.clone();
+            ensure_member_authorized_to_edit_reply::<T>(origin, &participant_id, reply_owner)?;
 
             //
             // == MUTATION SAFE ==
@@ -1539,16 +1540,17 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_reply(
-            _origin,
+            origin,
             participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reply_id: T::ReplyId,
         ) {
             // ensure that origin is signed by owner and owner is the original author of the reply
-            Self::not_implemented()?;
-
             // Ensure reply with given id exists
-            let _reply = Self::ensure_reply_exists(post_id, reply_id)?;
+            let reply = Self::ensure_reply_exists(post_id, reply_id)?;
+            let reply_owner = &reply.owner.clone();
+
+            ensure_member_authorized_to_edit_reply::<T>(origin, &participant_id, reply_owner)?;
 
             // decrease replies count for post
             let post = Self::ensure_post_exists(post_id)?;

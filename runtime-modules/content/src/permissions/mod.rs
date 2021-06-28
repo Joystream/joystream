@@ -272,13 +272,26 @@ pub fn ensure_actor_authorized_to_create_post<T: Trait>(
     ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
 }
 
-// Enure member can create reply
+// Ensure member can create reply
 pub fn ensure_member_authorized_to_create_reply<T: Trait>(
     origin: T::Origin,
     member: &ParticipantId<T>,
 ) -> DispatchResult {
     let sender = &ensure_signed(origin)?;
     ensure_member_auth_success::<T>(member, sender)
+}
+
+// Ensure member can edit the reply:
+// ensure sender is a member account and it coincides with the reply owner
+pub fn ensure_member_authorized_to_edit_reply<T: Trait>(
+    origin: T::Origin,
+    member: &ParticipantId<T>,
+    owner: &ParticipantId<T>,
+) -> DispatchResult {
+    let sender = &ensure_signed(origin)?;
+    ensure_member_auth_success::<T>(member, sender)?;
+    ensure!(*owner == *member, Error::<T>::MemberNotAuthorized);
+    Ok(())
 }
 
 // Enure actor can edit post
