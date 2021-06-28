@@ -13,8 +13,9 @@ import {
   RequestData,
   verifyTokenSignature,
   parseUploadToken,
-  verifyUploadTokenData,
+  UploadToken,
 } from '../helpers/auth'
+import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
 import { httpLogger } from '../../services/logger'
 
 // Creates web API application.
@@ -111,8 +112,39 @@ function validateUpload(
       bagId: req.body.bagId,
     }
 
-    verifyUploadTokenData(token, sourceTokenRequest)
+    verifyUploadTokenData(account.address, token, sourceTokenRequest)
 
-    return verifyTokenSignature(token, account.address)
+    return true
+  }
+}
+
+// Throws exceptions on errors.
+function verifyUploadTokenData(
+  accountAddress: string,
+  token: UploadToken,
+  request: RequestData
+): void {
+  if (!verifyTokenSignature(token, accountAddress)) {
+    throw new Error('Invalid signature')
+  }
+
+  if (token.data.dataObjectId !== request.dataObjectId) {
+    throw new Error('Unexpected dataObjectId')
+  }
+
+  if (token.data.storageBucketId !== request.storageBucketId) {
+    throw new Error('Unexpected storageBucketId')
+  }
+
+  if (token.data.bagId !== request.bagId) {
+    throw new Error('Unexpected bagId')
+  }
+
+  if (token.data.validUntil < Date.now()) {
+    throw new Error('Token expired')
+  }
+
+  if (!checkRemoveNonce(token.data.nonce)) {
+    throw new Error('Nonce not found')
   }
 }

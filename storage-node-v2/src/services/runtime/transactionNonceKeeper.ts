@@ -3,7 +3,7 @@ import type { Index } from '@polkadot/types/interfaces/runtime'
 import BN from 'bn.js'
 import AwaitLock from 'await-lock'
 import { ApiPromise } from '@polkadot/api'
-import logger from '../../services/logger'
+import logger from '../logger'
 
 let nonce: Index | null = null
 const lock = new AwaitLock()

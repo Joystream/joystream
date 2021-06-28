@@ -9,7 +9,7 @@ import {
   DispatchError,
   DispatchResult,
 } from '@polkadot/types/interfaces/system'
-import { getNonce } from './nonceKeeper'
+import { getNonce } from './transactionNonceKeeper'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
