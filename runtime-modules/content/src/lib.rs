@@ -1581,12 +1581,14 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         fn react_post(
-            _origin,
+            origin,
             participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reaction_id: T::PostReactionId,
         ) {
             // ensure origin is signed by a member
+            let _post = Self::ensure_post_exists(post_id)?;
+            ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
             Self::deposit_event(RawEvent::ReactionToPost(participant_id, post_id, reaction_id));
         }
     }
