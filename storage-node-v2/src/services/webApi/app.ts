@@ -10,10 +10,10 @@ import {
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import {
-  TokenRequest,
+  RequestData,
   verifyTokenSignature,
-  parseToken,
-  verifyTokenData,
+  parseUploadToken,
+  verifyUploadTokenData,
 } from '../helpers/auth'
 import { httpLogger } from '../../services/logger'
 
@@ -103,16 +103,16 @@ function validateUpload(
     schema: OpenAPIV3.SecuritySchemeObject
   ) => {
     const tokenString = req.headers['x-api-key'] as string
-    const token = parseToken(tokenString)
+    const token = parseUploadToken(tokenString)
 
-    const sourceTokenRequest: TokenRequest = {
+    const sourceTokenRequest: RequestData = {
       dataObjectId: parseInt(req.body.dataObjectId),
       storageBucketId: parseInt(req.body.storageBucketId),
       bagId: req.body.bagId,
     }
 
-    verifyTokenData(token, sourceTokenRequest)
+    verifyUploadTokenData(token, sourceTokenRequest)
 
-    return verifyTokenSignature(token, account)
+    return verifyTokenSignature(token, account.address)
   }
 }

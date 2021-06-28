@@ -100,6 +100,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        410:
+          description: AuthToken request problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -111,17 +117,32 @@ components:
     TokenRequest:
       type: object
       required:
-        - dataObjectId
-        - storageBucketId
-        - bagId
+        - data
+        - signature
       properties:
-        dataObjectId:
-          type: integer
-          format: int64
-        storageBucketId:
-          type: integer
-          format: int64
-        bagId:
+        data:
+          type: object
+          required:
+            - memberId
+            - accountId
+            - dataObjectId
+            - storageBucketId
+            - bagId
+          properties:
+            memberId:
+              type: integer
+              format: int64
+            accountId:
+              type: string
+            dataObjectId:
+              type: integer
+              format: int64
+            storageBucketId:
+              type: integer
+              format: int64
+            bagId:
+              type: string
+        signature:
           type: string
     ErrorResponse:
       type: object
