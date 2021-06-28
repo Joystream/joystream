@@ -272,6 +272,15 @@ pub fn ensure_actor_authorized_to_create_post<T: Trait>(
     ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
 }
 
+// Enure member can create reply
+pub fn ensure_member_authorized_to_create_reply<T: Trait>(
+    origin: T::Origin,
+    member: &ParticipantId<T>,
+) -> DispatchResult {
+    let sender = &ensure_signed(origin)?;
+    ensure_member_auth_success::<T>(member, sender)
+}
+
 // Enure actor can edit post
 pub fn ensure_actor_authorized_to_edit_post<T: Trait>(
     origin: T::Origin,

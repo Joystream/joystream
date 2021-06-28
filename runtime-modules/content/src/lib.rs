@@ -1401,14 +1401,14 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_reply(
-            _origin,
+            origin,
             participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reply_id: Option<T::ReplyId>,
             text: <T as frame_system::Trait>::Hash,
         ) {
-        // ensure that origin is signed by a Member
-        Self::not_implemented()?;
+            // ensure that origin is signed by a Member
+            ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
 
             // Ensure post with given id exists
             let post = Self::ensure_post_exists(post_id)?;
