@@ -9,7 +9,12 @@ import {
 } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { TokenRequest, verifyTokenSignature } from '../helpers/auth'
+import {
+  TokenRequest,
+  verifyTokenSignature,
+  parseToken,
+  verifyTokenData,
+} from '../helpers/auth'
 import { httpLogger } from '../../services/logger'
 
 // Creates web API application.
@@ -97,15 +102,17 @@ function validateUpload(
     scopes: string[],
     schema: OpenAPIV3.SecuritySchemeObject
   ) => {
-    const tokenSignature = req.headers['x-api-key'] as string
+    const tokenString = req.headers['x-api-key'] as string
+    const token = parseToken(tokenString)
 
-    // TODO: token construction
     const sourceTokenRequest: TokenRequest = {
       dataObjectId: parseInt(req.body.dataObjectId),
       storageBucketId: parseInt(req.body.storageBucketId),
       bagId: req.body.bagId,
     }
 
-    return verifyTokenSignature(sourceTokenRequest, tokenSignature, account)
+    verifyTokenData(token, sourceTokenRequest)
+
+    return verifyTokenSignature(token, account)
   }
 }

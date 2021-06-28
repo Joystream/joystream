@@ -1,6 +1,6 @@
 import * as express from 'express'
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { TokenRequest, signToken } from '../../helpers/auth'
+import { TokenRequest, TokenBody, signToken } from '../../helpers/auth'
 import { hashFile } from '../../../services/helpers/hashing'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
@@ -56,10 +56,14 @@ export async function authToken(
 ): Promise<void> {
   const account = getAccount(res)
   const tokenRequest = getTokenRequest(req)
-  const signature = signToken(tokenRequest, account)
+  const tokenBody: TokenBody = {
+    timestamp: Date.now(),
+    ...tokenRequest,
+  }
+  const signedToken = signToken(tokenBody, account)
 
   res.status(201).json({
-    token: signature,
+    token: signedToken,
   })
 }
 
