@@ -2,10 +2,18 @@ import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { Network } from 'query-node/dist/src/modules/enums/enums'
 import { Event } from 'query-node/dist/src/modules/event/event.model'
 import { Bytes } from '@polkadot/types'
-import { WorkingGroup } from '@joystream/types/augment/all'
+import { WorkingGroup, ProposalId, ThreadId } from '@joystream/types/augment/all'
 import { BaseModel } from 'warthog'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
+
+// FIXME: See issues like: https://github.com/Joystream/joystream/issues/2457
+type MappingsMemoryCache = {
+  lastCreatedProposalId?: ProposalId
+  lastCreatedProposalThreadId?: ThreadId
+}
+
+export const MemoryCache: MappingsMemoryCache = {}
 
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
   const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent

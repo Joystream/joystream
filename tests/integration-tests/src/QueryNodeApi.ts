@@ -1,5 +1,5 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
-import { MemberId } from '@joystream/types/common'
+import { MemberId, PostId } from '@joystream/types/common'
 import Debugger from 'debug'
 import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
@@ -187,6 +187,30 @@ import {
   GetProposalCancelledEventsByEventIdsQuery,
   GetProposalCancelledEventsByEventIdsQueryVariables,
   GetProposalCancelledEventsByEventIds,
+  ProposalDiscussionPostCreatedEventFieldsFragment,
+  GetProposalDiscussionPostCreatedEventsQuery,
+  GetProposalDiscussionPostCreatedEventsQueryVariables,
+  GetProposalDiscussionPostCreatedEvents,
+  ProposalDiscussionPostUpdatedEventFieldsFragment,
+  GetProposalDiscussionPostUpdatedEventsQuery,
+  GetProposalDiscussionPostUpdatedEventsQueryVariables,
+  GetProposalDiscussionPostUpdatedEvents,
+  ProposalDiscussionThreadModeChangedEventFieldsFragment,
+  GetProposalDiscussionThreadModeChangedEventsQuery,
+  GetProposalDiscussionThreadModeChangedEventsQueryVariables,
+  GetProposalDiscussionThreadModeChangedEvents,
+  ProposalDiscussionPostDeletedEventFieldsFragment,
+  GetProposalDiscussionPostDeletedEventsQuery,
+  GetProposalDiscussionPostDeletedEventsQueryVariables,
+  GetProposalDiscussionPostDeletedEvents,
+  ProposalDiscussionPostFieldsFragment,
+  GetProposalDiscussionPostsByIdsQuery,
+  GetProposalDiscussionPostsByIdsQueryVariables,
+  GetProposalDiscussionPostsByIds,
+  ProposalDiscussionThreadFieldsFragment,
+  GetProposalDiscussionThreadsByIdsQuery,
+  GetProposalDiscussionThreadsByIdsQueryVariables,
+  GetProposalDiscussionThreadsByIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -713,5 +737,63 @@ export class QueryNodeApi {
       GetProposalCancelledEventsByEventIdsQuery,
       GetProposalCancelledEventsByEventIdsQueryVariables
     >(GetProposalCancelledEventsByEventIds, { eventIds }, 'proposalCancelledEvents')
+  }
+
+  public async getProposalDiscussionPostCreatedEvents(
+    events: EventDetails[]
+  ): Promise<ProposalDiscussionPostCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalDiscussionPostCreatedEventsQuery,
+      GetProposalDiscussionPostCreatedEventsQueryVariables
+    >(GetProposalDiscussionPostCreatedEvents, { eventIds }, 'proposalDiscussionPostCreatedEvents')
+  }
+
+  public async getProposalDiscussionPostUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<ProposalDiscussionPostUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalDiscussionPostUpdatedEventsQuery,
+      GetProposalDiscussionPostUpdatedEventsQueryVariables
+    >(GetProposalDiscussionPostUpdatedEvents, { eventIds }, 'proposalDiscussionPostUpdatedEvents')
+  }
+
+  public async getProposalDiscussionThreadModeChangedEvents(
+    events: EventDetails[]
+  ): Promise<ProposalDiscussionThreadModeChangedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalDiscussionThreadModeChangedEventsQuery,
+      GetProposalDiscussionThreadModeChangedEventsQueryVariables
+    >(GetProposalDiscussionThreadModeChangedEvents, { eventIds }, 'proposalDiscussionThreadModeChangedEvents')
+  }
+
+  public async getProposalDiscussionPostDeletedEvents(
+    events: EventDetails[]
+  ): Promise<ProposalDiscussionPostDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetProposalDiscussionPostDeletedEventsQuery,
+      GetProposalDiscussionPostDeletedEventsQueryVariables
+    >(GetProposalDiscussionPostDeletedEvents, { eventIds }, 'proposalDiscussionPostDeletedEvents')
+  }
+
+  public async getProposalDiscussionPostsByIds(
+    ids: (PostId | number)[]
+  ): Promise<ProposalDiscussionPostFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetProposalDiscussionPostsByIdsQuery,
+      GetProposalDiscussionPostsByIdsQueryVariables
+    >(GetProposalDiscussionPostsByIds, { ids: ids.map((id) => id.toString()) }, 'proposalDiscussionPosts')
+  }
+
+  public async getProposalDiscussionThreadsByIds(
+    ids: (PostId | number)[]
+  ): Promise<ProposalDiscussionThreadFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetProposalDiscussionThreadsByIdsQuery,
+      GetProposalDiscussionThreadsByIdsQueryVariables
+    >(GetProposalDiscussionThreadsByIds, { ids: ids.map((id) => id.toString()) }, 'proposalDiscussionThreads')
   }
 }

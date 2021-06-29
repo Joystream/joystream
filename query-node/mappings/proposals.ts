@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@dzlzv/hydra-common'
-import { ProposalDetails as RuntimeProposalDetails, ProposalId } from '@joystream/types/augment/all'
+import { ProposalDetails as RuntimeProposalDetails } from '@joystream/types/augment/all'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -57,20 +57,14 @@ import {
   ProposalCancelledEvent,
   ProposalCreatedEvent,
   RuntimeWasmBytecode,
+  ProposalDiscussionThread,
+  ProposalDiscussionThreadModeOpen,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
+import { bytesToString, genericEventFields, getWorkingGroupModuleName, MemoryCache, perpareString } from './common'
 import { ProposalsEngine, ProposalsCodex } from './generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
-
-// FIXME: https://github.com/Joystream/joystream/issues/2457
-type ProposalsMappingsMemoryCache = {
-  lastCreatedProposalId: ProposalId | null
-}
-const proposalsMappingsMemoryCache: ProposalsMappingsMemoryCache = {
-  lastCreatedProposalId: null,
-}
 
 async function getProposal(store: DatabaseManager, id: string) {
   const proposal = await store.get(Proposal, { where: { id } })
@@ -325,7 +319,7 @@ export async function proposalsEngine_ProposalCreated({ event }: EventContext & 
   const [, proposalId] = new ProposalsEngine.ProposalCreatedEvent(event).params
 
   // Cache the id
-  proposalsMappingsMemoryCache.lastCreatedProposalId = proposalId
+  MemoryCache.lastCreatedProposalId = proposalId
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -333,12 +327,16 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
-  if (!proposalsMappingsMemoryCache.lastCreatedProposalId) {
-    throw new Error('Unexpected state: proposalsMappingsMemoryCache.lastCreatedProposalId is empty')
+  if (!MemoryCache.lastCreatedProposalId) {
+    throw new Error('Unexpected state: MemoryCache.lastCreatedProposalId is empty')
+  }
+
+  if (!MemoryCache.lastCreatedProposalThreadId) {
+    throw new Error('Unexpected state: MemoryCache.lastCreatedProposalThreadId is empty')
   }
 
   const proposal = new Proposal({
-    id: proposalsMappingsMemoryCache.lastCreatedProposalId.toString(),
+    id: MemoryCache.lastCreatedProposalId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
     details: proposalDetails,
@@ -353,6 +351,16 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     statusSetAtTime: eventTime,
   })
   await store.save<Proposal>(proposal)
+
+  // Thread is always created along with the proposal
+  const proposalThread = new ProposalDiscussionThread({
+    id: MemoryCache.lastCreatedProposalThreadId.toString(),
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    mode: new ProposalDiscussionThreadModeOpen(),
+    proposal,
+  })
+  await store.save<ProposalDiscussionThread>(proposalThread)
 
   const proposalCreatedEvent = new ProposalCreatedEvent({
     ...genericEventFields(event),

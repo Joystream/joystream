@@ -2,7 +2,7 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { u32, BTreeMap } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, MemberId } from '@joystream/types/common'
+import { AccountId, MemberId, PostId } from '@joystream/types/common'
 
 import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
@@ -27,6 +27,8 @@ import {
   ProposalsEngineEventName,
   ProposalCreatedEventDetails,
   ProposalType,
+  ProposalDiscussionPostCreatedEventDetails,
+  ProposalsDiscussionEventName,
 } from './types'
 import {
   ApplicationId,
@@ -442,6 +444,27 @@ export class Api {
     return {
       ...details,
       proposalId: details.event.data[1] as ProposalId,
+    }
+  }
+
+  public async retrieveProposalsDiscussionEventDetails(
+    result: ISubmittableResult,
+    eventName: ProposalsDiscussionEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'proposalsDiscussion', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
+  public async retrieveProposalDiscussionPostCreatedEventDetails(
+    result: ISubmittableResult
+  ): Promise<ProposalDiscussionPostCreatedEventDetails> {
+    const details = await this.retrieveProposalsDiscussionEventDetails(result, 'PostCreated')
+    return {
+      ...details,
+      postId: details.event.data[0] as PostId,
     }
   }
 

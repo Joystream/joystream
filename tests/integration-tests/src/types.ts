@@ -1,4 +1,4 @@
-import { MemberId } from '@joystream/types/common'
+import { MemberId, PostId } from '@joystream/types/common'
 import { ApplicationId, OpeningId, WorkerId, ApplyOnOpeningParameters } from '@joystream/types/working-group'
 import { Event } from '@polkadot/types/interfaces/system'
 import { BTreeMap } from '@polkadot/types'
@@ -9,6 +9,11 @@ import { CreateInterface } from '@joystream/types'
 export type MemberContext = {
   account: string
   memberId: MemberId
+}
+
+export type MetadataInput<T> = {
+  value: T | string
+  expectFailure?: boolean
 }
 
 export type AnyQueryNodeEvent = Pick<
@@ -104,6 +109,17 @@ export type ProposalsEngineEventName =
   | 'ProposalExecuted'
   | 'Voted'
   | 'ProposalCancelled'
+
+export type ProposalsDiscussionEventName =
+  | 'ThreadCreated'
+  | 'PostCreated'
+  | 'PostUpdated'
+  | 'ThreadModeChanged'
+  | 'PostDeleted'
+
+export interface ProposalDiscussionPostCreatedEventDetails extends EventDetails {
+  postId: PostId
+}
 
 export type ProposalType = keyof typeof ProposalDetails.typeDefinitions
 export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<

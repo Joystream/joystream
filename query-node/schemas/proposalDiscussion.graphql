@@ -30,6 +30,9 @@ type ProposalDiscussionThread @entity {
 
   "Current thread mode"
   mode: ProposalDiscussionThreadMode!
+
+  "List of related thread mode change events"
+  modeChanges: [ProposalDiscussionThreadModeChangedEvent!] @derivedFrom(field: "thread")
 }
 
 "The post is visible and editable"

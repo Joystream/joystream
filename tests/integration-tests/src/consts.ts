@@ -13,6 +13,8 @@ export const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
 export const MIN_APPLICATION_STAKE = new BN(2000)
 export const MIN_UNSTANKING_PERIOD = 43201
 export const LEADER_OPENING_STAKE = new BN(2000)
+export const PROPOSALS_POST_DEPOSIT = new BN(2000)
+export const ALL_BYTES = '0x' + Array.from({ length: 256 }, (v, i) => Buffer.from([i]).toString('hex')).join('')
 
 export const lockIdByWorkingGroup: { [K in WorkingGroupModuleName]: string } = {
   storageWorkingGroup: '0x0606060606060606',
