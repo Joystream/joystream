@@ -22,7 +22,7 @@ const cluster = new eks.Cluster('eksctl-my-cluster', {
 export const kubeconfig = cluster.kubeconfig
 
 // Create a repository
-const repo = new awsx.ecr.Repository('my-repo')
+const repo = new awsx.ecr.Repository('colossus-image')
 
 // Build an image and publish it to our ECR repository.
 
@@ -39,7 +39,7 @@ const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
-// Create a NGINX Deployment
+// Create a Deployment
 const appLabels = { appClass: name }
 const deployment = new k8s.apps.v1.Deployment(
   name,
@@ -56,11 +56,19 @@ const deployment = new k8s.apps.v1.Deployment(
           labels: appLabels,
         },
         spec: {
+          hostname: 'ipfs',
           containers: [
             {
               name: 'ipfs',
               image: 'ipfs/go-ipfs:latest',
               ports: [{ containerPort: 5001 }, { containerPort: 8080 }],
+              command: ['/bin/sh', '-c'],
+              args: [
+                'set -e; \
+                /usr/local/bin/start_ipfs config profile apply lowpower; \
+                /usr/local/bin/start_ipfs config --json Gateway.PublicGateways \'{"localhost": null }\'; \
+                /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true',
+              ],
             },
             {
               name: 'colossus',
@@ -73,13 +81,13 @@ const deployment = new k8s.apps.v1.Deployment(
                 },
                 {
                   name: 'DEBUG',
-                  value: '*',
+                  value: 'joystream:*',
                 },
               ],
               command: [
                 'yarn',
                 'colossus',
-                '--dev',
+                '--anonymous',
                 '--ws-provider',
                 '$(WS_PROVIDER_ENDPOINT_URI)',
                 '--ipfs-host',
@@ -100,7 +108,7 @@ const deployment = new k8s.apps.v1.Deployment(
 // Export the Deployment name
 export const deploymentName = deployment.metadata.name
 
-// Create a LoadBalancer Service for the NGINX Deployment
+// Create a LoadBalancer Service for the Deployment
 const service = new k8s.core.v1.Service(
   name,
   {
@@ -110,11 +118,7 @@ const service = new k8s.core.v1.Service(
     },
     spec: {
       type: 'LoadBalancer',
-      ports: [
-        { name: 'port-1', port: 5001 },
-        { name: 'port-2', port: 8080 },
-        { name: 'port-3', port: 3001 },
-      ],
+      ports: [{ name: 'port-1', port: 3001 }],
       selector: appLabels,
     },
   },
@@ -125,4 +129,8 @@ const service = new k8s.core.v1.Service(
 
 // Export the Service name and public LoadBalancer Endpoint
 export const serviceName = service.metadata.name
-export const serviceHostname = service.status.loadBalancer.ingress[0].hostname
+
+// When "done", this will print the public IP.
+export let serviceHostname: pulumi.Output<string>
+
+serviceHostname = service.status.loadBalancer.ingress[0].hostname

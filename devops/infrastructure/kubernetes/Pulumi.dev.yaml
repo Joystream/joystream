@@ -1,3 +1,4 @@
+encryptionsalt: v1:nPWInMpmigw=:v1:X1I9D4nnHSzvfEJ/:eVSSXQqisXdm5Lm09+phZ0eCviANrA==
 config:
-  aws:profile: joystream-user
   aws:region: us-east-1
+  aws:profile: joystream-user
