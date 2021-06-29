@@ -237,6 +237,15 @@ impl Trait for Test {
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem = MockStorageSystem;
+
+    /// PostId Type
+    type PostId = u64;
+
+    /// ReplyId Type
+    type ReplyId = u64;
+
+    /// Post Reaction Type
+    type PostReactionId = u64;
 }
 
 pub type System = frame_system::Module<Test>;

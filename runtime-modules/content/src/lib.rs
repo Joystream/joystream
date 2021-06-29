@@ -585,7 +585,7 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub PostById get(fn post_by_id) config(): map hasher(blake2_128_concat) T::PostId => Post<T>;
+        pub PostById get(fn post_by_id) : map hasher(blake2_128_concat) T::PostId => Post<T>;
         pub ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T>;
 
         pub NextPostId get(fn next_post_id): T::PostId;
