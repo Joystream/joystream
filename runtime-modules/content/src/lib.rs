@@ -1417,7 +1417,7 @@ decl_module! {
         // If this is a reply to an existing one, ensure that parent reply is existed
             if let Some(reply_id) = reply_id {
                 // Check parent existed at some point in time(whether it is in storage or not)
-                ensure!(reply_id < post.replies_count, Error::<T>::ReplyDoesNotExists);
+                ensure!(reply_id < post.replies_count, Error::<T>::ReplyDoesNotExist);
             }
 
             let new_replies_count = post
@@ -1693,7 +1693,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T>, Error<T>> {
         ensure!(
             PostById::<T>::contains_key(post_id),
-            Error::<T>::PostDoesNotExists
+            Error::<T>::PostDoesNotExist
         );
         Ok(PostById::<T>::get(post_id))
     }
@@ -1701,7 +1701,7 @@ impl<T: Trait> Module<T> {
     fn ensure_reply_exists(post_id: T::PostId, reply_id: T::ReplyId) -> Result<Reply<T>, Error<T>> {
         ensure!(
             ReplyById::<T>::contains_key(post_id, reply_id),
-            Error::<T>::ReplyDoesNotExists
+            Error::<T>::ReplyDoesNotExist
         );
         Ok(ReplyById::<T>::get(post_id, reply_id))
     }
