@@ -242,7 +242,7 @@ fn non_owner_origin_cannot_edit_post() {
 }
 
 #[test]
-fn cannot_edit_nonexisting_post() {
+fn cant_edit_nonexisting_post() {
     with_default_mock_builder(|| {
         //        run_to_block(1);
 
