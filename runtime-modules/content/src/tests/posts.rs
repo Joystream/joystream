@@ -523,6 +523,35 @@ fn cannot_reply_to_unexisting_post_or_reply() {
     })
 }
 
+fn setup_testing_scenario_with_replies(
+    origins: &Vec<u64>,
+    member_ids: &Vec<u64>,
+) -> (
+    <tests::mock::Test as Trait>::ReplyId,
+    <tests::mock::Test as Trait>::PostId,
+) {
+    let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
+
+    assert_ok!(Content::create_reply(
+        Origin::signed(origins[0]),
+        <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+        post_id,
+        None,
+        <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+    ));
+
+    let reply_id = Content::post_by_id(post_id).replies_count;
+
+    assert_ok!(Content::create_reply(
+        Origin::signed(origins[0]),
+        <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+        post_id,
+        Some(reply_id),
+        <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+    ));
+    (reply_id, post_id)
+}
+
 #[test]
 fn verify_create_reply_effects() {
     with_default_mock_builder(|| {
@@ -532,25 +561,9 @@ fn verify_create_reply_effects() {
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
 
-        let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
-
-        assert_ok!(Content::create_reply(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
-            post_id,
-            None,
-            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
-        ));
-
-        let reply_id = Content::post_by_id(post_id).replies_count;
-
-        assert_ok!(Content::create_reply(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
-            post_id,
-            Some(reply_id),
-            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
-        ));
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let reply_id = out.0;
+        let post_id = out.1;
 
         // replies count increased
         assert_eq!(Content::post_by_id(post_id).replies_count - reply_id, 1);
@@ -562,6 +575,139 @@ fn verify_create_reply_effects() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
                 post_id,
                 Content::post_by_id(post_id).replies_count,
+            ))
+        );
+    })
+}
+
+// edit_reply
+#[test]
+fn cannot_edit_unexisting_reply() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let reply_id = out.0;
+        let post_id = out.1;
+
+        let non_existing_element_id = 7777u64;
+
+        assert_err!(
+            Content::edit_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                post_id,
+                <tests::mock::Test as Trait>::ReplyId::from(non_existing_element_id),
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+            ),
+            Error::<Test>::ReplyDoesNotExist,
+        );
+
+        assert_err!(
+            Content::edit_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as Trait>::PostId::from(non_existing_element_id),
+                reply_id,
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+            ),
+            Error::<Test>::ReplyDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn non_owner_cannot_edit_reply() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let reply_id = out.0;
+        let post_id = out.1;
+
+        assert_err!(
+            Content::edit_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[2]),
+                post_id,
+                reply_id,
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn unknown_member_cannot_edit_reply() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let reply_id = out.0;
+        let post_id = out.1;
+
+        let unknown_member_id = 7777u64;
+
+        assert_err!(
+            Content::edit_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(unknown_member_id),
+                post_id,
+                reply_id,
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn verify_create_edit_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let reply_id = out.0;
+        let post_id = out.1;
+
+        assert_ok!(Content::edit_reply(
+            Origin::signed(origins[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            post_id,
+            reply_id,
+            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+        ));
+
+        // replies count increased
+        assert_eq!(
+            Content::reply_by_id(post_id, reply_id).text,
+            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+        );
+
+        // event deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ReplyModified(
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                post_id,
+                reply_id,
             ))
         );
     })
