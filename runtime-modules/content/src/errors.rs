@@ -68,12 +68,6 @@ decl_error! {
         PostDoesNotExist,
 
         /// Partecipant is not a member
-        MembershipError,
-
-        /// Partecipant is not a member
-        ReplyDoesNotExist,
-
-        /// Member is not authorized to perform the operation
-        MemberNotAuthorized
+        ReplyDoesNotExist
     }
 }

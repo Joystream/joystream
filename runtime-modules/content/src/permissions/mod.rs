@@ -290,7 +290,7 @@ pub fn ensure_member_authorized_to_edit_reply<T: Trait>(
 ) -> DispatchResult {
     let sender = &ensure_signed(origin)?;
     ensure_member_auth_success::<T>(member, sender)?;
-    ensure!(*owner == *member, Error::<T>::MemberNotAuthorized);
+    ensure!(*owner == *member, Error::<T>::MemberAuthFailed);
     Ok(())
 }
 
