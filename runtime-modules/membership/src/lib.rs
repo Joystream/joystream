@@ -506,13 +506,9 @@ decl_module! {
                 });
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
-
-                Self::deposit_event(RawEvent::MemberProfileUpdated(
-                        member_id,
-                        handle,
-                        metadata,
-                    ));
             }
+
+            Self::deposit_event(RawEvent::MemberProfileUpdated(member_id, handle, metadata));
         }
 
         /// Updates member root or controller accounts. No effect if both new accounts are empty.
