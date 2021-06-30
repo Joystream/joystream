@@ -1,9 +1,24 @@
 name: eks-cluster
 runtime: nodejs
-description: A minimal AWS TypeScript Pulumi program
+description: A Pulumi program to deploy storage node to cloud environment
 template:
   config:
     aws:profile:
       default: joystream-user
     aws:region:
       default: us-east-1
+    wsProviderEndpointURI:
+      description: Chain RPC endpoint
+      default: 'wss://rome-rpc-endpoint.joystream.org:9944/'
+    isProduction:
+      description: Whether you are deploying a production storage node
+      default: false
+    providerId:
+      description: StorageProviderId assigned to you in working group
+    keyFile:
+      description: JSON key export file to use as the storage provider (role account)
+    publicURL:
+      description: API Public URL to announce
+    passphrase:
+      description: Optional passphrase to use to decrypt the key-file
+      secret: true

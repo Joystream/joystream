@@ -34,12 +34,19 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi stack init
    ```
 
-1. Set the required AWS configuration variables in `Pulumi.<stack>.yaml`
-
-1. Set `WS_PROVIDER_ENDPOINT_URI` environment variable.
+1. Set the required configuration variables in `Pulumi.<stack>.yaml`
 
    ```bash
-   $ export WS_PROVIDER_ENDPOINT_URI='wss://18.209.241.63.nip.io/'
+   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
+    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/'
+   ```
+
+   If running for production use the below mentioned config
+
+   ```bash
+   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
+    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' --plaintext isProduction=true \
+    --plaintext providerId=<ID> --plaintext keyFile=<PATH> --plaintext publicURL=<DOMAIN> --secret passphrase=<PASSPHRASE>
    ```
 
 1. Stand up the EKS cluster:
@@ -72,6 +79,12 @@ After cloning this repo, from this working directory, run these commands:
    $ kubectl config set-context --current --namespace=$(pulumi stack output namespaceName)
    $ kubectl get pods
    $ kubectl logs <PODNAME> --all-containers
+   ```
+
+   To run a command on a pod
+
+   ```bash
+   $ kubectl exec ${POD_NAME} -c ${CONTAINER_NAME} -- ${CMD} ${ARG1}
    ```
 
    To see complete pulumi stack output

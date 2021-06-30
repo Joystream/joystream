@@ -4,6 +4,10 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 
 const awsConfig = new pulumi.Config('aws')
+const config = new pulumi.Config()
+
+const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
+const isProduction = config.require('isProduction') === 'true'
 
 // Create a VPC for our cluster.
 const vpc = new awsx.ec2.Vpc('vpc', { numberOfAvailabilityZones: 2 })
@@ -39,8 +43,50 @@ const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
-// Create a Deployment
 const appLabels = { appClass: name }
+
+// Create a LoadBalancer Service for the Deployment
+const service = new k8s.core.v1.Service(
+  name,
+  {
+    metadata: {
+      labels: appLabels,
+      namespace: namespaceName,
+    },
+    spec: {
+      type: 'LoadBalancer',
+      ports: [{ name: 'port-1', port: 3001 }],
+      selector: appLabels,
+    },
+  },
+  {
+    provider: cluster.provider,
+  }
+)
+
+// Export the Service name and public LoadBalancer Endpoint
+export const serviceName = service.metadata.name
+// When "done", this will print the public IP.
+export let serviceHostname: pulumi.Output<string>
+serviceHostname = service.status.loadBalancer.ingress[0].hostname
+const publicUrlInput: pulumi.Input<string> = pulumi.interpolate`http://${serviceHostname}:${3001}/`
+
+let additionalParams: string[] | pulumi.Input<string>[] = []
+
+if (isProduction) {
+  const providerId = config.require('providerId')
+  const keyFile = config.require('keyFile')
+  const publicUrl = config.get('publicURL') ? config.get('publicURL')! : publicUrlInput
+
+  additionalParams = ['--provider-id', providerId, '--key-file', keyFile, '--public-url', publicUrl]
+
+  const passphrase = config.get('passphrase')
+  if (passphrase) {
+    additionalParams.push('--passphrase', passphrase)
+  }
+}
+
+// Create a Deployment
 const deployment = new k8s.apps.v1.Deployment(
   name,
   {
@@ -77,7 +123,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 {
                   name: 'WS_PROVIDER_ENDPOINT_URI',
                   // example 'wss://18.209.241.63.nip.io/'
-                  value: process.env.WS_PROVIDER_ENDPOINT_URI,
+                  value: wsProviderEndpointURI,
                 },
                 {
                   name: 'DEBUG',
@@ -89,9 +135,10 @@ const deployment = new k8s.apps.v1.Deployment(
                 'colossus',
                 '--anonymous',
                 '--ws-provider',
-                '$(WS_PROVIDER_ENDPOINT_URI)',
+                wsProviderEndpointURI,
                 '--ipfs-host',
                 'ipfs',
+                ...additionalParams,
               ],
               ports: [{ containerPort: 3001 }],
             },
@@ -107,30 +154,3 @@ const deployment = new k8s.apps.v1.Deployment(
 
 // Export the Deployment name
 export const deploymentName = deployment.metadata.name
-
-// Create a LoadBalancer Service for the Deployment
-const service = new k8s.core.v1.Service(
-  name,
-  {
-    metadata: {
-      labels: appLabels,
-      namespace: namespaceName,
-    },
-    spec: {
-      type: 'LoadBalancer',
-      ports: [{ name: 'port-1', port: 3001 }],
-      selector: appLabels,
-    },
-  },
-  {
-    provider: cluster.provider,
-  }
-)
-
-// Export the Service name and public LoadBalancer Endpoint
-export const serviceName = service.metadata.name
-
-// When "done", this will print the public IP.
-export let serviceHostname: pulumi.Output<string>
-
-serviceHostname = service.status.loadBalancer.ingress[0].hostname
