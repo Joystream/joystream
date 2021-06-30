@@ -675,7 +675,7 @@ fn unknown_member_cannot_edit_reply() {
 }
 
 #[test]
-fn verify_create_edit_effects() {
+fn verify_edit_reply_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -708,6 +708,87 @@ fn verify_create_edit_effects() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
                 post_id,
                 reply_id,
+            ))
+        );
+    })
+}
+
+// delete reply
+// behavior on unsatisfied preconditions is the same as edit_reply, testing effects only...
+#[test]
+fn verify_delete_sub_reply_effects() {
+    with_default_mock_builder(|| {
+        // deleting (the last) reply to a reply
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let post_id = out.1;
+
+        let replies_count_pre = Content::post_by_id(post_id).replies_count;
+
+        assert_ok!(Content::delete_reply(
+            Origin::signed(origins[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            post_id,
+            replies_count_pre,
+        ));
+
+        let replies_count_post = Content::post_by_id(post_id).replies_count;
+
+        // replies count increased
+        assert_eq!(replies_count_pre - replies_count_post, 1);
+
+        // event deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ReplyDeleted(
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                post_id,
+                replies_count_pre,
+            ))
+        );
+    })
+}
+
+#[test]
+fn verify_delete_parent_reply_effects() {
+    with_default_mock_builder(|| {
+        // deleting parent reply
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
+        let post_id = out.1;
+        let parent_reply_id = out.0;
+
+        let replies_count_pre = Content::post_by_id(post_id).replies_count;
+
+        assert_ok!(Content::delete_reply(
+            Origin::signed(origins[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            post_id,
+            parent_reply_id,
+        ));
+
+        let replies_count_post = Content::post_by_id(post_id).replies_count;
+
+        // replies count increased
+        assert_eq!(replies_count_pre - replies_count_post, 1);
+
+        // event deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ReplyDeleted(
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                post_id,
+                parent_reply_id,
             ))
         );
     })
