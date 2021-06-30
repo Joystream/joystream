@@ -5,8 +5,21 @@ import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
 import * as k8sjs from './k8sjs'
 import * as k8s from '@pulumi/kubernetes'
+import * as fs from 'fs'
 
 require('dotenv').config()
+
+interface EnvironmentType {
+  name: string
+  value: string
+}
+
+let envCopy: EnvironmentType[] = []
+let e: string = ''
+for (e in process.env) {
+  let envObject: EnvironmentType = { 'name': e, 'value': process.env[e]! }
+  envCopy.push(envObject)
+}
 
 // const awsConfig = new pulumi.Config('aws')
 
@@ -45,6 +58,10 @@ require('dotenv').config()
 //   localImageName: 'joystream/apps:latest',
 // }).imageName
 
+function getUniqueListByName(arr: EnvironmentType[]) {
+  return [...new Map(arr.map((item: EnvironmentType) => [item['name'], item])).values()]
+}
+
 export const joystreamAppsImage = 'joystream/apps'
 
 const name = 'query-node'
@@ -56,8 +73,16 @@ const ns = new k8s.core.v1.Namespace(name, {})
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
-// Create a NGINX Deployment
 const appLabels = { appClass: name }
+
+const defsConfig = new k8s.core.v1.ConfigMap(name, {
+  metadata: { namespace: namespaceName, labels: appLabels },
+  data: { 'fileData': fs.readFileSync('../../../types/augment/all/defs.json').toString() },
+})
+const defsConfigName = defsConfig.metadata.apply((m) => m.name)
+
+// Create a Deployment
+
 const deployment = new k8s.apps.v1.Deployment(
   name,
   {
@@ -83,46 +108,51 @@ const deployment = new k8s.apps.v1.Deployment(
             {
               name: 'postgres-db',
               image: 'postgres:12',
-              env: [
+              env: getUniqueListByName([
                 { name: 'POSTGRES_USER', value: process.env.DB_USER! },
                 { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
                 { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
-              ],
+              ]),
               ports: [{ containerPort: 5432 }],
             },
             {
               name: 'temp-db-prepare-container',
               image: joystreamAppsImage,
               imagePullPolicy: 'Never',
-              env: [
+              env: getUniqueListByName([
                 {
                   name: 'DB_HOST',
                   value: 'postgres-db',
                 },
-              ],
+              ]),
               command: ['/bin/sh', '-c'],
               args: ['yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate'],
             },
-            // {
-            //   name: 'indexer',
-            //   image: 'joystream/hydra-indexer:2.1.0-beta.9',
-            //   env: [
-            //     { name: 'DB_HOST', value: 'postgres-db' },
-            //     { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
-            //     { name: 'INDEXER_WORKERS', value: '5' },
-            //     { name: 'REDIS_URI', value: 'redis://redis:6379/0' },
-            //     { name: 'DEBUG', value: 'index-builder:*' },
-            //     { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
-            //     { name: 'TYPES_JSON', value: 'types.json' },
-            //   ],
-            //   // volumeMounts: [
-            //   //   {
-            //   //     mountPath: '/home/hydra/packages/hydra-indexer/types.json',
-            //   //     name: 'indexer-volume',
-            //   //   },
-            //   // ],
-            //   command: ['sh', '-c', 'yarn db:bootstrap && yarn start:prod'],
-            // },
+            {
+              name: 'indexer',
+              image: 'joystream/hydra-indexer:2.1.0-beta.9',
+              env: getUniqueListByName([
+                // ...envCopy,
+                { name: 'DB_HOST', value: 'postgres-db' },
+                { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
+                { name: 'DB_PASS', value: process.env.DB_PASS! },
+                { name: 'INDEXER_WORKERS', value: '5' },
+                { name: 'REDIS_URI', value: 'redis://postgres-db:6379/0' },
+                { name: 'DEBUG', value: 'index-builder:*' },
+                { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
+                { name: 'TYPES_JSON', value: 'types.json' },
+                { name: 'PGUSER', value: process.env.DB_USER! },
+              ]),
+              volumeMounts: [
+                {
+                  mountPath: '/home/hydra/packages/hydra-indexer/types.json',
+                  name: 'indexer-volume',
+                  subPath: 'fileData',
+                },
+              ],
+              command: ['/bin/sh', '-c'],
+              args: ['yarn db:bootstrap && yarn start:prod'],
+            },
             // {
             //   name: 'hydra-indexer-gateway',
             //   image: 'joystream/hydra-indexer-gateway:2.1.0-beta.5',
@@ -173,22 +203,21 @@ const deployment = new k8s.apps.v1.Deployment(
             //   command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod'],
             // },
           ],
-          // volumes: [
-          //   {
-          //     name: 'processor-volume',
-          //     hostPath: {
-          //       path: '/Users/anuj/Joystream/joystream/types/augment/all/defs.json',
-          //       type: 'FileOrCreate',
-          //     },
-          //   },
-          //   {
-          //     name: 'indexer-volume',
-          //     hostPath: {
-          //       path: '/Users/anuj/Joystream/joystream/types/augment/all/defs.json',
-          //       type: 'FileOrCreate',
-          //     },
-          //   },
-          // ],
+          volumes: [
+            // {
+            //   name: 'processor-volume',
+            //   hostPath: {
+            //     path: '/Users/anuj/Joystream/joystream/types/augment/all/defs.json',
+            //     type: 'FileOrCreate',
+            //   },
+            // },
+            {
+              name: 'indexer-volume',
+              configMap: {
+                name: defsConfigName,
+              },
+            },
+          ],
         },
       },
     },
