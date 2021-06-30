@@ -61,6 +61,10 @@ pub trait WeightInfo {
     fn update_category_membership_of_moderator_old() -> Weight;
     fn update_category_archival_status_lead(i: u32) -> Weight;
     fn update_category_archival_status_moderator(i: u32) -> Weight;
+    fn update_category_title_lead(i: u32, j: u32) -> Weight;
+    fn update_category_title_moderator(i: u32, j: u32) -> Weight;
+    fn update_category_description_lead(i: u32, j: u32) -> Weight;
+    fn update_category_description_moderator(i: u32, j: u32) -> Weight;
     fn delete_category_lead(i: u32) -> Weight;
     fn delete_category_moderator(i: u32) -> Weight;
     fn create_thread(j: u32, k: u32, i: u32) -> Weight;
@@ -209,7 +213,7 @@ pub struct Poll<Timestamp, Hash> {
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -469,6 +473,7 @@ decl_event!(
         ModeratorId = ModeratorId<T>,
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
+        <T as frame_system::Trait>::Hash,
         ForumUserId = ForumUserId<T>,
         <T as Trait>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
@@ -477,9 +482,17 @@ decl_event!(
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
 
-        /// A category with given id was updated.
+        /// An arhical status of category with given id was updated.
         /// The second argument reflects the new archival status of the category.
-        CategoryUpdated(CategoryId, bool, PrivilegedActor),
+        CategoryArchivalStatusUpdated(CategoryId, bool, PrivilegedActor),
+
+        /// A title of category with given id was updated.
+        /// The second argument reflects the new title hash of the category.
+        CategoryTitleUpdated(CategoryId, Hash, PrivilegedActor),
+
+        /// A discription of category with given id was updated.
+        /// The second argument reflects the new description hash of the category.
+        CategoryDescriptionUpdated(CategoryId, Hash, PrivilegedActor),
 
         /// A category was deleted
         CategoryDeleted(CategoryId, PrivilegedActor),
@@ -577,6 +590,7 @@ decl_module! {
 
             Ok(())
         }
+
 
         /// Add a new category.
         ///
@@ -687,7 +701,105 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(
-                RawEvent::CategoryUpdated(category_id, new_archival_status, actor)
+                RawEvent::CategoryArchivalStatusUpdated(category_id, new_archival_status, actor)
+            );
+
+            Ok(())
+        }
+
+        /// Update category title
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + V)` where:
+        /// - `W` is the category depth
+        /// - `V` is the length of the category title.
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoForum::<T>::update_category_title_lead(
+            T::MaxCategoryDepth::get() as u32,
+            title.len().saturated_into(),
+        ).max(WeightInfoForum::<T>::update_category_title_moderator(
+            T::MaxCategoryDepth::get() as u32,
+            title.len().saturated_into(),
+        ))]
+        fn update_category_title(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, title: Vec<u8>) -> DispatchResult {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let account_id = ensure_signed(origin)?;
+
+            // Ensure actor can update category
+            let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+
+            let title_hash = T::calculate_hash(title.as_slice());
+
+            // No change, invalid transaction
+            if title_hash == category.title_hash {
+                return Err(Error::<T>::CategoryNotBeingUpdated.into())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Mutate category, and set possible new change parameters
+            <CategoryById<T>>::mutate(category_id, |c| c.title_hash = title_hash);
+
+            // Generate event
+            Self::deposit_event(
+                RawEvent::CategoryTitleUpdated(category_id, title_hash, actor)
+            );
+
+            Ok(())
+        }
+
+        /// Update category description
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is the category depth
+        /// - `V` is the length of the category description.
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoForum::<T>::update_category_description_lead(
+            T::MaxCategoryDepth::get() as u32,
+            description.len().saturated_into(),
+        ).max(WeightInfoForum::<T>::update_category_description_moderator(
+            T::MaxCategoryDepth::get() as u32,
+            description.len().saturated_into(),
+        ))]
+        fn update_category_description(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, description: Vec<u8>) -> DispatchResult {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let account_id = ensure_signed(origin)?;
+
+            // Ensure actor can update category
+            let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+
+            let description_hash = T::calculate_hash(description.as_slice());
+
+            // No change, invalid transaction
+            if description_hash == category.description_hash {
+                return Err(Error::<T>::CategoryNotBeingUpdated.into())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Mutate category, and set possible new change parameters
+            <CategoryById<T>>::mutate(category_id, |c| c.description_hash = description_hash);
+
+            // Generate event
+            Self::deposit_event(
+                RawEvent::CategoryDescriptionUpdated(category_id, description_hash, actor)
             );
 
             Ok(())
@@ -1333,13 +1445,16 @@ decl_module! {
             rationale: Vec<u8>,
         ) -> DispatchResult {
 
+            // Check only unique post instances.
+            let unique_posts: BTreeSet<_> = posts.into_iter().collect();
+
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
-            let mut deleting_posts = Vec::new();
-            for (category_id, thread_id, post_id, hide) in &posts {
+            let mut deleting_posts = BTreeSet::new();
+            for (category_id, thread_id, post_id, hide) in &unique_posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
@@ -1350,7 +1465,7 @@ decl_module! {
                     *hide,
                 )?;
 
-                deleting_posts.push((category_id, thread_id, post_id, post));
+                deleting_posts.insert((category_id, thread_id, post_id, post));
             }
 
             //
@@ -1366,7 +1481,7 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(
-                RawEvent::PostDeleted(rationale, forum_user_id, posts)
+                RawEvent::PostDeleted(rationale, forum_user_id, unique_posts.into_iter().collect())
             );
 
             Ok(())

@@ -183,4 +183,40 @@ impl forum::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
+    fn update_category_title_lead(i: u32, j: u32) -> Weight {
+        (20_591_000 as Weight)
+            .saturating_add((72_609_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((233_007_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
+    }
+    fn update_category_title_moderator(i: u32, j: u32) -> Weight {
+        (20_591_000 as Weight)
+            .saturating_add((72_609_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((233_007_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
+    }
+    fn update_category_description_lead(i: u32, j: u32) -> Weight {
+        (20_591_000 as Weight)
+            .saturating_add((72_609_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((233_007_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
+    }
+    fn update_category_description_moderator(i: u32, j: u32) -> Weight {
+        (20_591_000 as Weight)
+            .saturating_add((72_609_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add((233_007_000 as Weight).saturating_mul(j as Weight))
+            .saturating_add(DbWeight::get().reads(3 as Weight))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
+    }
 }

@@ -56,7 +56,7 @@ export class LeaveRoleFixture extends BaseWorkingGroupFixture {
       const worker = qWorkers.find((w) => w.runtimeId === workerId.toNumber())
       Utils.assert(worker, 'Query node: Worker not found!')
       Utils.assert(
-        worker.status.__typename === 'WorkerStatusLeft',
+        worker.status.__typename === 'WorkerStatusLeaving',
         `Invalid worker status: ${worker.status.__typename}`
       )
       Utils.assert(worker.status.workerStartedLeavingEvent, 'Query node: Missing workerStartedLeavingEvent relation')

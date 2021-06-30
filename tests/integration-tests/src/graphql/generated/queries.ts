@@ -1005,6 +1005,7 @@ export type WorkerFieldsFragment = {
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
+    | { __typename: 'WorkerStatusLeaving'; workerStartedLeavingEvent?: Types.Maybe<{ id: string }> }
     | {
         __typename: 'WorkerStatusLeft'
         workerStartedLeavingEvent?: Types.Maybe<{ id: string }>
@@ -2457,6 +2458,11 @@ export const WorkerFields = gql`
     stakeAccount
     status {
       __typename
+      ... on WorkerStatusLeaving {
+        workerStartedLeavingEvent {
+          id
+        }
+      }
       ... on WorkerStatusLeft {
         workerStartedLeavingEvent {
           id
