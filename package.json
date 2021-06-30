@@ -38,7 +38,7 @@
     "@polkadot/util-crypto": "^6.0.5",
     "@polkadot/wasm-crypto": "^4.0.2",
     "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^3.9.7",
+    "typescript": "3.8.*",
     "bn.js": "^5.1.2",
     "rxjs": "^6.6.2",
     "typeorm": "^0.2.31",
