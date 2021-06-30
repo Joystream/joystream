@@ -1410,20 +1410,20 @@ decl_module! {
             // ensure that origin is signed by a Member
             ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
 
-            // Ensure post with given id exists
+        // Ensure post with given id exists
             let post = Self::ensure_post_exists(post_id)?;
 
 
         // If this is a reply to an existing one, ensure that parent reply is existed
             if let Some(reply_id) = reply_id {
                 // Check parent existed at some point in time(whether it is in storage or not)
-                ensure!(reply_id < post.replies_count, Error::<T>::ReplyDoesNotExist);
+                ensure!(reply_id <= post.replies_count, Error::<T>::ReplyDoesNotExist);
             }
 
             let new_replies_count = post
-        .replies_count
-        .checked_add(&T::ReplyId::one())
-        .ok_or("Replies count overflow")?;
+                .replies_count
+                .checked_add(&T::ReplyId::one())
+                .ok_or("Replies count overflow")?;
 
             //
             // == MUTATION SAFE ==
@@ -1435,24 +1435,24 @@ decl_module! {
 
             // parent id for the new reply
             let parent_id = if let Some(reply_id) = reply_id {
-        ParentId::Reply(reply_id)
+                ParentId::Reply(reply_id)
             } else {
-        ParentId::Post(post_id)
+                ParentId::Post(post_id)
             };
 
             let reply = Reply_ {
-        owner: participant_id,
-        parent_id: parent_id,
-        cleanup_pay_off: BalanceOf::<T>::zero(),
-        last_edited: frame_system::Module::<T>::block_number(),
-        text: text,
+                owner: participant_id,
+                parent_id: parent_id,
+                cleanup_pay_off: BalanceOf::<T>::zero(),
+                last_edited: frame_system::Module::<T>::block_number(),
+                text: text,
             };
 
-        // insert the reply into storage
+            // insert the reply into storage
             ReplyById::<T>::insert(post_id, new_replies_count, reply);
 
-        // deposit event
-        Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, new_replies_count));
+            // deposit event
+            Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, new_replies_count));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight

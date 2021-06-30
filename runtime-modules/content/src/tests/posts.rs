@@ -4,39 +4,31 @@
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
+use sp_runtime::traits::Hash;
 
-fn setup_testing_scenario(origins: &Vec<u64>, member_ids: &Vec<u64>, channel_ids: &Vec<u64>) {
-    let create_channel = |origin, member_id| {
-        Content::create_channel(
-            Origin::signed(origin),
-            ContentActor::Member(member_id),
+fn setup_testing_scenario(origins: &Vec<u64>, member_ids: &Vec<u64>) {
+    for (origin, member_id) in origins.iter().zip(member_ids.iter()) {
+        let channel_id = Content::next_channel_id();
+
+        assert_ok!(Content::create_channel(
+            Origin::signed(*origin),
+            ContentActor::Member(*member_id),
             ChannelCreationParameters {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
             },
-        )
-    };
+        ));
 
-    let create_video = |origin, member_id, channel_id| {
-        Content::create_video(
-            Origin::signed(origin),
-            ContentActor::Member(member_id),
+        assert_ok!(Content::create_video(
+            Origin::signed(*origin),
+            ContentActor::Member(*member_id),
             channel_id,
             VideoCreationParameters {
                 assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
                 meta: b"metablob".to_vec(),
             },
-        )
-    };
-
-    for ((origin, member_id), channel_id) in origins
-        .iter()
-        .zip(member_ids.iter())
-        .zip(channel_ids.iter())
-    {
-        let _ch = create_channel(*origin, *member_id);
-        let _vid = create_video(*origin, *member_id, *channel_id);
+        ));
     }
 }
 
@@ -49,9 +41,8 @@ fn cannot_create_post_with_nonexisting_video() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.iter().map(|x| x - 1).collect::<Vec<u64>>();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let non_existing_video = 7777u64;
         assert_err!(
@@ -73,9 +64,8 @@ fn non_channel_owner_cannot_create_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let non_owner_member_id = 7777u64;
@@ -98,9 +88,8 @@ fn non_existing_member_cannot_create_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let non_existing_member_id = 7777u64;
         let video_id = 1u64;
@@ -124,9 +113,8 @@ fn verify_create_post_effects() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let post_id = Content::next_post_id();
@@ -178,9 +166,8 @@ fn non_owner_cannot_edit_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let new_video_id = 2u64;
@@ -213,9 +200,8 @@ fn non_existing_member_cannot_edit_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let new_video_id = 2u64;
@@ -250,9 +236,8 @@ fn cannot_edit_nonexisting_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let new_video_id = 2u64;
@@ -285,9 +270,8 @@ fn verify_edit_post_effects() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let new_video_id = 2u64;
@@ -331,9 +315,8 @@ fn cannot_delete_non_existing_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let non_existing_post_id = 7777u64;
@@ -363,9 +346,8 @@ fn non_owner_cannot_delete_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let post_id = Content::next_post_id();
@@ -395,9 +377,8 @@ fn non_existing_member_cannot_delete_post() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let post_id = Content::next_post_id();
@@ -427,9 +408,8 @@ fn verify_delete_post_effects() {
         // setting up ids for creating channels & videos
         let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
         let member_ids = origins.clone();
-        let channel_ids = origins.clone();
 
-        setup_testing_scenario(&origins, &member_ids, &channel_ids);
+        setup_testing_scenario(&origins, &member_ids);
 
         let video_id = 1u64;
         let post_id = Content::next_post_id();
@@ -452,6 +432,136 @@ fn verify_delete_post_effects() {
             MetaEvent::content(RawEvent::PostDeleted(
                 ContentActor::Member(member_ids[0]),
                 post_id
+            ))
+        );
+    })
+}
+
+// create reply tests
+
+fn setup_testing_scenario_for_replies(
+    origins: &Vec<u64>,
+    member_ids: &Vec<u64>,
+) -> <tests::mock::Test as Trait>::PostId {
+    setup_testing_scenario(&origins, &member_ids);
+    let video_id = 1u64;
+    let post_id = Content::next_post_id();
+
+    assert_ok!(Content::create_post(
+        Origin::signed(origins[0]),
+        <tests::mock::Test as Trait>::VideoId::from(video_id),
+        ContentActor::Member(member_ids[0]),
+    ));
+
+    assert_eq!(Content::next_post_id(), 1);
+
+    post_id
+}
+
+#[test]
+fn non_existing_member_cannot_reply() {
+    with_default_mock_builder(|| {
+        //        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
+
+        let non_existing_member_id = 7777u64;
+        assert_err!(
+            Content::create_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(non_existing_member_id),
+                post_id,
+                None,
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn cannot_reply_to_unexisting_post_or_reply() {
+    with_default_mock_builder(|| {
+        // run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
+        println!("{}", Content::next_post_id());
+
+        let non_existing_element_id = 7777u64;
+
+        assert_err!(
+            Content::create_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as Trait>::PostId::from(non_existing_element_id),
+                None,
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+
+        assert_err!(
+            Content::create_reply(
+                Origin::signed(origins[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as Trait>::PostId::from(0u64),
+                Some(<tests::mock::Test as Trait>::ReplyId::from(
+                    non_existing_element_id
+                )),
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+            ),
+            Error::<Test>::ReplyDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn verify_create_reply_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        // setting up ids for creating channels & videos
+        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
+        let member_ids = origins.clone();
+
+        let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
+
+        assert_ok!(Content::create_reply(
+            Origin::signed(origins[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            post_id,
+            None,
+            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
+        ));
+
+        let reply_id = Content::post_by_id(post_id).replies_count;
+
+        assert_ok!(Content::create_reply(
+            Origin::signed(origins[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            post_id,
+            Some(reply_id),
+            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+        ));
+
+        // replies count increased
+        assert_eq!(Content::post_by_id(post_id).replies_count - reply_id, 1);
+
+        // event deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ReplyCreated(
+                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                post_id,
+                Content::post_by_id(post_id).replies_count,
             ))
         );
     })
