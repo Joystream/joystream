@@ -218,3 +218,19 @@ export async function cancelStorageBucketOperatorInvite(
     )
   )
 }
+
+export async function removeStorageBucketOperator(
+  api: ApiPromise,
+  account: KeyringPair,
+  bucketId: number
+): Promise<boolean> {
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'removeStorageBucketOperator',
+      [bucketId]
+    )
+  )
+}

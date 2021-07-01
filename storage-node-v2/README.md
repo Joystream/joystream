@@ -33,10 +33,11 @@ USAGE
 * [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
-* [`storage-node leader:cancel-invite [FILE]`](#storage-node-leadercancel-invite-file)
+* [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
+* [`storage-node leader:remove-operator [FILE]`](#storage-node-leaderremove-operator-file)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
@@ -154,18 +155,21 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.0.1/src/commands/help.ts)_
 
-## `storage-node leader:cancel-invite [FILE]`
+## `storage-node leader:cancel-invite`
 
-describe the command here
+Cancels a storage bucket operator invite. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node leader:cancel-invite [FILE]
+  $ storage-node leader:cancel-invite
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/cancel-invite.ts)_
@@ -230,6 +234,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/invite-operator.ts)_
+
+## `storage-node leader:remove-operator [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:remove-operator [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/remove-operator.ts)_
 
 ## `storage-node leader:update-bag`
 
