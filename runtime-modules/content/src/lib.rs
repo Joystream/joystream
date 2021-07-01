@@ -1580,7 +1580,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        fn react_post(
+        fn react_to_post(
             origin,
             participant_id: ParticipantId<T>,
             post_id: T::PostId,

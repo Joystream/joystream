@@ -17,7 +17,12 @@ fn setup_testing_scenario() -> (
     <tests::mock::Test as Trait>::VideoId,
     <tests::mock::Test as Trait>::VideoId,
 ) {
-    // one channel for a member, one for a curator group
+    // scenario A:
+    // - 1 member (FIRST_MEMBER_ID),
+    // - 1 curator group (FIRST_CURATOR_GROUP_ID),
+    // - 2 channels (channel_id.0 & channel_id.1, one for each actor),
+    // - 2 videos (video_id.0 & video_id.1 one for each channel)
+
     let member_channel_id = Content::next_channel_id();
 
     assert_ok!(Content::create_channel(
@@ -133,7 +138,7 @@ fn non_authorized_actor_cannot_create_post() {
                 <tests::mock::Test as Trait>::VideoId::from(curator_video_id),
                 ContentActor::Curator(UNKNOWN_CURATOR_GROUP_ID, UNKNOWN_CURATOR_ID),
             ),
-            Error::<Test>::MemberAuthFailed,
+            Error::<Test>::CuratorAuthFailed,
         );
     })
 }
@@ -142,6 +147,8 @@ fn setup_testing_scenario_with_post() -> (
     <tests::mock::Test as Trait>::PostId,
     <tests::mock::Test as Trait>::VideoId,
 ) {
+    // scenario B: previous scenario + one post made by FIRST_MEMBER_ID
+
     let (member_video_id, _curator_video_id) = setup_testing_scenario();
     let post_id = Content::next_post_id();
 
@@ -397,6 +404,8 @@ fn setup_testing_scenario_with_replies() -> (
     <tests::mock::Test as Trait>::ReplyId,
     <tests::mock::Test as Trait>::PostId,
 ) {
+    // scenario C : scenario B + reply (reply.1) to the post by FIRST_MEMBER_ID and reply to reply.1
+    // by FIRST_MEMBER_ID
     let (post_id, _member_video_id) = setup_testing_scenario_with_post();
 
     assert_ok!(Content::create_reply(
@@ -668,5 +677,46 @@ fn verify_delete_parent_reply_effects() {
     })
 }
 
-//#[test]
-// test react to post
+#[test]
+fn nonexistent_member_cannot_react_to_post() {
+    with_default_mock_builder(|| {
+        let (post_id, _member_video_id) = setup_testing_scenario_with_post();
+
+        assert_err!(
+            Content::react_to_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
+                post_id,
+                <tests::mock::Test as Trait>::PostReactionId::from(1u64),
+            ),
+            Error::<Test>::MemberAuthFailed
+        );
+    })
+}
+
+#[test]
+fn verify_react_to_post_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let (post_id, _member_video_id) = setup_testing_scenario_with_post();
+
+        let reaction_id = <tests::mock::Test as Trait>::PostReactionId::from(1u64);
+
+        assert_ok!(Content::react_to_post(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
+            post_id,
+            reaction_id
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ReactionToPost(
+                <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
+                post_id,
+                reaction_id,
+            ))
+        );
+    })
+}
