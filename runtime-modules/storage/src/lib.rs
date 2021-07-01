@@ -99,6 +99,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
+use frame_system::ensure_root;
 
 use common::constraints::BoundedValueConstraint;
 use common::origin::ActorOriginValidator;
@@ -1563,6 +1564,14 @@ decl_module! {
                     accepting_new_bags
                 )
             );
+        }
+
+        /// Upload new data objects. Development mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
+          ensure_root(origin)?;
+
+          Self::upload_data_objects(params)?;
         }
     }
 }

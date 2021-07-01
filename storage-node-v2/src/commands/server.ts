@@ -15,7 +15,7 @@ export default class Server extends ApiCommandBase {
     uploads: flags.string({
       char: 'd',
       required: true,
-      description: 'Data uploading directory.',
+      description: 'Data uploading directory (absolute path).',
     }),
     port: flags.integer({
       char: 'o',

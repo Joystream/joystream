@@ -33,12 +33,10 @@ export async function createApp(
   app.use(express.json())
   app.use(httpLogger())
 
-  // TODO: check path
-  app.use('/files', express.static(uploadsDir))
-
   app.use(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
+      res.locals.uploadsDir = uploadsDir
       res.locals.storageProviderAccount = account
       res.locals.workerId = workerId
       res.locals.api = api
