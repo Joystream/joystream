@@ -1,4 +1,3 @@
-import * as express from 'express'
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
 import {
   UploadTokenRequest,
@@ -11,18 +10,70 @@ import {
   createNonce,
   TokenExpirationPeriod,
 } from '../../../services/helpers/tokenNonceKeeper'
+import { parseBagId } from '../../../services/helpers/bagIdParser'
+
+import FileType from 'file-type'
+import readChunk from 'read-chunk'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { parseBagId } from '../../../services/helpers/bagIdParser'
-import fs from 'fs'
 import { Membership } from '@joystream/types/members'
-
+import * as express from 'express'
+import fs from 'fs'
+import path from 'path'
+import send from 'send'
 const fsPromises = fs.promises
 
 interface UploadRequest {
   dataObjectId: number
   storageBucketId: number
   bagId: string
+}
+
+export async function files(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  try {
+    const cid = getCid(req)
+    const uploadsDir = getUploadsDir(res)
+    const fullPath = path.resolve(uploadsDir, cid)
+
+    const fileInfo = await getFileInfo(fullPath)
+
+    const stream = send(req, fullPath)
+
+    stream.on('headers', (res) => {
+      // serve all files for download
+      res.setHeader('Content-Disposition', 'inline')
+      res.setHeader('Content-Type', fileInfo.mimeType)
+    })
+
+    stream.on('error', (err) => {
+      // General error
+      let statusCode = 410
+      const errorString = err.toString()
+
+      const errorObj = {
+        type: 'files',
+        message: errorString,
+      }
+
+      // Special case - file not found.
+      if (errorString.includes('ENOENT')) {
+        statusCode = 404
+        errorObj.message = 'File not found'
+      }
+
+      res.status(statusCode).json(errorObj)
+    })
+
+    stream.pipe(res)
+  } catch (err) {
+    res.status(410).json({
+      type: 'files',
+      message: err.toString(),
+    })
+  }
 }
 
 export async function upload(
@@ -51,7 +102,7 @@ export async function upload(
       [uploadRequest.dataObjectId]
     )
     res.status(201).json({
-      file: 'received',
+      status: 'received',
     })
   } catch (err) {
     res.status(410).json({
@@ -111,6 +162,14 @@ function getWorkerId(res: express.Response): number {
   throw new Error('No Joystream worker ID loaded.')
 }
 
+function getUploadsDir(res: express.Response): string {
+  if (res.locals.uploadsDir) {
+    return res.locals.uploadsDir
+  }
+
+  throw new Error('No upload directory path loaded.')
+}
+
 function getAccount(res: express.Response): KeyringPair {
   if (res.locals.storageProviderAccount) {
     return res.locals.storageProviderAccount
@@ -125,6 +184,15 @@ function getApi(res: express.Response): ApiPromise {
   }
 
   throw new Error('No Joystream API loaded.')
+}
+
+function getCid(req: express.Request): string {
+  const cid = req.params.cid || ''
+  if (cid.length > 0) {
+    return cid
+  }
+
+  throw new Error('No CID provided.')
 }
 
 function getTokenRequest(req: express.Request): UploadTokenRequest {
@@ -159,4 +227,30 @@ async function validateTokenRequest(
 
 function getTokenExpirationTime(): number {
   return Date.now() + TokenExpirationPeriod
+}
+
+type FileInfo = {
+  mimeType: string
+  ext: string
+}
+
+const MINIMUM_FILE_CHUNK = 4100
+async function getFileInfo(fullPath: string): Promise<FileInfo> {
+  // Default file info if nothing could be detected.
+  const DEFAULT_FILE_INFO = {
+    mimeType: 'application/octet-stream',
+    ext: 'bin',
+  }
+
+  const buffer = readChunk.sync(fullPath, 0, MINIMUM_FILE_CHUNK)
+  const fileType = await FileType.fromBuffer(buffer)
+
+  if (fileType === undefined) {
+    return DEFAULT_FILE_INFO
+  }
+
+  return {
+    mimeType: fileType.mime.toString(),
+    ext: fileType.ext.toString(),
+  }
 }

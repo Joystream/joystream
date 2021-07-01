@@ -19,6 +19,47 @@ tags:
     description: Public storage node API
 
 paths:
+  /files/{cid}:
+    get:
+      operationId: publicApi.files
+      description: Returns a media file.
+      tags:
+        - public
+      parameters:
+        - name: cid
+          required: true
+          in: path
+          description: Content ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            video/*:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        410:
+          description: File request problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /upload:
     post:
       security:
@@ -61,8 +102,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
+                  status:
+                    type: string
         401:
           description: Unauthorized
         410:
