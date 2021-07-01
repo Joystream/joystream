@@ -324,13 +324,7 @@ fn verify_delete_post_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        let (post_id, member_video_id) = setup_testing_scenario_with_post();
-
-        assert_ok!(Content::create_post(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            <tests::mock::Test as Trait>::VideoId::from(member_video_id),
-            ContentActor::Member(FIRST_MEMBER_ID),
-        ));
+        let (post_id, _member_video_id) = setup_testing_scenario_with_post();
 
         assert_ok!(Content::delete_post(
             Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -389,7 +383,7 @@ fn cannot_reply_to_nonexistent_post_or_reply() {
             Content::create_reply(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
                 <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
-                <tests::mock::Test as Trait>::PostId::from(0u64),
+                <tests::mock::Test as Trait>::PostId::from(post_id),
                 Some(<tests::mock::Test as Trait>::ReplyId::from(
                     UNKNOWN_REPLY_ID
                 )),
@@ -517,12 +511,13 @@ fn non_authorized_member_cannot_edit_reply() {
 
 // edit_reply
 #[test]
-fn cannot_delete_nonexistent_reply() {
+fn cannot_delete_reply_to_nonexistent_reply_or_post() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         let (reply_id, post_id) = setup_testing_scenario_with_replies();
 
+        // reply id is not valid
         assert_err!(
             Content::delete_reply(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -533,6 +528,7 @@ fn cannot_delete_nonexistent_reply() {
             Error::<Test>::ReplyDoesNotExist,
         );
 
+        // postid is not valid
         assert_err!(
             Content::delete_reply(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -628,7 +624,7 @@ fn verify_delete_sub_reply_effects() {
 
         let replies_count_post = Content::post_by_id(post_id).replies_count;
 
-        // replies count increased
+        // replies count decreased
         assert_eq!(replies_count_pre - replies_count_post, 1);
 
         // event deposited
@@ -662,7 +658,7 @@ fn verify_delete_parent_reply_effects() {
 
         let replies_count_post = Content::post_by_id(post_id).replies_count;
 
-        // replies count increased
+        // replies count decreased
         assert_eq!(replies_count_pre - replies_count_post, 1);
 
         // event deposited
@@ -710,6 +706,7 @@ fn verify_react_to_post_effects() {
             reaction_id
         ));
 
+        // deposit event
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ReactionToPost(
