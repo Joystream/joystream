@@ -42,7 +42,7 @@ pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
 
 pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
-// pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
+pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
