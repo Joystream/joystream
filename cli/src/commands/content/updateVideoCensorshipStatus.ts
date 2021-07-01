@@ -32,13 +32,9 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
       flags: { rationale },
     } = this.parse(UpdateVideoCensorshipStatusCommand)
 
-    const currentAccount = await this.getRequiredSelectedAccount()
-
     const video = await this.getApi().videoById(id)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
-    const actor = await this.getCurationActorByChannel(channel)
-
-    await this.requestAccountDecoding(currentAccount)
+    const [actor, address] = await this.getCurationActorByChannel(channel)
 
     if (status === undefined) {
       status = await this.simplePrompt({
@@ -59,10 +55,12 @@ export default class UpdateVideoCensorshipStatusCommand extends ContentDirectory
     }
 
     if (rationale === undefined) {
-      rationale = await this.simplePrompt({ message: 'Please provide the rationale for updating the status' })
+      rationale = (await this.simplePrompt({
+        message: 'Please provide the rationale for updating the status',
+      })) as string
     }
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideoCensorshipStatus', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateVideoCensorshipStatus', [
       actor,
       id,
       status,

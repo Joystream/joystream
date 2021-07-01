@@ -1,8 +1,7 @@
 import { Vec, Option, Tuple } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url, MemberId } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url, MemberId, AccountId } from '../common'
 import { ContentParameters } from '../storage'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}

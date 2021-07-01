@@ -7,7 +7,7 @@ import {
   DEFAULT_OPENING_PARAMS,
 } from '../../fixtures/workingGroups'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { workingGroups } from '../../consts'
@@ -15,7 +15,7 @@ import { workingGroups } from '../../consts'
 export default async function leadOpening({ api, query, env }: FlowProps): Promise<void> {
   await Promise.all(
     workingGroups.map(async (group) => {
-      const debug = Debugger(`flow:lead-opening:${group}`)
+      const debug = extendDebug(`flow:lead-opening:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 

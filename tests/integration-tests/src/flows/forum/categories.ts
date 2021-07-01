@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
   CategoryParams,
@@ -13,7 +13,7 @@ import {
 import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
 
 export default async function categories({ api, query }: FlowProps): Promise<void> {
-  const debug = Debugger(`flow:cateogries`)
+  const debug = extendDebug(`flow:cateogries`)
   debug('Started')
   api.enableDebugTxLogs()
 

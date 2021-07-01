@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
 import { SudoUpdateMembershipSystem } from '../../fixtures/membership'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import BN from 'bn.js'
 
 export default async function membershipSystem({ api, query, env }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:membership-system')
+  const debug = extendDebug('flow:membership-system')
   debug('Started')
   api.enableDebugTxLogs()
 
@@ -16,6 +16,10 @@ export default async function membershipSystem({ api, query, env }: FlowProps): 
       membershipPrice: new BN(1000),
       referralCut: 5,
       invitedInitialBalance: new BN(500),
+    },
+    // BigInt above Int32 case:
+    {
+      membershipPrice: new BN(100_000_000_000),
     },
     {
       defaultInviteCount: 5,

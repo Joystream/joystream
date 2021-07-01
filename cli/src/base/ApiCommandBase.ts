@@ -3,7 +3,7 @@ import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
 import { getTypeDef, Option, Tuple } from '@polkadot/types'
-import { Registry, Codec, TypeDef, TypeDefInfo } from '@polkadot/types/types'
+import { Registry, Codec, TypeDef, TypeDefInfo, IEvent } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { SubmittableResult, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -11,7 +11,7 @@ import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
-import { AugmentedSubmittables, SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedSubmittables, SubmittableExtrinsic, AugmentedEvents, AugmentedEvent } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
@@ -521,6 +521,14 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     console.log('Params:', this.humanize(params))
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)
+  }
+
+  public findEvent<
+    S extends keyof AugmentedEvents<'promise'> & string,
+    M extends keyof AugmentedEvents<'promise'>[S] & string,
+    EventType = AugmentedEvents<'promise'>[S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+  >(result: SubmittableResult, section: S, method: M): EventType | undefined {
+    return result.findRecord(section, method)?.event as EventType | undefined
   }
 
   async buildAndSendExtrinsic<

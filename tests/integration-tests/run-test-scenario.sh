@@ -17,4 +17,4 @@ if [ -n "$RUNTIME_UPGRADE_TARGET_IMAGE_TAG" ]; then
 fi
 
 # Execute the tests
-time DEBUG=* yarn workspace integration-tests node-ts-strict src/scenarios/${SCENARIO}.ts
+time DEBUG=integration-tests:* yarn workspace integration-tests node-ts-strict src/scenarios/${SCENARIO}.ts

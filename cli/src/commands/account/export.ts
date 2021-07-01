@@ -63,13 +63,13 @@ export default class AccountExport extends AccountsCommandBase {
       for (const acc of accounts) {
         this.exportAccount(acc.meta.name, exportPath)
       }
-      this.log(chalk.greenBright(`All accounts succesfully exported to: ${chalk.white(exportPath)}!`))
+      this.log(chalk.greenBright(`All accounts succesfully exported to: ${chalk.magentaBright(exportPath)}!`))
     } else {
       if (!name) {
         name = await this.promptForAccount()
       }
       const exportedFilePath: string = this.exportAccount(name, destPath)
-      this.log(chalk.greenBright(`Account succesfully exported to: ${chalk.white(exportedFilePath)}`))
+      this.log(chalk.greenBright(`Account succesfully exported to: ${chalk.magentaBright(exportedFilePath)}`))
     }
   }
 }

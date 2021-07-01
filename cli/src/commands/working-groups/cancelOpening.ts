@@ -28,6 +28,6 @@ export default class WorkingGroupsCancelOpening extends WorkingGroupsCommandBase
       [openingId]
     )
 
-    this.log(chalk.green(`Opening ${chalk.white(openingId.toString())} has been cancelled!`))
+    this.log(chalk.green(`Opening ${chalk.magentaBright(openingId.toString())} has been cancelled!`))
   }
 }

@@ -148,12 +148,13 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   const member = await getMemberById(store, memberId)
   const eventTime = new Date(event.blockTimestamp)
 
+  // FIXME: https://github.com/Joystream/hydra/issues/435
   if (typeof metadata?.name === 'string') {
-    member.metadata.name = metadata.name || undefined
+    member.metadata.name = (metadata.name || null) as string | undefined
     member.metadata.updatedAt = eventTime
   }
   if (typeof metadata?.about === 'string') {
-    member.metadata.about = metadata.about || undefined
+    member.metadata.about = (metadata.about || null) as string | undefined
     member.metadata.updatedAt = eventTime
   }
   // TODO: avatar

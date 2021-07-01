@@ -76,31 +76,33 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     await this.getRequiredLeadContext()
   }
 
-  async getCurationActorByChannel(channel: Channel): Promise<ContentActor> {
-    return channel.owner.isOfType('Curators') ? await this.getActor('Lead') : await this.getActor('Curator')
+  async getCurationActorByChannel(channel: Channel): Promise<[ContentActor, string]> {
+    return channel.owner.isOfType('Curators')
+      ? await this.getContentActor('Lead')
+      : await this.getContentActor('Curator')
   }
 
-  async getChannelOwnerActor(channel: Channel): Promise<ContentActor> {
+  async getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
     if (channel.owner.isOfType('Curators')) {
       try {
-        return await this.getActor('Lead')
+        return await this.getContentActor('Lead')
       } catch (e) {
         return await this.getCuratorContext(channel.owner.asType('Curators'))
       }
     } else {
-      return await this.getActor('Member')
+      return await this.getContentActor('Member')
     }
   }
 
-  async getCategoryManagementActor(): Promise<ContentActor> {
+  async getCategoryManagementActor(): Promise<[ContentActor, string]> {
     try {
-      return await this.getActor('Lead')
+      return await this.getContentActor('Lead')
     } catch (e) {
-      return await this.getActor('Curator')
+      return await this.getContentActor('Curator')
     }
   }
 
-  async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<ContentActor> {
+  async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<[ContentActor, string]> {
     const curator = await this.getRequiredWorkerContext()
 
     let groupId: number
@@ -133,7 +135,10 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       }
     }
 
-    return createType('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] })
+    return [
+      createType('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] }),
+      curator.roleAccount.toString(),
+    ]
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
@@ -225,19 +230,18 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return group
   }
 
-  async getActor(context: typeof CONTEXTS[number]) {
-    let actor: ContentActor
+  async getContentActor(context: typeof CONTEXTS[number]): Promise<[ContentActor, string]> {
+    let contentActorContext: [ContentActor, string]
     if (context === 'Member') {
-      const { id } = await this.getRequiredMemberContext()
-      actor = this.createType('ContentActor', { Member: id })
+      const { id, membership } = await this.getRequiredMemberContext()
+      contentActorContext = [this.createType('ContentActor', { Member: id }), membership.controller_account.toString()]
     } else if (context === 'Curator') {
-      actor = await this.getCuratorContext()
+      contentActorContext = await this.getCuratorContext()
     } else {
-      await this.getRequiredLeadContext()
-
-      actor = this.createType('ContentActor', { Lead: null })
+      const lead = await this.getRequiredLeadContext()
+      contentActorContext = [this.createType('ContentActor', { Lead: null }), lead.roleAccount.toString()]
     }
 
-    return actor
+    return contentActorContext
   }
 }

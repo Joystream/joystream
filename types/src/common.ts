@@ -5,7 +5,7 @@ import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
+import { GenericAccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
@@ -118,6 +118,7 @@ export class BalanceKind extends JoyEnum({
 
 // @polkadot/types overrides required since migration to Substrate 2.0,
 // see: https://polkadot.js.org/docs/api/FAQ#i-cannot-send-transactions-sending-yields-address-decoding-failures
+export class AccountId extends GenericAccountId {}
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
 

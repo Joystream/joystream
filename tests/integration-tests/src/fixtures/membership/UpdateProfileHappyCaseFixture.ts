@@ -7,35 +7,55 @@ import { MemberContext, EventDetails } from '../../types'
 import { MembershipFieldsFragment, MemberProfileUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { Utils } from '../../utils'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
-// TODO: Add partial update to make sure it works too
+export type MemberProfileData = {
+  name?: string | null
+  handle?: string | null
+  about?: string | null
+}
+
 export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
   private memberContext: MemberContext
   // Update data
-  private newName = 'New name'
-  private newHandle = 'New handle'
-  private newAbout = 'New about'
+  private newValues: MemberProfileData
+  private oldValues: MemberProfileData
 
   private event?: EventDetails
   private tx?: SubmittableExtrinsic<'promise'>
 
-  public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext) {
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    memberContext: MemberContext,
+    oldValues: MemberProfileData,
+    newValues: MemberProfileData
+  ) {
     super(api, query)
     this.memberContext = memberContext
+    this.oldValues = oldValues
+    this.newValues = newValues
+    console.log({ oldValues, newValues })
   }
 
   private assertProfileUpdateSuccesful(qMember: MembershipFieldsFragment | null) {
     if (!qMember) {
       throw new Error('Query node: Membership not found!')
     }
-    const {
-      handle,
-      metadata: { name, about },
-    } = qMember
-    assert.equal(name, this.newName)
-    assert.equal(handle, this.newHandle)
+    const { handle, metadata } = qMember
+    const expected = this.getExpectedValues()
+    assert.equal(metadata.name, expected.name)
+    assert.equal(handle, expected.handle)
     // TODO: avatar
-    assert.equal(about, this.newAbout)
+    assert.equal(metadata.about, expected.about)
+  }
+
+  public getExpectedValues(): MemberProfileData {
+    return {
+      handle: isSet(this.newValues.handle) ? this.newValues.handle : this.oldValues.handle,
+      name: isSet(this.newValues.name) ? this.newValues.name || null : this.oldValues.name,
+      about: isSet(this.newValues.about) ? this.newValues.about || null : this.oldValues.about,
+    }
   }
 
   private assertQueryNodeEventIsValid(
@@ -50,23 +70,24 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       newHandle,
       newMetadata,
     } = qEvent
+    const expected = this.getExpectedValues()
     assert.equal(inExtrinsic, txHash)
     assert.equal(memberId, this.memberContext.memberId.toString())
-    assert.equal(newHandle, this.newHandle)
-    assert.equal(newMetadata.name, this.newName)
-    assert.equal(newMetadata.about, this.newAbout)
+    assert.equal(newHandle, expected.handle)
+    assert.equal(newMetadata.name, expected.name)
+    assert.equal(newMetadata.about, expected.about)
     // TODO: avatar
   }
 
   async execute(): Promise<void> {
     const metadata = new MembershipMetadata({
-      name: this.newName,
-      about: this.newAbout,
+      name: this.newValues.name,
+      about: this.newValues.about,
     })
     // TODO: avatar
     this.tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
-      this.newHandle,
+      this.newValues.handle || null,
       Utils.metadataToBytes(MembershipMetadata, metadata)
     )
     const txFee = await this.api.estimateTxFee(this.tx, this.memberContext.account)

@@ -7,7 +7,9 @@
     "status": "ts-node src/status",
     "script": "ts-node src/script",
     "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict",
-    "initialize-content-lead": "ts-node src/initialize-content-lead"
+    "initialize-lead": "ts-node src/initialize-lead",
+    "initialize-worker": "ts-node src/initialize-worker",
+    "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
     "@joystream/types": "^0.17.0",

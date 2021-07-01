@@ -74,7 +74,7 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
         },
       },
     },
-    personsList: { type: 'array' },
+    persons: { type: 'array' },
     publishedBeforeJoystream: {
       type: 'object',
       properties: {

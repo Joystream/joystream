@@ -146,7 +146,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
 
       // Send the tx
-      const txSuccess = await this.sendAndFollowNamedTx(
+      const result = await this.sendAndFollowNamedTx(
         await this.getDecodedPair(lead.roleAccount.toString()),
         apiModuleByGroup[this.group],
         'addOpening',
@@ -155,7 +155,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       )
 
       // Display a success message on success or ask to try again on error
-      if (txSuccess) {
+      if (result) {
         this.log(chalk.green('Opening successfully created!'))
         tryAgain = false
       } else {

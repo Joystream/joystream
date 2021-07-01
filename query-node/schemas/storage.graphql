@@ -5,9 +5,6 @@ enum LiaisonJudgement {
 
   "Content accepted"
   ACCEPTED
-
-  "Content rejected"
-  REJECTED
 }
 
 "Manages content ids, type and storage provider decision about it"
@@ -16,7 +13,7 @@ type DataObject @entity {
   owner: DataObjectOwner!
 
   "Content added at"
-  addedAt: Int!
+  createdInBlock: Int!
 
   "Content type id"
   typeId: Int!
@@ -25,8 +22,7 @@ type DataObject @entity {
   size: BigInt!
 
   "Storage provider id of the liaison"
-  liaisonId: BigInt!
-
+  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
   "Storage provider as liaison judgment"
   liaisonJudgement: LiaisonJudgement!
 
@@ -47,11 +43,8 @@ union DataObjectOwner =
 
 "Asset owned by a member"
 type DataObjectOwnerMember @variant {
-  # use `BigInt` instead of `Membership` before variant relations are featured in Hydra
-  #"Member identifier"
-  #memberId: Membership!
-  "Member identifier"
-  member: BigInt!
+  "Related member"
+  member: Membership!
 
   "Variant needs to have at least one property. This value is not used."
   dummy: Int
@@ -59,11 +52,8 @@ type DataObjectOwnerMember @variant {
 
 "Asset owned by a channel"
 type DataObjectOwnerChannel @variant {
-  # use `BigInt` instead of `Channel` before variant relations are featured in Hydra
-  #"Channel identifier"
-  #channel: Channel!
-  "Channel identifier"
-  channel: BigInt!
+  "Related channel"
+  channel: Channel!
 
   "Variant needs to have at least one property. This value is not used."
   dummy: Int
@@ -72,7 +62,7 @@ type DataObjectOwnerChannel @variant {
 "Asset owned by a DAO"
 type DataObjectOwnerDao @variant {
   "DAO identifier"
-  dao: BigInt!
+  dao: Int!
 }
 
 "Asset owned by the Council"
@@ -83,9 +73,6 @@ type DataObjectOwnerCouncil @variant {
 
 "Asset owned by a WorkingGroup"
 type DataObjectOwnerWorkingGroup @variant {
-  #"Working group identifier"
-  #workingGroup: BigInt!
-
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
+  "Working group"
+  workingGroup: WorkingGroup!
 }

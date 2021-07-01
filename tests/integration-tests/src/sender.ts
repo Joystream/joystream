@@ -4,7 +4,7 @@ import { ISubmittableResult, AnyJson } from '@polkadot/types/types/'
 import { AccountId, EventRecord } from '@polkadot/types/interfaces'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
 import { KeyringPair } from '@polkadot/keyring/types'
-import Debugger from 'debug'
+import { extendDebug, Debugger } from './Debugger'
 import AsyncLock from 'async-lock'
 import { assert } from 'chai'
 import BN from 'bn.js'
@@ -28,7 +28,7 @@ export class Sender {
   constructor(api: ApiPromise, keyring: Keyring, label: string) {
     this.api = api
     this.keyring = keyring
-    this.debug = Debugger(`Sender:${Sender.instance++}:${label}`)
+    this.debug = extendDebug(`Sender:${Sender.instance++}:${label}`)
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read

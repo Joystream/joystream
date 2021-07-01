@@ -6,7 +6,7 @@ import {
   UpcomingOpeningParams,
 } from '../../fixtures/workingGroups'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
 import Long from 'long'
@@ -68,7 +68,7 @@ const upcomingOpeningsToCreate: UpcomingOpeningParams[] = [
 export default async function upcomingOpenings({ api, query, env }: FlowProps): Promise<void> {
   await Promise.all(
     workingGroups.map(async (group) => {
-      const debug = Debugger(`flow:upcoming-openings:${group}`)
+      const debug = extendDebug(`flow:upcoming-openings:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
       const createUpcomingOpeningFixture = new CreateUpcomingOpeningsFixture(

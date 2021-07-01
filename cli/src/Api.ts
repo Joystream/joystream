@@ -29,7 +29,7 @@ import {
   Opening,
 } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { MemberId, ChannelId } from '@joystream/types/common'
+import { MemberId, ChannelId, AccountId } from '@joystream/types/common'
 import {
   Channel,
   Video,
@@ -42,7 +42,6 @@ import {
   VideoCategory,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
-import _ from 'lodash'
 import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client'
 import fetch from 'cross-fetch'
 import { Maybe } from './graphql/generated/schema'
@@ -52,7 +51,6 @@ import {
   GetMemberByIdQueryVariables,
   MembershipFieldsFragment,
 } from './graphql/generated/queries'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -62,6 +60,8 @@ export const apiModuleByGroup = {
   [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
+  [WorkingGroups.Operations]: 'operationsWorkingGroup',
+  [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
 } as const
 
 export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
@@ -69,6 +69,8 @@ export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
   [WorkingGroups.Curators]: '0x0707070707070707',
   [WorkingGroups.Forum]: '0x0808080808080808',
   [WorkingGroups.Membership]: '0x0909090909090909',
+  [WorkingGroups.Operations]: '0x0d0d0d0d0d0d0d0d',
+  [WorkingGroups.Gateway]: '0x0e0e0e0e0e0e0e0e',
 }
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
@@ -470,12 +472,12 @@ export default class Api {
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id)).toNumber()
-    return exists ? await this._api.query.contentDirectory.curatorGroupById(id) : null
+    const exists = !!(await this._api.query.content.curatorGroupById.size(id)).toNumber()
+    return exists ? await this._api.query.content.curatorGroupById(id) : null
   }
 
   async nextCuratorGroupId(): Promise<number> {
-    return (await this._api.query.contentDirectory.nextCuratorGroupId()).toNumber()
+    return (await this._api.query.content.nextCuratorGroupId()).toNumber()
   }
 
   async channelById(channelId: ChannelId | number | string): Promise<Channel> {
@@ -494,7 +496,7 @@ export default class Api {
     if (channel) {
       return Promise.all(
         channel.videos.map(
-          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
+          async (videoId) => [videoId, await this._api.query.content.videoById(videoId)] as [VideoId, Video]
         )
       )
     } else {
@@ -503,7 +505,7 @@ export default class Api {
   }
 
   async videoById(videoId: VideoId | number | string): Promise<Video> {
-    const video = await this._api.query.content.videoById<Video>(videoId)
+    const video = await this._api.query.content.videoById(videoId)
     if (video.isEmpty) {
       throw new CLIError(`Video by id ${videoId.toString()} not found!`)
     }
@@ -534,12 +536,6 @@ export default class Api {
       throw new CLIError(`DataObject not found by id ${contentIds[notFoundIndex].toString()}`)
     }
     return dataObjects
-  }
-
-  async getRandomBootstrapEndpoint(): Promise<string | null> {
-    const endpoints = await this._api.query.discovery.bootstrapEndpoints()
-    const randomEndpoint = _.sample(endpoints.toArray())
-    return randomEndpoint ? randomEndpoint.toString() : null
   }
 
   async storageProviderEndpoint(storageProviderId: StorageProviderId | number): Promise<string> {

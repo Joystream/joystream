@@ -368,6 +368,96 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentDirectoryWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    # Operations working group
+    - event: operationsWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: operationsWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: operationsWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: operationsWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: operationsWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: operationsWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: operationsWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: operationsWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: operationsWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: operationsWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: operationsWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: operationsWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: operationsWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: operationsWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: operationsWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: operationsWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: operationsWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: operationsWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: operationsWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: operationsWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: operationsWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
+    # Gateway working group
+    - event: gatewayWorkingGroup.OpeningAdded
+      handler: workingGroups_OpeningAdded
+    - event: gatewayWorkingGroup.AppliedOnOpening
+      handler: workingGroups_AppliedOnOpening
+    - event: gatewayWorkingGroup.OpeningFilled
+      handler: workingGroups_OpeningFilled
+    - event: gatewayWorkingGroup.LeaderSet
+      handler: workingGroups_LeaderSet
+    - event: gatewayWorkingGroup.WorkerRoleAccountUpdated
+      handler: workingGroups_WorkerRoleAccountUpdated
+    - event: gatewayWorkingGroup.LeaderUnset
+      handler: workingGroups_LeaderUnset
+    - event: gatewayWorkingGroup.WorkerExited
+      handler: workingGroups_WorkerExited
+    - event: gatewayWorkingGroup.TerminatedWorker
+      handler: workingGroups_TerminatedWorker
+    - event: gatewayWorkingGroup.TerminatedLeader
+      handler: workingGroups_TerminatedLeader
+    - event: gatewayWorkingGroup.StakeSlashed
+      handler: workingGroups_StakeSlashed
+    - event: gatewayWorkingGroup.StakeDecreased
+      handler: workingGroups_StakeDecreased
+    - event: gatewayWorkingGroup.StakeIncreased
+      handler: workingGroups_StakeIncreased
+    - event: gatewayWorkingGroup.ApplicationWithdrawn
+      handler: workingGroups_ApplicationWithdrawn
+    - event: gatewayWorkingGroup.OpeningCanceled
+      handler: workingGroups_OpeningCanceled
+    - event: gatewayWorkingGroup.BudgetSet
+      handler: workingGroups_BudgetSet
+    - event: gatewayWorkingGroup.WorkerRewardAccountUpdated
+      handler: workingGroups_WorkerRewardAccountUpdated
+    - event: gatewayWorkingGroup.WorkerRewardAmountUpdated
+      handler: workingGroups_WorkerRewardAmountUpdated
+    - event: gatewayWorkingGroup.StatusTextChanged
+      handler: workingGroups_StatusTextChanged
+    - event: gatewayWorkingGroup.BudgetSpending
+      handler: workingGroups_BudgetSpending
+    - event: gatewayWorkingGroup.RewardPaid
+      handler: workingGroups_RewardPaid
+    - event: gatewayWorkingGroup.NewMissedRewardLevelReached
+      handler: workingGroups_NewMissedRewardLevelReached
+    - event: gatewayWorkingGroup.WorkerStartedLeaving
+      handler: workingGroups_WorkerStartedLeaving
     # Proposals
     - event: proposalsCodex.ProposalCreated
       handler: proposalsCodex_ProposalCreated
@@ -429,64 +519,67 @@ mappings:
       handler: forum_CategoryMembershipOfModeratorUpdated
     # Content directory
     - event: content.CuratorGroupCreated
-      handler: content_CuratorGroupCreated(DatabaseManager, SubstrateEvent)
+      handler: content_CuratorGroupCreated
     - event: content.CuratorGroupStatusSet
-      handler: content_CuratorGroupStatusSet(DatabaseManager, SubstrateEvent)
+      handler: content_CuratorGroupStatusSet
     - event: content.CuratorAdded
-      handler: content_CuratorAdded(DatabaseManager, SubstrateEvent)
+      handler: content_CuratorAdded
     - event: content.CuratorRemoved
-      handler: content_CuratorRemoved(DatabaseManager, SubstrateEvent)
+      handler: content_CuratorRemoved
     - event: content.ChannelCreated
-      handler: content_ChannelCreated(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelCreated
     - event: content.ChannelUpdated
-      handler: content_ChannelUpdated(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelUpdated
     - event: content.ChannelAssetsRemoved
-      handler: content_ChannelAssetsRemoved(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelAssetsRemoved
     - event: content.ChannelCensorshipStatusUpdated
-      handler: content_ChannelCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelCensorshipStatusUpdated
     # these events are defined in runtime but never calles (at the time of writing)
     #- event: content.ChannelOwnershipTransferRequested
-    #  handler: content_ChannelOwnershipTransferRequested(DatabaseManager, SubstrateEvent)
+    #  handler: content_ChannelOwnershipTransferRequested
     #- event: content.ChannelOwnershipTransferRequestWithdrawn
-    #  handler: content_ChannelOwnershipTransferRequestWithdrawn(DatabaseManager, SubstrateEvent)
+    #  handler: content_ChannelOwnershipTransferRequestWithdrawn
     #- event: content.ChannelOwnershipTransferred
-    #  handler: content_ChannelOwnershipTransferred(DatabaseManager, SubstrateEvent)
+    #  handler: content_ChannelOwnershipTransferred
     - event: content.ChannelCategoryCreated
-      handler: content_ChannelCategoryCreated(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelCategoryCreated
     - event: content.ChannelCategoryUpdated
-      handler: content_ChannelCategoryUpdated(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelCategoryUpdated
     - event: content.ChannelCategoryDeleted
-      handler: content_ChannelCategoryDeleted(DatabaseManager, SubstrateEvent)
+      handler: content_ChannelCategoryDeleted
     - event: content.VideoCategoryCreated
-      handler: content_VideoCategoryCreated(DatabaseManager, SubstrateEvent)
+      handler: content_VideoCategoryCreated
     - event: content.VideoCategoryUpdated
-      handler: content_VideoCategoryUpdated(DatabaseManager, SubstrateEvent)
+      handler: content_VideoCategoryUpdated
     - event: content.VideoCategoryDeleted
-      handler: content_VideoCategoryDeleted(DatabaseManager, SubstrateEvent)
+      handler: content_VideoCategoryDeleted
     - event: content.VideoCreated
-      handler: content_VideoCreated(DatabaseManager, SubstrateEvent)
+      handler: content_VideoCreated
     - event: content.VideoUpdated
-      handler: content_VideoUpdated(DatabaseManager, SubstrateEvent)
+      handler: content_VideoUpdated
     - event: content.VideoDeleted
-      handler: content_VideoDeleted(DatabaseManager, SubstrateEvent)
+      handler: content_VideoDeleted
     - event: content.VideoCensorshipStatusUpdated
-      handler: content_VideoCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
+      handler: content_VideoCensorshipStatusUpdated
     - event: content.FeaturedVideosSet
-      handler: content_FeaturedVideosSet(DatabaseManager, SubstrateEvent)
+      handler: content_FeaturedVideosSet
     # Storage
     - event: dataDirectory.ContentAdded
-      handler: dataDirectory_ContentAdded(DatabaseManager, SubstrateEvent)
+      handler: dataDirectory_ContentAdded
     - event: dataDirectory.ContentRemoved
-      handler: dataDirectory_ContentRemoved(DatabaseManager, SubstrateEvent)
+      handler: dataDirectory_ContentRemoved
     - event: dataDirectory.ContentAccepted
-      handler: dataDirectory_ContentAccepted(DatabaseManager, SubstrateEvent)
+      handler: dataDirectory_ContentAccepted
     # not handled at the moment
     #- event: dataDirectory.ContentUploadingStatusUpdated
-    #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
+    #  handler: data_directory_ContentUploadingStatusUpdated
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
     #- extrinsic: Sudo.batchCall
     #  handler: handleSudoCall(DatabaseManager,SubstrateEvent)
   preBlockHooks:
+    - handler: loadGenesisData
+      filter:
+        height: "[0,0]" # will be executed only at genesis
   postBlockHooks:

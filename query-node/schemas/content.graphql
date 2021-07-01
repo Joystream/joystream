@@ -1,0 +1,212 @@
+type AssetExternal @variant {
+  # FIXME: [String!] currnetly not supported in variants
+  "JSON array of the urls"
+  urls: String!
+}
+
+type AssetJoystreamStorage @variant {
+  "Related DataObject entity"
+  dataObject: DataObject!
+}
+
+# FIXME: https://github.com/Joystream/hydra/issues/434
+type AssetNone @variant {
+  _phantom: Int
+}
+
+union Asset = AssetExternal | AssetJoystreamStorage | AssetNone
+
+"Category of media channel"
+type ChannelCategory @entity {
+  id: ID!
+
+  "The name of the category"
+  name: String @fulltext(query: "channelCategoriesByName")
+
+  channels: [Channel!]! @derivedFrom(field: "category")
+
+  createdInBlock: Int!
+}
+
+type Language @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  "Language identifier ISO 639-1"
+  iso: String!
+
+  createdInBlock: Int!
+}
+
+type Channel @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  "Member owning the channel (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the channel (if any)"
+  ownerCuratorGroup: CuratorGroup
+
+  category: ChannelCategory
+
+  "Reward account where revenue is sent if set."
+  rewardAccount: String
+
+  "The title of the Channel"
+  title: String @fulltext(query: "search")
+
+  "The description of a Channel"
+  description: String
+
+  "Channel's cover (background) photo asset. Recommended ratio: 16:9."
+  coverPhoto: Asset
+
+  "Channel's avatar photo asset."
+  avatarPhoto: Asset
+
+  ##########################
+
+  "Flag signaling whether a channel is public."
+  isPublic: Boolean
+
+  "Flag signaling whether a channel is censored."
+  isCensored: Boolean!
+
+  "The primary langauge of the channel's content"
+  language: Language
+
+  videos: [Video!]! @derivedFrom(field: "channel")
+
+  createdInBlock: Int!
+}
+
+type CuratorGroup @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Curators belonging to this group"
+  curatorIds: [Int!]!
+
+  "Is group active or not"
+  isActive: Boolean!
+
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+}
+
+type VideoCategory @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "The name of the category"
+  name: String @fulltext(query: "videoCategoriesByName")
+
+  videos: [Video!]! @derivedFrom(field: "category")
+
+  createdInBlock: Int!
+}
+
+type Video @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Reference to member's channel"
+  channel: Channel!
+
+  "Reference to a video category"
+  category: VideoCategory
+
+  "The title of the video"
+  title: String @fulltext(query: "search")
+
+  "The description of the Video"
+  description: String
+
+  "Video duration in seconds"
+  duration: Int
+
+  "Video thumbnail asset (recommended ratio: 16:9)"
+  thumbnailPhoto: Asset
+
+  ##########################
+
+  "Video's main langauge"
+  language: Language
+
+  "Whether or not Video contains marketing"
+  hasMarketing: Boolean
+
+  "If the Video was published on other platform before beeing published on Joystream - the original publication date"
+  publishedBeforeJoystream: DateTime
+
+  "Whether the Video is supposed to be publically displayed"
+  isPublic: Boolean
+
+  "Flag signaling whether a video is censored."
+  isCensored: Boolean!
+
+  "Whether the Video contains explicit material."
+  isExplicit: Boolean
+
+  "License under the video is published"
+  license: License
+
+  "Video media asset"
+  media: Asset
+
+  ##########################
+
+  "Video file metadata"
+  mediaMetadata: VideoMediaMetadata
+
+  createdInBlock: Int!
+
+  "Is video featured or not"
+  isFeatured: Boolean!
+}
+
+type VideoMediaMetadata @entity {
+  "Unique identifier"
+  id: ID!
+
+  "Encoding of the video media object"
+  encoding: VideoMediaEncoding
+
+  "Video media width in pixels"
+  pixelWidth: Int
+
+  "Video media height in pixels"
+  pixelHeight: Int
+
+  "Video media size in bytes"
+  size: BigInt
+
+  video: Video @derivedFrom(field: "mediaMetadata")
+
+  createdInBlock: Int!
+}
+
+type VideoMediaEncoding @entity {
+  "Encoding of the video media object"
+  codecName: String
+
+  "Media container format"
+  container: String
+
+  "Content MIME type"
+  mimeMediaType: String
+}
+
+type License @entity {
+  "Unique identifier"
+  id: ID!
+
+  "License code defined by Joystream"
+  code: Int
+
+  "Attribution (if required by the license)"
+  attribution: String
+
+  "Custom license content"
+  custom_text: String
+}

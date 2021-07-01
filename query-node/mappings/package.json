@@ -14,9 +14,7 @@
     "@dzlzv/hydra-db-utils": "3.1.0-alpha.0",
     "@joystream/types": "^0.17.0",
     "warthog": "https://github.com/metmirr/warthog/releases/download/v2.30.0/warthog-v2.30.0.tgz",
-    "@joystream/content-metadata-protobuf": "^1.1.0",
     "@joystream/metadata-protobuf": "^1.0.0",
-    "query-node": "^0.1.0",
     "iso-639-1": "^2.1.8"
   },
   "devDependencies": {

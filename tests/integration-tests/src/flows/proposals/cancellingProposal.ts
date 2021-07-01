@@ -1,12 +1,12 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { CreateProposalsFixture, CancelProposalsFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
 
 export default async function cancellingProposals({ api, query, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:cancelling-proposals')
+  const debug = extendDebug('flow:cancelling-proposals')
   debug('Started')
   api.enableDebugTxLogs()
 

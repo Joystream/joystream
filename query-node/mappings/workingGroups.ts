@@ -74,6 +74,8 @@ import {
   WorkerStatusLeaving,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -230,7 +232,7 @@ async function handleAddUpcomingOpeningAction(
   store: DatabaseManager,
   event: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
-  action: IAddUpcomingOpening
+  action: DecodedMetadataObject<IAddUpcomingOpening>
 ): Promise<UpcomingOpeningAdded | InvalidActionMetadata> {
   const upcomingOpeningMeta = action.metadata || {}
   const group = await getWorkingGroup(store, event)
@@ -246,9 +248,9 @@ async function handleAddUpcomingOpeningAction(
     updatedAt: eventTime,
     metadata: openingMeta,
     group,
-    rewardPerBlock: rewardPerBlock?.toNumber() ? new BN(rewardPerBlock.toString()) : undefined,
+    rewardPerBlock: isSet(rewardPerBlock) && parseInt(rewardPerBlock) ? new BN(rewardPerBlock) : undefined,
     expectedStart: expectedStart ? new Date(expectedStart) : undefined,
-    stakeAmount: minApplicationStake?.toNumber() ? new BN(minApplicationStake.toString()) : undefined,
+    stakeAmount: isSet(minApplicationStake) && parseInt(minApplicationStake) ? new BN(minApplicationStake) : undefined,
     createdInEvent: statusChangedEvent,
   })
   await store.save<UpcomingWorkingGroupOpening>(upcomingOpening)
@@ -318,7 +320,7 @@ async function handleWorkingGroupMetadataAction(
   store: DatabaseManager,
   event: SubstrateEvent,
   statusChangedEvent: StatusTextChangedEvent,
-  action: IWorkingGroupMetadataAction
+  action: DecodedMetadataObject<IWorkingGroupMetadataAction>
 ): Promise<typeof WorkingGroupMetadataActionResult> {
   if (action.addUpcomingOpening) {
     return handleAddUpcomingOpeningAction(store, event, statusChangedEvent, action.addUpcomingOpening)

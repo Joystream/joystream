@@ -9,7 +9,7 @@ import {
   OpeningParams,
 } from '../../fixtures/workingGroups'
 
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { workingGroups, LEADER_OPENING_STAKE } from '../../consts'
@@ -69,7 +69,7 @@ export default async function openingsAndApplications({ api, query, env }: FlowP
 
   await Promise.all(
     workingGroups.map(async (group) => {
-      const debug = Debugger(`flow:openings-and-applications:${group}`)
+      const debug = extendDebug(`flow:openings-and-applications:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 

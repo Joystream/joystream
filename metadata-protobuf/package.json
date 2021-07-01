@@ -4,15 +4,26 @@
   "description": "Joystream Metadata Protobuf Library ",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "exports": {
+    ".": "./lib/index.js",
+    "./utils": "./lib/utils.js",
+    "./licenses": "./lib/licenses.js"
+  },
+  "typesVersions": {
+    "*": {
+      "lib/index.d.ts": ["lib/index.d.ts"],
+      "*": [ "lib/*" ]
+    }
+  },
   "repository": "https://github.com/joystream/joystream",
   "author": "Joystream Contributors",
   "license": "MIT",
   "private": false,
   "scripts": {
     "build": "yarn compile && tsc",
-    "compile": "./compile.sh",
+    "compile": "yarn ts-node ./scripts/compile.ts",
     "generate-doc": "./generate-md-doc.sh",
-    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'test/**/*.ts'",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --inline-diffs -r ts-node/register 'test/**/*.ts'",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write"

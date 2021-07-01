@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import Debugger from 'debug'
+import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { Utils } from '../../utils'
@@ -12,7 +12,7 @@ import { OpeningMetadata } from '@joystream/metadata-protobuf'
 import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals'
 
 export default async function creatingProposals({ api, query, lock }: FlowProps): Promise<void> {
-  const debug = Debugger('flow:creating-proposals')
+  const debug = extendDebug('flow:creating-proposals')
   debug('Started')
   api.enableDebugTxLogs()
 
