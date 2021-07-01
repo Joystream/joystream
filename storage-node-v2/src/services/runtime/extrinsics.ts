@@ -14,21 +14,17 @@ export async function createStorageBucket(
   sizeLimit = 0,
   objectsLimit = 0
 ): Promise<boolean> {
-  try {
+  return await extrinsicWrapper(() => {
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
 
-    await sendAndFollowNamedTx(api, account, 'storage', 'createStorageBucket', [
-      invitedWorkerValue,
-      allowedNewBags,
-      sizeLimit,
-      objectsLimit,
-    ])
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-    return false
-  }
-
-  return true
+    return sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'createStorageBucket',
+      [invitedWorkerValue, allowedNewBags, sizeLimit, objectsLimit]
+    )
+  })
 }
 
 export async function acceptStorageBucketInvitation(
@@ -37,19 +33,15 @@ export async function acceptStorageBucketInvitation(
   workerId: number,
   storageBucketId: number
 ): Promise<boolean> {
-  try {
-    await sendAndFollowNamedTx(
+  return await extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
       api,
       account,
       'storage',
       'acceptStorageBucketInvitation',
       [workerId, storageBucketId]
     )
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-    return false
-  }
-  return true
+  )
 }
 
 export async function updateStorageBucketsForBag(
@@ -59,7 +51,7 @@ export async function updateStorageBucketsForBag(
   bucketId: number,
   removeBucket: boolean
 ): Promise<boolean> {
-  try {
+  return await extrinsicWrapper(() => {
     let addBuckets: CodecArg
     let removeBuckets: CodecArg
 
@@ -69,27 +61,22 @@ export async function updateStorageBucketsForBag(
       addBuckets = api.createType('StorageBucketIdSet', [bucketId])
     }
 
-    await sendAndFollowNamedTx(
+    return sendAndFollowNamedTx(
       api,
       account,
       'storage',
       'updateStorageBucketsForBag',
       [bagId, addBuckets, removeBuckets]
     )
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-    return false
-  }
-
-  return true
+  })
 }
 
 export async function uploadDataObjects(
   api: ApiPromise,
   objectSize: number,
   objectCid: string
-): Promise<void> {
-  try {
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
     const alice = getAlicePair()
 
     const data = api.createType('UploadParameters', {
@@ -102,16 +89,14 @@ export async function uploadDataObjects(
       ],
     })
 
-    await sendAndFollowSudoNamedTx(
+    return sendAndFollowSudoNamedTx(
       api,
       alice,
       'storage',
       'sudoUploadDataObjects',
       [data]
     )
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-  }
+  })
 }
 
 export async function acceptPendingDataObjects(
@@ -121,24 +106,21 @@ export async function acceptPendingDataObjects(
   workerId: number,
   storageBucketId: number,
   dataObjects: number[]
-): Promise<void> {
-  try {
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
     const dataObjectSet: CodecArg = api.createType(
       'DataObjectIdSet',
       dataObjects
     )
 
-    await sendAndFollowNamedTx(
+    return sendAndFollowNamedTx(
       api,
       account,
       'storage',
       'acceptPendingDataObjects',
       [workerId, storageBucketId, bagId, dataObjectSet]
     )
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-    throw err
-  }
+  }, true)
 }
 
 export async function updateStorageBucketsPerBagLimit(
@@ -146,20 +128,15 @@ export async function updateStorageBucketsPerBagLimit(
   account: KeyringPair,
   newLimit: number
 ): Promise<boolean> {
-  try {
-    await sendAndFollowNamedTx(
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
       api,
       account,
       'storage',
       'updateStorageBucketsPerBagLimit',
       [newLimit]
     )
-
-    return true
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-    return false
-  }
+  )
 }
 
 export async function updateStorageBucketsVoucherMaxLimits(
@@ -168,20 +145,15 @@ export async function updateStorageBucketsVoucherMaxLimits(
   newSizeLimit: number,
   newObjectLimit: number
 ): Promise<boolean> {
-  try {
-    await sendAndFollowNamedTx(
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
       api,
       account,
       'storage',
       'updateStorageBucketsVoucherMaxLimits',
       [newSizeLimit, newObjectLimit]
     )
-  } catch (err) {
-    logger.error(`Api Error: ${err}`)
-    return false
-  }
-
-  return true
+  )
 }
 
 export async function deleteStorageBucket(
@@ -189,12 +161,42 @@ export async function deleteStorageBucket(
   account: KeyringPair,
   bucketId: number
 ): Promise<boolean> {
-  try {
-    await sendAndFollowNamedTx(api, account, 'storage', 'deleteStorageBucket', [
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(api, account, 'storage', 'deleteStorageBucket', [
       bucketId,
     ])
+  )
+}
+
+export async function inviteStorageBucketOperator(
+  api: ApiPromise,
+  account: KeyringPair,
+  bucketId: number,
+  operatorId: number
+): Promise<boolean> {
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'inviteStorageBucketOperator',
+      [bucketId, operatorId]
+    )
+  )
+}
+
+async function extrinsicWrapper(
+  extrinsic: () => Promise<void>,
+  throwErr = false
+): Promise<boolean> {
+  try {
+    await extrinsic()
   } catch (err) {
     logger.error(`Api Error: ${err}`)
+
+    if (throwErr) {
+      throw err
+    }
     return false
   }
 
