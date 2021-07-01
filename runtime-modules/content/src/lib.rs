@@ -585,7 +585,7 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub PostById get(fn post_by_id) config(): map hasher(blake2_128_concat) T::PostId => Post<T>;
+        pub PostById get(fn post_by_id) : map hasher(blake2_128_concat) T::PostId => Post<T>;
         pub ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T>;
 
         pub NextPostId get(fn next_post_id): T::PostId;
@@ -1410,20 +1410,20 @@ decl_module! {
             // ensure that origin is signed by a Member
             ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
 
-            // Ensure post with given id exists
+        // Ensure post with given id exists
             let post = Self::ensure_post_exists(post_id)?;
 
 
         // If this is a reply to an existing one, ensure that parent reply is existed
             if let Some(reply_id) = reply_id {
                 // Check parent existed at some point in time(whether it is in storage or not)
-                ensure!(reply_id < post.replies_count, Error::<T>::ReplyDoesNotExists);
+                ensure!(reply_id <= post.replies_count, Error::<T>::ReplyDoesNotExist);
             }
 
             let new_replies_count = post
-        .replies_count
-        .checked_add(&T::ReplyId::one())
-        .ok_or("Replies count overflow")?;
+                .replies_count
+                .checked_add(&T::ReplyId::one())
+                .ok_or("Replies count overflow")?;
 
             //
             // == MUTATION SAFE ==
@@ -1435,24 +1435,24 @@ decl_module! {
 
             // parent id for the new reply
             let parent_id = if let Some(reply_id) = reply_id {
-        ParentId::Reply(reply_id)
+                ParentId::Reply(reply_id)
             } else {
-        ParentId::Post(post_id)
+                ParentId::Post(post_id)
             };
 
             let reply = Reply_ {
-        owner: participant_id,
-        parent_id: parent_id,
-        cleanup_pay_off: BalanceOf::<T>::zero(),
-        last_edited: frame_system::Module::<T>::block_number(),
-        text: text,
+                owner: participant_id,
+                parent_id: parent_id,
+                cleanup_pay_off: BalanceOf::<T>::zero(),
+                last_edited: frame_system::Module::<T>::block_number(),
+                text: text,
             };
 
-        // insert the reply into storage
+            // insert the reply into storage
             ReplyById::<T>::insert(post_id, new_replies_count, reply);
 
-        // deposit event
-        Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, new_replies_count));
+            // deposit event
+            Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, new_replies_count));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1580,7 +1580,7 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        fn react_post(
+        fn react_to_post(
             origin,
             participant_id: ParticipantId<T>,
             post_id: T::PostId,
@@ -1693,7 +1693,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T>, Error<T>> {
         ensure!(
             PostById::<T>::contains_key(post_id),
-            Error::<T>::PostDoesNotExists
+            Error::<T>::PostDoesNotExist
         );
         Ok(PostById::<T>::get(post_id))
     }
@@ -1701,7 +1701,7 @@ impl<T: Trait> Module<T> {
     fn ensure_reply_exists(post_id: T::PostId, reply_id: T::ReplyId) -> Result<Reply<T>, Error<T>> {
         ensure!(
             ReplyById::<T>::contains_key(post_id, reply_id),
-            Error::<T>::ReplyDoesNotExists
+            Error::<T>::ReplyDoesNotExist
         );
         Ok(ReplyById::<T>::get(post_id, reply_id))
     }
