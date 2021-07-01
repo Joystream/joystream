@@ -37,9 +37,10 @@ USAGE
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
-* [`storage-node leader:remove-operator [FILE]`](#storage-node-leaderremove-operator-file)
+* [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+* [`storage-node leader:update-data-fee [FILE]`](#storage-node-leaderupdate-data-fee-file)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node server [FILE]`](#storage-node-server-file)
@@ -217,7 +218,7 @@ _See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/j
 
 ## `storage-node leader:invite-operator`
 
-Deletes a storage bucket. Requires storage working group leader permissions.
+Invites a storage bucket operator. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -235,18 +236,21 @@ OPTIONS
 
 _See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/invite-operator.ts)_
 
-## `storage-node leader:remove-operator [FILE]`
+## `storage-node leader:remove-operator`
 
-describe the command here
+Removes a storage bucket operator. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node leader:remove-operator [FILE]
+  $ storage-node leader:remove-operator
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/remove-operator.ts)_
@@ -316,6 +320,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
+
+## `storage-node leader:update-data-fee [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:update-data-fee [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-data-fee.ts)_
 
 ## `storage-node leader:update-voucher-limits`
 

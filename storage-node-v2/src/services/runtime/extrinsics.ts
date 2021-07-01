@@ -234,3 +234,15 @@ export async function removeStorageBucketOperator(
     )
   )
 }
+
+export async function updateDataSizeFee(
+  api: ApiPromise,
+  account: KeyringPair,
+  bucketId: number
+): Promise<boolean> {
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(api, account, 'storage', 'updateDataSizeFee', [
+      bucketId,
+    ])
+  )
+}
