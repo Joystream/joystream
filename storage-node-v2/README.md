@@ -33,9 +33,10 @@ USAGE
 * [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
+* [`storage-node leader:cancel-invite [FILE]`](#storage-node-leadercancel-invite-file)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
-* [`storage-node leader:invite-operator [FILE]`](#storage-node-leaderinvite-operator-file)
+* [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
@@ -153,6 +154,22 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.0.1/src/commands/help.ts)_
 
+## `storage-node leader:cancel-invite [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:cancel-invite [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/cancel-invite.ts)_
+
 ## `storage-node leader:create-bucket`
 
 Create new storage bucket. Requires storage working group leader permissions.
@@ -194,18 +211,22 @@ OPTIONS
 
 _See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/delete-bucket.ts)_
 
-## `storage-node leader:invite-operator [FILE]`
+## `storage-node leader:invite-operator`
 
-describe the command here
+Deletes a storage bucket. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node leader:invite-operator [FILE]
+  $ storage-node leader:invite-operator
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help                   show CLI help
+  -i, --bucketId=bucketId      (required) Storage bucket ID
+  -k, --keyfile=keyfile        Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                    Use development mode
+  -p, --password=password      Key file password (optional).
+  -u, --apiUrl=apiUrl          Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+  -w, --operatorId=operatorId  (required) Storage bucket operator ID (storage group worker ID)
 ```
 
 _See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/invite-operator.ts)_

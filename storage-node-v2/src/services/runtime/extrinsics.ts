@@ -202,3 +202,19 @@ async function extrinsicWrapper(
 
   return true
 }
+
+export async function cancelStorageBucketOperatorInvite(
+  api: ApiPromise,
+  account: KeyringPair,
+  bucketId: number
+): Promise<boolean> {
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'cancelStorageBucketOperatorInvite',
+      [bucketId]
+    )
+  )
+}
