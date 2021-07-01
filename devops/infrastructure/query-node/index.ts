@@ -48,21 +48,25 @@ for (e in process.env) {
 // })
 
 // Create image from local app
-// export const joystreamAppsImage = new docker.Image('joystream/apps', {
-//   build: {
-//     context: '../../../',
-//     dockerfile: '../../../apps.Dockerfile',
-//   },
-//   imageName: 'joystream/apps:latest',
-//   skipPush: true,
-//   localImageName: 'joystream/apps:latest',
-// }).imageName
+export const joystreamAppsImage = new docker.Image('joystream/apps', {
+  build: {
+    context: '../../../',
+    dockerfile: '../../../apps.Dockerfile',
+  },
+  imageName: 'joystream/apps:latest',
+  skipPush: true,
+  localImageName: 'joystream/apps:latest',
+}).baseImageName
 
 function getUniqueListByName(arr: EnvironmentType[]) {
   return [...new Map(arr.map((item: EnvironmentType) => [item['name'], item])).values()]
 }
 
-export const joystreamAppsImage = 'joystream/apps'
+// export let imageName: pulumi.Output<string>
+// imageName = joystreamAppsImage
+// console.log(imageName)
+
+// export const joystreamAppsImage = 'joystream/apps'
 
 const name = 'query-node'
 
@@ -89,6 +93,9 @@ const deployment = new k8s.apps.v1.Deployment(
     metadata: {
       namespace: namespaceName,
       labels: appLabels,
+      annotations: {
+        'pulumi.com/timeoutSeconds': '120',
+      },
     },
     spec: {
       replicas: 1,
@@ -118,13 +125,15 @@ const deployment = new k8s.apps.v1.Deployment(
             {
               name: 'temp-db-prepare-container',
               image: joystreamAppsImage,
-              imagePullPolicy: 'Never',
-              env: getUniqueListByName([
+              imagePullPolicy: 'IfNotPresent',
+              env: [
                 {
                   name: 'DB_HOST',
                   value: 'postgres-db',
                 },
-              ]),
+                { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
+                { name: 'DB_PASS', value: process.env.DB_PASS! },
+              ],
               command: ['/bin/sh', '-c'],
               args: ['yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate'],
             },
@@ -153,55 +162,61 @@ const deployment = new k8s.apps.v1.Deployment(
               command: ['/bin/sh', '-c'],
               args: ['yarn db:bootstrap && yarn start:prod'],
             },
-            // {
-            //   name: 'hydra-indexer-gateway',
-            //   image: 'joystream/hydra-indexer-gateway:2.1.0-beta.5',
-            //   env: [
-            //     { name: 'WARTHOG_STARTER_DB_DATABASE', value: process.env.INDEXER_DB_NAME! },
-            //     { name: 'WARTHOG_STARTER_DB_HOST', value: 'postgres-db' },
-            //     { name: 'WARTHOG_STARTER_DB_PASSWORD', value: process.env.DB_PASS! },
-            //     { name: 'WARTHOG_STARTER_DB_PORT', value: process.env.DB_PORT! },
-            //     { name: 'WARTHOG_STARTER_DB_USERNAME', value: process.env.DB_USER! },
-            //     { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://redis:6379/0' },
-            //     { name: 'WARTHOG_APP_PORT', value: process.env.WARTHOG_APP_PORT! },
-            //     { name: 'PORT', value: process.env.WARTHOG_APP_PORT! },
-            //     { name: 'DEBUG', value: '*' },
-            //   ],
-            //   ports: [{ containerPort: 4002 }],
-            // },
-            // {
-            //   name: 'processor',
-            //   image: joystreamAppsImage,
-            //   imagePullPolicy: 'Never',
-            //   env: [
-            //     {
-            //       name: 'INDEXER_ENDPOINT_URL',
-            //       value: `http://hydra-indexer-gateway:${process.env.WARTHOG_APP_PORT}/graphql`,
-            //     },
-            //     { name: 'TYPEORM_HOST', value: 'postgres-db' },
-            //     { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
-            //     { name: 'DEBUG', value: 'index-builder:*' },
-            //     { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
-            //   ],
-            //   // volumeMounts: [
-            //   //   {
-            //   //     mountPath: '/joystream/query-node/mappings/lib/generated/types/typedefs.json',
-            //   //     name: 'processor-volume',
-            //   //   },
-            //   // ],
-            //   command: ['yarn', 'workspace', 'query-node-root', 'processor:start'],
-            // },
-            // {
-            //   name: 'graphql-server',
-            //   image: joystreamAppsImage,
-            //   imagePullPolicy: 'Never',
-            //   env: [
-            //     { name: 'DB_HOST', value: 'postgres-db' },
-            //     { name: 'DB_NAME', value: process.env.DB_NAME! },
-            //   ],
-            //   ports: [{ name: 'graph-ql-port', containerPort: Number(process.env.GRAPHQL_SERVER_PORT!) }],
-            //   command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod'],
-            // },
+            {
+              name: 'hydra-indexer-gateway',
+              image: 'joystream/hydra-indexer-gateway:2.1.0-beta.5',
+              env: [
+                { name: 'WARTHOG_STARTER_DB_DATABASE', value: process.env.INDEXER_DB_NAME! },
+                { name: 'WARTHOG_STARTER_DB_HOST', value: 'postgres-db' },
+                { name: 'WARTHOG_STARTER_DB_PASSWORD', value: process.env.DB_PASS! },
+                { name: 'WARTHOG_STARTER_DB_PORT', value: process.env.DB_PORT! },
+                { name: 'WARTHOG_STARTER_DB_USERNAME', value: process.env.DB_USER! },
+                { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://postgres-db:6379/0' },
+                { name: 'WARTHOG_APP_PORT', value: process.env.WARTHOG_APP_PORT! },
+                { name: 'PORT', value: process.env.WARTHOG_APP_PORT! },
+                { name: 'DEBUG', value: '*' },
+              ],
+              ports: [{ containerPort: 4002 }],
+            },
+            {
+              name: 'processor',
+              image: joystreamAppsImage,
+              imagePullPolicy: 'IfNotPresent',
+              env: [
+                {
+                  name: 'INDEXER_ENDPOINT_URL',
+                  value: `http://hydra-indexer-gateway:${process.env.WARTHOG_APP_PORT}/graphql`,
+                },
+                { name: 'TYPEORM_HOST', value: 'postgres-db' },
+                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
+                { name: 'DEBUG', value: 'index-builder:*' },
+                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/joystream/query-node/mappings/lib/generated/types/typedefs.json',
+                  name: 'indexer-volume',
+                  subPath: 'fileData',
+                },
+              ],
+              command: ['yarn', 'workspace', 'query-node-root', 'processor:start'],
+            },
+            {
+              name: 'graphql-server',
+              image: joystreamAppsImage,
+              imagePullPolicy: 'IfNotPresent',
+              env: [
+                { name: 'DB_HOST', value: 'postgres-db' },
+                { name: 'DB_PASS', value: process.env.DB_PASS! },
+                { name: 'DB_USER', value: process.env.DB_USER! },
+                { name: 'DB_PORT', value: process.env.DB_PORT! },
+                { name: 'DB_NAME', value: process.env.DB_NAME! },
+                { name: 'GRAPHQL_SERVER_HOST', value: process.env.GRAPHQL_SERVER_HOST! },
+                { name: 'GRAPHQL_SERVER_PORT', value: process.env.GRAPHQL_SERVER_PORT! },
+              ],
+              ports: [{ name: 'graph-ql-port', containerPort: Number(process.env.GRAPHQL_SERVER_PORT!) }],
+              args: ['workspace', 'query-node-root', 'query-node:start:prod'],
+            },
           ],
           volumes: [
             // {
