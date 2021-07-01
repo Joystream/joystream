@@ -20,7 +20,10 @@ yarn storage-node leader:update-bag -b=0 -i static:council --dev
 yarn storage-node leader:create-bucket -a -n=100 -s=10000000  --dev # bucketId = 1
 yarn storage-node leader:delete-bucket -i=1  --dev 
 
-# Create a bucket, invite operator and cancel invite
+# Create a bucket, invite operator, cancel invite, accept invitation and remove operator.
 yarn storage-node leader:create-bucket -a -n=100 -s=10000000  --dev # bucketId = 2
 yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
 yarn storage-node leader:cancel-invite -i=2   --dev 
+yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
+yarn storage-node operator:accept-invitation -w=0 -b=2 --dev
+yarn storage-node leader:remove-operator -i=2   --dev 
