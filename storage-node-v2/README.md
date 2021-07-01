@@ -40,9 +40,10 @@ USAGE
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
-* [`storage-node leader:update-data-fee [FILE]`](#storage-node-leaderupdate-data-fee-file)
+* [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
+* [`storage-node operator:set-metadata [FILE]`](#storage-node-operatorset-metadata-file)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
 ## `storage-node dev:init`
@@ -321,18 +322,21 @@ OPTIONS
 
 _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
 
-## `storage-node leader:update-data-fee [FILE]`
+## `storage-node leader:update-data-fee`
 
-describe the command here
+Updates data size fee. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node leader:update-data-fee [FILE]
+  $ storage-node leader:update-data-fee
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -f, --fee=fee            (required) New data size fee
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-data-fee.ts)_
@@ -376,6 +380,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
+
+## `storage-node operator:set-metadata [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node operator:set-metadata [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-metadata.ts)_
 
 ## `storage-node server [FILE]`
 
