@@ -238,11 +238,27 @@ export async function removeStorageBucketOperator(
 export async function updateDataSizeFee(
   api: ApiPromise,
   account: KeyringPair,
-  bucketId: number
+  fee: number
 ): Promise<boolean> {
   return extrinsicWrapper(() =>
-    sendAndFollowNamedTx(api, account, 'storage', 'updateDataSizeFee', [
-      bucketId,
-    ])
+    sendAndFollowNamedTx(api, account, 'storage', 'updateDataSizeFee', [fee])
+  )
+}
+
+export async function setStorageOperatorMetadata(
+  api: ApiPromise,
+  account: KeyringPair,
+  operatorId: number,
+  bucketId: number,
+  metadata: string
+): Promise<boolean> {
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'setStorageOperatorMetadata',
+      [operatorId, bucketId, metadata]
+    )
   )
 }

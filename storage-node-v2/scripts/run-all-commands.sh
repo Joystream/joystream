@@ -7,14 +7,16 @@
 # Set Alice as leader
 yarn storage-node dev:init # leader workerId = 0
 
-# Update limits
+# Update limits and constants
 yarn storage-node leader:update-bag-limit -l 7 --dev
 yarn storage-node leader:update-voucher-limits -o 100 -s 10000000 --dev
+yarn storage-node leader:update-data-fee -f 10000 --dev
 
 # Create and configure a bucket.
 yarn storage-node leader:create-bucket -i=0 -a -n=100 -s=10000000  --dev # bucketId = 0
-yarn storage-node operator:accept-invitation -w=0 -b=0 --dev
+yarn storage-node operator:accept-invitation -w=0 -i=0 --dev
 yarn storage-node leader:update-bag -b=0 -i static:council --dev 
+yarn storage-node operator:set-metadata -w=0 -i=0 -m=http://google.com --dev
 
 # Create and delete a bucket
 yarn storage-node leader:create-bucket -a -n=100 -s=10000000  --dev # bucketId = 1
@@ -25,5 +27,5 @@ yarn storage-node leader:create-bucket -a -n=100 -s=10000000  --dev # bucketId =
 yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
 yarn storage-node leader:cancel-invite -i=2   --dev 
 yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
-yarn storage-node operator:accept-invitation -w=0 -b=2 --dev
+yarn storage-node operator:accept-invitation -w=0 -i=2 --dev
 yarn storage-node leader:remove-operator -i=2   --dev 
