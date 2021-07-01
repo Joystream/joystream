@@ -34,7 +34,8 @@ USAGE
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
-* [`storage-node leader:delete-bucket [FILE]`](#storage-node-leaderdelete-bucket-file)
+* [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
+* [`storage-node leader:invite-operator [FILE]`](#storage-node-leaderinvite-operator-file)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
@@ -174,13 +175,32 @@ OPTIONS
 
 _See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
 
-## `storage-node leader:delete-bucket [FILE]`
+## `storage-node leader:delete-bucket`
+
+Deletes a storage bucket. Requires storage working group leader permissions.
+
+```
+USAGE
+  $ storage-node leader:delete-bucket
+
+OPTIONS
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+```
+
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/delete-bucket.ts)_
+
+## `storage-node leader:invite-operator [FILE]`
 
 describe the command here
 
 ```
 USAGE
-  $ storage-node leader:delete-bucket [FILE]
+  $ storage-node leader:invite-operator [FILE]
 
 OPTIONS
   -f, --force
@@ -188,7 +208,7 @@ OPTIONS
   -n, --name=name  name to print
 ```
 
-_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/delete-bucket.ts)_
+_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/invite-operator.ts)_
 
 ## `storage-node leader:update-bag`
 
