@@ -39,7 +39,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    await createStorageBucket(
+    const success = await createStorageBucket(
       api,
       account,
       invitedWorker,
@@ -47,5 +47,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       objectSize,
       objectNumber
     )
+
+    this.exitAfterRuntimeCall(success)
   }
 }

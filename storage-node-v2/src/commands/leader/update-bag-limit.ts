@@ -28,6 +28,8 @@ export default class LeaderUpdateBagLimit extends ApiCommandBase {
     const limit = flags.limit ?? 0
 
     const api = await this.getApi()
-    await updateStorageBucketsPerBagLimit(api, account, limit)
+    const success = await updateStorageBucketsPerBagLimit(api, account, limit)
+
+    this.exitAfterRuntimeCall(success)
   }
 }

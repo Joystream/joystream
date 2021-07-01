@@ -4,6 +4,7 @@ enum ExitCodes {
   InvalidParameters = 100,
   DevelopmentModeOnly,
   FileError,
-  ApiError = 1000,
+  ApiError = 200,
+  UnsuccessfulRuntimeCall,
 }
 export = ExitCodes

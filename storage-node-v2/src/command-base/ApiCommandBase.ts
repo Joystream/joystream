@@ -100,4 +100,13 @@ export default abstract class ApiCommandBase extends Command {
 
     return account
   }
+
+  exitAfterRuntimeCall(success: boolean): never {
+    let exitCode = ExitCodes.OK
+    if (!success) {
+      exitCode = ExitCodes.UnsuccessfulRuntimeCall
+    }
+
+    this.exit(exitCode)
+  }
 }

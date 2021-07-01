@@ -29,14 +29,15 @@ USAGE
 # Commands
 <!-- commands -->
 * [`storage-node dev:init`](#storage-node-devinit)
+* [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:upload`](#storage-node-devupload)
-* [`storage-node dev:verify-bag-id [FILE]`](#storage-node-devverify-bag-id-file)
+* [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
+* [`storage-node leader:delete-bucket [FILE]`](#storage-node-leaderdelete-bucket-file)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
-* [`storage-node multihash`](#storage-node-multihash)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
@@ -49,10 +50,29 @@ USAGE
   $ storage-node dev:init
 
 OPTIONS
-  -h, --help  show CLI help
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/dev/init.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/init.ts)_
+
+## `storage-node dev:multihash`
+
+Creates a multihash (blake3) for a file.
+
+```
+USAGE
+  $ storage-node dev:multihash
+
+OPTIONS
+  -f, --file=file  (required) Path for a hashing file.
+  -h, --help       show CLI help
+```
+
+_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/multihash.ts)_
 
 ## `storage-node dev:upload`
 
@@ -63,25 +83,54 @@ USAGE
   $ storage-node dev:upload
 
 OPTIONS
-  -c, --cid=cid    (required) Data object IPFS content ID.
-  -h, --help       show CLI help
-  -s, --size=size  (required) Data object size.
+  -c, --cid=cid            (required) Data object IPFS content ID.
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -s, --size=size          (required) Data object size.
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/dev/upload.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/upload.ts)_
 
-## `storage-node dev:verify-bag-id [FILE]`
+## `storage-node dev:verify-bag-id`
 
-describe the command here
+The command verifies bag id supported by the storage node. Requires chain connection.
 
 ```
 USAGE
-  $ storage-node dev:verify-bag-id [FILE]
+  $ storage-node dev:verify-bag-id
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help
+      show CLI help
+
+  -i, --bagId=bagId
+      (required) 
+             Bag ID. Format: {bag_type}:{sub_type}:{id}.
+             - Bag types: 'static', 'dynamic'
+             - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+             - Id: 
+               - absent for 'static:council'
+               - working group name for 'static:wg'
+               - integer for 'dynamic:member' and 'dynamic:channel'
+             Examples:
+             - static:council
+             - static:wg:storage
+             - dynamic:member:4
+
+  -k, --keyfile=keyfile
+      Key file for the account. Mandatory in non-dev environment.
+
+  -m, --dev
+      Use development mode
+
+  -p, --password=password
+      Key file password (optional).
+
+  -u, --apiUrl=apiUrl
+      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/verify-bag-id.ts)_
@@ -113,16 +162,33 @@ USAGE
 
 OPTIONS
   -a, --allow              Accepts new bags
-  -d, --dev                Use development mode
   -h, --help               show CLI help
   -i, --invited=invited    Invited storage operator ID (storage WG worker ID)
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
   -n, --number=number      Storage bucket max total objects number
   -p, --password=password  Key file password (optional).
   -s, --size=size          Storage bucket max total objects size
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
+
+## `storage-node leader:delete-bucket [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:delete-bucket [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/delete-bucket.ts)_
 
 ## `storage-node leader:update-bag`
 
@@ -135,9 +201,6 @@ USAGE
 OPTIONS
   -b, --bucket=bucket
       (required) Storage bucket ID
-
-  -d, --dev
-      Use development mode
 
   -h, --help
       show CLI help
@@ -159,11 +222,17 @@ OPTIONS
   -k, --keyfile=keyfile
       Key file for the account. Mandatory in non-dev environment.
 
+  -m, --dev
+      Use development mode
+
   -p, --password=password
       Key file password (optional).
 
   -r, --remove
       Remove a bucket from the bag
+
+  -u, --apiUrl=apiUrl
+      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag.ts)_
@@ -177,11 +246,12 @@ USAGE
   $ storage-node leader:update-bag-limit
 
 OPTIONS
-  -d, --dev                Use development mode
   -h, --help               show CLI help
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
   -l, --limit=limit        (required) New StorageBucketsPerBagLimit value
+  -m, --dev                Use development mode
   -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
@@ -195,30 +265,16 @@ USAGE
   $ storage-node leader:update-voucher-limits
 
 OPTIONS
-  -d, --dev                Use development mode
   -h, --help               show CLI help
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
   -o, --objects=objects    (required) New 'max voucher object number limit' value
   -p, --password=password  Key file password (optional).
   -s, --size=size          (required) New 'max voucher object size limit' value
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-voucher-limits.ts)_
-
-## `storage-node multihash`
-
-Creates a multihash (blake3) for a file.
-
-```
-USAGE
-  $ storage-node multihash
-
-OPTIONS
-  -f, --file=file  (required) Path for a hashing file.
-  -h, --help       show CLI help
-```
-
-_See code: [src/commands/multihash.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/multihash.ts)_
 
 ## `storage-node operator:accept-invitation`
 
@@ -230,10 +286,11 @@ USAGE
 
 OPTIONS
   -b, --bucket=bucket      (required) Storage bucket ID
-  -d, --dev                Use development mode
   -h, --help               show CLI help
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
   -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
   -w, --worker=worker      (required) Storage operator worker ID
 ```
 
@@ -248,12 +305,14 @@ USAGE
   $ storage-node server [FILE]
 
 OPTIONS
-  -d, --dev                Use development mode
+  -d, --uploads=uploads    (required) Data uploading directory (absolute path).
   -h, --help               show CLI help
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -o, --port=port          (required) Server port.
   -p, --password=password  Key file password (optional).
-  -p, --port=port          (required) Server port.
-  -u, --uploads=uploads    (required) Data uploading directory.
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+  -w, --worker=worker      (required) Storage provider worker ID
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/server.ts)_
