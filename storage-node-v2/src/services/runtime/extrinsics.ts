@@ -13,7 +13,7 @@ export async function createStorageBucket(
   allowedNewBags = true,
   sizeLimit = 0,
   objectsLimit = 0
-): Promise<void> {
+): Promise<boolean> {
   try {
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
 
@@ -25,7 +25,10 @@ export async function createStorageBucket(
     ])
   } catch (err) {
     logger.error(`Api Error: ${err}`)
+    return false
   }
+
+  return true
 }
 
 export async function acceptStorageBucketInvitation(
@@ -33,7 +36,7 @@ export async function acceptStorageBucketInvitation(
   account: KeyringPair,
   workerId: number,
   storageBucketId: number
-): Promise<void> {
+): Promise<boolean> {
   try {
     await sendAndFollowNamedTx(
       api,
@@ -44,10 +47,10 @@ export async function acceptStorageBucketInvitation(
     )
   } catch (err) {
     logger.error(`Api Error: ${err}`)
+    return false
   }
+  return true
 }
-
-// TODO: Add dynamic bag parameter
 
 export async function updateStorageBucketsForBag(
   api: ApiPromise,
@@ -55,7 +58,7 @@ export async function updateStorageBucketsForBag(
   account: KeyringPair,
   bucketId: number,
   removeBucket: boolean
-): Promise<void> {
+): Promise<boolean> {
   try {
     let addBuckets: CodecArg
     let removeBuckets: CodecArg
@@ -75,7 +78,10 @@ export async function updateStorageBucketsForBag(
     )
   } catch (err) {
     logger.error(`Api Error: ${err}`)
+    return false
   }
+
+  return true
 }
 
 export async function uploadDataObjects(
@@ -139,7 +145,7 @@ export async function updateStorageBucketsPerBagLimit(
   api: ApiPromise,
   account: KeyringPair,
   newLimit: number
-): Promise<void> {
+): Promise<boolean> {
   try {
     await sendAndFollowNamedTx(
       api,
@@ -148,8 +154,11 @@ export async function updateStorageBucketsPerBagLimit(
       'updateStorageBucketsPerBagLimit',
       [newLimit]
     )
+
+    return true
   } catch (err) {
     logger.error(`Api Error: ${err}`)
+    return false
   }
 }
 
@@ -158,7 +167,7 @@ export async function updateStorageBucketsVoucherMaxLimits(
   account: KeyringPair,
   newSizeLimit: number,
   newObjectLimit: number
-): Promise<void> {
+): Promise<boolean> {
   try {
     await sendAndFollowNamedTx(
       api,
@@ -169,5 +178,25 @@ export async function updateStorageBucketsVoucherMaxLimits(
     )
   } catch (err) {
     logger.error(`Api Error: ${err}`)
+    return false
   }
+
+  return true
+}
+
+export async function deleteStorageBucket(
+  api: ApiPromise,
+  account: KeyringPair,
+  bucketId: number
+): Promise<boolean> {
+  try {
+    await sendAndFollowNamedTx(api, account, 'storage', 'deleteStorageBucket', [
+      bucketId,
+    ])
+  } catch (err) {
+    logger.error(`Api Error: ${err}`)
+    return false
+  }
+
+  return true
 }

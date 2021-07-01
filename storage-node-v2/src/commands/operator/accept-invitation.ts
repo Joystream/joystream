@@ -34,6 +34,13 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    await acceptStorageBucketInvitation(api, account, worker, bucket)
+    const success = await acceptStorageBucketInvitation(
+      api,
+      account,
+      worker,
+      bucket
+    )
+
+    this.exitAfterRuntimeCall(success)
   }
 }
