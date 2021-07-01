@@ -6,8 +6,16 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 use sp_runtime::traits::Hash;
 
-fn setup_testing_scenario(origins: &Vec<u64>, member_ids: &Vec<u64>) {
-    for (origin, member_id) in origins.iter().zip(member_ids.iter()) {
+pub const ORIGINS: [u64; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+pub const MEMBER_IDS: [u64; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+pub const UNKNOWN_MEMBER_ID: u64 = 7777;
+pub const UNKNOWN_REPLY_ID: u64 = 7777;
+pub const UNKNOWN_POST_ID: u64 = 7777;
+pub const VIDEO_ID: u64 = 1;
+pub const NEW_VIDEO_ID: u64 = 2;
+
+fn setup_testing_scenario() {
+    for (origin, member_id) in ORIGINS.iter().zip(MEMBER_IDS.iter()) {
         let channel_id = Content::next_channel_id();
 
         assert_ok!(Content::create_channel(
@@ -38,18 +46,14 @@ fn cannot_create_post_with_nonexisting_video() {
     with_default_mock_builder(|| {
         //        run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
+        setup_testing_scenario();
 
         let non_existing_video = 7777u64;
         assert_err!(
             Content::create_post(
-                Origin::signed(origins[0]),
+                Origin::signed(ORIGINS[0]),
                 <tests::mock::Test as Trait>::VideoId::from(non_existing_video),
-                ContentActor::Member(member_ids[0]),
+                ContentActor::Member(MEMBER_IDS[0]),
             ),
             Error::<Test>::VideoDoesNotExist,
         );
@@ -57,48 +61,26 @@ fn cannot_create_post_with_nonexisting_video() {
 }
 
 #[test]
-fn non_channel_owner_cannot_create_post() {
+fn non_authorized_actor_cannot_create_post() {
     with_default_mock_builder(|| {
-        //        run_to_block(1);
+        setup_testing_scenario();
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let non_owner_member_id = 7777u64;
-        let non_owner_origin = 7777u64;
+        // non channel owner cannot create post
         assert_err!(
             Content::create_post(
-                Origin::signed(non_owner_origin),
-                <tests::mock::Test as Trait>::VideoId::from(video_id),
-                ContentActor::Member(non_owner_member_id),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+                ContentActor::Member(MEMBER_IDS[1]),
             ),
-            Error::<Test>::MemberAuthFailed,
+            Error::<Test>::ActorNotAuthorized,
         );
-    })
-}
-#[test]
-fn non_existing_member_cannot_create_post() {
-    with_default_mock_builder(|| {
-        //        run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let non_existing_member_id = 7777u64;
-        let video_id = 1u64;
-
+        // unknown actor/member cannot create post
         assert_err!(
             Content::create_post(
-                Origin::signed(UNKNOWN_ORIGIN),
-                <tests::mock::Test as Trait>::VideoId::from(video_id),
-                ContentActor::Member(non_existing_member_id),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+                ContentActor::Member(UNKNOWN_MEMBER_ID),
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -110,28 +92,23 @@ fn verify_create_post_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
+        setup_testing_scenario();
 
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
         let post_id = Content::next_post_id();
 
         assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+            ContentActor::Member(MEMBER_IDS[0]),
         ));
 
         // the actual post that should be created
         let post: Post<Test> = Post_ {
-            author: ChannelOwner::Member(member_ids[0]),
+            author: ChannelOwner::Member(MEMBER_IDS[0]),
             cleanup_pay_off: BalanceOf::<Test>::zero(),
             replies_count: <Test as Trait>::ReplyId::zero(),
             last_edited: frame_system::Module::<Test>::block_number(),
-            video: video_id,
+            video: VIDEO_ID,
         };
 
         // next post increased by one
@@ -148,8 +125,8 @@ fn verify_create_post_effects() {
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::PostCreated(
-                ContentActor::Member(member_ids[0]),
-                video_id,
+                ContentActor::Member(MEMBER_IDS[0]),
+                VIDEO_ID,
                 post_id
             ))
         );
@@ -157,71 +134,44 @@ fn verify_create_post_effects() {
 }
 
 // Edit post tests
+fn setup_testing_scenario_with_post() -> <tests::mock::Test as Trait>::PostId {
+    setup_testing_scenario();
+    let post_id = Content::next_post_id();
+
+    assert_ok!(Content::create_post(
+        Origin::signed(ORIGINS[0]),
+        <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+        ContentActor::Member(MEMBER_IDS[0]),
+    ));
+
+    assert_eq!(Content::next_post_id(), 1);
+
+    post_id
+}
 
 #[test]
 fn non_owner_cannot_edit_post() {
     with_default_mock_builder(|| {
-        //        run_to_block(1);
+        let post_id = setup_testing_scenario_with_post();
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let new_video_id = 2u64;
-
-        let post_id = Content::next_post_id();
-
-        assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
-        ));
-
+        // non owner cannot edit post
         assert_err!(
             Content::edit_post(
-                Origin::signed(origins[2]),
+                Origin::signed(ORIGINS[2]),
                 post_id,
-                <tests::mock::Test as Trait>::VideoId::from(new_video_id),
-                ContentActor::Member(member_ids[2]),
+                <tests::mock::Test as Trait>::VideoId::from(NEW_VIDEO_ID),
+                ContentActor::Member(MEMBER_IDS[2]),
             ),
             Error::<Test>::ActorNotAuthorized,
         );
-    })
-}
 
-#[test]
-fn non_existing_member_cannot_edit_post() {
-    with_default_mock_builder(|| {
-        //        run_to_block(1);
-
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let new_video_id = 2u64;
-
-        let post_id = Content::next_post_id();
-
-        assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
-        ));
-
-        let non_existing_member_id = 7777u64;
-
+        // unknown member/actor cannot edit posts
         assert_err!(
             Content::edit_post(
-                Origin::signed(origins[2]),
+                Origin::signed(ORIGINS[2]),
                 post_id,
-                <tests::mock::Test as Trait>::VideoId::from(new_video_id),
-                ContentActor::Member(non_existing_member_id),
+                <tests::mock::Test as Trait>::VideoId::from(NEW_VIDEO_ID),
+                ContentActor::Member(UNKNOWN_MEMBER_ID),
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -231,31 +181,20 @@ fn non_existing_member_cannot_edit_post() {
 #[test]
 fn cannot_edit_nonexisting_post() {
     with_default_mock_builder(|| {
-        //        run_to_block(1);
-
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let new_video_id = 2u64;
-
-        let non_existing_post_id = 7777u64;
+        setup_testing_scenario();
 
         assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+            ContentActor::Member(MEMBER_IDS[0]),
         ));
 
         assert_err!(
             Content::edit_post(
-                Origin::signed(origins[0]),
-                non_existing_post_id,
-                <tests::mock::Test as Trait>::VideoId::from(new_video_id),
-                ContentActor::Member(member_ids[0]),
+                Origin::signed(ORIGINS[0]),
+                UNKNOWN_POST_ID,
+                <tests::mock::Test as Trait>::VideoId::from(NEW_VIDEO_ID),
+                ContentActor::Member(MEMBER_IDS[0]),
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -267,39 +206,32 @@ fn verify_edit_post_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let new_video_id = 2u64;
+        setup_testing_scenario();
 
         let post_id = Content::next_post_id();
 
         assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+            ContentActor::Member(MEMBER_IDS[0]),
         ));
 
         assert_ok!(Content::edit_post(
-            Origin::signed(origins[0]),
+            Origin::signed(ORIGINS[0]),
             post_id,
-            <tests::mock::Test as Trait>::VideoId::from(new_video_id),
-            ContentActor::Member(member_ids[0])
+            <tests::mock::Test as Trait>::VideoId::from(NEW_VIDEO_ID),
+            ContentActor::Member(MEMBER_IDS[0])
         ));
 
         // post video is updated
-        assert_eq!(Content::post_by_id(post_id).video, new_video_id);
+        assert_eq!(Content::post_by_id(post_id).video, NEW_VIDEO_ID);
 
         // event is deposited
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::PostModified(
-                ContentActor::Member(member_ids[0]),
-                new_video_id,
+                ContentActor::Member(MEMBER_IDS[0]),
+                NEW_VIDEO_ID,
                 post_id
             ))
         );
@@ -310,28 +242,12 @@ fn verify_edit_post_effects() {
 #[test]
 fn cannot_delete_non_existing_post() {
     with_default_mock_builder(|| {
-        //        run_to_block(1);
-
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let non_existing_post_id = 7777u64;
-
-        assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
-        ));
-
+        let _post_id = setup_testing_scenario_with_post();
         assert_err!(
             Content::delete_post(
-                Origin::signed(origins[0]),
-                non_existing_post_id,
-                ContentActor::Member(member_ids[0]),
+                Origin::signed(ORIGINS[0]),
+                UNKNOWN_POST_ID,
+                ContentActor::Member(MEMBER_IDS[0]),
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -339,98 +255,54 @@ fn cannot_delete_non_existing_post() {
 }
 
 #[test]
-fn non_owner_cannot_delete_post() {
+fn non_authorized_actor_cannot_delete_post() {
     with_default_mock_builder(|| {
-        //        run_to_block(1);
-
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let post_id = Content::next_post_id();
-
-        assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
-        ));
+        let post_id = setup_testing_scenario_with_post();
 
         assert_err!(
             Content::delete_post(
-                Origin::signed(origins[0]),
+                Origin::signed(ORIGINS[0]),
                 post_id,
-                ContentActor::Member(member_ids[2]),
+                ContentActor::Member(MEMBER_IDS[2]),
             ),
             Error::<Test>::ActorNotAuthorized,
         );
-    })
-}
-
-#[test]
-fn non_existing_member_cannot_delete_post() {
-    with_default_mock_builder(|| {
-        //        run_to_block(1);
-
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
-        let post_id = Content::next_post_id();
-        let non_existing_member_id = 7777u64;
-
-        assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
-        ));
-
         assert_err!(
             Content::delete_post(
-                Origin::signed(origins[0]),
+                Origin::signed(ORIGINS[0]),
                 post_id,
-                ContentActor::Member(non_existing_member_id),
+                ContentActor::Member(UNKNOWN_MEMBER_ID),
             ),
             Error::<Test>::MemberAuthFailed,
         );
     })
 }
+
 #[test]
 fn verify_delete_post_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        setup_testing_scenario(&origins, &member_ids);
-
-        let video_id = 1u64;
+        setup_testing_scenario();
         let post_id = Content::next_post_id();
 
         assert_ok!(Content::create_post(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as Trait>::VideoId::from(video_id),
-            ContentActor::Member(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as Trait>::VideoId::from(VIDEO_ID),
+            ContentActor::Member(MEMBER_IDS[0]),
         ));
 
         assert_ok!(Content::delete_post(
-            Origin::signed(origins[0]),
+            Origin::signed(ORIGINS[0]),
             post_id,
-            ContentActor::Member(member_ids[0])
+            ContentActor::Member(MEMBER_IDS[0])
         ));
 
         // event is deposited
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::PostDeleted(
-                ContentActor::Member(member_ids[0]),
+                ContentActor::Member(MEMBER_IDS[0]),
                 post_id
             ))
         );
@@ -439,41 +311,15 @@ fn verify_delete_post_effects() {
 
 // create reply tests
 
-fn setup_testing_scenario_for_replies(
-    origins: &Vec<u64>,
-    member_ids: &Vec<u64>,
-) -> <tests::mock::Test as Trait>::PostId {
-    setup_testing_scenario(&origins, &member_ids);
-    let video_id = 1u64;
-    let post_id = Content::next_post_id();
-
-    assert_ok!(Content::create_post(
-        Origin::signed(origins[0]),
-        <tests::mock::Test as Trait>::VideoId::from(video_id),
-        ContentActor::Member(member_ids[0]),
-    ));
-
-    assert_eq!(Content::next_post_id(), 1);
-
-    post_id
-}
-
 #[test]
 fn non_existing_member_cannot_reply() {
     with_default_mock_builder(|| {
-        //        run_to_block(1);
+        let post_id = setup_testing_scenario_with_post();
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
-
-        let non_existing_member_id = 7777u64;
         assert_err!(
             Content::create_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(non_existing_member_id),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
                 post_id,
                 None,
                 <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
@@ -486,22 +332,13 @@ fn non_existing_member_cannot_reply() {
 #[test]
 fn cannot_reply_to_unexisting_post_or_reply() {
     with_default_mock_builder(|| {
-        // run_to_block(1);
-
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
-        println!("{}", Content::next_post_id());
-
-        let non_existing_element_id = 7777u64;
+        let post_id = setup_testing_scenario_with_post();
 
         assert_err!(
             Content::create_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
-                <tests::mock::Test as Trait>::PostId::from(non_existing_element_id),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
+                <tests::mock::Test as Trait>::PostId::from(UNKNOWN_POST_ID),
                 None,
                 <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
             ),
@@ -510,11 +347,11 @@ fn cannot_reply_to_unexisting_post_or_reply() {
 
         assert_err!(
             Content::create_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
                 <tests::mock::Test as Trait>::PostId::from(0u64),
                 Some(<tests::mock::Test as Trait>::ReplyId::from(
-                    non_existing_element_id
+                    UNKNOWN_REPLY_ID
                 )),
                 <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
             ),
@@ -523,18 +360,15 @@ fn cannot_reply_to_unexisting_post_or_reply() {
     })
 }
 
-fn setup_testing_scenario_with_replies(
-    origins: &Vec<u64>,
-    member_ids: &Vec<u64>,
-) -> (
+fn setup_testing_scenario_with_replies() -> (
     <tests::mock::Test as Trait>::ReplyId,
     <tests::mock::Test as Trait>::PostId,
 ) {
-    let post_id = setup_testing_scenario_for_replies(&origins, &member_ids);
+    let post_id = setup_testing_scenario_with_post();
 
     assert_ok!(Content::create_reply(
-        Origin::signed(origins[0]),
-        <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+        Origin::signed(ORIGINS[0]),
+        <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
         post_id,
         None,
         <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
@@ -543,8 +377,8 @@ fn setup_testing_scenario_with_replies(
     let reply_id = Content::post_by_id(post_id).replies_count;
 
     assert_ok!(Content::create_reply(
-        Origin::signed(origins[0]),
-        <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+        Origin::signed(ORIGINS[0]),
+        <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
         post_id,
         Some(reply_id),
         <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
@@ -557,13 +391,7 @@ fn verify_create_reply_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let reply_id = out.0;
-        let post_id = out.1;
+        let (reply_id, post_id) = setup_testing_scenario_with_replies();
 
         // replies count increased
         assert_eq!(Content::post_by_id(post_id).replies_count - reply_id, 1);
@@ -572,7 +400,7 @@ fn verify_create_reply_effects() {
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ReplyCreated(
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
                 post_id,
                 Content::post_by_id(post_id).replies_count,
             ))
@@ -586,22 +414,14 @@ fn cannot_edit_unexisting_reply() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let reply_id = out.0;
-        let post_id = out.1;
-
-        let non_existing_element_id = 7777u64;
+        let (reply_id, post_id) = setup_testing_scenario_with_replies();
 
         assert_err!(
             Content::edit_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
                 post_id,
-                <tests::mock::Test as Trait>::ReplyId::from(non_existing_element_id),
+                <tests::mock::Test as Trait>::ReplyId::from(UNKNOWN_REPLY_ID),
                 <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
             ),
             Error::<Test>::ReplyDoesNotExist,
@@ -609,9 +429,9 @@ fn cannot_edit_unexisting_reply() {
 
         assert_err!(
             Content::edit_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
-                <tests::mock::Test as Trait>::PostId::from(non_existing_element_id),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
+                <tests::mock::Test as Trait>::PostId::from(UNKNOWN_POST_ID),
                 reply_id,
                 <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
             ),
@@ -621,22 +441,27 @@ fn cannot_edit_unexisting_reply() {
 }
 
 #[test]
-fn non_owner_cannot_edit_reply() {
+fn non_authorized_member_cannot_edit_reply() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let reply_id = out.0;
-        let post_id = out.1;
+        let (reply_id, post_id) = setup_testing_scenario_with_replies();
 
         assert_err!(
             Content::edit_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[2]),
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[2]),
+                post_id,
+                reply_id,
+                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+
+        assert_err!(
+            Content::edit_reply(
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
                 post_id,
                 reply_id,
                 <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
@@ -646,28 +471,59 @@ fn non_owner_cannot_edit_reply() {
     })
 }
 
+// edit_reply
 #[test]
-fn unknown_member_cannot_edit_reply() {
+fn cannot_delete_unexisting_reply() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let reply_id = out.0;
-        let post_id = out.1;
-
-        let unknown_member_id = 7777u64;
+        let (reply_id, post_id) = setup_testing_scenario_with_replies();
 
         assert_err!(
-            Content::edit_reply(
-                Origin::signed(origins[0]),
-                <tests::mock::Test as MembershipTypes>::MemberId::from(unknown_member_id),
+            Content::delete_reply(
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
+                post_id,
+                <tests::mock::Test as Trait>::ReplyId::from(UNKNOWN_REPLY_ID),
+            ),
+            Error::<Test>::ReplyDoesNotExist,
+        );
+
+        assert_err!(
+            Content::delete_reply(
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
+                <tests::mock::Test as Trait>::PostId::from(UNKNOWN_POST_ID),
+                reply_id,
+            ),
+            Error::<Test>::ReplyDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn non_authorized_member_cannot_delete_reply() {
+    with_default_mock_builder(|| {
+        let (reply_id, post_id) = setup_testing_scenario_with_replies();
+
+        // non owner member cannot delete reply
+        assert_err!(
+            Content::delete_reply(
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[2]),
                 post_id,
                 reply_id,
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+
+        // non existing member cannot delete reply
+        assert_err!(
+            Content::delete_reply(
+                Origin::signed(ORIGINS[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
+                post_id,
+                reply_id,
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -679,17 +535,11 @@ fn verify_edit_reply_effects() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let reply_id = out.0;
-        let post_id = out.1;
+        let (reply_id, post_id) = setup_testing_scenario_with_replies();
 
         assert_ok!(Content::edit_reply(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
             post_id,
             reply_id,
             <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
@@ -705,7 +555,7 @@ fn verify_edit_reply_effects() {
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ReplyModified(
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
                 post_id,
                 reply_id,
             ))
@@ -721,18 +571,13 @@ fn verify_delete_sub_reply_effects() {
         // deleting (the last) reply to a reply
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let post_id = out.1;
+        let (_reply_id, post_id) = setup_testing_scenario_with_replies();
 
         let replies_count_pre = Content::post_by_id(post_id).replies_count;
 
         assert_ok!(Content::delete_reply(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
             post_id,
             replies_count_pre,
         ));
@@ -746,7 +591,7 @@ fn verify_delete_sub_reply_effects() {
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ReplyDeleted(
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
                 post_id,
                 replies_count_pre,
             ))
@@ -760,19 +605,13 @@ fn verify_delete_parent_reply_effects() {
         // deleting parent reply
         run_to_block(1);
 
-        // setting up ids for creating channels & videos
-        let origins = (1..MEMBERS_COUNT).collect::<Vec<u64>>();
-        let member_ids = origins.clone();
-
-        let out = setup_testing_scenario_with_replies(&origins, &member_ids);
-        let post_id = out.1;
-        let parent_reply_id = out.0;
+        let (parent_reply_id, post_id) = setup_testing_scenario_with_replies();
 
         let replies_count_pre = Content::post_by_id(post_id).replies_count;
 
         assert_ok!(Content::delete_reply(
-            Origin::signed(origins[0]),
-            <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+            Origin::signed(ORIGINS[0]),
+            <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
             post_id,
             parent_reply_id,
         ));
@@ -786,10 +625,13 @@ fn verify_delete_parent_reply_effects() {
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ReplyDeleted(
-                <tests::mock::Test as MembershipTypes>::MemberId::from(member_ids[0]),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(MEMBER_IDS[0]),
                 post_id,
                 parent_reply_id,
             ))
         );
     })
 }
+
+//#[test]
+// test react to post
