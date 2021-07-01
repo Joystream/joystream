@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import styled from 'styled-components';
 
 import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
@@ -21,6 +22,28 @@ import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller';
 import './index.sass';
 
 import translate from './translate';
+
+const Banner = styled.div`
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  margin: 0 -2em;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+`;
+
+const BannerText = styled.h1`
+  font-size: 24px;
+  color: black;
+  width: 75%;
+  text-align: center;
+  font-weight: 600;
+
+  @media(max-width: 1300px){
+    font-size: 20px;
+    width: 90%;
+  }
+`;
 
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps
 
@@ -74,6 +97,12 @@ export const App: React.FC<Props> = (props: Props) => {
 
   return (
     <main className='roles--App'>
+      <Banner>
+        <BannerText>
+          As Working Group Members you are eligible to share your testnet contributions to have a chance at becoming a Founding Member.
+          Make sure to do that to get a portion of the initial mainnet tokens and other interesting accolades. Get started <a href='https://www.joystream.org/founding-members' target='_blank' rel='noreferrer'>here</a>!
+        </BannerText>
+      </Banner>
       <header>
         <Tabs
           basePath={basePath}

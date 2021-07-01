@@ -19,6 +19,28 @@ import ForumRoot from './ForumRoot';
 
 const ForumMain = styled.main`${style}`;
 
+const Banner = styled.div`
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  margin: 0 -2em 15px -2em;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+`;
+
+const BannerText = styled.h1`
+  font-size: 24px;
+  color: black;
+  width: 75%;
+  text-align: center;
+  font-weight: 600;
+
+  @media(max-width: 1300px){
+    font-size: 20px;
+    width: 90%;
+  }
+`;
+
 type Props = AppMainRouteProps & I18nProps;
 
 class App extends React.PureComponent<Props> {
@@ -29,6 +51,12 @@ class App extends React.PureComponent<Props> {
       <ForumProvider>
         <ForumSudoProvider>
           <ForumMain className='forum--App'>
+            <Banner>
+              <BannerText>
+                By being an active contributor to the platform you are eligible to share your testnet contributions to have a chance at becoming a Founding Member.
+                Make sure to do that to get a portion of the initial mainnet tokens and other interesting accolades. Get started <a href='https://www.joystream.org/founding-members' target='_blank' rel='noreferrer'>here</a>!
+              </BannerText>
+            </Banner>
             <Switch>
               <Route path={`${basePath}/categories/new`} component={NewCategory} />
               {/* routes for handling legacy format of forum paging within the routing path */}
