@@ -41,8 +41,9 @@ USAGE
 * [`storage-node leader:set-uploading-block`](#storage-node-leaderset-uploading-block)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+* [`storage-node leader:update-blacklist [FILE]`](#storage-node-leaderupdate-blacklist-file)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
-* [`storage-node leader:update-dynamic-bag-policy [FILE]`](#storage-node-leaderupdate-dynamic-bag-policy-file)
+* [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node operator:set-bucket-limits`](#storage-node-operatorset-bucket-limits)
@@ -329,7 +330,7 @@ _See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joys
 
 ## `storage-node leader:update-bag-limit`
 
-Updates StorageBucketsPerBagLimit variable in the Joystream node storage.
+Update StorageBucketsPerBagLimit variable in the Joystream node storage.
 
 ```
 USAGE
@@ -345,6 +346,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
+
+## `storage-node leader:update-blacklist [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:update-blacklist [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-blacklist.ts)_
 
 ## `storage-node leader:update-data-fee`
 
@@ -365,18 +382,23 @@ OPTIONS
 
 _See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-data-fee.ts)_
 
-## `storage-node leader:update-dynamic-bag-policy [FILE]`
+## `storage-node leader:update-dynamic-bag-policy`
 
-describe the command here
+Update number of storage buckets used in the dynamic bag creation policy.
 
 ```
 USAGE
-  $ storage-node leader:update-dynamic-bag-policy [FILE]
+  $ storage-node leader:update-dynamic-bag-policy
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -c, --channel            Channel dynamic bag type
+  -e, --member             Member dynamic bag type (default)
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -n, --number=number      (required) New storage buckets number
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-dynamic-bag-policy.ts)_
