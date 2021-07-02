@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import usePromise from '@polkadot/joy-utils/react/hooks/usePromise';
 import styled from 'styled-components';
-import { Loader, Progress } from 'semantic-ui-react';
+import { Loader, Progress, Dimmer } from 'semantic-ui-react';
 
 const WindowBannerContainer = styled.div`
     height: 100px;
@@ -127,7 +127,11 @@ const WindowBanner = () => {
 
   const renderContent = () => {
     if (isFoundingMembersDataLoading) {
-      return <Loader size='medium'>Loading</Loader>;
+      return (
+        <Dimmer active>
+          <Loader size='medium'>Loading</Loader>
+        </Dimmer>
+      );
     }
 
     if (foundingMembersDataError) {
