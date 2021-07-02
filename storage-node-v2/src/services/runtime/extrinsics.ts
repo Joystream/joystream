@@ -287,12 +287,29 @@ export async function updateStorageBucketStatus(
   newStatus: boolean
 ): Promise<boolean> {
   return await extrinsicWrapper(() =>
+    sendAndFollowNamedTx(api, account, 'storage', 'updateStorageBucketStatus', [
+      workerId,
+      storageBucketId,
+      newStatus,
+    ])
+  )
+}
+
+export async function setStorageBucketVoucherLimits(
+  api: ApiPromise,
+  account: KeyringPair,
+  workerId: number,
+  storageBucketId: number,
+  newSizeLimit: number,
+  newObjectLimit: number
+): Promise<boolean> {
+  return await extrinsicWrapper(() =>
     sendAndFollowNamedTx(
       api,
       account,
       'storage',
-      'updateStorageBucketStatus',
-      [workerId, storageBucketId, newStatus]
+      'setStorageBucketVoucherLimits',
+      [workerId, storageBucketId, newSizeLimit, newObjectLimit]
     )
   )
 }

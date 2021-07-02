@@ -44,8 +44,9 @@ USAGE
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
+* [`storage-node operator:set-bucket-limits [FILE]`](#storage-node-operatorset-bucket-limits-file)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
-* [`storage-node operator:update-bucket-status [FILE]`](#storage-node-operatorupdate-bucket-status-file)
+* [`storage-node operator:update-bucket-status`](#storage-node-operatorupdate-bucket-status)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
 ## `storage-node dev:init`
@@ -161,7 +162,7 @@ _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.0.1
 
 ## `storage-node leader:cancel-invite`
 
-Cancels a storage bucket operator invite. Requires storage working group leader permissions.
+Cancel a storage bucket operator invite. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -202,7 +203,7 @@ _See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/j
 
 ## `storage-node leader:delete-bucket`
 
-Deletes a storage bucket. Requires storage working group leader permissions.
+Delete a storage bucket. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -221,7 +222,7 @@ _See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/j
 
 ## `storage-node leader:invite-operator`
 
-Invites a storage bucket operator. Requires storage working group leader permissions.
+Invite a storage bucket operator. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -241,7 +242,7 @@ _See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream
 
 ## `storage-node leader:remove-operator`
 
-Removes a storage bucket operator. Requires storage working group leader permissions.
+Remove a storage bucket operator. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -260,7 +261,7 @@ _See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream
 
 ## `storage-node leader:set-uploading-block`
 
-Sets global uploading block. Requires storage working group leader permissions.
+Set global uploading block. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -346,7 +347,7 @@ _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystrea
 
 ## `storage-node leader:update-data-fee`
 
-Updates data size fee. Requires storage working group leader permissions.
+Update data size fee. Requires storage working group leader permissions.
 
 ```
 USAGE
@@ -403,6 +404,22 @@ OPTIONS
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
 
+## `storage-node operator:set-bucket-limits [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node operator:set-bucket-limits [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/operator/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-bucket-limits.ts)_
+
 ## `storage-node operator:set-metadata`
 
 Accept pending storage bucket invitation.
@@ -424,18 +441,24 @@ OPTIONS
 
 _See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-metadata.ts)_
 
-## `storage-node operator:update-bucket-status [FILE]`
+## `storage-node operator:update-bucket-status`
 
-describe the command here
+Update storage bucket status (accepting new bags).
 
 ```
 USAGE
-  $ storage-node operator:update-bucket-status [FILE]
+  $ storage-node operator:update-bucket-status
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -d, --disable            Disables accepting new bags.
+  -e, --enable             Enables accepting new bags (default).
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+  -w, --workerId=workerId  (required) Storage operator worker ID
 ```
 
 _See code: [src/commands/operator/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/update-bucket-status.ts)_
