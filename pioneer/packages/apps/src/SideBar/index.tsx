@@ -160,6 +160,7 @@ export default React.memo(styled(SideBar)`
       top: 0;
       width: 100%;
       position: sticky;
+      padding-bottom: 125px;
     }
 
     .apps--SideBar-Scroll {

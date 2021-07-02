@@ -97,10 +97,9 @@ function Content ({ className }: Props): React.ReactElement<Props> {
 }
 
 export default React.memo(styled(Content)`
-  padding: 0 1.5rem;
+  padding: 0 1.5rem 135px;
   position: relative;
   width: 100%;
-  height: 100%;
 
   @media(max-width: 768px) {
     padding: 0 0.5rem;

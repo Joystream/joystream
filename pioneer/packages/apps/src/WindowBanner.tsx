@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { Loader, Progress, Dimmer } from 'semantic-ui-react';
 
 const WindowBannerContainer = styled.div`
-    height: 100px;
+    height: 125px;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -16,15 +16,30 @@ const WindowBannerContainer = styled.div`
     z-index: 9999;
 `;
 
-const BannerText = styled.h1`
+const CounterText = styled.h1`
+    font-size: 32px;
+    text-align: center;
+    color: white;
+    margin-bottom: 0px;
+
+    @media(max-width: 1300px){
+      font-size: 26px;
+    }
+`;
+
+const BannerText = styled.p`
     font-size: 20px;
     text-align: center;
     color: white;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 
     @media(max-width: 1300px){
         font-size: 16px;
         margin-bottom: 8px;
+    }
+
+    @media(max-width: 1000px){
+      width: 75%;
     }
 `;
 
@@ -142,8 +157,17 @@ const WindowBanner = () => {
       <>
         {
           progress && progress > 100
-            ? <BannerText> The previous Founding Members scoring period has ended. You still have time to submit your activity report to make sure you are awarded for your contributions! </BannerText>
-            : <BannerText> {remainingTimeString} until the end of this Founding Members scoring period. Make sure to report your activity to get the points for your contributions! </BannerText>
+            ? <BannerText>
+                The previous Founding Members scoring period has ended.
+                You still have time to submit your activity report to make sure you are awarded for your contributions!
+            </BannerText>
+            : <>
+              <CounterText>{remainingTimeString}</CounterText>
+              <BannerText>
+                  until the end of this Founding Members scoring period.
+                  Make sure to report your activity to get the points for your contributions!
+              </BannerText>
+            </>
         }
         <ProgressContainer>
           <StyledProgress percent={progress && progress > 100 ? 100 : progress} />
