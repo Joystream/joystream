@@ -70,7 +70,6 @@ declare module '@polkadot/types/types/registry' {
     'Compact<BabeAuthorityWeight>': Compact<BabeAuthorityWeight>;
     'Compact<BabeBlockWeight>': Compact<BabeBlockWeight>;
     'Compact<BabeWeight>': Compact<BabeWeight>;
-    'Compact<BagIdType>': Compact<BagIdType>;
     'Compact<Balance>': Compact<Balance>;
     'Compact<BalanceOf>': Compact<BalanceOf>;
     'Compact<BalanceOfMint>': Compact<BalanceOfMint>;
@@ -93,7 +92,6 @@ declare module '@polkadot/types/types/registry' {
     'Compact<DynamicBag>': Compact<DynamicBag>;
     'Compact<DynamicBagCreationPolicy>': Compact<DynamicBagCreationPolicy>;
     'Compact<DynamicBagId>': Compact<DynamicBagId>;
-    'Compact<DynamicBagType>': Compact<DynamicBagType>;
     'Compact<EntityId>': Compact<EntityId>;
     'Compact<EraIndex>': Compact<EraIndex>;
     'Compact<EventIndex>': Compact<EventIndex>;

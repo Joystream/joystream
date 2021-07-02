@@ -972,7 +972,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * DynamicBagCreationPolicy by bag type storage map.
        **/
-      dynamicBagCreationPolicies: AugmentedQuery<ApiType, (arg: DynamicBagType | AnyNumber | Uint8Array) => Observable<DynamicBagCreationPolicy>, [DynamicBagType]>;
+      dynamicBagCreationPolicies: AugmentedQuery<ApiType, (arg: DynamicBagType | 'Member' | 'Channel' | number | Uint8Array) => Observable<DynamicBagCreationPolicy>, [DynamicBagType]>;
       /**
        * Dynamic bag storage map.
        **/

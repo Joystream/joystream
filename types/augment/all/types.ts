@@ -166,7 +166,11 @@ export interface BagId extends Enum {
 }
 
 /** @name BagIdType */
-export interface BagIdType extends u64 {}
+export interface BagIdType extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+}
 
 /** @name BalanceOfMint */
 export interface BalanceOfMint extends u128 {}
@@ -466,7 +470,10 @@ export interface DynamicBagCreationPolicy extends u64 {}
 export interface DynamicBagId extends u64 {}
 
 /** @name DynamicBagType */
-export interface DynamicBagType extends u64 {}
+export interface DynamicBagType extends Enum {
+  readonly isMember: boolean;
+  readonly isChannel: boolean;
+}
 
 /** @name ElectionParameters */
 export interface ElectionParameters extends Struct {
