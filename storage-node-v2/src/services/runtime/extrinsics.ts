@@ -330,3 +330,29 @@ export async function updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
     )
   )
 }
+
+export async function updateBlacklist(
+  api: ApiPromise,
+  account: KeyringPair,
+  cid: string,
+  removeCid: boolean
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
+    let addHashes: CodecArg
+    let removeHashes: CodecArg
+
+    if (removeCid) {
+      removeHashes = api.createType('ContentIdSet', [cid])
+    } else {
+      addHashes = api.createType('ContentIdSet', [cid])
+    }
+
+    return sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'updateBlacklist',
+      [removeHashes, addHashes]
+    )
+  })
+}
