@@ -87,46 +87,68 @@ const defsConfigName = defsConfig.metadata.apply((m) => m.name)
 
 // Create a Deployment
 
-const deployment = new k8s.apps.v1.Deployment(
-  name,
+const databaseLabels = { app: 'postgres-db' }
+const databaseDeployment = new k8s.apps.v1.Deployment('postgres-db', {
+  metadata: {
+    namespace: namespaceName,
+    labels: databaseLabels,
+  },
+  spec: {
+    selector: { matchLabels: databaseLabels },
+    template: {
+      metadata: { labels: databaseLabels },
+      spec: {
+        containers: [
+          {
+            name: 'postgres-db',
+            image: 'postgres:12',
+            env: [
+              { name: 'POSTGRES_USER', value: process.env.DB_USER! },
+              { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
+              { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
+            ],
+            ports: [{ containerPort: 5432 }],
+          },
+        ],
+      },
+    },
+  },
+})
+
+const databaseService = new k8s.core.v1.Service('postgres-db', {
+  metadata: {
+    namespace: namespaceName,
+    labels: databaseDeployment.metadata.labels,
+    name: 'postgres-db',
+  },
+  spec: {
+    ports: [{ port: 5432 }],
+    selector: databaseDeployment.spec.template.metadata.labels,
+  },
+})
+
+// Create an example Job.
+const exampleJob = new k8s.batch.v1.Job(
+  'db-migration',
   {
     metadata: {
       namespace: namespaceName,
-      labels: appLabels,
-      annotations: {
-        'pulumi.com/timeoutSeconds': '120',
-      },
     },
     spec: {
-      replicas: 1,
-      selector: { matchLabels: appLabels },
+      backoffLimit: 0,
       template: {
-        metadata: {
-          labels: appLabels,
-        },
         spec: {
-          hostname: 'postgres-db',
           containers: [
             {
-              name: 'redis',
-              image: 'redis:6.0-alpine',
-              ports: [{ containerPort: 6379 }],
-            },
-            {
-              name: 'postgres-db',
-              image: 'postgres:12',
-              env: getUniqueListByName([
-                { name: 'POSTGRES_USER', value: process.env.DB_USER! },
-                { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
-                { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
-              ]),
-              ports: [{ containerPort: 5432 }],
-            },
-            {
-              name: 'temp-db-prepare-container',
+              name: 'db-migration',
               image: joystreamAppsImage,
               imagePullPolicy: 'IfNotPresent',
+              resources: { requests: { cpu: '100m', memory: '100Mi' } },
               env: [
+                {
+                  name: 'WARTHOG_DB_HOST',
+                  value: 'postgres-db',
+                },
                 {
                   name: 'DB_HOST',
                   value: 'postgres-db',
@@ -137,21 +159,52 @@ const deployment = new k8s.apps.v1.Deployment(
               command: ['/bin/sh', '-c'],
               args: ['yarn workspace query-node-root db:prepare; yarn workspace query-node-root db:migrate'],
             },
+          ],
+          restartPolicy: 'Never',
+        },
+      },
+    },
+  },
+  { dependsOn: databaseService }
+  // { provider: provider }
+)
+
+const deployment = new k8s.apps.v1.Deployment(
+  name,
+  {
+    metadata: {
+      namespace: namespaceName,
+      labels: appLabels,
+    },
+    spec: {
+      replicas: 1,
+      selector: { matchLabels: appLabels },
+      template: {
+        metadata: {
+          labels: appLabels,
+        },
+        spec: {
+          containers: [
+            {
+              name: 'redis',
+              image: 'redis:6.0-alpine',
+              ports: [{ containerPort: 6379 }],
+            },
             {
               name: 'indexer',
               image: 'joystream/hydra-indexer:2.1.0-beta.9',
-              env: getUniqueListByName([
+              env: [
                 // ...envCopy,
                 { name: 'DB_HOST', value: 'postgres-db' },
                 { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
                 { name: 'DB_PASS', value: process.env.DB_PASS! },
                 { name: 'INDEXER_WORKERS', value: '5' },
-                { name: 'REDIS_URI', value: 'redis://postgres-db:6379/0' },
+                { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
                 { name: 'DEBUG', value: 'index-builder:*' },
                 { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
                 { name: 'TYPES_JSON', value: 'types.json' },
                 { name: 'PGUSER', value: process.env.DB_USER! },
-              ]),
+              ],
               volumeMounts: [
                 {
                   mountPath: '/home/hydra/packages/hydra-indexer/types.json',
@@ -171,7 +224,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 { name: 'WARTHOG_STARTER_DB_PASSWORD', value: process.env.DB_PASS! },
                 { name: 'WARTHOG_STARTER_DB_PORT', value: process.env.DB_PORT! },
                 { name: 'WARTHOG_STARTER_DB_USERNAME', value: process.env.DB_USER! },
-                { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://postgres-db:6379/0' },
+                { name: 'WARTHOG_STARTER_REDIS_URI', value: 'redis://localhost:6379/0' },
                 { name: 'WARTHOG_APP_PORT', value: process.env.WARTHOG_APP_PORT! },
                 { name: 'PORT', value: process.env.WARTHOG_APP_PORT! },
                 { name: 'DEBUG', value: '*' },
@@ -185,7 +238,7 @@ const deployment = new k8s.apps.v1.Deployment(
               env: [
                 {
                   name: 'INDEXER_ENDPOINT_URL',
-                  value: `http://hydra-indexer-gateway:${process.env.WARTHOG_APP_PORT}/graphql`,
+                  value: `http://localhost:${process.env.WARTHOG_APP_PORT}/graphql`,
                 },
                 { name: 'TYPEORM_HOST', value: 'postgres-db' },
                 { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
@@ -195,11 +248,11 @@ const deployment = new k8s.apps.v1.Deployment(
               volumeMounts: [
                 {
                   mountPath: '/joystream/query-node/mappings/lib/generated/types/typedefs.json',
-                  name: 'indexer-volume',
+                  name: 'processor-volume',
                   subPath: 'fileData',
                 },
               ],
-              command: ['yarn', 'workspace', 'query-node-root', 'processor:start'],
+              args: ['workspace', 'query-node-root', 'processor:start'],
             },
             {
               name: 'graphql-server',
@@ -219,13 +272,12 @@ const deployment = new k8s.apps.v1.Deployment(
             },
           ],
           volumes: [
-            // {
-            //   name: 'processor-volume',
-            //   hostPath: {
-            //     path: '/Users/anuj/Joystream/joystream/types/augment/all/defs.json',
-            //     type: 'FileOrCreate',
-            //   },
-            // },
+            {
+              name: 'processor-volume',
+              configMap: {
+                name: defsConfigName,
+              },
+            },
             {
               name: 'indexer-volume',
               configMap: {
@@ -236,7 +288,8 @@ const deployment = new k8s.apps.v1.Deployment(
         },
       },
     },
-  }
+  },
+  { dependsOn: exampleJob }
   // {
   //   provider: cluster.provider,
   // }
