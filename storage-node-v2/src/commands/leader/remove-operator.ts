@@ -4,7 +4,7 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
 export default class LeaderRemoveOperator extends ApiCommandBase {
-  static description = `Removes a storage bucket operator. Requires storage working group leader permissions.`
+  static description = `Remove a storage bucket operator. Requires storage working group leader permissions.`
 
   static flags = {
     bucketId: flags.integer({

@@ -4,7 +4,7 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
 export default class LeaderUpdateDataFee extends ApiCommandBase {
-  static description = `Updates data size fee. Requires storage working group leader permissions.`
+  static description = `Update data size fee. Requires storage working group leader permissions.`
 
   static flags = {
     fee: flags.integer({

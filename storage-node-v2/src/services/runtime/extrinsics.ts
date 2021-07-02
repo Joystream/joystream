@@ -278,3 +278,21 @@ export async function updateUploadingBlockedStatus(
     )
   )
 }
+
+export async function updateStorageBucketStatus(
+  api: ApiPromise,
+  account: KeyringPair,
+  workerId: number,
+  storageBucketId: number,
+  newStatus: boolean
+): Promise<boolean> {
+  return await extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'updateStorageBucketStatus',
+      [workerId, storageBucketId, newStatus]
+    )
+  )
+}
