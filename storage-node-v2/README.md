@@ -38,12 +38,13 @@ USAGE
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
+* [`storage-node leader:set-uploading-block [FILE]`](#storage-node-leaderset-uploading-block-file)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
-* [`storage-node operator:set-metadata [FILE]`](#storage-node-operatorset-metadata-file)
+* [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
 ## `storage-node dev:init`
@@ -256,6 +257,22 @@ OPTIONS
 
 _See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/remove-operator.ts)_
 
+## `storage-node leader:set-uploading-block [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:set-uploading-block [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/set-uploading-block.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-uploading-block.ts)_
+
 ## `storage-node leader:update-bag`
 
 Add/remove a storage bucket from a bag (adds by default).
@@ -370,29 +387,34 @@ USAGE
   $ storage-node operator:accept-invitation
 
 OPTIONS
-  -b, --bucket=bucket      (required) Storage bucket ID
   -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
   -m, --dev                Use development mode
   -p, --password=password  Key file password (optional).
   -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
-  -w, --worker=worker      (required) Storage operator worker ID
+  -w, --workerId=workerId  (required) Storage operator worker ID
 ```
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
 
-## `storage-node operator:set-metadata [FILE]`
+## `storage-node operator:set-metadata`
 
-describe the command here
+Accept pending storage bucket invitation.
 
 ```
 USAGE
-  $ storage-node operator:set-metadata [FILE]
+  $ storage-node operator:set-metadata
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help                   show CLI help
+  -i, --bucketId=bucketId      (required) Storage bucket ID
+  -k, --keyfile=keyfile        Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                    Use development mode
+  -m, --metadata=metadata      Storage bucket operator metadata
+  -p, --password=password      Key file password (optional).
+  -u, --apiUrl=apiUrl          Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+  -w, --operatorId=operatorId  (required) Storage bucket operator ID (storage group worker ID)
 ```
 
 _See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-metadata.ts)_

@@ -29,3 +29,7 @@ yarn storage-node leader:cancel-invite -i=2   --dev
 yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
 yarn storage-node operator:accept-invitation -w=0 -i=2 --dev
 yarn storage-node leader:remove-operator -i=2   --dev 
+
+# Toggle uploading block.
+yarn storage-node leader:set-uploading-block --enable --dev 
+yarn storage-node leader:set-uploading-block --disable --dev 
