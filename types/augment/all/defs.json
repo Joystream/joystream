@@ -1032,5 +1032,6 @@
         "deletionPrizeSourceAccountId": "GenericAccountId"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
-    "DataObjectIdSet": "BTreeSet<DataObjectId>"
+    "DataObjectIdSet": "BTreeSet<DataObjectId>",
+    "ContentIdSet": "BTreeSet<Text>"
 }
