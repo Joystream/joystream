@@ -5,7 +5,7 @@ import logger from '../../services/logger'
 
 export default class LeaderUpdateBagLimit extends ApiCommandBase {
   static description =
-    'Updates StorageBucketsPerBagLimit variable in the Joystream node storage.'
+    'Update StorageBucketsPerBagLimit variable in the Joystream node storage.'
 
   static flags = {
     limit: flags.integer({

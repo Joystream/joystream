@@ -3,7 +3,7 @@ import { getAlicePair } from './accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { CodecArg } from '@polkadot/types/types'
 import { ApiPromise } from '@polkadot/api'
-import { BagId } from '@joystream/types/storage'
+import { BagId, DynamicBagType } from '@joystream/types/storage'
 import logger from '../../services/logger'
 
 export async function createStorageBucket(
@@ -310,6 +310,23 @@ export async function setStorageBucketVoucherLimits(
       'storage',
       'setStorageBucketVoucherLimits',
       [workerId, storageBucketId, newSizeLimit, newObjectLimit]
+    )
+  )
+}
+
+export async function updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
+  api: ApiPromise,
+  account: KeyringPair,
+  dynamicBagType: DynamicBagType,
+  newNumber: number
+): Promise<boolean> {
+  return await extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'updateNumberOfStorageBucketsInDynamicBagCreationPolicy',
+      [dynamicBagType, newNumber]
     )
   )
 }

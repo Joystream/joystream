@@ -42,9 +42,10 @@ USAGE
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
+* [`storage-node leader:update-dynamic-bag-policy [FILE]`](#storage-node-leaderupdate-dynamic-bag-policy-file)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
-* [`storage-node operator:set-bucket-limits [FILE]`](#storage-node-operatorset-bucket-limits-file)
+* [`storage-node operator:set-bucket-limits`](#storage-node-operatorset-bucket-limits)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
 * [`storage-node operator:update-bucket-status`](#storage-node-operatorupdate-bucket-status)
 * [`storage-node server [FILE]`](#storage-node-server-file)
@@ -364,9 +365,25 @@ OPTIONS
 
 _See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-data-fee.ts)_
 
+## `storage-node leader:update-dynamic-bag-policy [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node leader:update-dynamic-bag-policy [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-dynamic-bag-policy.ts)_
+
 ## `storage-node leader:update-voucher-limits`
 
-Updates VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit the Joystream node storage.
+Update VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit for the Joystream node storage.
 
 ```
 USAGE
@@ -404,18 +421,24 @@ OPTIONS
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
 
-## `storage-node operator:set-bucket-limits [FILE]`
+## `storage-node operator:set-bucket-limits`
 
-describe the command here
+Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.
 
 ```
 USAGE
-  $ storage-node operator:set-bucket-limits [FILE]
+  $ storage-node operator:set-bucket-limits
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -o, --objects=objects    (required) New 'voucher object number limit' value
+  -p, --password=password  Key file password (optional).
+  -s, --size=size          (required) New 'voucher object size limit' value
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+  -w, --workerId=workerId  (required) Storage operator worker ID
 ```
 
 _See code: [src/commands/operator/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-bucket-limits.ts)_

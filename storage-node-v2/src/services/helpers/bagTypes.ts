@@ -1,4 +1,4 @@
-import { BagId, Static } from '@joystream/types/storage'
+import { BagId, DynamicBagType, Static } from '@joystream/types/storage'
 import { ApiPromise } from '@polkadot/api'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
@@ -50,4 +50,11 @@ function parseDynamicBagId(): BagId {
   throw new CLIError('Function not implemented.', {
     exit: ExitCodes.InvalidParameters,
   })
+}
+
+export function parseDynamicBagType(
+  api: ApiPromise,
+  bagType: 'Member' | 'Channel'
+): DynamicBagType {
+  return api.createType('DynamicBagType', bagType)
 }
