@@ -90,7 +90,6 @@ declare module '@polkadot/types/types/registry' {
     'Compact<DataObjectStorageRelationshipId>': Compact<DataObjectStorageRelationshipId>;
     'Compact<DataObjectTypeId>': Compact<DataObjectTypeId>;
     'Compact<DynamicBag>': Compact<DynamicBag>;
-    'Compact<DynamicBagCreationPolicy>': Compact<DynamicBagCreationPolicy>;
     'Compact<DynamicBagId>': Compact<DynamicBagId>;
     'Compact<EntityId>': Compact<EntityId>;
     'Compact<EraIndex>': Compact<EraIndex>;
