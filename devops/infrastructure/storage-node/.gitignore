@@ -2,3 +2,4 @@
 /node_modules/
 kubeconfig.yml
 package-lock.json
+Pulumi.*.yaml

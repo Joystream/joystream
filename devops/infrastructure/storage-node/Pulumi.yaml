@@ -16,7 +16,7 @@ template:
     providerId:
       description: StorageProviderId assigned to you in working group
     keyFile:
-      description: JSON key export file to use as the storage provider (role account)
+      description: Path to JSON key export file to use as the storage provider (role account)
     publicURL:
       description: API Public URL to announce
     passphrase:
