@@ -1,6 +1,6 @@
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import { parseBagId } from '../../services/helpers/bagIdParser'
+import { parseBagId } from '../../services/helpers/bagTypes'
 import logger from '../../services/logger'
 
 export default class DevVerifyBagId extends ApiCommandBase {

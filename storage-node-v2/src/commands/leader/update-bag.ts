@@ -1,7 +1,7 @@
 import { flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import { parseBagId } from '../../services/helpers/bagIdParser'
+import { parseBagId } from '../../services/helpers/bagTypes'
 import logger from '../../services/logger'
 
 export default class LeaderUpdateBag extends ApiCommandBase {
