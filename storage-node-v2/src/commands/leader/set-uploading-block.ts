@@ -4,7 +4,7 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
 export default class LeaderSetUploadingBlock extends ApiCommandBase {
-  static description = `Sets global uploading block. Requires storage working group leader permissions.`
+  static description = `Set global uploading block. Requires storage working group leader permissions.`
 
   static flags = {
     enable: flags.boolean({
@@ -22,7 +22,6 @@ export default class LeaderSetUploadingBlock extends ApiCommandBase {
     const { flags } = this.parse(LeaderSetUploadingBlock)
 
     const disable = flags.disable
-
     const newStatus = !disable
 
     logger.info('Setting global uploading block...')

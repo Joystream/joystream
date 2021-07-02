@@ -38,13 +38,14 @@ USAGE
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
-* [`storage-node leader:set-uploading-block [FILE]`](#storage-node-leaderset-uploading-block-file)
+* [`storage-node leader:set-uploading-block`](#storage-node-leaderset-uploading-block)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
+* [`storage-node operator:update-bucket-status [FILE]`](#storage-node-operatorupdate-bucket-status-file)
 * [`storage-node server [FILE]`](#storage-node-server-file)
 
 ## `storage-node dev:init`
@@ -257,18 +258,22 @@ OPTIONS
 
 _See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/remove-operator.ts)_
 
-## `storage-node leader:set-uploading-block [FILE]`
+## `storage-node leader:set-uploading-block`
 
-describe the command here
+Sets global uploading block. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node leader:set-uploading-block [FILE]
+  $ storage-node leader:set-uploading-block
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -d, --disable            Disables global uploading block.
+  -e, --enable             Enables global uploading block (default).
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/set-uploading-block.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-uploading-block.ts)_
@@ -418,6 +423,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-metadata.ts)_
+
+## `storage-node operator:update-bucket-status [FILE]`
+
+describe the command here
+
+```
+USAGE
+  $ storage-node operator:update-bucket-status [FILE]
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+  -n, --name=name  name to print
+```
+
+_See code: [src/commands/operator/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/update-bucket-status.ts)_
 
 ## `storage-node server [FILE]`
 

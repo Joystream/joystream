@@ -13,8 +13,9 @@ yarn storage-node leader:update-voucher-limits -o 100 -s 10000000 --dev
 yarn storage-node leader:update-data-fee -f 10000 --dev
 
 # Create and configure a bucket.
-yarn storage-node leader:create-bucket -i=0 -a -n=100 -s=10000000  --dev # bucketId = 0
+yarn storage-node leader:create-bucket -i=0 -n=100 -s=10000000  --dev # bucketId = 0
 yarn storage-node operator:accept-invitation -w=0 -i=0 --dev
+yarn storage-node operator:update-bucket-status -w=0 -i=0 --enable --dev
 yarn storage-node leader:update-bag -b=0 -i static:council --dev 
 yarn storage-node operator:set-metadata -w=0 -i=0 -m=http://google.com --dev
 
