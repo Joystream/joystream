@@ -262,3 +262,19 @@ export async function setStorageOperatorMetadata(
     )
   )
 }
+
+export async function updateUploadingBlockedStatus(
+  api: ApiPromise,
+  account: KeyringPair,
+  newStatus: boolean
+): Promise<boolean> {
+  return extrinsicWrapper(() =>
+    sendAndFollowNamedTx(
+      api,
+      account,
+      'storage',
+      'updateUploadingBlockedStatus',
+      [newStatus]
+    )
+  )
+}
