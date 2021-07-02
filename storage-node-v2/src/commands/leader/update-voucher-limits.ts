@@ -5,7 +5,7 @@ import logger from '../../services/logger'
 
 export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
   static description =
-    'Updates VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit the Joystream node storage.'
+    'Update VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit for the Joystream node storage.'
 
   static flags = {
     objects: flags.integer({
@@ -24,7 +24,7 @@ export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateVoucherLimits)
 
-    logger.info('Update "Storage buckets per bag" number limit....')
+    logger.info('Updating global storage bucket voucher limits....')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
