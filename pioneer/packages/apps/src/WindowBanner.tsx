@@ -126,7 +126,7 @@ const numberToDateString = (number: number) : string => {
 };
 
 const WindowBanner = () => {
-  const [foundingMembersData, foundingMembersDataError, isFoundingMembersDataLoading] = usePromise<FoundingMembersData | undefined>(
+  const [foundingMembersData, foundingMembersDataError] = usePromise<FoundingMembersData | undefined>(
     () => fetch(FM_DATA_URL).then((res) => res.json().then((data) => data as FoundingMembersData)), undefined, []
   );
   const [dates, setDates] = useState<{ started: Date, ends: Date }>();
@@ -158,19 +158,17 @@ const WindowBanner = () => {
     }
   }, [foundingMembersData]);
 
-  const renderContent = () => {
-    if (isFoundingMembersDataLoading) {
-      return (
-        <Dimmer active>
-          <Loader size='medium'>Loading</Loader>
-        </Dimmer>
-      );
-    }
+  const Loading = () => (
+    <Dimmer active>
+      <Loader size='medium'>Loading</Loader>
+    </Dimmer>
+  );
 
-    if (foundingMembersDataError) {
-      return <ErrorText> There&apos;s been some problem while fetching this data! </ErrorText>;
-    }
+  const Error = () => (
+    <ErrorText> There&apos;s been some problem while fetching this data! </ErrorText>
+  );
 
+  const Content = () => {
     return (
       <>
         {
@@ -200,7 +198,8 @@ const WindowBanner = () => {
 
   return (
     <WindowBannerContainer>
-      {renderContent()}
+      {dates && remainingTimeString && progress ? <Content /> : <Loading />}
+      {foundingMembersDataError ? <Error /> : null}
     </WindowBannerContainer>
   );
 };
