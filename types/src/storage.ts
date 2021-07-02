@@ -1,4 +1,4 @@
-import { Null, u64, Text, Vec, GenericAccountId as AccountId } from '@polkadot/types'
+import { Null, u64, Text, Vec, GenericAccountId as AccountId, BTreeSet } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from './common'
 
@@ -108,6 +108,9 @@ export class UploadParameters
   })
   implements UploadParametersType {}
 
+export class ContentId extends Text {}
+export class ContentIdSet extends BTreeSet.with(ContentId) {}
+
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
@@ -127,5 +130,7 @@ export const storageTypes: RegistryTypes = {
   UploadParameters,
   StorageBucketIdSet,
   DataObjectIdSet,
+  ContentIdSet,
+  ContentId
 }
 export default storageTypes

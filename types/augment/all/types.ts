@@ -288,6 +288,9 @@ export interface ClassPropertyValue extends Null {}
 /** @name ContentId */
 export interface ContentId extends U8aFixed {}
 
+/** @name ContentIdSet */
+export interface ContentIdSet extends BTreeSet<Text> {}
+
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
   readonly class_id: ClassId;
