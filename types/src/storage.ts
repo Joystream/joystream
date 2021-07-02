@@ -19,12 +19,18 @@ export class StorageBucketsPerBagValueConstraint
 
 //TODO: implement these types
 export class DynamicBagId extends u64 {}
-export class DynamicBagType extends u64 {}
 export class DynamicBagCreationPolicy extends u64 {}
 export class DynamicBag extends u64 {}
 export class StaticBag extends u64 {}
 export class StorageBucket extends u64 {}
 //
+
+export const DynamicBagTypeDef = {
+    Member: Null,
+    Channel: Null,
+} as const
+export type DynamicBagTypeKey = keyof typeof DynamicBagTypeDef
+export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
 
 export const StaticBagIdDef = {
     Council: Null,
@@ -41,6 +47,9 @@ export const BagIdDef = {
 } as const
 export type BagIdKey = keyof typeof BagIdDef
 export class BagId extends JoyEnum(BagIdDef) {}
+
+// Alias
+export class BagIdType extends BagId {}
 
 export type VoucherType = {
     sizeLimit: u64,
@@ -61,8 +70,6 @@ export class Voucher
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
 
 export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
-
-export class BagIdType extends u64 {}
 
 export type DataObjectCreationParametersType = {
     size: u64,
