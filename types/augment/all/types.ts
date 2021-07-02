@@ -464,7 +464,9 @@ export interface DiscussionThread extends Struct {
 export interface DynamicBag extends u64 {}
 
 /** @name DynamicBagCreationPolicy */
-export interface DynamicBagCreationPolicy extends u64 {}
+export interface DynamicBagCreationPolicy extends Struct {
+  readonly numberOfStorageBuckets: u64;
+}
 
 /** @name DynamicBagId */
 export interface DynamicBagId extends u64 {}

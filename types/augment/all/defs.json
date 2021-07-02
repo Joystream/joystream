@@ -991,7 +991,9 @@
             "Channel"
         ]
     },
-    "DynamicBagCreationPolicy": "u64",
+    "DynamicBagCreationPolicy": {
+        "numberOfStorageBuckets": "u64"
+    },
     "DynamicBag": "u64",
     "StaticBag": "u64",
     "StorageBucket": "u64",
