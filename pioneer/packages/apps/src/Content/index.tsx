@@ -102,7 +102,7 @@ export default React.memo(styled(Content)`
   width: 100%;
 
   @media(max-width: 768px) {
-    padding: 0 0.5rem;
+    padding: 0 0.5rem 135px;
   }
 
   .connecting {

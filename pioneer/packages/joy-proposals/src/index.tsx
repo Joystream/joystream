@@ -59,7 +59,15 @@ const BannerText = styled.h1`
 
   @media(max-width: 1300px){
     font-size: 20px;
-    width: 90%;
+    width: 80%;
+  }
+
+  @media(max-width: 800px){
+    font-size: 16px;
+  }
+
+  @media(max-width: 500px){
+    font-size: 12px;
   }
 `;
 

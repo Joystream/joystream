@@ -21,9 +21,14 @@ const CounterText = styled.h1`
     text-align: center;
     color: white;
     margin-bottom: 0px;
+    font-weight: 400;
 
     @media(max-width: 1300px){
       font-size: 26px;
+    }
+
+    @media(max-width: 700px){
+      font-size: 18px;
     }
 `;
 
@@ -34,12 +39,16 @@ const BannerText = styled.p`
     margin-bottom: 10px;
 
     @media(max-width: 1300px){
-        font-size: 16px;
-        margin-bottom: 8px;
+      font-size: 16px;
+      margin-bottom: 8px;
     }
 
     @media(max-width: 1000px){
       width: 75%;
+    }
+
+    @media(max-width: 700px){
+      font-size: 12px;
     }
 `;
 
@@ -47,6 +56,11 @@ const ErrorText = styled.h1`
     font-size: 26px;
     text-align: center;
     color: white;
+
+    @media(max-width: 750px){
+      width: 80%;
+      font-size: 20px;
+    }
 `;
 
 const ProgressContainer = styled.div`
@@ -64,6 +78,10 @@ const DateText = styled.p`
     letter-spacing: -.4000000059604645px;
     color: #dfe4ea;
     margin-bottom: 0;
+
+    @media(max-width: 1000px){
+      font-size: 12px;
+    }
 `;
 
 const StyledProgress = styled(Progress)`
