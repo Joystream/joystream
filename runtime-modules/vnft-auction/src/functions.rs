@@ -1,0 +1,198 @@
+use crate::*;
+
+impl<T: Trait> Module<T> {
+    /// Authorize auctioneer
+    pub(crate) fn authorize_auctioneer(
+        origin: T::Origin,
+        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        auction_params: &AuctionParams<
+            T::VNFTId,
+            VideoId<T>,
+            <T as timestamp::Trait>::Moment,
+            BalanceOf<T>,
+        >,
+    ) -> Result<T::AccountId, DispatchError> {
+        if let AuctionMode::WithoutIsuance(vnft_id) = auction_params.auction_mode {
+            let vnft = Self::ensure_vnft_exists(vnft_id)?;
+
+            // Only members are supposed to start auctions for already existing nfts
+            if let ContentActor::Member(member_id) = actor {
+                let account_id = T::MemberOriginValidator::ensure_actor_origin(origin, *member_id)
+                    .map_err::<Error<T>, _>(|_| Error::<T>::ActorOriginAuthError.into())?;
+
+                Self::ensure_vnft_ownership(&account_id, &vnft)?;
+
+                Ok(account_id)
+            } else {
+                Err(Error::<T>::AuctionDoesNotExist.into())
+            }
+        } else {
+            // TODO: Move to common pallet
+            content::ensure_actor_authorized_to_create_channel::<T>(origin.clone(), &actor)
+                .map_err::<Error<T>, _>(|_| Error::<T>::ActorNotAuthorizedToIssueNft.into());
+            let account_id = ensure_signed(origin)?;
+            Ok(account_id)
+        }
+    }
+
+    pub(crate) fn validate_auction_params(
+        auction_params: &AuctionParams<
+            T::VNFTId,
+            VideoId<T>,
+            <T as timestamp::Trait>::Moment,
+            BalanceOf<T>,
+        >,
+    ) -> DispatchResult {
+        if let AuctionMode::WithIssuance(Some(royalty), _) = auction_params.auction_mode {
+            Self::ensure_royalty_bounds_satisfied(royalty)?;
+        }
+
+        Self::ensure_round_time_bounds_satisfied(auction_params.round_time)?;
+        Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
+
+        Ok(())
+    }
+
+    /// Ensure given account id is vnft owner
+    pub(crate) fn ensure_vnft_ownership(
+        account_id: &T::AccountId,
+        vnft: &VNFT<T::AccountId>,
+    ) -> DispatchResult {
+        ensure!(*account_id == vnft.owner, Error::<T>::DoesNotOwnVNFT);
+        Ok(())
+    }
+
+    /// Ensure royalty bounds satisfied
+    pub(crate) fn ensure_royalty_bounds_satisfied(royalty: Perbill) -> DispatchResult {
+        ensure!(
+            royalty <= Self::max_creator_royalty(),
+            Error::<T>::RoyaltyUpperBoundExceeded
+        );
+        ensure!(
+            royalty >= Self::min_creator_royalty(),
+            Error::<T>::RoyaltyLowerBoundExceeded
+        );
+        Ok(())
+    }
+
+    /// Ensure royalty bounds satisfied
+    pub(crate) fn ensure_round_time_bounds_satisfied(round_time: T::Moment) -> DispatchResult {
+        ensure!(
+            round_time <= Self::max_round_time(),
+            Error::<T>::RoundTimeUpperBoundExceeded
+        );
+        ensure!(
+            round_time >= Self::min_round_time(),
+            Error::<T>::RoundTimeLowerBoundExceeded
+        );
+        Ok(())
+    }
+
+    /// Ensure royalty bounds satisfied
+    pub(crate) fn ensure_starting_price_bounds_satisfied(
+        starting_price: BalanceOf<T>,
+    ) -> DispatchResult {
+        ensure!(
+            starting_price >= Self::max_starting_price(),
+            Error::<T>::StartingPriceUpperBoundExceeded
+        );
+        ensure!(
+            starting_price <= Self::min_starting_price(),
+            Error::<T>::StartingPriceLowerBoundExceeded
+        );
+        Ok(())
+    }
+
+    /// Check whether auction for given video id exists
+    pub(crate) fn is_auction_exist(video_id: T::VideoId) -> bool {
+        <AuctionByVideoId<T>>::contains_key(video_id)
+    }
+
+    /// Check whether vnft for given vnft id exists
+    pub(crate) fn is_vnft_exist(vnft_id: T::VNFTId) -> bool {
+        <VNFTById<T>>::contains_key(vnft_id)
+    }
+
+    /// Ensure auction for given video id exists
+    pub(crate) fn ensure_auction_exists(video_id: T::VideoId) -> Result<Auction<T>, Error<T>> {
+        ensure!(
+            Self::is_auction_exist(video_id),
+            Error::<T>::AuctionDoesNotExist
+        );
+        Ok(Self::auction_by_video_id(video_id))
+    }
+
+    /// Ensure given vnft exists
+    pub(crate) fn ensure_vnft_exists(vnft_id: T::VNFTId) -> Result<VNFT<T::AccountId>, Error<T>> {
+        ensure!(Self::is_vnft_exist(vnft_id), Error::<T>::VNFTDoesNotExist);
+        Ok(Self::vnft_by_vnft_id(vnft_id))
+    }
+
+    /// Try complete auction when round time expired
+    pub fn try_complete_auction(auction: Auction<T>, video_id: T::VideoId) -> bool {
+        let now = timestamp::Module::<T>::now();
+        if (now - auction.last_bid_time) >= auction.round_time {
+            Self::complete_auction(auction, video_id);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Complete auction
+    fn complete_auction(auction: Auction<T>, video_id: T::VideoId) {
+        <AuctionByVideoId<T>>::remove(video_id);
+        match auction.auction_mode.clone() {
+            AuctionMode::WithIssuance(royalty, _) => {
+                <Module<T>>::issue_vnft(auction, video_id, royalty)
+            }
+            AuctionMode::WithoutIsuance(vnft_id) => {
+                <Module<T>>::complete_vnft_auction_transfer(auction, vnft_id)
+            }
+        }
+    }
+
+    /// Issue vnft and update mapping relations
+    pub(crate) fn issue_vnft(auction: Auction<T>, video_id: T::VideoId, royalty: Option<Royalty>) {
+        let vnft_id = Self::next_video_nft_id();
+
+        <VNFTIdByVideo<T>>::insert(video_id, vnft_id);
+
+        let creator_royalty = if let Some(royalty) = royalty {
+            Some((auction.auctioneer_account_id.clone(), royalty))
+        } else {
+            None
+        };
+
+        <VNFTById<T>>::insert(
+            vnft_id,
+            VNFT::new(auction.current_bidder.clone(), creator_royalty),
+        );
+
+        NextVNFTId::<T>::put(vnft_id + T::VNFTId::one());
+
+        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id, auction));
+    }
+
+    /// Complete vnft transfer
+    pub(crate) fn complete_vnft_auction_transfer(auction: Auction<T>, vnft_id: T::VNFTId) {
+        let vnft = Self::vnft_by_vnft_id(vnft_id);
+        let current_bid = auction.current_bid;
+
+        if let Some((creator_account_id, creator_royalty)) = vnft.creator_royalty {
+            let royalty = creator_royalty * current_bid;
+
+            T::NftCurrencyProvider::slash_reserved(&auction.current_bidder, current_bid);
+
+            T::NftCurrencyProvider::deposit_creating(
+                &auction.auctioneer_account_id,
+                current_bid - royalty,
+            );
+            T::NftCurrencyProvider::deposit_creating(&creator_account_id, royalty);
+        } else {
+            T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, current_bid);
+        }
+
+        <VNFTById<T>>::mutate(vnft_id, |vnft| vnft.owner = auction.current_bidder);
+    }
+}
