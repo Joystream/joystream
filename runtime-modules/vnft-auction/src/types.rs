@@ -47,9 +47,10 @@ pub struct AuctionRecord<
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     pub round_time: Moment,
+    pub minimal_bid_step: Balance,
     pub last_bid_time: Moment,
-    pub current_bid: Balance,
-    pub current_bidder: AccountId,
+    pub last_bid: Balance,
+    pub last_bidder: AccountId,
 }
 
 impl<
@@ -59,7 +60,7 @@ impl<
         CuratorGroupId: Default + Copy,
         CuratorId: Default + Copy,
         MemberId: Default + Copy,
-        Balance: Default,
+        Balance: Default + BaseArithmetic,
     > AuctionRecord<AccountId, VNFTId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
 {
     pub fn new<VideoId>(
@@ -72,6 +73,7 @@ impl<
             round_time,
             starting_price,
             buy_now_price,
+            minimal_bid_step,
             ..
         } = auction_params;
         Self {
@@ -81,10 +83,42 @@ impl<
             starting_price,
             buy_now_price,
             round_time,
+            minimal_bid_step,
             last_bid_time: Moment::default(),
-            current_bid: Balance::default(),
-            current_bidder: AccountId::default(),
+            last_bid: Balance::default(),
+            last_bidder: AccountId::default(),
         }
+    }
+
+    /// Ensure new bid is greater then last bid + minimal bid step
+    pub fn ensure_is_valid_bid<T: Trait>(&self, new_bid: Balance) -> DispatchResult {
+        // Always allow to buy now
+        match &self.buy_now_price {
+            Some(buy_now_price) if new_bid >= *buy_now_price => (),
+            // Ensure new bid is greater then last bid + minimal bid step
+            _ => ensure!(
+                self.last_bid
+                    .checked_add(&self.minimal_bid_step)
+                    .ok_or(Error::<T>::OverflowOrUnderflowHappened)?
+                    < new_bid,
+                Error::<T>::InvalidBid
+            ),
+        }
+
+        Ok(())
+    }
+
+    /// Make auction bid
+    pub fn make_bid<T: Trait>(
+        mut self,
+        who: AccountId,
+        bid: Balance,
+        last_bid_time: Moment,
+    ) -> Self {
+        self.last_bidder = who;
+        self.last_bid = bid;
+        self.last_bid_time = last_bid_time;
+        self
     }
 }
 
@@ -107,6 +141,7 @@ pub struct AuctionParams<VNFTId: Default, VideoId, Moment, Balance> {
     pub video_id: VideoId,
     pub round_time: Moment,
     pub starting_price: Balance,
+    pub minimal_bid_step: Balance,
     pub buy_now_price: Option<Balance>,
 }
 

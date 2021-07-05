@@ -17,8 +17,7 @@ impl<T: Trait> Module<T> {
 
             // Only members are supposed to start auctions for already existing nfts
             if let ContentActor::Member(member_id) = actor {
-                let account_id = T::MemberOriginValidator::ensure_actor_origin(origin, *member_id)
-                    .map_err::<Error<T>, _>(|_| Error::<T>::ActorOriginAuthError.into())?;
+                let account_id = Self::authorize_auction_participant(origin, *member_id)?;
 
                 Self::ensure_vnft_ownership(&account_id, &vnft)?;
 
@@ -35,6 +34,28 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Authorize auction participant under given member id
+    pub(crate) fn authorize_auction_participant(
+        origin: T::Origin,
+        member_id: MemberId<T>,
+    ) -> Result<T::AccountId, Error<T>> {
+        T::MemberOriginValidator::ensure_actor_origin(origin, member_id)
+            .map_err(|_| Error::<T>::ActorOriginAuthError)
+    }
+
+    /// Ensure auction participant has sufficient balance to make bid
+    pub(crate) fn ensure_has_sufficient_balance(
+        participant: &T::AccountId,
+        bid: BalanceOf<T>,
+    ) -> DispatchResult {
+        ensure!(
+            T::NftCurrencyProvider::can_reserve(participant, bid),
+            Error::<T>::InsufficientBalance
+        );
+        Ok(())
+    }
+
+    /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
         auction_params: &AuctionParams<
             T::VNFTId,
@@ -49,6 +70,7 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_round_time_bounds_satisfied(auction_params.round_time)?;
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
+        Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
 
         Ok(())
     }
@@ -71,6 +93,19 @@ impl<T: Trait> Module<T> {
         ensure!(
             royalty >= Self::min_creator_royalty(),
             Error::<T>::RoyaltyLowerBoundExceeded
+        );
+        Ok(())
+    }
+
+    /// Ensure bid step bounds satisfied
+    pub(crate) fn ensure_bid_step_bounds_satisfied(bid_step: BalanceOf<T>) -> DispatchResult {
+        ensure!(
+            bid_step <= Self::max_bid_step(),
+            Error::<T>::AuctionBidStepUpperBoundExceeded
+        );
+        ensure!(
+            bid_step >= Self::min_bid_step(),
+            Error::<T>::AuctionBidStepLowerBoundExceeded
         );
         Ok(())
     }
@@ -129,7 +164,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Try complete auction when round time expired
-    pub fn try_complete_auction(auction: Auction<T>, video_id: T::VideoId) -> bool {
+    pub(crate) fn try_complete_auction(auction: &Auction<T>, video_id: T::VideoId) -> bool {
         let now = timestamp::Module::<T>::now();
         if (now - auction.last_bid_time) >= auction.round_time {
             Self::complete_auction(auction, video_id);
@@ -140,8 +175,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete auction
-    fn complete_auction(auction: Auction<T>, video_id: T::VideoId) {
+    pub(crate) fn complete_auction(auction: &Auction<T>, video_id: T::VideoId) {
+        // Remove auction entry
         <AuctionByVideoId<T>>::remove(video_id);
+
         match auction.auction_mode.clone() {
             AuctionMode::WithIssuance(royalty, _) => {
                 <Module<T>>::issue_vnft(auction, video_id, royalty)
@@ -153,7 +190,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Issue vnft and update mapping relations
-    pub(crate) fn issue_vnft(auction: Auction<T>, video_id: T::VideoId, royalty: Option<Royalty>) {
+    pub(crate) fn issue_vnft(auction: &Auction<T>, video_id: T::VideoId, royalty: Option<Royalty>) {
         let vnft_id = Self::next_video_nft_id();
 
         <VNFTIdByVideo<T>>::insert(video_id, vnft_id);
@@ -166,33 +203,33 @@ impl<T: Trait> Module<T> {
 
         <VNFTById<T>>::insert(
             vnft_id,
-            VNFT::new(auction.current_bidder.clone(), creator_royalty),
+            VNFT::new(auction.last_bidder.clone(), creator_royalty),
         );
 
         NextVNFTId::<T>::put(vnft_id + T::VNFTId::one());
 
-        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id, auction));
+        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id, auction.clone()));
     }
 
     /// Complete vnft transfer
-    pub(crate) fn complete_vnft_auction_transfer(auction: Auction<T>, vnft_id: T::VNFTId) {
+    pub(crate) fn complete_vnft_auction_transfer(auction: &Auction<T>, vnft_id: T::VNFTId) {
         let vnft = Self::vnft_by_vnft_id(vnft_id);
-        let current_bid = auction.current_bid;
+        let last_bid = auction.last_bid;
 
         if let Some((creator_account_id, creator_royalty)) = vnft.creator_royalty {
-            let royalty = creator_royalty * current_bid;
+            let royalty = creator_royalty * last_bid;
 
-            T::NftCurrencyProvider::slash_reserved(&auction.current_bidder, current_bid);
+            T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
 
             T::NftCurrencyProvider::deposit_creating(
                 &auction.auctioneer_account_id,
-                current_bid - royalty,
+                last_bid - royalty,
             );
             T::NftCurrencyProvider::deposit_creating(&creator_account_id, royalty);
         } else {
-            T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, current_bid);
+            T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
         }
 
-        <VNFTById<T>>::mutate(vnft_id, |vnft| vnft.owner = auction.current_bidder);
+        <VNFTById<T>>::mutate(vnft_id, |vnft| vnft.owner = auction.last_bidder.clone());
     }
 }

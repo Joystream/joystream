@@ -30,5 +30,13 @@ decl_error! {
         StartingPriceUpperBoundExceeded,
         /// Starting price lower bound exceeded
         StartingPriceLowerBoundExceeded,
+        /// Auction bid step upper bound exceeded
+        AuctionBidStepUpperBoundExceeded,
+        /// Auction bid step lower bound exceeded
+        AuctionBidStepLowerBoundExceeded,
+        /// Insufficient balance
+        InsufficientBalance,
+        /// Invalid bid
+        InvalidBid,
     }
 }

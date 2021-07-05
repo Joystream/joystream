@@ -96,6 +96,12 @@ decl_storage! {
 
         /// Max creator royalty
         pub MaxCreatorRoyalty get(fn max_creator_royalty) config(): Perbill;
+
+        /// Min auction bid step
+        pub MinBidStep get(fn min_bid_step) config(): BalanceOf<T>;
+
+        /// Max auction bid step
+        pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
     }
 }
 
@@ -132,7 +138,7 @@ decl_module! {
                 let auction = Self::auction_by_video_id(video_id);
 
                 // Try finalize already completed auction (issues new nft if required)
-                ensure!(Self::try_complete_auction(auction, video_id), Error::<T>::AuctionAlreadyStarted);
+                ensure!(Self::try_complete_auction(&auction, video_id), Error::<T>::AuctionAlreadyStarted);
                 return Ok(())
             }
 
@@ -143,6 +149,55 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::AuctionStarted(auctioneer, auction_params));
         }
+
+        /// Make auction bid
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn make_bid(
+            origin,
+            participant: MemberId<T>,
+            video_id: T::VideoId,
+            bid: BalanceOf<T>,
+        ) {
+
+            let auction_participant = Self::authorize_auction_participant(origin, participant)?;
+
+            // Ensure auction for given video id exists
+            let auction = Self::ensure_auction_exists(video_id)?;
+
+
+            // Ensure bidder have sufficient balance amount to reserve for bid
+            Self::ensure_has_sufficient_balance(&auction_participant, bid)?;
+
+            // Ensure new bid is greater then last bid + minimal bid step
+            auction.ensure_is_valid_bid::<T>(bid)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Try complete previous auction
+            if Self::try_complete_auction(&auction, video_id) {
+                return Ok(())
+            }
+
+            // Make auction bid
+            let auction = match &auction.buy_now_price {
+                // Instantly complete auction if bid is greater or equal then buy now price
+                Some(buy_now_price) if bid >= *buy_now_price => {
+                    Self::complete_auction(&auction, video_id);
+                    return Ok(())
+                }
+                _ => {
+                    let last_bid_time = timestamp::Module::<T>::now();
+                    auction.make_bid::<T>(auction_participant, bid, last_bid_time)
+                }
+            };
+
+            <AuctionByVideoId<T>>::insert(video_id, auction);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionBidMade(participant, video_id, bid));
+        }
     }
 }
 
@@ -151,6 +206,8 @@ decl_event!(
     where
         VideoId = <T as content::Trait>::VideoId,
         VNFTId = <T as Trait>::VNFTId,
+        Member = MemberId<T>,
+        Balance = BalanceOf<T>,
         ContentActor = ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
         AuctionParams = AuctionParams<
             <T as Trait>::VNFTId,
@@ -171,5 +228,6 @@ decl_event!(
         // Curators
         AuctionStarted(ContentActor, AuctionParams),
         NftIssued(VideoId, VNFTId, Auction),
+        AuctionBidMade(Member, VideoId, Balance),
     }
 );
