@@ -10,11 +10,6 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
-// use crate::{
-//     ContentDirectoryWorkingGroupInstance, GatewayWorkingGroupInstance,
-//     OperationsWorkingGroupInstance, StorageWorkingGroupInstance,
-// };
-
 use crate::constants::PRIMARY_PROBABILITY;
 
 use crate::{
