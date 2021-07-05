@@ -216,6 +216,7 @@ export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
   DataObjectId,
+  DynamicBagIdType,
   DynamicBagId,
   Voucher,
   DynamicBagType,

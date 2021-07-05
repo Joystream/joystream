@@ -450,6 +450,7 @@ declare module '@polkadot/types/types/registry' {
     'Option<DynamicBagDeletionPrize>': Option<DynamicBagDeletionPrize>;
     'Option<DynamicBagDeletionPrizeRecord>': Option<DynamicBagDeletionPrizeRecord>;
     'Option<DynamicBagId>': Option<DynamicBagId>;
+    'Option<DynamicBagIdType>': Option<DynamicBagIdType>;
     'Option<DynamicBagType>': Option<DynamicBagType>;
     'Option<EcdsaSignature>': Option<EcdsaSignature>;
     'Option<Ed25519Signature>': Option<Ed25519Signature>;
@@ -1453,6 +1454,7 @@ declare module '@polkadot/types/types/registry' {
     'Vec<DynamicBagDeletionPrize>': Vec<DynamicBagDeletionPrize>;
     'Vec<DynamicBagDeletionPrizeRecord>': Vec<DynamicBagDeletionPrizeRecord>;
     'Vec<DynamicBagId>': Vec<DynamicBagId>;
+    'Vec<DynamicBagIdType>': Vec<DynamicBagIdType>;
     'Vec<DynamicBagType>': Vec<DynamicBagType>;
     'Vec<EcdsaSignature>': Vec<EcdsaSignature>;
     'Vec<Ed25519Signature>': Vec<Ed25519Signature>;
@@ -2456,6 +2458,7 @@ declare module '@polkadot/types/types/registry' {
     DynamicBagDeletionPrize: DynamicBagDeletionPrize;
     DynamicBagDeletionPrizeRecord: DynamicBagDeletionPrizeRecord;
     DynamicBagId: DynamicBagId;
+    DynamicBagIdType: DynamicBagIdType;
     DynamicBagType: DynamicBagType;
     EcdsaSignature: EcdsaSignature;
     Ed25519Signature: Ed25519Signature;
