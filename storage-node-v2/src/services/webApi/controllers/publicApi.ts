@@ -10,7 +10,7 @@ import {
   createNonce,
   TokenExpirationPeriod,
 } from '../../../services/helpers/tokenNonceKeeper'
-import { parseBagId } from '../../../services/helpers/bagIdParser'
+import { parseBagId } from '../../helpers/bagTypes'
 
 import FileType from 'file-type'
 import readChunk from 'read-chunk'

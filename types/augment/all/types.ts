@@ -166,7 +166,11 @@ export interface BagId extends Enum {
 }
 
 /** @name BagIdType */
-export interface BagIdType extends u64 {}
+export interface BagIdType extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+}
 
 /** @name BalanceOfMint */
 export interface BalanceOfMint extends u128 {}
@@ -283,6 +287,9 @@ export interface ClassPropertyValue extends Null {}
 
 /** @name ContentId */
 export interface ContentId extends U8aFixed {}
+
+/** @name ContentIdSet */
+export interface ContentIdSet extends BTreeSet<Text> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
@@ -460,13 +467,18 @@ export interface DiscussionThread extends Struct {
 export interface DynamicBag extends u64 {}
 
 /** @name DynamicBagCreationPolicy */
-export interface DynamicBagCreationPolicy extends u64 {}
+export interface DynamicBagCreationPolicy extends Struct {
+  readonly numberOfStorageBuckets: u64;
+}
 
 /** @name DynamicBagId */
 export interface DynamicBagId extends u64 {}
 
 /** @name DynamicBagType */
-export interface DynamicBagType extends u64 {}
+export interface DynamicBagType extends Enum {
+  readonly isMember: boolean;
+  readonly isChannel: boolean;
+}
 
 /** @name ElectionParameters */
 export interface ElectionParameters extends Struct {

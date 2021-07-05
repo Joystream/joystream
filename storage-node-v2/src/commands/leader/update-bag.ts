@@ -1,7 +1,7 @@
 import { flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import { parseBagId } from '../../services/helpers/bagIdParser'
+import { parseBagId } from '../../services/helpers/bagTypes'
 import logger from '../../services/logger'
 
 export default class LeaderUpdateBag extends ApiCommandBase {
@@ -43,7 +43,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
 
     const bucket = flags.bucket ?? 0
 
-    logger.info('Update bag - add/remove storage buckets...')
+    logger.info('Updating the bag...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }

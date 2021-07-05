@@ -985,8 +985,15 @@
         "sizeUsed": "u64",
         "objectsUsed": "u64"
     },
-    "DynamicBagType": "u64",
-    "DynamicBagCreationPolicy": "u64",
+    "DynamicBagType": {
+        "_enum": [
+            "Member",
+            "Channel"
+        ]
+    },
+    "DynamicBagCreationPolicy": {
+        "numberOfStorageBuckets": "u64"
+    },
     "DynamicBag": "u64",
     "StaticBag": "u64",
     "StorageBucket": "u64",
@@ -1012,7 +1019,12 @@
         "size": "u64",
         "ipfsContentId": "Text"
     },
-    "BagIdType": "u64",
+    "BagIdType": {
+        "_enum": {
+            "Static": "Static",
+            "Dynamic": "Null"
+        }
+    },
     "UploadParameters": {
         "authenticationKey": "Text",
         "bagId": "BagId",
@@ -1020,5 +1032,6 @@
         "deletionPrizeSourceAccountId": "GenericAccountId"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
-    "DataObjectIdSet": "BTreeSet<DataObjectId>"
+    "DataObjectIdSet": "BTreeSet<DataObjectId>",
+    "ContentIdSet": "BTreeSet<Text>"
 }

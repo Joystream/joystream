@@ -4,7 +4,7 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
 export default class LeaderCancelInvite extends ApiCommandBase {
-  static description = `Cancels a storage bucket operator invite. Requires storage working group leader permissions.`
+  static description = `Cancel a storage bucket operator invite. Requires storage working group leader permissions.`
 
   static flags = {
     bucketId: flags.integer({
