@@ -104,6 +104,11 @@ use common::working_group::WorkingGroup;
 
 use storage_bucket_picker::StorageBucketPicker;
 
+// TODO: constants
+// Max number of distribution bucket families
+// Max number of distribution buckets per family.
+// Max number of pending invitations per distribution bucket.
+
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
     /// Validates upload parameters and conditions (like global uploading block).
@@ -171,43 +176,53 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Data object ID type.
     type DataObjectId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
+    + Member
+    + BaseArithmetic
+    + Codec
+    + Default
+    + Copy
+    + MaybeSerialize
+    + PartialEq;
 
     /// Storage bucket ID type.
     type StorageBucketId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
+    + Member
+    + BaseArithmetic
+    + Codec
+    + Default
+    + Copy
+    + MaybeSerialize
+    + PartialEq;
 
     /// Distribution bucket ID type.
     type DistributionBucketId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
+    + Member
+    + BaseArithmetic
+    + Codec
+    + Default
+    + Copy
+    + MaybeSerialize
+    + PartialEq;
+
+    /// Distribution bucket family ID type.
+    type DistributionBucketFamilyId: Parameter
+    + Member
+    + BaseArithmetic
+    + Codec
+    + Default
+    + Copy
+    + MaybeSerialize
+    + PartialEq;
 
     /// Channel ID type (part of the dynamic bag ID).
     type ChannelId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
+    + Member
+    + BaseArithmetic
+    + Codec
+    + Default
+    + Copy
+    + MaybeSerialize
+    + PartialEq;
 
     /// Defines max number of data objects per bag.
     type MaxNumberOfDataObjectsPerBag: Get<u64>;
@@ -239,17 +254,31 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Something that provides randomness in the runtime.
     type Randomness: Randomness<Self::Hash>;
 
-    /// Demand the working group leader authorization.
+    /// Demand the storage working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
+    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
 
-    /// Validate origin for the worker.
+    /// Validate origin for the storage worker.
     /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_worker_origin(origin: Self::Origin, worker_id: WorkerId<Self>) -> DispatchResult;
+    fn ensure_storage_worker_origin(
+        origin: Self::Origin,
+        worker_id: WorkerId<Self>,
+    ) -> DispatchResult;
 
-    /// Validate worker existence.
+    /// Validate storage worker existence.
     /// TODO: Refactor after merging with the Olympia release.
-    fn ensure_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
+    fn ensure_storage_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
+
+    /// Demand the distribution group leader authorization.
+    /// TODO: Refactor after merging with the Olympia release.
+    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
+
+    /// Validate origin for the distribution worker.
+    /// TODO: Refactor after merging with the Olympia release.
+    fn ensure_distribution_worker_origin(
+        origin: Self::Origin,
+        worker_id: WorkerId<Self>,
+    ) -> DispatchResult;
 }
 
 /// Operations with local pallet account.
@@ -360,7 +389,7 @@ pub struct DataObject<Balance> {
 
 /// Type alias for the BagObject.
 pub type Bag<T> =
-    BagObject<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
+BagObject<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
 
 /// Bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -383,7 +412,7 @@ pub struct BagObject<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
 }
 
 impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
-    BagObject<StorageBucketId, DistributionBucketId, Balance>
+BagObject<StorageBucketId, DistributionBucketId, Balance>
 {
     // Add and/or remove storage buckets.
     fn update_buckets(
@@ -495,7 +524,7 @@ impl<MemberId: Default, ChannelId> Default for DynamicBagIdType<MemberId, Channe
 }
 
 impl<MemberId, ChannelId> From<DynamicBagIdType<MemberId, ChannelId>>
-    for BagIdType<MemberId, ChannelId>
+for BagIdType<MemberId, ChannelId>
 {
     fn from(dynamic_bag_id: DynamicBagIdType<MemberId, ChannelId>) -> Self {
         BagIdType::Dynamic(dynamic_bag_id)
@@ -542,7 +571,7 @@ pub struct UploadParametersObject<MemberId, ChannelId, AccountId, Balance> {
 
 /// Alias for the DynamicBagDeletionPrizeObject
 pub type DynamicBagDeletionPrize<T> =
-    DynamicBagDeletionPrizeObject<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+DynamicBagDeletionPrizeObject<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
 
 /// Deletion prize data for the dynamic bag. Requires on the dynamic bag creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -685,6 +714,26 @@ impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     }
 }
 
+/// Distribution bucket family.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct DistributionBucketFamily<DistributionBucketId: Ord> {
+    /// Distribution bucket map.
+    pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>,
+}
+
+/// Distribution bucket.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct DistributionBucket {
+    //TODO:
+// pending_invitations: BTreeSet<WorkerId>,
+// number_of_pending_data_objects: u32,
+// accepting_new_bags: boolean,
+// distributing: boolean,
+// number_of_operators: u32,
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Storage {
         /// Defines whether all new uploads blocked
@@ -729,6 +778,15 @@ decl_storage! {
         pub DataObjectsById get (fn data_object_by_id): double_map
             hasher(blake2_128_concat) BagId<T>,
             hasher(blake2_128_concat) T::DataObjectId => DataObject<BalanceOf<T>>;
+
+        /// Distribution bucket family id counter. Starts at zero.
+        pub NextDistributionBucketFamilyId get(fn next_distribution_bucket_family_id):
+            T::DistributionBucketFamilyId;
+
+        /// Distribution bucket families.
+        pub DistributionBucketFamilyById get (fn distribution_bucket_family_by_id):
+            map hasher(blake2_128_concat) T::DistributionBucketFamilyId =>
+            DistributionBucketFamily<T::DistributionBucketId>;
     }
 }
 
@@ -744,6 +802,7 @@ decl_event! {
         DynamicBagId = DynamicBagId<T>,
         <T as frame_system::Trait>::AccountId,
         Balance = BalanceOf<T>,
+        <T as Trait>::DistributionBucketFamilyId,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -893,6 +952,12 @@ decl_event! {
         /// - new total objects size
         /// - new total objects number
         BagObjectsChanged(BagId, u64, u64),
+
+        /// Emits on updating the number of storage buckets in dynamic bag creation policy.
+        /// Params
+        /// - dynamic bag type
+        /// - new number of storage buckets
+        DistributionBucketFamilyCreated(DistributionBucketFamilyId),
     }
 }
 
@@ -1053,7 +1118,7 @@ decl_module! {
             origin,
             storage_bucket_id: T::StorageBucketId,
         ){
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1076,7 +1141,7 @@ decl_module! {
         /// Update whether uploading is globally blocked.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_uploading_blocked_status(origin, new_status: bool) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1090,7 +1155,7 @@ decl_module! {
         /// Updates size-based pricing of new objects uploaded.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_data_size_fee(origin, new_data_size_fee: BalanceOf<T>) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1104,7 +1169,7 @@ decl_module! {
         /// Updates "Storage buckets per bag" number limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
                 new_limit,
@@ -1128,7 +1193,7 @@ decl_module! {
             new_objects_size: u64,
             new_objects_number: u64,
         ) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1149,7 +1214,7 @@ decl_module! {
             dynamic_bag_type: DynamicBagType,
             number_of_storage_buckets: u64,
         ) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1176,7 +1241,7 @@ decl_module! {
             remove_hashes: BTreeSet<ContentId>,
             add_hashes: BTreeSet<ContentId>
         ){
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             // Get only hashes that exist in the blacklist.
             let verified_remove_hashes = Self::get_existing_hashes(&remove_hashes);
@@ -1219,7 +1284,7 @@ decl_module! {
             size_limit: u64,
             objects_limit: u64,
         ) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             let voucher = Voucher {
                 size_limit,
@@ -1268,7 +1333,7 @@ decl_module! {
             add_buckets: BTreeSet<T::StorageBucketId>,
             remove_buckets: BTreeSet<T::StorageBucketId>,
         ) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             Self::ensure_bag_exists(&bag_id)?;
 
@@ -1310,7 +1375,7 @@ decl_module! {
         /// Cancel pending storage bucket invite. An invitation must be pending.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_storage_bucket_operator_invite(origin, storage_bucket_id: T::StorageBucketId){
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1336,7 +1401,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             operator_id: WorkerId<T>,
         ){
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1364,7 +1429,7 @@ decl_module! {
             origin,
             storage_bucket_id: T::StorageBucketId,
         ){
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1391,7 +1456,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             accepting_new_bags: bool
         ) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1416,7 +1481,7 @@ decl_module! {
             new_objects_size_limit: u64,
             new_objects_number_limit: u64,
         ) {
-            T::ensure_working_group_leader_origin(origin)?;
+            T::ensure_storage_working_group_leader_origin(origin)?;
 
             Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1460,7 +1525,7 @@ decl_module! {
             worker_id: WorkerId<T>,
             storage_bucket_id: T::StorageBucketId
         ) {
-            T::ensure_worker_origin(origin, worker_id)?;
+            T::ensure_storage_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1487,7 +1552,7 @@ decl_module! {
             storage_bucket_id: T::StorageBucketId,
             metadata: Vec<u8>
         ) {
-            T::ensure_worker_origin(origin, worker_id)?;
+            T::ensure_storage_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1511,7 +1576,7 @@ decl_module! {
             bag_id: BagId<T>,
             data_objects: BTreeSet<T::DataObjectId>,
         ) {
-            T::ensure_worker_origin(origin, worker_id)?;
+            T::ensure_storage_worker_origin(origin, worker_id)?;
 
             let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
 
@@ -1544,6 +1609,31 @@ decl_module! {
                     data_objects
                 )
             );
+        }
+
+        /// Create a distribution family.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_distribution_bucket_family(origin) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            // TODO: check max bucket families number
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let family = DistributionBucketFamily {
+                distribution_buckets: BTreeMap::new(),
+            };
+
+            let family_id = Self::next_distribution_bucket_family_id();
+
+            <NextDistributionBucketFamilyId<T>>::put(family_id + One::one());
+
+            <DistributionBucketFamilyById<T>>::insert(family_id, family);
+
+            Self::deposit_event(RawEvent::DistributionBucketFamilyCreated(family_id));
         }
     }
 }
@@ -1928,7 +2018,7 @@ impl<T: Trait> Module<T> {
 
             id
         })
-        .take(data_objects.len());
+            .take(data_objects.len());
 
         let data_objects_map = ids.zip(data_objects).collect::<BTreeMap<_, _>>();
 
@@ -2355,7 +2445,7 @@ impl<T: Trait> Module<T> {
     // Verifies storage provider operator existence.
     fn ensure_storage_provider_operator_exists(operator_id: &WorkerId<T>) -> DispatchResult {
         ensure!(
-            T::ensure_worker_exists(operator_id).is_ok(),
+            T::ensure_storage_worker_exists(operator_id).is_ok(),
             Error::<T>::StorageProviderOperatorDoesntExist
         );
 

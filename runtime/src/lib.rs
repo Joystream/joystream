@@ -565,6 +565,9 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance4;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
@@ -575,6 +578,11 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<DistributionWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -665,6 +673,7 @@ impl storage::Trait for Runtime {
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type DistributionBucketId = DistributionBucketId;
+    type DistributionBucketFamilyId = DistributionBucketFamilyId;
     type ChannelId = ChannelId;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
@@ -677,18 +686,29 @@ impl storage::Trait for Runtime {
     type Randomness = RandomnessCollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
 
-    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
     }
 
-    fn ensure_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
+    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
         StorageWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
     }
 
-    fn ensure_worker_exists(worker_id: &ActorId) -> DispatchResult {
+    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
         StorageWorkingGroup::ensure_worker_exists(&worker_id)
             .map(|_| ())
             .map_err(|err| err.into())
+    }
+
+    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        DistributionWorkingGroup::ensure_origin_is_active_leader(origin)
+    }
+
+    fn ensure_distribution_worker_origin(
+        origin: Self::Origin,
+        worker_id: ActorId,
+    ) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
     }
 }
 
@@ -755,6 +775,7 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         //
         Storage: storage::{Module, Call, Storage, Event<T>},
     }

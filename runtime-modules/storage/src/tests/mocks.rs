@@ -68,8 +68,10 @@ parameter_types! {
     };
 }
 
-pub const WG_LEADER_ACCOUNT_ID: u64 = 100001;
+pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
+pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 
@@ -78,6 +80,7 @@ impl crate::Trait for Test {
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketId = u64;
+    type DistributionBucketFamilyId = u64;
     type ChannelId = u64;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
@@ -90,17 +93,17 @@ impl crate::Trait for Test {
     type Randomness = CollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
 
-    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
-        if account_id != WG_LEADER_ACCOUNT_ID {
+        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
             Err(DispatchError::BadOrigin)
         } else {
             Ok(())
         }
     }
 
-    fn ensure_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
+    fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
         if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
@@ -110,12 +113,32 @@ impl crate::Trait for Test {
         }
     }
 
-    fn ensure_worker_exists(worker_id: &u64) -> DispatchResult {
+    fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
         let allowed_storage_providers =
             vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
 
         if !allowed_storage_providers.contains(worker_id) {
             Err(DispatchError::Other("Invalid worker"))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        if account_id != DISTRIBUTION_WG_LEADER_ACCOUNT_ID {
+            Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
+            Err(DispatchError::BadOrigin)
         } else {
             Ok(())
         }
