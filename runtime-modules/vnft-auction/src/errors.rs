@@ -39,8 +39,8 @@ decl_error! {
         /// Invalid bid
         InvalidBid,
         /// Already active auction cannot be cancelled
-        ActionIsActive,
+        ActionIsAlreadyActive,
         /// Provided actor is not an auction auctioneer.
-        ActorIsNotAuctioneer,
+        ActorIsNotAnAuctioneer,
     }
 }

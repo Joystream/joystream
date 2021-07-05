@@ -127,7 +127,7 @@ impl<
     }
 
     pub fn ensure_is_not_active<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_active(), Error::<T>::ActionIsActive);
+        ensure!(self.is_active(), Error::<T>::ActionIsAlreadyActive);
         Ok(())
     }
 
@@ -137,7 +137,7 @@ impl<
     ) -> DispatchResult {
         ensure!(
             self.auctioneer.eq(auctioneer),
-            Error::<T>::ActorIsNotAuctioneer
+            Error::<T>::ActorIsNotAnAuctioneer
         );
         Ok(())
     }
