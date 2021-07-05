@@ -256,8 +256,55 @@ mappings:
     - event: gatewayWorkingGroup.TerminatedLeader
       handler: gatewayWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
 
-    # - event: storage.StorageBucketCreated
-    #   handler: storage_StorageBucketCreated
+    # storage v2
+    - event: storage.StorageBucketCreated
+      handler: storage_StorageBucketCreated
+    - event: storage.StorageBucketInvitationAccepted
+      handler: storage_StorageBucketInvitationAccepted
+    - event: storage.StorageBucketsUpdatedForBag
+      handler: storage_StorageBucketsUpdatedForBag
+    - event: storage.DataObjectdUploaded
+      handler: storage_DataObjectdUploaded
+    - event: storage.StorageOperatorMetadataSet
+      handler: storage_StorageOperatorMetadataSet
+    - event: storage.StorageBucketVoucherLimitsSet
+      handler: storage_StorageBucketVoucherLimitsSet
+    - event: storage.PendingDataObjectsAccepted
+      handler: storage_PendingDataObjectsAccepted
+    - event: storage.StorageBucketInvitationCancelled
+      handler: storage_StorageBucketInvitationCancelled
+    - event: storage.StorageBucketOperatorInvited
+      handler: storage_StorageBucketOperatorInvited
+    - event: storage.StorageBucketOperatorRemoved
+      handler: storage_StorageBucketOperatorRemoved
+    - event: storage.UploadingBlockStatusUpdated
+      handler: storage_UploadingBlockStatusUpdated
+    - event: storage.DataObjectPerMegabyteFeeUpdated
+      handler: storage_DataObjectPerMegabyteFeeUpdated
+    - event: storage.StorageBucketsPerBagLimitUpdated
+      handler: storage_StorageBucketsPerBagLimitUpdated
+    - event: storage.StorageBucketsVoucherMaxLimitsUpdated
+      handler: storage_StorageBucketsVoucherMaxLimitsUpdated
+    - event: storage.DataObjectsMoved
+      handler: storage_DataObjectsMoved
+    - event: storage.DataObjectsDeleted
+      handler: storage_DataObjectsDeleted
+    - event: storage.StorageBucketStatusUpdated
+      handler: storage_StorageBucketStatusUpdated
+    - event: storage.UpdateBlacklist
+      handler: storage_UpdateBlacklist
+    - event: storage.DynamicBagDeleted
+      handler: storage_DynamicBagDeleted
+    - event: storage.DynamicBagCreated
+      handler: storage_DynamicBagCreated
+    - event: storage.DeletionPrizeChanged
+      handler: storage_DeletionPrizeChanged
+    - event: storage.VoucherChanged
+      handler: storage_VoucherChanged
+    - event: storage.StorageBucketDeleted
+      handler: storage_StorageBucketDeleted
+    - event: storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
+      handler: storage_NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
