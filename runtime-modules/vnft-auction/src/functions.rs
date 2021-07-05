@@ -27,8 +27,7 @@ impl<T: Trait> Module<T> {
             }
         } else {
             // TODO: Move to common pallet
-            content::ensure_actor_authorized_to_create_channel::<T>(origin.clone(), &actor)
-                .map_err::<Error<T>, _>(|_| Error::<T>::ActorNotAuthorizedToIssueNft.into());
+            Self::authorize_content_actor(origin.clone(), actor)?;
             let account_id = ensure_signed(origin)?;
             Ok(account_id)
         }
@@ -41,6 +40,16 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::AccountId, Error<T>> {
         T::MemberOriginValidator::ensure_actor_origin(origin, member_id)
             .map_err(|_| Error::<T>::ActorOriginAuthError)
+    }
+
+    /// Authorize content actor
+    pub(crate) fn authorize_content_actor(
+        origin: T::Origin,
+        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+    ) -> Result<(), Error<T>> {
+        // TODO: Move to common pallet
+        content::ensure_actor_authorized_to_create_channel::<T>(origin.clone(), actor)
+            .map_err(|_| Error::<T>::ActorNotAuthorizedToIssueNft)
     }
 
     /// Ensure auction participant has sufficient balance to make bid
@@ -191,6 +200,13 @@ impl<T: Trait> Module<T> {
 
     /// Issue vnft and update mapping relations
     pub(crate) fn issue_vnft(auction: &Auction<T>, video_id: T::VideoId, royalty: Option<Royalty>) {
+        let last_bid = auction.last_bid;
+
+        // Slash last bidder bid and deposit it into auctioneer account
+        T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
+        T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
+
+        // Issue vnft
         let vnft_id = Self::next_video_nft_id();
 
         <VNFTIdByVideo<T>>::insert(video_id, vnft_id);
@@ -219,14 +235,21 @@ impl<T: Trait> Module<T> {
         if let Some((creator_account_id, creator_royalty)) = vnft.creator_royalty {
             let royalty = creator_royalty * last_bid;
 
+            // Slash last bidder bid
             T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
 
+            // Deposit bid, exluding royalty amount into auctioneer account
             T::NftCurrencyProvider::deposit_creating(
                 &auction.auctioneer_account_id,
                 last_bid - royalty,
             );
+
+            // Deposit royalty into creator account
             T::NftCurrencyProvider::deposit_creating(&creator_account_id, royalty);
         } else {
+            // Slash last bidder bid and deposit it into auctioneer account
+            T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
+
             T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
         }
 

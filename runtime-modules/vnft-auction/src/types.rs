@@ -54,12 +54,12 @@ pub struct AuctionRecord<
 }
 
 impl<
-        AccountId: Default,
+        AccountId: Default + PartialEq,
         VNFTId: Default,
         Moment: BaseArithmetic + Copy + Default,
-        CuratorGroupId: Default + Copy,
-        CuratorId: Default + Copy,
-        MemberId: Default + Copy,
+        CuratorGroupId: Default + Copy + PartialEq,
+        CuratorId: Default + Copy + PartialEq,
+        MemberId: Default + Copy + PartialEq,
         Balance: Default + BaseArithmetic,
     > AuctionRecord<AccountId, VNFTId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
 {
@@ -119,6 +119,27 @@ impl<
         self.last_bid = bid;
         self.last_bid_time = last_bid_time;
         self
+    }
+
+    // We assume that default AccountId can not make any bids
+    fn is_active(&self) -> bool {
+        self.last_bidder.eq(&AccountId::default())
+    }
+
+    pub fn ensure_is_not_active<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.is_active(), Error::<T>::ActionIsActive);
+        Ok(())
+    }
+
+    pub fn ensure_is_auctioneer<T: Trait>(
+        &self,
+        auctioneer: &ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    ) -> DispatchResult {
+        ensure!(
+            self.auctioneer.eq(auctioneer),
+            Error::<T>::ActorIsNotAuctioneer
+        );
+        Ok(())
     }
 }
 

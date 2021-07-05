@@ -38,5 +38,9 @@ decl_error! {
         InsufficientBalance,
         /// Invalid bid
         InvalidBid,
+        /// Already active auction cannot be cancelled
+        ActionIsActive,
+        /// Provided actor is not an auction auctioneer.
+        ActorIsNotAuctioneer,
     }
 }

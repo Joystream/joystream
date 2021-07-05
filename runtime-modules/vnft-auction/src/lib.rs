@@ -150,6 +150,39 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionStarted(auctioneer, auction_params));
         }
 
+        /// Cancel video auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_auction(
+            origin,
+            auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            video_id: T::VideoId,
+        ) {
+
+            Self::authorize_content_actor(origin, &auctioneer)?;
+
+            // Ensure auction for given video id exists
+            let auction = Self::ensure_auction_exists(video_id)?;
+
+            // Ensure given auction has no participants
+            auction.ensure_is_not_active::<T>()?;
+
+            auction.ensure_is_auctioneer::<T>(&auctioneer)?;
+
+            // Try complete previous auction
+            if Self::try_complete_auction(&auction, video_id) {
+                return Ok(())
+            }
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <AuctionByVideoId<T>>::remove(video_id);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, video_id));
+        }
+
         /// Make auction bid
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn make_bid(
@@ -180,15 +213,27 @@ decl_module! {
                 return Ok(())
             }
 
+            let last_bid_time = timestamp::Module::<T>::now();
+
+            // Unreserve previous bidder balance
+            T::NftCurrencyProvider::unreserve(&auction.last_bidder, auction.last_bid);
+
             // Make auction bid
-            let auction = match &auction.buy_now_price {
+            let auction = match *&auction.buy_now_price {
                 // Instantly complete auction if bid is greater or equal then buy now price
-                Some(buy_now_price) if bid >= *buy_now_price => {
+                Some(buy_now_price) if bid >= buy_now_price => {
+                    // Reseve balance for current bid
+                    // Can not failt, needed check made
+                    T::NftCurrencyProvider::reserve(&auction_participant, buy_now_price)?;
+
+                    let auction = auction.make_bid::<T>(auction_participant, buy_now_price, last_bid_time);
                     Self::complete_auction(&auction, video_id);
                     return Ok(())
                 }
                 _ => {
-                    let last_bid_time = timestamp::Module::<T>::now();
+                    // Reseve balance for current bid
+                    // Can not failt, needed check made
+                    T::NftCurrencyProvider::reserve(&auction_participant, bid)?;
                     auction.make_bid::<T>(auction_participant, bid, last_bid_time)
                 }
             };
@@ -229,5 +274,6 @@ decl_event!(
         AuctionStarted(ContentActor, AuctionParams),
         NftIssued(VideoId, VNFTId, Auction),
         AuctionBidMade(Member, VideoId, Balance),
+        AuctionCancelled(ContentActor, VideoId),
     }
 );
