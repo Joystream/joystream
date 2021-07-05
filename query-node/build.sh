@@ -10,12 +10,13 @@ set -a
 set +a
 
 # only use this when new Hydra releases and contents of `generated/` folder needs to be refreshed
-#yarn clean
-#yarn codegen:noinstall
-#yarn codegen:typegen # if this fails try to run this command outside of yarn workspaces
+yarn clean
+yarn codegen:noinstall
+yarn typegen # if this fails try to run this command outside of yarn workspaces
 
-yarn query-node:build
-yarn mappings:build
+yarn workspace query-node codegen
+yarn workspace query-node build
+yarn workspace query-node-mappings build
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
