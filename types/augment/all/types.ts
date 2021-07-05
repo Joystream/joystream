@@ -1240,15 +1240,21 @@ export interface StakingStatus extends Enum {
 export interface Static extends Enum {
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
 }
 
 /** @name StaticBag */
-export interface StaticBag extends u64 {}
+export interface StaticBag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: Vec<u64>;
+}
 
 /** @name StaticBagId */
 export interface StaticBagId extends Enum {
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
 }
 
 /** @name Status */

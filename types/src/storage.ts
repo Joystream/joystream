@@ -1,7 +1,8 @@
-import { Null, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet } from '@polkadot/types'
+import { Null, u128, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from './common'
+import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
 
+export class BalanceOf extends u128 {}
 export class DataObjectId extends u64 {}
 export class StorageBucketId extends u64 {}
 
@@ -20,9 +21,40 @@ export class StorageBucketsPerBagValueConstraint
 //TODO: implement these types
 export class DynamicBagId extends u64 {}
 export class DynamicBag extends u64 {}
-export class StaticBag extends u64 {}
-//
 
+export type DataObjectType = {
+  accepted: bool
+  deletion_prize: BalanceOf
+  size: u64
+}
+
+export class DataObject
+  extends JoyStructDecorated({
+    accepted: bool,
+    deletion_prize: BalanceOf,
+    size: u64,
+  })
+  implements DataObjectType {}
+
+export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
+export class DistributionBucketId extends u64 {}
+export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
+export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
+
+export type StaticBagType = {
+  objects: DataObjectIdMap
+  stored_by: StorageBucketIdSet
+  distributed_by: DistributionBucketSet
+}
+
+export class StaticBag
+  extends JoyStructDecorated({
+    objects: DataObjectIdMap,
+    stored_by: StorageBucketIdSet,
+    distributed_by: DistributionBucketSet,
+  })
+  implements StaticBagType {}
 
 export type DynamicBagCreationPolicyType = {
   numberOfStorageBuckets: u64
@@ -43,7 +75,7 @@ export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
 
 export const StaticBagIdDef = {
   Council: Null,
-  WorkingGroup: Null,
+  WorkingGroup: WorkingGroup,
 } as const
 export type StaticBagIdKey = keyof typeof StaticBagIdDef
 export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
@@ -77,32 +109,28 @@ export class Voucher
   implements VoucherType {}
 
 export const StorageBucketOperatorStatusDef = {
-    Missing: Null,
-    InvitedStorageWorker: u64,
-    StorageWorker: u64
+  Missing: Null,
+  InvitedStorageWorker: u64,
+  StorageWorker: u64,
 } as const
 export type StorageBucketOperatorStatusKey = keyof typeof StorageBucketOperatorStatusDef
 export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
 
 export type StorageBucketType = {
+  operator_status: StorageBucketOperatorStatus
+  accepting_new_bags: bool
+  voucher: Voucher
+  metadata: Text
+}
+
+export class StorageBucket
+  extends JoyStructDecorated({
     operator_status: StorageBucketOperatorStatus,
     accepting_new_bags: bool,
     voucher: Voucher,
     metadata: Text,
-}
-
-export class StorageBucket
-    extends JoyStructDecorated({
-        operator_status: StorageBucketOperatorStatus,
-        accepting_new_bags: bool,
-        voucher: Voucher,
-        metadata: Text,
-    })
-    implements StorageBucketType {}
-
-export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
-
-export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+  })
+  implements StorageBucketType {}
 
 export type DataObjectCreationParametersType = {
   size: u64
@@ -156,6 +184,6 @@ export const storageTypes: RegistryTypes = {
   DataObjectIdSet,
   ContentIdSet,
   ContentId,
-  StorageBucketOperatorStatus
+  StorageBucketOperatorStatus,
 }
 export default storageTypes
