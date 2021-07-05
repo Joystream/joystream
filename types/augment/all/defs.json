@@ -552,7 +552,7 @@
         "identity": "IPNSIdentity",
         "expires_at": "u32"
     },
-    "ContentId": "[u8;32]",
+    "ContentId": "Text",
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
@@ -571,7 +571,7 @@
     },
     "DataObjectStorageRelationshipId": "u64",
     "DataObjectStorageRelationship": {
-        "content_id": "ContentId",
+        "content_id": "Hash",
         "storage_provider": "StorageProviderId",
         "ready": "bool"
     },
@@ -580,7 +580,7 @@
         "description": "Text",
         "active": "bool"
     },
-    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
+    "DataObjectsMap": "BTreeMap<[u8;32],DataObject>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -996,7 +996,12 @@
     },
     "DynamicBag": "u64",
     "StaticBag": "u64",
-    "StorageBucket": "u64",
+    "StorageBucket": {
+        "operator_status": "StorageBucketOperatorStatus",
+        "accepting_new_bags": "bool",
+        "voucher": "Voucher",
+        "metadata": "Text"
+    },
     "StaticBagId": {
         "_enum": [
             "Council",
@@ -1033,5 +1038,12 @@
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
-    "ContentIdSet": "BTreeSet<Text>"
+    "ContentIdSet": "BTreeSet<ContentId>",
+    "StorageBucketOperatorStatus": {
+        "_enum": {
+            "Missing": "Null",
+            "InvitedStorageWorker": "u64",
+            "StorageWorker": "u64"
+        }
+    }
 }

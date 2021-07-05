@@ -11,8 +11,8 @@ export async function createStorageBucket(
   account: KeyringPair,
   invitedWorker: number | null = null,
   allowedNewBags = true,
-  sizeLimit = 0,
-  objectsLimit = 0
+  sizeLimit: number = 0,
+  objectsLimit: number = 0
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
