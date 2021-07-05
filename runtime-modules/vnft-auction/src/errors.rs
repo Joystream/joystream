@@ -8,8 +8,10 @@ decl_error! {
         AuctionDoesNotExist,
         /// Vnft auction for given video_id have been started already
         AuctionAlreadyStarted,
-        /// VNFT does not exist
+        /// vNFT does not exist
         VNFTDoesNotExist,
+        /// vNFT for given video id already exists
+        VNFTAlreadyExists,
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
         /// Actor origin authorization error happened

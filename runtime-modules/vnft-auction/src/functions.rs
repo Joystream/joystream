@@ -73,6 +73,7 @@ impl<T: Trait> Module<T> {
             BalanceOf<T>,
         >,
     ) -> DispatchResult {
+        Self::ensure_vnft_does_not_exist(auction_params.video_id)?;
         if let AuctionMode::WithIssuance(Some(royalty), _) = auction_params.auction_mode {
             Self::ensure_royalty_bounds_satisfied(royalty)?;
         }
@@ -152,10 +153,10 @@ impl<T: Trait> Module<T> {
         <AuctionByVideoId<T>>::contains_key(video_id)
     }
 
-    /// Check whether vnft for given vnft id exists
-    pub(crate) fn is_vnft_exist(vnft_id: T::VNFTId) -> bool {
-        <VNFTById<T>>::contains_key(vnft_id)
-    }
+    // /// Check whether vnft for given vnft id exists
+    // pub(crate) fn is_vnft_exist(vnft_id: T::VNFTId) -> bool {
+
+    // }
 
     /// Ensure auction for given video id exists
     pub(crate) fn ensure_auction_exists(video_id: T::VideoId) -> Result<Auction<T>, Error<T>> {
@@ -168,8 +169,20 @@ impl<T: Trait> Module<T> {
 
     /// Ensure given vnft exists
     pub(crate) fn ensure_vnft_exists(vnft_id: T::VNFTId) -> Result<VNFT<T::AccountId>, Error<T>> {
-        ensure!(Self::is_vnft_exist(vnft_id), Error::<T>::VNFTDoesNotExist);
+        ensure!(
+            <VNFTById<T>>::contains_key(vnft_id),
+            Error::<T>::VNFTDoesNotExist
+        );
         Ok(Self::vnft_by_vnft_id(vnft_id))
+    }
+
+    /// Ensure given video id vnft relation does not exist
+    pub(crate) fn ensure_vnft_does_not_exist(video_id: T::VideoId) -> DispatchResult {
+        ensure!(
+            !<VNFTIdByVideo<T>>::contains_key(video_id),
+            Error::<T>::VNFTAlreadyExists
+        );
+        Ok(())
     }
 
     /// Try complete auction when round time expired
@@ -190,41 +203,43 @@ impl<T: Trait> Module<T> {
 
         match auction.auction_mode.clone() {
             AuctionMode::WithIssuance(royalty, _) => {
-                <Module<T>>::issue_vnft(auction, video_id, royalty)
+                let last_bid = auction.last_bid;
+
+                // Slash last bidder bid and deposit it into auctioneer account
+                T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
+                T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
+
+                let creator_royalty = if let Some(royalty) = royalty {
+                    Some((auction.auctioneer_account_id.clone(), royalty))
+                } else {
+                    None
+                };
+
+                <Module<T>>::issue_vnft(auction.last_bidder.clone(), video_id, creator_royalty)
             }
             AuctionMode::WithoutIsuance(vnft_id) => {
                 <Module<T>>::complete_vnft_auction_transfer(auction, vnft_id)
             }
         }
+        Self::deposit_event(RawEvent::AuctionCompleted(video_id, auction.to_owned()));
     }
 
     /// Issue vnft and update mapping relations
-    pub(crate) fn issue_vnft(auction: &Auction<T>, video_id: T::VideoId, royalty: Option<Royalty>) {
-        let last_bid = auction.last_bid;
-
-        // Slash last bidder bid and deposit it into auctioneer account
-        T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
-        T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
-
+    pub(crate) fn issue_vnft(
+        who: T::AccountId,
+        video_id: T::VideoId,
+        creator_royalty: Option<(T::AccountId, Royalty)>,
+    ) {
         // Issue vnft
         let vnft_id = Self::next_video_nft_id();
 
         <VNFTIdByVideo<T>>::insert(video_id, vnft_id);
 
-        let creator_royalty = if let Some(royalty) = royalty {
-            Some((auction.auctioneer_account_id.clone(), royalty))
-        } else {
-            None
-        };
-
-        <VNFTById<T>>::insert(
-            vnft_id,
-            VNFT::new(auction.last_bidder.clone(), creator_royalty),
-        );
+        <VNFTById<T>>::insert(vnft_id, VNFT::new(who, creator_royalty));
 
         NextVNFTId::<T>::put(vnft_id + T::VNFTId::one());
 
-        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id, auction.clone()));
+        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id));
     }
 
     /// Complete vnft transfer

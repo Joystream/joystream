@@ -168,14 +168,14 @@ decl_module! {
 
             auction.ensure_is_auctioneer::<T>(&auctioneer)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // Try complete previous auction
             if Self::try_complete_auction(&auction, video_id) {
                 return Ok(())
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             <AuctionByVideoId<T>>::remove(video_id);
 
@@ -243,6 +243,42 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::AuctionBidMade(participant, video_id, bid));
         }
+
+        /// Issue vNFT
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn issue(
+            origin,
+            auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            video_id: T::VideoId,
+            royalty: Option<Royalty>,
+        ) {
+
+            Self::authorize_content_actor(origin.clone(), &auctioneer)?;
+
+            let content_actor_account_id = ensure_signed(origin)?;
+
+            Self::ensure_vnft_does_not_exist(video_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Try complete auction
+            if Self::is_auction_exist(video_id) {
+
+                let auction = Self::auction_by_video_id(video_id);
+
+                // Try finalize already completed auction (issues new nft if required)
+                ensure!(Self::try_complete_auction(&auction, video_id), Error::<T>::AuctionAlreadyStarted);
+                return Ok(())
+            }
+
+            // Issue vNFT
+
+            let royalty = royalty.map(|royalty| (content_actor_account_id.clone(), royalty));
+
+            Self::issue_vnft(content_actor_account_id, video_id, royalty);
+        }
     }
 }
 
@@ -270,10 +306,10 @@ decl_event!(
             BalanceOf<T>,
         >,
     {
-        // Curators
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(VideoId, VNFTId, Auction),
+        NftIssued(VideoId, VNFTId),
         AuctionBidMade(Member, VideoId, Balance),
         AuctionCancelled(ContentActor, VideoId),
+        AuctionCompleted(VideoId, Auction),
     }
 );
