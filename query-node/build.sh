@@ -14,10 +14,13 @@ yarn clean
 yarn codegen:noinstall
 yarn typegen # if this fails try to run this command outside of yarn workspaces
 
-yarn workspace query-node codegen
-yarn workspace query-node build
-yarn workspace query-node-mappings build
-
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
+
+yarn workspace query-node codegen
+yarn workspace query-node build
+
+yarn workspace query-node-mappings build
+
+

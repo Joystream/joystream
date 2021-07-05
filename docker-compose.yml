@@ -68,7 +68,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${INDEXER_DB_NAME}
 
-  graphql-server:
+  graphql-server: &graphql-server
     image: joystream/apps
     restart: unless-stopped
     build:
@@ -86,7 +86,18 @@ services:
       - db
     command: ["workspace", "query-node-root", "query-node:start:prod"]
 
-  processor:
+  graphql-server-mnt:
+    <<: *graphql-server
+    image: node:14
+    build: .
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
+    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
+
+  processor: &processor
     image: joystream/apps
     restart: unless-stopped
     build:
@@ -100,16 +111,26 @@ services:
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
       - DEBUG=index-builder:*
-      - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
+      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
     volumes:
       - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
-      - graphql-server
       - hydra-indexer-gateway
     command: ["workspace", "query-node-root", "processor:start"]
 
+  processor-mnt:
+    <<: *processor
+    image: node:14
+    build: .
+    volumes:
+      - type: bind
+        source: .
+        target: /joystream
+    working_dir: /joystream
+    command: ["yarn", "workspace", "query-node-root", "processor:start"]
+
   indexer:
-    image: joystream/hydra-indexer:2.1.0-beta.9
+    image: joystream/hydra-indexer:3.0.0
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
@@ -131,7 +152,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:2.1.0-beta.5
+    image: joystream/hydra-indexer-gateway:3.0.0
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
