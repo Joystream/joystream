@@ -1,4 +1,4 @@
-import { Null, u64, Text, Vec, GenericAccountId as AccountId, BTreeSet } from '@polkadot/types'
+import { Null, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from './common'
 
@@ -21,8 +21,8 @@ export class StorageBucketsPerBagValueConstraint
 export class DynamicBagId extends u64 {}
 export class DynamicBag extends u64 {}
 export class StaticBag extends u64 {}
-export class StorageBucket extends u64 {}
 //
+
 
 export type DynamicBagCreationPolicyType = {
   numberOfStorageBuckets: u64
@@ -75,6 +75,30 @@ export class Voucher
     objectsUsed: u64,
   })
   implements VoucherType {}
+
+export const StorageBucketOperatorStatusDef = {
+    Missing: Null,
+    InvitedStorageWorker: u64,
+    StorageWorker: u64
+} as const
+export type StorageBucketOperatorStatusKey = keyof typeof StorageBucketOperatorStatusDef
+export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
+
+export type StorageBucketType = {
+    operator_status: StorageBucketOperatorStatus,
+    accepting_new_bags: bool,
+    voucher: Voucher,
+    metadata: Text,
+}
+
+export class StorageBucket
+    extends JoyStructDecorated({
+        operator_status: StorageBucketOperatorStatus,
+        accepting_new_bags: bool,
+        voucher: Voucher,
+        metadata: Text,
+    })
+    implements StorageBucketType {}
 
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
 
@@ -131,6 +155,7 @@ export const storageTypes: RegistryTypes = {
   StorageBucketIdSet,
   DataObjectIdSet,
   ContentIdSet,
-  ContentId
+  ContentId,
+  StorageBucketOperatorStatus
 }
 export default storageTypes

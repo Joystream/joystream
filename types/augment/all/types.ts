@@ -286,10 +286,10 @@ export interface ClassPermissionsType extends Null {}
 export interface ClassPropertyValue extends Null {}
 
 /** @name ContentId */
-export interface ContentId extends U8aFixed {}
+export interface ContentId extends Text {}
 
 /** @name ContentIdSet */
-export interface ContentIdSet extends BTreeSet<Text> {}
+export interface ContentIdSet extends BTreeSet<ContentId> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
@@ -417,11 +417,11 @@ export interface DataObjectId extends u64 {}
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
 /** @name DataObjectsMap */
-export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
+export interface DataObjectsMap extends BTreeMap<U8aFixed, DataObject> {}
 
 /** @name DataObjectStorageRelationship */
 export interface DataObjectStorageRelationship extends Struct {
-  readonly content_id: ContentId;
+  readonly content_id: Hash;
   readonly storage_provider: StorageProviderId;
   readonly ready: bool;
 }
@@ -1255,13 +1255,27 @@ export interface StaticBagId extends Enum {
 export interface Status extends bool {}
 
 /** @name StorageBucket */
-export interface StorageBucket extends u64 {}
+export interface StorageBucket extends Struct {
+  readonly operator_status: StorageBucketOperatorStatus;
+  readonly accepting_new_bags: bool;
+  readonly voucher: Voucher;
+  readonly metadata: Text;
+}
 
 /** @name StorageBucketId */
 export interface StorageBucketId extends u64 {}
 
 /** @name StorageBucketIdSet */
 export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
+
+/** @name StorageBucketOperatorStatus */
+export interface StorageBucketOperatorStatus extends Enum {
+  readonly isMissing: boolean;
+  readonly isInvitedStorageWorker: boolean;
+  readonly asInvitedStorageWorker: u64;
+  readonly isStorageWorker: boolean;
+  readonly asStorageWorker: u64;
+}
 
 /** @name StorageBucketsPerBagValueConstraint */
 export interface StorageBucketsPerBagValueConstraint extends Struct {
