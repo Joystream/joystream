@@ -552,7 +552,7 @@
         "identity": "IPNSIdentity",
         "expires_at": "u32"
     },
-    "ContentId": "[u8;32]",
+    "ContentId": "Text",
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
@@ -571,7 +571,7 @@
     },
     "DataObjectStorageRelationshipId": "u64",
     "DataObjectStorageRelationship": {
-        "content_id": "ContentId",
+        "content_id": "Hash",
         "storage_provider": "StorageProviderId",
         "ready": "bool"
     },
@@ -580,7 +580,7 @@
         "description": "Text",
         "active": "bool"
     },
-    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
+    "DataObjectsMap": "BTreeMap<[u8;32],DataObject>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -978,7 +978,18 @@
         "max_min_diff": "u64"
     },
     "DataObjectId": "u64",
-    "DynamicBagId": "u64",
+    "DynamicBagIdType": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId"
+        }
+    },
+    "DynamicBagId": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId"
+        }
+    },
     "Voucher": {
         "sizeLimit": "u64",
         "objectsLimit": "u64",
@@ -998,21 +1009,21 @@
     "StaticBag": "u64",
     "StorageBucket": "u64",
     "StaticBagId": {
-        "_enum": [
-            "Council",
-            "WorkingGroup"
-        ]
+        "_enum": {
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
     },
     "Static": {
-        "_enum": [
-            "Council",
-            "WorkingGroup"
-        ]
+        "_enum": {
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
     },
     "BagId": {
         "_enum": {
             "Static": "Static",
-            "Dynamic": "Null"
+            "Dynamic": "DynamicBagIdType"
         }
     },
     "DataObjectCreationParameters": {
@@ -1022,7 +1033,7 @@
     "BagIdType": {
         "_enum": {
             "Static": "Static",
-            "Dynamic": "Null"
+            "Dynamic": "DynamicBagIdType"
         }
     },
     "UploadParameters": {
@@ -1033,5 +1044,5 @@
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
-    "ContentIdSet": "BTreeSet<Text>"
+    "ContentIdSet": "BTreeSet<ContentId>"
 }

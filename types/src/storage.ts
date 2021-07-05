@@ -1,6 +1,8 @@
 import { Null, u64, Text, Vec, GenericAccountId as AccountId, BTreeSet } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from './common'
+import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
+import { ChannelId } from './content-working-group'
+import { MemberId } from './members'
 
 export class DataObjectId extends u64 {}
 export class StorageBucketId extends u64 {}
@@ -17,8 +19,17 @@ export class StorageBucketsPerBagValueConstraint
   })
   implements StorageBucketsPerBagValueConstraintType {}
 
-//TODO: implement these types
-export class DynamicBagId extends u64 {}
+export const DynamicBagIdDef = {
+  Member: MemberId,
+  Channel: ChannelId,
+}
+export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
+export class DynamicBagIdType extends JoyEnum(DynamicBagIdDef) {}
+
+// Runtime alias
+export class DynamicBagId extends DynamicBagIdType {}
+
+// TODO: implement these types:
 export class DynamicBag extends u64 {}
 export class StaticBag extends u64 {}
 export class StorageBucket extends u64 {}
@@ -43,7 +54,7 @@ export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
 
 export const StaticBagIdDef = {
   Council: Null,
-  WorkingGroup: Null,
+  WorkingGroup: WorkingGroup,
 } as const
 export type StaticBagIdKey = keyof typeof StaticBagIdDef
 export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
@@ -52,7 +63,7 @@ export class Static extends StaticBagId {}
 
 export const BagIdDef = {
   Static,
-  Dynamic: Null, //TODO: implement dynamic type
+  Dynamic: DynamicBagIdType,
 } as const
 export type BagIdKey = keyof typeof BagIdDef
 export class BagId extends JoyEnum(BagIdDef) {}
@@ -115,6 +126,7 @@ export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
   DataObjectId,
+  DynamicBagIdType,
   DynamicBagId,
   Voucher,
   DynamicBagType,
@@ -131,6 +143,6 @@ export const storageTypes: RegistryTypes = {
   StorageBucketIdSet,
   DataObjectIdSet,
   ContentIdSet,
-  ContentId
+  ContentId,
 }
 export default storageTypes

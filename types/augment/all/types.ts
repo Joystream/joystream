@@ -163,6 +163,7 @@ export interface BagId extends Enum {
   readonly isStatic: boolean;
   readonly asStatic: Static;
   readonly isDynamic: boolean;
+  readonly asDynamic: DynamicBagIdType;
 }
 
 /** @name BagIdType */
@@ -170,6 +171,7 @@ export interface BagIdType extends Enum {
   readonly isStatic: boolean;
   readonly asStatic: Static;
   readonly isDynamic: boolean;
+  readonly asDynamic: DynamicBagIdType;
 }
 
 /** @name BalanceOfMint */
@@ -286,10 +288,10 @@ export interface ClassPermissionsType extends Null {}
 export interface ClassPropertyValue extends Null {}
 
 /** @name ContentId */
-export interface ContentId extends U8aFixed {}
+export interface ContentId extends Text {}
 
 /** @name ContentIdSet */
-export interface ContentIdSet extends BTreeSet<Text> {}
+export interface ContentIdSet extends BTreeSet<ContentId> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
@@ -417,11 +419,11 @@ export interface DataObjectId extends u64 {}
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
 /** @name DataObjectsMap */
-export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
+export interface DataObjectsMap extends BTreeMap<U8aFixed, DataObject> {}
 
 /** @name DataObjectStorageRelationship */
 export interface DataObjectStorageRelationship extends Struct {
-  readonly content_id: ContentId;
+  readonly content_id: Hash;
   readonly storage_provider: StorageProviderId;
   readonly ready: bool;
 }
@@ -472,7 +474,20 @@ export interface DynamicBagCreationPolicy extends Struct {
 }
 
 /** @name DynamicBagId */
-export interface DynamicBagId extends u64 {}
+export interface DynamicBagId extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+}
+
+/** @name DynamicBagIdType */
+export interface DynamicBagIdType extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: ChannelId;
+}
 
 /** @name DynamicBagType */
 export interface DynamicBagType extends Enum {
@@ -1240,6 +1255,7 @@ export interface StakingStatus extends Enum {
 export interface Static extends Enum {
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
 }
 
 /** @name StaticBag */
@@ -1249,6 +1265,7 @@ export interface StaticBag extends u64 {}
 export interface StaticBagId extends Enum {
   readonly isCouncil: boolean;
   readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
 }
 
 /** @name Status */

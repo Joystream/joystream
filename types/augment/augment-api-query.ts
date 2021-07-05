@@ -960,7 +960,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Blacklisted data object hashes.
        **/
-      blacklist: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<ITuple<[]>>, [ContentId]>;
+      blacklist: AugmentedQuery<ApiType, (arg: ContentId | string) => Observable<ITuple<[]>>, [ContentId]>;
       /**
        * Blacklist collection counter.
        **/
@@ -976,7 +976,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Dynamic bag storage map.
        **/
-      dynamicBags: AugmentedQuery<ApiType, (arg: DynamicBagId | AnyNumber | Uint8Array) => Observable<DynamicBag>, [DynamicBagId]>;
+      dynamicBags: AugmentedQuery<ApiType, (arg: DynamicBagId | { Member: any } | { Channel: any } | string | Uint8Array) => Observable<DynamicBag>, [DynamicBagId]>;
       /**
        * Data object id counter. Starts at zero.
        **/
@@ -988,7 +988,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Working groups' and council's bags storage map.
        **/
-      staticBags: AugmentedQuery<ApiType, (arg: StaticBagId | 'Council' | 'WorkingGroup' | number | Uint8Array) => Observable<StaticBag>, [StaticBagId]>;
+      staticBags: AugmentedQuery<ApiType, (arg: StaticBagId | { Council: any } | { WorkingGroup: any } | string | Uint8Array) => Observable<StaticBag>, [StaticBagId]>;
       /**
        * Storage buckets.
        **/
