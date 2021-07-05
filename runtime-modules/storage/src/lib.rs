@@ -1573,6 +1573,14 @@ decl_module! {
 
           Self::upload_data_objects(params)?;
         }
+
+        /// Create a dynamic bag. Development mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn sudo_create_dynamic_bag(origin, bag_id: DynamicBagId<T>) {
+          ensure_root(origin)?;
+
+          Self::create_dynamic_bag(bag_id)?;
+        }
     }
 }
 

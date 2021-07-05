@@ -976,7 +976,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Dynamic bag storage map.
        **/
-      dynamicBags: AugmentedQuery<ApiType, (arg: DynamicBagId | AnyNumber | Uint8Array) => Observable<DynamicBag>, [DynamicBagId]>;
+      dynamicBags: AugmentedQuery<ApiType, (arg: DynamicBagId | { Member: any } | { Channel: any } | string | Uint8Array) => Observable<DynamicBag>, [DynamicBagId]>;
       /**
        * Data object id counter. Starts at zero.
        **/

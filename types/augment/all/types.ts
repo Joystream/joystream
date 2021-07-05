@@ -163,6 +163,7 @@ export interface BagId extends Enum {
   readonly isStatic: boolean;
   readonly asStatic: Static;
   readonly isDynamic: boolean;
+  readonly asDynamic: Dynamic;
 }
 
 /** @name BagIdType */
@@ -170,6 +171,7 @@ export interface BagIdType extends Enum {
   readonly isStatic: boolean;
   readonly asStatic: Static;
   readonly isDynamic: boolean;
+  readonly asDynamic: Dynamic;
 }
 
 /** @name BalanceOfMint */
@@ -463,8 +465,21 @@ export interface DiscussionThread extends Struct {
   readonly author_id: MemberId;
 }
 
+/** @name Dynamic */
+export interface Dynamic extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
+
 /** @name DynamicBag */
-export interface DynamicBag extends u64 {}
+export interface DynamicBag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: Vec<u64>;
+  readonly deletion_prize: u128;
+}
 
 /** @name DynamicBagCreationPolicy */
 export interface DynamicBagCreationPolicy extends Struct {
@@ -472,7 +487,12 @@ export interface DynamicBagCreationPolicy extends Struct {
 }
 
 /** @name DynamicBagId */
-export interface DynamicBagId extends u64 {}
+export interface DynamicBagId extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
 
 /** @name DynamicBagType */
 export interface DynamicBagType extends Enum {

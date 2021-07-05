@@ -978,7 +978,12 @@
         "max_min_diff": "u64"
     },
     "DataObjectId": "u64",
-    "DynamicBagId": "u64",
+    "DynamicBagId": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "u64"
+        }
+    },
     "Voucher": {
         "sizeLimit": "u64",
         "objectsLimit": "u64",
@@ -994,7 +999,12 @@
     "DynamicBagCreationPolicy": {
         "numberOfStorageBuckets": "u64"
     },
-    "DynamicBag": "u64",
+    "DynamicBag": {
+        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
+        "stored_by": "StorageBucketIdSet",
+        "distributed_by": "Vec<u64>",
+        "deletion_prize": "u128"
+    },
     "StaticBag": {
         "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
         "stored_by": "StorageBucketIdSet",
@@ -1018,10 +1028,16 @@
             "WorkingGroup": "WorkingGroup"
         }
     },
+    "Dynamic": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "u64"
+        }
+    },
     "BagId": {
         "_enum": {
             "Static": "Static",
-            "Dynamic": "Null"
+            "Dynamic": "Dynamic"
         }
     },
     "DataObjectCreationParameters": {
@@ -1031,7 +1047,7 @@
     "BagIdType": {
         "_enum": {
             "Static": "Static",
-            "Dynamic": "Null"
+            "Dynamic": "Dynamic"
         }
     },
     "UploadParameters": {
