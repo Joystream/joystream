@@ -67,21 +67,21 @@ pub struct PaymentRequestSignature<RequestId, ServiceUnits> {
 // TODO: Also are display requirements too restrictive?
 impl<T: Display, I: Display> PaymentRequestSignature<T, I> {
     fn serialize(&self) -> Vec<u8> {
-        let mut ser = self.payment_signature_request_id.to_string().into_bytes();
-        ser.extend(
+        let mut serialized = self.payment_signature_request_id.to_string().into_bytes();
+        serialized.extend(
             &self
                 .new_total_service_level_requested_paid_for
                 .to_string()
                 .into_bytes(),
         );
-        ser.extend(&self.service_provider_service_report_commitment);
-        ser
+        serialized.extend(&self.service_provider_service_report_commitment);
+        serialized
     }
 
     pub fn get_verification_message<U: Trait>(&self, channel_id: &U::ServiceChannelId) -> Vec<u8> {
-        let mut ser = self.serialize();
-        ser.extend(&channel_id.to_string().into_bytes());
-        ser
+        let mut serialized = self.serialize();
+        serialized.extend(&channel_id.to_string().into_bytes());
+        serialized
     }
 }
 
@@ -92,7 +92,8 @@ pub struct ServiceProvider<WorkerId, Balance, BlockNumber> {
     pub service_provider_worker_id: ServiceProviderWorkerId<WorkerId>,
     pub platform_service_price: Balance,
     pub refund_period: BlockNumber,
-    pub service_price: Balance,
+    pub provider_price: Balance,
+    pub minimum_locked_balance: Balance,
 }
 
 /// Representation of a channel between a Service Provider and a channel
@@ -106,6 +107,7 @@ pub struct ServiceChannel<WorkerId, Balance, BlockNumber, AccountId, ServiceProv
     pub locked_balance: Balance,
     pub refund_delay_period: BlockNumber,
     pub platform_price: Balance,
+    pub provider_price: Balance,
     pub state: ServiceChannelState<BlockNumber>,
 }
 /// State of a service channel
@@ -201,6 +203,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as Gateway {
         /// Next identifier for *any* service provider
         pub NextServiceProvider get(fn next_service_provider_id): T::ServiceProviderId;
+
         /// Next identifier for service channel
         pub NextServiceChannelId get(fn next_service_channel_id): T::ServiceChannelId;
 
@@ -212,11 +215,21 @@ decl_storage! {
         pub ServiceChannelById get(fn service_channel_by_id): map hasher(blake2_128_concat)
             T::ServiceChannelId => ServiceChannelOf<T>;
 
-        /// Time until stake is refunded.
+        /// Default share of a service channel price that goes to the platform(is burned).
+        /// It is updatable by the lead for an specific provider.
+        pub ServiceChannelPlatformPrice get(fn service_channel_creation_price): BalanceOf<T>;
+
+        /// Default price of a unit of service for a service channel.
+        /// It's updatable by the service provider.
+        pub ProviderPrice get(fn provider_price): BalanceOf<T>;
+
+        /// Default price of a unit of service for a service channel.
+        /// It's updatable by the lead for an specific provider.
         pub RefundPeriod get(fn refund_period): T::BlockNumber;
 
-        /// Initial cost of service channel
-        pub ServiceChannelPlatformPrice get(fn service_channel_creation_price): BalanceOf<T>;
+        /// Default minimum locked balance for a channel of a given service provider.
+        /// It's updatable by the service provider for their channels.
+        pub MinimumLockedBalance get(fn minimum_locked_balance): BalanceOf<T>;
     }
 }
 
@@ -227,14 +240,16 @@ decl_event! {
               Balance = BalanceOf<T>,
               <T as system::Trait>::BlockNumber,
               <T as Trait>::ServiceProviderId,
-              <T as system::Trait>::AccountId
+              <T as system::Trait>::AccountId,
+              <T as Trait>::ServiceChannelId
     {
         /// A service provider was created With the following parameters
         /// * Worker Id of the service provider
         /// * Refund period
         /// * Service price per unit for any channel created for this provider
+        /// * Platform price per unit of service rendered for the created service channel
         /// * Id of the service provider created
-        ServiceProviderCreated(ServiceProviderWorkerId, BlockNumber, Balance, ServiceProviderId),
+        ServiceProviderCreated(ServiceProviderWorkerId, BlockNumber, Balance, Balance, ServiceProviderId),
 
 
         /// A channel was created
@@ -244,6 +259,22 @@ decl_event! {
         /// * Locked Balance
         /// * Gateway Worker
         ServiceChannelCreated(WorkerId, ServiceProviderId, Balance, AccountId),
+
+        /// A channel was confirmed by the Service Provider
+        /// * Channel ID
+        ServiceChannelConfirmed(ServiceChannelId),
+
+        /// A channel has been settled
+        /// * Channel ID
+        ChannelSettled(ServiceChannelId),
+
+        /// A channel has been canceled
+        /// * Channel ID
+        ChannelCanceled(ServiceChannelId),
+
+        /// A gateway initiated a refund request
+        /// * Channel Id
+        ChannelRefundInitiated(ServiceChannelId),
     }
 }
 
@@ -251,14 +282,12 @@ decl_module! {
 pub struct Module<T: Trait> for enum Call where origin: T::Origin {
     fn deposit_event() = default;
 
-    /// Creates a new service provider chosing one in the corresponding working group
+    /// Creates a new service provider choosing one in the corresponding working group
     /// needs to be a lead on the gateway working group to call it.
     #[weight = 10_000_000] // TODO: adjust weight
     pub fn create_service_provider(
         origin,
         service_provider_worker_id: ServiceProviderWorkerId<WorkerId<T>>,
-        service_price: BalanceOf<T>,
-        refund_period: T::BlockNumber
     ) {
         GatewayWorkingGroup::<T>::ensure_origin_is_active_leader(origin)?;
         // TODO: should check in any of the working groups
@@ -267,14 +296,16 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             &service_provider_worker_id.worker_id
         )?;
 
-        // Mutation
+        // == MUTATION SAFE ==
+
         let service_provider_id = Self::get_next_service_provider_id();
 
         let service_provider = ServiceProvider {
             service_provider_worker_id: service_provider_worker_id.clone(),
             platform_service_price: Self::service_channel_creation_price(),
-            service_price,
-            refund_period,
+            provider_price: Self::provider_price(),
+            refund_period: Self::refund_period(),
+            minimum_locked_balance: Self::minimum_locked_balance(),
         };
 
         <ServiceProviderById<T>>::insert(
@@ -285,33 +316,40 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         Self::deposit_event(
             RawEvent::ServiceProviderCreated(
                 service_provider_worker_id,
-                refund_period,
-                service_price,
+                Self::refund_period(),
+                Self::provider_price(),
+                Self::service_channel_creation_price(),
                 service_provider_id
             )
         );
     }
 
-    /// Creates a new channel between service provider and calling gateway
+    /// Used by gateway to propose a channel for a service provider.
+    /// Must be confirmed by the Service Provider using `confirm_channel`
     #[weight = 10_000_000] // TODO adjust weight
     pub fn create_channel(
         origin,
         gateway_worker_id: WorkerId<T>,
         service_provider_id: T::ServiceProviderId,
         locked_balance: BalanceOf<T>,
-        gateway_worker_fallback_account: T::AccountId,
     ) {
-        let _ = GatewayWorkingGroup::<T>::ensure_worker_signed(origin, &gateway_worker_id)?;
+        let gateway_worker = GatewayWorkingGroup::<T>::ensure_worker_signed(origin, &gateway_worker_id)?;
+        ensure!(<ServiceProviderById<T>>::contains_key(service_provider_id), Error::<T>::ServiceProviderNotExist);
+
         let service_channel_provider = Self::service_provider_by_id(service_provider_id);
-        let gateway_worker = ServiceProviderWorkingGroup::<T>::ensure_worker_exists(
-          &service_channel_provider.service_provider_worker_id.worker_id
-        )?;
         let account_id = gateway_worker.role_account_id;
-        GatewayWorkingGroup::<T>::ensure_worker_exists(&gateway_worker_id)?;
+
         ensure!(
           <T as Trait>::Currency::free_balance(&account_id) >= locked_balance,
           Error::<T>::InsufficientBalance
         );
+
+        ensure!(
+          locked_balance >= service_channel_provider.minimum_locked_balance,
+          Error::<T>::InsufficientBalance
+        );
+
+        // == MUTATION SAFE ==
 
         let channel_id = Self::get_next_channel_id();
 
@@ -322,12 +360,15 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         )?;
 
         let service_channel = ServiceChannelOf::<T> {
-          gateway_worker_id, service_provider_id,
-          locked_balance,
-          refund_delay_period: <RefundPeriod<T>>::get(),
-          platform_price: service_channel_provider.platform_service_price, state: ServiceChannelState::default(),
-          gateway_worker_fallback_account: gateway_worker_fallback_account.clone(),
-          service_provider_fallback_account: None,
+            gateway_worker_id,
+            service_provider_id,
+            locked_balance,
+            refund_delay_period: service_channel_provider.refund_period,
+            platform_price: service_channel_provider.platform_service_price,
+            provider_price: service_channel_provider.provider_price,
+            state: ServiceChannelState::default(),
+            gateway_worker_fallback_account: account_id.clone(),
+            service_provider_fallback_account: None,
         };
 
 
@@ -337,43 +378,56 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
                 gateway_worker_id,
                 service_provider_id,
                 locked_balance,
-                gateway_worker_fallback_account,
+                account_id,
             )
         );
     }
 
+    /// Service provider confirms channel proposed by gateway worker.
     #[weight = 10_000_000] // TODO: adjust weight
     pub fn confirm_channel(
         origin,
         channel_id: T::ServiceChannelId,
     ) {
+        let account_id = ensure_signed(origin.clone())?;
         let mut service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
         ensure!(service_channel.state == ServiceChannelState::Pending, Error::<T>::ServiceChannelAlreadyConfirmed);
 
+        // == MUTATION SAFE ==
+
         service_channel.state = ServiceChannelState::Operational;
+        service_channel.service_provider_fallback_account = Some(account_id);
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
+
+        Self::deposit_event(RawEvent::ServiceChannelConfirmed(channel_id));
     }
 
+    /// Called by a service provider to get paid by its service rendered.
+    /// This extrinsic closes the channel and a new one needs to be open to continue.
     #[weight = 10_000_000] // TODO: adjust weight
     pub fn settle_channel(origin, channel_id: T::ServiceChannelId, request_payment_signature: PaymentRequestSignatureOf, signature: T::Signature) {
         let service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
         let verification_message = request_payment_signature.get_verification_message::<T>(&channel_id);
         ensure!(signature.verify(&verification_message, &service_channel.gateway_worker_fallback_account), Error::<T>::SignatureError);
-        let service_channel_provider =
-            Self::service_provider_by_id(service_channel.service_provider_id);
 
-        let payoff_balance = service_channel_provider.service_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
+        ensure!(service_channel.state == ServiceChannelState::Operational, Error::<T>::ChannelNotOperational);
+
+        let payoff_balance = service_channel.provider_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
         let burn_balance = service_channel.platform_price * BalanceOf::<T>::from(request_payment_signature.new_total_service_level_requested_paid_for);
-        ensure!(service_channel.locked_balance > (payoff_balance + burn_balance), Error::<T>::InsufficientBalanceForSettling);
+        // Should be always true
+        ensure!(service_channel.locked_balance >= (payoff_balance + burn_balance), Error::<T>::InsufficientBalanceForSettling);
         let refund_balance = service_channel.locked_balance - (payoff_balance + burn_balance);
+        // Should be always true
         ensure!(service_channel.locked_balance == <T as Trait>::Currency::free_balance(&Self::get_service_channel_account(channel_id)), Error::<T>::InsufficientBalanceForSettling);
 
-        let service_provider_account = if let Some(fallback_account) = service_channel.service_provider_fallback_account
-            {
-              fallback_account
-            } else {
-              return Err(Error::<T>::NoServiceProviderFallbackAccount.into());
-            };
+        // Should be always true since channel is operational
+        let service_provider_account = if let Some(fallback_account) = service_channel.service_provider_fallback_account {
+            fallback_account
+        } else {
+            return Err(Error::<T>::NoServiceProviderFallbackAccount.into());
+        };
+
+        // == MUTATION SAFE ==
 
         let gateway_account_id = service_channel.gateway_worker_fallback_account;
 
@@ -387,15 +441,19 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         )?;
 
         <ServiceChannelById<T>>::remove(channel_id);
+        Self::deposit_event(RawEvent::ChannelSettled(channel_id));
     }
 
+    /// Cancel a channel before it's confirmed
     #[weight = 10_000_000]  // TODO: adjust weight
     pub fn cancel_channel(origin, channel_id: T::ServiceChannelId) {
         let service_channel = Self::ensure_gateway_caller(origin, channel_id)?;
         ensure!(
-            matches!(service_channel.state, ServiceChannelState::Pending),
+            service_channel.state == ServiceChannelState::Pending,
             Error::<T>::ServiceChannelAlreadyConfirmed
         );
+
+        // == MUTATION SAFE ==
 
         Self::settle_channel_balance(
             None,
@@ -407,15 +465,21 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         )?;
 
         <ServiceChannelById<T>>::remove(channel_id);
+        Self::deposit_event(RawEvent::ChannelCanceled(channel_id));
     }
 
+    /// Initiate a channel refund by a gateway, the service provider can settle the channel before the refund is completed.
     #[weight = 10_000_000] // TODO: adjust weight
     pub fn initiate_refund_channel(origin, channel_id: T::ServiceChannelId) {
         let mut service_channel = Self::ensure_gateway_caller(origin, channel_id)?;
         ensure!(service_channel.state == ServiceChannelState::Operational, Error::<T>::ChannelNotOperational);
 
+        // == MUTATION SAFE ==
+
         service_channel.state = ServiceChannelState::RefundInitiated(system::Module::<T>::block_number());
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
+
+        Self::deposit_event(RawEvent::ChannelRefundInitiated(channel_id));
     }
 
     #[weight = 10_000_000] // TODO: adjust weight
@@ -430,6 +494,8 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             system::Module::<T>::block_number() - refund_start >= service_channel.refund_delay_period,
             Error::<T>::RefundDelayOnGoing
         );
+
+        // == MUTATION SAFE ==
 
         Self::settle_channel_balance(
             None,
@@ -451,6 +517,8 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             Error::<T>::InsufficientBalance
         );
 
+        // == MUTATION SAFE ==
+
         Self::reserve_channel_balance(
             &account_id,
             channel_id,
@@ -465,8 +533,10 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         new_fallback_account: T::AccountId
     ) {
         let mut service_channel = Self::ensure_gateway_caller(origin, channel_id)?;
-        service_channel.gateway_worker_fallback_account = new_fallback_account;
 
+        // == MUTATION SAFE ==
+
+        service_channel.gateway_worker_fallback_account = new_fallback_account;
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
     }
 
@@ -477,8 +547,10 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         new_fallback_account: T::AccountId
     ) {
         let mut service_channel = Self::ensure_service_provider_caller(origin, channel_id)?;
-        service_channel.service_provider_fallback_account = Some(new_fallback_account);
 
+        // == MUTATION SAFE ==
+
+        service_channel.service_provider_fallback_account = Some(new_fallback_account);
         <ServiceChannelById<T>>::insert(channel_id, service_channel);
     }
 
@@ -493,6 +565,8 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             Error::<T>::InsufficientBalance
         );
 
+        // == MUTATION SAFE ==
+
         <T as Trait>::Currency::transfer(
             service_channel_account_id,
             &service_channel.gateway_worker_fallback_account,
@@ -505,7 +579,7 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
     pub fn update_service_provider_terms(
         origin,
         service_provider_id: T::ServiceProviderId,
-        service_price: Option<BalanceOf<T>>,
+        platform_service_price: Option<BalanceOf<T>>,
         refund_period: Option<T::BlockNumber>
     ) {
         GatewayWorkingGroup::<T>::ensure_origin_is_active_leader(origin)?;
@@ -514,12 +588,12 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             Error::<T>::ServiceProviderNotExist
         );
         ensure!(
-            service_price.is_some() || refund_period.is_some(),
+            platform_service_price.is_some() || refund_period.is_some(),
             Error::<T>::ServiceTermsUpdateEmpty
         );
-        if let Some(service_price) = service_price {
+        if let Some(platform_service_price) = platform_service_price {
              ensure!(
-                service_price > Zero::zero(),
+                platform_service_price > Zero::zero(),
                 Error::<T>::ServicePriceIsZero
             );
         }
@@ -530,11 +604,13 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
             );
         }
 
+        // == MUTATION SAFE ==
+
         <ServiceProviderById<T>>::mutate(
             service_provider_id,
             |sp| *sp = ServiceProvider {
                 refund_period: refund_period.unwrap_or(sp.refund_period),
-                service_price: service_price.unwrap_or(sp.platform_service_price),
+                platform_service_price: platform_service_price.unwrap_or(sp.platform_service_price),
                 ..sp.clone()
             }
         )
@@ -544,6 +620,8 @@ pub struct Module<T: Trait> for enum Call where origin: T::Origin {
     pub fn remove_service_provider(origin, service_provider_id: T::ServiceProviderId) {
         GatewayWorkingGroup::<T>::ensure_origin_is_active_leader(origin)?;
         ensure!(<ServiceProviderById<T>>::contains_key(service_provider_id), Error::<T>::ServiceProviderNotExist);
+
+        // == MUTATION SAFE ==
 
         <ServiceProviderById<T>>::remove(service_provider_id);
     }
@@ -559,8 +637,15 @@ impl<T: Trait> Module<T> {
             Error::<T>::ChannelNotExists
         );
         let service_channel = Self::service_channel_by_id(channel_id);
+        if let Some(ref account_id) = service_channel.service_provider_fallback_account {
+            let caller_id = ensure_signed(origin.clone())?;
+            if account_id == &caller_id {
+                return Ok(service_channel);
+            }
+        }
         let service_channel_provider =
             Self::service_provider_by_id(service_channel.service_provider_id);
+
         ServiceProviderWorkingGroup::<T>::ensure_worker_signed(
             origin,
             &service_channel_provider
@@ -580,6 +665,9 @@ impl<T: Trait> Module<T> {
             Error::<T>::ChannelNotExists
         );
         let service_channel = Self::service_channel_by_id(channel_id);
+        if ensure_signed(origin.clone())? == service_channel.gateway_worker_fallback_account {
+            return Ok(service_channel);
+        }
         GatewayWorkingGroup::<T>::ensure_worker_signed(origin, &service_channel.gateway_worker_id)?;
 
         Ok(service_channel)
