@@ -1,6 +1,7 @@
 import { Null, u128, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
+import { MemberId } from './members'
 
 export class BalanceOf extends u128 {}
 export class DataObjectId extends u64 {}
@@ -17,10 +18,6 @@ export class StorageBucketsPerBagValueConstraint
     max_min_diff: u64,
   })
   implements StorageBucketsPerBagValueConstraintType {}
-
-//TODO: implement these types
-export class DynamicBagId extends u64 {}
-export class DynamicBag extends u64 {}
 
 export type DataObjectType = {
   accepted: bool
@@ -56,6 +53,22 @@ export class StaticBag
   })
   implements StaticBagType {}
 
+export type DynamicBagTypeDef = {
+  objects: DataObjectIdMap
+  stored_by: StorageBucketIdSet
+  distributed_by: DistributionBucketSet
+  deletion_prize: BalanceOf
+}
+
+export class DynamicBag
+  extends JoyStructDecorated({
+    objects: DataObjectIdMap,
+    stored_by: StorageBucketIdSet,
+    distributed_by: DistributionBucketSet,
+    deletion_prize: BalanceOf,
+  })
+  implements DynamicBagTypeDef {}
+
 export type DynamicBagCreationPolicyType = {
   numberOfStorageBuckets: u64
 }
@@ -82,9 +95,19 @@ export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
 
 export class Static extends StaticBagId {}
 
+export class ChannelId extends u64 {}
+export const DynamicBagIdDef = {
+  Member: MemberId,
+  Channel: ChannelId,
+} as const
+export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
+export class DynamicBagId extends JoyEnum(DynamicBagIdDef) {}
+
+export class Dynamic extends DynamicBagId {}
+
 export const BagIdDef = {
   Static,
-  Dynamic: Null, //TODO: implement dynamic type
+  Dynamic,
 } as const
 export type BagIdKey = keyof typeof BagIdDef
 export class BagId extends JoyEnum(BagIdDef) {}
@@ -176,6 +199,7 @@ export const storageTypes: RegistryTypes = {
   StorageBucket,
   StaticBagId,
   Static,
+  Dynamic,
   BagId,
   DataObjectCreationParameters,
   BagIdType,
