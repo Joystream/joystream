@@ -269,7 +269,7 @@ decl_module! {
                 let auction = Self::auction_by_video_id(video_id);
 
                 // Try finalize already completed auction (issues new nft if required)
-                ensure!(Self::try_complete_auction(&auction, video_id), Error::<T>::AuctionAlreadyStarted);
+                Self::try_complete_auction(&auction, video_id);
                 return Ok(())
             }
 
