@@ -552,7 +552,6 @@
         "identity": "IPNSIdentity",
         "expires_at": "u32"
     },
-    "ContentId": "Text",
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
@@ -1044,5 +1043,6 @@
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
-    "ContentIdSet": "BTreeSet<ContentId>"
+    "ContentIdSet": "BTreeSet<ContentId>",
+    "ContentId": "Text"
 }
