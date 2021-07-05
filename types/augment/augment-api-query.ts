@@ -988,7 +988,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Working groups' and council's bags storage map.
        **/
-      staticBags: AugmentedQuery<ApiType, (arg: StaticBagId | 'Council' | 'WorkingGroup' | number | Uint8Array) => Observable<StaticBag>, [StaticBagId]>;
+      staticBags: AugmentedQuery<ApiType, (arg: StaticBagId | { Council: any } | { WorkingGroup: any } | string | Uint8Array) => Observable<StaticBag>, [StaticBagId]>;
       /**
        * Storage buckets.
        **/

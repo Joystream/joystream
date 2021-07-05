@@ -152,7 +152,6 @@ declare module '@polkadot/types/types/registry' {
     'Compact<SlotNumber>': Compact<SlotNumber>;
     'Compact<SpanIndex>': Compact<SpanIndex>;
     'Compact<StakeId>': Compact<StakeId>;
-    'Compact<StaticBag>': Compact<StaticBag>;
     'Compact<StorageBucketId>': Compact<StorageBucketId>;
     'Compact<StorageProviderId>': Compact<StorageProviderId>;
     'Compact<StrikeCount>': Compact<StrikeCount>;
