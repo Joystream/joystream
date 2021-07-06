@@ -54,6 +54,8 @@
 //! #### Distribution working group leader extrinsics
 //! - [create_distribution_bucket_family](./struct.Module.html#method.create_distribution_bucket_family) -
 //! creates distribution bucket family.
+//! - [delete_distribution_bucket_family](./struct.Module.html#method.delete_distribution_bucket_family) -
+//! deletes distribution bucket family.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -978,11 +980,15 @@ decl_event! {
         /// - new number of storage buckets
         NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(DynamicBagType, u64),
 
-        /// Emits on updating the number of storage buckets in dynamic bag creation policy.
+        /// Emits on creating distribution bucket family.
         /// Params
-        /// - dynamic bag type
-        /// - new number of storage buckets
+        /// - distribution family bucket ID
         DistributionBucketFamilyCreated(DistributionBucketFamilyId),
+
+        /// Emits on deleting distribution bucket family.
+        /// Params
+        /// - distribution family bucket ID
+        DistributionBucketFamilyDeleted(DistributionBucketFamilyId),
     }
 }
 
@@ -1102,6 +1108,9 @@ decl_error! {
 
         /// Max distribution bucket family number limit exceeded.
         MaxDistributionBucketFamilyNumberLimitExceeded,
+
+        /// Distribution bucket family doesn't exist.
+        DistributionBucketFamilyDoesntExist,
     }
 }
 
@@ -1696,6 +1705,26 @@ decl_module! {
             <DistributionBucketFamilyById<T>>::insert(family_id, family);
 
             Self::deposit_event(RawEvent::DistributionBucketFamilyCreated(family_id));
+        }
+
+        /// Deletes a distribution family.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_distribution_bucket_family(origin, family_id: T::DistributionBucketFamilyId) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            Self::ensure_distribution_bucket_family_exists(&family_id)?;
+
+            // TODO: check for emptiness
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::decrement_distribution_family_number();
+
+            <DistributionBucketFamilyById<T>>::remove(family_id);
+
+            Self::deposit_event(RawEvent::DistributionBucketFamilyDeleted(family_id));
         }
     }
 }
@@ -2509,5 +2538,18 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    // Ensures the existence of the distribution bucket family.
+    // Returns the DistributionBucketFamily object or error.
+    fn ensure_distribution_bucket_family_exists(
+        family_id: &T::DistributionBucketFamilyId,
+    ) -> Result<DistributionBucketFamily<T::DistributionBucketId>, Error<T>> {
+        ensure!(
+            <DistributionBucketFamilyById<T>>::contains_key(family_id),
+            Error::<T>::DistributionBucketFamilyDoesntExist
+        );
+
+        Ok(Self::distribution_bucket_family_by_id(family_id))
     }
 }
