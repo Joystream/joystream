@@ -5,11 +5,14 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import * as fs from 'fs'
 
+const dns = require('dns')
+
 const awsConfig = new pulumi.Config('aws')
 const config = new pulumi.Config()
 
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
 const isProduction = config.require('isProduction') === 'true'
+const lbReady = config.get('isLoadBalancerReady') === 'true'
 
 // Create a VPC for our cluster.
 const vpc = new awsx.ec2.Vpc('vpc', { numberOfAvailabilityZones: 2 })
@@ -57,7 +60,10 @@ const service = new k8s.core.v1.Service(
     },
     spec: {
       type: 'LoadBalancer',
-      ports: [{ name: 'port-1', port: colossusPort }],
+      ports: [
+        { name: 'http', port: 80 },
+        { name: 'https', port: 443 },
+      ],
       selector: appLabels,
     },
   },
@@ -72,11 +78,13 @@ export const serviceName = service.metadata.name
 export let serviceHostname: pulumi.Output<string>
 serviceHostname = service.status.loadBalancer.ingress[0].hostname
 
+export let appLink: pulumi.Output<string>
+
 const publicUrlInput: pulumi.Input<string> = pulumi.interpolate`http://${serviceHostname}:${colossusPort}/`
 
 let additionalParams: string[] | pulumi.Input<string>[] = []
-
 let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
+let caddyVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
 let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
 
 if (isProduction) {
@@ -114,6 +122,48 @@ if (isProduction) {
   additionalParams.push('--anonymous')
 }
 
+if (lbReady) {
+  async function lookupPromise(url: string) {
+    return new Promise((resolve, reject) => {
+      dns.lookup(url, (err: any, address: any) => {
+        if (err) reject(err)
+        resolve(address)
+      })
+    })
+  }
+
+  const lbIp = serviceHostname.apply((dnsName) => {
+    return lookupPromise(dnsName)
+  })
+
+  const caddyConfig = pulumi.interpolate`${lbIp}.nip.io {
+  reverse_proxy localhost:${colossusPort}
+}`
+
+  const keyConfig = new k8s.core.v1.ConfigMap(name, {
+    metadata: { namespace: namespaceName, labels: appLabels },
+    data: { 'fileData': caddyConfig },
+  })
+  const keyConfigName = keyConfig.metadata.apply((m) => m.name)
+
+  caddyVolumeMounts.push({
+    mountPath: '/etc/caddy/Caddyfile',
+    name: 'caddy-volume',
+    subPath: 'fileData',
+  })
+
+  volumes.push({
+    name: 'caddy-volume',
+    configMap: {
+      name: keyConfigName,
+    },
+  })
+
+  appLink = pulumi.interpolate`${lbIp}.nip.io`
+
+  lbIp.apply((value) => console.log(`You can now access the app at: ${value}.nip.io`))
+}
+
 // Create a Deployment
 const deployment = new k8s.apps.v1.Deployment(
   name,
@@ -145,6 +195,20 @@ const deployment = new k8s.apps.v1.Deployment(
                 /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true',
               ],
             },
+            // {
+            //   name: 'httpd',
+            //   image: 'crccheck/hello-world',
+            //   ports: [{ name: 'hello-world', containerPort: 8000 }],
+            // },
+            {
+              name: 'caddy',
+              image: 'caddy',
+              ports: [
+                { name: 'caddy-http', containerPort: 80 },
+                { name: 'caddy-https', containerPort: 443 },
+              ],
+              volumeMounts: caddyVolumeMounts,
+            },
             {
               name: 'colossus',
               image: colossusImage,
@@ -169,7 +233,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 'ipfs',
                 ...additionalParams,
               ],
-              ports: [{ containerPort: 3001 }],
+              ports: [{ containerPort: colossusPort }],
             },
           ],
           volumes,
@@ -184,47 +248,3 @@ const deployment = new k8s.apps.v1.Deployment(
 
 // Export the Deployment name
 export const deploymentName = deployment.metadata.name
-
-// Create a CloudFront distribution
-const distributionArgs: aws.cloudfront.DistributionArgs = {
-  enabled: true,
-  origins: [
-    {
-      originId: 'storage-node-load-balancer',
-      domainName: serviceHostname,
-      customOriginConfig: {
-        originProtocolPolicy: 'http-only',
-        httpPort: colossusPort,
-        httpsPort: colossusPort,
-        originSslProtocols: ['TLSv1'],
-      },
-    },
-  ],
-
-  defaultCacheBehavior: {
-    targetOriginId: 'storage-node-load-balancer',
-
-    viewerProtocolPolicy: 'allow-all',
-    allowedMethods: ['GET', 'HEAD'],
-    cachedMethods: ['GET', 'HEAD'],
-
-    forwardedValues: {
-      cookies: { forward: 'none' },
-      queryString: false,
-    },
-  },
-
-  restrictions: {
-    geoRestriction: {
-      restrictionType: 'none',
-    },
-  },
-
-  viewerCertificate: {
-    cloudfrontDefaultCertificate: true,
-  },
-}
-
-const cloudfront = new aws.cloudfront.Distribution(`storage-node`, distributionArgs)
-
-export const cloudFrontDomain = cloudfront.domainName

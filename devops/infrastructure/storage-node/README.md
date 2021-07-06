@@ -38,7 +38,8 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/'
+    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
+    --plaintext isProduction=false
    ```
 
    If running for production use the below mentioned config
@@ -53,6 +54,16 @@ After cloning this repo, from this working directory, run these commands:
 
    Running `pulumi up -y` will deploy the EKS cluster. Note, provisioning a
    new EKS cluster takes between 10-15 minutes.
+
+1. Once the stack if up and running, we will modify the Caddy config to get SSL certificate for the load balancer
+
+   Modify the config variable `isLoadBalancerReady`
+
+   ```bash
+   $ pulumi config set isLoadBalancerReady true
+   ```
+
+   Run `pulumi up -y` to update the Caddy config
 
 1. Access the Kubernetes Cluster using `kubectl`
 

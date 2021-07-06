@@ -13,6 +13,9 @@ template:
     isProduction:
       description: Whether you are deploying a production storage node
       default: false
+    isLoadBalancerReady:
+      description: Whether the load balancer service is ready and has been assigned an IP
+      default: false
     providerId:
       description: StorageProviderId assigned to you in working group
     keyFile:
