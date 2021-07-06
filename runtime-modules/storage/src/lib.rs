@@ -56,6 +56,8 @@
 //! creates distribution bucket family.
 //! - [delete_distribution_bucket_family](./struct.Module.html#method.delete_distribution_bucket_family) -
 //! deletes distribution bucket family.
+//! - [create_distribution_bucket](./struct.Module.html#method.create_distribution_bucket) -
+//! creates distribution bucket.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -79,6 +81,7 @@
 //! - DefaultMemberDynamicBagCreationPolicy
 //! - DefaultChannelDynamicBagCreationPolicy
 //! - MaxDistributionBucketFamilyNumber
+//! - MaxDistributionBucketNumberPerFamily
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -118,8 +121,6 @@ use bag_manager::BagManager;
 use storage_bucket_picker::StorageBucketPicker;
 
 // TODO: constants
-// Max number of distribution bucket families
-// Max number of distribution buckets per family.
 // Max number of pending invitations per distribution bucket.
 
 /// Public interface for the storage module.
@@ -266,6 +267,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Defines max allowed distribution bucket family number.
     type MaxDistributionBucketFamilyNumber: Get<u64>;
+
+    /// Defines max allowed distribution bucket number per family.
+    type MaxDistributionBucketNumberPerFamily: Get<u64>;
 
     /// Demand the storage working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
@@ -747,12 +751,13 @@ pub struct DistributionBucketFamily<DistributionBucketId: Ord> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct DistributionBucket {
+    /// Distribution bucket accepts new bags.
+    pub accepting_new_bags: bool,
     //TODO:
-// pending_invitations: BTreeSet<WorkerId>,
-// number_of_pending_data_objects: u32,
-// accepting_new_bags: boolean,
-// distributing: boolean,
-// number_of_operators: u32,
+    // pending_invitations: BTreeSet<WorkerId>,
+    // number_of_pending_data_objects: u32,
+    // distributing: boolean,
+    // number_of_operators: u32,
 }
 
 decl_storage! {
@@ -814,6 +819,9 @@ decl_storage! {
 
         /// Total number of distribution bucket families in the system.
         pub DistributionBucketFamilyNumber get(fn distribution_bucket_family_number): u64;
+
+        /// Distribution bucket id counter. Starts at zero.
+        pub NextDistributionBucketId get(fn next_distribution_bucket_id): T::DistributionBucketId;
     }
 }
 
@@ -830,6 +838,7 @@ decl_event! {
         <T as frame_system::Trait>::AccountId,
         Balance = BalanceOf<T>,
         <T as Trait>::DistributionBucketFamilyId,
+        <T as Trait>::DistributionBucketId,
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -989,6 +998,13 @@ decl_event! {
         /// Params
         /// - distribution family bucket ID
         DistributionBucketFamilyDeleted(DistributionBucketFamilyId),
+
+        /// Emits on creating distribution bucket.
+        /// Params
+        /// - distribution bucket family ID
+        /// - accepting new bags
+        /// - distribution bucket ID
+        DistributionBucketCreated(DistributionBucketFamilyId, bool, DistributionBucketId),
     }
 }
 
@@ -1111,6 +1127,9 @@ decl_error! {
 
         /// Distribution bucket family doesn't exist.
         DistributionBucketFamilyDoesntExist,
+
+        /// Max distribution bucket number per family limit exceeded.
+        MaxDistributionBucketNumberPerFamilyLimitExceeded,
     }
 }
 
@@ -1149,6 +1168,10 @@ decl_module! {
 
         /// Exports const - max allowed distribution bucket family number.
         const MaxDistributionBucketFamilyNumber: u64 = T::MaxDistributionBucketFamilyNumber::get();
+
+        /// Exports const - max allowed distribution bucket number per family.
+        const MaxDistributionBucketNumberPerFamily: u64 =
+            T::MaxDistributionBucketNumberPerFamily::get();
 
         // ===== Storage Lead actions =====
 
@@ -1677,7 +1700,7 @@ decl_module! {
 
         // ===== Distribution Lead actions =====
 
-        /// Create a distribution family.
+        /// Create a distribution bucket family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_distribution_bucket_family(origin) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
@@ -1707,7 +1730,7 @@ decl_module! {
             Self::deposit_event(RawEvent::DistributionBucketFamilyCreated(family_id));
         }
 
-        /// Deletes a distribution family.
+        /// Deletes a distribution bucket family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_distribution_bucket_family(origin, family_id: T::DistributionBucketFamilyId) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
@@ -1725,6 +1748,44 @@ decl_module! {
             <DistributionBucketFamilyById<T>>::remove(family_id);
 
             Self::deposit_event(RawEvent::DistributionBucketFamilyDeleted(family_id));
+        }
+
+        /// Create a distribution bucket.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_distribution_bucket(
+            origin,
+            family_id: T::DistributionBucketFamilyId,
+            accepting_new_bags: bool,
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
+
+            ensure!(
+                family.distribution_buckets.len().saturated_into::<u64>() <
+                    T::MaxDistributionBucketNumberPerFamily::get(),
+                Error::<T>::MaxDistributionBucketNumberPerFamilyLimitExceeded
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let bucket = DistributionBucket {
+                accepting_new_bags
+            };
+
+            let bucket_id = Self::next_distribution_bucket_id();
+
+            family.distribution_buckets.insert(bucket_id, bucket);
+
+            <NextDistributionBucketId<T>>::put(bucket_id + One::one());
+
+            <DistributionBucketFamilyById<T>>::insert(family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketCreated(family_id, accepting_new_bags, bucket_id)
+            );
         }
     }
 }

@@ -10,8 +10,9 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
-    DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, UploadParameters,
+    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
+    DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -45,6 +46,7 @@ impl EventFixture {
             u64,
             u64,
             u64,
+            u64,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -60,6 +62,7 @@ impl EventFixture {
             UploadParameters<Test>,
             BagId<Test>,
             DynamicBagId<Test>,
+            u64,
             u64,
             u64,
             u64,
@@ -1178,11 +1181,11 @@ impl UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
     }
 }
 
-pub struct CreateDistributionBucketBucketFamilyFixture {
+pub struct CreateDistributionBucketFamilyFixture {
     origin: RawOrigin<u64>,
 }
 
-impl CreateDistributionBucketBucketFamilyFixture {
+impl CreateDistributionBucketFamilyFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
@@ -1229,12 +1232,12 @@ impl CreateDistributionBucketBucketFamilyFixture {
     }
 }
 
-pub struct DeleteDistributionBucketBucketFamilyFixture {
+pub struct DeleteDistributionBucketFamilyFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
 }
 
-impl DeleteDistributionBucketBucketFamilyFixture {
+impl DeleteDistributionBucketFamilyFixture {
     pub fn default(family_id: u64) -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
@@ -1263,6 +1266,67 @@ impl DeleteDistributionBucketBucketFamilyFixture {
             ));
         } else {
             assert_eq!(family_number, Storage::distribution_bucket_family_number());
+        }
+    }
+}
+
+pub struct CreateDistributionBucketFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    accept_new_bags: bool,
+}
+
+impl CreateDistributionBucketFixture {
+    pub fn default(family_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            family_id,
+            accept_new_bags: false,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_accept_new_bags(self, accept_new_bags: bool) -> Self {
+        Self {
+            accept_new_bags,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
+        let next_bucket_id = Storage::next_distribution_bucket_id();
+        let actual_result = Storage::create_distribution_bucket(
+            self.origin.clone().into(),
+            self.family_id,
+            self.accept_new_bags,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(next_bucket_id + 1, Storage::next_distribution_bucket_id());
+
+            let family: DistributionBucketFamily<u64> =
+                Storage::distribution_bucket_family_by_id(self.family_id);
+
+            assert!(family.distribution_buckets.contains_key(&next_bucket_id));
+            assert_eq!(
+                family
+                    .distribution_buckets
+                    .get(&next_bucket_id)
+                    .unwrap()
+                    .accepting_new_bags,
+                self.accept_new_bags
+            );
+
+            Some(next_bucket_id)
+        } else {
+            assert_eq!(next_bucket_id, Storage::next_distribution_bucket_id());
+
+            None
         }
     }
 }
