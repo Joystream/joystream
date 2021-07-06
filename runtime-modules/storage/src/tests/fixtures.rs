@@ -1215,3 +1215,41 @@ impl CreateDistributionBucketBucketFamilyFixture {
         }
     }
 }
+
+pub struct DeleteDistributionBucketBucketFamilyFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+}
+
+impl DeleteDistributionBucketBucketFamilyFixture {
+    pub fn default(family_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            family_id,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let family_number = Storage::distribution_bucket_family_number();
+        let actual_result =
+            Storage::delete_distribution_bucket_family(self.origin.clone().into(), self.family_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                family_number - 1,
+                Storage::distribution_bucket_family_number()
+            );
+            assert!(!<crate::DistributionBucketFamilyById<Test>>::contains_key(
+                self.family_id
+            ));
+        } else {
+            assert_eq!(family_number, Storage::distribution_bucket_family_number());
+        }
+    }
+}

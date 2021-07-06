@@ -3507,3 +3507,44 @@ fn create_distribution_bucket_family_fails_with_exceeding_family_number_limit() 
             ));
     });
 }
+
+#[test]
+fn delete_distribution_bucket_family_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let family_id = CreateDistributionBucketBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        DeleteDistributionBucketBucketFamilyFixture::default(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketFamilyDeleted(family_id));
+    });
+}
+
+#[test]
+fn delete_distribution_bucket_family_fails_with_non_signed_origin() {
+    build_test_externalities().execute_with(|| {
+        let invalid_family_id = 100;
+        DeleteDistributionBucketBucketFamilyFixture::default(invalid_family_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn delete_distribution_bucket_family_fails_with_non_existing_family() {
+    build_test_externalities().execute_with(|| {
+        let invalid_family_id = 100;
+        DeleteDistributionBucketBucketFamilyFixture::default(invalid_family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
