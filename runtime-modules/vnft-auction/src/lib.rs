@@ -129,10 +129,6 @@ decl_module! {
             // Validate round_time & starting_price
             Self::validate_auction_params(&auction_params)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             let auction_id = auction_params.auction_mode.get_auction_id();
 
             // Try complete auction
@@ -144,6 +140,10 @@ decl_module! {
                 ensure!(Self::try_complete_auction(&auction), Error::<T>::AuctionAlreadyStarted);
                 return Ok(())
             }
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Create new auction
             let auction = AuctionRecord::new(auctioneer, auctioneer_account_id, auction_params.clone());
