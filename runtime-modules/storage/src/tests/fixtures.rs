@@ -1316,3 +1316,40 @@ impl CreateDistributionBucketFixture {
         }
     }
 }
+
+pub struct UpdateDistributionBucketStatusFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    distribution_bucket_id: u64,
+    new_status: bool,
+}
+
+impl UpdateDistributionBucketStatusFixture {
+    pub fn default(family_id: u64, bucket_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            family_id,
+            distribution_bucket_id: bucket_id,
+            new_status: false,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_status(self, new_status: bool) -> Self {
+        Self { new_status, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_distribution_bucket_status(
+            self.origin.clone().into(),
+            self.family_id,
+            self.distribution_bucket_id,
+            self.new_status,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}

@@ -58,6 +58,8 @@
 //! deletes distribution bucket family.
 //! - [create_distribution_bucket](./struct.Module.html#method.create_distribution_bucket) -
 //! creates distribution bucket.
+//! - [update_distribution_bucket_status](./struct.Module.html#method.update_distribution_bucket_status) -
+//! updates distribution bucket status (accepting new bags).
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -993,6 +995,13 @@ decl_event! {
         /// - accepting new bags
         /// - distribution bucket ID
         DistributionBucketCreated(DistributionBucketFamilyId, bool, DistributionBucketId),
+
+        /// Emits on storage bucket status update.
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        /// - new status (accepting new bags)
+        DistributionBucketStatusUpdated(DistributionBucketFamilyId, DistributionBucketId, bool),
     }
 }
 
@@ -1121,6 +1130,9 @@ decl_error! {
 
         /// Max distribution bucket number per family limit exceeded.
         MaxDistributionBucketNumberPerFamilyLimitExceeded,
+
+        /// Distribution bucket doesn't exist.
+        DistributionBucketDoesntExist,
     }
 }
 
@@ -1720,6 +1732,7 @@ decl_module! {
             origin,
             family_id: T::DistributionBucketFamilyId,
             accepting_new_bags: bool,
+            // TODO: invited ?
         ) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
 
@@ -1751,6 +1764,45 @@ decl_module! {
                 RawEvent::DistributionBucketCreated(family_id, accepting_new_bags, bucket_id)
             );
         }
+
+        /// Update whether a bucket accepts new bags for distribution.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_distribution_bucket_status(
+            origin,
+            family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+            accepting_new_bags: bool
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
+            let mut bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            //TODO: Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bucket.accepting_new_bags = accepting_new_bags;
+            family.distribution_buckets.insert(distribution_bucket_id, bucket);
+
+            <DistributionBucketFamilyById<T>>::insert(family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketStatusUpdated(
+                    family_id,
+                    distribution_bucket_id,
+                    accepting_new_bags
+                )
+            );
+        }
+
+        // ===== Distribution Operator actions =====
+
     }
 }
 
@@ -2653,5 +2705,18 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(Self::distribution_bucket_family_by_id(family_id))
+    }
+
+    // Ensures the existence of the distribution bucket.
+    // Returns the DistributionBucket object or error.
+    fn ensure_distribution_bucket_exists(
+        family: &DistributionBucketFamily<T::DistributionBucketId>,
+        distribution_bucket_id: &T::DistributionBucketId,
+    ) -> Result<DistributionBucket, Error<T>> {
+        family
+            .distribution_buckets
+            .get(distribution_bucket_id)
+            .cloned()
+            .ok_or(Error::<T>::DistributionBucketDoesntExist)
     }
 }
