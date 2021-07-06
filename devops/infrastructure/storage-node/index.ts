@@ -80,7 +80,7 @@ serviceHostname = service.status.loadBalancer.ingress[0].hostname
 
 export let appLink: pulumi.Output<string>
 
-const publicUrlInput: pulumi.Input<string> = pulumi.interpolate`http://${serviceHostname}:${colossusPort}/`
+const publicUrlInput: pulumi.Input<string> = pulumi.interpolate`http://${serviceHostname}/`
 
 let additionalParams: string[] | pulumi.Input<string>[] = []
 let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
