@@ -54,6 +54,7 @@ impl balances::Trait for Test {
 parameter_types! {
     pub const MaxStorageBucketNumber: u64 = 1000;
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 1;
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
@@ -94,6 +95,7 @@ impl crate::Trait for Test {
     type DefaultChannelDynamicBagCreationPolicy = DefaultChannelDynamicBagCreationPolicy;
     type Randomness = CollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;

@@ -653,6 +653,7 @@ parameter_types! {
 }
 
 parameter_types! {
+    pub const MaxDistributionBucketFamilyNumber: u64 = 20; //TODO: adjust value
     pub const MaxStorageBucketNumber: u64 = 20; //TODO: adjust value
     pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
     pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
@@ -687,6 +688,7 @@ impl storage::Trait for Runtime {
     type DefaultChannelDynamicBagCreationPolicy = DefaultChannelDynamicBagCreationPolicy;
     type Randomness = RandomnessCollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
