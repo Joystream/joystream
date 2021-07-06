@@ -1224,11 +1224,15 @@ pub struct DeleteDistributionBucketFamilyFixture {
 }
 
 impl DeleteDistributionBucketFamilyFixture {
-    pub fn default(family_id: u64) -> Self {
+    pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
-            family_id,
+            family_id: Default::default(),
         }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -1263,12 +1267,16 @@ pub struct CreateDistributionBucketFixture {
 }
 
 impl CreateDistributionBucketFixture {
-    pub fn default(family_id: u64) -> Self {
+    pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
-            family_id,
+            family_id: Default::default(),
             accept_new_bags: false,
         }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -1325,13 +1333,23 @@ pub struct UpdateDistributionBucketStatusFixture {
 }
 
 impl UpdateDistributionBucketStatusFixture {
-    pub fn default(family_id: u64, bucket_id: u64) -> Self {
+    pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            family_id,
-            distribution_bucket_id: bucket_id,
+            family_id: Default::default(),
+            distribution_bucket_id: Default::default(),
             new_status: false,
         }
+    }
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self {
+            distribution_bucket_id: bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -1348,6 +1366,47 @@ impl UpdateDistributionBucketStatusFixture {
             self.family_id,
             self.distribution_bucket_id,
             self.new_status,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct DeleteDistributionBucketFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    distribution_bucket_id: u64,
+}
+
+impl DeleteDistributionBucketFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            family_id: Default::default(),
+            distribution_bucket_id: Default::default(),
+        }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self {
+            distribution_bucket_id: bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::delete_distribution_bucket(
+            self.origin.clone().into(),
+            self.family_id,
+            self.distribution_bucket_id,
         );
 
         assert_eq!(actual_result, expected_result);
