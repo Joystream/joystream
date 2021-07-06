@@ -5,12 +5,14 @@
 //! - [spec](https://github.com/Joystream/joystream/issues/2224)
 //! - [utilization model](https://github.com/Joystream/joystream/issues/2359)
 //!
-//! Pallet functionality could be split in three distinct groups:
-//! - extrinsics for the working group leader
+//! Pallet functionality could be split in five distinct groups:
+//! - extrinsics for the storage working group leader
+//! - extrinsics for the distribution group leader
 //! - extrinsics for the storage provider
+//! - extrinsics for the distribution provider
 //! - public methods for the pallet integration
 //!
-//! #### Working group leader extrinsics
+//! #### Storage working group leader extrinsics
 //! - [create_storage_bucket](./struct.Module.html#method.create_storage_bucket) - creates storage
 //! bucket.
 //! - [update_storage_buckets_for_bag](./struct.Module.html#method.update_storage_buckets_for_bag) -
@@ -49,6 +51,10 @@
 //! - [accept_pending_data_objects](./struct.Module.html#method.accept_pending_data_objects) - a
 //! storage provider signals that the data object was successfully uploaded to its storage.
 //!
+//! #### Distribution working group leader extrinsics
+//! - [create_distribution_bucket_family](./struct.Module.html#method.create_distribution_bucket_family) -
+//! creates distribution bucket family.
+//!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
 //! - can_upload_data_objects
@@ -69,6 +75,7 @@
 //! - StorageBucketsPerBagValueConstraint
 //! - DefaultMemberDynamicBagCreationPolicy
 //! - DefaultChannelDynamicBagCreationPolicy
+//! - MaxDistributionBucketFamilyNumber
 //!
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -253,6 +260,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Something that provides randomness in the runtime.
     type Randomness: Randomness<Self::Hash>;
+
+    /// Defines max allowed distribution bucket family number.
+    type MaxDistributionBucketFamilyNumber: Get<u64>;
 
     /// Demand the storage working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
@@ -787,6 +797,9 @@ decl_storage! {
         pub DistributionBucketFamilyById get (fn distribution_bucket_family_by_id):
             map hasher(blake2_128_concat) T::DistributionBucketFamilyId =>
             DistributionBucketFamily<T::DistributionBucketId>;
+
+        /// Total number of distribution bucket families in the system.
+        pub DistributionBucketFamilyNumber get(fn distribution_bucket_family_number): u64;
     }
 }
 
@@ -1077,6 +1090,9 @@ decl_error! {
 
         /// Cannot delete non empty dynamic bag.
         CannotDeleteNonEmptyDynamicBag,
+
+        /// Max distribution bucket family number limit exceeded.
+        MaxDistributionBucketFamilyNumberLimitExceeded,
     }
 }
 
@@ -1109,6 +1125,9 @@ decl_module! {
         /// Exports const - the default dynamic bag creation policy for channels.
         const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy =
             T::DefaultChannelDynamicBagCreationPolicy::get();
+
+        /// Exports const - max allowed distribution bucket family number.
+        const MaxDistributionBucketFamilyNumber: u64 = T::MaxDistributionBucketFamilyNumber::get();
 
         // ===== Storage Lead actions =====
 
@@ -1611,17 +1630,24 @@ decl_module! {
             );
         }
 
+        // ===== Distribution Lead actions =====
+
         /// Create a distribution family.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_distribution_bucket_family(origin) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
 
-            // TODO: check max bucket families number
-
+            ensure!(
+                Self::distribution_bucket_family_number() <
+                    T::MaxDistributionBucketFamilyNumber::get(),
+                Error::<T>::MaxDistributionBucketFamilyNumberLimitExceeded
+            );
 
             //
             // == MUTATION SAFE ==
             //
+
+            Self::increment_distribution_family_number();
 
             let family = DistributionBucketFamily {
                 distribution_buckets: BTreeMap::new(),
@@ -1852,6 +1878,18 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 }
 
 impl<T: Trait> Module<T> {
+    // Increment distribution family number in the storage.
+    fn increment_distribution_family_number() {
+        DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() + 1);
+    }
+
+    // Decrement distribution family number in the storage. No effect on zero number.
+    fn decrement_distribution_family_number() {
+        if Self::distribution_bucket_family_number() > 0 {
+            DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() - 1);
+        }
+    }
+
     // Validates dynamic bag creation params and conditions.
     fn validate_create_dynamic_bag_params(
         dynamic_bag_id: &DynamicBagId<T>,

@@ -3492,3 +3492,18 @@ fn create_distribution_bucket_family_fails_with_non_signed_origin() {
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
+
+#[test]
+fn create_distribution_bucket_family_fails_with_exceeding_family_number_limit() {
+    build_test_externalities().execute_with(|| {
+        CreateDistributionBucketBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()));
+
+        CreateDistributionBucketBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::MaxDistributionBucketFamilyNumberLimitExceeded.into(),
+            ));
+    });
+}

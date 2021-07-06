@@ -1182,7 +1182,7 @@ impl CreateDistributionBucketBucketFamilyFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
         let next_family_id = Storage::next_distribution_bucket_family_id();
-        //let buckets_number = Storage::storage_buckets_number(); // TODO
+        let family_number = Storage::distribution_bucket_family_number();
         let actual_result = Storage::create_distribution_bucket_family(self.origin.clone().into());
 
         assert_eq!(actual_result, expected_result);
@@ -1192,7 +1192,10 @@ impl CreateDistributionBucketBucketFamilyFixture {
                 next_family_id + 1,
                 Storage::next_distribution_bucket_family_id()
             );
-            // assert_eq!(buckets_number + 1, Storage::storage_buckets_number()); //TODO
+            assert_eq!(
+                family_number + 1,
+                Storage::distribution_bucket_family_number()
+            );
             assert!(<crate::DistributionBucketFamilyById<Test>>::contains_key(
                 next_family_id
             ));
@@ -1203,7 +1206,7 @@ impl CreateDistributionBucketBucketFamilyFixture {
                 next_family_id,
                 Storage::next_distribution_bucket_family_id()
             );
-            // assert_eq!(buckets_number, Storage::storage_buckets_number()); //TODO
+            assert_eq!(family_number, Storage::distribution_bucket_family_number());
             assert!(!<crate::DistributionBucketFamilyById<Test>>::contains_key(
                 next_family_id
             ));
