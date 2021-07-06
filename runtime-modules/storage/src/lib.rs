@@ -1014,6 +1014,12 @@ decl_event! {
         /// - distribution bucket ID
         /// - new status (accepting new bags)
         DistributionBucketStatusUpdated(DistributionBucketFamilyId, DistributionBucketId, bool),
+
+        /// Emits on deleting distribution bucket.
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        DistributionBucketDeleted(DistributionBucketFamilyId, DistributionBucketId),
     }
 }
 
@@ -1836,6 +1842,36 @@ decl_module! {
                 )
             );
         }
+
+        /// Delete distribution bucket. Must be empty.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_distribution_bucket(
+            origin,
+            family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+        ){
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
+            Self::ensure_distribution_bucket_exists(&family, &distribution_bucket_id)?;
+
+            //TODO: check emptiness
+
+            //TODO: check invitation
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            family.distribution_buckets.remove(&distribution_bucket_id);
+
+            <DistributionBucketFamilyById<T>>::insert(family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketDeleted(family_id, distribution_bucket_id)
+            );
+        }
+
 
         // ===== Distribution Operator actions =====
 
