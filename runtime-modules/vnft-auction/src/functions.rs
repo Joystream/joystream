@@ -1,3 +1,5 @@
+use frame_support::StorageMap;
+
 use crate::*;
 
 impl<T: Trait> Module<T> {
@@ -17,9 +19,9 @@ impl<T: Trait> Module<T> {
 
             // Only members are supposed to start auctions for already existing nfts
             if let ContentActor::Member(member_id) = actor {
-                let account_id = Self::authorize_auction_participant(origin, *member_id)?;
+                let account_id = Self::authorize_participant(origin, *member_id)?;
 
-                Self::ensure_vnft_ownership(&account_id, &vnft)?;
+                vnft.ensure_ownership::<T>(&account_id)?;
 
                 Ok(account_id)
             } else {
@@ -33,8 +35,8 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Authorize auction participant under given member id
-    pub(crate) fn authorize_auction_participant(
+    /// Authorize participant under given member id
+    pub(crate) fn authorize_participant(
         origin: T::Origin,
         member_id: MemberId<T>,
     ) -> Result<T::AccountId, Error<T>> {
@@ -73,9 +75,15 @@ impl<T: Trait> Module<T> {
             BalanceOf<T>,
         >,
     ) -> DispatchResult {
-        Self::ensure_vnft_does_not_exist(auction_params.video_id)?;
-        if let AuctionMode::WithIssuance(Some(royalty), _) = auction_params.auction_mode {
-            Self::ensure_royalty_bounds_satisfied(royalty)?;
+        match auction_params.auction_mode {
+            AuctionMode::WithIssuance(video_id, Some(royalty), _) => {
+                Self::ensure_vnft_does_not_exist(video_id)?;
+                Self::ensure_royalty_bounds_satisfied(royalty)?;
+            }
+            AuctionMode::WithoutIsuance(vnft_id) => {
+                Self::ensure_no_pending_transfers(vnft_id)?;
+            }
+            _ => (),
         }
 
         Self::ensure_round_time_bounds_satisfied(auction_params.round_time)?;
@@ -85,12 +93,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure given account id is vnft owner
-    pub(crate) fn ensure_vnft_ownership(
-        account_id: &T::AccountId,
-        vnft: &VNFT<T::AccountId>,
-    ) -> DispatchResult {
-        ensure!(*account_id == vnft.owner, Error::<T>::DoesNotOwnVNFT);
+    /// Ensure vNFT has no pending transfers
+    pub(crate) fn ensure_no_pending_transfers(vnft_id: T::VNFTId) -> DispatchResult {
+        ensure!(
+            !<PendingTransfers<T>>::contains_key(vnft_id),
+            Error::<T>::PendingTransferFound
+        );
         Ok(())
     }
 
@@ -149,22 +157,30 @@ impl<T: Trait> Module<T> {
     }
 
     /// Check whether auction for given video id exists
-    pub(crate) fn is_auction_exist(video_id: T::VideoId) -> bool {
-        <AuctionByVideoId<T>>::contains_key(video_id)
+    pub(crate) fn is_auction_exist(auction_id: AuctionId<VideoId<T>, T::VNFTId>) -> bool {
+        <AuctionById<T>>::contains_key(auction_id)
     }
 
-    // /// Check whether vnft for given vnft id exists
-    // pub(crate) fn is_vnft_exist(vnft_id: T::VNFTId) -> bool {
-
-    // }
-
-    /// Ensure auction for given video id exists
-    pub(crate) fn ensure_auction_exists(video_id: T::VideoId) -> Result<Auction<T>, Error<T>> {
+    /// Ensure auction for given id exists
+    pub(crate) fn ensure_auction_exists(
+        auction_id: AuctionId<VideoId<T>, T::VNFTId>,
+    ) -> Result<Auction<T>, Error<T>> {
         ensure!(
-            Self::is_auction_exist(video_id),
+            Self::is_auction_exist(auction_id),
             Error::<T>::AuctionDoesNotExist
         );
-        Ok(Self::auction_by_video_id(video_id))
+        Ok(Self::auction_by_id(auction_id))
+    }
+
+    /// Ensure auction for given id does not exist
+    pub(crate) fn ensure_auction_does_not_exist(
+        auction_id: AuctionId<VideoId<T>, T::VNFTId>,
+    ) -> Result<Auction<T>, Error<T>> {
+        ensure!(
+            Self::is_auction_exist(auction_id),
+            Error::<T>::AuctionDoesNotExist
+        );
+        Ok(Self::auction_by_id(auction_id))
     }
 
     /// Ensure given vnft exists
@@ -186,10 +202,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// Try complete auction when round time expired
-    pub(crate) fn try_complete_auction(auction: &Auction<T>, video_id: T::VideoId) -> bool {
+    pub(crate) fn try_complete_auction(auction: &Auction<T>) -> bool {
         let now = timestamp::Module::<T>::now();
         if (now - auction.last_bid_time) >= auction.round_time {
-            Self::complete_auction(auction, video_id);
+            Self::complete_auction(auction);
             true
         } else {
             false
@@ -197,12 +213,13 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete auction
-    pub(crate) fn complete_auction(auction: &Auction<T>, video_id: T::VideoId) {
+    pub(crate) fn complete_auction(auction: &Auction<T>) {
+        let auction_id = auction.auction_mode.get_auction_id();
         // Remove auction entry
-        <AuctionByVideoId<T>>::remove(video_id);
+        <AuctionById<T>>::remove(auction_id);
 
         match auction.auction_mode.clone() {
-            AuctionMode::WithIssuance(royalty, _) => {
+            AuctionMode::WithIssuance(video_id, royalty, _) => {
                 let last_bid = auction.last_bid;
 
                 // Slash last bidder bid and deposit it into auctioneer account
@@ -221,7 +238,7 @@ impl<T: Trait> Module<T> {
                 <Module<T>>::complete_vnft_auction_transfer(auction, vnft_id)
             }
         }
-        Self::deposit_event(RawEvent::AuctionCompleted(video_id, auction.to_owned()));
+        Self::deposit_event(RawEvent::AuctionCompleted(auction.to_owned()));
     }
 
     /// Issue vnft and update mapping relations
@@ -235,11 +252,11 @@ impl<T: Trait> Module<T> {
 
         <VNFTIdByVideo<T>>::insert(video_id, vnft_id);
 
-        <VNFTById<T>>::insert(vnft_id, VNFT::new(who, creator_royalty));
+        <VNFTById<T>>::insert(vnft_id, VNFT::new(who, creator_royalty.clone()));
 
         NextVNFTId::<T>::put(vnft_id + T::VNFTId::one());
 
-        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id));
+        Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id, creator_royalty));
     }
 
     /// Complete vnft transfer

@@ -44,5 +44,7 @@ decl_error! {
         ActionIsAlreadyActive,
         /// Provided actor is not an auction auctioneer.
         ActorIsNotAnAuctioneer,
+        /// Can not create aution for vNFT, which is already locked for transfer
+        PendingTransferFound,
     }
 }

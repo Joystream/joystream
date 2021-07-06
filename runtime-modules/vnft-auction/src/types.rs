@@ -16,16 +16,39 @@ pub type Royalty = Perbill;
 // Either new auction, which requires vNFT issance or auction for already existing nft.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AuctionMode<VNFTId: Default> {
+pub enum AuctionMode<VideoId: Default, VNFTId: Default> {
     // Auction, where nft issued at the end
-    WithIssuance(Option<Royalty>, Metadata),
+    WithIssuance(VideoId, Option<Royalty>, Metadata),
     // Auction for already existing nft
     WithoutIsuance(VNFTId),
 }
 
-impl<VNFTId: Default> Default for AuctionMode<VNFTId> {
+impl<VideoId: Default, VNFTId: Default> Default for AuctionMode<VideoId, VNFTId> {
     fn default() -> Self {
         Self::WithoutIsuance(VNFTId::default())
+    }
+}
+
+impl<VideoId: Default + Copy, VNFTId: Default + Copy> AuctionMode<VideoId, VNFTId> {
+    pub fn get_auction_id(&self) -> AuctionId<VideoId, VNFTId> {
+        match &self {
+            AuctionMode::WithIssuance(video_id, ..) => AuctionId::VideoId(*video_id),
+            AuctionMode::WithoutIsuance(vnft_id) => AuctionId::VNFTId(*vnft_id),
+        }
+    }
+}
+
+// AuctionId, represented either by video_id or vnft_id
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum AuctionId<VideoId: Default + Copy, VNFTId: Default + Copy> {
+    VideoId(VideoId),
+    VNFTId(VNFTId),
+}
+
+impl<VideoId: Default + Copy, VNFTId: Default + Copy> Default for AuctionId<VideoId, VNFTId> {
+    fn default() -> Self {
+        Self::VideoId(VideoId::default())
     }
 }
 
@@ -34,6 +57,7 @@ impl<VNFTId: Default> Default for AuctionMode<VNFTId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AuctionRecord<
     AccountId,
+    VideoId: Default,
     VNFTId: Default,
     Moment: BaseArithmetic + Copy,
     CuratorGroupId: Default + Copy,
@@ -43,7 +67,7 @@ pub struct AuctionRecord<
 > {
     pub auctioneer: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     pub auctioneer_account_id: AccountId,
-    pub auction_mode: AuctionMode<VNFTId>,
+    pub auction_mode: AuctionMode<VideoId, VNFTId>,
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     pub round_time: Moment,
@@ -55,15 +79,17 @@ pub struct AuctionRecord<
 
 impl<
         AccountId: Default + PartialEq,
+        VideoId: Default,
         VNFTId: Default,
         Moment: BaseArithmetic + Copy + Default,
         CuratorGroupId: Default + Copy + PartialEq,
         CuratorId: Default + Copy + PartialEq,
         MemberId: Default + Copy + PartialEq,
         Balance: Default + BaseArithmetic,
-    > AuctionRecord<AccountId, VNFTId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
+    >
+    AuctionRecord<AccountId, VideoId, VNFTId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
 {
-    pub fn new<VideoId>(
+    pub fn new(
         auctioneer: ContentActor<CuratorGroupId, CuratorId, MemberId>,
         auctioneer_account_id: AccountId,
         auction_params: AuctionParams<VNFTId, VideoId, Moment, Balance>,
@@ -146,6 +172,7 @@ impl<
 /// Auction alias type for simplification.
 pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::AccountId,
+    VideoId<T>,
     <T as Trait>::VNFTId,
     <T as timestamp::Trait>::Moment,
     CuratorGroupId<T>,
@@ -157,9 +184,8 @@ pub type Auction<T> = AuctionRecord<
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParams<VNFTId: Default, VideoId, Moment, Balance> {
-    pub auction_mode: AuctionMode<VNFTId>,
-    pub video_id: VideoId,
+pub struct AuctionParams<VNFTId: Default, VideoId: Default, Moment, Balance> {
+    pub auction_mode: AuctionMode<VideoId, VNFTId>,
     pub round_time: Moment,
     pub starting_price: Balance,
     pub minimal_bid_step: Balance,
@@ -173,11 +199,18 @@ pub struct VNFT<AccountId: Default> {
     pub creator_royalty: Option<(AccountId, Royalty)>,
 }
 
-impl<AccountId: Default> VNFT<AccountId> {
+impl<AccountId: Default + PartialEq> VNFT<AccountId> {
+    /// Create new vNFT
     pub fn new(owner: AccountId, creator_royalty: Option<(AccountId, Royalty)>) -> Self {
         Self {
             owner,
             creator_royalty,
         }
+    }
+
+    /// Ensure given account id is vnft owner
+    pub fn ensure_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
+        ensure!(self.owner.eq(owner), Error::<T>::DoesNotOwnVNFT);
+        Ok(())
     }
 }
