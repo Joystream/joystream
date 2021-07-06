@@ -46,5 +46,11 @@ decl_error! {
         ActorIsNotAnAuctioneer,
         /// Can not create aution for vNFT, which is already locked for transfer
         PendingTransferFound,
+        /// No pending transfers for given vNFT
+        PendingTransferDoesNotExist,
+        /// Pending transfer for given vNFT already exists
+        PendingAlreadyExists,
+        // No incoming transfers for given vnft origin
+        NoIncomingTransfers
     }
 }

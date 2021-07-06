@@ -81,7 +81,7 @@ impl<T: Trait> Module<T> {
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
             AuctionMode::WithoutIsuance(vnft_id) => {
-                Self::ensure_no_pending_transfers(vnft_id)?;
+                Self::ensure_pending_transfer_does_not_exist(vnft_id)?;
             }
             _ => (),
         }
@@ -90,15 +90,6 @@ impl<T: Trait> Module<T> {
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
         Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
 
-        Ok(())
-    }
-
-    /// Ensure vNFT has no pending transfers
-    pub(crate) fn ensure_no_pending_transfers(vnft_id: T::VNFTId) -> DispatchResult {
-        ensure!(
-            !<PendingTransfers<T>>::contains_key(vnft_id),
-            Error::<T>::PendingTransferFound
-        );
         Ok(())
     }
 
@@ -170,6 +161,39 @@ impl<T: Trait> Module<T> {
             Error::<T>::AuctionDoesNotExist
         );
         Ok(Self::auction_by_id(auction_id))
+    }
+
+    pub(crate) fn is_pending_transfer_exists(vnft_id: T::VNFTId) -> bool {
+        <PendingTransfers<T>>::iter_prefix_values(vnft_id).count() == 1
+    }
+
+    pub(crate) fn ensure_pending_transfer_exists(vnft_id: T::VNFTId) -> DispatchResult {
+        ensure!(
+            Self::is_pending_transfer_exists(vnft_id),
+            Error::<T>::PendingTransferDoesNotExist
+        );
+        Ok(())
+    }
+
+    /// Ensure vNFT has no pending transfers
+    pub(crate) fn ensure_pending_transfer_does_not_exist(vnft_id: T::VNFTId) -> DispatchResult {
+        ensure!(
+            !Self::is_pending_transfer_exists(vnft_id),
+            Error::<T>::PendingAlreadyExists
+        );
+        Ok(())
+    }
+
+    /// Ensure new pending transfer for given participant available to proceed
+    pub(crate) fn ensure_new_pending_transfer_available(
+        vnft_id: T::VNFTId,
+        participant: MemberId<T>,
+    ) -> DispatchResult {
+        ensure!(
+            <PendingTransfers<T>>::contains_key(vnft_id, participant),
+            Error::<T>::NoIncomingTransfers
+        );
+        Ok(())
     }
 
     /// Ensure auction for given id does not exist

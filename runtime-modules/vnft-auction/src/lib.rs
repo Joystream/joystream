@@ -76,8 +76,10 @@ decl_storage! {
         /// Map, representing AuctionId -> Auction relation
         pub AuctionById get (fn auction_by_id): map hasher(blake2_128_concat) AuctionId<VideoId<T>, T::VNFTId> => Auction<T>;
 
-        /// Representation for pending vNFT transfers, vnft_id => (sender, receiver)
-        pub PendingTransfers get (fn pending_transfers): map hasher(blake2_128_concat) T::VNFTId => (MemberId<T>, MemberId<T>);
+        /// Representation for pending vNFT transfers, vnft_id => receiver
+        pub PendingTransfers get (fn pending_transfers): double_map
+            hasher(blake2_128_concat) T::VNFTId,
+            hasher(blake2_128_concat) MemberId<T> => ();
 
         /// Next vNFT id
         pub NextVNFTId get(fn next_video_nft_id) config(): T::VNFTId;
@@ -289,33 +291,96 @@ decl_module! {
             Self::issue_vnft(content_actor_account_id, video_id, royalty);
         }
 
-         /// Start vNFT transfer
-         #[weight = 10_000_000] // TODO: adjust weight
-         pub fn start_transfer(
-             origin,
-             participant: MemberId<T>,
-             vnft_id: T::VNFTId,
-             to: MemberId<T>,
-         ) {
+        /// Start vNFT transfer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn start_transfer(
+            origin,
+            vnft_id: T::VNFTId,
+            from: MemberId<T>,
+            to: MemberId<T>,
+        ) {
 
-            let participant_account_id = Self::authorize_participant(origin, participant)?;
+            let from_account_id = Self::authorize_participant(origin, from)?;
 
             let vnft = Self::ensure_vnft_exists(vnft_id)?;
-            vnft.ensure_ownership::<T>(&participant_account_id)?;
+            vnft.ensure_ownership::<T>(&from_account_id)?;
 
             // Ensure there is no auction for given vnft
             Self::ensure_auction_does_not_exist(AuctionId::VNFTId(vnft_id))?;
+
+            // Ensure pending transfer isn`t started
+            Self::ensure_pending_transfer_does_not_exist(vnft_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Add vNFT transfer data to pending transfers storage
-            <PendingTransfers<T>>::insert(vnft_id, (participant, to));
+            <PendingTransfers<T>>::insert(vnft_id, to, ());
 
             // Trigger event
-            Self::deposit_event(RawEvent::TransferStarted(vnft_id, participant, to));
-         }
+            Self::deposit_event(RawEvent::TransferStarted(vnft_id, from, to));
+        }
+
+        /// Cancel vNFT transfer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_transfer(
+            origin,
+            vnft_id: T::VNFTId,
+            participant: MemberId<T>,
+        ) {
+
+            let participant_account_id = Self::authorize_participant(origin, participant)?;
+
+            Self::ensure_pending_transfer_exists(vnft_id)?;
+
+            let vnft = Self::ensure_vnft_exists(vnft_id)?;
+            vnft.ensure_ownership::<T>(&participant_account_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove vNFT transfer data from pending transfers storage
+            // Safe to call, because we always have one transfers per vnft_id
+            <PendingTransfers<T>>::remove_prefix(vnft_id);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TransferCancelled(vnft_id, participant));
+        }
+
+        /// Accept incoming vNFT transfer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_incoming_vnft(
+            origin,
+            vnft_id: T::VNFTId,
+            participant: MemberId<T>,
+        ) {
+
+            let participant_account_id = Self::authorize_participant(origin, participant)?;
+
+            Self::ensure_pending_transfer_exists(vnft_id)?;
+
+            // Ensure new pending transfer available to proceed
+            Self::ensure_new_pending_transfer_available(vnft_id, participant)?;
+
+            let mut vnft = Self::ensure_vnft_exists(vnft_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove vNFT transfer data from pending transfers storage
+            // Safe to call, because we always have one transfers per vnft_id
+            <PendingTransfers<T>>::remove_prefix(vnft_id);
+
+
+            vnft.owner = participant_account_id;
+            <VNFTById<T>>::insert(vnft_id, vnft);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TransferAccepted(vnft_id, participant));
+        }
     }
 }
 
@@ -352,5 +417,7 @@ decl_event!(
         AuctionCancelled(ContentActor, AuctionId),
         AuctionCompleted(Auction),
         TransferStarted(VNFTId, Member, Member),
+        TransferCancelled(VNFTId, Member),
+        TransferAccepted(VNFTId, Member),
     }
 );
