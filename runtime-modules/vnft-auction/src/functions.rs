@@ -163,10 +163,12 @@ impl<T: Trait> Module<T> {
         Ok(Self::auction_by_id(auction_id))
     }
 
+    /// Whether pending tansfer exist
     pub(crate) fn is_pending_transfer_exists(vnft_id: T::VNFTId) -> bool {
         <PendingTransfers<T>>::iter_prefix_values(vnft_id).count() == 1
     }
 
+    /// Ensure vNFT has pending transfer
     pub(crate) fn ensure_pending_transfer_exists(vnft_id: T::VNFTId) -> DispatchResult {
         ensure!(
             Self::is_pending_transfer_exists(vnft_id),
@@ -239,6 +241,7 @@ impl<T: Trait> Module<T> {
     /// Complete auction
     pub(crate) fn complete_auction(auction: &Auction<T>) {
         let auction_id = auction.auction_mode.get_auction_id();
+
         // Remove auction entry
         <AuctionById<T>>::remove(auction_id);
 

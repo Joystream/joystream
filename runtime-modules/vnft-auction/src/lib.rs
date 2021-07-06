@@ -11,9 +11,7 @@ use errors::*;
 use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
-    ensure,
-    traits::Get,
-    Parameter,
+    ensure, Parameter,
 };
 pub use frame_system::ensure_signed;
 pub use functions::*;
@@ -147,6 +145,7 @@ decl_module! {
                 return Ok(())
             }
 
+            // Create new auction
             let auction = AuctionRecord::new(auctioneer, auctioneer_account_id, auction_params.clone());
 
             <AuctionById<T>>::insert(auction_id, auction);
@@ -171,6 +170,7 @@ decl_module! {
             // Ensure given auction has no participants
             auction.ensure_is_not_active::<T>()?;
 
+            // Ensure given conntent actor is auctioneer
             auction.ensure_is_auctioneer::<T>(&auctioneer)?;
 
             //
@@ -258,12 +258,14 @@ decl_module! {
             royalty: Option<Royalty>,
         ) {
 
+            // Authorize content actor
             Self::authorize_content_actor(origin.clone(), &auctioneer)?;
 
             let content_actor_account_id = ensure_signed(origin)?;
 
             Self::ensure_vnft_does_not_exist(video_id)?;
 
+            // Enure royalty bounds satisfied, if provided
             if let Some(royalty) = royalty {
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
@@ -300,9 +302,13 @@ decl_module! {
             to: MemberId<T>,
         ) {
 
+            // Authorize participant under given member id
             let from_account_id = Self::authorize_participant(origin, from)?;
 
+            // Ensure given vnft exists
             let vnft = Self::ensure_vnft_exists(vnft_id)?;
+
+            // Ensure from_account_id is vnft owner
             vnft.ensure_ownership::<T>(&from_account_id)?;
 
             // Ensure there is no auction for given vnft

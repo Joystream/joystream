@@ -1,6 +1,6 @@
 use super::*;
 
-// Metadata for vNFT issuance
+/// Metadata for vNFT issuance
 type Metadata = Vec<u8>;
 
 pub type BalanceOf<T> =
@@ -10,7 +10,7 @@ pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
 pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;
 pub type MemberId<T> = <T as MembershipTypes>::MemberId;
 
-// Owner royalty
+/// Owner royalty
 pub type Royalty = Perbill;
 
 // Either new auction, which requires vNFT issance or auction for already existing nft.
@@ -30,6 +30,7 @@ impl<VideoId: Default, VNFTId: Default> Default for AuctionMode<VideoId, VNFTId>
 }
 
 impl<VideoId: Default + Copy, VNFTId: Default + Copy> AuctionMode<VideoId, VNFTId> {
+    /// Get auction id from auction mode
     pub fn get_auction_id(&self) -> AuctionId<VideoId, VNFTId> {
         match &self {
             AuctionMode::WithIssuance(video_id, ..) => AuctionId::VideoId(*video_id),
@@ -38,7 +39,7 @@ impl<VideoId: Default + Copy, VNFTId: Default + Copy> AuctionMode<VideoId, VNFTI
     }
 }
 
-// AuctionId, represented either by video_id or vnft_id
+/// AuctionId, represented either by video_id or vnft_id
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AuctionId<VideoId: Default + Copy, VNFTId: Default + Copy> {
@@ -89,6 +90,7 @@ impl<
     >
     AuctionRecord<AccountId, VideoId, VNFTId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
 {
+    /// Create a new auction record with provided parameters
     pub fn new(
         auctioneer: ContentActor<CuratorGroupId, CuratorId, MemberId>,
         auctioneer_account_id: AccountId,
@@ -152,11 +154,13 @@ impl<
         self.last_bidder.eq(&AccountId::default())
     }
 
+    /// Ensure auction is not active
     pub fn ensure_is_not_active<T: Trait>(&self) -> DispatchResult {
         ensure!(self.is_active(), Error::<T>::ActionIsAlreadyActive);
         Ok(())
     }
 
+    /// Ensure provided account id is auctioneer
     pub fn ensure_is_auctioneer<T: Trait>(
         &self,
         auctioneer: &ContentActor<CuratorGroupId, CuratorId, MemberId>,
