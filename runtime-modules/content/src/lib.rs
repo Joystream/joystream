@@ -1351,6 +1351,70 @@ decl_module! {
         ) {
             Self::not_implemented()?;
         }
+
+    // extrinsics for the forum feature
+
+    #[weight = 10_000_000]
+     fn create_thread(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            title_hash: T::Hash,
+            _text_hash: T::Hash,
+     channel_id: T::ChannelId
+        ) -> DispatchResult {
+
+            let account_id = ensure_signed(origin)?;
+
+            ensure_can_create_thread::<T>(&account_id, &forum_user_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Create and add new thread
+            let new_thread_id = <NextThreadId<T>>::get();
+
+            // Build a new thread
+            let new_thread = Thread_ {
+                title_hash: title_hash,
+                category_id: category_id,
+                author_id: forum_user_id,
+                cleanup_pay_off: BalanceOf::<T>::zero(),
+                number_of_posts: T::PostId::zero(),
+        channel_id: channel_id,
+            };
+
+            // Store thread
+            <ThreadById<T>>::mutate(category_id, new_thread_id, |value| {
+                *value = new_thread.clone()
+            });
+
+            // Add inital post to thread
+            // let _ = Self::add_new_post(
+            //     new_thread_id,
+            //     category_id,
+            //     &text,
+            //     forum_user_id,
+            //     true,
+            // );
+
+            // Update next thread id
+            <NextThreadId<T>>::mutate(|n| *n += One::one());
+
+            // Generate event
+            // Self::deposit_event(
+            //     RawEvent::ThreadCreated(
+            //         new_thread_id,
+            //         forum_user_id,
+            //         category_id,
+            //         title,
+            //         text,
+            //     )
+            // );
+
+            Ok(())
+        }
     }
 }
 

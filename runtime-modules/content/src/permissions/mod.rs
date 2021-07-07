@@ -263,6 +263,17 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     }
 }
 
+pub fn ensure_can_create_thread<T: Trait>(
+    account_id: &T::AccountId,
+    forum_user_id: &ForumUserId<T>,
+) -> DispatchResult {
+    ensure!(
+        T::is_member(forum_user_id, account_id),
+        Error::<T>::MemberAuthFailed
+    );
+    Ok(())
+}
+
 // pub fn ensure_actor_authorized_to_delete_stale_assets<T: Trait>(
 //     origin: T::Origin,
 //     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
