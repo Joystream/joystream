@@ -11,8 +11,16 @@ const awsConfig = new pulumi.Config('aws')
 const config = new pulumi.Config()
 
 const wsProviderEndpointURI = config.require('wsProviderEndpointURI')
-const isProduction = config.require('isProduction') === 'true'
+const isAnonymous = config.require('isAnonymous') === 'true'
 const lbReady = config.get('isLoadBalancerReady') === 'true'
+const name = 'storage-node'
+const colossusPort = parseInt(config.get('colossusPort') || '3000')
+const storage = parseInt(config.get('storage') || '40')
+
+let additionalParams: string[] | pulumi.Input<string>[] = []
+let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
+let caddyVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
+let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
 
 // Create a VPC for our cluster.
 const vpc = new awsx.ec2.Vpc('vpc', { numberOfAvailabilityZones: 2 })
@@ -39,9 +47,6 @@ export const colossusImage = repo.buildAndPushImage({
   context: '../../../',
 })
 
-const name = 'storage-node'
-const colossusPort = 3001
-
 // Create a Kubernetes Namespace
 const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
 
@@ -49,6 +54,29 @@ const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
 export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
+
+const pvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-pvc`, {
+  metadata: {
+    labels: appLabels,
+    namespace: namespaceName,
+    name: `${name}-pvc`,
+  },
+  spec: {
+    accessModes: ['ReadWriteOnce'],
+    resources: {
+      requests: {
+        storage: `${storage}Gi`,
+      },
+    },
+  },
+})
+
+volumes.push({
+  name: 'ipfs-data',
+  persistentVolumeClaim: {
+    claimName: `${name}-pvc`,
+  },
+})
 
 // Create a LoadBalancer Service for the Deployment
 const service = new k8s.core.v1.Service(
@@ -79,48 +107,6 @@ export let serviceHostname: pulumi.Output<string>
 serviceHostname = service.status.loadBalancer.ingress[0].hostname
 
 export let appLink: pulumi.Output<string>
-
-const publicUrlInput: pulumi.Input<string> = pulumi.interpolate`http://${serviceHostname}/`
-
-let additionalParams: string[] | pulumi.Input<string>[] = []
-let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
-let caddyVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
-let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
-
-if (isProduction) {
-  const remoteKeyFilePath = '/joystream/key-file.json'
-  const providerId = config.require('providerId')
-  const keyFile = config.require('keyFile')
-  const publicUrl = config.get('publicURL') ? config.get('publicURL')! : publicUrlInput
-
-  const keyConfig = new k8s.core.v1.ConfigMap(name, {
-    metadata: { namespace: namespaceName, labels: appLabels },
-    data: { 'fileData': fs.readFileSync(keyFile).toString() },
-  })
-  const keyConfigName = keyConfig.metadata.apply((m) => m.name)
-
-  additionalParams = ['--provider-id', providerId, '--key-file', remoteKeyFilePath, '--public-url', publicUrl]
-
-  volumeMounts.push({
-    mountPath: remoteKeyFilePath,
-    name: 'keyfile-volume',
-    subPath: 'fileData',
-  })
-
-  volumes.push({
-    name: 'keyfile-volume',
-    configMap: {
-      name: keyConfigName,
-    },
-  })
-
-  const passphrase = config.get('passphrase')
-  if (passphrase) {
-    additionalParams.push('--passphrase', passphrase)
-  }
-} else {
-  additionalParams.push('--anonymous')
-}
 
 if (lbReady) {
   async function lookupPromise(url: string) {
@@ -159,9 +145,46 @@ if (lbReady) {
     },
   })
 
-  appLink = pulumi.interpolate`${lbIp}.nip.io`
+  appLink = pulumi.interpolate`https://${lbIp}.nip.io`
 
   lbIp.apply((value) => console.log(`You can now access the app at: ${value}.nip.io`))
+
+  if (!isAnonymous) {
+    const remoteKeyFilePath = '/joystream/key-file.json'
+    const providerId = config.require('providerId')
+    const keyFile = config.require('keyFile')
+    const publicUrl = config.get('publicURL') ? config.get('publicURL')! : appLink
+
+    const keyConfig = new k8s.core.v1.ConfigMap('key-config', {
+      metadata: { namespace: namespaceName, labels: appLabels },
+      data: { 'fileData': fs.readFileSync(keyFile).toString() },
+    })
+    const keyConfigName = keyConfig.metadata.apply((m) => m.name)
+
+    additionalParams = ['--provider-id', providerId, '--key-file', remoteKeyFilePath, '--public-url', publicUrl]
+
+    volumeMounts.push({
+      mountPath: remoteKeyFilePath,
+      name: 'keyfile-volume',
+      subPath: 'fileData',
+    })
+
+    volumes.push({
+      name: 'keyfile-volume',
+      configMap: {
+        name: keyConfigName,
+      },
+    })
+
+    const passphrase = config.get('passphrase')
+    if (passphrase) {
+      additionalParams.push('--passphrase', passphrase)
+    }
+  }
+}
+
+if (isAnonymous) {
+  additionalParams.push('--anonymous')
 }
 
 // Create a Deployment
@@ -193,6 +216,12 @@ const deployment = new k8s.apps.v1.Deployment(
                 /usr/local/bin/start_ipfs config --json Gateway.PublicGateways \'{"localhost": null }\'; \
                 /usr/local/bin/start_ipfs config Datastore.StorageMax 200GB; \
                 /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true',
+              ],
+              volumeMounts: [
+                {
+                  name: 'ipfs-data',
+                  mountPath: '/data/ipfs',
+                },
               ],
             },
             // {
