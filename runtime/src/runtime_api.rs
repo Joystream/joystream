@@ -10,16 +10,11 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
-use crate::{
-    ContentDirectoryWorkingGroupInstance, DataDirectory, GatewayWorkingGroupInstance,
-    OperationsWorkingGroupInstance, StorageWorkingGroupInstance,
-};
-
 use crate::constants::PRIMARY_PROBABILITY;
 
 use crate::{
-    content, data_directory, AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration,
-    GrandpaAuthorityList, GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
+    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
+    GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
@@ -59,72 +54,10 @@ pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
-// Default Executive type without the RuntimeUpgrade
-// pub type Executive =
-//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
-
-// Alias for the builder working group
-pub(crate) type OperationsWorkingGroup<T> =
-    working_group::Module<T, OperationsWorkingGroupInstance>;
-
-// Alias for the gateway working group
-pub(crate) type GatewayWorkingGroup<T> = working_group::Module<T, GatewayWorkingGroupInstance>;
-
-// Alias for the storage working group
-pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
-
-// Alias for the content working group
-pub(crate) type ContentDirectoryWorkingGroup<T> =
-    working_group::Module<T, ContentDirectoryWorkingGroupInstance>;
-
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
-        content::Module::<Runtime>::on_runtime_upgrade();
-
-        let default_text_constraint = crate::working_group::default_text_constraint();
-
-        let default_storage_size_constraint =
-            crate::working_group::default_storage_size_constraint();
-
-        let default_content_working_group_mint_capacity = 0;
-
-        // Initialize new groups
-        OperationsWorkingGroup::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        GatewayWorkingGroup::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        DataDirectory::initialize_data_directory(
-            Vec::new(),
-            data_directory::DEFAULT_VOUCHER_SIZE_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_VOUCHER_OBJECTS_LIMIT_UPPER_BOUND,
-            data_directory::DEFAULT_GLOBAL_VOUCHER,
-            data_directory::DEFAULT_VOUCHER,
-            data_directory::DEFAULT_UPLOADING_BLOCKED_STATUS,
-        );
-
-        // Initialize existing groups
-        StorageWorkingGroup::<Runtime>::set_worker_storage_size_constraint(
-            default_storage_size_constraint,
-        );
-
-        ContentDirectoryWorkingGroup::<Runtime>::set_worker_storage_size_constraint(
-            default_storage_size_constraint,
-        );
-
         10_000_000 // TODO: adjust weight
     }
 }
