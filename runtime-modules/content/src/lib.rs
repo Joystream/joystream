@@ -494,10 +494,38 @@ pub struct Thread_<ForumUserId, CategoryId, Hash, Balance, NumberOfPosts, Channe
 pub type Thread<T> = Thread_<
     ForumUserId<T>,
     <T as Trait>::CategoryId,
-    <T as frame_system::Trait>::Hashing,
+    <T as frame_system::Trait>::Hash,
     BalanceOf<T>,
     <T as Trait>::PostId,
     <T as StorageOwnership>::ChannelId,
+>;
+
+/// Represents a thread post
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct Post_<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
+    /// Id of thread to which this post corresponds.
+    pub thread_id: ThreadId,
+
+    /// Hash of current text
+    pub text_hash: Hash,
+
+    /// Author of post.
+    pub author_id: ForumUserId,
+
+    /// Cleanup pay off
+    pub cleanup_pay_off: Balance,
+
+    /// When it was created or last edited
+    pub last_edited: BlockNumber,
+}
+
+pub type Post<T> = Post_<
+    ForumUserId<T>,
+    <T as Trait>::ThreadId,
+    <T as frame_system::Trait>::Hash,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::BlockNumber,
 >;
 
 decl_storage! {
