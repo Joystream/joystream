@@ -567,6 +567,26 @@ decl_storage! {
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
+
+    /// Category identifier value to be used for the next Category created.
+    pub NextCategoryId get(fn next_category_id) config(): T::CategoryId;
+
+    /// Counter for all existing categories.
+    pub CategoryCounter get(fn category_counter) config(): T::CategoryId;
+
+    /// Map thread identifier to corresponding thread.
+    pub ThreadById get(fn thread_by_id) config(): double_map hasher(blake2_128_concat)
+        T::CategoryId, hasher(blake2_128_concat) T::ThreadId => Thread<T>;
+
+    /// Thread identifier value to be used for next Thread in threadById.
+    pub NextThreadId get(fn next_thread_id) config(): T::ThreadId;
+
+    /// Post identifier value to be used for for next post created.
+    pub NextPostId get(fn next_post_id) config(): T::PostId;
+
+    /// Map post identifier to corresponding post.
+    pub PostById get(fn post_by_id) config(): double_map hasher(blake2_128_concat) T::ThreadId,
+        hasher(blake2_128_concat) T::PostId => Post<T>;
     }
 }
 
