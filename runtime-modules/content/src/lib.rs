@@ -39,6 +39,8 @@ pub use common::{
     MembershipTypes, StorageOwnership, Url,
 };
 
+pub type ForumUserId<T> = common::MemberId<T>;
+
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
@@ -115,6 +117,15 @@ pub trait Trait:
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem: StorageSystem<Self>;
+
+    // counting posts
+    type PostId: NumericIdentifier;
+
+    // counting threads
+    type ThreadId: NumericIdentifier;
+
+    // categories
+    type CategoryId: NumericIdentifier;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -455,6 +466,39 @@ pub struct Person<MemberId> {
     /// Who can update or delete this person.
     controlled_by: PersonController<MemberId>,
 }
+
+// channel forum data structures
+/// Represents a thread
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+pub struct Thread_<ForumUserId, CategoryId, Hash, Balance, NumberOfPosts, ChannelId> {
+    /// Title hash
+    pub title_hash: Hash,
+
+    /// Category in which this thread lives
+    pub category_id: CategoryId,
+
+    /// Author of post.
+    pub author_id: ForumUserId,
+
+    /// Pay off by deleting
+    pub cleanup_pay_off: Balance,
+
+    /// Number of posts in the thread
+    pub number_of_posts: NumberOfPosts,
+
+    /// channel whose forum this thread belongs to
+    pub channel_id: ChannelId,
+}
+
+pub type Thread<T> = Thread_<
+    ForumUserId<T>,
+    <T as Trait>::CategoryId,
+    <T as frame_system::Trait>::Hashing,
+    BalanceOf<T>,
+    <T as Trait>::PostId,
+    <T as StorageOwnership>::ChannelId,
+>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
