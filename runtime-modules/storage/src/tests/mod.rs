@@ -3964,3 +3964,80 @@ fn update_distribution_buckets_per_bag_limit_fails_with_incorrect_value() {
             ));
     });
 }
+
+#[test]
+fn update_distribution_bucket_mode_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let distributing = false;
+        UpdateDistributionBucketModeFixture::default()
+            .with_family_id(family_id)
+            .with_bucket_id(bucket_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_distributing(distributing)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Storage::distribution_bucket_family_by_id(family_id)
+                .distribution_buckets
+                .get(&bucket_id)
+                .unwrap()
+                .accepting_new_bags,
+            distributing
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketModeUpdated(
+            family_id,
+            bucket_id,
+            distributing,
+        ));
+    });
+}
+
+#[test]
+fn update_distribution_bucket_mode_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        UpdateDistributionBucketModeFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_distribution_bucket_mode_fails_with_invalid_distribution_bucket() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        UpdateDistributionBucketModeFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
+    });
+}
+
+#[test]
+fn update_distribution_bucket_mode_fails_with_invalid_distribution_bucket_family() {
+    build_test_externalities().execute_with(|| {
+        UpdateDistributionBucketModeFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
