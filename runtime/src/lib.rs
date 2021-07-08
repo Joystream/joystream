@@ -669,6 +669,8 @@ parameter_types! {
     pub const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
         number_of_storage_buckets: 4
     }; //TODO: adjust value
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+        storage::DistributionBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
 }
 
 impl storage::Trait for Runtime {
@@ -691,6 +693,7 @@ impl storage::Trait for Runtime {
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
+    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
