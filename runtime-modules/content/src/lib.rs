@@ -1502,9 +1502,52 @@ decl_module! {
             // );
 
             Ok(())
-
     }
 
+    #[weight = 10_000_000]
+    fn edit_post_text(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            _category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+            post_id: T::PostId,
+            new_text_hash: T::Hash,
+        ) -> DispatchResult {
+            // Ensure data migration is done
+
+            let account_id = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+            // Make sure there exists a mutable post with post id `post_id`
+            let post = Self::ensure_post_exists(&thread_id, &post_id)?;
+
+            // Signer does not match creator of post with identifier postId
+            ensure!(post.author_id == forum_user_id, Error::<T>::AccountDoesNotMatchPostAuthor);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update post text
+            let mut post = post;
+            post.text_hash = new_text_hash;
+            post.last_edited = frame_system::Module::<T>::block_number();
+
+            <PostById<T>>::insert(thread_id, post_id, post);
+
+            // Generate event
+            // Self::deposit_event(RawEvent::PostTextUpdated(
+            //         post_id,
+            //         forum_user_id,
+            //         category_id,
+            //         thread_id,
+            //         new_text
+            //     ));
+
+            Ok(())
+        }
     }
 }
 
@@ -1654,6 +1697,17 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    fn ensure_post_exists(
+        thread_id: &T::ThreadId,
+        post_id: &T::PostId,
+    ) -> Result<Post<T>, Error<T>> {
+        ensure!(
+            PostById::<T>::contains_key(thread_id, post_id),
+            Error::<T>::PostDoesNotExist,
+        );
+        Ok(PostById::<T>::get(thread_id, post_id))
     }
 }
 

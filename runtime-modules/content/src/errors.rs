@@ -28,8 +28,11 @@ decl_error! {
         /// Curator id is not a worker id in content working group
         CuratorIdInvalid,
 
-            /// Member Id invalid
+        /// Member Id invalid
         MemberIdInvalid,
+
+        /// Member Id invalid
+        AccountDoesNotMatchPostAuthor,
 
 
         // Authentication Errors
@@ -55,6 +58,9 @@ decl_error! {
 
         /// A Channel or Video Category does not exist.
         CategoryDoesNotExist,
+
+        /// A Post does not exist.
+        PostDoesNotExist,
 
         /// Channel does not exist
         ChannelDoesNotExist,
