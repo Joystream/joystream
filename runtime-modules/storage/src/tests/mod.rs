@@ -8,6 +8,7 @@ use frame_support::traits::Currency;
 use frame_support::{StorageMap, StorageValue, StorageDoubleMap};
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::FromIterator;
 
@@ -22,7 +23,7 @@ use crate::{
 
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
-    DefaultChannelDynamicBagCreationPolicy, DefaultMemberDynamicBagCreationPolicy,
+    DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag,
     MaxRandomIterationNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
@@ -3230,7 +3231,7 @@ fn test_storage_bucket_picking_for_bag_non_random() {
         assert_eq!(bucket_ids, expected_ids);
 
         // No storage buckets required
-        crate::DynamicBagCreationPolicies::insert(
+        crate::DynamicBagCreationPolicies::<Test>::insert(
             DynamicBagType::Member,
             DynamicBagCreationPolicy::default(),
         );
@@ -3312,7 +3313,7 @@ fn test_storage_bucket_picking_for_bag_with_randomness() {
         assert!(!bucket_ids.contains(removed_bucket_id));
 
         // No storage buckets required
-        crate::DynamicBagCreationPolicies::insert(
+        crate::DynamicBagCreationPolicies::<Test>::insert(
             DynamicBagType::Member,
             DynamicBagCreationPolicy::default(),
         );
@@ -3424,7 +3425,10 @@ fn dynamic_bag_creation_policy_defaults_and_updates_succeeded() {
         // Change member dynamic bag creation policy.
         let dynamic_bag_type = DynamicBagType::Member;
         let policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_type);
-        assert_eq!(policy, DefaultMemberDynamicBagCreationPolicy::get());
+        assert_eq!(
+            policy.number_of_storage_buckets,
+            DefaultMemberDynamicBagNumberOfStorageBuckets::get()
+        );
 
         UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -3438,7 +3442,10 @@ fn dynamic_bag_creation_policy_defaults_and_updates_succeeded() {
         // Change channel dynamic bag creation policy.
         let dynamic_bag_type = DynamicBagType::Channel;
         let policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_type);
-        assert_eq!(policy, DefaultChannelDynamicBagCreationPolicy::get());
+        assert_eq!(
+            policy.number_of_storage_buckets,
+            DefaultChannelDynamicBagNumberOfStorageBuckets::get()
+        );
 
         UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -4036,6 +4043,65 @@ fn update_distribution_bucket_mode_fails_with_invalid_distribution_bucket_family
     build_test_externalities().execute_with(|| {
         UpdateDistributionBucketModeFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
+
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let dynamic_bag_type = DynamicBagType::Channel;
+        let new_bucket_number = 40;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let families = BTreeMap::from_iter(vec![(family_id, new_bucket_number)]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families.clone())
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(
+            dynamic_bag_type,
+            families,
+        ));
+    });
+}
+
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_fails_with_invalid_family_id() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_type = DynamicBagType::Channel;
+        let new_bucket_number = 40;
+        let invalid_family_id = 111;
+
+        let families = BTreeMap::from_iter(vec![(invalid_family_id, new_bucket_number)]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families.clone())
+            .with_dynamic_bag_type(dynamic_bag_type)
             .call_and_assert(Err(
                 Error::<Test>::DistributionBucketFamilyDoesntExist.into()
             ));

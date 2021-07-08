@@ -63,7 +63,6 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
-use storage::DynamicBagCreationPolicy;
 
 // Node dependencies
 pub use common;
@@ -662,12 +661,8 @@ parameter_types! {
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
-    pub const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
-        number_of_storage_buckets: 4
-    }; //TODO: adjust value
-    pub const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
-        number_of_storage_buckets: 4
-    }; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 4; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4; //TODO: adjust value
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
         storage::DistributionBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
 }
@@ -685,8 +680,10 @@ impl storage::Trait for Runtime {
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
-    type DefaultMemberDynamicBagCreationPolicy = DefaultMemberDynamicBagCreationPolicy;
-    type DefaultChannelDynamicBagCreationPolicy = DefaultChannelDynamicBagCreationPolicy;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
     type Randomness = RandomnessCollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;

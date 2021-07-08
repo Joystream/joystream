@@ -68,6 +68,8 @@
 //! updates "Distribution buckets per bag" number limit.
 //! - [update_distribution_bucket_mode](./struct.Module.html#method.distribution_buckets_per_bag_limit) -
 //! updates "distributing" flag for the distribution bucket.
+//! - [update_families_in_dynamic_bag_creation_policy](./struct.Module.html#method.update_families_in_dynamic_bag_creation_policy) -
+//!  updates distribution bucket families used in given dynamic bag creation policy.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -93,6 +95,8 @@
 //! - MaxDistributionBucketNumberPerFamily
 //!
 
+// Compiler demand.
+#![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 // #![warn(missing_docs)] // Cannot be enabled by default because of the Substrate issue.
@@ -267,11 +271,11 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// "Distribution buckets per bag" value constraint.
     type DistributionBucketsPerBagValueConstraint: Get<DistributionBucketsPerBagValueConstraint>;
 
-    /// Defines the default dynamic bag creation policy for members.
-    type DefaultMemberDynamicBagCreationPolicy: Get<DynamicBagCreationPolicy>;
+    /// Defines the default dynamic bag creation policy for members (storage bucket number).
+    type DefaultMemberDynamicBagNumberOfStorageBuckets: Get<u64>;
 
-    /// Defines the default dynamic bag creation policy for channels.
-    type DefaultChannelDynamicBagCreationPolicy: Get<DynamicBagCreationPolicy>;
+    /// Defines the default dynamic bag creation policy for channels (storage bucket number).
+    type DefaultChannelDynamicBagNumberOfStorageBuckets: Get<u64>;
 
     /// Defines max random iteration number (eg.: when picking the storage buckets).
     type MaxRandomIterationNumber: Get<u64>;
@@ -367,12 +371,17 @@ impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccoun
 /// It describes how many storage buckets should store the bag.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DynamicBagCreationPolicy {
+pub struct DynamicBagCreationPolicy<DistributionBucketFamilyId: Ord> {
     /// The number of storage buckets which should replicate the new bag.
     pub number_of_storage_buckets: u64,
+
+    /// The set of distribution bucket families which should be sampled
+    /// to distribute bag, and for each the number of buckets in that family
+    /// which should be used.
+    pub families: BTreeMap<DistributionBucketFamilyId, u32>,
 }
 
-impl DynamicBagCreationPolicy {
+impl<DistributionBucketFamilyId: Ord> DynamicBagCreationPolicy<DistributionBucketFamilyId> {
     // Verifies non-zero number of storage buckets.
     pub(crate) fn no_storage_buckets_required(&self) -> bool {
         self.number_of_storage_buckets == 0
@@ -809,7 +818,8 @@ decl_storage! {
 
         /// DynamicBagCreationPolicy by bag type storage map.
         pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy):
-            map hasher(blake2_128_concat) DynamicBagType => DynamicBagCreationPolicy;
+            map hasher(blake2_128_concat) DynamicBagType =>
+            DynamicBagCreationPolicy<T::DistributionBucketFamilyId>;
 
         /// 'Data objects for bags' storage double map.
         pub DataObjectsById get (fn data_object_by_id): double_map
@@ -1053,6 +1063,15 @@ decl_event! {
         /// - distribution bucket ID
         /// - distributing
         DistributionBucketModeUpdated(DistributionBucketFamilyId, DistributionBucketId, bool),
+
+        /// Emits on dynamic bag creation policy update (distribution bucket families).
+        /// Params
+        /// - dynamic bag type
+        /// - families and bucket numbers
+        FamiliesInDynamicBagCreationPolicyUpdated(
+            DynamicBagType,
+            BTreeMap<DistributionBucketFamilyId, u32>
+        ),
     }
 }
 
@@ -1230,13 +1249,15 @@ decl_module! {
         const StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
             T::StorageBucketsPerBagValueConstraint::get();
 
-        /// Exports const - the default dynamic bag creation policy for members.
-        const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy =
-            T::DefaultMemberDynamicBagCreationPolicy::get();
+        /// Exports const - the default dynamic bag creation policy for members (storage bucket
+        /// number).
+        const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 =
+            T::DefaultMemberDynamicBagNumberOfStorageBuckets::get();
 
-        /// Exports const - the default dynamic bag creation policy for channels.
-        const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy =
-            T::DefaultChannelDynamicBagCreationPolicy::get();
+        /// Exports const - the default dynamic bag creation policy for channels (storage bucket
+        /// number).
+        const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 =
+            T::DefaultChannelDynamicBagNumberOfStorageBuckets::get();
 
         /// Exports const - max allowed distribution bucket family number.
         const MaxDistributionBucketFamilyNumber: u64 = T::MaxDistributionBucketFamilyNumber::get();
@@ -1363,7 +1384,7 @@ decl_module! {
 
             creation_policy.number_of_storage_buckets = number_of_storage_buckets;
 
-            DynamicBagCreationPolicies::insert(dynamic_bag_type, creation_policy);
+            DynamicBagCreationPolicies::<T>::insert(dynamic_bag_type, creation_policy);
 
             Self::deposit_event(
                 RawEvent::NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(
@@ -2001,6 +2022,35 @@ decl_module! {
                     family_id,
                     distribution_bucket_id,
                     distributing
+                )
+            );
+        }
+
+        /// Update number of distributed buckets used in given dynamic bag creation policy.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_families_in_dynamic_bag_creation_policy(
+            origin,
+            dynamic_bag_type: DynamicBagType,
+            families: BTreeMap<T::DistributionBucketFamilyId, u32>
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            Self::validate_update_families_in_dynamic_bag_creation_policy_params(&families)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let mut creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+
+            creation_policy.families = families.clone();
+
+            DynamicBagCreationPolicies::<T>::insert(dynamic_bag_type, creation_policy);
+
+            Self::deposit_event(
+                RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(
+                    dynamic_bag_type,
+                    families
                 )
             );
         }
@@ -2808,18 +2858,23 @@ impl<T: Trait> Module<T> {
     // Get default dynamic bag policy by bag type.
     fn get_default_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
-    ) -> DynamicBagCreationPolicy {
-        match bag_type {
-            DynamicBagType::Member => T::DefaultMemberDynamicBagCreationPolicy::get(),
-            DynamicBagType::Channel => T::DefaultChannelDynamicBagCreationPolicy::get(),
+    ) -> DynamicBagCreationPolicy<T::DistributionBucketFamilyId> {
+        let number_of_storage_buckets = match bag_type {
+            DynamicBagType::Member => T::DefaultMemberDynamicBagNumberOfStorageBuckets::get(),
+            DynamicBagType::Channel => T::DefaultChannelDynamicBagNumberOfStorageBuckets::get(),
+        };
+
+        DynamicBagCreationPolicy::<T::DistributionBucketFamilyId> {
+            number_of_storage_buckets,
+            ..Default::default()
         }
     }
 
     // Loads dynamic bag creation policy or use default values.
     pub(crate) fn get_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
-    ) -> DynamicBagCreationPolicy {
-        if DynamicBagCreationPolicies::contains_key(bag_type) {
+    ) -> DynamicBagCreationPolicy<T::DistributionBucketFamilyId> {
+        if DynamicBagCreationPolicies::<T>::contains_key(bag_type) {
             return Self::dynamic_bag_creation_policy(bag_type);
         }
 
@@ -2973,6 +3028,18 @@ impl<T: Trait> Module<T> {
                 !distribution_bucket_ids.contains(&bucket_id),
                 Error::<T>::DistributionBucketIsBoundToBag
             );
+        }
+
+        Ok(())
+    }
+
+    // Ensures validity of the `update_families_in_dynamic_bag_creation_policy` extrinsic parameters
+    fn validate_update_families_in_dynamic_bag_creation_policy_params(
+        families: &BTreeMap<T::DistributionBucketFamilyId, u32>,
+    ) -> DispatchResult {
+        // TODO: check bucket number? also for storage buckets?
+        for (family_id, _) in families.iter() {
+            Self::ensure_distribution_bucket_family_exists(family_id)?;
         }
 
         Ok(())

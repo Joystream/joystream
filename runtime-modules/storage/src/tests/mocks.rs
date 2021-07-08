@@ -10,8 +10,6 @@ use sp_runtime::{
     ModuleId, Perbill,
 };
 
-use crate::DynamicBagCreationPolicy;
-
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -62,12 +60,8 @@ parameter_types! {
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
     pub const MaxRandomIterationNumber: u64 = 3;
-        pub const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
-        number_of_storage_buckets: 3
-    };
-    pub const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
-        number_of_storage_buckets: 4
-    };
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
 }
@@ -92,8 +86,10 @@ impl crate::Trait for Test {
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = ();
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
-    type DefaultMemberDynamicBagCreationPolicy = DefaultMemberDynamicBagCreationPolicy;
-    type DefaultChannelDynamicBagCreationPolicy = DefaultChannelDynamicBagCreationPolicy;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
     type Randomness = CollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;

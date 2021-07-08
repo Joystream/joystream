@@ -2,6 +2,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
@@ -1561,5 +1562,55 @@ impl UpdateDistributionBucketModeFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct UpdateFamiliesInDynamicBagCreationPolicyFixture {
+    origin: RawOrigin<u64>,
+    dynamic_bag_type: DynamicBagType,
+    families: BTreeMap<u64, u32>,
+}
+
+impl UpdateFamiliesInDynamicBagCreationPolicyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            dynamic_bag_type: Default::default(),
+            families: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_families(self, families: BTreeMap<u64, u32>) -> Self {
+        Self { families, ..self }
+    }
+
+    pub fn with_dynamic_bag_type(self, dynamic_bag_type: DynamicBagType) -> Self {
+        Self {
+            dynamic_bag_type,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+
+        let actual_result = Storage::update_families_in_dynamic_bag_creation_policy(
+            self.origin.clone().into(),
+            self.dynamic_bag_type,
+            self.families.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+        if actual_result.is_ok() {
+            assert_eq!(new_policy.families, self.families);
+        } else {
+            assert_eq!(old_policy, new_policy);
+        }
     }
 }
