@@ -6,3 +6,4 @@ query-node/**/dist
 query-node/lib
 cli/
 tests/
+devops/
