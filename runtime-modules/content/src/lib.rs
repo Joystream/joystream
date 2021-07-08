@@ -23,7 +23,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -1454,6 +1454,55 @@ decl_module! {
             //     ));
 
             Ok(())
+    }
+
+    #[weight = 10_000_000]
+    fn add_post(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+            text_hash: <T as frame_system::Trait>::Hash,
+    ) -> DispatchResult {
+         let account_id = ensure_signed(origin)?;
+
+        // Make sure thread exists and is mutable
+        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+        // Add new post
+
+    let new_post_id = <NextPostId<T>>::get();
+
+        // Update next post id
+        <NextPostId<T>>::mutate(|n| *n += One::one());
+
+            // Build a post
+            let new_post = Post_ {
+                thread_id: thread_id,
+                text_hash: text_hash,
+                author_id: forum_user_id,
+                cleanup_pay_off: BalanceOf::<T>::zero(),
+                last_edited: frame_system::Module::<T>::block_number(),
+            };
+
+            <PostById<T>>::insert(thread_id, new_post_id, new_post);
+
+        let mut thread = <ThreadById<T>>::get(category_id, thread_id);
+        thread.number_of_posts = thread.number_of_posts.saturating_add(T::PostId::one());
+
+        <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
+
+            // Generate event
+            // Self::deposit_event(
+            //     RawEvent::PostAdded(post_id, forum_user_id, category_id, thread_id, text, editable)
+            // );
+
+            Ok(())
+
     }
 
     }
