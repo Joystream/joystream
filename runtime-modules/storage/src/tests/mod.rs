@@ -5,7 +5,7 @@ pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
-use frame_support::{StorageDoubleMap, StorageMap};
+use frame_support::{StorageMap, StorageValue, StorageDoubleMap};
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
@@ -3760,4 +3760,167 @@ fn delete_distribution_bucket_fails_with_non_existing_distribution_bucket_family
                 Error::<Test>::DistributionBucketFamilyDoesntExist.into()
             ));
     });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        set_default_distribution_buckets_per_bag_limit();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_accept_new_bags(true)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::static_bag(static_bag_id);
+        assert_eq!(bag.distributed_by, add_buckets);
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketsUpdatedForBag(
+            bag_id,
+            family_id,
+            add_buckets,
+            BTreeSet::new(),
+        ));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
+    build_test_externalities().execute_with(|| {
+        set_default_distribution_buckets_per_bag_limit();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_accept_new_bags(false)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bag_id(bag_id.clone())
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketDoesntAcceptNewBags.into()
+            ));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_fails_with_empty_params() {
+    build_test_externalities().execute_with(|| {
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketIdCollectionsAreEmpty.into()
+            ));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_fails_with_non_existing_distribution_buckets() {
+    build_test_externalities().execute_with(|| {
+        set_default_distribution_buckets_per_bag_limit();
+
+        let invalid_bucket_id = 11000;
+        let buckets = BTreeSet::from_iter(vec![invalid_bucket_id]);
+        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        // Invalid added bucket ID.
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_add_bucket_ids(buckets.clone())
+            .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
+
+        // Invalid removed bucket ID.
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_remove_bucket_ids(buckets.clone())
+            .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
+    });
+}
+
+fn set_default_distribution_buckets_per_bag_limit() {
+    crate::DistributionBucketsPerBagLimit::put(5);
 }

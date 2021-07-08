@@ -58,8 +58,12 @@
 //! deletes distribution bucket family.
 //! - [create_distribution_bucket](./struct.Module.html#method.create_distribution_bucket) -
 //! creates distribution bucket.
+//! - [delete_distribution_bucket](./struct.Module.html#method.delete_distribution_bucket) -
+//! deletes distribution bucket.
 //! - [update_distribution_bucket_status](./struct.Module.html#method.update_distribution_bucket_status) -
 //! updates distribution bucket status (accepting new bags).
+//! - [update_distribution_buckets_for_bag](./struct.Module.html#method.update_distribution_buckets_for_bag) -
+//! updates distribution buckets for a bag.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -120,6 +124,7 @@ use storage_bucket_picker::StorageBucketPicker;
 
 // TODO: constants
 // Max number of pending invitations per distribution bucket.
+// TODO: mut in extrinsics
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -254,6 +259,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// "Storage buckets per bag" value constraint.
     type StorageBucketsPerBagValueConstraint: Get<StorageBucketsPerBagValueConstraint>;
 
+    /// "Distribution buckets per bag" value constraint.
+    type DistributionBucketsPerBagValueConstraint: Get<DistributionBucketsPerBagValueConstraint>;
+
     /// Defines the default dynamic bag creation policy for members.
     type DefaultMemberDynamicBagCreationPolicy: Get<DynamicBagCreationPolicy>;
 
@@ -368,6 +376,9 @@ impl DynamicBagCreationPolicy {
 
 /// "Storage buckets per bag" value constraint type.
 pub type StorageBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
+
+/// "Distribution buckets per bag" value constraint type.
+pub type DistributionBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
 
 /// Local module account handler.
 pub type StorageTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
@@ -812,6 +823,9 @@ decl_storage! {
 
         /// Distribution bucket id counter. Starts at zero.
         pub NextDistributionBucketId get(fn next_distribution_bucket_id): T::DistributionBucketId;
+
+        /// "Distribution buckets per bag" number limit.
+        pub DistributionBucketsPerBagLimit get (fn distribution_buckets_per_bag_limit): u64;
     }
 }
 
@@ -1008,6 +1022,18 @@ decl_event! {
         /// - distribution bucket family ID
         /// - distribution bucket ID
         DistributionBucketDeleted(DistributionBucketFamilyId, DistributionBucketId),
+
+        /// Emits on updating distribution buckets for bag.
+        /// Params
+        /// - bag ID
+        /// - storage buckets to add ID collection
+        /// - storage buckets to remove ID collection
+        DistributionBucketsUpdatedForBag(
+            BagId,
+            DistributionBucketFamilyId,
+            BTreeSet<DistributionBucketId>,
+            BTreeSet<DistributionBucketId>
+        ),
     }
 }
 
@@ -1139,6 +1165,21 @@ decl_error! {
 
         /// Distribution bucket doesn't exist.
         DistributionBucketDoesntExist,
+
+        /// Distribution bucket id collections are empty.
+        DistributionBucketIdCollectionsAreEmpty,
+
+        /// Distribution bucket doesn't accept new bags.
+        DistributionBucketDoesntAcceptNewBags,
+
+        /// Max distribution bucket number per bag limit exceeded.
+        MaxDistributionBucketNumberPerBagLimitExceeded,
+
+        /// Distribution bucket is not bound to a bag.
+        DistributionBucketIsNotBoundToBag,
+
+        /// Distribution bucket is bound to a bag.
+        DistributionBucketIsBoundToBag,
     }
 }
 
@@ -1178,6 +1219,10 @@ decl_module! {
         /// Exports const - max allowed distribution bucket number per family.
         const MaxDistributionBucketNumberPerFamily: u64 =
             T::MaxDistributionBucketNumberPerFamily::get();
+
+        /// Exports const - "Distribution buckets per bag" value constraint.
+        const DistributionBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
+            T::DistributionBucketsPerBagValueConstraint::get();
 
         // ===== Storage Lead actions =====
 
@@ -1721,6 +1766,8 @@ decl_module! {
 
             // TODO: check for emptiness
 
+            // TODO: check dynamic bag policy
+
             //
             // == MUTATION SAFE ==
             //
@@ -1836,6 +1883,70 @@ decl_module! {
             );
         }
 
+        /// Updates distribution buckets for a bag.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_distribution_buckets_for_bag(
+            origin,
+            bag_id: BagId<T>,
+            family_id: T::DistributionBucketFamilyId, //TODO: remove this constraint?
+            add_buckets: BTreeSet<T::DistributionBucketId>,
+            remove_buckets: BTreeSet<T::DistributionBucketId>,
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            Self::validate_update_distribution_buckets_for_bag_params(
+                &bag_id,
+                &family_id,
+                &add_buckets,
+                &remove_buckets,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update vouchers.
+            if !add_buckets.is_empty() {
+                BagManager::<T>::add_distribution_buckets(&bag_id, add_buckets.clone());
+            }
+            if !remove_buckets.is_empty() {
+                BagManager::<T>::remove_distribution_buckets(&bag_id, remove_buckets.clone());
+            }
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketsUpdatedForBag(
+                    bag_id,
+                    family_id,
+                    add_buckets,
+                    remove_buckets
+                )
+            );
+        }
+
+        //TODO: distribution
+
+        //         /// Updates "Storage buckets per bag" number limit.
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
+        //     T::ensure_storage_working_group_leader_origin(origin)?;
+        //
+        //     T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
+        //         new_limit,
+        //         Error::<T>::StorageBucketsPerBagLimitTooLow,
+        //         Error::<T>::StorageBucketsPerBagLimitTooHigh,
+        //     )?;
+        //
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+        //
+        //     StorageBucketsPerBagLimit::put(new_limit);
+        //
+        //     Self::deposit_event(RawEvent::StorageBucketsPerBagLimitUpdated(new_limit));
+        // }
+
+
+        //TODO: upldate distributing field
 
         // ===== Distribution Operator actions =====
 
@@ -2754,5 +2865,59 @@ impl<T: Trait> Module<T> {
             .get(distribution_bucket_id)
             .cloned()
             .ok_or(Error::<T>::DistributionBucketDoesntExist)
+    }
+
+    // Ensures validity of the `update_distribution_buckets_for_bag` extrinsic parameters
+    fn validate_update_distribution_buckets_for_bag_params(
+        bag_id: &BagId<T>,
+        family_id: &T::DistributionBucketFamilyId,
+        add_buckets: &BTreeSet<T::DistributionBucketId>,
+        remove_buckets: &BTreeSet<T::DistributionBucketId>,
+    ) -> DispatchResult {
+        ensure!(
+            !add_buckets.is_empty() || !remove_buckets.is_empty(),
+            Error::<T>::DistributionBucketIdCollectionsAreEmpty
+        );
+
+        BagManager::<T>::ensure_bag_exists(&bag_id)?;
+
+        let family = Self::ensure_distribution_bucket_family_exists(family_id)?;
+
+        let distribution_bucket_ids = BagManager::<T>::get_distribution_bucket_ids(bag_id);
+        let new_bucket_number = distribution_bucket_ids
+            .len()
+            .saturating_add(add_buckets.len())
+            .saturating_sub(remove_buckets.len())
+            .saturated_into::<u64>();
+
+        ensure!(
+            new_bucket_number <= Self::distribution_buckets_per_bag_limit(),
+            Error::<T>::MaxDistributionBucketNumberPerBagLimitExceeded
+        );
+
+        for bucket_id in remove_buckets.iter() {
+            Self::ensure_distribution_bucket_exists(&family, bucket_id)?;
+
+            ensure!(
+                distribution_bucket_ids.contains(&bucket_id),
+                Error::<T>::DistributionBucketIsNotBoundToBag
+            );
+        }
+
+        for bucket_id in add_buckets.iter() {
+            let bucket = Self::ensure_distribution_bucket_exists(&family, bucket_id)?;
+
+            ensure!(
+                bucket.accepting_new_bags,
+                Error::<T>::DistributionBucketDoesntAcceptNewBags
+            );
+
+            ensure!(
+                !distribution_bucket_ids.contains(&bucket_id),
+                Error::<T>::DistributionBucketIsBoundToBag
+            );
+        }
+
+        Ok(())
     }
 }

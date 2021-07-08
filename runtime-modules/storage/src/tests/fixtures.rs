@@ -1412,3 +1412,61 @@ impl DeleteDistributionBucketFixture {
         assert_eq!(actual_result, expected_result);
     }
 }
+
+pub struct UpdateDistributionBucketForBagsFixture {
+    origin: RawOrigin<u64>,
+    bag_id: BagId<Test>,
+    family_id: u64,
+    add_bucket_ids: BTreeSet<u64>,
+    remove_bucket_ids: BTreeSet<u64>,
+}
+
+impl UpdateDistributionBucketForBagsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            bag_id: Default::default(),
+            family_id: Default::default(),
+            add_bucket_ids: Default::default(),
+            remove_bucket_ids: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_add_bucket_ids(self, add_bucket_ids: BTreeSet<u64>) -> Self {
+        Self {
+            add_bucket_ids,
+            ..self
+        }
+    }
+
+    pub fn with_remove_bucket_ids(self, remove_bucket_ids: BTreeSet<u64>) -> Self {
+        Self {
+            remove_bucket_ids,
+            ..self
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_distribution_buckets_for_bag(
+            self.origin.clone().into(),
+            self.bag_id.clone(),
+            self.family_id,
+            self.add_bucket_ids.clone(),
+            self.remove_bucket_ids.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
