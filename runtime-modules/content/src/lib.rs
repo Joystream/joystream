@@ -126,6 +126,9 @@ pub trait Trait:
 
     // categories
     type CategoryId: NumericIdentifier;
+
+    // reaction id
+    type ReactionId: NumericIdentifier;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -1579,6 +1582,32 @@ decl_module! {
 
     Ok(())
     }
+
+    #[weight = 10_000_000]
+    fn react_post(origin,
+              forum_user_id: ForumUserId<T>,
+              category_id: T::CategoryId,
+              thread_id: T::ThreadId,
+              post_id: T::PostId,
+              react: T::ReactionId
+    ) -> DispatchResult {
+                    let account_id = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+        let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(
+                RawEvent::PostReacted(post_id, forum_user_id, category_id, thread_id, react)
+            );
+
+            Ok(())
+        }
     }
 }
 
@@ -1806,6 +1835,7 @@ decl_event!(
         ThreadId = <T as Trait>::ThreadId,
         CategoryId = <T as Trait>::CategoryId,
         PostId = <T as Trait>::PostId,
+        ReactionId = <T as Trait>::ReactionId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1929,5 +1959,6 @@ decl_event!(
         PostAdded(PostId, ForumUserId, CategoryId, ThreadId, Hash),
         PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Hash),
         PostDeleted(PostId, ForumUserId, CategoryId, ThreadId),
+        PostReacted(PostId, ForumUserId, CategoryId, ThreadId, ReactionId),
     }
 );
