@@ -9,18 +9,6 @@ import * as fs from 'fs'
 
 require('dotenv').config()
 
-interface EnvironmentType {
-  name: string
-  value: string
-}
-
-let envCopy: EnvironmentType[] = []
-let e: string = ''
-for (e in process.env) {
-  let envObject: EnvironmentType = { 'name': e, 'value': process.env[e]! }
-  envCopy.push(envObject)
-}
-
 // const awsConfig = new pulumi.Config('aws')
 
 // // Create a VPC for our cluster.
@@ -55,16 +43,7 @@ export const joystreamAppsImage = new docker.Image('joystream/apps', {
   },
   imageName: 'joystream/apps:latest',
   skipPush: true,
-  localImageName: 'joystream/apps:latest',
 }).baseImageName
-
-function getUniqueListByName(arr: EnvironmentType[]) {
-  return [...new Map(arr.map((item: EnvironmentType) => [item['name'], item])).values()]
-}
-
-// export let imageName: pulumi.Output<string>
-// imageName = joystreamAppsImage
-// console.log(imageName)
 
 // export const joystreamAppsImage = 'joystream/apps'
 
@@ -153,7 +132,7 @@ const exampleJob = new k8s.batch.v1.Job(
                   name: 'DB_HOST',
                   value: 'postgres-db',
                 },
-                { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
+                { name: 'DB_NAME', value: process.env.DB_NAME! },
                 { name: 'DB_PASS', value: process.env.DB_PASS! },
               ],
               command: ['/bin/sh', '-c'],
@@ -204,6 +183,7 @@ const deployment = new k8s.apps.v1.Deployment(
                 { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
                 { name: 'TYPES_JSON', value: 'types.json' },
                 { name: 'PGUSER', value: process.env.DB_USER! },
+                { name: 'BLOCK_HEIGHT', value: process.env.BLOCK_HEIGHT! },
               ],
               volumeMounts: [
                 {
