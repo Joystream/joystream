@@ -26,7 +26,7 @@
 //! - [remove_storage_bucket_operator](./struct.Module.html#method.remove_storage_bucket_operator) -
 //! removes storage bucket operator.
 //! - [update_uploading_blocked_status](./struct.Module.html#method.update_uploading_blocked_status) -
-//! updates whether uploading is globally blocked.
+//! updates global uploading status.
 //! - [update_data_size_fee](./struct.Module.html#method.update_data_size_fee) - updates size-based
 //! pricing of new objects uploaded.
 //! - [update_storage_buckets_per_bag_limit](./struct.Module.html#method.update_storage_buckets_per_bag_limit) -
@@ -66,6 +66,8 @@
 //! updates distribution buckets for a bag.
 //! - [distribution_buckets_per_bag_limit](./struct.Module.html#method.distribution_buckets_per_bag_limit) -
 //! updates "Distribution buckets per bag" number limit.
+//! - [update_distribution_bucket_mode](./struct.Module.html#method.distribution_buckets_per_bag_limit) -
+//! updates "distributing" flag for the distribution bucket.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -131,6 +133,7 @@ use storage_bucket_picker::StorageBucketPicker;
 // TODO: constants
 // Max number of pending invitations per distribution bucket.
 // TODO: mut in extrinsics
+// TODO: dynamic bag creation - distributed buckets
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -768,10 +771,12 @@ pub struct DistributionBucketFamily<DistributionBucketId: Ord> {
 pub struct DistributionBucket {
     /// Distribution bucket accepts new bags.
     pub accepting_new_bags: bool,
+
+    /// Distribution bucket serves objects.
+    pub distributing: bool,
     //TODO:
     // pending_invitations: BTreeSet<WorkerId>,
     // number_of_pending_data_objects: u32,
-    // distributing: boolean,
     // number_of_operators: u32,
 }
 
@@ -1024,7 +1029,7 @@ decl_event! {
         /// - distribution bucket ID
         DistributionBucketCreated(DistributionBucketFamilyId, bool, DistributionBucketId),
 
-        /// Emits on storage bucket status update.
+        /// Emits on storage bucket status update (accepting new bags).
         /// Params
         /// - distribution bucket family ID
         /// - distribution bucket ID
@@ -1053,6 +1058,13 @@ decl_event! {
         /// Params
         /// - new limit
         DistributionBucketsPerBagLimitUpdated(u64),
+
+        /// Emits on storage bucket mode update (distributing flag).
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        /// - distributing
+        DistributionBucketModeUpdated(DistributionBucketFamilyId, DistributionBucketId, bool),
     }
 }
 
@@ -1279,7 +1291,7 @@ decl_module! {
             );
         }
 
-        /// Update whether uploading is globally blocked.
+        /// Updates global uploading flag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_uploading_blocked_status(origin, new_status: bool) {
             T::ensure_storage_working_group_leader_origin(origin)?;
@@ -1727,7 +1739,7 @@ decl_module! {
             );
         }
 
-        /// Update whether a bucket accepts new bags for storage.
+        /// Updates a storage bucket 'accepts new bags' flag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_bucket_status(
             origin,
@@ -1851,7 +1863,8 @@ decl_module! {
             //
 
             let bucket = DistributionBucket {
-                accepting_new_bags
+                accepting_new_bags,
+                distributing: true,
             };
 
             let bucket_id = Self::next_distribution_bucket_id();
@@ -1867,7 +1880,7 @@ decl_module! {
             );
         }
 
-        /// Update whether a bucket accepts new bags for distribution.
+        /// Updates a distribution bucket 'accepts new bags' flag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_distribution_bucket_status(
             origin,
@@ -1992,8 +2005,41 @@ decl_module! {
             Self::deposit_event(RawEvent::DistributionBucketsPerBagLimitUpdated(new_limit));
         }
 
+        /// Updates 'distributing' flag for the distributing flag.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_distribution_bucket_mode(
+            origin,
+            family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+            distributing: bool
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
 
-        //TODO: upldate distributing field
+            let mut family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
+            let mut bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            //TODO: Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bucket.distributing = distributing;
+            family.distribution_buckets.insert(distribution_bucket_id, bucket);
+
+            <DistributionBucketFamilyById<T>>::insert(family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketModeUpdated(
+                    family_id,
+                    distribution_bucket_id,
+                    distributing
+                )
+            );
+        }
 
         // ===== Distribution Operator actions =====
 
