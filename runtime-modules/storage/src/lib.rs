@@ -2423,9 +2423,14 @@ impl<T: Trait> Module<T> {
         BagManager::<T>::ensure_bag_exists(&bag_id)?;
 
         let storage_bucket_ids = BagManager::<T>::get_storage_bucket_ids(bag_id);
+        let new_bucket_number = storage_bucket_ids
+            .len()
+            .saturating_add(add_buckets.len())
+            .saturating_sub(remove_buckets.len())
+            .saturated_into::<u64>();
+
         ensure!(
-            storage_bucket_ids.len().saturated_into::<u64>()
-                <= Self::storage_buckets_per_bag_limit(),
+            new_bucket_number <= Self::storage_buckets_per_bag_limit(),
             Error::<T>::StorageBucketPerBagLimitExceeded
         );
 
