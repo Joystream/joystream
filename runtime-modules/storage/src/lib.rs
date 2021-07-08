@@ -64,6 +64,8 @@
 //! updates distribution bucket status (accepting new bags).
 //! - [update_distribution_buckets_for_bag](./struct.Module.html#method.update_distribution_buckets_for_bag) -
 //! updates distribution buckets for a bag.
+//! - [distribution_buckets_per_bag_limit](./struct.Module.html#method.distribution_buckets_per_bag_limit) -
+//! updates "Distribution buckets per bag" number limit.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -1034,6 +1036,11 @@ decl_event! {
             BTreeSet<DistributionBucketId>,
             BTreeSet<DistributionBucketId>
         ),
+
+        /// Emits on changing the "Distribution buckets per bag" number limit.
+        /// Params
+        /// - new limit
+        DistributionBucketsPerBagLimitUpdated(u64),
     }
 }
 
@@ -1180,6 +1187,12 @@ decl_error! {
 
         /// Distribution bucket is bound to a bag.
         DistributionBucketIsBoundToBag,
+
+        /// The new `DistributionBucketsPerBagLimit` number is too low.
+        DistributionBucketsPerBagLimitTooLow,
+
+        /// The new `DistributionBucketsPerBagLimit` number is too high.
+        DistributionBucketsPerBagLimitTooHigh,
     }
 }
 
@@ -1923,27 +1936,25 @@ decl_module! {
             );
         }
 
-        //TODO: distribution
+        /// Updates "Distribution buckets per bag" number limit.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_distribution_buckets_per_bag_limit(origin, new_limit: u64) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
 
-        //         /// Updates "Storage buckets per bag" number limit.
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
-        //     T::ensure_storage_working_group_leader_origin(origin)?;
-        //
-        //     T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
-        //         new_limit,
-        //         Error::<T>::StorageBucketsPerBagLimitTooLow,
-        //         Error::<T>::StorageBucketsPerBagLimitTooHigh,
-        //     )?;
-        //
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
-        //
-        //     StorageBucketsPerBagLimit::put(new_limit);
-        //
-        //     Self::deposit_event(RawEvent::StorageBucketsPerBagLimitUpdated(new_limit));
-        // }
+            T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
+                new_limit,
+                Error::<T>::DistributionBucketsPerBagLimitTooLow,
+                Error::<T>::DistributionBucketsPerBagLimitTooHigh,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            DistributionBucketsPerBagLimit::put(new_limit);
+
+            Self::deposit_event(RawEvent::DistributionBucketsPerBagLimitUpdated(new_limit));
+        }
 
 
         //TODO: upldate distributing field
