@@ -1570,6 +1570,13 @@ decl_module! {
         }
         <PostById<T>>::remove(thread_id, post_id);
 
+    Self::deposit_event(RawEvent::PostDeleted(
+        post_id,
+        forum_user_id,
+        category_id,
+        thread_id,
+        ));
+
     Ok(())
     }
     }
@@ -1921,5 +1928,6 @@ decl_event!(
         ThreadCreated(ThreadId, ForumUserId, CategoryId, Hash, ChannelId),
         PostAdded(PostId, ForumUserId, CategoryId, ThreadId, Hash),
         PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Hash),
+        PostDeleted(PostId, ForumUserId, CategoryId, ThreadId),
     }
 );
