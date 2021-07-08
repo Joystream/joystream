@@ -1366,7 +1366,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            ensure_can_create_thread::<T>(&account_id, &forum_user_id)?;
+            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1414,7 +1414,48 @@ decl_module! {
             // );
 
             Ok(())
-        }
+     }
+
+    #[weight = 10_000_000]
+    fn delete_thread(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+        ) -> DispatchResult {
+            // Ensure data migration is done
+            // Self::ensure_data_migration_done()?;
+
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_can_delete_thread(
+                &account_id,
+                &forum_user_id,
+                &category_id,
+                &thread_id
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Pay off to thread deleter
+//            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
+
+            // Delete thread
+            <ThreadById<T>>::remove(category_id, thread_id);
+
+            // Store the event
+            // Self::deposit_event(RawEvent::ThreadDeleted(
+            //         thread_id,
+            //         forum_user_id,
+            //         category_id,
+            //         hide,
+            //     ));
+
+            Ok(())
+    }
+
     }
 }
 
@@ -1516,6 +1557,54 @@ impl<T: Trait> Module<T> {
 
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
+    }
+
+    fn ensure_thread_exists(
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+    ) -> Result<Thread<T>, Error<T>> {
+        if !<ThreadById<T>>::contains_key(category_id, thread_id) {
+            return Err(Error::<T>::ThreadDoesNotExist);
+        }
+
+        Ok(<ThreadById<T>>::get(category_id, thread_id))
+    }
+
+    fn ensure_can_delete_thread(
+        account_id: &T::AccountId,
+        forum_user_id: &ForumUserId<T>,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+    ) -> DispatchResult {
+        // Ensure thread exists and is mutable
+        let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
+
+        // Check that account is forum member
+        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+        // Ensure forum user is author of the thread
+        Self::ensure_is_thread_author(&thread, &forum_user_id)?;
+
+        Ok(())
+    }
+
+    fn ensure_is_forum_user(
+        account_id: &T::AccountId,
+        forum_user_id: &ForumUserId<T>,
+    ) -> DispatchResult {
+        ensure_member_auth_success::<T>(forum_user_id, account_id)
+    }
+
+    fn ensure_is_thread_author(
+        thread: &Thread<T>,
+        forum_user_id: &ForumUserId<T>,
+    ) -> DispatchResult {
+        ensure!(
+            thread.author_id == *forum_user_id,
+            Error::<T>::AccountDoesNotMatchThreadAuthor
+        );
+
+        Ok(())
     }
 }
 

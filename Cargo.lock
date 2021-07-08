@@ -3827,6 +3827,7 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-membership",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",

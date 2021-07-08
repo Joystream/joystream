@@ -28,6 +28,10 @@ decl_error! {
         /// Curator id is not a worker id in content working group
         CuratorIdInvalid,
 
+            /// Member Id invalid
+        MemberIdInvalid,
+
+
         // Authentication Errors
         // ---------------------
 
@@ -62,6 +66,13 @@ decl_error! {
         VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels
+        CannotCensoreCuratorGroupOwnedChannels,
+
+        /// thread does not exists
+        ThreadDoesNotExist,
+
+    /// account does not match thread author
+    AccountDoesNotMatchThreadAuthor,
+
     }
 }
