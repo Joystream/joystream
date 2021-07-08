@@ -1493,7 +1493,7 @@ decl_module! {
 
         let mut thread = <ThreadById<T>>::get(category_id, thread_id);
         let post_id = thread.number_of_posts.saturating_add(T::PostId::one());
-	thread.number_of_posts = post_id;
+    thread.number_of_posts = post_id;
 
         <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
 
@@ -1509,7 +1509,7 @@ decl_module! {
     fn edit_post_text(
             origin,
             forum_user_id: ForumUserId<T>,
-            _category_id: T::CategoryId,
+            category_id: T::CategoryId,
             thread_id: T::ThreadId,
             post_id: T::PostId,
             new_text_hash: T::Hash,
@@ -1539,13 +1539,13 @@ decl_module! {
             <PostById<T>>::insert(thread_id, post_id, post);
 
             // Generate event
-            // Self::deposit_event(RawEvent::PostTextUpdated(
-            //         post_id,
-            //         forum_user_id,
-            //         category_id,
-            //         thread_id,
-            //         new_text
-            //     ));
+            Self::deposit_event(RawEvent::PostTextUpdated(
+                    post_id,
+                    forum_user_id,
+                    category_id,
+                    thread_id,
+                    new_text_hash,
+                ));
 
             Ok(())
     }
@@ -1920,5 +1920,6 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, ForumUserId, CategoryId, Hash, ChannelId),
         PostAdded(PostId, ForumUserId, CategoryId, ThreadId, Hash),
+        PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Hash),
     }
 );
