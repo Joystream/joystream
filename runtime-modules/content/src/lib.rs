@@ -1382,7 +1382,7 @@ decl_module! {
                 author_id: forum_user_id,
                 cleanup_pay_off: BalanceOf::<T>::zero(),
                 number_of_posts: T::PostId::zero(),
-        channel_id: channel_id,
+                channel_id: channel_id,
             };
 
             // Store thread
@@ -1403,15 +1403,15 @@ decl_module! {
             <NextThreadId<T>>::mutate(|n| *n += One::one());
 
             // Generate event
-            // Self::deposit_event(
-            //     RawEvent::ThreadCreated(
-            //         new_thread_id,
-            //         forum_user_id,
-            //         category_id,
-            //         title,
-            //         text,
-            //     )
-            // );
+            Self::deposit_event(
+                RawEvent::ThreadCreated(
+                    new_thread_id,
+                    forum_user_id,
+                    category_id,
+                    title_hash,
+            channel_id,
+                )
+            );
 
             Ok(())
      }
@@ -1793,6 +1793,10 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        Hash = <T as frame_system::Trait>::Hash,
+        ForumUserId = ForumUserId<T>,
+        ThreadId = <T as Trait>::ThreadId,
+        CategoryId = <T as Trait>::CategoryId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1912,5 +1916,6 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
+        ThreadCreated(ThreadId, ForumUserId, CategoryId, Hash, ChannelId),
     }
 );
