@@ -1492,14 +1492,15 @@ decl_module! {
             <PostById<T>>::insert(thread_id, new_post_id, new_post);
 
         let mut thread = <ThreadById<T>>::get(category_id, thread_id);
-        thread.number_of_posts = thread.number_of_posts.saturating_add(T::PostId::one());
+        let post_id = thread.number_of_posts.saturating_add(T::PostId::one());
+	thread.number_of_posts = post_id;
 
         <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
 
             // Generate event
-            // Self::deposit_event(
-            //     RawEvent::PostAdded(post_id, forum_user_id, category_id, thread_id, text, editable)
-            // );
+             Self::deposit_event(
+                 RawEvent::PostAdded(post_id, forum_user_id, category_id, thread_id, text_hash)
+            );
 
             Ok(())
     }
@@ -1797,6 +1798,7 @@ decl_event!(
         ForumUserId = ForumUserId<T>,
         ThreadId = <T as Trait>::ThreadId,
         CategoryId = <T as Trait>::CategoryId,
+        PostId = <T as Trait>::PostId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1917,5 +1919,6 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, ForumUserId, CategoryId, Hash, ChannelId),
+        PostAdded(PostId, ForumUserId, CategoryId, ThreadId, Hash),
     }
 );
