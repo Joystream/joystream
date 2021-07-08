@@ -320,6 +320,8 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
     build_test_externalities().execute_with(|| {
+        set_default_storage_buckets_per_bag_limit();
+
         let static_bag_id = StaticBagId::Council;
         let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
@@ -1263,34 +1265,19 @@ fn accept_pending_data_objects_succeeded() {
 
         let objects_limit = 1;
         let size_limit = 100;
-
         let static_bag_id = StaticBagId::Council;
         let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
-        let invite_worker = Some(storage_provider_id);
+        let objects_limit = 1;
+        let size_limit = 100;
 
-        let bucket_id = CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(invite_worker)
-            .with_size_limit(size_limit)
-            .with_objects_limit(objects_limit)
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        AcceptStorageBucketInvitationFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
-            .with_storage_bucket_id(bucket_id)
-            .with_worker_id(storage_provider_id)
-            .call_and_assert(Ok(()));
-
-        let buckets = BTreeSet::from_iter(vec![bucket_id]);
-
-        UpdateStorageBucketForBagsFixture::default()
-            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(buckets.clone())
-            .call_and_assert(Ok(()));
+        let bucket_id = create_storage_bucket_and_assign_to_bag(
+            bag_id.clone(),
+            Some(storage_provider_id),
+            objects_limit,
+            size_limit,
+        );
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -3923,4 +3910,8 @@ fn update_distribution_buckets_for_bags_fails_with_non_existing_distribution_buc
 
 fn set_default_distribution_buckets_per_bag_limit() {
     crate::DistributionBucketsPerBagLimit::put(5);
+}
+
+fn set_default_storage_buckets_per_bag_limit() {
+    crate::StorageBucketsPerBagLimit::put(5);
 }
