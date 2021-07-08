@@ -360,7 +360,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        set_update_storage_buckets_per_bag_limit();
+        set_default_storage_buckets_per_bag_limit();
         let old_bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
@@ -420,7 +420,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_number_limit() {
     build_test_externalities().execute_with(|| {
-        set_update_storage_buckets_per_bag_limit();
+        set_default_storage_buckets_per_bag_limit();
 
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
@@ -468,7 +468,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
 
-        set_update_storage_buckets_per_bag_limit();
+        set_default_storage_buckets_per_bag_limit();
         create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let object_creation_list = create_single_data_object();
@@ -541,7 +541,7 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
 #[test]
 fn update_storage_buckets_for_dynamic_bags_succeeded() {
     build_test_externalities().execute_with(|| {
-        set_update_storage_buckets_per_bag_limit();
+        set_default_storage_buckets_per_bag_limit();
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
@@ -2948,7 +2948,7 @@ fn update_storage_buckets_per_bag_limit_fails_with_incorrect_value() {
     });
 }
 
-fn set_update_storage_buckets_per_bag_limit() {
+fn set_default_storage_buckets_per_bag_limit() {
     let new_limit = 7;
 
     UpdateStorageBucketsPerBagLimitFixture::default()
@@ -3936,6 +3936,55 @@ fn set_default_distribution_buckets_per_bag_limit() {
     crate::DistributionBucketsPerBagLimit::put(5);
 }
 
-fn set_default_storage_buckets_per_bag_limit() {
-    crate::StorageBucketsPerBagLimit::put(5);
+#[test]
+fn update_distribution_buckets_per_bag_limit_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let new_limit = 4;
+
+        UpdateDistributionBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_new_limit(new_limit)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketsPerBagLimitUpdated(
+            new_limit,
+        ));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_per_bag_limit_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        UpdateDistributionBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_per_bag_limit_fails_with_incorrect_value() {
+    build_test_externalities().execute_with(|| {
+        let new_limit = 0;
+
+        UpdateDistributionBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_new_limit(new_limit)
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketsPerBagLimitTooLow.into()
+            ));
+
+        let new_limit = 100;
+
+        UpdateDistributionBucketsPerBagLimitFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_new_limit(new_limit)
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketsPerBagLimitTooHigh.into()
+            ));
+    });
 }

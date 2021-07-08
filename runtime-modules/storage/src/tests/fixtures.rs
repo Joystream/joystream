@@ -9,6 +9,7 @@ use super::mocks::{
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
+use crate::tests::mocks::DISTRIBUTION_WG_LEADER_ACCOUNT_ID;
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
@@ -1482,5 +1483,47 @@ impl UpdateDistributionBucketForBagsFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct UpdateDistributionBucketsPerBagLimitFixture {
+    origin: RawOrigin<u64>,
+    new_limit: u64,
+}
+
+impl UpdateDistributionBucketsPerBagLimitFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID),
+            new_limit: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_limit(self, new_limit: u64) -> Self {
+        Self { new_limit, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_limit = Storage::distribution_buckets_per_bag_limit();
+
+        let actual_result = Storage::update_distribution_buckets_per_bag_limit(
+            self.origin.clone().into(),
+            self.new_limit,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Storage::distribution_buckets_per_bag_limit(),
+                self.new_limit
+            );
+        } else {
+            assert_eq!(old_limit, Storage::distribution_buckets_per_bag_limit());
+        }
     }
 }
