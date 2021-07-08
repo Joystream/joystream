@@ -31,9 +31,11 @@ decl_error! {
         /// Member Id invalid
         MemberIdInvalid,
 
-        /// Member Id invalid
-        AccountDoesNotMatchPostAuthor,
+        /// Account does not match thread author
+        AccountDoesNotMatchThreadAuthor,
 
+        /// Account does not match Post author
+        AccountDoesNotMatchPostAuthor,
 
         // Authentication Errors
         // ---------------------
@@ -76,9 +78,6 @@ decl_error! {
 
         /// thread does not exists
         ThreadDoesNotExist,
-
-    /// account does not match thread author
-    AccountDoesNotMatchThreadAuthor,
 
     }
 }

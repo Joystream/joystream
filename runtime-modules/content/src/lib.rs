@@ -1547,7 +1547,30 @@ decl_module! {
             //     ));
 
             Ok(())
+    }
+
+    #[weight = 10_000_000]
+    fn delete_post(origin,
+           forum_user_id: ForumUserId<T>,
+           category_id: T::CategoryId,
+           thread_id: T::ThreadId,
+           post_id: T::PostId,
+          ) -> DispatchResult {
+
+        let account_id = ensure_signed(origin)?;
+
+        if <ThreadById<T>>::contains_key(category_id, thread_id) {
+            let mut thread = <ThreadById<T>>::get(category_id, thread_id);
+
+            Self::ensure_can_delete_post(&account_id, &forum_user_id, &thread_id, &post_id)?;
+            thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one());
+
+            <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
         }
+        <PostById<T>>::remove(thread_id, post_id);
+
+    Ok(())
+    }
     }
 }
 
@@ -1708,6 +1731,25 @@ impl<T: Trait> Module<T> {
             Error::<T>::PostDoesNotExist,
         );
         Ok(PostById::<T>::get(thread_id, post_id))
+    }
+
+    fn ensure_can_delete_post(
+        account_id: &T::AccountId,
+        forum_user_id: &ForumUserId<T>,
+        thread_id: &T::ThreadId,
+        post_id: &T::PostId,
+    ) -> DispatchResult {
+        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+        let post = Self::ensure_post_exists(&thread_id, &post_id)?;
+
+        ensure!(
+            post.author_id == *forum_user_id,
+            Error::<T>::AccountDoesNotMatchPostAuthor,
+        );
+
+        // deposit event
+        Ok(())
     }
 }
 
