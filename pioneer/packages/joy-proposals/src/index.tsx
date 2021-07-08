@@ -27,6 +27,7 @@ import { SignalForm,
 import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
 import style from './style';
 import { HistoricalProposalFromId } from './Proposal/ProposalFromId';
+import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 const ProposalsMain = styled.main`${style}`;
 
@@ -38,36 +39,6 @@ const StyledHeader = styled.header`
   .ui.breadcrumb {
     padding: 1.4rem 0 0 .4rem;
     font-size: 1.4rem;
-  }
-`;
-
-const Banner = styled.div`
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  margin: 0 -2em 15px -2em;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-`;
-
-const BannerText = styled.h1`
-  font-size: 24px;
-  color: black;
-  width: 75%;
-  text-align: center;
-  font-weight: 600;
-
-  @media(max-width: 1300px){
-    font-size: 20px;
-    width: 80%;
-  }
-
-  @media(max-width: 800px){
-    font-size: 16px;
-  }
-
-  @media(max-width: 500px){
-    font-size: 12px;
   }
 `;
 
@@ -88,12 +59,7 @@ function App (props: Props): React.ReactElement<Props> {
 
   return (
     <ProposalsMain className='proposal--App'>
-      <Banner>
-        <BannerText>
-          By being an active contributor to the platform you are eligible to share your testnet contributions to have a chance at becoming a Founding Member.
-          Make sure to do that to get a portion of the initial mainnet tokens and other interesting accolades. Get started <a href='https://www.joystream.org/founding-members' target='_blank' rel='noreferrer'>here</a>!
-        </BannerText>
-      </Banner>
+      <FMReminderBanner contextualTitle='Proposals'/>
       <StyledHeader>
         <Tabs
           basePath={basePath}

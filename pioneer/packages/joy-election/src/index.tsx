@@ -22,38 +22,9 @@ import Reveals from './Reveals';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
 import { ApiProps } from '@polkadot/react-api/types';
+import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 const ElectionMain = styled.main`${style}`;
-
-const Banner = styled.div`
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  margin: 0 -2em;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-`;
-
-const BannerText = styled.h1`
-  font-size: 24px;
-  color: black;
-  width: 75%;
-  text-align: center;
-  font-weight: 600;
-
-  @media(max-width: 1300px){
-    font-size: 20px;
-    width: 80%;
-  }
-
-  @media(max-width: 800px){
-    font-size: 16px;
-  }
-
-  @media(max-width: 500px){
-    font-size: 12px;
-  }
-`;
 
 // define out internal types
 type Props = AppMainRouteProps & ApiProps & I18nProps & {
@@ -97,12 +68,7 @@ class App extends React.PureComponent<Props, State> {
 
     return (
       <ElectionMain className='election--App'>
-        <Banner>
-          <BannerText>
-            As Council Members you are eligible to share your testnet contributions to have a chance at becoming a Founding Member.
-            Make sure to do that to get a portion of the initial mainnet tokens and other interesting accolades. Get started <a href='https://www.joystream.org/founding-members' target='_blank' rel='noreferrer'>here</a>!
-          </BannerText>
-        </Banner>
+        <FMReminderBanner contextualTitle='Council'/>
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>

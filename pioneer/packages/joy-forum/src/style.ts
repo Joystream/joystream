@@ -5,6 +5,10 @@ export default css`
     background-color: #fff;
   }
 
+  .ui.breadcrumb {
+    margin-top: 2em;
+  }
+
   .ForumPageTitle {
     display: flex;
     margin-top: 1rem;

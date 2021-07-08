@@ -16,38 +16,9 @@ import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
 import { LegacyPagingRedirect } from './LegacyPagingRedirect';
 import ForumRoot from './ForumRoot';
+import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 const ForumMain = styled.main`${style}`;
-
-const Banner = styled.div`
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  margin: 0 -2em 15px -2em;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-`;
-
-const BannerText = styled.h1`
-  font-size: 24px;
-  color: black;
-  width: 75%;
-  text-align: center;
-  font-weight: 600;
-
-  @media(max-width: 1300px){
-    font-size: 20px;
-    width: 80%;
-  }
-
-  @media(max-width: 800px){
-    font-size: 16px;
-  }
-
-  @media(max-width: 500px){
-    font-size: 12px;
-  }
-`;
 
 type Props = AppMainRouteProps & I18nProps;
 
@@ -59,12 +30,7 @@ class App extends React.PureComponent<Props> {
       <ForumProvider>
         <ForumSudoProvider>
           <ForumMain className='forum--App'>
-            <Banner>
-              <BannerText>
-                By being an active contributor to the platform you are eligible to share your testnet contributions to have a chance at becoming a Founding Member.
-                Make sure to do that to get a portion of the initial mainnet tokens and other interesting accolades. Get started <a href='https://www.joystream.org/founding-members' target='_blank' rel='noreferrer'>here</a>!
-              </BannerText>
-            </Banner>
+            <FMReminderBanner contextualTitle='Forum'/>
             <Switch>
               <Route path={`${basePath}/categories/new`} component={NewCategory} />
               {/* routes for handling legacy format of forum paging within the routing path */}

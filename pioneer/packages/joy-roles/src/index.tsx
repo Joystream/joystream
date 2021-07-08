@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useState } from 'react';
-import styled from 'styled-components';
 
 import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
@@ -18,40 +17,11 @@ import { OpportunityController, OpportunityView } from './tabs/Opportunity.contr
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller';
 import { ApplyController, ApplyView } from './flows/apply.controller';
 import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller';
+import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 import './index.sass';
 
 import translate from './translate';
-
-const Banner = styled.div`
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  margin: 0 -2em;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-`;
-
-const BannerText = styled.h1`
-  font-size: 24px;
-  color: black;
-  width: 75%;
-  text-align: center;
-  font-weight: 600;
-
-  @media(max-width: 1300px){
-    font-size: 20px;
-    width: 80%;
-  }
-
-  @media(max-width: 800px){
-    font-size: 16px;
-  }
-
-  @media(max-width: 500px){
-    font-size: 12px;
-  }
-`;
 
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps
 
@@ -105,12 +75,7 @@ export const App: React.FC<Props> = (props: Props) => {
 
   return (
     <main className='roles--App'>
-      <Banner>
-        <BannerText>
-          As Working Group Members you are eligible to share your testnet contributions to have a chance at becoming a Founding Member.
-          Make sure to do that to get a portion of the initial mainnet tokens and other interesting accolades. Get started <a href='https://www.joystream.org/founding-members' target='_blank' rel='noreferrer'>here</a>!
-        </BannerText>
-      </Banner>
+      <FMReminderBanner contextualTitle='Working Groups'/>
       <header>
         <Tabs
           basePath={basePath}
