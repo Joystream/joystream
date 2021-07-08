@@ -55,21 +55,25 @@ export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
 
-const pvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-pvc`, {
-  metadata: {
-    labels: appLabels,
-    namespace: namespaceName,
-    name: `${name}-pvc`,
-  },
-  spec: {
-    accessModes: ['ReadWriteOnce'],
-    resources: {
-      requests: {
-        storage: `${storage}Gi`,
+const pvc = new k8s.core.v1.PersistentVolumeClaim(
+  `${name}-pvc`,
+  {
+    metadata: {
+      labels: appLabels,
+      namespace: namespaceName,
+      name: `${name}-pvc`,
+    },
+    spec: {
+      accessModes: ['ReadWriteOnce'],
+      resources: {
+        requests: {
+          storage: `${storage}Gi`,
+        },
       },
     },
   },
-})
+  { provider: cluster.provider }
+)
 
 volumes.push({
   name: 'ipfs-data',
