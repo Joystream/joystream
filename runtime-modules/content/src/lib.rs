@@ -531,6 +531,35 @@ pub type Post<T> = Post_<
     <T as frame_system::Trait>::BlockNumber,
 >;
 
+/// Represents a category
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct Category_<CategoryId, Hash> {
+    /// Title
+    pub title_hash: Hash,
+
+    /// Description
+    pub description_hash: Hash,
+
+    /// Whether category is archived.
+    pub archived: bool,
+
+    /// Number of subcategories, needed for emptiness checks when trying to delete category
+    pub num_direct_subcategories: u32,
+
+    // Number of threads in category, needed for emptiness checks when trying to delete category
+    pub num_direct_threads: u32,
+
+    pub num_direct_moderators: u32,
+
+    /// Parent category, if child of another category, otherwise this category is a root category
+    pub parent_category_id: Option<CategoryId>,
+    // Sticky threads list
+    //    pub sticky_thread_ids: Vec<ThreadId>,
+}
+
+pub type Category<T> = Category_<<T as Trait>::CategoryId, <T as frame_system::Trait>::Hash>;
+
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -590,6 +619,9 @@ decl_storage! {
     /// Map post identifier to corresponding post.
     pub PostById get(fn post_by_id) config(): double_map hasher(blake2_128_concat) T::ThreadId,
         hasher(blake2_128_concat) T::PostId => Post<T>;
+
+    /// Map categoryid to category
+        pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat) T::CategoryId => Category<T>;
     }
 }
 
@@ -1607,6 +1639,60 @@ decl_module! {
             );
 
             Ok(())
+    }
+
+    #[weight = 10_000_000]
+    fn create_forum_category(origin, parent_category_id: Option<T::CategoryId>, title_hash: T::Hash, description_hash: T::Hash ) -> DispatchResult {
+            // Ensure data migration is done
+//            Self::ensure_data_migration_done()?;
+
+            let _account_id = ensure_signed(origin)?;
+
+//            Self::ensure_can_create_category(account_id, &parent_category_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Get next category id
+            let next_category_id = <NextCategoryId<T>>::get();
+
+            // Create new category
+            let new_category = Category_ {
+                title_hash: title_hash,
+                description_hash: description_hash,
+                archived: false,
+                num_direct_subcategories: 0,
+                num_direct_threads: 0,
+                num_direct_moderators: 0,
+                parent_category_id,
+//                sticky_thread_ids: vec![],
+            };
+
+            // Insert category in map
+            <CategoryById<T>>::mutate(next_category_id, |value| *value = new_category);
+
+            // Update other next category id
+            <NextCategoryId<T>>::mutate(|value| *value += One::one());
+
+            // Update total category count
+            <CategoryCounter<T>>::mutate(|value| *value += One::one());
+
+            // If not root, increase parent's subcategories counter
+            if let Some(tmp_parent_category_id) = parent_category_id {
+                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
+                    c.num_direct_subcategories += 1;
+                });
+            }
+
+            // Generate event
+            Self::deposit_event(RawEvent::CategoryCreated(
+                    next_category_id,
+                    parent_category_id,
+                    title_hash,
+                    description_hash,
+                ));
+            Ok(())
         }
     }
 }
@@ -1960,5 +2046,6 @@ decl_event!(
         PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Hash),
         PostDeleted(PostId, ForumUserId, CategoryId, ThreadId),
         PostReacted(PostId, ForumUserId, CategoryId, ThreadId, ReactionId),
+        CategoryCreated(CategoryId, Option<CategoryId>, Hash, Hash),
     }
 );
