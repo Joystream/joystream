@@ -82,5 +82,11 @@ decl_error! {
         /// category does not exists
         ForumCategoryDoesNotExist,
 
+    /// non empty threads for a category
+        CategoryNotEmptyThreads,
+
+    /// non empty subcategories for a category
+        CategoryNotEmptySubCategories,
+
     }
 }

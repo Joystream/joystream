@@ -1711,11 +1711,9 @@ decl_module! {
             // Ensure data migration is done
 //            Self::ensure_data_migration_done()?;
 
-             let _account_id = ensure_signed(origin)?;
+             let account_id = ensure_signed(origin)?;
 
-    //            let category = Self::ensure_can_delete_category(account_id, &actor, &category_id)?;
-        let category = Self::ensure_category_exists(&category_id)?;
-
+             let category = Self::ensure_can_delete_category(account_id, &actor, &category_id)?;
             //
             // == MUTATION SAFE ==
             //
@@ -1921,6 +1919,86 @@ impl<T: Trait> Module<T> {
         );
 
         // deposit event
+        Ok(())
+    }
+
+    fn ensure_can_delete_category(
+        account_id: T::AccountId,
+        actor: &PrivilegedActor<T>,
+        category_id: &T::CategoryId,
+    ) -> Result<Category<T>, Error<T>> {
+        // Check actor's role
+        Self::ensure_actor_role(&account_id, actor)?;
+
+        // Ensure category exists
+        let category = Self::ensure_category_exists(category_id)?;
+
+        // Ensure category is empty
+        ensure!(
+            category.num_direct_threads == 0,
+            Error::<T>::CategoryNotEmptyThreads,
+        );
+        ensure!(
+            category.num_direct_subcategories == 0,
+            Error::<T>::CategoryNotEmptySubCategories,
+        );
+
+        // check moderator's privilege
+        if let Some(parent_category_id) = category.parent_category_id {
+            Self::ensure_can_moderate_category_path(actor, &parent_category_id)
+                .map_err(|_| Error::<T>::ActorNotAuthorized)?;
+
+            Ok(category)
+        } else {
+            // category is root - only lead can delete it
+            match actor {
+                PrivilegedActor::<T>::Lead => Ok(category),
+                PrivilegedActor::<T>::Moderator(_) => Err(Error::<T>::ActorNotAuthorized),
+            }
+        }
+    }
+
+    // fn ensure_can_moderate_category(
+    //     account_id: &T::AccountId,
+    //     actor: &PrivilegedActor<T>,
+    //     category_id: &T::CategoryId,
+    // ) -> Result<Category<T>, Error<T>> {
+    //     // Ensure actor's role
+    //     Self::ensure_actor_role(account_id, actor)?;
+
+    //     Self::ensure_can_moderate_category_path(actor, category_id)
+    // }
+
+    fn ensure_can_moderate_category_path(
+        _actor: &PrivilegedActor<T>,
+        _category_id: &T::CategoryId,
+    ) -> Result<Category<T>, Error<T>> {
+        // need to review how categories are organized
+        Ok(Category::<T>::default())
+    }
+
+    fn ensure_actor_role(
+        account_id: &T::AccountId,
+        actor: &PrivilegedActor<T>,
+    ) -> Result<(), Error<T>> {
+        match actor {
+            PrivilegedActor::<T>::Lead => {
+                Self::ensure_is_forum_lead_account(account_id)?;
+            }
+            PrivilegedActor::<T>::Moderator(moderator_id) => {
+                Self::ensure_is_moderator_account(account_id, &moderator_id)?;
+            }
+        };
+        Ok(())
+    }
+    // Ensure forum user is lead - check via account
+    fn ensure_is_forum_lead_account(_account_id: &T::AccountId) -> Result<(), Error<T>> {
+        Ok(())
+    }
+    fn ensure_is_moderator_account(
+        _account_id: &T::AccountId,
+        _moderator_id: &ModeratorId<T>,
+    ) -> Result<(), Error<T>> {
         Ok(())
     }
 }
