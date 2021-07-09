@@ -10,7 +10,7 @@ use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
-use sp_std::iter::FromIterator;
+use sp_std::iter::{repeat, FromIterator};
 
 use common::working_group::WorkingGroup;
 
@@ -24,10 +24,11 @@ use crate::{
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
-    InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag,
-    MaxRandomIterationNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
-    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
+    InitialStorageBucketsNumberForDynamicBag, MaxDistributionBucketFamilyNumber,
+    MaxDistributionBucketNumberPerFamily, MaxNumberOfDataObjectsPerBag, MaxRandomIterationNumber,
+    MaxStorageBucketNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID,
+    DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -3489,9 +3490,11 @@ fn create_distribution_bucket_family_fails_with_non_signed_origin() {
 #[test]
 fn create_distribution_bucket_family_fails_with_exceeding_family_number_limit() {
     build_test_externalities().execute_with(|| {
-        CreateDistributionBucketFamilyFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Ok(()));
+        for _ in 0..MaxDistributionBucketFamilyNumber::get() {
+            CreateDistributionBucketFamilyFixture::default()
+                .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+                .call_and_assert(Ok(()));
+        }
 
         CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
@@ -3596,15 +3599,9 @@ fn create_distribution_bucket_fails_with_non_existing_family() {
 #[test]
 fn create_distribution_bucket_fails_with_exceeding_max_bucket_number() {
     build_test_externalities().execute_with(|| {
-        let family_id = CreateDistributionBucketFamilyFixture::default()
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        CreateDistributionBucketFixture::default()
-            .with_family_id(family_id)
-            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Ok(()));
+        let (family_id, _) = create_distribution_bucket_family_with_buckets(
+            MaxDistributionBucketNumberPerFamily::get(),
+        );
 
         CreateDistributionBucketFixture::default()
             .with_family_id(family_id)
@@ -4105,5 +4102,82 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_invalid_family_id()
             .call_and_assert(Err(
                 Error::<Test>::DistributionBucketFamilyDoesntExist.into()
             ));
+    });
+}
+
+fn create_distribution_bucket_family_with_buckets(bucket_number: u64) -> (u64, Vec<u64>) {
+    let family_id = CreateDistributionBucketFamilyFixture::default()
+        .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+        .call_and_assert(Ok(()))
+        .unwrap();
+
+    let bucket_ids = repeat(family_id)
+        .take(bucket_number as usize)
+        .map(|fam_id| {
+            CreateDistributionBucketFixture::default()
+                .with_family_id(fam_id)
+                .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+                .with_accept_new_bags(true)
+                .call_and_assert(Ok(()))
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+
+    (family_id, bucket_ids)
+}
+
+#[test]
+fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
+    build_test_externalities().execute_with(|| {
+        // Enable randomness (disabled at the initial block).
+        let starting_block = 6;
+        run_to_block(starting_block);
+
+        let dynamic_bag_type = DynamicBagType::Channel;
+        let new_bucket_number = 5;
+
+        let (family_id1, bucket_ids1) = create_distribution_bucket_family_with_buckets(
+            MaxDistributionBucketNumberPerFamily::get(),
+        );
+        let (family_id2, bucket_ids2) = create_distribution_bucket_family_with_buckets(
+            MaxDistributionBucketNumberPerFamily::get(),
+        );
+        let (family_id3, _) = create_distribution_bucket_family_with_buckets(
+            MaxDistributionBucketNumberPerFamily::get(),
+        );
+        let (family_id4, _) = create_distribution_bucket_family_with_buckets(0);
+
+        let families = BTreeMap::from_iter(vec![
+            (family_id1, new_bucket_number),
+            (family_id2, new_bucket_number),
+            (family_id3, 0),
+            (family_id4, new_bucket_number),
+        ]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        let picked_bucket_ids =
+            Storage::pick_distribution_buckets_for_dynamic_bag(dynamic_bag_type);
+
+        assert_eq!(picked_bucket_ids.len(), (new_bucket_number * 2) as usize); // buckets from two families
+
+        let total_ids1 = BTreeSet::from_iter(
+            bucket_ids1
+                .iter()
+                .cloned()
+                .chain(bucket_ids2.iter().cloned()),
+        );
+        let total_ids2 = BTreeSet::from_iter(
+            total_ids1
+                .iter()
+                .cloned()
+                .chain(picked_bucket_ids.iter().cloned()),
+        );
+
+        assert_eq!(total_ids1, total_ids2); // picked IDS are from total ID set.
     });
 }
