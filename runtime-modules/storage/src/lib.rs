@@ -109,6 +109,7 @@ mod tests;
 mod benchmarking;
 
 mod bag_manager;
+pub(crate) mod distribution_bucket_picker;
 pub(crate) mod storage_bucket_picker;
 
 use codec::{Codec, Decode, Encode};
@@ -132,6 +133,7 @@ use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 
 use bag_manager::BagManager;
+use distribution_bucket_picker::DistributionBucketPicker;
 use storage_bucket_picker::StorageBucketPicker;
 
 // TODO: constants
@@ -386,6 +388,11 @@ impl<DistributionBucketFamilyId: Ord> DynamicBagCreationPolicy<DistributionBucke
     // Verifies non-zero number of storage buckets.
     pub(crate) fn no_storage_buckets_required(&self) -> bool {
         self.number_of_storage_buckets == 0
+    }
+
+    // Verifies non-zero number of required distribution buckets.
+    pub(crate) fn no_distribution_buckets_required(&self) -> bool {
+        self.families.iter().map(|(_, num)| num).sum::<u32>() == 0
     }
 }
 
@@ -2296,10 +2303,14 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let storage_buckets = Self::pick_storage_buckets_for_dynamic_bag(bag_id.clone().into());
+        let bag_type: DynamicBagType = bag_id.clone().into();
+
+        let storage_buckets = Self::pick_storage_buckets_for_dynamic_bag(bag_type);
+        let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
 
         let bag = DynamicBag::<T> {
             stored_by: storage_buckets,
+            distributed_by: distribution_buckets,
             ..Default::default()
         };
 
@@ -2874,11 +2885,18 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Selects storage bucket ID sets to assign to the storage bucket.
+    // Selects storage bucket ID sets to assign to the dynamic bag.
     pub(crate) fn pick_storage_buckets_for_dynamic_bag(
         bag_type: DynamicBagType,
     ) -> BTreeSet<T::StorageBucketId> {
         StorageBucketPicker::<T>::pick_storage_buckets(bag_type)
+    }
+
+    // Selects distributed bucket ID sets to assign to the dynamic bag.
+    pub(crate) fn pick_distribution_buckets_for_dynamic_bag(
+        bag_type: DynamicBagType,
+    ) -> BTreeSet<T::DistributionBucketId> {
+        DistributionBucketPicker::<T>::pick_distribution_buckets(bag_type)
     }
 
     // Get default dynamic bag policy by bag type.
@@ -3007,5 +3025,28 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    // Generate random number from zero to upper_bound (excluding).
+    pub(crate) fn random_index(seed: &[u8], upper_bound: u64) -> u64 {
+        if upper_bound == 0 {
+            return upper_bound;
+        }
+
+        let mut rand: u64 = 0;
+        for (offset, byte) in seed.iter().enumerate().take(8) {
+            rand += (*byte as u64) << offset;
+        }
+        rand % upper_bound
+    }
+
+    // Get initial random seed. It handles the error on the initial block.
+    pub(crate) fn get_initial_random_seed() -> T::Hash {
+        // Cannot create randomness in the initial block (Substrate error).
+        if <frame_system::Module<T>>::block_number() == Zero::zero() {
+            Default::default()
+        } else {
+            T::Randomness::random_seed()
+        }
     }
 }
