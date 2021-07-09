@@ -41,6 +41,9 @@ pub use common::{
 
 pub type ForumUserId<T> = common::MemberId<T>;
 
+/// Moderator ID alias for the actor of the system.
+pub type ModeratorId<T> = common::ActorId<T>;
+
 pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
@@ -559,6 +562,14 @@ pub struct Category_<CategoryId, Hash> {
 }
 
 pub type Category<T> = Category_<<T as Trait>::CategoryId, <T as frame_system::Trait>::Hash>;
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum PrivilegedActor_<ModeratorId> {
+    Lead,
+    Moderator(ModeratorId),
+}
+
+pub type PrivilegedActor<T> = PrivilegedActor_<ModeratorId<T>>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1693,7 +1704,37 @@ decl_module! {
                     description_hash,
                 ));
             Ok(())
+    }
+
+    #[weight = 10_000_000]
+    fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> DispatchResult {
+            // Ensure data migration is done
+//            Self::ensure_data_migration_done()?;
+
+             let _account_id = ensure_signed(origin)?;
+
+    //            let category = Self::ensure_can_delete_category(account_id, &actor, &category_id)?;
+        let category = Self::ensure_category_exists(&category_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Delete category
+            <CategoryById<T>>::remove(category_id);
+            if let Some(parent_category_id) = category.parent_category_id {
+                <CategoryById<T>>::mutate(parent_category_id, |tmp_category| tmp_category.num_direct_subcategories -= 1);
+            }
+
+            // Update total category count
+            <CategoryCounter<T>>::mutate(|value| *value -= One::one());
+
+            // Store the event
+            Self::deposit_event(RawEvent::CategoryDeleted(category_id, actor));
+
+            Ok(())
         }
+
     }
 }
 
@@ -1806,6 +1847,14 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(<ThreadById<T>>::get(category_id, thread_id))
+    }
+
+    fn ensure_category_exists(category_id: &T::CategoryId) -> Result<Category<T>, Error<T>> {
+        if !<CategoryById<T>>::contains_key(category_id) {
+            return Err(Error::<T>::ForumCategoryDoesNotExist);
+        }
+
+        Ok(<CategoryById<T>>::get(category_id))
     }
 
     fn ensure_can_delete_thread(
@@ -1922,6 +1971,7 @@ decl_event!(
         CategoryId = <T as Trait>::CategoryId,
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
+        PrivilegedActor = PrivilegedActor<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2047,5 +2097,6 @@ decl_event!(
         PostDeleted(PostId, ForumUserId, CategoryId, ThreadId),
         PostReacted(PostId, ForumUserId, CategoryId, ThreadId, ReactionId),
         CategoryCreated(CategoryId, Option<CategoryId>, Hash, Hash),
+        CategoryDeleted(CategoryId, PrivilegedActor),
     }
 );

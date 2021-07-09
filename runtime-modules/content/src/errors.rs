@@ -79,5 +79,8 @@ decl_error! {
         /// thread does not exists
         ThreadDoesNotExist,
 
+        /// category does not exists
+        ForumCategoryDoesNotExist,
+
     }
 }
