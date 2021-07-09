@@ -3,7 +3,7 @@ import * as eks from '@pulumi/eks'
 // import * as k8s from '@pulumi/kubernetes'
 import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
-import * as k8sjs from './k8sjs'
+// import * as k8sjs from './k8sjs'
 import * as k8s from '@pulumi/kubernetes'
 import * as fs from 'fs'
 
@@ -36,16 +36,16 @@ require('dotenv').config()
 // })
 
 // Create image from local app
-export const joystreamAppsImage = new docker.Image('joystream/apps', {
-  build: {
-    context: '../../../',
-    dockerfile: '../../../apps.Dockerfile',
-  },
-  imageName: 'joystream/apps:latest',
-  skipPush: true,
-}).baseImageName
+// export const joystreamAppsImage = new docker.Image('joystream/apps', {
+//   build: {
+//     context: '../../../',
+//     dockerfile: '../../../apps.Dockerfile',
+//   },
+//   imageName: 'joystream/apps:latest',
+//   skipPush: true,
+// }).baseImageName
 
-// export const joystreamAppsImage = 'joystream/apps'
+export const joystreamAppsImage = 'joystream/apps'
 
 const name = 'query-node'
 
