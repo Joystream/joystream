@@ -611,8 +611,8 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-    /// Category identifier value to be used for the next Category created.
-    pub NextCategoryId get(fn next_category_id) config(): T::CategoryId;
+        /// Category identifier value to be used for the next Category created.
+        pub NextCategoryId get(fn next_category_id) config(): T::CategoryId;
 
     /// Counter for all existing categories.
     pub CategoryCounter get(fn category_counter) config(): T::CategoryId;
@@ -628,11 +628,18 @@ decl_storage! {
     pub NextPostId get(fn next_post_id) config(): T::PostId;
 
     /// Map post identifier to corresponding post.
-    pub PostById get(fn post_by_id) config(): double_map hasher(blake2_128_concat) T::ThreadId,
-        hasher(blake2_128_concat) T::PostId => Post<T>;
+    pub PostById get(fn post_by_id) config():
+    double_map hasher(blake2_128_concat) T::ThreadId,
+    hasher(blake2_128_concat) T::PostId => Post<T>;
 
     /// Map categoryid to category
-        pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat) T::CategoryId => Category<T>;
+        pub CategoryById get(fn category_by_id) config():
+    map hasher(blake2_128_concat) T::CategoryId => Category<T>;
+
+    /// Moderator set for each Category
+    pub CategoryByModerator get(fn category_by_moderator) config():
+    double_map hasher(blake2_128_concat) T::CategoryId,
+    hasher(blake2_128_concat) ModeratorId<T> => ();
     }
 }
 
@@ -1731,6 +1738,43 @@ decl_module! {
             Self::deposit_event(RawEvent::CategoryDeleted(category_id, actor));
 
             Ok(())
+    }
+
+    #[weight = 10_000_000]
+    fn update_category_membership_of_moderator(
+        origin,
+        moderator_id: ModeratorId<T>,
+        category_id: T::CategoryId,
+        new_value: bool) -> DispatchResult {
+            // Ensure data migration is done
+            //Self::ensure_data_migration_done()?;
+            //clear_prefix(b"Forum ForumUserById");
+
+            let account_id = ensure_signed(origin)?;
+
+            Self::ensure_can_update_category_membership_of_moderator(account_id, &category_id, &moderator_id, new_value)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if new_value {
+                <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
+
+                <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators += 1);
+            } else {
+                <CategoryByModerator<T>>::remove(category_id, moderator_id);
+
+                <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators -= 1);
+            }
+
+            // Generate event
+        Self::deposit_event(RawEvent::CategoryMembershipOfModeratorUpdated(
+        moderator_id,
+        category_id
+    ));
+
+            Ok(())
         }
 
     }
@@ -2001,6 +2045,15 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), Error<T>> {
         Ok(())
     }
+    fn ensure_can_update_category_membership_of_moderator(
+        _account_id: T::AccountId,
+        _category_id: &T::CategoryId,
+        _moderator_id: &ModeratorId<T>,
+        _new_value: bool,
+    ) -> Result<(), Error<T>> {
+        // to be implemented
+        Ok(())
+    }
 }
 
 // Some initial config for the module on runtime upgrade
@@ -2050,6 +2103,7 @@ decl_event!(
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
         PrivilegedActor = PrivilegedActor<T>,
+        ModeratorId = ModeratorId<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2176,5 +2230,6 @@ decl_event!(
         PostReacted(PostId, ForumUserId, CategoryId, ThreadId, ReactionId),
         CategoryCreated(CategoryId, Option<CategoryId>, Hash, Hash),
         CategoryDeleted(CategoryId, PrivilegedActor),
+        CategoryMembershipOfModeratorUpdated(ModeratorId, CategoryId),
     }
 );
