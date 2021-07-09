@@ -20,7 +20,6 @@ import Content from './Content';
 import SideBar from './SideBar';
 import WarmUp from './WarmUp';
 import { WindowDimensionsCtx } from './WindowDimensions';
-import WindowBanner from './WindowBanner';
 
 /* Joystream-specific */
 import TopBar from './JoyTopBar/TopBar';
@@ -108,7 +107,6 @@ function Apps ({ className = '' }: Props): React.ReactElement<Props> {
           <ConnectingOverlay />
           <div id={PORTAL_ID} />
         </AccountSidebar>
-        <WindowBanner />
       </div>
       <WarmUp />
     </>

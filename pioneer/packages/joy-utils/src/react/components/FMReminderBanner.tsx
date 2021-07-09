@@ -4,8 +4,6 @@ import { Button, Icon } from 'semantic-ui-react';
 import CoinIllustration from '../../assets/coin-illustration.png';
 import CoinIllustrationSmall from '../../assets/coin-illustration1.png';
 
-const FM_SUBMISSION_GUIDELINES_LINK = 'https://github.com/Joystream/founding-members/blob/main/SUBMISSION-GUIDELINES.md';
-
 const Container = styled.div`
   height: auto;
   margin: 2em 0 0 0;
@@ -78,26 +76,26 @@ const BannerText = styled.p`
   }
 `;
 
-const LinkWrapper = styled.a`
-  margin-left: 260px;
-
-  @media(max-width: 1200px){
-    margin-left: 30px;  
-  }
-
-  @media(max-width: 800px){
-    margin: 20px 0 0 0;
-  }
-`;
-
 const BannerButton = styled(Button)`
   background-color: #4038FF !important;
   color: white !important;
+  min-width: 155px !important;
   width: 155px !important;
+  min-height: 36px !important;
   height: 36px !important;
 
   .icon {
     background-color: #3D35F2 !important;
+  }
+
+  margin-left: 260px !important;
+
+  @media(max-width: 1200px){
+    margin-left: 30px !important;
+  }
+
+  @media(max-width: 800px){
+    margin: 20px 0 0 0 !important;
   }
 `;
 
@@ -111,14 +109,27 @@ const FMReminderBanner = ({ contextualTitle } : Props) => {
       <Banner>
         <TextContainer>
           <BannerTitle>Report your {contextualTitle} activity to earn Founding Members points!</BannerTitle>
-          <BannerText>Only activity that&apos;s been reported is eligible for earning FM points. <a href={FM_SUBMISSION_GUIDELINES_LINK}>Learn more about reporting your activity...</a></BannerText>
+          <BannerText>
+            Only activity that&apos;s been reported is eligible for earning FM points.
+            <a
+              href='https://github.com/Joystream/founding-members/blob/main/SUBMISSION-GUIDELINES.md'
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              Learn more about reporting your activity...
+            </a>
+          </BannerText>
         </TextContainer>
-        <LinkWrapper href='https://www.joystream.org/founding-members/form/'>
-          <BannerButton icon labelPosition='right'>
-              Report Now
-            <Icon name='arrow right' />
-          </BannerButton>
-        </LinkWrapper>
+        <BannerButton
+          icon
+          labelPosition='right'
+          href='https://www.joystream.org/founding-members/form/'
+          target='_blank'
+          rel='noopener noreferrer'
+        >
+            Report Now
+          <Icon name='arrow right' />
+        </BannerButton>
       </Banner>
     </Container>
   );
