@@ -170,7 +170,7 @@ const StyledLoader = styled(Loader)`
 `;
 
 const FM_DATA_URL = 'https://raw.githubusercontent.com/Joystream/founding-members/main/data/fm-info.json';
-const MILISECONDS_TO_DAYS = 1000 * 60 * 60 * 24;
+const MILLISECONDS_TO_DAYS = 1000 * 60 * 60 * 24;
 
 type FoundingMembersData = {
   scoringPeriodsFull: {
@@ -219,23 +219,23 @@ const SidebarBanner = ({ isSidebarCollapsed } : { isSidebarCollapsed: boolean}) 
 
   useEffect(() => {
     if (foundingMembersData && !foundingMembersDataError) {
-      const ScoringPeriodStartedDate = new Date(foundingMembersData.scoringPeriodsFull.currentScoringPeriod.started);
-      const ScoringPeriodEndedDate = new Date(foundingMembersData.scoringPeriodsFull.currentScoringPeriod.ends);
+      const scoringPeriodStartedDate = new Date(foundingMembersData.scoringPeriodsFull.currentScoringPeriod.started);
+      const scoringPeriodEndedDate = new Date(foundingMembersData.scoringPeriodsFull.currentScoringPeriod.ends);
       const now = new Date();
 
       // calculate the elapsed time from start of scoring period until now
-      const timeDifferenceBetweenDates = Math.abs(ScoringPeriodEndedDate.getTime() - ScoringPeriodStartedDate.getTime()) / MILISECONDS_TO_DAYS;
-      const timePassedUntilNow = Math.abs(now.getTime() - ScoringPeriodStartedDate.getTime()) / MILISECONDS_TO_DAYS;
+      const timeDifferenceBetweenDates = Math.abs(scoringPeriodEndedDate.getTime() - scoringPeriodStartedDate.getTime()) / MILLISECONDS_TO_DAYS;
+      const timePassedUntilNow = Math.abs(now.getTime() - scoringPeriodStartedDate.getTime()) / MILLISECONDS_TO_DAYS;
       const progressPercentage = (timePassedUntilNow / timeDifferenceBetweenDates) * 100;
 
       // calculate the amount of days remaining until the end of the scoring period
-      const remainingTime = Math.abs(ScoringPeriodEndedDate.getTime() - now.getTime()) / MILISECONDS_TO_DAYS;
+      const remainingTime = Math.abs(scoringPeriodEndedDate.getTime() - now.getTime()) / MILLISECONDS_TO_DAYS;
 
       setRemainingTime(remainingTime);
 
       setDates({
-        started: ScoringPeriodStartedDate,
-        ends: ScoringPeriodEndedDate
+        started: scoringPeriodStartedDate,
+        ends: scoringPeriodEndedDate
       });
 
       setProgress(progressPercentage > 100 ? 100 : progressPercentage);

@@ -6,7 +6,7 @@ export default css`
   }
 
   .ui.breadcrumb {
-    margin-top: 2em;
+    margin-top: 2rem;
   }
 
   .ForumPageTitle {
