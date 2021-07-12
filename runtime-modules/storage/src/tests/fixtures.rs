@@ -10,7 +10,9 @@ use super::mocks::{
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
-use crate::tests::mocks::DISTRIBUTION_WG_LEADER_ACCOUNT_ID;
+use crate::tests::mocks::{
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+};
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
@@ -1671,6 +1673,66 @@ impl InviteDistributionBucketOperatorFixture {
             assert!(new_bucket
                 .pending_invitations
                 .contains(&self.operator_worker_id),);
+        }
+    }
+}
+
+pub struct CancelDistributionBucketInvitationFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    operator_worker_id: u64,
+}
+
+impl CancelDistributionBucketInvitationFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            operator_worker_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
+        Self {
+            operator_worker_id,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::cancel_distribution_bucket_operator_invite(
+            self.origin.clone().into(),
+            self.family_id,
+            self.bucket_id,
+            self.operator_worker_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(!new_bucket
+                .pending_invitations
+                .contains(&self.operator_worker_id));
         }
     }
 }
