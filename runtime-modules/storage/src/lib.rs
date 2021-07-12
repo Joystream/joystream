@@ -74,8 +74,12 @@
 //!  invites a distribution bucket operator.
 //! - [cancel_distribution_bucket_operator_invite](./struct.Module.html#method.cancel_distribution_bucket_operator_invite) -
 //!  Cancels pending invite for a distribution bucket.
+
+//! #### Distribution provider extrinsics
 //! - [accept_distribution_bucket_invitation](./struct.Module.html#method.accept_distribution_bucket_invitation) -
 //!  Accepts pending invite for a distribution bucket.
+//! - [set_distribution_operator_metadata](./struct.Module.html#method.set_distribution_operator_metadata) -
+//!  Set distribution operator metadata for the distribution bucket.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -147,6 +151,7 @@ use storage_bucket_picker::StorageBucketPicker;
 // How to be sure that we don't have already accepted invitation? We need to have it in the bucket
 // a separate map. DistributionOperatorId is not sustainable - verify that on Monday.
 // TODO: test invite_distribution_bucket_operator with accepted invitation.
+// TODO: test docs.
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
@@ -1137,15 +1142,28 @@ decl_event! {
             WorkerId,
         ),
 
-        /// Emits on canceling a distribution bucket invitation for the operator.
+        /// Emits on accepting a distribution bucket invitation for the operator.
         /// Params
+        /// - worker ID
         /// - distribution bucket family ID
         /// - distribution bucket ID
-        /// - worker ID
         DistributionBucketInvitationAccepted(
             WorkerId,
             DistributionBucketFamilyId,
             DistributionBucketId,
+        ),
+
+        /// Emits on setting the metadata by a distribution bucket operator.
+        /// Params
+        /// - worker ID
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        /// - metadata
+        DistributionBucketMetadataSet(
+            WorkerId,
+            DistributionBucketFamilyId,
+            DistributionBucketId,
+            Vec<u8>
         ),
     }
 }
@@ -1311,6 +1329,9 @@ decl_error! {
 
         /// No distribution bucket invitation.
         NoDistributionBucketInvitation,
+
+        /// Invalid operations: must be a distribution provider operator for a bucket.
+        MustBeDistributionProviderOperatorForBucket,
     }
 }
 
@@ -2262,9 +2283,47 @@ decl_module! {
                 )
             );
         }
+
+        /// Set distribution operator metadata for the distribution bucket.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_distribution_operator_metadata(
+            origin,
+            worker_id: WorkerId<T>,
+            distribution_bucket_family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+            metadata: Vec<u8>,
+        ) {
+            T::ensure_distribution_worker_origin(origin, worker_id)?;
+
+            let family =
+                Self::ensure_distribution_bucket_family_exists(&distribution_bucket_family_id)?;
+            let bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            ensure!(
+                bucket.operators.contains(&worker_id),
+                Error::<T>::MustBeDistributionProviderOperatorForBucket
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketMetadataSet(
+                    worker_id,
+                    distribution_bucket_family_id,
+                    distribution_bucket_id,
+                    metadata
+                )
+            );
+        }
     }
 }
 
+// -
 // Public methods
 impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
