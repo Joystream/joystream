@@ -61,7 +61,7 @@ impl<T: Trait> DistributionBucketPicker<T> {
         bucket_number: u32,
         seed: Rc<RefCell<T::Hash>>, //     seed: RefCell<T::Hash>
     ) -> BTreeSet<T::DistributionBucketId> {
-        let mut working_ids = ids.clone();
+        let mut working_ids = ids;
         let mut result_ids = BTreeSet::default();
 
         for _ in 0..bucket_number {
@@ -87,7 +87,7 @@ impl<T: Trait> DistributionBucketPicker<T> {
             return Module::<T>::get_initial_random_seed();
         }
 
-        let current_seed = seed.borrow().clone();
+        let current_seed = *seed.borrow();
         seed.replace(T::Randomness::random(current_seed.as_ref()))
     }
 }

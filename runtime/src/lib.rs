@@ -691,6 +691,7 @@ impl storage::Trait for Runtime {
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
+    type DistributionBucketOperatorId = DistributionBucketOperatorId;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
@@ -715,6 +716,12 @@ impl storage::Trait for Runtime {
         worker_id: ActorId,
     ) -> DispatchResult {
         DistributionWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+    }
+
+    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
     }
 }
 

@@ -73,6 +73,8 @@ pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
 pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
+pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
 
 impl crate::Trait for Test {
     type Event = TestEvent;
@@ -80,6 +82,7 @@ impl crate::Trait for Test {
     type StorageBucketId = u64;
     type DistributionBucketId = u64;
     type DistributionBucketFamilyId = u64;
+    type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
     type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
@@ -144,6 +147,19 @@ impl crate::Trait for Test {
 
         if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
             Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_distribution_worker_exists(worker_id: &u64) -> DispatchResult {
+        let allowed_providers = vec![
+            DEFAULT_DISTRIBUTION_PROVIDER_ID,
+            ANOTHER_DISTRIBUTION_PROVIDER_ID,
+        ];
+
+        if !allowed_providers.contains(worker_id) {
+            Err(DispatchError::Other("Invalid worker"))
         } else {
             Ok(())
         }

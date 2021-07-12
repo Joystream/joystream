@@ -80,6 +80,9 @@ pub type DistributionBucketFamilyId = u64;
 /// Represent a media channel.
 pub type ChannelId = u64;
 
+/// Represent relationships between distribution buckets and distribution working group workers.
+pub type DistributionBucketOperatorId = u64;
+
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
 /// account.
