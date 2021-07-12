@@ -32,6 +32,7 @@ use mocks::{
     DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
+use crate::tests::mocks::DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID;
 use fixtures::*;
 
 #[test]
@@ -4409,6 +4410,106 @@ fn cancel_distribution_bucket_operator_invite_fails_with_invalid_distribution_bu
     build_test_externalities().execute_with(|| {
         CancelDistributionBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
+
+#[test]
+fn accept_distribution_bucket_operator_invite_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let provider_id = DEFAULT_DISTRIBUTION_PROVIDER_ID;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(provider_id)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bucket_id(bucket_id)
+            .with_worker_id(provider_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketInvitationAccepted(
+            provider_id,
+            family_id,
+            bucket_id,
+        ));
+    });
+}
+
+#[test]
+fn accept_distribution_bucket_operator_invite_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let invalid_account_id = 11111;
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(invalid_account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn accept_distribution_bucket_operator_invite_fails_with_non_existing_storage_bucket() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
+    });
+}
+
+#[test]
+fn accept_distribution_bucket_operator_invite_fails_with_non_invited_storage_provider() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bucket_id(bucket_id)
+            .call_and_assert(Err(Error::<Test>::NoDistributionBucketInvitation.into()));
+    });
+}
+
+#[test]
+fn accept_distribution_bucket_operator_invite_fails_with_invalid_distribution_bucket_family() {
+    build_test_externalities().execute_with(|| {
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
             .call_and_assert(Err(
                 Error::<Test>::DistributionBucketFamilyDoesntExist.into()
             ));

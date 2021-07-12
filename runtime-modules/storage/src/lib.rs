@@ -74,6 +74,8 @@
 //!  invites a distribution bucket operator.
 //! - [cancel_distribution_bucket_operator_invite](./struct.Module.html#method.cancel_distribution_bucket_operator_invite) -
 //!  Cancels pending invite for a distribution bucket.
+//! - [accept_distribution_bucket_invitation](./struct.Module.html#method.accept_distribution_bucket_invitation) -
+//!  Accepts pending invite for a distribution bucket.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -145,6 +147,7 @@ use storage_bucket_picker::StorageBucketPicker;
 // How to be sure that we don't have already accepted invitation? We need to have it in the bucket
 // a separate map. DistributionOperatorId is not sustainable - verify that on Monday.
 // TODO: test invite_distribution_bucket_operator with accepted invitation.
+
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
     /// Validates upload parameters and conditions (like global uploading block).
@@ -1127,11 +1130,22 @@ decl_event! {
         /// Params
         /// - distribution bucket family ID
         /// - distribution bucket ID
-        /// - worker ID
+        /// - operator worker ID
         DistributionBucketInvitationCancelled(
             DistributionBucketFamilyId,
             DistributionBucketId,
             WorkerId,
+        ),
+
+        /// Emits on canceling a distribution bucket invitation for the operator.
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        /// - worker ID
+        DistributionBucketInvitationAccepted(
+            WorkerId,
+            DistributionBucketFamilyId,
+            DistributionBucketId,
         ),
     }
 }
@@ -2134,7 +2148,7 @@ decl_module! {
             origin,
             distribution_bucket_family_id: T::DistributionBucketFamilyId,
             distribution_bucket_id: T::DistributionBucketId,
-            worker_id: WorkerId<T>
+            operator_worker_id: WorkerId<T>
         ) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
 
@@ -2145,13 +2159,13 @@ decl_module! {
                 &distribution_bucket_id
             )?;
 
-            Self::ensure_distribution_provider_can_be_invited(&bucket, &worker_id)?;
+            Self::ensure_distribution_provider_can_be_invited(&bucket, &operator_worker_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            bucket.pending_invitations.insert(worker_id);
+            bucket.pending_invitations.insert(operator_worker_id);
             family.distribution_buckets.insert(distribution_bucket_id, bucket);
 
             <DistributionBucketFamilyById<T>>::insert(distribution_bucket_family_id, family);
@@ -2160,7 +2174,7 @@ decl_module! {
                 RawEvent::DistributionBucketOperatorInvited(
                     distribution_bucket_family_id,
                     distribution_bucket_id,
-                    worker_id,
+                    operator_worker_id,
                 )
             );
         }
@@ -2171,9 +2185,52 @@ decl_module! {
             origin,
             distribution_bucket_family_id: T::DistributionBucketFamilyId,
             distribution_bucket_id: T::DistributionBucketId,
-            worker_id: WorkerId<T>
+            operator_worker_id: WorkerId<T>
         ) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family =
+                Self::ensure_distribution_bucket_family_exists(&distribution_bucket_family_id)?;
+            let mut bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            ensure!(
+                bucket.pending_invitations.contains(&operator_worker_id),
+                Error::<T>::NoDistributionBucketInvitation
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bucket.pending_invitations.remove(&operator_worker_id);
+            family.distribution_buckets.insert(distribution_bucket_id, bucket);
+
+            <DistributionBucketFamilyById<T>>::insert(distribution_bucket_family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketInvitationCancelled(
+                    distribution_bucket_family_id,
+                    distribution_bucket_id,
+                    operator_worker_id
+                )
+            );
+        }
+
+        // ===== Distribution Operator actions =====
+
+        /// Accept pending invite.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_distribution_bucket_invitation(
+            origin,
+            worker_id: WorkerId<T>,
+            distribution_bucket_family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+
+        ) {
+            T::ensure_distribution_worker_origin(origin, worker_id)?;
 
             let mut family =
                 Self::ensure_distribution_bucket_family_exists(&distribution_bucket_family_id)?;
@@ -2192,21 +2249,19 @@ decl_module! {
             //
 
             bucket.pending_invitations.remove(&worker_id);
+            bucket.operators.insert(worker_id);
             family.distribution_buckets.insert(distribution_bucket_id, bucket);
 
             <DistributionBucketFamilyById<T>>::insert(distribution_bucket_family_id, family);
 
             Self::deposit_event(
-                RawEvent::DistributionBucketInvitationCancelled(
+                RawEvent::DistributionBucketInvitationAccepted(
+                    worker_id,
                     distribution_bucket_family_id,
                     distribution_bucket_id,
-                    worker_id
                 )
             );
         }
-
-        // ===== Distribution Operator actions =====
-
     }
 }
 

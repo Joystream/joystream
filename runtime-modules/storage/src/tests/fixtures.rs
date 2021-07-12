@@ -1736,3 +1736,60 @@ impl CancelDistributionBucketInvitationFixture {
         }
     }
 }
+
+pub struct AcceptDistributionBucketInvitationFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    worker_id: u64,
+}
+
+impl AcceptDistributionBucketInvitationFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            worker_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::accept_distribution_bucket_invitation(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.family_id,
+            self.bucket_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(!new_bucket.pending_invitations.contains(&self.worker_id));
+
+            assert!(new_bucket.operators.contains(&self.worker_id));
+        }
+    }
+}
