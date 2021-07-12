@@ -643,7 +643,7 @@ decl_storage! {
     pub CategoryCounter get(fn category_counter) config(): T::CategoryId;
 
     /// Map thread identifier to corresponding thread.
-    pub ThreadById get(fn thread_by_id) config(): double_map hasher(blake2_128_concat)
+    pub ThreadById get(fn thread_by_id): double_map hasher(blake2_128_concat)
         T::CategoryId, hasher(blake2_128_concat) T::ThreadId => Thread<T>;
 
     /// Thread identifier value to be used for next Thread in threadById.
@@ -653,16 +653,16 @@ decl_storage! {
     pub NextPostId get(fn next_post_id) config(): T::PostId;
 
     /// Map post identifier to corresponding post.
-    pub PostById get(fn post_by_id) config():
+    pub PostById get(fn post_by_id):
     double_map hasher(blake2_128_concat) T::ThreadId,
     hasher(blake2_128_concat) T::PostId => Post<T>;
 
     /// Map categoryid to category
-        pub CategoryById get(fn category_by_id) config():
+        pub CategoryById get(fn category_by_id):
     map hasher(blake2_128_concat) T::CategoryId => Category<T>;
 
     /// Moderator set for each Category
-    pub CategoryByModerator get(fn category_by_moderator) config():
+    pub CategoryByModerator get(fn category_by_moderator):
     double_map hasher(blake2_128_concat) T::CategoryId,
     hasher(blake2_128_concat) ModeratorId<T> => ();
     }
@@ -1439,12 +1439,19 @@ decl_module! {
             category_id: T::CategoryId,
             title_hash: T::Hash,
             text_hash: T::Hash,
-     channel_id: T::ChannelId
+            channel_id: T::ChannelId,
         ) -> DispatchResult {
 
             let account_id = ensure_signed(origin)?;
 
+        // ensure that signer is forum_user_id and forum_user_id refers to a valid member
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+            // ensure valid channel
+            Self::ensure_channel_exists(&channel_id)?;
+
+            // ensure category_id is valid
+            Self::ensure_category_exists(&category_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1469,11 +1476,11 @@ decl_module! {
             });
 
             // Add inital post to thread
-         let _ = Self::add_new_post(
+            let _ = Self::add_new_post(
                 new_thread_id,
                 category_id,
                 text_hash,
-            forum_user_id,
+                forum_user_id,
             );
 
             // Update next thread id
@@ -1522,6 +1529,9 @@ decl_module! {
             // Delete thread
             <ThreadById<T>>::remove(category_id, thread_id);
 
+            // decrease category's thread counter
+            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(
                     thread_id,
@@ -1545,6 +1555,9 @@ decl_module! {
         // Make sure thread exists and is mutable
         Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
+        // make sure thread is valid
+        Self::ensure_thread_exists(&category_id, &thread_id)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1560,8 +1573,13 @@ decl_module! {
 
             // Generate event
              Self::deposit_event(
-                 RawEvent::PostAdded(post_id, forum_user_id, category_id, thread_id, text_hash)
-            );
+                 RawEvent::PostAdded(
+             post_id,
+             forum_user_id,
+             category_id,
+             thread_id,
+             text_hash,
+         ));
 
             Ok(())
     }
@@ -2129,7 +2147,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
     // Ensure forum user is lead - check via account
-    fn ensure_is_forum_lead_account(_account_id: &T::AccountId) -> Result<(), Error<T>> {
+    fn ensure_is_forum_lead_account(account_id: &T::AccountId) -> Result<(), Error<T>> {
+        //        ensure_is_lead::<T>(account_id)?;
         Ok(())
     }
 
@@ -2165,6 +2184,7 @@ impl<T: Trait> Module<T> {
         }
         Ok(())
     }
+
     pub fn add_new_post(
         thread_id: T::ThreadId,
         category_id: T::CategoryId,

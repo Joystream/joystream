@@ -237,6 +237,46 @@ impl Trait for Test {
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem = MockStorageSystem;
+
+    // counting posts
+    type PostId = u64;
+
+    // counting threads
+    type ThreadId = u64;
+
+    // categories
+    type CategoryId = u64;
+
+    // reaction id
+    type ReactionId = u64;
+
+    // limit for categories
+    type MapLimits = MapLimits;
+
+    // max category depth
+    type MaxCategoryDepth = MaxCategoryDepth;
+}
+
+parameter_types! {
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const MaxCategoryDepth: u64 = 20;
+    pub const PostLifeTime: u64 = 100;
+    pub const MaxSubcategories: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 3;
+    pub const MaxCategories: u64 = 40;
+    pub const MaxPollAlternativesNumber: u64 = 20;
+    pub const ThreadDeposit: u64 = 100;
+    pub const PostDeposit: u64 = 10;
+//    pub const ForumModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+}
+
+pub struct MapLimits;
+
+impl StorageLimits for MapLimits {
+    type MaxSubcategories = MaxSubcategories;
+    type MaxModeratorsForCategory = MaxModeratorsForCategory;
+    type MaxCategories = MaxCategories;
+    //    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -252,6 +292,10 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    category_counter: u64,
+    next_category_id: u64,
+    next_post_id: u64,
+    next_thread_id: u64,
 }
 
 impl Default for ExtBuilder {
@@ -266,6 +310,10 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            category_counter: 1,
+            next_category_id: 1,
+            next_post_id: 1,
+            next_thread_id: 1,
         }
     }
 }
@@ -286,6 +334,10 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            category_counter: self.category_counter,
+            next_category_id: self.next_category_id,
+            next_post_id: self.next_post_id,
+            next_thread_id: self.next_thread_id,
         }
         .assimilate_storage(&mut t)
         .unwrap();
