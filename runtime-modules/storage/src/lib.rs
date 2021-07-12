@@ -67,11 +67,13 @@
 //! - [distribution_buckets_per_bag_limit](./struct.Module.html#method.distribution_buckets_per_bag_limit) -
 //! updates "Distribution buckets per bag" number limit.
 //! - [update_distribution_bucket_mode](./struct.Module.html#method.distribution_buckets_per_bag_limit) -
-//! updates "distributing" flag for the distribution bucket.
+//! updates "distributing" flag for a distribution bucket.
 //! - [update_families_in_dynamic_bag_creation_policy](./struct.Module.html#method.update_families_in_dynamic_bag_creation_policy) -
 //!  updates distribution bucket families used in given dynamic bag creation policy.
 //! - [invite_distribution_bucket_operator](./struct.Module.html#method.invite_distribution_bucket_operator) -
 //!  invites a distribution bucket operator.
+//! - [cancel_distribution_bucket_operator_invite](./struct.Module.html#method.cancel_distribution_bucket_operator_invite) -
+//!  Cancels pending invite for a distribution bucket.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -1122,11 +1124,23 @@ decl_event! {
             BTreeMap<DistributionBucketFamilyId, u32>
         ),
 
-        /// Emits on dynamic bag creation policy update (distribution bucket families).
+        /// Emits on creating a distribution bucket invitation for the operator.
         /// Params
         /// - distribution bucket family ID
         /// - distribution bucket ID
+        /// - worker ID
         DistributionBucketOperatorInvited(
+            DistributionBucketFamilyId,
+            DistributionBucketId,
+            WorkerId,
+        ),
+
+        /// Emits on canceling a distribution bucket invitation for the operator.
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        /// - worker ID
+        DistributionBucketInvitationCancelled(
             DistributionBucketFamilyId,
             DistributionBucketId,
             WorkerId,
@@ -1289,6 +1303,9 @@ decl_error! {
 
         /// Distribution provider operator already set.
         DistributionProviderOperatorAlreadySet,
+
+        /// No distribution bucket invitation.
+        NoDistributionBucketInvitation,
     }
 }
 
@@ -2180,6 +2197,46 @@ decl_module! {
                     distribution_bucket_family_id,
                     distribution_bucket_id,
                     worker_id,
+                )
+            );
+        }
+
+        /// Cancel pending invite. Must be pending.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_distribution_bucket_operator_invite(
+            origin,
+            distribution_bucket_family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+            worker_id: WorkerId<T>
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family =
+                Self::ensure_distribution_bucket_family_exists(&distribution_bucket_family_id)?;
+            let mut bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            ensure!(
+                bucket.pending_invitations.contains(&worker_id),
+                Error::<T>::NoDistributionBucketInvitation
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bucket.pending_invitations.remove(&worker_id);
+            family.distribution_buckets.insert(distribution_bucket_id, bucket);
+
+            <DistributionBucketFamilyById<T>>::insert(distribution_bucket_family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketInvitationCancelled(
+                    distribution_bucket_family_id,
+                    distribution_bucket_id,
+                    worker_id
                 )
             );
         }

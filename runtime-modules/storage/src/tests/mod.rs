@@ -4327,3 +4327,114 @@ fn invite_distribution_bucket_operator_fails_with_invalid_storage_provider_id() 
             ));
     });
 }
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_invalid_distribution_bucket_family() {
+    build_test_externalities().execute_with(|| {
+        CancelDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
+
+#[test]
+fn cancel_distribution_bucket_operator_invite_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let provider_id = DEFAULT_DISTRIBUTION_PROVIDER_ID;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(provider_id)
+            .call_and_assert(Ok(()));
+
+        CancelDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bucket_id(bucket_id)
+            .with_operator_worker_id(provider_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketInvitationCancelled(
+            family_id,
+            bucket_id,
+            provider_id,
+        ));
+    });
+}
+
+#[test]
+fn cancel_distribution_bucket_operator_invite_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_account_id = 11111;
+
+        CancelDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn cancel_distribution_bucket_operator_invite_fails_with_non_existing_storage_bucket() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        CancelDistributionBucketInvitationFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
+    });
+}
+
+#[test]
+fn cancel_distribution_bucket_operator_invite_fails_with_non_invited_storage_provider() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        CancelDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bucket_id(bucket_id)
+            .call_and_assert(Err(Error::<Test>::NoDistributionBucketInvitation.into()));
+    });
+}
+
+#[test]
+fn cancel_distribution_bucket_operator_invite_fails_with_invalid_distribution_bucket_family() {
+    build_test_externalities().execute_with(|| {
+        CancelDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
