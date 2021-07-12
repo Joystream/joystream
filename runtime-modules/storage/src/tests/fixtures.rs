@@ -1807,3 +1807,55 @@ impl AcceptDistributionBucketInvitationFixture {
         }
     }
 }
+
+pub struct SetDistributionBucketMetadataFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    worker_id: u64,
+    metadata: Vec<u8>,
+}
+
+impl SetDistributionBucketMetadataFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            worker_id: Default::default(),
+            metadata: Default::default(),
+        }
+    }
+
+    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
+        Self { metadata, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::set_distribution_operator_metadata(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.family_id,
+            self.bucket_id,
+            self.metadata.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
