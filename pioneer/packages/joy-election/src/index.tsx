@@ -22,6 +22,7 @@ import Reveals from './Reveals';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
 import { ApiProps } from '@polkadot/react-api/types';
+import FMReminderBanner from '@polkadot/joy-utils/react/components/FMReminderBanner';
 
 const ElectionMain = styled.main`${style}`;
 
@@ -67,6 +68,7 @@ class App extends React.PureComponent<Props, State> {
 
     return (
       <ElectionMain className='election--App'>
+        <FMReminderBanner contextualTitle='Council'/>
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>
