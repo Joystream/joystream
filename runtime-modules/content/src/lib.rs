@@ -74,6 +74,7 @@ pub trait NumericIdentifier:
     + PartialEq
     + Ord
     + Zero
+    + Into<u64> // required for map limits
 {
 }
 
@@ -132,6 +133,12 @@ pub trait Trait:
 
     // reaction id
     type ReactionId: NumericIdentifier;
+
+    // limit for categories
+    type MapLimits: StorageLimits;
+
+    /// maximum depth for a category
+    type MaxCategoryDepth: Get<u64>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -570,6 +577,24 @@ pub enum PrivilegedActor_<ModeratorId> {
 }
 
 pub type PrivilegedActor<T> = PrivilegedActor_<ModeratorId<T>>;
+
+type CategoryTreePathArg<T> = [(<T as Trait>::CategoryId, Category<T>)];
+
+type CategoryTreePath<T> = Vec<(<T as Trait>::CategoryId, Category<T>)>;
+
+pub trait StorageLimits {
+    /// Maximum direct subcategories in a category
+    type MaxSubcategories: Get<u64>;
+
+    /// Maximum moderator count for a single category
+    type MaxModeratorsForCategory: Get<u64>;
+
+    /// Maximum total of all existing categories
+    type MaxCategories: Get<u64>;
+
+    // /// Maximum number of poll alternatives
+    // type MaxPollAlternativesNumber: Get<u64>;
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1413,7 +1438,7 @@ decl_module! {
             forum_user_id: ForumUserId<T>,
             category_id: T::CategoryId,
             title_hash: T::Hash,
-            _text_hash: T::Hash,
+            text_hash: T::Hash,
      channel_id: T::ChannelId
         ) -> DispatchResult {
 
@@ -1444,13 +1469,12 @@ decl_module! {
             });
 
             // Add inital post to thread
-            // let _ = Self::add_new_post(
-            //     new_thread_id,
-            //     category_id,
-            //     &text,
-            //     forum_user_id,
-            //     true,
-            // );
+         let _ = Self::add_new_post(
+                new_thread_id,
+                category_id,
+                text_hash,
+            forum_user_id,
+            );
 
             // Update next thread id
             <NextThreadId<T>>::mutate(|n| *n += One::one());
@@ -1499,12 +1523,11 @@ decl_module! {
             <ThreadById<T>>::remove(category_id, thread_id);
 
             // Store the event
-            // Self::deposit_event(RawEvent::ThreadDeleted(
-            //         thread_id,
-            //         forum_user_id,
-            //         category_id,
-            //         hide,
-            //     ));
+            Self::deposit_event(RawEvent::ThreadDeleted(
+                    thread_id,
+                    forum_user_id,
+                    category_id,
+                ));
 
             Ok(())
     }
@@ -1527,28 +1550,13 @@ decl_module! {
             //
 
         // Add new post
+        let post_id = Self::add_new_post(
+                    thread_id,
+                    category_id,
+                    text_hash,
+                    forum_user_id,
+                );
 
-    let new_post_id = <NextPostId<T>>::get();
-
-        // Update next post id
-        <NextPostId<T>>::mutate(|n| *n += One::one());
-
-            // Build a post
-            let new_post = Post_ {
-                thread_id: thread_id,
-                text_hash: text_hash,
-                author_id: forum_user_id,
-                cleanup_pay_off: BalanceOf::<T>::zero(),
-                last_edited: frame_system::Module::<T>::block_number(),
-            };
-
-            <PostById<T>>::insert(thread_id, new_post_id, new_post);
-
-        let mut thread = <ThreadById<T>>::get(category_id, thread_id);
-        let post_id = thread.number_of_posts.saturating_add(T::PostId::one());
-    thread.number_of_posts = post_id;
-
-        <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
 
             // Generate event
              Self::deposit_event(
@@ -1660,13 +1668,17 @@ decl_module! {
     }
 
     #[weight = 10_000_000]
-    fn create_forum_category(origin, parent_category_id: Option<T::CategoryId>, title_hash: T::Hash, description_hash: T::Hash ) -> DispatchResult {
+    fn create_forum_category(origin,
+                 parent_category_id: Option<T::CategoryId>,
+                 title_hash: T::Hash,
+                 description_hash: T::Hash,
+    ) -> DispatchResult {
             // Ensure data migration is done
 //            Self::ensure_data_migration_done()?;
 
-            let _account_id = ensure_signed(origin)?;
+            let account_id = ensure_signed(origin)?;
 
-//            Self::ensure_can_create_category(account_id, &parent_category_id)?;
+            Self::ensure_can_create_category(account_id, &parent_category_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1714,7 +1726,11 @@ decl_module! {
     }
 
     #[weight = 10_000_000]
-    fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> DispatchResult {
+    fn delete_forum_category(
+        origin,
+        actor: PrivilegedActor<T>,
+        category_id: T::CategoryId
+    ) -> DispatchResult {
             // Ensure data migration is done
 //            Self::ensure_data_migration_done()?;
 
@@ -1745,7 +1761,8 @@ decl_module! {
         origin,
         moderator_id: ModeratorId<T>,
         category_id: T::CategoryId,
-        new_value: bool) -> DispatchResult {
+        new_value: bool
+    ) -> DispatchResult {
             // Ensure data migration is done
             //Self::ensure_data_migration_done()?;
             //clear_prefix(b"Forum ForumUserById");
@@ -2014,11 +2031,87 @@ impl<T: Trait> Module<T> {
     // }
 
     fn ensure_can_moderate_category_path(
-        _actor: &PrivilegedActor<T>,
-        _category_id: &T::CategoryId,
+        actor: &PrivilegedActor<T>,
+        category_id: &T::CategoryId,
     ) -> Result<Category<T>, Error<T>> {
-        // need to review how categories are organized
-        Ok(Category::<T>::default())
+        fn check_moderator<T: Trait>(
+            category_tree_path: &CategoryTreePathArg<T>,
+            moderator_id: &ModeratorId<T>,
+        ) -> Result<(), Error<T>> {
+            for item in category_tree_path {
+                if <CategoryByModerator<T>>::contains_key(item.0, moderator_id) {
+                    return Ok(());
+                }
+            }
+
+            Err(Error::<T>::ModeratorCantUpdateCategory)
+        }
+
+        let category_tree_path =
+            Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
+
+        match actor {
+            PrivilegedActor::<T>::Lead => (),
+            PrivilegedActor::<T>::Moderator(moderator_id) => {
+                check_moderator::<T>(&category_tree_path, moderator_id)?
+            }
+        };
+
+        let category = category_tree_path[0].1.clone();
+
+        Ok(category)
+    }
+
+    /// Build category tree path and validate them
+    fn ensure_valid_category_and_build_category_tree_path(
+        category_id: &T::CategoryId,
+    ) -> Result<CategoryTreePath<T>, Error<T>> {
+        ensure!(
+            <CategoryById<T>>::contains_key(category_id),
+            Error::<T>::CategoryDoesNotExist
+        );
+
+        // Get path from parent to root of category tree.
+        let category_tree_path = Self::build_category_tree_path(&category_id);
+
+        if category_tree_path.is_empty() {
+            debug_assert!(
+                false,
+                "Should not fail! {:?}",
+                Error::<T>::PathLengthShouldBeGreaterThanZero
+            );
+            Err(Error::<T>::PathLengthShouldBeGreaterThanZero)
+        } else {
+            Ok(category_tree_path)
+        }
+    }
+
+    /// Builds path and populates in `path`.
+    /// Requires that `category_id` is valid
+    fn build_category_tree_path(category_id: &T::CategoryId) -> CategoryTreePath<T> {
+        // Get path from parent to root of category tree.
+        let mut category_tree_path = vec![];
+
+        Self::_build_category_tree_path(category_id, &mut category_tree_path);
+
+        category_tree_path
+    }
+
+    /// Builds path and populates in `path`.
+    /// Requires that `category_id` is valid
+    fn _build_category_tree_path(category_id: &T::CategoryId, path: &mut CategoryTreePath<T>) {
+        // Grab category
+        let category = <CategoryById<T>>::get(*category_id);
+
+        // Add category to path container
+        path.push((*category_id, category.clone()));
+
+        // Make recursive call on par ent if we are not at root
+        if let Some(parent_category_id) = category.parent_category_id {
+            assert!(<CategoryById<T>>::contains_key(parent_category_id));
+
+            Self::_build_category_tree_path(&parent_category_id, path);
+        }
     }
 
     fn ensure_actor_role(
@@ -2039,19 +2132,139 @@ impl<T: Trait> Module<T> {
     fn ensure_is_forum_lead_account(_account_id: &T::AccountId) -> Result<(), Error<T>> {
         Ok(())
     }
+
     fn ensure_is_moderator_account(
         _account_id: &T::AccountId,
         _moderator_id: &ModeratorId<T>,
     ) -> Result<(), Error<T>> {
+        //        let is_moderator = T::WorkingGroup::is_worker_account_id(account_id, moderator_id);
+        //        ensure!(is_moderator, Error::<T>::ModeratorIdNotMatchAccount);
         Ok(())
     }
+
     fn ensure_can_update_category_membership_of_moderator(
-        _account_id: T::AccountId,
-        _category_id: &T::CategoryId,
-        _moderator_id: &ModeratorId<T>,
-        _new_value: bool,
+        account_id: T::AccountId,
+        category_id: &T::CategoryId,
+        moderator_id: &ModeratorId<T>,
+        new_value: bool,
     ) -> Result<(), Error<T>> {
-        // to be implemented
+        Self::ensure_is_forum_lead_account(&account_id)?;
+
+        // ensure category exists.
+        let category = Self::ensure_category_exists(category_id)?;
+
+        if new_value {
+            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
+                category.num_direct_moderators as u64,
+            )?;
+        } else {
+            ensure!(
+                <CategoryByModerator<T>>::contains_key(category_id, moderator_id),
+                Error::<T>::CategoryModeratorDoesNotExist
+            );
+        }
+        Ok(())
+    }
+    pub fn add_new_post(
+        thread_id: T::ThreadId,
+        category_id: T::CategoryId,
+        text_hash: T::Hash,
+        author_id: ForumUserId<T>,
+    ) -> T::PostId {
+        // Make and add initial post
+        let new_post_id = <NextPostId<T>>::get();
+
+        // Update next post id
+        <NextPostId<T>>::mutate(|n| *n += One::one());
+
+        // Build a post
+        let new_post = Post_ {
+            text_hash: text_hash,
+            thread_id,
+            author_id,
+            cleanup_pay_off: BalanceOf::<T>::zero(),
+            last_edited: frame_system::Module::<T>::block_number(),
+        };
+
+        <PostById<T>>::insert(thread_id, new_post_id, new_post);
+
+        let mut thread = <ThreadById<T>>::get(category_id, thread_id);
+        thread.number_of_posts = thread.number_of_posts.saturating_add(T::PostId::one());
+
+        <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
+
+        new_post_id
+    }
+    fn ensure_can_create_category(
+        account_id: T::AccountId,
+        parent_category_id: &Option<T::CategoryId>,
+    ) -> Result<Option<Category<T>>, Error<T>> {
+        // Not signed by forum LEAD
+        Self::ensure_is_forum_lead_account(&account_id)?;
+
+        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxCategories>(
+            <CategoryCounter<T>>::get().into() as u64,
+        )?;
+
+        // If not root, then check that we can create in parent category
+        if let Some(tmp_parent_category_id) = parent_category_id {
+            // Can we mutate in this category?
+            Self::ensure_can_add_subcategory_path_leaf(&tmp_parent_category_id)?;
+
+            let parent_category = <CategoryById<T>>::get(tmp_parent_category_id);
+
+            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxSubcategories>(
+                parent_category.num_direct_subcategories as u64,
+            )?;
+
+            return Ok(Some(parent_category));
+        }
+
+        Ok(None)
+    }
+
+    fn ensure_map_limits<U: Get<u64>>(current_amount: u64) -> Result<(), Error<T>> {
+        fn check_limit<T: Trait>(amount: u64, limit: u64) -> Result<(), Error<T>> {
+            if amount >= limit {
+                return Err(Error::<T>::MapSizeLimit);
+            }
+
+            Ok(())
+        }
+
+        check_limit(current_amount, U::get())
+    }
+
+    fn ensure_can_add_subcategory_path_leaf(
+        parent_category_id: &T::CategoryId,
+    ) -> Result<(), Error<T>> {
+        // Get the path from parent category to root
+        let category_tree_path =
+            Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
+
+        let max_category_depth: u64 = T::MaxCategoryDepth::get();
+
+        // Check if max depth reached
+        if category_tree_path.len() as u64 >= max_category_depth {
+            return Err(Error::<T>::MaxValidCategoryDepthExceeded);
+        }
+
+        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+
+        Ok(())
+    }
+
+    fn ensure_can_mutate_in_path_leaf(
+        category_tree_path: &CategoryTreePathArg<T>,
+    ) -> Result<(), Error<T>> {
+        // Is parent category directly or indirectly deleted or archived category
+        ensure!(
+            !category_tree_path
+                .iter()
+                .any(|(_, c): &(_, Category<T>)| c.archived),
+            Error::<T>::AncestorCategoryImmutable
+        );
+
         Ok(())
     }
 }
@@ -2224,6 +2437,7 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, ForumUserId, CategoryId, Hash, ChannelId),
+        ThreadDeleted(ThreadId, ForumUserId, CategoryId),
         PostAdded(PostId, ForumUserId, CategoryId, ThreadId, Hash),
         PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Hash),
         PostDeleted(PostId, ForumUserId, CategoryId, ThreadId),

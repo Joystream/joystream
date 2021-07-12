@@ -37,6 +37,9 @@ decl_error! {
         /// Account does not match Post author
         AccountDoesNotMatchPostAuthor,
 
+        /// Moderator canont update category
+        ModeratorCantUpdateCategory,
+
         // Authentication Errors
         // ---------------------
 
@@ -82,11 +85,26 @@ decl_error! {
         /// category does not exists
         ForumCategoryDoesNotExist,
 
-    /// non empty threads for a category
+        /// non empty threads for a category
         CategoryNotEmptyThreads,
 
-    /// non empty subcategories for a category
+        /// non empty subcategories for a category
         CategoryNotEmptySubCategories,
+
+        /// Error encountered when transversing forum categories
+        PathLengthShouldBeGreaterThanZero,
+
+        /// Error encountered when transversing forum categories
+        MapSizeLimit,
+
+        /// Ancestor category immutable
+        AncestorCategoryImmutable,
+
+        /// maximum category depth exceeded
+        MaxValidCategoryDepthExceeded,
+
+        /// maximum category depth exceeded
+        CategoryModeratorDoesNotExist,
 
     }
 }
