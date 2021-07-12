@@ -26,8 +26,9 @@ use mocks::{
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDistributionBucketFamilyNumber,
     MaxDistributionBucketNumberPerFamily, MaxNumberOfDataObjectsPerBag, MaxRandomIterationNumber,
-    MaxStorageBucketNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID,
-    DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    MaxStorageBucketNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
     DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
@@ -3472,7 +3473,7 @@ fn create_distribution_bucket_family_succeeded() {
 
         let bucket_family = Storage::distribution_bucket_family_by_id(family_id);
 
-        assert_eq!(bucket_family, DistributionBucketFamily::default());
+        assert_eq!(bucket_family, DistributionBucketFamily::<Test>::default());
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketFamilyCreated(family_id));
     });
@@ -4179,5 +4180,126 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
         );
 
         assert_eq!(total_ids1, total_ids2); // picked IDS are from total ID set.
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let provider_id = DEFAULT_DISTRIBUTION_PROVIDER_ID;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(provider_id)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::DistributionBucketOperatorInvited(
+            family_id,
+            bucket_id,
+            provider_id,
+        ));
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_non_leader_origin() {
+    build_test_externalities().execute_with(|| {
+        let non_leader_id = 1;
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(non_leader_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_non_existing_storage_bucket() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_non_missing_invitation() {
+    build_test_externalities().execute_with(|| {
+        let invited_worker_id = DEFAULT_DISTRIBUTION_PROVIDER_ID;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(invited_worker_id)
+            .call_and_assert(Ok(()));
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(invited_worker_id)
+            .call_and_assert(Err(
+                Error::<Test>::DistributionProviderOperatorAlreadyInvited.into(),
+            ));
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_invalid_storage_provider_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_provider_id = 155;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(invalid_provider_id)
+            .call_and_assert(Err(
+                Error::<Test>::DistributionProviderOperatorDoesntExist.into()
+            ));
     });
 }

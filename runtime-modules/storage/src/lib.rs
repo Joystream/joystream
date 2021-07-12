@@ -70,6 +70,8 @@
 //! updates "distributing" flag for the distribution bucket.
 //! - [update_families_in_dynamic_bag_creation_policy](./struct.Module.html#method.update_families_in_dynamic_bag_creation_policy) -
 //!  updates distribution bucket families used in given dynamic bag creation policy.
+//! - [invite_distribution_bucket_operator](./struct.Module.html#method.invite_distribution_bucket_operator) -
+//!  invites a distribution bucket operator.
 //!
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
@@ -137,6 +139,10 @@ use storage_bucket_picker::StorageBucketPicker;
 // TODO: mut in extrinsics
 // TODO: dynamic bag creation - distributed buckets
 
+// TODO:
+// How to be sure that we don't have already accepted invitation? We need to have it in the bucket
+// a separate map. DistributionOperatorId is not sustainable - verify that on Monday.
+// TODO: test invite_distribution_bucket_operator with accepted invitation.
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
     /// Validates upload parameters and conditions (like global uploading block).
@@ -252,6 +258,17 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     + MaybeSerialize
     + PartialEq;
 
+    /// Distribution bucket operator ID type (relationship between distribution bucket and
+    /// distribution operator).
+    type DistributionBucketOperatorId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
     /// Defines max number of data objects per bag.
     type MaxNumberOfDataObjectsPerBag: Get<u64>;
 
@@ -316,6 +333,10 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         origin: Self::Origin,
         worker_id: WorkerId<Self>,
     ) -> DispatchResult;
+
+    /// Validate distribution worker existence.
+    /// TODO: Refactor after merging with the Olympia release.
+    fn ensure_distribution_worker_exists(worker_id: &WorkerId<Self>) -> DispatchResult;
 }
 
 /// Operations with local pallet account.
@@ -764,27 +785,36 @@ impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     }
 }
 
+/// Type alias for the DistributionBucketObject.
+pub type DistributionBucketFamily<T> =
+    DistributionBucketFamilyObject<<T as Trait>::DistributionBucketId, WorkerId<T>>;
+
 /// Distribution bucket family.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DistributionBucketFamily<DistributionBucketId: Ord> {
+pub struct DistributionBucketFamilyObject<DistributionBucketId: Ord, WorkerId: Ord> {
     /// Distribution bucket map.
-    pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>,
+    pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketObject<WorkerId>>,
 }
+
+/// Type alias for the DistributionBucketObject.
+pub type DistributionBucket<T> = DistributionBucketObject<WorkerId<T>>;
 
 /// Distribution bucket.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DistributionBucket {
+pub struct DistributionBucketObject<WorkerId: Ord> {
     /// Distribution bucket accepts new bags.
     pub accepting_new_bags: bool,
 
     /// Distribution bucket serves objects.
     pub distributing: bool,
-    //TODO:
-    // pending_invitations: BTreeSet<WorkerId>,
-    // number_of_pending_data_objects: u32,
-    // number_of_operators: u32,
+
+    /// Pending invitations for workers to distribute the bucket.
+    pub pending_invitations: BTreeSet<WorkerId>,
+
+    /// Active operators to distribute the bucket.
+    pub operators: BTreeSet<WorkerId>,
 }
 
 decl_storage! {
@@ -840,7 +870,7 @@ decl_storage! {
         /// Distribution bucket families.
         pub DistributionBucketFamilyById get (fn distribution_bucket_family_by_id):
             map hasher(blake2_128_concat) T::DistributionBucketFamilyId =>
-            DistributionBucketFamily<T::DistributionBucketId>;
+            DistributionBucketFamily<T>;
 
         /// Total number of distribution bucket families in the system.
         pub DistributionBucketFamilyNumber get(fn distribution_bucket_family_number): u64;
@@ -1079,6 +1109,16 @@ decl_event! {
             DynamicBagType,
             BTreeMap<DistributionBucketFamilyId, u32>
         ),
+
+        /// Emits on dynamic bag creation policy update (distribution bucket families).
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        DistributionBucketOperatorInvited(
+            DistributionBucketFamilyId,
+            DistributionBucketId,
+            WorkerId,
+        ),
     }
 }
 
@@ -1231,6 +1271,15 @@ decl_error! {
 
         /// The new `DistributionBucketsPerBagLimit` number is too high.
         DistributionBucketsPerBagLimitTooHigh,
+
+        /// Distribution provider operator doesn't exist.
+        DistributionProviderOperatorDoesntExist,
+
+        /// Distribution provider operator already invited.
+        DistributionProviderOperatorAlreadyInvited,
+
+        /// Distribution provider operator already set.
+        DistributionProviderOperatorAlreadySet,
     }
 }
 
@@ -1797,9 +1846,7 @@ decl_module! {
 
             Self::increment_distribution_family_number();
 
-            let family = DistributionBucketFamily {
-                distribution_buckets: BTreeMap::new(),
-            };
+            let family = DistributionBucketFamily::<T>::default();
 
             let family_id = Self::next_distribution_bucket_family_id();
 
@@ -1854,9 +1901,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let bucket = DistributionBucket {
+            let bucket = DistributionBucket::<T> {
                 accepting_new_bags,
                 distributing: true,
+                pending_invitations: BTreeSet::new(),
+                operators: BTreeSet::new(),
             };
 
             let bucket_id = Self::next_distribution_bucket_id();
@@ -2058,6 +2107,43 @@ decl_module! {
                 RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(
                     dynamic_bag_type,
                     families
+                )
+            );
+        }
+
+        /// Invite an operator. Must be missing.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn invite_distribution_bucket_operator(
+            origin,
+            distribution_bucket_family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+            worker_id: WorkerId<T>
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family =
+                Self::ensure_distribution_bucket_family_exists(&distribution_bucket_family_id)?;
+            let mut bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            Self::ensure_distribution_provider_can_be_invited(&bucket, &worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bucket.pending_invitations.insert(worker_id);
+            family.distribution_buckets.insert(distribution_bucket_id, bucket);
+
+            <DistributionBucketFamilyById<T>>::insert(distribution_bucket_family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketOperatorInvited(
+                    distribution_bucket_family_id,
+                    distribution_bucket_id,
+                    worker_id,
                 )
             );
         }
@@ -2894,7 +2980,7 @@ impl<T: Trait> Module<T> {
         Self::get_default_dynamic_bag_creation_policy(bag_type)
     }
 
-    // Verifies storage provider operator existence.
+    // Verifies storage operator existence.
     fn ensure_storage_provider_operator_exists(operator_id: &WorkerId<T>) -> DispatchResult {
         ensure!(
             T::ensure_storage_worker_exists(operator_id).is_ok(),
@@ -2970,7 +3056,7 @@ impl<T: Trait> Module<T> {
     // Returns the DistributionBucketFamily object or error.
     fn ensure_distribution_bucket_family_exists(
         family_id: &T::DistributionBucketFamilyId,
-    ) -> Result<DistributionBucketFamily<T::DistributionBucketId>, Error<T>> {
+    ) -> Result<DistributionBucketFamily<T>, Error<T>> {
         ensure!(
             <DistributionBucketFamilyById<T>>::contains_key(family_id),
             Error::<T>::DistributionBucketFamilyDoesntExist
@@ -2982,9 +3068,9 @@ impl<T: Trait> Module<T> {
     // Ensures the existence of the distribution bucket.
     // Returns the DistributionBucket object or error.
     fn ensure_distribution_bucket_exists(
-        family: &DistributionBucketFamily<T::DistributionBucketId>,
+        family: &DistributionBucketFamily<T>,
         distribution_bucket_id: &T::DistributionBucketId,
-    ) -> Result<DistributionBucket, Error<T>> {
+    ) -> Result<DistributionBucket<T>, Error<T>> {
         family
             .distribution_buckets
             .get(distribution_bucket_id)
@@ -3079,5 +3165,28 @@ impl<T: Trait> Module<T> {
         } else {
             T::Randomness::random_seed()
         }
+    }
+
+    // Verify parameters for the `invite_distribution_bucket_operator` extrinsic.
+    fn ensure_distribution_provider_can_be_invited(
+        bucket: &DistributionBucket<T>,
+        worker_id: &WorkerId<T>,
+    ) -> DispatchResult {
+        ensure!(
+            T::ensure_distribution_worker_exists(worker_id).is_ok(),
+            Error::<T>::DistributionProviderOperatorDoesntExist
+        );
+
+        ensure!(
+            !bucket.pending_invitations.contains(worker_id),
+            Error::<T>::DistributionProviderOperatorAlreadyInvited
+        );
+
+        ensure!(
+            !bucket.operators.contains(worker_id),
+            Error::<T>::DistributionProviderOperatorAlreadySet
+        );
+
+        Ok(())
     }
 }

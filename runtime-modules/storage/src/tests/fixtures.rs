@@ -1305,7 +1305,7 @@ impl CreateDistributionBucketFixture {
         if actual_result.is_ok() {
             assert_eq!(next_bucket_id + 1, Storage::next_distribution_bucket_id());
 
-            let family: DistributionBucketFamily<u64> =
+            let family: DistributionBucketFamily<Test> =
                 Storage::distribution_bucket_family_by_id(self.family_id);
 
             assert!(family.distribution_buckets.contains_key(&next_bucket_id));
@@ -1611,6 +1611,66 @@ impl UpdateFamiliesInDynamicBagCreationPolicyFixture {
             assert_eq!(new_policy.families, self.families);
         } else {
             assert_eq!(old_policy, new_policy);
+        }
+    }
+}
+
+pub struct InviteDistributionBucketOperatorFixture {
+    origin: RawOrigin<u64>,
+    operator_worker_id: u64,
+    family_id: u64,
+    bucket_id: u64,
+}
+
+impl InviteDistributionBucketOperatorFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            operator_worker_id: DEFAULT_WORKER_ID,
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
+        Self {
+            operator_worker_id,
+            ..self
+        }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::invite_distribution_bucket_operator(
+            self.origin.clone().into(),
+            self.family_id,
+            self.bucket_id,
+            self.operator_worker_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(new_bucket
+                .pending_invitations
+                .contains(&self.operator_worker_id),);
         }
     }
 }
