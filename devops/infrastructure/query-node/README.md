@@ -38,12 +38,18 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH>
+    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH> --plaintext isMinikube=true
+   ```
+
+   If you want to build the stack on AWS set the `isMinikube` config to `false`
+
+   ```bash
+   $ puluim config set isMinikube false
    ```
 
 1. Create a `.env` file in this directory and set the database and other variables in it
 
-1. Stand up the EKS cluster:
+1. Stand up the Kubernetes cluster:
 
    Running `pulumi up -y` will deploy the EKS cluster. Note, provisioning a
    new EKS cluster takes between 10-15 minutes.

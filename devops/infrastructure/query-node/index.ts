@@ -1,69 +1,82 @@
 import * as awsx from '@pulumi/awsx'
 import * as eks from '@pulumi/eks'
-// import * as k8s from '@pulumi/kubernetes'
 import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
-// import * as k8sjs from './k8sjs'
+import { configMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
-import * as fs from 'fs'
 
 require('dotenv').config()
 
 const config = new pulumi.Config()
-// const awsConfig = new pulumi.Config('aws')
+const awsConfig = new pulumi.Config('aws')
+const isMinikube = config.getBoolean('isMinikube')
+export let kubeconfig: pulumi.Output<any>
+export let joystreamAppsImage: pulumi.Output<string>
+let provider: k8s.Provider
 
-// // Create a VPC for our cluster.
-// const vpc = new awsx.ec2.Vpc('vpc', { numberOfAvailabilityZones: 2 })
+if (isMinikube) {
+  provider = new k8s.Provider('local', {})
 
-// // Create an EKS cluster with the default configuration.
-// const cluster = new eks.Cluster('eksctl-my-cluster', {
-//   vpcId: vpc.id,
-//   subnetIds: vpc.publicSubnetIds,
-//   instanceType: 't2.large',
-//   providerCredentialOpts: {
-//     profileName: awsConfig.get('profile'),
-//   },
-// })
+  // Create image from local app
+  joystreamAppsImage = new docker.Image('joystream/apps', {
+    build: {
+      context: '../../../',
+      dockerfile: '../../../apps.Dockerfile',
+    },
+    imageName: 'joystream/apps:latest',
+    skipPush: true,
+  }).baseImageName
+  // joystreamAppsImage = pulumi.interpolate`joystream/apps`
+} else {
+  // Create a VPC for our cluster.
+  const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2 })
 
-// // Export the cluster's kubeconfig.
-// export const kubeconfig = cluster.kubeconfig
+  // Create an EKS cluster with the default configuration.
+  const cluster = new eks.Cluster('eksctl-my-cluster', {
+    vpcId: vpc.id,
+    subnetIds: vpc.publicSubnetIds,
+    desiredCapacity: 3,
+    maxSize: 3,
+    instanceType: 't2.large',
+    providerCredentialOpts: {
+      profileName: awsConfig.get('profile'),
+    },
+  })
+  provider = cluster.provider
 
-// // Create a repository
-// const repo = new awsx.ecr.Repository('joystream/apps')
+  // Export the cluster's kubeconfig.
+  kubeconfig = cluster.kubeconfig
 
-// export const joystreamAppsImage = repo.buildAndPushImage({
-//   dockerfile: '../../../apps.Dockerfile',
-//   context: '../../../',
-// })
+  // Create a repository
+  const repo = new awsx.ecr.Repository('joystream/apps')
 
-// Create image from local app
-// export const joystreamAppsImage = new docker.Image('joystream/apps', {
-//   build: {
-//     context: '../../../',
-//     dockerfile: '../../../apps.Dockerfile',
-//   },
-//   imageName: 'joystream/apps:latest',
-//   skipPush: true,
-// }).baseImageName
+  joystreamAppsImage = repo.buildAndPushImage({
+    dockerfile: '../../../apps.Dockerfile',
+    context: '../../../',
+  })
+}
 
-export const joystreamAppsImage = 'joystream/apps'
+const resourceOptions = { provider: provider }
 
 const name = 'query-node'
 
 // Create a Kubernetes Namespace
 // const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
-const ns = new k8s.core.v1.Namespace(name, {})
+const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
 
-const defsConfig = new k8s.core.v1.ConfigMap(name, {
-  metadata: { namespace: namespaceName, labels: appLabels },
-  data: { 'fileData': fs.readFileSync('../../../types/augment/all/defs.json').toString() },
-})
-const defsConfigName = defsConfig.metadata.apply((m) => m.name)
+const defsConfig = new configMapFromFile(
+  'defs-config',
+  {
+    filePath: '../../../types/augment/all/defs.json',
+    namespaceName: namespaceName,
+  },
+  resourceOptions
+).configName
 
 // Create a Deployment
 const databaseLabels = { app: 'postgres-db' }
@@ -84,62 +97,71 @@ const pvc = new k8s.core.v1.PersistentVolumeClaim(
         },
       },
     },
-  }
-  // { provider: cluster.provider }
+  },
+  resourceOptions
 )
 
-const databaseDeployment = new k8s.apps.v1.Deployment('postgres-db', {
-  metadata: {
-    namespace: namespaceName,
-    labels: databaseLabels,
-  },
-  spec: {
-    selector: { matchLabels: databaseLabels },
-    template: {
-      metadata: { labels: databaseLabels },
-      spec: {
-        containers: [
-          {
-            name: 'postgres-db',
-            image: 'postgres:12',
-            env: [
-              { name: 'POSTGRES_USER', value: process.env.DB_USER! },
-              { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
-              { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
-            ],
-            ports: [{ containerPort: 5432 }],
-            volumeMounts: [
-              {
-                name: 'postgres-data',
-                mountPath: '/var/lib/postgresql/data',
-              },
-            ],
-          },
-        ],
-        volumes: [
-          {
-            name: 'postgres-data',
-            persistentVolumeClaim: {
-              claimName: `db-pvc`,
+const databaseDeployment = new k8s.apps.v1.Deployment(
+  'postgres-db',
+  {
+    metadata: {
+      namespace: namespaceName,
+      labels: databaseLabels,
+    },
+    spec: {
+      selector: { matchLabels: databaseLabels },
+      template: {
+        metadata: { labels: databaseLabels },
+        spec: {
+          containers: [
+            {
+              name: 'postgres-db',
+              image: 'postgres:12',
+              env: [
+                { name: 'POSTGRES_USER', value: process.env.DB_USER! },
+                { name: 'POSTGRES_PASSWORD', value: process.env.DB_PASS! },
+                { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
+              ],
+              ports: [{ containerPort: 5432 }],
+              volumeMounts: [
+                {
+                  name: 'postgres-data',
+                  mountPath: '/var/lib/postgresql/data',
+                  subPath: 'postgres',
+                },
+              ],
             },
-          },
-        ],
+          ],
+          volumes: [
+            {
+              name: 'postgres-data',
+              persistentVolumeClaim: {
+                claimName: `db-pvc`,
+              },
+            },
+          ],
+        },
       },
     },
   },
-})
+  resourceOptions
+)
 
-const databaseService = new k8s.core.v1.Service('postgres-db', {
-  metadata: {
-    namespace: namespaceName,
-    labels: databaseDeployment.metadata.labels,
-    name: 'postgres-db',
+const databaseService = new k8s.core.v1.Service(
+  'postgres-db',
+  {
+    metadata: {
+      namespace: namespaceName,
+      labels: databaseDeployment.metadata.labels,
+      name: 'postgres-db',
+    },
+    spec: {
+      ports: [{ port: 5432 }],
+      selector: databaseDeployment.spec.template.metadata.labels,
+    },
   },
-  spec: {
-    ports: [{ port: 5432 }],
-    selector: databaseDeployment.spec.template.metadata.labels,
-  },
-})
+  resourceOptions
+)
 
 const migrationJob = new k8s.batch.v1.Job(
   'db-migration',
@@ -178,8 +200,7 @@ const migrationJob = new k8s.batch.v1.Job(
       },
     },
   },
-  { dependsOn: databaseService }
-  // { provider: provider }
+  { ...resourceOptions, dependsOn: databaseService }
 )
 
 const membersFilePath = config.get('membersFilePath')
@@ -189,14 +210,23 @@ const workersFilePath = config.get('workersFilePath')
   ? config.get('workersFilePath')!
   : '../../../query-node/mappings/bootstrap/data/workers.json'
 
-const processorConfig = new k8s.core.v1.ConfigMap(`processor-config`, {
-  metadata: { namespace: namespaceName, labels: appLabels },
-  data: {
-    'members': fs.readFileSync(membersFilePath).toString(),
-    'workers': fs.readFileSync(workersFilePath).toString(),
+const membersConfig = new configMapFromFile(
+  'processor-config-members',
+  {
+    filePath: membersFilePath,
+    namespaceName: namespaceName,
   },
-})
-const processorConfigName = processorConfig.metadata.apply((m) => m.name)
+  resourceOptions
+).configName
+
+const workersConfig = new configMapFromFile(
+  'processor-config-workers',
+  {
+    filePath: workersFilePath,
+    namespaceName: namespaceName,
+  },
+  resourceOptions
+).configName
 
 const processorJob = new k8s.batch.v1.Job(
   'processor-migration',
@@ -226,13 +256,13 @@ const processorJob = new k8s.batch.v1.Job(
               volumeMounts: [
                 {
                   mountPath: '/joystream/query-node/mappings/bootstrap/data/members.json',
-                  name: 'processor-volume',
-                  subPath: 'members',
+                  name: 'processor-volume-members',
+                  subPath: 'fileData',
                 },
                 {
                   mountPath: '/joystream/query-node/mappings/bootstrap/data/workers.json',
-                  name: 'processor-volume',
-                  subPath: 'workers',
+                  name: 'processor-volume-workers',
+                  subPath: 'fileData',
                 },
               ],
               args: ['workspace', 'query-node-root', 'processor:bootstrap'],
@@ -241,9 +271,15 @@ const processorJob = new k8s.batch.v1.Job(
           restartPolicy: 'Never',
           volumes: [
             {
-              name: 'processor-volume',
+              name: 'processor-volume-members',
               configMap: {
-                name: processorConfigName,
+                name: membersConfig,
+              },
+            },
+            {
+              name: 'processor-volume-workers',
+              configMap: {
+                name: workersConfig,
               },
             },
           ],
@@ -251,7 +287,7 @@ const processorJob = new k8s.batch.v1.Job(
       },
     },
   },
-  { dependsOn: migrationJob }
+  { ...resourceOptions, dependsOn: migrationJob }
   // { provider: provider }
 )
 
@@ -280,7 +316,6 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'indexer',
               image: 'joystream/hydra-indexer:2.1.0-beta.9',
               env: [
-                // ...envCopy,
                 { name: 'DB_HOST', value: 'postgres-db' },
                 { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
                 { name: 'DB_PASS', value: process.env.DB_PASS! },
@@ -363,13 +398,13 @@ const deployment = new k8s.apps.v1.Deployment(
             {
               name: 'processor-volume',
               configMap: {
-                name: defsConfigName,
+                name: defsConfig,
               },
             },
             {
               name: 'indexer-volume',
               configMap: {
-                name: defsConfigName,
+                name: defsConfig,
               },
             },
           ],
@@ -377,10 +412,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { dependsOn: processorJob }
-  // {
-  //   provider: cluster.provider,
-  // }
+  { ...resourceOptions, dependsOn: processorJob }
 )
 
 // Export the Deployment name
@@ -395,17 +427,15 @@ const service = new k8s.core.v1.Service(
       namespace: namespaceName,
     },
     spec: {
-      type: 'NodePort',
+      type: isMinikube ? 'NodePort' : 'LoadBalancer',
       ports: [
         { name: 'port-1', port: 8081, targetPort: 'graph-ql-port' },
         { name: 'port-2', port: 4000, targetPort: 4002 },
       ],
       selector: appLabels,
     },
-  }
-  // {
-  //   provider: cluster.provider,
-  // }
+  },
+  resourceOptions
 )
 
 // Export the Service name and public LoadBalancer Endpoint
