@@ -1484,7 +1484,10 @@ decl_module! {
             );
 
             // Update next thread id
-            <NextThreadId<T>>::mutate(|n| *n += One::one());
+         <NextThreadId<T>>::mutate(|n| *n += One::one());
+
+         // increase category's thread counter
+         <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads += 1);
 
             // Generate event
             Self::deposit_event(
@@ -2147,7 +2150,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
     // Ensure forum user is lead - check via account
-    fn ensure_is_forum_lead_account(account_id: &T::AccountId) -> Result<(), Error<T>> {
+    fn ensure_is_forum_lead_account(_account_id: &T::AccountId) -> Result<(), Error<T>> {
         //        ensure_is_lead::<T>(account_id)?;
         Ok(())
     }
