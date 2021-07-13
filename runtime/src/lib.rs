@@ -658,6 +658,7 @@ parameter_types! {
     pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxRandomIterationNumber: u64 = 30; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 30; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
@@ -690,6 +691,8 @@ impl storage::Trait for Runtime {
     type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type DistributionBucketOperatorId = DistributionBucketOperatorId;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
