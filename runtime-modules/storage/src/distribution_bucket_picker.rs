@@ -6,9 +6,10 @@ use sp_runtime::SaturatedConversion;
 use sp_std::cell::RefCell;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::marker::PhantomData;
+use sp_std::rc::Rc;
+use sp_std::vec::Vec;
 
 use crate::{DynamicBagType, Module, Trait};
-use sp_std::rc::Rc;
 
 // Generates distribution bucket IDs to assign to a new dynamic bag.
 pub(crate) struct DistributionBucketPicker<T> {

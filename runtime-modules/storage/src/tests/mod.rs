@@ -3551,6 +3551,60 @@ fn delete_distribution_bucket_family_succeeded() {
 }
 
 #[test]
+fn delete_distribution_bucket_family_fails_with_bound_member_dynamic_bag_creation_policy() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let new_bucket_number = 10;
+        let families = BTreeMap::from_iter(vec![(family_id, new_bucket_number)]);
+        let dynamic_bag_type = DynamicBagType::Member;
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families.clone())
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        DeleteDistributionBucketFamilyFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionFamilyBoundToBagCreationPolicy.into(),
+            ));
+    });
+}
+
+#[test]
+fn delete_distribution_bucket_family_fails_with_bound_channel_dynamic_bag_creation_policy() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let new_bucket_number = 10;
+        let families = BTreeMap::from_iter(vec![(family_id, new_bucket_number)]);
+        let dynamic_bag_type = DynamicBagType::Channel;
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families.clone())
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Ok(()));
+
+        DeleteDistributionBucketFamilyFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(
+                Error::<Test>::DistributionFamilyBoundToBagCreationPolicy.into(),
+            ));
+    });
+}
+
+#[test]
 fn delete_distribution_bucket_family_fails_with_non_signed_origin() {
     build_test_externalities().execute_with(|| {
         DeleteDistributionBucketFamilyFixture::default()
@@ -3739,6 +3793,42 @@ fn delete_distribution_bucket_succeeded() {
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketDeleted(
             family_id, bucket_id,
         ));
+    });
+}
+
+#[test]
+fn delete_distribution_bucket_failed_with_existing_operators() {
+    build_test_externalities().execute_with(|| {
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(family_id)
+            .with_bucket_id(bucket_id)
+            .with_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        DeleteDistributionBucketFixture::default()
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionProviderOperatorSet.into()));
     });
 }
 
@@ -4335,6 +4425,45 @@ fn invite_distribution_bucket_operator_fails_with_exceeding_the_limit_of_pending
                 Error::<Test>::MaxNumberOfPendingInvitationsLimitForDistributionBucketReached
                     .into(),
             ));
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_already_set_operator() {
+    build_test_externalities().execute_with(|| {
+        let invited_worker_id = DEFAULT_DISTRIBUTION_PROVIDER_ID;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(invited_worker_id)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_worker_id(invited_worker_id)
+            .call_and_assert(Ok(()));
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(invited_worker_id)
+            .call_and_assert(Err(Error::<Test>::DistributionProviderOperatorSet.into()));
     });
 }
 

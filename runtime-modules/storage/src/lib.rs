@@ -147,14 +147,6 @@ use bag_manager::BagManager;
 use distribution_bucket_picker::DistributionBucketPicker;
 use storage_bucket_picker::StorageBucketPicker;
 
-// TODO: mut in extrinsics
-
-// TODO:
-// How to be sure that we don't have already accepted invitation? We need to have it in the bucket
-// a separate map. DistributionOperatorId is not sustainable - verify that on Monday.
-// TODO: test invite_distribution_bucket_operator with accepted invitation.
-// TODO: test docs.
-
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
     /// Validates upload parameters and conditions (like global uploading block).
@@ -1335,7 +1327,7 @@ decl_error! {
         DistributionProviderOperatorAlreadyInvited,
 
         /// Distribution provider operator already set.
-        DistributionProviderOperatorAlreadySet,
+        DistributionProviderOperatorSet,
 
         /// No distribution bucket invitation.
         NoDistributionBucketInvitation,
@@ -1345,6 +1337,9 @@ decl_error! {
 
         /// Max number of pending invitations limit for a distribution bucket reached.
         MaxNumberOfPendingInvitationsLimitForDistributionBucketReached,
+
+        /// Distribution family bound to a bag creation policy.
+        DistributionFamilyBoundToBagCreationPolicy,
     }
 }
 
@@ -1962,7 +1957,14 @@ decl_module! {
 
             // TODO: check for emptiness
 
-            // TODO: check dynamic bag policy
+            Self::check_dynamic_bag_creation_policy_for_dependencies(
+                &family_id,
+                DynamicBagType::Member
+            )?;
+            Self::check_dynamic_bag_creation_policy_for_dependencies(
+                &family_id,
+                DynamicBagType::Channel
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -1981,7 +1983,6 @@ decl_module! {
             origin,
             family_id: T::DistributionBucketFamilyId,
             accepting_new_bags: bool,
-            // TODO: invited ?
         ) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
 
@@ -2033,8 +2034,6 @@ decl_module! {
                 &distribution_bucket_id
             )?;
 
-            //TODO: Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -2063,11 +2062,11 @@ decl_module! {
             T::ensure_distribution_working_group_leader_origin(origin)?;
 
             let mut family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
-            Self::ensure_distribution_bucket_exists(&family, &distribution_bucket_id)?;
+            let bucket = Self::ensure_distribution_bucket_exists(&family, &distribution_bucket_id)?;
 
             //TODO: check emptiness
 
-            //TODO: check invitation
+            ensure!(bucket.operators.is_empty(), Error::<T>::DistributionProviderOperatorSet);
 
             //
             // == MUTATION SAFE ==
@@ -2087,7 +2086,7 @@ decl_module! {
         pub fn update_distribution_buckets_for_bag(
             origin,
             bag_id: BagId<T>,
-            family_id: T::DistributionBucketFamilyId, //TODO: remove this constraint?
+            family_id: T::DistributionBucketFamilyId,
             add_buckets: BTreeSet<T::DistributionBucketId>,
             remove_buckets: BTreeSet<T::DistributionBucketId>,
         ) {
@@ -2157,8 +2156,6 @@ decl_module! {
                 &family,
                 &distribution_bucket_id
             )?;
-
-            //TODO: Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -3284,7 +3281,6 @@ impl<T: Trait> Module<T> {
     fn validate_update_families_in_dynamic_bag_creation_policy_params(
         families: &BTreeMap<T::DistributionBucketFamilyId, u32>,
     ) -> DispatchResult {
-        // TODO: check bucket number? also for storage buckets?
         for (family_id, _) in families.iter() {
             Self::ensure_distribution_bucket_family_exists(family_id)?;
         }
@@ -3332,13 +3328,29 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             !bucket.operators.contains(worker_id),
-            Error::<T>::DistributionProviderOperatorAlreadySet
+            Error::<T>::DistributionProviderOperatorSet
         );
 
         ensure!(
             bucket.pending_invitations.len().saturated_into::<u64>()
                 < T::MaxNumberOfPendingInvitationsPerDistributionBucket::get(),
             Error::<T>::MaxNumberOfPendingInvitationsLimitForDistributionBucketReached
+        );
+
+        Ok(())
+    }
+
+    // Verify that dynamic bag creation policies has no dependencies on given distribution bucket
+    // family for all bag types.
+    fn check_dynamic_bag_creation_policy_for_dependencies(
+        family_id: &T::DistributionBucketFamilyId,
+        dynamic_bag_type: DynamicBagType,
+    ) -> DispatchResult {
+        let creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+
+        ensure!(
+            !creation_policy.families.contains_key(family_id),
+            Error::<T>::DistributionFamilyBoundToBagCreationPolicy
         );
 
         Ok(())
