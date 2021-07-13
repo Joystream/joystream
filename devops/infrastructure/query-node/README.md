@@ -34,7 +34,12 @@ After cloning this repo, from this working directory, run these commands:
    $ pulumi stack init
    ```
 
-1. Set the required AWS configuration variables in `Pulumi.<stack>.yaml`
+1. Set the required configuration variables in `Pulumi.<stack>.yaml`
+
+   ```bash
+   $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
+    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH>
+   ```
 
 1. Create a `.env` file in this directory and set the database and other variables in it
 

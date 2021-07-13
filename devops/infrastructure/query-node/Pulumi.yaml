@@ -10,3 +10,7 @@ template:
     isMinikube:
       description: Whether you are deploying to minikube
       default: false
+    membersFilePath:
+      description: Path to members.json file for processor initialization
+    workersFilePath:
+      description: Path to workers.json file for processor initialization

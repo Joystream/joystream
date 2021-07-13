@@ -9,6 +9,7 @@ import * as fs from 'fs'
 
 require('dotenv').config()
 
+const config = new pulumi.Config()
 // const awsConfig = new pulumi.Config('aws')
 
 // // Create a VPC for our cluster.
@@ -65,8 +66,28 @@ const defsConfig = new k8s.core.v1.ConfigMap(name, {
 const defsConfigName = defsConfig.metadata.apply((m) => m.name)
 
 // Create a Deployment
-
 const databaseLabels = { app: 'postgres-db' }
+
+const pvc = new k8s.core.v1.PersistentVolumeClaim(
+  `db-pvc`,
+  {
+    metadata: {
+      labels: databaseLabels,
+      namespace: namespaceName,
+      name: `db-pvc`,
+    },
+    spec: {
+      accessModes: ['ReadWriteOnce'],
+      resources: {
+        requests: {
+          storage: `10Gi`,
+        },
+      },
+    },
+  }
+  // { provider: cluster.provider }
+)
+
 const databaseDeployment = new k8s.apps.v1.Deployment('postgres-db', {
   metadata: {
     namespace: namespaceName,
@@ -87,6 +108,20 @@ const databaseDeployment = new k8s.apps.v1.Deployment('postgres-db', {
               { name: 'POSTGRES_DB', value: process.env.INDEXER_DB_NAME! },
             ],
             ports: [{ containerPort: 5432 }],
+            volumeMounts: [
+              {
+                name: 'postgres-data',
+                mountPath: '/var/lib/postgresql/data',
+              },
+            ],
+          },
+        ],
+        volumes: [
+          {
+            name: 'postgres-data',
+            persistentVolumeClaim: {
+              claimName: `db-pvc`,
+            },
           },
         ],
       },
@@ -106,8 +141,7 @@ const databaseService = new k8s.core.v1.Service('postgres-db', {
   },
 })
 
-// Create an example Job.
-const exampleJob = new k8s.batch.v1.Job(
+const migrationJob = new k8s.batch.v1.Job(
   'db-migration',
   {
     metadata: {
@@ -145,6 +179,79 @@ const exampleJob = new k8s.batch.v1.Job(
     },
   },
   { dependsOn: databaseService }
+  // { provider: provider }
+)
+
+const membersFilePath = config.get('membersFilePath')
+  ? config.get('membersFilePath')!
+  : '../../../query-node/mappings/bootstrap/data/members.json'
+const workersFilePath = config.get('workersFilePath')
+  ? config.get('workersFilePath')!
+  : '../../../query-node/mappings/bootstrap/data/workers.json'
+
+const processorConfig = new k8s.core.v1.ConfigMap(`processor-config`, {
+  metadata: { namespace: namespaceName, labels: appLabels },
+  data: {
+    'members': fs.readFileSync(membersFilePath).toString(),
+    'workers': fs.readFileSync(workersFilePath).toString(),
+  },
+})
+const processorConfigName = processorConfig.metadata.apply((m) => m.name)
+
+const processorJob = new k8s.batch.v1.Job(
+  'processor-migration',
+  {
+    metadata: {
+      namespace: namespaceName,
+    },
+    spec: {
+      backoffLimit: 0,
+      template: {
+        spec: {
+          containers: [
+            {
+              name: 'processor-migration',
+              image: joystreamAppsImage,
+              imagePullPolicy: 'IfNotPresent',
+              env: [
+                {
+                  name: 'INDEXER_ENDPOINT_URL',
+                  value: `http://localhost:${process.env.WARTHOG_APP_PORT}/graphql`,
+                },
+                { name: 'TYPEORM_HOST', value: 'postgres-db' },
+                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
+                { name: 'DEBUG', value: 'index-builder:*' },
+                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/joystream/query-node/mappings/bootstrap/data/members.json',
+                  name: 'processor-volume',
+                  subPath: 'members',
+                },
+                {
+                  mountPath: '/joystream/query-node/mappings/bootstrap/data/workers.json',
+                  name: 'processor-volume',
+                  subPath: 'workers',
+                },
+              ],
+              args: ['workspace', 'query-node-root', 'processor:bootstrap'],
+            },
+          ],
+          restartPolicy: 'Never',
+          volumes: [
+            {
+              name: 'processor-volume',
+              configMap: {
+                name: processorConfigName,
+              },
+            },
+          ],
+        },
+      },
+    },
+  },
+  { dependsOn: migrationJob }
   // { provider: provider }
 )
 
@@ -232,7 +339,8 @@ const deployment = new k8s.apps.v1.Deployment(
                   subPath: 'fileData',
                 },
               ],
-              args: ['workspace', 'query-node-root', 'processor:start'],
+              command: ['/bin/sh', '-c'],
+              args: ['cd query-node && yarn hydra-processor run -e ../.env'],
             },
             {
               name: 'graphql-server',
@@ -269,7 +377,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { dependsOn: exampleJob }
+  { dependsOn: processorJob }
   // {
   //   provider: cluster.provider,
   // }
