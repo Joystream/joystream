@@ -99,8 +99,8 @@
 //! - DataObjectDeletionPrize
 //! - BlacklistSizeLimit
 //! - StorageBucketsPerBagValueConstraint
-//! - DefaultMemberDynamicBagCreationPolicy
-//! - DefaultChannelDynamicBagCreationPolicy
+//! - DefaultMemberDynamicBagNumberOfStorageBuckets
+//! - DefaultChannelDynamicBagNumberOfStorageBuckets
 //! - MaxDistributionBucketFamilyNumber
 //! - MaxDistributionBucketNumberPerFamily
 //! - DistributionBucketsPerBagValueConstraint
