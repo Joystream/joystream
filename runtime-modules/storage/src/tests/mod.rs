@@ -25,13 +25,13 @@ use mocks::{
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDistributionBucketFamilyNumber,
     MaxDistributionBucketNumberPerFamily, MaxNumberOfDataObjectsPerBag, MaxRandomIterationNumber,
-    MaxStorageBucketNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
+    MaxStorageBucketNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
+    ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
     DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
     DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
-use crate::tests::mocks::DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID;
 use fixtures::*;
 
 #[test]
@@ -4298,6 +4298,42 @@ fn invite_distribution_bucket_operator_fails_with_non_missing_invitation() {
             .with_operator_worker_id(invited_worker_id)
             .call_and_assert(Err(
                 Error::<Test>::DistributionProviderOperatorAlreadyInvited.into(),
+            ));
+    });
+}
+
+#[test]
+fn invite_distribution_bucket_operator_fails_with_exceeding_the_limit_of_pending_invitations() {
+    build_test_externalities().execute_with(|| {
+        let invited_worker_id = DEFAULT_DISTRIBUTION_PROVIDER_ID;
+        let another_worker_id = ANOTHER_DISTRIBUTION_PROVIDER_ID;
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(invited_worker_id)
+            .call_and_assert(Ok(()));
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_operator_worker_id(another_worker_id)
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfPendingInvitationsLimitForDistributionBucketReached
+                    .into(),
             ));
     });
 }

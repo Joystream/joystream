@@ -104,7 +104,8 @@
 //! - DefaultChannelDynamicBagCreationPolicy
 //! - MaxDistributionBucketFamilyNumber
 //! - MaxDistributionBucketNumberPerFamily
-//!
+//! - DistributionBucketsPerBagValueConstraint
+//! - MaxNumberOfPendingInvitationsPerDistributionBucket
 
 // Compiler demand.
 #![recursion_limit = "256"]
@@ -146,10 +147,7 @@ use bag_manager::BagManager;
 use distribution_bucket_picker::DistributionBucketPicker;
 use storage_bucket_picker::StorageBucketPicker;
 
-// TODO: constants
-// Max number of pending invitations per distribution bucket.
 // TODO: mut in extrinsics
-// TODO: dynamic bag creation - distributed buckets
 
 // TODO:
 // How to be sure that we don't have already accepted invitation? We need to have it in the bucket
@@ -318,6 +316,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Defines max allowed distribution bucket number per family.
     type MaxDistributionBucketNumberPerFamily: Get<u64>;
+
+    /// Max number of pending invitations per distribution bucket.
+    type MaxNumberOfPendingInvitationsPerDistributionBucket: Get<u64>;
 
     /// Demand the storage working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
@@ -1341,6 +1342,9 @@ decl_error! {
 
         /// Invalid operations: must be a distribution provider operator for a bucket.
         MustBeDistributionProviderOperatorForBucket,
+
+        /// Max number of pending invitations limit for a distribution bucket reached.
+        MaxNumberOfPendingInvitationsLimitForDistributionBucketReached,
     }
 }
 
@@ -1389,6 +1393,10 @@ decl_module! {
         /// Exports const - "Distribution buckets per bag" value constraint.
         const DistributionBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
             T::DistributionBucketsPerBagValueConstraint::get();
+
+        /// Exports const - max number of pending invitations per distribution bucket.
+        const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 =
+            T::MaxNumberOfPendingInvitationsPerDistributionBucket::get();
 
         // ===== Storage Lead actions =====
 
@@ -3325,6 +3333,12 @@ impl<T: Trait> Module<T> {
         ensure!(
             !bucket.operators.contains(worker_id),
             Error::<T>::DistributionProviderOperatorAlreadySet
+        );
+
+        ensure!(
+            bucket.pending_invitations.len().saturated_into::<u64>()
+                < T::MaxNumberOfPendingInvitationsPerDistributionBucket::get(),
+            Error::<T>::MaxNumberOfPendingInvitationsLimitForDistributionBucketReached
         );
 
         Ok(())

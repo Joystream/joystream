@@ -57,6 +57,7 @@ parameter_types! {
     pub const DataObjectDeletionPrize: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
@@ -100,6 +101,8 @@ impl crate::Trait for Test {
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
