@@ -2141,26 +2141,12 @@ impl<T: Trait> Module<T> {
     ) -> Result<(), Error<T>> {
         match actor {
             PrivilegedActor::<T>::Lead => {
-                Self::ensure_is_forum_lead_account(account_id)?;
+                ensure_is_forum_lead(account_id)?;
             }
             PrivilegedActor::<T>::Moderator(moderator_id) => {
-                Self::ensure_is_moderator_account(account_id, &moderator_id)?;
+                ensure_is_moderator(account_id, moderator_id)?;
             }
         };
-        Ok(())
-    }
-    // Ensure forum user is lead - check via account
-    fn ensure_is_forum_lead_account(_account_id: &T::AccountId) -> Result<(), Error<T>> {
-        //        ensure_is_lead::<T>(account_id)?;
-        Ok(())
-    }
-
-    fn ensure_is_moderator_account(
-        _account_id: &T::AccountId,
-        _moderator_id: &ModeratorId<T>,
-    ) -> Result<(), Error<T>> {
-        //        let is_moderator = T::WorkingGroup::is_worker_account_id(account_id, moderator_id);
-        //        ensure!(is_moderator, Error::<T>::ModeratorIdNotMatchAccount);
         Ok(())
     }
 
@@ -2170,7 +2156,7 @@ impl<T: Trait> Module<T> {
         moderator_id: &ModeratorId<T>,
         new_value: bool,
     ) -> Result<(), Error<T>> {
-        Self::ensure_is_forum_lead_account(&account_id)?;
+        ensure_is_forum_lead(&account_id)?;
 
         // ensure category exists.
         let category = Self::ensure_category_exists(category_id)?;
@@ -2223,7 +2209,7 @@ impl<T: Trait> Module<T> {
         parent_category_id: &Option<T::CategoryId>,
     ) -> Result<Option<Category<T>>, Error<T>> {
         // Not signed by forum LEAD
-        Self::ensure_is_forum_lead_account(&account_id)?;
+        ensure_is_forum_lead(&account_id)?;
 
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxCategories>(
             <CategoryCounter<T>>::get().into() as u64,

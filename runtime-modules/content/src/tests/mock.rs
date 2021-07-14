@@ -25,13 +25,16 @@ pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 /// Origins
 
 pub const LEAD_ORIGIN: u64 = 1;
-
 pub const FIRST_CURATOR_ORIGIN: u64 = 2;
 pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
+
+pub const FORUM_LEAD_ORIGIN: u64 = 20;
+pub const FIRST_MODERATOR_ORIGIN: u64 = 21;
+pub const SECOND_MODERATOR_ORIGIN: u64 = 22;
 
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
@@ -46,6 +49,16 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+pub const NOT_FORUM_MEMBER_ID: MemberId = 114;
+
+pub const FIRST_MODERATOR_ID: MemberId = 31;
+pub const SECOND_MODERATOR_ID: MemberId = 32;
+
+/// Invalid IDs
+pub const INVALID_POST: <Test as Trait>::PostId = 222;
+pub const INVALID_CATEGORY: <Test as Trait>::CategoryId = 333;
+pub const INVALID_CHANNEL: <Test as StorageOwnership>::ChannelId = 444;
+pub const INVALID_THREAD: <Test as Trait>::ThreadId = 555;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -146,6 +159,23 @@ impl ContentActorAuthenticator for Test {
     fn is_lead(account_id: &Self::AccountId) -> bool {
         let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
         *account_id == lead_account_id
+    }
+
+    fn is_forum_lead(account_id: &Self::AccountId) -> bool {
+        let lead_account_id = ensure_signed(Origin::signed(FORUM_LEAD_ORIGIN)).unwrap();
+        *account_id == lead_account_id
+    }
+
+    fn is_forum_moderator(account_id: &Self::AccountId, moderator_id: &ModeratorId<Self>) -> bool {
+        match *moderator_id {
+            FIRST_MODERATOR_ID => {
+                ensure_signed(Origin::signed(FIRST_MODERATOR_ORIGIN)).unwrap() == *account_id
+            }
+            SECOND_MODERATOR_ID => {
+                ensure_signed(Origin::signed(SECOND_MODERATOR_ORIGIN)).unwrap() == *account_id
+            }
+            _ => false,
+        }
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
