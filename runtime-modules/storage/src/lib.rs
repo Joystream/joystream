@@ -35,6 +35,8 @@
 //! updates number of storage buckets used in given dynamic bag creation policy.
 //! - [update_blacklist](./struct.Module.html#method.update_blacklist) - adds and removes hashes to
 //! the current blacklist.
+//! - [update_storage_bucket_status](./struct.Module.html#method.update_storage_bucket_status) -
+//! updates whether new bags are being accepted for storage.
 //!
 //! #### Storage provider extrinsics
 //!
@@ -44,8 +46,6 @@
 //! sets storage operator metadata.
 //! - [set_storage_bucket_voucher_limits](./struct.Module.html#method.set_storage_bucket_voucher_limits) -
 //! sets storage bucket voucher limits.
-//! - [update_storage_bucket_status](./struct.Module.html#method.update_storage_bucket_status) -
-//! updates whether new bags are being accepted for storage.
 //! - [accept_pending_data_objects](./struct.Module.html#method.accept_pending_data_objects) - a
 //! storage provider signals that the data object was successfully uploaded to its storage.
 //!
@@ -856,9 +856,8 @@ decl_event! {
         /// Emits on storage bucket status update.
         /// Params
         /// - storage bucket ID
-        /// - worker ID (storage provider ID)
         /// - new status
-        StorageBucketStatusUpdated(StorageBucketId, WorkerId, bool),
+        StorageBucketStatusUpdated(StorageBucketId, bool),
 
         /// Emits on updating the blacklist with data hashes.
         /// Params
@@ -1387,6 +1386,30 @@ decl_module! {
             );
         }
 
+        /// Update whether new bags are being accepted for storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_storage_bucket_status(
+            origin,
+            storage_bucket_id: T::StorageBucketId,
+            accepting_new_bags: bool
+        ) {
+            T::ensure_working_group_leader_origin(origin)?;
+
+            Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
+                bucket.accepting_new_bags = accepting_new_bags;
+            });
+
+            Self::deposit_event(
+                RawEvent::StorageBucketStatusUpdated(storage_bucket_id, accepting_new_bags)
+            );
+        }
+
         // ===== Storage Operator actions =====
 
         /// Accept the storage bucket invitation. An invitation must match the worker_id parameter.
@@ -1526,37 +1549,6 @@ decl_module! {
                     worker_id,
                     bag_id,
                     data_objects
-                )
-            );
-        }
-
-        /// Update whether new bags are being accepted for storage.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_storage_bucket_status(
-            origin,
-            worker_id: WorkerId<T>,
-            storage_bucket_id: T::StorageBucketId,
-            accepting_new_bags: bool
-        ) {
-            T::ensure_worker_origin(origin, worker_id)?;
-
-            let bucket = Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
-
-            Self::ensure_bucket_invitation_accepted(&bucket, worker_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <StorageBucketById<T>>::mutate(storage_bucket_id, |bucket| {
-                bucket.accepting_new_bags = accepting_new_bags;
-            });
-
-            Self::deposit_event(
-                RawEvent::StorageBucketStatusUpdated(
-                    storage_bucket_id,
-                    worker_id,
-                    accepting_new_bags
                 )
             );
         }

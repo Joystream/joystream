@@ -672,7 +672,6 @@ impl DeleteDataObjectsFixture {
 
 pub struct UpdateStorageBucketStatusFixture {
     origin: RawOrigin<u64>,
-    worker_id: u64,
     storage_bucket_id: u64,
     new_status: bool,
 }
@@ -681,7 +680,6 @@ impl UpdateStorageBucketStatusFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
             new_status: false,
         }
@@ -689,10 +687,6 @@ impl UpdateStorageBucketStatusFixture {
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
     }
 
     pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
@@ -709,7 +703,6 @@ impl UpdateStorageBucketStatusFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_storage_bucket_status(
             self.origin.clone().into(),
-            self.worker_id,
             self.storage_bucket_id,
             self.new_status,
         );
