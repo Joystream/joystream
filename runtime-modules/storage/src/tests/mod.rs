@@ -359,6 +359,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -422,6 +423,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -467,6 +469,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -667,6 +670,7 @@ fn upload_succeeded() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -723,6 +727,7 @@ fn upload_succeeded_with_data_size_fee() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -758,6 +763,7 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -792,6 +798,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -826,6 +833,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         // Check storage bucket voucher: object size limit.
@@ -851,6 +859,7 @@ fn upload_succeeded_with_dynamic_bag() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -887,6 +896,7 @@ fn upload_fails_with_non_existent_dynamic_bag() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -905,6 +915,7 @@ fn upload_succeeded_with_non_empty_bag() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, 2),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -916,6 +927,7 @@ fn upload_succeeded_with_non_empty_bag() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(3, 2),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -949,6 +961,7 @@ fn upload_fails_with_zero_object_size() {
                 ipfs_content_id: vec![1],
                 size: 0,
             }],
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -968,6 +981,7 @@ fn upload_fails_with_empty_object_cid() {
                 ipfs_content_id: Vec::new(),
                 size: 220,
             }],
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -987,6 +1001,7 @@ fn upload_fails_with_max_data_object_size_exceeded() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, invalid_object_number),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1003,6 +1018,7 @@ fn upload_fails_with_insufficient_balance_for_deletion_prize() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1021,6 +1037,7 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         // Check that balance is sufficient for the deletion prize.
@@ -1033,9 +1050,41 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
             .with_new_fee(data_size_fee)
             .call_and_assert(Ok(()));
 
+        // Update fee parameter after the change.
+        let upload_params = UploadParameters::<Test> {
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            ..upload_params
+        };
+
         UploadFixture::default()
             .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
+    });
+}
+
+#[test]
+fn upload_fails_with_data_size_fee_changed() {
+    build_test_externalities().execute_with(|| {
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, DataObjectDeletionPrize::get());
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
+            authentication_key: Vec::new(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+        };
+
+        let data_size_fee = 1000;
+
+        UpdateDataObjectPerMegabyteFeeFixture::default()
+            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
+            .with_new_fee(data_size_fee)
+            .call_and_assert(Ok(()));
+
+        UploadFixture::default()
+            .with_params(upload_params)
+            .call_and_assert(Err(Error::<Test>::DataSizeFeeChanged.into()));
     });
 }
 
@@ -1050,6 +1099,7 @@ fn upload_failed_with_blocked_uploading() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         let new_blocking_status = true;
@@ -1084,6 +1134,7 @@ fn upload_failed_with_blacklisted_data_object() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list,
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1243,6 +1294,7 @@ fn accept_pending_data_objects_succeeded() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1307,6 +1359,7 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1401,6 +1454,7 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1729,6 +1783,7 @@ fn move_data_objects_succeeded() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1828,6 +1883,7 @@ fn move_data_objects_succeeded_having_voucher() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1902,6 +1958,7 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -1960,6 +2017,7 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2038,6 +2096,7 @@ fn delete_data_objects_succeeded() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2135,6 +2194,7 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2176,6 +2236,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2459,6 +2520,7 @@ fn delete_dynamic_bags_succeeded() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2529,6 +2591,7 @@ fn delete_dynamic_bags_succeeded_having_voucher() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2568,6 +2631,7 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2662,6 +2726,7 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2835,6 +2900,7 @@ fn deletion_prize_changed_event_fired() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()
@@ -2878,6 +2944,7 @@ fn storage_bucket_voucher_changed_event_fired() {
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
         };
 
         UploadFixture::default()

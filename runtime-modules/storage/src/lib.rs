@@ -495,12 +495,13 @@ pub type UploadParameters<T> = UploadParametersObject<
     MemberId<T>,
     <T as Trait>::ChannelId,
     <T as frame_system::Trait>::AccountId,
+    BalanceOf<T>,
 >;
 
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct UploadParametersObject<MemberId, ChannelId, AccountId> {
+pub struct UploadParametersObject<MemberId, ChannelId, AccountId, Balance> {
     /// Public key used authentication in upload to liaison.
     pub authentication_key: Vec<u8>,
 
@@ -512,6 +513,9 @@ pub struct UploadParametersObject<MemberId, ChannelId, AccountId> {
 
     /// Account for the data object deletion prize.
     pub deletion_prize_source_account_id: AccountId,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
 }
 
 /// Defines storage bucket parameters.
@@ -1011,6 +1015,9 @@ decl_error! {
 
         /// Storage provider operator doesn't exist.
         StorageProviderOperatorDoesntExist,
+
+        /// Invalid extrinsic call: data size fee changed..
+        DataSizeFeeChanged,
     }
 }
 
@@ -2198,6 +2205,12 @@ impl<T: Trait> Module<T> {
         ensure!(
             total_possible_data_objects_number <= T::MaxNumberOfDataObjectsPerBag::get(),
             Error::<T>::DataObjectsPerBagLimitExceeded
+        );
+
+        // Check data size fee change.
+        ensure!(
+            params.expected_data_size_fee == Self::data_object_per_mega_byte_fee(),
+            Error::<T>::DataSizeFeeChanged
         );
 
         let bag_change = params
