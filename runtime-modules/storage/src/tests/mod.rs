@@ -23,7 +23,7 @@ use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
     DefaultChannelDynamicBagCreationPolicy, DefaultMemberDynamicBagCreationPolicy,
     InitialStorageBucketsNumberForDynamicBag, MaxNumberOfDataObjectsPerBag,
-    MaxRandomIterationNumber, MaxStorageBucketNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
+    MaxRandomIterationNumber, Storage, Test, ANOTHER_STORAGE_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
     DEFAULT_STORAGE_PROVIDER_ID, WG_LEADER_ACCOUNT_ID,
 };
@@ -130,20 +130,6 @@ fn create_storage_bucket_fails_with_non_leader_origin() {
         CreateStorageBucketFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_account_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn create_storage_bucket_fails_with_exceeding_max_storage_bucket_limit() {
-    build_test_externalities().execute_with(|| {
-        let buckets_number = MaxStorageBucketNumber::get();
-        create_storage_buckets(buckets_number);
-
-        CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(WG_LEADER_ACCOUNT_ID))
-            .call_and_assert(Err(
-                Error::<Test>::MaxStorageBucketNumberLimitExceeded.into()
-            ));
     });
 }
 
@@ -712,7 +698,7 @@ fn upload_succeeded() {
             DataObjectDeletionPrize::get()
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::DataObjectdUploaded(
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
             vec![data_object_id],
             upload_params,
         ));

@@ -142,7 +142,6 @@ impl CreateStorageBucketFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
         let next_storage_bucket_id = Storage::next_storage_bucket_id();
-        let buckets_number = Storage::storage_buckets_number();
         let actual_result = Storage::create_storage_bucket(
             self.origin.clone().into(),
             self.invite_worker,
@@ -158,7 +157,6 @@ impl CreateStorageBucketFixture {
                 next_storage_bucket_id + 1,
                 Storage::next_storage_bucket_id()
             );
-            assert_eq!(buckets_number + 1, Storage::storage_buckets_number());
             assert!(<crate::StorageBucketById<Test>>::contains_key(
                 next_storage_bucket_id
             ));
@@ -166,7 +164,6 @@ impl CreateStorageBucketFixture {
             Some(next_storage_bucket_id)
         } else {
             assert_eq!(next_storage_bucket_id, Storage::next_storage_bucket_id());
-            assert_eq!(buckets_number, Storage::storage_buckets_number());
             assert!(!<crate::StorageBucketById<Test>>::contains_key(
                 next_storage_bucket_id
             ));

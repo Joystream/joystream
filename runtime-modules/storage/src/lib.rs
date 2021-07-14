@@ -63,7 +63,6 @@
 //! - create_dynamic_bag
 //!
 //! ### Pallet constants
-//! - MaxStorageBucketNumber
 //! - MaxNumberOfDataObjectsPerBag
 //! - DataObjectDeletionPrize
 //! - BlacklistSizeLimit
@@ -205,9 +204,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    /// Defines max allowed storage bucket number.
-    type MaxStorageBucketNumber: Get<u64>;
 
     /// Defines max number of data objects per bag.
     type MaxNumberOfDataObjectsPerBag: Get<u64>;
@@ -712,9 +708,6 @@ decl_storage! {
         /// Data object id counter. Starts at zero.
         pub NextDataObjectId get(fn next_data_object_id): T::DataObjectId;
 
-        /// Total number of the storage buckets in the system.
-        pub StorageBucketsNumber get(fn storage_buckets_number): u64;
-
         /// Storage buckets.
         pub StorageBucketById get (fn storage_bucket_by_id): map hasher(blake2_128_concat)
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
@@ -782,7 +775,7 @@ decl_event! {
         /// Params
         /// - data objects IDs
         /// - initial uploading parameters
-        DataObjectdUploaded(Vec<DataObjectId>, UploadParameters),
+        DataObjectsUploaded(Vec<DataObjectId>, UploadParameters),
 
         /// Emits on setting the storage operator metadata.
         /// Params
@@ -910,9 +903,6 @@ decl_event! {
 decl_error! {
     /// Storage module predefined errors
     pub enum Error for Module<T: Trait>{
-        /// Max storage bucket number limit exceeded.
-        MaxStorageBucketNumberLimitExceeded,
-
         /// Empty "data object creation" collection.
         NoObjectsOnUpload,
 
@@ -1031,9 +1021,6 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
-
-        /// Exports const - max allowed storage bucket number.
-        const MaxStorageBucketNumber: u64 = T::MaxStorageBucketNumber::get();
 
         /// Exports const - max number of data objects per bag.
         const MaxNumberOfDataObjectsPerBag: u64 = T::MaxNumberOfDataObjectsPerBag::get();
@@ -1258,8 +1245,6 @@ decl_module! {
             };
 
             let storage_bucket_id = Self::next_storage_bucket_id();
-
-            StorageBucketsNumber::put(Self::storage_buckets_number() + 1);
 
             <NextStorageBucketId<T>>::put(storage_bucket_id + One::one());
 
@@ -1611,7 +1596,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             operation_type,
         );
 
-        Self::deposit_event(RawEvent::DataObjectdUploaded(
+        Self::deposit_event(RawEvent::DataObjectsUploaded(
             data.data_objects_map.keys().cloned().collect(),
             params,
         ));
@@ -2099,11 +2084,6 @@ impl<T: Trait> Module<T> {
         voucher: &Voucher,
         invited_worker: &Option<WorkerId<T>>,
     ) -> DispatchResult {
-        ensure!(
-            Self::storage_buckets_number() < T::MaxStorageBucketNumber::get(),
-            Error::<T>::MaxStorageBucketNumberLimitExceeded
-        );
-
         ensure!(
             voucher.size_limit <= Self::voucher_max_objects_size_limit(),
             Error::<T>::VoucherMaxObjectSizeLimitExceeded
