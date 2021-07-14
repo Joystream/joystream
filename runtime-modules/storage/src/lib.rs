@@ -672,7 +672,7 @@ impl<DataObjectId: Ord, StorageBucketId: Ord, DistributionBucketId: Ord, Balance
 
 // Helper struct for the dynamic bag changing.
 #[derive(Clone, PartialEq, Eq, Debug, Copy, Default)]
-struct BagChangeInfo<Balance> {
+struct BagUpdate<Balance> {
     // Voucher update for data objects
     voucher_update: VoucherUpdate,
 
@@ -680,7 +680,7 @@ struct BagChangeInfo<Balance> {
     total_deletion_prize: Balance,
 }
 
-impl<Balance: Saturating + Copy> BagChangeInfo<Balance> {
+impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     // Adds a single object data to the voucher update (updates objects size, number)
     // and deletion prize.
     fn add_object(&mut self, size: u64, deletion_prize: Balance) {
@@ -1801,7 +1801,7 @@ impl<T: Trait> Module<T> {
     // Validates dynamic bag deletion params and conditions.
     fn validate_delete_dynamic_bag_params(
         bag_id: &DynamicBagId<T>,
-    ) -> Result<BagChangeInfo<BalanceOf<T>>, DispatchError> {
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
         BagManager::<T>::ensure_bag_exists(BagId::<T>::Dynamic(bag_id.clone()))?;
 
         let dynamic_bag = Self::dynamic_bag(bag_id);
@@ -1816,7 +1816,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::InsufficientTreasuryBalance
         );
 
-        let bag_change = BagChangeInfo {
+        let bag_change = BagUpdate {
             voucher_update,
             total_deletion_prize: dynamic_bag.deletion_prize,
         };
@@ -2045,7 +2045,7 @@ impl<T: Trait> Module<T> {
         src_bag_id: &BagId<T>,
         dest_bag_id: &BagId<T>,
         object_ids: &BTreeSet<T::DataObjectId>,
-    ) -> Result<BagChangeInfo<BalanceOf<T>>, DispatchError> {
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
         ensure!(
             *src_bag_id != *dest_bag_id,
             Error::<T>::SourceAndDestinationBagsAreEqual
@@ -2059,7 +2059,7 @@ impl<T: Trait> Module<T> {
         let src_bag_manager = BagManager::<T>::ensure_bag_exists(src_bag_id.clone())?;
         let dest_bag_manager = BagManager::<T>::ensure_bag_exists(dest_bag_id.clone())?;
 
-        let mut bag_change = BagChangeInfo::<BalanceOf<T>>::default();
+        let mut bag_change = BagUpdate::<BalanceOf<T>>::default();
 
         for object_id in object_ids.iter() {
             let data_object = src_bag_manager.ensure_data_object_existence(object_id)?;
@@ -2149,7 +2149,7 @@ impl<T: Trait> Module<T> {
     fn validate_delete_data_objects_params(
         bag_id: &BagId<T>,
         data_object_ids: &BTreeSet<T::DataObjectId>,
-    ) -> Result<BagChangeInfo<BalanceOf<T>>, DispatchError> {
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
         ensure!(
             !data_object_ids.is_empty(),
             Error::<T>::DataObjectIdParamsAreEmpty
@@ -2157,7 +2157,7 @@ impl<T: Trait> Module<T> {
 
         let bag_manager = BagManager::<T>::ensure_bag_exists(bag_id.clone())?;
 
-        let mut bag_change = BagChangeInfo::default();
+        let mut bag_change = BagUpdate::default();
 
         for data_object_id in data_object_ids.iter() {
             let data_object = bag_manager.ensure_data_object_existence(data_object_id)?;
@@ -2177,7 +2177,7 @@ impl<T: Trait> Module<T> {
     // Returns voucher update parameters for the storage buckets.
     fn validate_upload_data_objects_parameters(
         params: &UploadParameters<T>,
-    ) -> Result<BagChangeInfo<BalanceOf<T>>, DispatchError> {
+    ) -> Result<BagUpdate<BalanceOf<T>>, DispatchError> {
         // Check global uploading block.
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
 
@@ -2199,7 +2199,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataObjectsPerBagLimitExceeded
         );
 
-        let mut bag_change = BagChangeInfo::default();
+        let mut bag_change = BagUpdate::default();
         // Check data objects.
         for object_params in params.object_creation_list.iter() {
             // Should be non-empty hash.
