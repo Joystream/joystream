@@ -4,6 +4,9 @@ import * as docker from '@pulumi/docker'
 import * as pulumi from '@pulumi/pulumi'
 import { configMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
+import * as s3Helpers from './s3Helpers'
+import { workers } from 'cluster'
+// import * as fs from 'fs'
 
 require('dotenv').config()
 
@@ -68,15 +71,6 @@ const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
-
-const defsConfig = new configMapFromFile(
-  'defs-config',
-  {
-    filePath: '../../../types/augment/all/defs.json',
-    namespaceName: namespaceName,
-  },
-  resourceOptions
-).configName
 
 // Create a Deployment
 const databaseLabels = { app: 'postgres-db' }
@@ -210,23 +204,18 @@ const workersFilePath = config.get('workersFilePath')
   ? config.get('workersFilePath')!
   : '../../../query-node/mappings/bootstrap/data/workers.json'
 
-const membersConfig = new configMapFromFile(
-  'processor-config-members',
-  {
-    filePath: membersFilePath,
-    namespaceName: namespaceName,
-  },
-  resourceOptions
-).configName
+const dataBucket = new s3Helpers.FileBucket('bootstrap-data', {
+  files: [
+    { path: membersFilePath, name: 'members.json' },
+    { path: workersFilePath, name: 'workers.json' },
+  ],
+  policy: s3Helpers.publicReadPolicy,
+})
 
-const workersConfig = new configMapFromFile(
-  'processor-config-workers',
-  {
-    filePath: workersFilePath,
-    namespaceName: namespaceName,
-  },
-  resourceOptions
-).configName
+const membersUrl = dataBucket.getUrlForFile('members.json')
+const workersUrl = dataBucket.getUrlForFile('workers.json')
+
+const dataPath = '/joystream/query-node/mappings/bootstrap/data'
 
 const processorJob = new k8s.batch.v1.Job(
   'processor-migration',
@@ -238,6 +227,22 @@ const processorJob = new k8s.batch.v1.Job(
       backoffLimit: 0,
       template: {
         spec: {
+          initContainers: [
+            {
+              name: 'curl-init',
+              image: 'appropriate/curl',
+              command: ['/bin/sh', '-c'],
+              args: [
+                pulumi.interpolate`curl -o ${dataPath}/workers.json ${workersUrl}; curl -o ${dataPath}/members.json ${membersUrl}; ls -al ${dataPath};`,
+              ],
+              volumeMounts: [
+                {
+                  name: 'bootstrap-data',
+                  mountPath: dataPath,
+                },
+              ],
+            },
+          ],
           containers: [
             {
               name: 'processor-migration',
@@ -255,14 +260,8 @@ const processorJob = new k8s.batch.v1.Job(
               ],
               volumeMounts: [
                 {
-                  mountPath: '/joystream/query-node/mappings/bootstrap/data/members.json',
-                  name: 'processor-volume-members',
-                  subPath: 'fileData',
-                },
-                {
-                  mountPath: '/joystream/query-node/mappings/bootstrap/data/workers.json',
-                  name: 'processor-volume-workers',
-                  subPath: 'fileData',
+                  name: 'bootstrap-data',
+                  mountPath: dataPath,
                 },
               ],
               args: ['workspace', 'query-node-root', 'processor:bootstrap'],
@@ -271,16 +270,8 @@ const processorJob = new k8s.batch.v1.Job(
           restartPolicy: 'Never',
           volumes: [
             {
-              name: 'processor-volume-members',
-              configMap: {
-                name: membersConfig,
-              },
-            },
-            {
-              name: 'processor-volume-workers',
-              configMap: {
-                name: workersConfig,
-              },
+              name: 'bootstrap-data',
+              emptyDir: {},
             },
           ],
         },
@@ -288,8 +279,16 @@ const processorJob = new k8s.batch.v1.Job(
     },
   },
   { ...resourceOptions, dependsOn: migrationJob }
-  // { provider: provider }
 )
+
+const defsConfig = new configMapFromFile(
+  'defs-config',
+  {
+    filePath: '../../../types/augment/all/defs.json',
+    namespaceName: namespaceName,
+  },
+  resourceOptions
+).configName
 
 const deployment = new k8s.apps.v1.Deployment(
   name,
