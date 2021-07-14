@@ -15,13 +15,15 @@ use sp_runtime::traits::Hash;
 
 // pub const NOT_FORUM_MODERATOR_ORIGIN: <Test as frame_system::Trait>::AccountId = 113;
 
-pub const NOT_FORUM_MEMBER_ORIGIN: <Test as frame_system::Trait>::AccountId = 114;
+pub const NOT_FORUM_MEMBER_ID: <Test as frame_system::Trait>::AccountId = 114;
+
+pub const INVALID_POST: <Test as Trait>::PostId = 222;
 
 pub const INVALID_CATEGORY: <Test as Trait>::CategoryId = 333;
 
-pub const INVALID_CHANNEL: <Test as StorageOwnership>::ChannelId = 333;
+pub const INVALID_CHANNEL: <Test as StorageOwnership>::ChannelId = 444;
 
-pub const INVALID_THREAD: <Test as Trait>::ThreadId = 333;
+pub const INVALID_THREAD: <Test as Trait>::ThreadId = 555;
 
 // pub const FORUM_MODERATOR_ORIGIN: <Test as frame_system::Trait>::AccountId = 123;
 
@@ -35,7 +37,7 @@ struct TestScenario {
     )>,
     channel: Option<(<Test as StorageOwnership>::ChannelId, Channel<Test>)>,
     thread: Option<(<Test as Trait>::ThreadId, Thread<Test>)>,
-    //post: Option<(<Test as Trait>::PostId, Post<Test>)>,
+    post: Option<(<Test as Trait>::PostId, Post<Test>)>,
 }
 
 fn get_category_id(s: &TestScenario) -> <Test as Trait>::CategoryId {
@@ -56,9 +58,15 @@ fn get_channel_id(s: &TestScenario) -> <Test as StorageOwnership>::ChannelId {
 fn get_thread_id(s: &TestScenario) -> <Test as Trait>::ThreadId {
     s.thread.clone().unwrap().0
 }
-// fn get_thread(s: &TestScenario) -> Thread<Test> {
-//     s.thread.clone().unwrap().1
-// }
+fn get_thread(s: &TestScenario) -> Thread<Test> {
+    s.thread.clone().unwrap().1
+}
+fn get_post_id(s: &TestScenario) -> <Test as Trait>::PostId {
+    s.post.clone().unwrap().0
+}
+fn get_post(s: &TestScenario) -> Post<Test> {
+    s.post.clone().unwrap().1
+}
 
 #[test]
 fn cannot_create_subcategory_of_an_invalid_category() {
@@ -183,7 +191,7 @@ fn helper_setup_basic_scenario() -> TestScenario {
         )),
         channel: Some((channel_id, Content::channel_by_id(channel_id))),
         thread: None,
-        //post: None,
+        post: None,
     }
 }
 
@@ -202,8 +210,8 @@ fn non_member_cannot_create_thread() {
         let scenario = helper_setup_basic_scenario();
         assert_err!(
             Content::create_thread(
-                Origin::signed(NOT_FORUM_MEMBER_ORIGIN),
-                NOT_FORUM_MEMBER_ORIGIN,
+                Origin::signed(UNKNOWN_ORIGIN),
+                NOT_FORUM_MEMBER_ID,
                 scenario.category.unwrap().0,
                 <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
                 <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
@@ -319,7 +327,7 @@ fn helper_setup_scenario_with_thread() -> TestScenario {
         )),
         channel: Some((channel_id, Content::channel_by_id(channel_id))),
         thread: Some((thread_id, Content::thread_by_id(category_id, thread_id))),
-        //        post: None,
+        post: None,
     }
 }
 
@@ -458,8 +466,8 @@ fn non_authorized_or_invalid_member_cannot_create_post() {
         // non member cannot create post
         assert_err!(
             Content::add_post(
-                Origin::signed(NOT_FORUM_MEMBER_ORIGIN),
-                NOT_FORUM_MEMBER_ORIGIN,
+                Origin::signed(UNKNOWN_ORIGIN),
+                NOT_FORUM_MEMBER_ID,
                 category_id,
                 thread_id,
                 <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
@@ -469,3 +477,362 @@ fn non_authorized_or_invalid_member_cannot_create_post() {
     })
 }
 
+fn helper_setup_scenario_with_post() -> TestScenario {
+    let scenario = helper_setup_scenario_with_thread();
+    let category_id = get_category_id(&scenario);
+    let thread_id = get_thread_id(&scenario);
+    let channel_id = get_channel_id(&scenario);
+
+    let post_id = Content::next_post_id();
+
+    assert_ok!(Content::add_post(
+        Origin::signed(FIRST_MEMBER_ORIGIN),
+        FIRST_MEMBER_ID,
+        category_id,
+        thread_id,
+        <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+    ));
+    TestScenario {
+        category: Some((
+            category_id,
+            Content::category_by_id(category_id),
+            Content::category_counter(),
+        )),
+        channel: Some((channel_id, Content::channel_by_id(channel_id))),
+        thread: Some((thread_id, Content::thread_by_id(category_id, thread_id))),
+        post: Some((post_id, Content::post_by_id(thread_id, post_id))),
+    }
+}
+
+#[test]
+fn verify_add_post_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        let scenario = helper_setup_scenario_with_thread();
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+
+        let thread = get_thread(&scenario);
+        let post_id = Content::next_post_id();
+
+        assert_ok!(Content::add_post(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            category_id,
+            thread_id,
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+        ));
+
+        // 1. event deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostAdded(
+                post_id,
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            ))
+        );
+
+        // 2. post counter for thread increased by 1
+        assert_eq!(
+            Content::thread_by_id(category_id, thread_id).number_of_posts - thread.number_of_posts,
+            1,
+        );
+    })
+}
+
+#[test]
+fn non_author_or_invalid_member_cannot_edit_post() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_scenario_with_post();
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        // valid member but not original post author
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(SECOND_MEMBER_ORIGIN),
+                SECOND_MEMBER_ID,
+                category_id,
+                thread_id,
+                post_id,
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            ),
+            Error::<Test>::AccountDoesNotMatchPostAuthor,
+        );
+
+        // invalid member
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(UNKNOWN_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                post_id,
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn cannot_edit_invalid_post() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_scenario_with_post();
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        // invalid combination of thread post
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                INVALID_POST,
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+
+        // invalid combination of thread post
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                INVALID_THREAD,
+                post_id,
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn verify_edit_post_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let scenario = helper_setup_scenario_with_post();
+
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        assert_ok!(Content::edit_post_text(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            category_id,
+            thread_id,
+            post_id,
+            <Test as frame_system::Trait>::Hashing::hash(&2.encode()),
+        ));
+
+        // 1. Deposit event
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostTextUpdated(
+                post_id,
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                <Test as frame_system::Trait>::Hashing::hash(&2.encode()),
+            ))
+        );
+    })
+}
+
+#[test]
+fn non_author_or_invalid_member_cannot_delete_post() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_scenario_with_post();
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        // valid member but not original post author
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(SECOND_MEMBER_ORIGIN),
+                SECOND_MEMBER_ID,
+                category_id,
+                thread_id,
+                post_id,
+            ),
+            Error::<Test>::AccountDoesNotMatchPostAuthor,
+        );
+
+        // invalid member
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(UNKNOWN_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                post_id,
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn cannot_delete_invalid_post() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_scenario_with_post();
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        // invalid combination of thread post category
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                INVALID_CATEGORY,
+                thread_id,
+                post_id,
+            ),
+            Error::<Test>::ThreadDoesNotExist,
+        );
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                INVALID_THREAD,
+                post_id,
+            ),
+            Error::<Test>::ThreadDoesNotExist,
+        );
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                INVALID_POST,
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn verify_delete_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let scenario = helper_setup_scenario_with_post();
+
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        assert_ok!(Content::delete_post(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            category_id,
+            thread_id,
+            post_id,
+        ));
+
+        // 1. Deposit event
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostDeleted(
+                post_id,
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+            ))
+        );
+    })
+}
+
+#[test]
+fn invalid_forum_user_cannot_react_post() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_scenario_with_post();
+
+        let post_id = get_post_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let category_id = get_category_id(&scenario);
+
+        // using invalid signer
+        assert_err!(
+            Content::react_post(
+                Origin::signed(UNKNOWN_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                post_id,
+                <Test as Trait>::ReactionId::from(1u64),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+
+        // using invalid member
+        assert_err!(
+            Content::react_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                NOT_FORUM_MEMBER_ID,
+                category_id,
+                thread_id,
+                post_id,
+                <Test as Trait>::ReactionId::from(1u64),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn cannot_react_to_invalid_post() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_scenario_with_post();
+        let category_id = get_category_id(&scenario);
+        let thread_id = get_thread_id(&scenario);
+        let post_id = get_post_id(&scenario);
+
+        // invalid combination of thread post
+        assert_err!(
+            Content::react_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                thread_id,
+                INVALID_POST,
+                <Test as Trait>::ReactionId::from(1u64),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+
+        // invalid combination of thread post
+        assert_err!(
+            Content::react_post(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                INVALID_THREAD,
+                post_id,
+                <Test as Trait>::ReactionId::from(1u64),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+    })
+}
+
+/* Observations
+- Resolve MemberId and AccountId difference
+- Resolve errors between Post and Thread does not exist
+*/

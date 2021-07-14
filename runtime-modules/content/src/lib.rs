@@ -1642,24 +1642,24 @@ decl_module! {
 
         let account_id = ensure_signed(origin)?;
 
-        if <ThreadById<T>>::contains_key(category_id, thread_id) {
-            let mut thread = <ThreadById<T>>::get(category_id, thread_id);
+        let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
 
-            Self::ensure_can_delete_post(&account_id, &forum_user_id, &thread_id, &post_id)?;
-            thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one());
+        Self::ensure_can_delete_post(&account_id, &forum_user_id, &thread_id, &post_id)?;
 
-            <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
-        }
+        let mut thread = thread;
+        thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one());
+
+        <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
         <PostById<T>>::remove(thread_id, post_id);
 
-    Self::deposit_event(RawEvent::PostDeleted(
-        post_id,
-        forum_user_id,
-        category_id,
-        thread_id,
+        Self::deposit_event(RawEvent::PostDeleted(
+            post_id,
+            forum_user_id,
+            category_id,
+            thread_id,
         ));
 
-    Ok(())
+        Ok(())
     }
 
     #[weight = 10_000_000]
@@ -1675,7 +1675,7 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
-        let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
+            let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
             //
             // == MUTATION SAFE ==
