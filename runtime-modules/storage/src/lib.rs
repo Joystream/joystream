@@ -683,9 +683,11 @@ struct BagUpdate<Balance> {
 impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     // Adds a single object data to the voucher update (updates objects size, number)
     // and deletion prize.
-    fn add_object(&mut self, size: u64, deletion_prize: Balance) {
+    fn add_object(&mut self, size: u64, deletion_prize: Balance) -> Self {
         self.voucher_update.add_object(size);
         self.total_deletion_prize = self.total_deletion_prize.saturating_add(deletion_prize);
+
+        *self
     }
 }
 
@@ -2157,13 +2159,20 @@ impl<T: Trait> Module<T> {
 
         let bag_manager = BagManager::<T>::ensure_bag_exists(bag_id.clone())?;
 
-        let mut bag_change = BagUpdate::default();
+        let bag_change = data_object_ids
+            .iter()
+            .try_fold::<_, _, Result<_, DispatchError>>(
+                BagUpdate::default(),
+                |acc, data_object_id| {
+                    let data_object = bag_manager.ensure_data_object_existence(data_object_id)?;
 
-        for data_object_id in data_object_ids.iter() {
-            let data_object = bag_manager.ensure_data_object_existence(data_object_id)?;
+                    let bag_change = acc
+                        .clone()
+                        .add_object(data_object.size, data_object.deletion_prize);
 
-            bag_change.add_object(data_object.size, data_object.deletion_prize);
-        }
+                    Ok(bag_change)
+                },
+            )?;
 
         ensure!(
             <StorageTreasury<T>>::usable_balance() >= bag_change.total_deletion_prize,
@@ -2199,25 +2208,33 @@ impl<T: Trait> Module<T> {
             Error::<T>::DataObjectsPerBagLimitExceeded
         );
 
-        let mut bag_change = BagUpdate::default();
-        // Check data objects.
-        for object_params in params.object_creation_list.iter() {
-            // Should be non-empty hash.
-            ensure!(
-                !object_params.ipfs_content_id.is_empty(),
-                Error::<T>::EmptyContentId
-            );
-            // Should be non-zero size.
-            ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
+        let bag_change = params
+            .object_creation_list
+            .iter()
+            .try_fold::<_, _, Result<_, DispatchError>>(
+                BagUpdate::default(),
+                |acc, object_params| {
+                    // Should be non-empty hash.
+                    ensure!(
+                        !object_params.ipfs_content_id.is_empty(),
+                        Error::<T>::EmptyContentId
+                    );
+                    // Should be non-zero size.
+                    ensure!(object_params.size != 0, Error::<T>::ZeroObjectSize);
 
-            // Should not be blacklisted.
-            ensure!(
-                !Blacklist::contains_key(&object_params.ipfs_content_id),
-                Error::<T>::DataObjectBlacklisted,
-            );
+                    // Should not be blacklisted.
+                    ensure!(
+                        !Blacklist::contains_key(&object_params.ipfs_content_id),
+                        Error::<T>::DataObjectBlacklisted,
+                    );
 
-            bag_change.add_object(object_params.size, T::DataObjectDeletionPrize::get());
-        }
+                    let bag_change = acc
+                        .clone()
+                        .add_object(object_params.size, T::DataObjectDeletionPrize::get());
+
+                    Ok(bag_change)
+                },
+            )?;
 
         let size_fee =
             Self::calculate_data_storage_fee(bag_change.voucher_update.objects_total_size);
