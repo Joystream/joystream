@@ -6,12 +6,6 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 use sp_runtime::traits::Hash;
 
-// forum
-
-// pub const FORUM_MODERATOR_ORIGIN: <Test as frame_system::Trait>::AccountId = 123;
-
-// pub const FORUM_MODERATOR_2_ORIGIN: <Test as frame_system::Trait>::AccountId = 124;
-
 struct TestScenario {
     category: Option<(
         <Test as Trait>::CategoryId,
@@ -35,9 +29,6 @@ fn get_category_counter(s: &TestScenario) -> <Test as Trait>::CategoryId {
 fn get_channel_id(s: &TestScenario) -> <Test as StorageOwnership>::ChannelId {
     s.channel.clone().unwrap().0
 }
-// fn get_channel(s: &TestScenario) -> Channel<Test> {
-//     s.channel.clone().unwrap().1
-// }
 fn get_thread_id(s: &TestScenario) -> <Test as Trait>::ThreadId {
     s.thread.clone().unwrap().0
 }
@@ -47,9 +38,44 @@ fn get_thread(s: &TestScenario) -> Thread<Test> {
 fn get_post_id(s: &TestScenario) -> <Test as Trait>::PostId {
     s.post.clone().unwrap().0
 }
-// fn get_post(s: &TestScenario) -> Post<Test> {
-//     s.post.clone().unwrap().1
-// }
+
+#[test]
+fn cannot_exceed_subcategories_limit() {
+    with_default_mock_builder(|| {
+        let parent_category_id = Content::next_category_id();
+
+        // create parent category with 2 subcategories
+        assert_ok!(Content::create_forum_category(
+            Origin::signed(FORUM_LEAD_ORIGIN),
+            None,
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+        ));
+        assert_ok!(Content::create_forum_category(
+            Origin::signed(FORUM_LEAD_ORIGIN),
+            Some(parent_category_id),
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+        ));
+        assert_ok!(Content::create_forum_category(
+            Origin::signed(FORUM_LEAD_ORIGIN),
+            Some(parent_category_id),
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+        ));
+
+        // trying to exceed subgategories limit = 2
+        assert_err!(
+            Content::create_forum_category(
+                Origin::signed(FORUM_LEAD_ORIGIN),
+                Some(parent_category_id),
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+                <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
+            ),
+            Error::<Test>::MapSizeLimit,
+        );
+    })
+}
 
 #[test]
 fn cannot_create_subcategory_of_an_invalid_category() {
@@ -930,11 +956,6 @@ fn verify_delete_category_effects() {
     })
 }
 
-/*
-Requires: origin is signed by a Lead account AND category_id must be valid AND category_id, moderator_idmust be a valid category-moderator pair AND the category must have not exceeded the max number of moderators allowed yet
-Effects: CategoryByModerator is storage element is modified in order reflects the changes AND so the category itself
- */
-
 /* Observations
 - Resolve MemberId and AccountId difference
 - Resolve errors between Post and Thread does not exist
@@ -983,6 +1004,39 @@ fn cannot_remove_non_existing_moderator_for_category() {
                 false,
             ),
             Error::<Test>::CategoryModeratorDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn cannot_exceed_max_moderators_for_category() {
+    with_default_mock_builder(|| {
+        let scenario = helper_setup_basic_scenario();
+        let category_id = get_category_id(&scenario);
+
+        assert_ok!(Content::update_category_membership_of_moderator(
+            Origin::signed(FORUM_LEAD_ORIGIN),
+            FIRST_MODERATOR_ID,
+            category_id,
+            true,
+        ));
+
+        assert_ok!(Content::update_category_membership_of_moderator(
+            Origin::signed(FORUM_LEAD_ORIGIN),
+            SECOND_MODERATOR_ID,
+            category_id,
+            true,
+        ));
+
+        // attempt to exceed max moderator for category = 2
+        assert_err!(
+            Content::update_category_membership_of_moderator(
+                Origin::signed(FORUM_LEAD_ORIGIN),
+                FIRST_MEMBER_ID,
+                category_id,
+                true,
+            ),
+            Error::<Test>::MapSizeLimit,
         );
     })
 }

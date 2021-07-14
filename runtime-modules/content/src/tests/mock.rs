@@ -291,8 +291,8 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MaxCategoryDepth: u64 = 20;
     pub const PostLifeTime: u64 = 100;
-    pub const MaxSubcategories: u64 = 20;
-    pub const MaxModeratorsForCategory: u64 = 3;
+    pub const MaxSubcategories: u64 = 2;
+    pub const MaxModeratorsForCategory: u64 = 2;
     pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 100;
