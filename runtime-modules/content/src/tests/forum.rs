@@ -204,22 +204,13 @@ fn helper_setup_basic_scenario() -> TestScenario {
     }
 }
 
-/*
-Requires:
- origin signed by the user specified by forum_user
- forum_user is a valid forum user
- category_id is a valid category
-Effects:
- thread count for category_id is increased by 1
- corresponding event is deposited
-*/
 #[test]
-fn non_member_cannot_create_thread() {
+fn invalid_member_cannot_create_thread() {
     with_default_mock_builder(|| {
         let scenario = helper_setup_basic_scenario();
         assert_err!(
             Content::create_thread(
-                Origin::signed(UNKNOWN_ORIGIN),
+                Origin::signed(FIRST_MEMBER_ID),
                 NOT_FORUM_MEMBER_ID,
                 scenario.category.unwrap().0,
                 <Test as frame_system::Trait>::Hashing::hash(&1.encode()),
@@ -777,7 +768,7 @@ fn invalid_forum_user_cannot_react_post() {
         let thread_id = get_thread_id(&scenario);
         let category_id = get_category_id(&scenario);
 
-        // using invalid signer
+        // using invalid account
         assert_err!(
             Content::react_post(
                 Origin::signed(UNKNOWN_ORIGIN),
@@ -790,7 +781,7 @@ fn invalid_forum_user_cannot_react_post() {
             Error::<Test>::MemberAuthFailed,
         );
 
-        // using invalid member
+        // using invalid member_id
         assert_err!(
             Content::react_post(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -955,11 +946,6 @@ fn verify_delete_category_effects() {
         );
     })
 }
-
-/* Observations
-- Resolve MemberId and AccountId difference
-- Resolve errors between Post and Thread does not exist
-*/
 
 #[test]
 fn non_lead_cannot_update_moderator_for_category() {
