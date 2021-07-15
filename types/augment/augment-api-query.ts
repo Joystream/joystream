@@ -960,7 +960,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Blacklisted data object hashes.
        **/
-      blacklist: AugmentedQuery<ApiType, (arg: ContentId | string) => Observable<ITuple<[]>>, [ContentId]>;
+      blacklist: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<ITuple<[]>>, [ContentId]>;
       /**
        * Blacklist collection counter.
        **/

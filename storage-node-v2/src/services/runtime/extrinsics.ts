@@ -11,8 +11,8 @@ export async function createStorageBucket(
   account: KeyringPair,
   invitedWorker: number | null = null,
   allowedNewBags = true,
-  sizeLimit: number = 0,
-  objectsLimit: number = 0
+  sizeLimit = 0,
+  objectsLimit = 0
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
@@ -347,12 +347,9 @@ export async function updateBlacklist(
       addHashes = api.createType('ContentIdSet', [cid])
     }
 
-    return sendAndFollowNamedTx(
-      api,
-      account,
-      'storage',
-      'updateBlacklist',
-      [removeHashes, addHashes]
-    )
+    return sendAndFollowNamedTx(api, account, 'storage', 'updateBlacklist', [
+      removeHashes,
+      addHashes,
+    ])
   })
 }

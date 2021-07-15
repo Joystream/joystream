@@ -183,8 +183,8 @@ export class UploadParameters
   })
   implements UploadParametersType {}
 
-export class ContentId extends Text {}
-export class ContentIdSet extends BTreeSet.with(ContentId) {}
+export class Cid extends Text {}
+export class ContentIdSet extends BTreeSet.with(Cid) {}
 
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
@@ -207,7 +207,7 @@ export const storageTypes: RegistryTypes = {
   StorageBucketIdSet,
   DataObjectIdSet,
   ContentIdSet,
-  ContentId,
+  Cid,
   StorageBucketOperatorStatus,
 }
 export default storageTypes

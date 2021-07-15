@@ -32,8 +32,9 @@ export default class DevVerifyBagId extends ApiCommandBase {
     const { flags } = this.parse(DevVerifyBagId)
 
     const api = await this.getApi()
-    parseBagId(api, flags.bagId)
+    const parsedBagId = parseBagId(api, flags.bagId)
 
     logger.info(`Correct bag id: ${flags.bagId}`)
+    logger.info(`Parsed: ${parsedBagId}`)
   }
 }

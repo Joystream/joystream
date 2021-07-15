@@ -552,7 +552,7 @@
         "identity": "IPNSIdentity",
         "expires_at": "u32"
     },
-    "ContentId": "Text",
+    "ContentId": "[u8;32]",
     "LiaisonJudgement": {
         "_enum": [
             "Pending",
@@ -571,7 +571,7 @@
     },
     "DataObjectStorageRelationshipId": "u64",
     "DataObjectStorageRelationship": {
-        "content_id": "Hash",
+        "content_id": "ContentId",
         "storage_provider": "StorageProviderId",
         "ready": "bool"
     },
@@ -580,7 +580,7 @@
         "description": "Text",
         "active": "bool"
     },
-    "DataObjectsMap": "BTreeMap<[u8;32],DataObject>",
+    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -1058,7 +1058,8 @@
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
-    "ContentIdSet": "BTreeSet<ContentId>",
+    "ContentIdSet": "BTreeSet<Cid>",
+    "Cid": "Text",
     "StorageBucketOperatorStatus": {
         "_enum": {
             "Missing": "Null",

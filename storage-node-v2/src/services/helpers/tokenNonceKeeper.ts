@@ -1,7 +1,6 @@
 import NodeCache from 'node-cache'
 
-// TODO: move to config or set to 10 seconds
-export const TokenExpirationPeriod: number = 100 * 1000 // seconds
+export const TokenExpirationPeriod: number = 30 * 1000 // seconds
 const MaxNonces = 100000
 
 const nonceCache = new NodeCache({

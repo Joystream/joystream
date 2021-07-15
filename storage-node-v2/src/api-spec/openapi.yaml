@@ -36,15 +36,7 @@ paths:
         200:
           description: Ok
           content:
-            image/*:
-              schema:
-                type: string
-                format: binary
-            audio/*:
-              schema:
-                type: string
-                format: binary
-            video/*:
+            application/octet-stream:
               schema:
                 type: string
                 format: binary

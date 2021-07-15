@@ -129,6 +129,7 @@ use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
@@ -139,7 +140,6 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
-use frame_system::ensure_root;
 
 use common::constraints::BoundedValueConstraint;
 use common::origin::ActorOriginValidator;

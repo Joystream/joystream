@@ -1,60 +1,135 @@
-import { BagId, DynamicBagType, Static } from '@joystream/types/storage'
+import {
+  BagId,
+  DynamicBagType,
+  DynamicBagTypeKey,
+  Static,
+  Dynamic,
+} from '@joystream/types/storage'
+import { WorkingGroup } from '@joystream/types/common'
 import { ApiPromise } from '@polkadot/api'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
-export function parseBagId(api: ApiPromise, bagId: string): BagId {
-  const bagIdParts = bagId.toLowerCase().split(':')
+export function parseDynamicBagType(
+  api: ApiPromise,
+  bagType: DynamicBagTypeKey
+): DynamicBagType {
+  return api.createType('DynamicBagType', bagType)
+}
 
-  if (bagIdParts.length > 3 || bagIdParts.length < 2) {
-    throw new CLIError(`Invalid bagId: ${bagId}`, {
+export function parseBagId(api: ApiPromise, bagId: string): BagId {
+  const parser = new BagIdParser(api, bagId)
+
+  return parser.parse()
+}
+
+class BagIdParser {
+  bagId: string
+  api: ApiPromise
+  bagIdParts: string[]
+
+  constructor(api: ApiPromise, bagId: string) {
+    this.bagId = bagId
+    this.api = api
+
+    this.bagIdParts = bagId.trim().toLowerCase().split(':')
+
+    if (this.bagIdParts.length > 3 || this.bagIdParts.length < 2) {
+      throw new CLIError(`Invalid bagId: ${bagId}`, {
+        exit: ExitCodes.InvalidParameters,
+      })
+    }
+  }
+
+  parse(): BagId {
+    if (this.bagIdParts[0] === 'static') {
+      return this.parseStaticBagId()
+    }
+
+    if (this.bagIdParts[0] === 'dynamic') {
+      return this.parseDynamicBagId()
+    }
+
+    throw new CLIError(`Invalid bagId: ${this.bagId}`, {
       exit: ExitCodes.InvalidParameters,
     })
   }
 
-  if (bagIdParts[0] === 'static') {
-    return parseStaticBagId(api, bagId, bagIdParts)
-  }
+  parseStaticBagId(): BagId {
+    // Try to construct static council bag ID.
+    if (this.bagIdParts[1] === 'council') {
+      if (this.bagIdParts.length === 2) {
+        const staticBagId: Static = this.api.createType('Static', 'Council')
+        const constructedBagId: BagId = this.api.createType('BagId', {
+          'Static': staticBagId,
+        })
 
-  if (bagIdParts[0] === 'dynamic') {
-    return parseDynamicBagId()
-  }
-
-  throw new CLIError(`Invalid bagId: ${bagId}`, {
-    exit: ExitCodes.InvalidParameters,
-  })
-}
-
-function parseStaticBagId(
-  api: ApiPromise,
-  bagId: string,
-  bagIdParts: string[]
-): BagId {
-  if (bagIdParts[1] === 'council') {
-    if (bagIdParts.length === 2) {
-      const staticBagId: Static = api.createType('Static', 'Council')
-      const constructedBagId: BagId = api.createType('BagId', {
-        'Static': staticBagId,
-      })
-
-      return constructedBagId
+        return constructedBagId
+      }
     }
+
+    // Try to construct static working group bag ID.
+    if (this.bagIdParts[1] === 'wg') {
+      if (this.bagIdParts.length === 3) {
+        const groups = Object.keys(WorkingGroup.typeDefinitions)
+        const actualGroup = this.bagIdParts[2]
+
+        for (const group of groups) {
+          if (group.toLowerCase() === actualGroup) {
+            const workingGroup: WorkingGroup = this.api.createType(
+              'WorkingGroup',
+              group
+            )
+            const staticBagId: Static = this.api.createType('Static', {
+              'WorkingGroup': workingGroup,
+            })
+            const constructedBagId: BagId = this.api.createType('BagId', {
+              'Static': staticBagId,
+            })
+
+            return constructedBagId
+          }
+        }
+      }
+    }
+
+    throw new CLIError(`Invalid static bagId: ${this.bagId}`, {
+      exit: ExitCodes.InvalidParameters,
+    })
   }
 
-  throw new CLIError(`Invalid bagId: ${bagId}`, {
-    exit: ExitCodes.InvalidParameters,
-  })
-}
+  parseDynamicBagId(): BagId {
+    if (this.bagIdParts.length === 3) {
+      const idString = this.bagIdParts[2]
+      const parsedId = parseInt(idString)
 
-function parseDynamicBagId(): BagId {
-  throw new CLIError('Function not implemented.', {
-    exit: ExitCodes.InvalidParameters,
-  })
-}
+      // Verify successful entity ID parsing
+      if (!isNaN(parsedId)) {
+        const dynamicBagTypes = Object.keys(DynamicBagType.typeDefinitions)
+        const actualType = this.bagIdParts[1]
 
-export function parseDynamicBagType(
-  api: ApiPromise,
-  bagType: 'Member' | 'Channel'
-): DynamicBagType {
-  return api.createType('DynamicBagType', bagType)
+        // Try to construct dynamic bag ID.
+        for (const dynamicBagType of dynamicBagTypes) {
+          if (dynamicBagType.toLowerCase() === actualType) {
+            const dynamic = {}
+            dynamic[dynamicBagType] = parsedId
+
+            const dynamicBagId: Dynamic = this.api.createType(
+              'Dynamic',
+              dynamic
+            )
+            const constructedBagId: BagId = this.api.createType('BagId', {
+              'Dynamic': dynamicBagId,
+            })
+
+            return constructedBagId
+          }
+        }
+      }
+    }
+
+    throw new CLIError(`Invalid dynamic bagId: ${this.bagId}`, {
+      exit: ExitCodes.InvalidParameters,
+    })
+  }
 }

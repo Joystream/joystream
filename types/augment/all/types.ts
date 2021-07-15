@@ -246,6 +246,9 @@ export interface ChildPositionInParentCategory extends Struct {
   readonly child_nr_in_parent_category: u32;
 }
 
+/** @name Cid */
+export interface Cid extends Text {}
+
 /** @name Class */
 export interface Class extends Struct {
   readonly class_permissions: ClassPermissions;
@@ -288,10 +291,10 @@ export interface ClassPermissionsType extends Null {}
 export interface ClassPropertyValue extends Null {}
 
 /** @name ContentId */
-export interface ContentId extends Text {}
+export interface ContentId extends U8aFixed {}
 
 /** @name ContentIdSet */
-export interface ContentIdSet extends BTreeSet<ContentId> {}
+export interface ContentIdSet extends BTreeSet<Cid> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
@@ -419,11 +422,11 @@ export interface DataObjectId extends u64 {}
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
 /** @name DataObjectsMap */
-export interface DataObjectsMap extends BTreeMap<U8aFixed, DataObject> {}
+export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
 
 /** @name DataObjectStorageRelationship */
 export interface DataObjectStorageRelationship extends Struct {
-  readonly content_id: Hash;
+  readonly content_id: ContentId;
   readonly storage_provider: StorageProviderId;
   readonly ready: bool;
 }

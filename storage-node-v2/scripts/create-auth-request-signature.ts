@@ -13,7 +13,7 @@ createApi('ws://localhost:9944').then(() => {
   const tokenRequestBody: UploadTokenRequestBody = {
     memberId: 0,
     accountId: alice.address,
-    dataObjectId: 2,
+    dataObjectId: 1,
     storageBucketId: 0,
     bagId: 'static:council'
   }

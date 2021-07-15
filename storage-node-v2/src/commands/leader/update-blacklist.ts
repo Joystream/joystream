@@ -31,14 +31,8 @@ export default class LeaderUpdateBlacklist extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    const success = await updateBlacklist(
-      api,
-      account,
-      flags.cid,
-      flags.remove
-    )
+    const success = await updateBlacklist(api, account, flags.cid, flags.remove)
 
     this.exitAfterRuntimeCall(success)
   }
 }
-

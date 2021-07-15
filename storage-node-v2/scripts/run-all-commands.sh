@@ -11,6 +11,7 @@ yarn storage-node dev:init # leader workerId = 0
 yarn storage-node leader:update-bag-limit -l 7 --dev
 yarn storage-node leader:update-voucher-limits -o 100 -s 10000000 --dev
 yarn storage-node leader:update-data-fee -f 10000 --dev
+yarn storage-node leader:update-dynamic-bag-policy -n 10 -m
 
 # Create and configure a bucket.
 yarn storage-node leader:create-bucket -i=0 --dev # bucketId = 0
