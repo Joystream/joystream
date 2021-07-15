@@ -501,7 +501,8 @@ decl_event!(
         CategoryDeleted(CategoryId, PrivilegedActor),
 
         /// A thread with given id was created.
-        ThreadCreated(ThreadId, ForumUserId, CategoryId, Vec<u8>, Vec<u8>, Option<Poll>),
+        /// A third argument reflects the initial post id of the thread.
+        ThreadCreated(CategoryId, ThreadId, PostId, ForumUserId, Vec<u8>, Vec<u8>, Option<Poll>),
 
         /// A thread with given id was moderated.
         ThreadModerated(ThreadId, Vec<u8>, PrivilegedActor, CategoryId),
@@ -923,7 +924,7 @@ decl_module! {
             });
 
             // Add inital post to thread
-            let _ = Self::add_new_post(
+            let initial_post_id = Self::add_new_post(
                 new_thread_id,
                 category_id,
                 &text,
@@ -940,9 +941,10 @@ decl_module! {
             // Generate event
             Self::deposit_event(
                 RawEvent::ThreadCreated(
-                    new_thread_id,
-                    forum_user_id,
                     category_id,
+                    new_thread_id,
+                    initial_post_id,
+                    forum_user_id,
                     title,
                     text,
                     poll,
