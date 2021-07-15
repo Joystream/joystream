@@ -695,9 +695,10 @@ pub fn create_thread_mock(
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadCreated(
-                thread_id,
-                forum_user_id,
                 category_id,
+                thread_id,
+                TestForumModule::next_thread_id() - 1,
+                forum_user_id,
                 title.clone(),
                 text.clone(),
                 poll_data.clone()
