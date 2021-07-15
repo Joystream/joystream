@@ -996,9 +996,10 @@ benchmarks! {
 
         assert_last_event::<T>(
             RawEvent::ThreadCreated(
-                next_thread_id,
-                forum_user_id.saturated_into(),
                 category_id,
+                next_thread_id,
+                next_post_id,
+                forum_user_id.saturated_into(),
                 title,
                 text,
                 poll,
