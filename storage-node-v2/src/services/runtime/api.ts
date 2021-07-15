@@ -14,6 +14,9 @@ import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
+/**
+ * Dedicated error for the failed extrinsics.
+ */
 export class ExtrinsicFailedError extends CLIError {}
 
 /**

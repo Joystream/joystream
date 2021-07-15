@@ -19,7 +19,6 @@ import { CLIError } from '@oclif/errors'
  * @param api - runtime API promise
  * @param bagType - dynamic bag type string
  * @returns The DynamicBagType instance.
- *
  */
 export function parseDynamicBagType(
   api: ApiPromise,
@@ -36,9 +35,8 @@ export function parseDynamicBagType(
  * on invalid string format.
  *
  * @param api - runtime API promise
- * @param bagId - bag id in string format
+ * @param bagId - bag ID in string format
  * @returns The BagId instance.
- *
  */
 export function parseBagId(api: ApiPromise, bagId: string): BagId {
   const parser = new BagIdParser(api, bagId)
@@ -46,6 +44,9 @@ export function parseBagId(api: ApiPromise, bagId: string): BagId {
   return parser.parse()
 }
 
+/**
+ * Class-helper for actual bag ID parsing.
+ */
 class BagIdParser {
   bagId: string
   api: ApiPromise
@@ -64,6 +65,10 @@ class BagIdParser {
     }
   }
 
+  /**
+   * Tries to parse the bag ID using given bag ID in string format, throws an
+   * exception on failure.
+   */
   parse(): BagId {
     if (this.bagIdParts[0] === 'static') {
       return this.parseStaticBagId()
@@ -78,6 +83,9 @@ class BagIdParser {
     })
   }
 
+  /**
+   * Tries to parse the static bag ID, throws an exception on failure.
+   */
   parseStaticBagId(): BagId {
     // Try to construct static council bag ID.
     if (this.bagIdParts[1] === 'council') {
@@ -121,6 +129,9 @@ class BagIdParser {
     })
   }
 
+  /**
+   * Tries to parse the dynamic bag ID, throws an exception on failure.
+   */
   parseDynamicBagId(): BagId {
     if (this.bagIdParts.length === 3) {
       const idString = this.bagIdParts[2]

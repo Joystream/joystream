@@ -1,5 +1,6 @@
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
 import {
+  RequestData,
   UploadTokenRequest,
   UploadTokenBody,
   createUploadToken,
@@ -8,12 +9,11 @@ import {
 import { hashFile } from '../../../services/helpers/hashing'
 import {
   createNonce,
-  TokenExpirationPeriod,
+  getTokenExpirationTime,
 } from '../../../services/helpers/tokenNonceKeeper'
+import { getFileInfo } from '../../../services/helpers/fileInfo'
 import { parseBagId } from '../../helpers/bagTypes'
 
-import FileType from 'file-type'
-import readChunk from 'read-chunk'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { Membership } from '@joystream/types/members'
@@ -23,12 +23,9 @@ import path from 'path'
 import send from 'send'
 const fsPromises = fs.promises
 
-interface UploadRequest {
-  dataObjectId: number
-  storageBucketId: number
-  bagId: string
-}
-
+/**
+ * A public endpoint: serves files by CID.
+ */
 export async function files(
   req: express.Request,
   res: express.Response
@@ -76,11 +73,14 @@ export async function files(
   }
 }
 
+/**
+ * A public endpoint: receives file.
+ */
 export async function upload(
   req: express.Request,
   res: express.Response
 ): Promise<void> {
-  const uploadRequest: UploadRequest = req.body
+  const uploadRequest: RequestData = req.body
 
   try {
     const fileObj = getFileObject(req)
@@ -112,6 +112,9 @@ export async function upload(
   }
 }
 
+/**
+ * A public endpoint: creates auth token for file uploads.
+ */
 export async function authToken(
   req: express.Request,
   res: express.Response
@@ -141,6 +144,13 @@ export async function authToken(
   }
 }
 
+/**
+ * Returns Multer.File object from the request.
+ *
+ * @remarks
+ * This is a helper function. It parses the request object for a variable and
+ * throws an error on failier.
+ */
 function getFileObject(req: express.Request): Express.Multer.File {
   if (req.file) {
     return req.file
@@ -154,6 +164,13 @@ function getFileObject(req: express.Request): Express.Multer.File {
   throw new Error('No file uploaded')
 }
 
+/**
+ * Returns worker ID from the response.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failier.
+ */
 function getWorkerId(res: express.Response): number {
   if (res.locals.workerId || res.locals.workerId === 0) {
     return res.locals.workerId
@@ -162,6 +179,13 @@ function getWorkerId(res: express.Response): number {
   throw new Error('No Joystream worker ID loaded.')
 }
 
+/**
+ * Returns a directory for file uploading from the response.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failier.
+ */
 function getUploadsDir(res: express.Response): string {
   if (res.locals.uploadsDir) {
     return res.locals.uploadsDir
@@ -170,6 +194,13 @@ function getUploadsDir(res: express.Response): string {
   throw new Error('No upload directory path loaded.')
 }
 
+/**
+ * Returns a KeyPair instance from the response.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failier.
+ */
 function getAccount(res: express.Response): KeyringPair {
   if (res.locals.storageProviderAccount) {
     return res.locals.storageProviderAccount
@@ -178,6 +209,13 @@ function getAccount(res: express.Response): KeyringPair {
   throw new Error('No Joystream account loaded.')
 }
 
+/**
+ * Returns API promise from the response.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failier.
+ */
 function getApi(res: express.Response): ApiPromise {
   if (res.locals.api) {
     return res.locals.api
@@ -186,6 +224,13 @@ function getApi(res: express.Response): ApiPromise {
   throw new Error('No Joystream API loaded.')
 }
 
+/**
+ * Returns Content ID from the request.
+ *
+ * @remarks
+ * This is a helper function. It parses the request object for a variable and
+ * throws an error on failier.
+ */
 function getCid(req: express.Request): string {
   const cid = req.params.cid || ''
   if (cid.length > 0) {
@@ -195,6 +240,13 @@ function getCid(req: express.Request): string {
   throw new Error('No CID provided.')
 }
 
+/**
+ * Returns UploadTokenRequest object from the request.
+ *
+ * @remarks
+ * This is a helper function. It parses the request object for a variable and
+ * throws an error on failier.
+ */
 function getTokenRequest(req: express.Request): UploadTokenRequest {
   const tokenRequest = req.body as UploadTokenRequest
   if (tokenRequest) {
@@ -204,6 +256,14 @@ function getTokenRequest(req: express.Request): UploadTokenRequest {
   throw new Error('No token request provided.')
 }
 
+/**
+ * Validates token request. It verifies token signature and compares the
+ * member ID and account ID from the runtime with token data.
+ *
+ * @param api - runtime API promise
+ * @param tokenRequest - UploadTokenRequest instance
+ * @returns void promise.
+ */
 async function validateTokenRequest(
   api: ApiPromise,
   tokenRequest: UploadTokenRequest
@@ -222,35 +282,5 @@ async function validateTokenRequest(
     membership.controller_account.toString() !== tokenRequest.data.accountId
   ) {
     throw new Error(`Provided controller account and member id don't match.`)
-  }
-}
-
-function getTokenExpirationTime(): number {
-  return Date.now() + TokenExpirationPeriod
-}
-
-type FileInfo = {
-  mimeType: string
-  ext: string
-}
-
-const MINIMUM_FILE_CHUNK = 4100
-async function getFileInfo(fullPath: string): Promise<FileInfo> {
-  // Default file info if nothing could be detected.
-  const DEFAULT_FILE_INFO = {
-    mimeType: 'application/octet-stream',
-    ext: 'bin',
-  }
-
-  const buffer = readChunk.sync(fullPath, 0, MINIMUM_FILE_CHUNK)
-  const fileType = await FileType.fromBuffer(buffer)
-
-  if (fileType === undefined) {
-    return DEFAULT_FILE_INFO
-  }
-
-  return {
-    mimeType: fileType.mime.toString(),
-    ext: fileType.ext.toString(),
   }
 }

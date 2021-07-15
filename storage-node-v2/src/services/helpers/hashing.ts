@@ -8,7 +8,6 @@ import { createHash } from 'blake3'
  *
  * @param filename - file name
  * @returns hash promise.
- *
  */
 export function hashFile(filename: string): Promise<string> {
   const fileStream = fs.createReadStream(filename).pipe(createHash())

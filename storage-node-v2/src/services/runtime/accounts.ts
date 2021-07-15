@@ -10,7 +10,6 @@ import ExitCodes from '../../command-base/ExitCodes'
  *
  * @param jsonBackupFilePath - JSON-file path
  * @returns KeyPair instance.
- *
  */
 export function getAccountFromJsonFile(
   jsonBackupFilePath: string
@@ -56,7 +55,14 @@ export function getAccountFromJsonFile(
   return account
 }
 
-// Returns 'Alice' keypair. Should be use in dev-mode only.
+/**
+ * Returns 'Alice' KeyPair instance.
+ *
+ * @remarks
+ * This method should be used in the development mode only.
+ *
+ * @returns 'Alice' KeyPair instance.
+ */
 export function getAlicePair(): KeyringPair {
   const keyring = new Keyring({ type: 'sr25519' })
   return keyring.addFromUri('//Alice')
