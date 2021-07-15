@@ -5,6 +5,7 @@ import * as pulumi from '@pulumi/pulumi'
 import { configMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
 import * as s3Helpers from './s3Helpers'
+import { CaddyServiceDeployment } from './caddy'
 import { workers } from 'cluster'
 // import * as fs from 'fs'
 
@@ -424,9 +425,9 @@ const service = new k8s.core.v1.Service(
     metadata: {
       labels: appLabels,
       namespace: namespaceName,
+      name: 'query-node',
     },
     spec: {
-      type: isMinikube ? 'NodePort' : 'LoadBalancer',
       ports: [
         { name: 'port-1', port: 8081, targetPort: 'graph-ql-port' },
         { name: 'port-2', port: 4000, targetPort: 4002 },
@@ -441,6 +442,11 @@ const service = new k8s.core.v1.Service(
 export const serviceName = service.metadata.name
 
 // When "done", this will print the public IP.
-export let serviceHostname: pulumi.Output<string>
+// export let serviceHostname: pulumi.Output<string>
 
-serviceHostname = service.status.loadBalancer.ingress[0].hostname
+// serviceHostname = service.status.loadBalancer.ingress[0].hostname
+const lbReady = config.get('isLoadBalancerReady') === 'true'
+const caddy = new CaddyServiceDeployment('caddy-proxy', { lbReady, namespaceName: namespaceName }, resourceOptions)
+
+export const endpoint1 = caddy.primaryEndpoint
+export const endpoint2 = caddy.secondaryEndpoint

@@ -47,12 +47,24 @@ After cloning this repo, from this working directory, run these commands:
    $ puluim config set isMinikube false
    ```
 
-1. Create a `.env` file in this directory and set the database and other variables in it
+1. Create a `.env` file in this directory (`cp ../../../.env ./.env`) and set the database and other variables in it
+
+   Make sure to set `GRAPHQL_SERVER_PORT=4001`
 
 1. Stand up the Kubernetes cluster:
 
    Running `pulumi up -y` will deploy the EKS cluster. Note, provisioning a
    new EKS cluster takes between 10-15 minutes.
+
+1. Once the stack is up and running, we will modify the Caddy config to get SSL certificate for the load balancer
+
+   Modify the config variable `isLoadBalancerReady`
+
+   ```bash
+   $ pulumi config set isLoadBalancerReady true
+   ```
+
+   Run `pulumi up -y` to update the Caddy config
 
 1. Access the Kubernetes Cluster using `kubectl`
 
