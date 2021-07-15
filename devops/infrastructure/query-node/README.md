@@ -1,6 +1,6 @@
-# Amazon EKS Cluster: Hello World!
+# Query Node automated deployment
 
-This example deploys an EKS Kubernetes cluster with query node
+Deploys an EKS Kubernetes cluster with query node
 
 ## Deploying the App
 
