@@ -9,6 +9,13 @@ const nonceCache = new NodeCache({
   maxKeys: MaxNonces,
 })
 
+/**
+ * Creates nonce string using the high precision process time and registers
+ * it in the local in-memory cache with expiration time.
+ *
+ * @returns nonce string.
+ *
+ */
 export function createNonce(): string {
   const nonce = process.hrtime.bigint().toString()
 
@@ -17,6 +24,13 @@ export function createNonce(): string {
   return nonce
 }
 
+/**
+ * Removes the nonce from the local cache.
+ *
+ * @param nonce - nonce string.
+ * @returns true if nonce was present in local cache.
+ *
+ */
 export function checkRemoveNonce(nonce: string): boolean {
   const deletedEntries = nonceCache.del(nonce)
 

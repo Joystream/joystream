@@ -16,13 +16,27 @@ import { CLIError } from '@oclif/errors'
 
 export class ExtrinsicFailedError extends CLIError {}
 
-// Initialize the runtime API.
+/**
+ * Initializes the runtime API and Joystream runtime types.
+ *
+ * @param apiUrl - API URL string
+ * @returns runtime API promise
+ */
 export async function createApi(apiUrl: string): Promise<ApiPromise> {
   const provider = new WsProvider(apiUrl)
 
   return await ApiPromise.create({ provider, types })
 }
 
+/**
+ * Sends an extrinsic to the runtime and follows the result.
+ *
+ * @param api - API promise
+ * @param account - KeyPair instance
+ * @param tx - runtime transaction object to send
+ * @param nonce - transaction nonce for a given account.
+ * @returns extrinsic result promise.
+ */
 function sendExtrinsic(
   api: ApiPromise,
   account: KeyringPair,
@@ -113,7 +127,19 @@ function sendExtrinsic(
   })
 }
 
-// Sends and follows a transaction.
+/**
+ * Helper function for sending an extrinsic to the runtime. It constructs an
+ * actual transaction object.
+ *
+ * @param api - API promise
+ * @param account - KeyPair instance
+ * @param module - runtime module name
+ * @param method - runtime extrinsic name
+ * @param params - extrinsic parameter
+ * @param sudoCall - defines whether the transaction call should be wrapped in
+ * the sudo call.
+ * @returns void promise.
+ */
 export async function sendAndFollowNamedTx(
   api: ApiPromise,
   account: KeyringPair,
@@ -133,7 +159,17 @@ export async function sendAndFollowNamedTx(
   logger.debug(`Extrinsic successful!`)
 }
 
-// Sends a transactions wrapped in sudo call.
+/**
+ * Helper function for sending an extrinsic to the runtime. It constructs an
+ * actual transaction object and sends a transactions wrapped in sudo call.
+ *
+ * @param api - API promise
+ * @param account - KeyPair instance
+ * @param module - runtime module name
+ * @param method - runtime extrinsic name
+ * @param params - extrinsic parameter
+ * @returns void promise.
+ */
 export async function sendAndFollowSudoNamedTx(
   api: ApiPromise,
   account: KeyringPair,

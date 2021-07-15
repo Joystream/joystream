@@ -10,6 +10,17 @@ import { ApiPromise } from '@polkadot/api'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
+/**
+ * Parses the type string and returns the DynamicBagType instance.
+ *
+ * @remarks
+ * This method uses runtime API for type construction.
+ *
+ * @param api - runtime API promise
+ * @param bagType - dynamic bag type string
+ * @returns The DynamicBagType instance.
+ *
+ */
 export function parseDynamicBagType(
   api: ApiPromise,
   bagType: DynamicBagTypeKey
@@ -17,6 +28,18 @@ export function parseDynamicBagType(
   return api.createType('DynamicBagType', bagType)
 }
 
+/**
+ * Parses the type string and returns the BagId instance.
+ *
+ * @remarks
+ * This method uses runtime API for type construction. It throws an exception
+ * on invalid string format.
+ *
+ * @param api - runtime API promise
+ * @param bagId - bag id in string format
+ * @returns The BagId instance.
+ *
+ */
 export function parseBagId(api: ApiPromise, bagId: string): BagId {
   const parser = new BagIdParser(api, bagId)
 
@@ -111,8 +134,8 @@ class BagIdParser {
         // Try to construct dynamic bag ID.
         for (const dynamicBagType of dynamicBagTypes) {
           if (dynamicBagType.toLowerCase() === actualType) {
-            const dynamic = {}
-            dynamic[dynamicBagType] = parsedId
+            const dynamic = {} as Record<DynamicBagTypeKey, number>
+            dynamic[dynamicBagType as DynamicBagTypeKey] = parsedId
 
             const dynamicBagId: Dynamic = this.api.createType(
               'Dynamic',

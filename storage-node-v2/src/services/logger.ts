@@ -2,7 +2,12 @@ import winston from 'winston'
 import expressWinston from 'express-winston'
 import { Handler } from 'express'
 
-// Creates basic winston logger.
+/**
+ * Creates basic Winston logger.
+ *
+ * @returns Winston logger
+ *
+ */
 function createDefaultLogger(): winston.Logger {
   const levels = {
     error: 0,
@@ -50,7 +55,12 @@ const Logger = createDefaultLogger()
 
 export default Logger
 
-// Creates Express-Winston logger handler.
+/**
+ * Creates Express-Winston logger handler.
+ *
+ * @returns  Express-Winston logger handler
+ *
+ */
 export function httpLogger(): Handler {
   const opts: expressWinston.LoggerOptions = {
     transports: [new winston.transports.Console()],

@@ -11,6 +11,16 @@ import { MemberId } from '@joystream/types/members'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../../services/logger'
 
+/**
+ * Hires the leader for the Storage working group.
+ *
+ * @remarks
+ * This method should be used in the development mode only.
+ *
+ * @param api - runtime API promise
+ * @return void promise
+ *
+ */
 export async function hireStorageWorkingGroupLead(
   api: ApiPromise
 ): Promise<void> {

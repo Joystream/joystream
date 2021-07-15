@@ -5,6 +5,13 @@ import { Keyring } from '@polkadot/keyring'
 import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
 import ExitCodes from '../../command-base/ExitCodes'
 
+/**
+ * Parses the JSON file with account data and KeyPair instance.
+ *
+ * @param jsonBackupFilePath - JSON-file path
+ * @returns KeyPair instance.
+ *
+ */
 export function getAccountFromJsonFile(
   jsonBackupFilePath: string
 ): KeyringPair {

@@ -8,6 +8,14 @@ import logger from '../logger'
 let nonce: Index | null = null
 const lock = new AwaitLock()
 
+/**
+ * Return the current transaction nonce for an account from the runtime.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyPair instance
+ * @returns promise with transaction nonce for a given account.
+ *
+ */
 export async function getNonce(
   api: ApiPromise,
   account: KeyringPair
