@@ -389,6 +389,9 @@ decl_module! {
         const DefaultInitialInvitationBalance: BalanceOf<T> =
             T::DefaultInitialInvitationBalance::get();
 
+        /// Exports const - Stake needed to candidate as staking account.
+        const CandidateStake: BalanceOf<T> = T::CandidateStake::get();
+
         /// Non-members can buy membership.
         ///
         /// <weight>

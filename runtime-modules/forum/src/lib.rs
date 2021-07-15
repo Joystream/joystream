@@ -554,6 +554,14 @@ decl_module! {
 
         fn deposit_event() = default;
 
+        /// Exports const
+
+        /// Deposit needed to create a post
+        const PostDeposit: BalanceOf<T> = T::PostDeposit::get();
+
+        /// Deposit needed to create a thread
+        const ThreadDeposit: BalanceOf<T> = T::ThreadDeposit::get();
+
         /// Enable a moderator can moderate a category and its sub categories.
         ///
         /// <weight>
