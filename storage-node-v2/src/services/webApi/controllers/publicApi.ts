@@ -26,7 +26,7 @@ const fsPromises = fs.promises
 /**
  * A public endpoint: serves files by CID.
  */
-export async function files(
+export async function getFile(
   req: express.Request,
   res: express.Response
 ): Promise<void> {
@@ -36,6 +36,7 @@ export async function files(
     const fullPath = path.resolve(uploadsDir, cid)
 
     const fileInfo = await getFileInfo(fullPath)
+    const fileStats = await fsPromises.stat(fullPath)
 
     const stream = send(req, fullPath)
 
@@ -43,52 +44,64 @@ export async function files(
       // serve all files for download
       res.setHeader('Content-Disposition', 'inline')
       res.setHeader('Content-Type', fileInfo.mimeType)
+      res.setHeader('Content-Length', fileStats.size)
     })
 
     stream.on('error', (err) => {
-      // General error
-      let statusCode = 410
-      const errorString = err.toString()
-
-      const errorObj = {
-        type: 'files',
-        message: errorString,
-      }
-
-      // Special case - file not found.
-      if (errorString.includes('ENOENT')) {
-        statusCode = 404
-        errorObj.message = 'File not found'
-      }
-
-      res.status(statusCode).json(errorObj)
+      sendResponseWithError(res, err, 'files')
     })
 
     stream.pipe(res)
   } catch (err) {
-    res.status(410).json({
-      type: 'files',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'files')
+  }
+}
+
+/**
+ * A public endpoint: sends file headers by CID.
+ */
+export async function getFileHeaders(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  try {
+    const cid = getCid(req)
+    const uploadsDir = getUploadsDir(res)
+    const fullPath = path.resolve(uploadsDir, cid)
+    const fileInfo = await getFileInfo(fullPath)
+    const fileStats = await fsPromises.stat(fullPath)
+
+    res.setHeader('Content-Disposition', 'inline')
+    res.setHeader('Content-Type', fileInfo.mimeType)
+    res.setHeader('Content-Length', fileStats.size)
+
+    res.status(200).send()
+  } catch (err) {
+    if (isNofileError(err)) {
+      res.status(404).send()
+    } else {
+      res.status(410).send()
+    }
   }
 }
 
 /**
  * A public endpoint: receives file.
  */
-export async function upload(
+export async function uploadFile(
   req: express.Request,
   res: express.Response
 ): Promise<void> {
   const uploadRequest: RequestData = req.body
 
   // saved filename to delete on verification or extrinsic errors
-  let cleanupFileName = '' 
+  let cleanupFileName = ''
   try {
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
     verifyFileSize(fileObj.size)
+    await verifyFileMimeType(fileObj.path)
 
     const hash = await hashFile(fileObj.path)
 
@@ -125,7 +138,7 @@ export async function upload(
 /**
  * A public endpoint: creates auth token for file uploads.
  */
-export async function authToken(
+export async function authTokenForUploading(
   req: express.Request,
   res: express.Response
 ): Promise<void> {
@@ -302,7 +315,7 @@ async function validateTokenRequest(
  * @returns void promise.
  */
 function verifyFileSize(fileSize: number) {
-  const MAX_FILE_SIZE = 100000 // TODO: Get this const from the runtime
+  const MAX_FILE_SIZE = 1000000 // TODO: Get this const from the runtime
 
   if (fileSize > MAX_FILE_SIZE) {
     throw new Error('Max file size exceeded.')
@@ -329,4 +342,64 @@ async function cleanupFileOnError(
       )
     }
   }
+}
+
+/**
+ * Verifies the mime type of the file by its content. It throws an exception
+ * if the mime type differs from allowed list ('image/', 'video/', 'audio/').
+ *
+ * @param filePath - file path to detect mime types
+ * @param error - external error
+ * @returns void promise.
+ */
+async function verifyFileMimeType(filePath: string): Promise<void> {
+  const allowedMimeTypes = ['image/', 'video/', 'audio/']
+
+  const fileInfo = await getFileInfo(filePath)
+  const correctMimeType = allowedMimeTypes.some((allowedType) =>
+    fileInfo.mimeType.startsWith(allowedType)
+  )
+
+  if (!correctMimeType) {
+    throw new Error(`Incorrect mime type detected: ${fileInfo.mimeType}`)
+  }
+}
+
+/**
+ * Handles errors and sends a response.
+ *
+ * @param res - Response instance
+ * @param err - error
+ * @param errorType - defines request type
+ * @returns void promise.
+ */
+function sendResponseWithError(
+  res: express.Response,
+  err: Error,
+  errorType: string
+): void {
+  const errorString = err.toString()
+  // Special case - file not found.
+  if (isNofileError(err)) {
+    res.status(404).json({
+      type: errorType,
+      message: `File not found.`,
+    })
+    return
+  }
+
+  res.status(410).json({
+    type: errorType,
+    message: errorString,
+  })
+}
+
+/**
+ * Checks the error for 'no-file' error (ENOENT).
+ *
+ * @param err - error
+ * @returns true when error code contains 'ENOENT'.
+ */
+function isNofileError(err: Error): boolean {
+  return err.toString().includes('ENOENT')
 }

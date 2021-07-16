@@ -21,7 +21,7 @@ tags:
 paths:
   /files/{cid}:
     get:
-      operationId: publicApi.files
+      operationId: publicApi.getFile
       description: Returns a media file.
       tags:
         - public
@@ -52,12 +52,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /upload:
+    head:
+      operationId: publicApi.getFileHeaders
+      description: Returns a media file headers.
+      tags:
+        - public
+      parameters:
+        - name: cid
+          required: true
+          in: path
+          description: Content ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+        404:
+          description: File not found
+        410:
+          description: Header request problem
+  /files:
     post:
       security:
         - UploadAuth: []
       description: Upload data
-      operationId: publicApi.upload
+      operationId: publicApi.uploadFile
       tags:
         - public
       requestBody:
@@ -108,7 +127,7 @@ paths:
   /authToken:
     post:
       description: Get auth token from a server.
-      operationId: publicApi.authToken
+      operationId: publicApi.authTokenForUploading
       tags:
         - public
       requestBody:

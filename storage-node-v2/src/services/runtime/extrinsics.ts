@@ -557,8 +557,8 @@ export async function updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
  * @param api - runtime API promise
  * @param account - KeyringPair instance
  * @param cid - content ID (multihash)
- * @param removeCid - defines wether the cid should be removed from the cid,
- * a cid is added when 'false'
+ * @param removeCid - defines whether the cid should be removed from the
+ * blacklist, cid is added when 'false'
  * @returns promise with a success flag.
  */
 export async function updateBlacklist(
