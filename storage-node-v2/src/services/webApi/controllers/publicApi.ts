@@ -13,7 +13,7 @@ import {
 } from '../../../services/helpers/tokenNonceKeeper'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
 import { parseBagId } from '../../helpers/bagTypes'
-
+import logger from '../../../services/logger'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { Membership } from '@joystream/types/members'
@@ -82,14 +82,22 @@ export async function upload(
 ): Promise<void> {
   const uploadRequest: RequestData = req.body
 
+  // saved filename to delete on verification or extrinsic errors
+  let cleanupFileName = '' 
   try {
     const fileObj = getFileObject(req)
+    cleanupFileName = fileObj.path
+
+    verifyFileSize(fileObj.size)
 
     const hash = await hashFile(fileObj.path)
+
+    // Prepare new file name
     const newPath = fileObj.path.replace(fileObj.filename, hash)
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
+    cleanupFileName = newPath
 
     const api = getApi(res)
     const bagId = parseBagId(api, uploadRequest.bagId)
@@ -105,6 +113,8 @@ export async function upload(
       status: 'received',
     })
   } catch (err) {
+    await cleanupFileOnError(cleanupFileName, err.toString())
+
     res.status(410).json({
       type: 'upload',
       message: err.toString(),
@@ -282,5 +292,41 @@ async function validateTokenRequest(
     membership.controller_account.toString() !== tokenRequest.data.accountId
   ) {
     throw new Error(`Provided controller account and member id don't match.`)
+  }
+}
+
+/**
+ * Validates file size. It throws an error when file size exceeds the limit
+ *
+ * @param fileSize - runtime API promise
+ * @returns void promise.
+ */
+function verifyFileSize(fileSize: number) {
+  const MAX_FILE_SIZE = 100000 // TODO: Get this const from the runtime
+
+  if (fileSize > MAX_FILE_SIZE) {
+    throw new Error('Max file size exceeded.')
+  }
+}
+
+/**
+ * Tries to remove file on error. It silences possible IO error and logs it.
+ *
+ * @param cleanupFileName - file path to delete
+ * @param error - external error
+ * @returns void promise.
+ */
+async function cleanupFileOnError(
+  cleanupFileName: string,
+  error: string
+): Promise<void> {
+  if (cleanupFileName) {
+    try {
+      await fsPromises.unlink(cleanupFileName)
+    } catch (err) {
+      logger.error(
+        `Cannot delete the file (${cleanupFileName}) on error: ${error}. IO error: ${err}`
+      )
+    }
   }
 }
