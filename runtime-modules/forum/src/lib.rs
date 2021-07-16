@@ -934,11 +934,7 @@ decl_module! {
             )?;
 
             // Hash poll description and poll alternatives description
-            let poll = if let Some(poll_input) = poll_input.clone() {
-                Some(Self::from_poll_input(poll_input))
-            } else {
-                None
-            };
+            let poll = poll_input.clone().map(Self::from_poll_input);
 
             // Build a new thread
             let new_thread = Thread {
@@ -1688,7 +1684,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure poll alternative size is valid
-    fn ensure_poll_alternatives_length_is_valid<K>(alternatives: &Vec<K>) -> Result<(), Error<T>> {
+    fn ensure_poll_alternatives_length_is_valid<K>(alternatives: &[K]) -> Result<(), Error<T>> {
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>(
             alternatives.len() as u64,
         )?;
