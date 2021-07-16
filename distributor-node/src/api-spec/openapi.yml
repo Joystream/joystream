@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Distributor node API
+  description: Distributor node API
+  contact:
+    email: info@joystream.org
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 0.1.0
+externalDocs:
+  description: Distributor node API
+  url: https://github.com/Joystream/joystream/issues/2224
+servers:
+  - url: http://localhost:3334/api/v1/
+
+tags:
+  - name: public
+    description: Public distributor node API
+
+paths:
+  /asset/{objectId}:
+    get:
+      operationId: public.asset
+      description: Returns a media file.
+      tags:
+        - public
+      parameters:
+        - name: objectId
+          required: true
+          in: path
+          description: Data Object ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Full available object data sent
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            video/*:
+              schema:
+                type: string
+                format: binary
+        206:
+          description: Requested partial object data sent
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            video/*:
+              schema:
+                type: string
+                format: binary
+        400:
+          description: Invalid request. Data object not supported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Data object does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected server error
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        type:
+          type: string
+        message:
+          type: string

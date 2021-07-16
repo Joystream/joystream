@@ -1,0 +1,42 @@
+fragment DataObjectDetails on StorageDataObject {
+  id
+  size
+  ipfsHash
+  isAccepted
+  storageBag {
+    storedBy {
+      id
+      operatorMetadata
+      operatorStatus {
+        __typename
+      }
+    }
+    distributedBy {
+      id
+      operatorMetadata
+    }
+  }
+}
+
+query getDataObjectDetails($id: ID!) {
+  storageDataObjectByUniqueInput(where: { id: $id }) {
+    ...DataObjectDetails
+  }
+}
+
+fragment DistirubtionBucketsWithObjects on DistributionBucket {
+  id
+  distributedBags {
+    objects {
+      id
+      size
+      ipfsHash
+    }
+  }
+}
+
+query getDistributionBucketsWithObjects($ids: [ID!]) {
+  distributionBuckets(where: { id_in: $ids }) {
+    ...DistirubtionBucketsWithObjects
+  }
+}

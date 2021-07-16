@@ -1,0 +1,1037 @@
+interface BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+}
+
+type BaseModel implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+}
+
+type BaseModelUUID implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+}
+
+input BaseWhereInput {
+  id_eq: String
+  id_in: [String!]
+  createdAt_eq: String
+  createdAt_lt: String
+  createdAt_lte: String
+  createdAt_gt: String
+  createdAt_gte: String
+  createdById_eq: String
+  updatedAt_eq: String
+  updatedAt_lt: String
+  updatedAt_lte: String
+  updatedAt_gt: String
+  updatedAt_gte: String
+  updatedById_eq: String
+  deletedAt_all: Boolean
+  deletedAt_eq: String
+  deletedAt_lt: String
+  deletedAt_lte: String
+  deletedAt_gt: String
+  deletedAt_gte: String
+  deletedById_eq: String
+}
+
+"""GraphQL representation of BigInt"""
+scalar BigInt
+
+"""GraphQL representation of Bytes"""
+scalar Bytes
+
+"""
+The javascript `Date` as string. Type represents date and time as the ISO Date string.
+"""
+scalar DateTime
+
+interface DeleteResponse {
+  id: ID!
+}
+
+type DistributionBucket implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+  distributedBags: [StorageBag!]!
+
+  """Distribution bucket operator metadata"""
+  operatorMetadata: Bytes
+}
+
+type DistributionBucketConnection {
+  totalCount: Int!
+  edges: [DistributionBucketEdge!]!
+  pageInfo: PageInfo!
+}
+
+input DistributionBucketCreateInput {
+  operatorMetadata: Bytes
+}
+
+type DistributionBucketEdge {
+  node: DistributionBucket!
+  cursor: String!
+}
+
+enum DistributionBucketOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  operatorMetadata_ASC
+  operatorMetadata_DESC
+}
+
+input DistributionBucketUpdateInput {
+  operatorMetadata: Bytes
+}
+
+input DistributionBucketWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  operatorMetadata_eq: Bytes
+  operatorMetadata_in: [Bytes!]
+  distributedBags_none: StorageBagWhereInput
+  distributedBags_some: StorageBagWhereInput
+  distributedBags_every: StorageBagWhereInput
+  AND: [DistributionBucketWhereInput!]
+  OR: [DistributionBucketWhereInput!]
+}
+
+input DistributionBucketWhereUniqueInput {
+  id: ID!
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type ProcessorState {
+  lastCompleteBlock: Float!
+  lastProcessedEvent: String!
+  indexerHead: Float!
+  chainHead: Float!
+}
+
+type Query {
+  distributionBuckets(offset: Int, limit: Int = 50, where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!]): [DistributionBucket!]!
+  distributionBucketByUniqueInput(where: DistributionBucketWhereUniqueInput!): DistributionBucket
+  distributionBucketsConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!]): DistributionBucketConnection!
+  storageBags(offset: Int, limit: Int = 50, where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!]): [StorageBag!]!
+  storageBagByUniqueInput(where: StorageBagWhereUniqueInput!): StorageBag
+  storageBagsConnection(first: Int, after: String, last: Int, before: String, where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!]): StorageBagConnection!
+  storageBuckets(offset: Int, limit: Int = 50, where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!]): [StorageBucket!]!
+  storageBucketByUniqueInput(where: StorageBucketWhereUniqueInput!): StorageBucket
+  storageBucketsConnection(first: Int, after: String, last: Int, before: String, where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!]): StorageBucketConnection!
+  storageDataObjects(offset: Int, limit: Int = 50, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): [StorageDataObject!]!
+  storageDataObjectByUniqueInput(where: StorageDataObjectWhereUniqueInput!): StorageDataObject
+  storageDataObjectsConnection(first: Int, after: String, last: Int, before: String, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): StorageDataObjectConnection!
+  storageSystemParameters(offset: Int, limit: Int = 50, where: StorageSystemParametersWhereInput, orderBy: [StorageSystemParametersOrderByInput!]): [StorageSystemParameters!]!
+  storageSystemParametersByUniqueInput(where: StorageSystemParametersWhereUniqueInput!): StorageSystemParameters
+  storageSystemParametersConnection(first: Int, after: String, last: Int, before: String, where: StorageSystemParametersWhereInput, orderBy: [StorageSystemParametersOrderByInput!]): StorageSystemParametersConnection!
+}
+
+type StandardDeleteResponse {
+  id: ID!
+}
+
+type StorageBag implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Last time the bag contents (data objects) was updated"""
+  contentsUpdatedAt: DateTime
+  objects: [StorageDataObject!]!
+  storedBy: [StorageBucket!]!
+  distributedBy: [DistributionBucket!]!
+
+  """Owner of the storage bag"""
+  owner: StorageBagOwner!
+}
+
+type StorageBagConnection {
+  totalCount: Int!
+  edges: [StorageBagEdge!]!
+  pageInfo: PageInfo!
+}
+
+input StorageBagCreateInput {
+  contentsUpdatedAt: DateTime
+  owner: JSONObject!
+}
+
+type StorageBagEdge {
+  node: StorageBag!
+  cursor: String!
+}
+
+enum StorageBagOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  contentsUpdatedAt_ASC
+  contentsUpdatedAt_DESC
+}
+
+union StorageBagOwner = StorageBagOwnerCouncil | StorageBagOwnerWorkingGroup | StorageBagOwnerMember | StorageBagOwnerChannel | StorageBagOwnerDAO
+
+type StorageBagOwnerChannel {
+  channelId: Int
+}
+
+input StorageBagOwnerChannelCreateInput {
+  channelId: Float
+}
+
+input StorageBagOwnerChannelUpdateInput {
+  channelId: Float
+}
+
+input StorageBagOwnerChannelWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  channelId_eq: Int
+  channelId_gt: Int
+  channelId_gte: Int
+  channelId_lt: Int
+  channelId_lte: Int
+  channelId_in: [Int!]
+  AND: [StorageBagOwnerChannelWhereInput!]
+  OR: [StorageBagOwnerChannelWhereInput!]
+}
+
+input StorageBagOwnerChannelWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBagOwnerCouncil {
+  phantom: Int
+}
+
+input StorageBagOwnerCouncilCreateInput {
+  phantom: Float
+}
+
+input StorageBagOwnerCouncilUpdateInput {
+  phantom: Float
+}
+
+input StorageBagOwnerCouncilWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  phantom_eq: Int
+  phantom_gt: Int
+  phantom_gte: Int
+  phantom_lt: Int
+  phantom_lte: Int
+  phantom_in: [Int!]
+  AND: [StorageBagOwnerCouncilWhereInput!]
+  OR: [StorageBagOwnerCouncilWhereInput!]
+}
+
+input StorageBagOwnerCouncilWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBagOwnerDAO {
+  daoId: Int
+}
+
+input StorageBagOwnerDAOCreateInput {
+  daoId: Float
+}
+
+input StorageBagOwnerDAOUpdateInput {
+  daoId: Float
+}
+
+input StorageBagOwnerDAOWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  daoId_eq: Int
+  daoId_gt: Int
+  daoId_gte: Int
+  daoId_lt: Int
+  daoId_lte: Int
+  daoId_in: [Int!]
+  AND: [StorageBagOwnerDAOWhereInput!]
+  OR: [StorageBagOwnerDAOWhereInput!]
+}
+
+input StorageBagOwnerDAOWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBagOwnerMember {
+  memberId: Int
+}
+
+input StorageBagOwnerMemberCreateInput {
+  memberId: Float
+}
+
+input StorageBagOwnerMemberUpdateInput {
+  memberId: Float
+}
+
+input StorageBagOwnerMemberWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  memberId_eq: Int
+  memberId_gt: Int
+  memberId_gte: Int
+  memberId_lt: Int
+  memberId_lte: Int
+  memberId_in: [Int!]
+  AND: [StorageBagOwnerMemberWhereInput!]
+  OR: [StorageBagOwnerMemberWhereInput!]
+}
+
+input StorageBagOwnerMemberWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBagOwnerWorkingGroup {
+  workingGroupId: String
+}
+
+input StorageBagOwnerWorkingGroupCreateInput {
+  workingGroupId: String
+}
+
+input StorageBagOwnerWorkingGroupUpdateInput {
+  workingGroupId: String
+}
+
+input StorageBagOwnerWorkingGroupWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  workingGroupId_eq: String
+  workingGroupId_contains: String
+  workingGroupId_startsWith: String
+  workingGroupId_endsWith: String
+  workingGroupId_in: [String!]
+  AND: [StorageBagOwnerWorkingGroupWhereInput!]
+  OR: [StorageBagOwnerWorkingGroupWhereInput!]
+}
+
+input StorageBagOwnerWorkingGroupWhereUniqueInput {
+  id: ID!
+}
+
+input StorageBagUpdateInput {
+  contentsUpdatedAt: DateTime
+  owner: JSONObject
+}
+
+input StorageBagWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  contentsUpdatedAt_eq: DateTime
+  contentsUpdatedAt_lt: DateTime
+  contentsUpdatedAt_lte: DateTime
+  contentsUpdatedAt_gt: DateTime
+  contentsUpdatedAt_gte: DateTime
+  owner_json: JSONObject
+  objects_none: StorageDataObjectWhereInput
+  objects_some: StorageDataObjectWhereInput
+  objects_every: StorageDataObjectWhereInput
+  storedBy_none: StorageBucketWhereInput
+  storedBy_some: StorageBucketWhereInput
+  storedBy_every: StorageBucketWhereInput
+  distributedBy_none: DistributionBucketWhereInput
+  distributedBy_some: DistributionBucketWhereInput
+  distributedBy_every: DistributionBucketWhereInput
+  AND: [StorageBagWhereInput!]
+  OR: [StorageBagWhereInput!]
+}
+
+input StorageBagWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBucket implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Current bucket operator status"""
+  operatorStatus: StorageBucketOperatorStatus!
+
+  """Storage bucket operator metadata"""
+  operatorMetadata: Bytes
+
+  """Whether the bucket is accepting any new storage bags"""
+  acceptingNewBags: Boolean!
+  storedBags: [StorageBag!]!
+
+  """Bucket's data object size limit in bytes"""
+  dataObjectsSizeLimit: BigInt!
+
+  """Bucket's data object count limit"""
+  dataObjectCountLimit: BigInt!
+}
+
+type StorageBucketConnection {
+  totalCount: Int!
+  edges: [StorageBucketEdge!]!
+  pageInfo: PageInfo!
+}
+
+input StorageBucketCreateInput {
+  operatorStatus: JSONObject!
+  operatorMetadata: Bytes
+  acceptingNewBags: Boolean!
+  dataObjectsSizeLimit: BigInt!
+  dataObjectCountLimit: BigInt!
+}
+
+type StorageBucketEdge {
+  node: StorageBucket!
+  cursor: String!
+}
+
+union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
+
+type StorageBucketOperatorStatusActive {
+  workerId: Int!
+}
+
+input StorageBucketOperatorStatusActiveCreateInput {
+  workerId: Float!
+}
+
+input StorageBucketOperatorStatusActiveUpdateInput {
+  workerId: Float
+}
+
+input StorageBucketOperatorStatusActiveWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  workerId_eq: Int
+  workerId_gt: Int
+  workerId_gte: Int
+  workerId_lt: Int
+  workerId_lte: Int
+  workerId_in: [Int!]
+  AND: [StorageBucketOperatorStatusActiveWhereInput!]
+  OR: [StorageBucketOperatorStatusActiveWhereInput!]
+}
+
+input StorageBucketOperatorStatusActiveWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBucketOperatorStatusInvited {
+  workerId: Int!
+}
+
+input StorageBucketOperatorStatusInvitedCreateInput {
+  workerId: Float!
+}
+
+input StorageBucketOperatorStatusInvitedUpdateInput {
+  workerId: Float
+}
+
+input StorageBucketOperatorStatusInvitedWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  workerId_eq: Int
+  workerId_gt: Int
+  workerId_gte: Int
+  workerId_lt: Int
+  workerId_lte: Int
+  workerId_in: [Int!]
+  AND: [StorageBucketOperatorStatusInvitedWhereInput!]
+  OR: [StorageBucketOperatorStatusInvitedWhereInput!]
+}
+
+input StorageBucketOperatorStatusInvitedWhereUniqueInput {
+  id: ID!
+}
+
+type StorageBucketOperatorStatusMissing {
+  phantom: Int
+}
+
+input StorageBucketOperatorStatusMissingCreateInput {
+  phantom: Float
+}
+
+input StorageBucketOperatorStatusMissingUpdateInput {
+  phantom: Float
+}
+
+input StorageBucketOperatorStatusMissingWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  phantom_eq: Int
+  phantom_gt: Int
+  phantom_gte: Int
+  phantom_lt: Int
+  phantom_lte: Int
+  phantom_in: [Int!]
+  AND: [StorageBucketOperatorStatusMissingWhereInput!]
+  OR: [StorageBucketOperatorStatusMissingWhereInput!]
+}
+
+input StorageBucketOperatorStatusMissingWhereUniqueInput {
+  id: ID!
+}
+
+enum StorageBucketOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  operatorMetadata_ASC
+  operatorMetadata_DESC
+  acceptingNewBags_ASC
+  acceptingNewBags_DESC
+  dataObjectsSizeLimit_ASC
+  dataObjectsSizeLimit_DESC
+  dataObjectCountLimit_ASC
+  dataObjectCountLimit_DESC
+}
+
+input StorageBucketUpdateInput {
+  operatorStatus: JSONObject
+  operatorMetadata: Bytes
+  acceptingNewBags: Boolean
+  dataObjectsSizeLimit: BigInt
+  dataObjectCountLimit: BigInt
+}
+
+input StorageBucketWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  operatorStatus_json: JSONObject
+  operatorMetadata_eq: Bytes
+  operatorMetadata_in: [Bytes!]
+  acceptingNewBags_eq: Boolean
+  acceptingNewBags_in: [Boolean!]
+  dataObjectsSizeLimit_eq: BigInt
+  dataObjectsSizeLimit_gt: BigInt
+  dataObjectsSizeLimit_gte: BigInt
+  dataObjectsSizeLimit_lt: BigInt
+  dataObjectsSizeLimit_lte: BigInt
+  dataObjectsSizeLimit_in: [BigInt!]
+  dataObjectCountLimit_eq: BigInt
+  dataObjectCountLimit_gt: BigInt
+  dataObjectCountLimit_gte: BigInt
+  dataObjectCountLimit_lt: BigInt
+  dataObjectCountLimit_lte: BigInt
+  dataObjectCountLimit_in: [BigInt!]
+  storedBags_none: StorageBagWhereInput
+  storedBags_some: StorageBagWhereInput
+  storedBags_every: StorageBagWhereInput
+  AND: [StorageBucketWhereInput!]
+  OR: [StorageBucketWhereInput!]
+}
+
+input StorageBucketWhereUniqueInput {
+  id: ID!
+}
+
+type StorageDataObject implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """
+  Whether the data object was uploaded and accepted by the storage provider
+  """
+  isAccepted: Boolean!
+
+  """Data object size in bytes"""
+  size: BigInt!
+  storageBag: StorageBag!
+  storageBagId: String!
+
+  """IPFS content hash"""
+  ipfsHash: String!
+
+  """Public key used to authenticate the uploader by the storage provider"""
+  authenticationKey: String
+}
+
+type StorageDataObjectConnection {
+  totalCount: Int!
+  edges: [StorageDataObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+input StorageDataObjectCreateInput {
+  isAccepted: Boolean!
+  size: BigInt!
+  storageBag: ID!
+  ipfsHash: String!
+  authenticationKey: String
+}
+
+type StorageDataObjectEdge {
+  node: StorageDataObject!
+  cursor: String!
+}
+
+enum StorageDataObjectOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  isAccepted_ASC
+  isAccepted_DESC
+  size_ASC
+  size_DESC
+  storageBag_ASC
+  storageBag_DESC
+  ipfsHash_ASC
+  ipfsHash_DESC
+  authenticationKey_ASC
+  authenticationKey_DESC
+}
+
+input StorageDataObjectUpdateInput {
+  isAccepted: Boolean
+  size: BigInt
+  storageBag: ID
+  ipfsHash: String
+  authenticationKey: String
+}
+
+input StorageDataObjectWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  isAccepted_eq: Boolean
+  isAccepted_in: [Boolean!]
+  size_eq: BigInt
+  size_gt: BigInt
+  size_gte: BigInt
+  size_lt: BigInt
+  size_lte: BigInt
+  size_in: [BigInt!]
+  storageBag_eq: ID
+  storageBag_in: [ID!]
+  ipfsHash_eq: String
+  ipfsHash_contains: String
+  ipfsHash_startsWith: String
+  ipfsHash_endsWith: String
+  ipfsHash_in: [String!]
+  authenticationKey_eq: String
+  authenticationKey_contains: String
+  authenticationKey_startsWith: String
+  authenticationKey_endsWith: String
+  authenticationKey_in: [String!]
+  storageBag: StorageBagWhereInput
+  AND: [StorageDataObjectWhereInput!]
+  OR: [StorageDataObjectWhereInput!]
+}
+
+input StorageDataObjectWhereUniqueInput {
+  id: ID!
+}
+
+"""Global storage system parameters"""
+type StorageSystemParameters implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Blacklisted content hashes"""
+  blacklist: [String!]!
+}
+
+type StorageSystemParametersConnection {
+  totalCount: Int!
+  edges: [StorageSystemParametersEdge!]!
+  pageInfo: PageInfo!
+}
+
+input StorageSystemParametersCreateInput {
+  blacklist: [String!]!
+}
+
+type StorageSystemParametersEdge {
+  node: StorageSystemParameters!
+  cursor: String!
+}
+
+enum StorageSystemParametersOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+}
+
+input StorageSystemParametersUpdateInput {
+  blacklist: [String!]
+}
+
+input StorageSystemParametersWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  AND: [StorageSystemParametersWhereInput!]
+  OR: [StorageSystemParametersWhereInput!]
+}
+
+input StorageSystemParametersWhereUniqueInput {
+  id: ID!
+}
+
+type Subscription {
+  stateSubscription: ProcessorState!
+}

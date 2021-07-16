@@ -18,6 +18,7 @@
     "types",
     "storage-node-v2",
     "storage-node",
+    "distributor-node",
     "storage-node/packages/*",
     "devops/eslint-config",
     "devops/prettier-config",

@@ -5,6 +5,7 @@
     "./tests/network-tests",
     "./types",
     "./storage-node",
-    "./atlas"
+    "./atlas",
+    "./distributor-node"
   ]
 }
