@@ -121,21 +121,21 @@ const SpendingAndStakeTableRow: React.FC<{
   );
 };
 
+const WORKING_GROUPS = ['storageProviders', 'contentCurators', 'operations'] as const;
+
 type TokenomicsGroup =
   'validators' |
   'council' |
-  'storageProviders' |
-  'contentCurators' |
-  'operations'
+  typeof WORKING_GROUPS[number]
 
 const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerData | null}> = ({ data, statusData }) => {
   const { width } = useWindowDimensions();
 
   const displayStatusData = (group: TokenomicsGroup, dataType: 'rewardsPerWeek' | 'totalStake', lead = false): string | undefined => {
-    if ((group === 'storageProviders' || group === 'contentCurators') && lead) {
+    if ((WORKING_GROUPS.includes(group as any)) && lead) {
       return statusData === null
         ? 'Data currently unavailable...'
-        : (data && statusData) && `${(data[group].lead[dataType] * Number(statusData.price)).toFixed(2)}`;
+        : (data && statusData) && `${(data[group as typeof WORKING_GROUPS[number]].lead[dataType] * Number(statusData.price)).toFixed(2)}`;
     } else {
       return statusData === null
         ? 'Data currently unavailable...'
