@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Invites a storage bucket operator.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:invite-operator"
+ */
 export default class LeaderInviteOperator extends ApiCommandBase {
   static description = `Invite a storage bucket operator. Requires storage working group leader permissions.`
 

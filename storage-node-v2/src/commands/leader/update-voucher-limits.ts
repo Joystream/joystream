@@ -3,6 +3,14 @@ import { updateStorageBucketsVoucherMaxLimits } from '../../services/runtime/ext
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Updates maximum values for storage bucket voucher limits.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-voucher-limits"
+ */
 export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
   static description =
     'Update VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit for the Joystream node storage.'

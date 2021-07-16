@@ -3,6 +3,14 @@ import { uploadDataObjects } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Registers the data object (content ID and its size) in the runtime.
+ *
+ * @remarks
+ * Should be run only during the development.
+ * Shell command: "dev:upload"
+ */
 export default class DevUpload extends ApiCommandBase {
   static description = 'Upload data object (development mode only).'
 

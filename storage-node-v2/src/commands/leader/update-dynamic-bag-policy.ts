@@ -4,6 +4,15 @@ import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 import { parseDynamicBagType } from '../../services/helpers/bagTypes'
 
+/**
+ * CLI command:
+ * Updates dynamic bag creation policy - storage bucket number for new dynamic
+ * bag.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-dynamic-bag-policy"
+ */
 export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
   static description =
     'Update number of storage buckets used in the dynamic bag creation policy.'

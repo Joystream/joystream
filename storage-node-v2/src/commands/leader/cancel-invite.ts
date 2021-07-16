@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Updates the storage bucket status (accept new bags).
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:cancel-invite"
+ */
 export default class LeaderCancelInvite extends ApiCommandBase {
   static description = `Cancel a storage bucket operator invite. Requires storage working group leader permissions.`
 

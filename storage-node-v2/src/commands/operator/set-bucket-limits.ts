@@ -3,6 +3,15 @@ import { setStorageBucketVoucherLimits } from '../../services/runtime/extrinsics
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Sets voucher limits for the storage bucket.
+ *
+ * @remarks
+ * Storage provider (operator) command. Requires an additional worker ID for
+ * runtime verification.
+ * Shell command: "operator:set-bucket-limits"
+ */
 export default class LeaderSetBucketLimits extends ApiCommandBase {
   static description =
     'Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.'

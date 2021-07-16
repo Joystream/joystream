@@ -3,6 +3,15 @@ import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Sets metadata for the storage bucket.
+ *
+ * @remarks
+ * Storage provider (operator) command. Requires an additional worker ID for
+ * runtime verification.
+ * Shell command: "operator:set-metadata"
+ */
 export default class OperatorSetMetadata extends ApiCommandBase {
   static description = 'Accept pending storage bucket invitation.'
 

@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Creates a storage bucket.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:create-bucket"
+ */
 export default class LeaderCreateBucket extends ApiCommandBase {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
 

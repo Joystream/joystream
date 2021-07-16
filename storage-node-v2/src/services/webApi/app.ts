@@ -18,7 +18,15 @@ import {
 import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
 import { httpLogger } from '../../services/logger'
 
-// Creates web API application.
+/**
+ * Creates Express web application. Uses the OAS spec file for the API.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @param workerId - storage provider ID (worker ID)
+ * @param uploadsDir - directory for the file uploading
+ * @returns Express promise.
+ */
 export async function createApp(
   api: ApiPromise,
   account: KeyringPair,
@@ -89,7 +97,13 @@ type ValidateUploadFunction = (
   schema: OpenAPIV3.SecuritySchemeObject
 ) => boolean | Promise<boolean>
 
-// Creates upload validation function.
+/**
+ * Creates upload validation function with captured parameters from the request.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @returns ValidateUploadFunction.
+ */
 function validateUpload(
   api: ApiPromise,
   account: KeyringPair
@@ -116,7 +130,13 @@ function validateUpload(
   }
 }
 
-// Throws exceptions on errors.
+/**
+ * Verifies upload request token. Throws exceptions on errors.
+ *
+ * @param accountAddress - account address (public key)
+ * @param token - token object
+ * @param request - data from the request to validate token
+ */
 function verifyUploadTokenData(
   accountAddress: string,
   token: UploadToken,

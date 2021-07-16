@@ -3,6 +3,14 @@ import { updateStorageBucketsPerBagLimit } from '../../services/runtime/extrinsi
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Sets new storage-buckets-per-bag limit.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-bag-limit"
+ */
 export default class LeaderUpdateBagLimit extends ApiCommandBase {
   static description =
     'Update StorageBucketsPerBagLimit variable in the Joystream node storage.'

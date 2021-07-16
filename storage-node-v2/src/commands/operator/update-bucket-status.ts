@@ -3,6 +3,15 @@ import { updateStorageBucketStatus } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Updates the storage bucket status (accept new bags).
+ *
+ * @remarks
+ * Storage provider (operator) command. Requires an additional worker ID for
+ * runtime verification.
+ * Shell command: "operator:set-metadata"
+ */
 export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
   static description = 'Update storage bucket status (accepting new bags).'
 

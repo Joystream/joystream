@@ -11,6 +11,9 @@ import ExitCodes from './ExitCodes'
 import { CLIError } from '@oclif/errors'
 import { Input } from '@oclif/parser'
 
+/**
+ * Parent class for all runtime-based commands. Defines common functions.
+ */
 export default abstract class ApiCommandBase extends Command {
   private api: ApiPromise | null = null
 
@@ -33,6 +36,11 @@ export default abstract class ApiCommandBase extends Command {
     }),
   }
 
+  /**
+   * Returns the runtime API promise.
+   *
+   * @returns void promise.
+   */
   async finally(err: Error | undefined): Promise<void> {
     // called after run and catch regardless of whether or not the command errored
     // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
@@ -40,6 +48,9 @@ export default abstract class ApiCommandBase extends Command {
     super.finally(err)
   }
 
+  /**
+   * Returns the runtime API promise.
+   */
   protected async getApi(): Promise<ApiPromise> {
     if (this.api === null) {
       throw new CLIError('Runtime Api is uninitialized.', {
@@ -50,6 +61,10 @@ export default abstract class ApiCommandBase extends Command {
     return this.api
   }
 
+  /**
+   * Initilizes the runtime API using the URL from the command line or the
+   * default value (ws://localhost:9944)
+   */
   async init(): Promise<void> {
     // Oclif hack: https://github.com/oclif/oclif/issues/225#issuecomment-490555119
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -62,6 +77,10 @@ export default abstract class ApiCommandBase extends Command {
     await this.getApi()
   }
 
+  /**
+   * Read the chain name from the runtime and throws an error if it's
+   * not 'Development' chain.
+   */
   async ensureDevelopmentChain(): Promise<void> {
     const api = await this.getApi()
 
@@ -78,6 +97,15 @@ export default abstract class ApiCommandBase extends Command {
     logger.info('Development mode is ON.')
   }
 
+  /**
+   * Returns the intialized account KeyringPair instance. Loads the account
+   * JSON-file or loads 'Alice' Keypair when in the development mode.
+   *
+   * @param dev - indicates the development mode (optional).
+   * @param keyfile - key file path (optional).
+   * @param password - password for the key file (optional).
+   * @returns KeyringPair instance.
+   */
   getAccount(flags: {
     dev?: boolean
     keyfile?: string
@@ -101,6 +129,12 @@ export default abstract class ApiCommandBase extends Command {
     return account
   }
 
+  /**
+   * Helper-function for exit after the CLI command. It changes the exit code
+   * depending on the previous extrinsic call success.
+   *
+   * @returns never returns.
+   */
   exitAfterRuntimeCall(success: boolean): never {
     let exitCode = ExitCodes.OK
     if (!success) {

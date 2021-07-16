@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Removes invited storage bucket operator.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:remove-operator"
+ */
 export default class LeaderRemoveOperator extends ApiCommandBase {
   static description = `Remove a storage bucket operator. Requires storage working group leader permissions.`
 

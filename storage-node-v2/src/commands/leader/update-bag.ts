@@ -4,6 +4,14 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import { parseBagId } from '../../services/helpers/bagTypes'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Updates bags-to-buckets relationships.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-bag"
+ */
 export default class LeaderUpdateBag extends ApiCommandBase {
   static description =
     'Add/remove a storage bucket from a bag (adds by default).'

@@ -3,6 +3,15 @@ import { updateBlacklist } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Updates content ID blacklist. The CID blacklist block data object
+ * runtim registration.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-blacklist"
+ */
 export default class LeaderUpdateBlacklist extends ApiCommandBase {
   static description =
     'Add/remove a content ID from the blacklist (adds by default).'
