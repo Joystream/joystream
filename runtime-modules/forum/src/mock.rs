@@ -603,19 +603,17 @@ pub fn good_poll_alternative_text() -> Vec<u8> {
     b"poll alternative".to_vec()
 }
 
-pub fn generate_poll(
+pub fn generate_poll_input(
     expiration_diff: u64,
-) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash> {
-    Poll {
-        description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
+) -> PollInput<<Runtime as pallet_timestamp::Trait>::Moment> {
+    PollInput {
+        description: good_poll_description(),
         end_time: Timestamp::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
-                alternatives.push(PollAlternative {
-                    alternative_text_hash: Runtime::calculate_hash(
-                        good_poll_alternative_text().as_slice(),
-                    ),
+                alternatives.push(PollAlternativeInput {
+                    alternative_text: good_poll_alternative_text(),
                     vote_count: 0,
                 });
             }
@@ -624,11 +622,11 @@ pub fn generate_poll(
     }
 }
 
-pub fn generate_poll_timestamp_cases(
+pub fn generate_poll_input_timestamp_cases(
     index: usize,
     expiration_diff: u64,
-) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash> {
-    let test_cases = vec![generate_poll(expiration_diff), generate_poll(1)];
+) -> PollInput<<Runtime as pallet_timestamp::Trait>::Moment> {
+    let test_cases = vec![generate_poll_input(expiration_diff), generate_poll_input(1)];
     test_cases[index].clone()
 }
 
@@ -671,9 +669,7 @@ pub fn create_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll_data: Option<
-        Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash>,
-    >,
+    poll_input_data: Option<PollInput<<Runtime as pallet_timestamp::Trait>::Moment>>,
     result: DispatchResult,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
@@ -686,7 +682,7 @@ pub fn create_thread_mock(
             category_id,
             title.clone(),
             text.clone(),
-            poll_data.clone(),
+            poll_input_data.clone(),
         ),
         result
     );
@@ -701,7 +697,7 @@ pub fn create_thread_mock(
                 forum_user_id,
                 title.clone(),
                 text.clone(),
-                poll_data.clone()
+                poll_input_data.clone()
             ))
         );
 

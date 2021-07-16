@@ -294,7 +294,7 @@ fn create_new_thread<T: Trait>(
     category_id: T::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll: Option<Poll<T::Moment, T::Hash>>,
+    poll: Option<PollInput<T::Moment>>,
 ) -> T::ThreadId {
     Module::<T>::create_thread(
         RawOrigin::Signed(account_id).into(),
@@ -335,20 +335,18 @@ pub fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
 
-pub fn generate_poll<T: Trait>(
+pub fn generate_poll_input<T: Trait>(
     expiration_diff: T::Moment,
     alternatives_number: u32,
-) -> Poll<T::Moment, T::Hash> {
-    Poll {
-        description_hash: T::calculate_hash(good_poll_description().as_slice()),
+) -> PollInput<T::Moment> {
+    PollInput {
+        description: good_poll_description(),
         end_time: pallet_timestamp::Module::<T>::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..alternatives_number {
-                alternatives.push(PollAlternative {
-                    alternative_text_hash: T::calculate_hash(
-                        good_poll_alternative_text().as_slice(),
-                    ),
+                alternatives.push(PollAlternativeInput {
+                    alternative_text: good_poll_alternative_text(),
                     vote_count: 0,
                 });
             }
@@ -941,18 +939,18 @@ benchmarks! {
 
         let expiration_diff = 1010u32.into();
 
-        let poll = if z == 1 {
+        let poll_input = if z == 1 {
             None
         } else {
             // min number of poll alternatives is set to 2
-            Some(generate_poll::<T>(expiration_diff, z))
+            Some(generate_poll_input::<T>(expiration_diff, z))
         };
 
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
 
-    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, title.clone(), text.clone(), poll.clone())
+    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, title.clone(), text.clone(), poll_input.clone())
     verify {
 
         assert_eq!(
@@ -978,7 +976,7 @@ benchmarks! {
             category_id,
             title_hash: T::calculate_hash(&title),
             author_id: forum_user_id.saturated_into(),
-            poll: poll.clone(),
+            poll: poll_input.clone().map(<Module<T>>::from_poll_input),
             cleanup_pay_off: T::ThreadDeposit::get(),
             number_of_posts: 1,
         };
@@ -1002,7 +1000,7 @@ benchmarks! {
                 forum_user_id.saturated_into(),
                 title,
                 text,
-                poll,
+                poll_input,
             ).into()
         );
     }
@@ -1058,7 +1056,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1270,12 +1268,12 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10u32.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, j));
+        let poll_input = Some(generate_poll_input::<T>(expiration_diff, j));
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
+            text.clone(), text.clone(), poll_input
         );
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
@@ -1328,7 +1326,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -1384,7 +1382,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -1502,7 +1500,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1543,7 +1541,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1597,7 +1595,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1644,7 +1642,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1700,7 +1698,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1777,7 +1775,7 @@ benchmarks! {
         // Create threads
         let expiration_diff = 1010u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1820,7 +1818,7 @@ benchmarks! {
         // Create threads
         let expiration_diff = 1010u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 

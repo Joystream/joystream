@@ -963,7 +963,7 @@ fn create_thread_poll_timestamp() {
             balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
             change_current_time(1);
-            let poll = generate_poll_timestamp_cases(index, expiration_diff);
+            let poll = generate_poll_input_timestamp_cases(index, expiration_diff);
             change_current_time(index as u64 * expiration_diff + 1);
 
             let category_id = create_category_mock(
@@ -1088,7 +1088,7 @@ fn delete_thread() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            Some(generate_poll(10)),
+            Some(generate_poll_input(10)),
             Ok(()),
         );
 
@@ -1434,7 +1434,7 @@ fn vote_on_poll_origin() {
                 category_id,
                 good_thread_title(),
                 good_thread_text(),
-                Some(generate_poll(expiration_diff)),
+                Some(generate_poll_input(expiration_diff)),
                 Ok(()),
             );
 
@@ -1473,7 +1473,7 @@ fn vote_on_poll_fails_on_double_voting() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            Some(generate_poll(expiration_diff)),
+            Some(generate_poll_input(expiration_diff)),
             Ok(()),
         );
 
@@ -1558,7 +1558,7 @@ fn vote_on_poll_expired() {
             category_id,
             good_thread_title(),
             good_thread_text(),
-            Some(generate_poll(expiration_diff)),
+            Some(generate_poll_input(expiration_diff)),
             Ok(()),
         );
         change_current_time(expiration_diff + 1);
