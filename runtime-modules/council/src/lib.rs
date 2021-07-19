@@ -242,10 +242,20 @@ pub trait Trait:
     type MinCandidateStake: Get<Balance<Self>>;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId, LockIdentifier>;
+    type CandidacyLock: StakingHandler<
+        Self::AccountId,
+        Balance<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId, LockIdentifier>;
+    type CouncilorLock: StakingHandler<
+        Self::AccountId,
+        Balance<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;

@@ -128,7 +128,12 @@ pub trait Trait:
     type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>, LockIdentifier>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Work entry Id type
     type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;

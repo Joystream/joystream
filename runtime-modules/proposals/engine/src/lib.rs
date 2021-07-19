@@ -204,7 +204,12 @@ pub trait Trait:
     type ProposalId: From<u32> + Parameter + Default + Copy;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>, LockIdentifier>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
     type CancellationFee: Get<BalanceOf<Self>>;

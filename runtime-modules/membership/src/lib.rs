@@ -123,7 +123,7 @@ pub trait Trait:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
-        LockIdentifier
+        LockIdentifier,
     >;
 
     /// Staking handler used for staking candidate.
@@ -131,7 +131,7 @@ pub trait Trait:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
-        LockIdentifier
+        LockIdentifier,
     >;
 
     /// Weight information for extrinsics in this pallet.

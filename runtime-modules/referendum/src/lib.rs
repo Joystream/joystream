@@ -222,7 +222,12 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type MaxSaltLength: Get<u64>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, Self::MemberId, LockIdentifier>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
 
     /// Origin from which the referendum can be started.
     type ManagerOrigin: EnsureOrigin<Self::Origin>;
@@ -401,7 +406,7 @@ decl_module! {
 
         /// Duration of revealing stage (number of blocks)
         const RevealStageDuration: T::BlockNumber = T::RevealStageDuration::get();
-        
+
         /// Minimum stake needed for voting
         const MinimumStake: BalanceOf<T> = T::MinimumStake::get();
 

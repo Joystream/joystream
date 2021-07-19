@@ -27,7 +27,6 @@ pub trait LockComparator<Balance> {
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
 pub trait StakingHandler<AccountId, Balance, MemberId, LockIdentifier> {
-
     /// Locks the specified balance on the account using specific lock identifier.
     /// It locks for all withdraw reasons.
     fn lock(account_id: &AccountId, amount: Balance);
