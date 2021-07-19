@@ -56,7 +56,7 @@ export async function prepareDataObject(
     typeId: contentParameters.type_id.toNumber(),
     size: customContentParameters.size_in_bytes.toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
-    ipfsContentId: contentParameters.ipfs_content_id.toUtf8(),
+    ipfsContentId: convertBytesToString(contentParameters.ipfs_content_id),
     joystreamContentId: customContentParameters.content_id.encode(),
 
     createdById: '1',
