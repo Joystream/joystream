@@ -51,7 +51,7 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
+use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReason, WithdrawReasons};
 pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
@@ -123,6 +123,7 @@ pub trait Trait:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
+        LockIdentifier
     >;
 
     /// Staking handler used for staking candidate.
@@ -130,6 +131,7 @@ pub trait Trait:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
+        LockIdentifier
     >;
 
     /// Weight information for extrinsics in this pallet.
@@ -391,6 +393,12 @@ decl_module! {
 
         /// Exports const - Stake needed to candidate as staking account.
         const CandidateStake: BalanceOf<T> = T::CandidateStake::get();
+
+        /// Exports const - invited member lock id.
+        const InvitedMemberLockId: LockIdentifier = T::InvitedMemberStakingHandler::lock_id();
+
+        /// Exports const - staking candidate lock id.
+        const StakingCandidateLockId: LockIdentifier = T::StakingCandidateStakingHandler::lock_id();
 
         /// Non-members can buy membership.
         ///

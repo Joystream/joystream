@@ -33,7 +33,7 @@
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
-use frame_support::traits::{EnsureOrigin, Get};
+use frame_support::traits::{EnsureOrigin, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
@@ -222,7 +222,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type MaxSaltLength: Get<u64>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, Self::MemberId>;
+    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, Self::MemberId, LockIdentifier>;
 
     /// Origin from which the referendum can be started.
     type ManagerOrigin: EnsureOrigin<Self::Origin>;
@@ -395,12 +395,18 @@ decl_module! {
         /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
         /// e.g. std::u64::MAX.
         const MaxSaltLength: u64 = T::MaxSaltLength::get();
+
         /// Duration of voting stage (number of blocks)
         const VoteStageDuration: T::BlockNumber = T::VoteStageDuration::get();
+
         /// Duration of revealing stage (number of blocks)
         const RevealStageDuration: T::BlockNumber = T::RevealStageDuration::get();
+        
         /// Minimum stake needed for voting
         const MinimumStake: BalanceOf<T> = T::MinimumStake::get();
+
+        /// Exports const - staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /////////////////// Lifetime ///////////////////////////////////////////
 

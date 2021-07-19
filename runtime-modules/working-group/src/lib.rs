@@ -42,7 +42,7 @@ mod errors;
 mod tests;
 mod types;
 
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
@@ -104,7 +104,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type MaxWorkerNumberLimit: Get<u32>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>, LockIdentifier>;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
@@ -355,6 +355,9 @@ decl_module! {
 
         /// Defines the period every worker gets paid in blocks.
         const RewardPeriod: u32 = T::RewardPeriod::get();
+
+        /// Staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// # <weight>
         ///
