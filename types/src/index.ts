@@ -11,7 +11,6 @@ import hiring from './hiring'
 import contentWorkingGroup from './content-working-group'
 import workingGroup from './working-group'
 import discovery from './discovery'
-import media from './media'
 import proposals from './proposals'
 import contentDirectory from './content-directory'
 import storage from './storage'
@@ -35,7 +34,6 @@ export {
   contentWorkingGroup,
   workingGroup,
   discovery,
-  media,
   proposals,
   contentDirectory,
   storage,
@@ -54,7 +52,6 @@ export const types: RegistryTypes = {
   ...contentWorkingGroup,
   ...workingGroup,
   ...discovery,
-  ...media,
   ...proposals,
   ...contentDirectory,
   ...storage,

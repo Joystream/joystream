@@ -33,10 +33,10 @@ use sp_runtime::Perbill;
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
     ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, ElectionParameters, ForumConfig, GrandpaConfig,
-    ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS,
+    CouncilConfig, CouncilElectionConfig, DistributionWorkingGroupConfig, ElectionParameters,
+    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS,
 };
 
 // Exported to be used by chain-spec-builder
@@ -313,6 +313,13 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+        }),
+        working_group_Instance4: Some(DistributionWorkingGroupConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,

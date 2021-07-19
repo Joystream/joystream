@@ -763,6 +763,400 @@ declare module '@polkadot/api/types/errors' {
        **/
       WorkerHasNoReward: AugmentedError<ApiType>;
     };
+    distributionWorkingGroup: {
+      /**
+       * Opening does not exist.
+       **/
+      AcceptWorkerApplicationsOpeningDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Opening Is Not in Waiting to begin.
+       **/
+      AcceptWorkerApplicationsOpeningIsNotWaitingToBegin: AugmentedError<ApiType>;
+      /**
+       * Opening does not activate in the future.
+       **/
+      AddWorkerOpeningActivatesInThePast: AugmentedError<ApiType>;
+      /**
+       * Add worker opening application stake cannot be zero.
+       **/
+      AddWorkerOpeningApplicationStakeCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Application stake amount less than minimum currency balance.
+       **/
+      AddWorkerOpeningAppliicationStakeLessThanMinimum: AugmentedError<ApiType>;
+      /**
+       * New application was crowded out.
+       **/
+      AddWorkerOpeningNewApplicationWasCrowdedOut: AugmentedError<ApiType>;
+      /**
+       * Opening does not exist.
+       **/
+      AddWorkerOpeningOpeningDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Opening is not in accepting applications stage.
+       **/
+      AddWorkerOpeningOpeningNotInAcceptingApplicationStage: AugmentedError<ApiType>;
+      /**
+       * Add worker opening role stake cannot be zero.
+       **/
+      AddWorkerOpeningRoleStakeCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Role stake amount less than minimum currency balance.
+       **/
+      AddWorkerOpeningRoleStakeLessThanMinimum: AugmentedError<ApiType>;
+      /**
+       * Stake amount too low.
+       **/
+      AddWorkerOpeningStakeAmountTooLow: AugmentedError<ApiType>;
+      /**
+       * Stake missing when required.
+       **/
+      AddWorkerOpeningStakeMissingWhenRequired: AugmentedError<ApiType>;
+      /**
+       * Stake provided when redundant.
+       **/
+      AddWorkerOpeningStakeProvidedWhenRedundant: AugmentedError<ApiType>;
+      /**
+       * Application rationing has zero max active applicants.
+       **/
+      AddWorkerOpeningZeroMaxApplicantCount: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter (application_rationing_policy):
+       * max_active_applicants should be non-zero.
+       **/
+      ApplicationRationingPolicyMaxActiveApplicantsIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter (application_staking_policy):
+       * crowded_out_unstaking_period_length should be non-zero.
+       **/
+      ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter (application_staking_policy):
+       * review_period_expired_unstaking_period_length should be non-zero.
+       **/
+      ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Signer does not match controller account.
+       **/
+      ApplyOnWorkerOpeningSignerNotControllerAccount: AugmentedError<ApiType>;
+      /**
+       * Opening does not exist.
+       **/
+      BeginWorkerApplicantReviewOpeningDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Opening Is Not in Waiting.
+       **/
+      BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin: AugmentedError<ApiType>;
+      /**
+       * Cannot find mint in the minting module.
+       **/
+      CannotFindMint: AugmentedError<ApiType>;
+      /**
+       * There is leader already, cannot hire another one.
+       **/
+      CannotHireLeaderWhenLeaderExists: AugmentedError<ApiType>;
+      /**
+       * Cannot fill opening with multiple applications.
+       **/
+      CannotHireMultipleLeaders: AugmentedError<ApiType>;
+      /**
+       * Current lead is not set.
+       **/
+      CurrentLeadNotSet: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * exit_role_application_stake_unstaking_period should be non-zero.
+       **/
+      ExitRoleApplicationStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * exit_role_stake_unstaking_period should be non-zero.
+       **/
+      ExitRoleStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * fill_opening_failed_applicant_application_stake_unstaking_period should be non-zero.
+       **/
+      FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * fill_opening_failed_applicant_role_stake_unstaking_period should be non-zero.
+       **/
+      FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Reward policy has invalid next payment block number.
+       **/
+      FillOpeningInvalidNextPaymentBlock: AugmentedError<ApiType>;
+      /**
+       * Working group mint does not exist.
+       **/
+      FillOpeningMintDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * fill_opening_successful_applicant_application_stake_unstaking_period should be non-zero.
+       **/
+      FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Applications not for opening.
+       **/
+      FillWorkerOpeningApplicationForWrongOpening: AugmentedError<ApiType>;
+      /**
+       * Application does not exist.
+       **/
+      FullWorkerOpeningApplicationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Application not in active stage.
+       **/
+      FullWorkerOpeningApplicationNotActive: AugmentedError<ApiType>;
+      /**
+       * OpeningDoesNotExist.
+       **/
+      FullWorkerOpeningOpeningDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Opening not in review period stage.
+       **/
+      FullWorkerOpeningOpeningNotInReviewPeriodStage: AugmentedError<ApiType>;
+      /**
+       * Application stake unstaking period for successful applicants redundant.
+       **/
+      FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodRedundant: AugmentedError<ApiType>;
+      /**
+       * Application stake unstaking period for failed applicants too short.
+       **/
+      FullWorkerOpeningSuccessfulApplicationStakeUnstakingPeriodTooShort: AugmentedError<ApiType>;
+      /**
+       * Role stake unstaking period for successful applicants redundant.
+       **/
+      FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodRedundant: AugmentedError<ApiType>;
+      /**
+       * Role stake unstaking period for successful applicants too short.
+       **/
+      FullWorkerOpeningSuccessfulRoleStakeUnstakingPeriodTooShort: AugmentedError<ApiType>;
+      /**
+       * Application stake unstaking period for failed applicants redundant.
+       **/
+      FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodRedundant: AugmentedError<ApiType>;
+      /**
+       * Application stake unstaking period for successful applicants too short.
+       **/
+      FullWorkerOpeningUnsuccessfulApplicationStakeUnstakingPeriodTooShort: AugmentedError<ApiType>;
+      /**
+       * Role stake unstaking period for failed applicants redundant.
+       **/
+      FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodRedundant: AugmentedError<ApiType>;
+      /**
+       * Role stake unstaking period for failed applicants too short.
+       **/
+      FullWorkerOpeningUnsuccessfulRoleStakeUnstakingPeriodTooShort: AugmentedError<ApiType>;
+      /**
+       * Insufficient balance to apply.
+       **/
+      InsufficientBalanceToApply: AugmentedError<ApiType>;
+      /**
+       * Insufficient balance to cover stake.
+       **/
+      InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * Not a lead account.
+       **/
+      IsNotLeadAccount: AugmentedError<ApiType>;
+      /**
+       * Working group size limit exceeded.
+       **/
+      MaxActiveWorkerNumberExceeded: AugmentedError<ApiType>;
+      /**
+       * Member already has an active application on the opening.
+       **/
+      MemberHasActiveApplicationOnOpening: AugmentedError<ApiType>;
+      /**
+       * Member id is invalid.
+       **/
+      MembershipInvalidMemberId: AugmentedError<ApiType>;
+      /**
+       * Unsigned origin.
+       **/
+      MembershipUnsignedOrigin: AugmentedError<ApiType>;
+      /**
+       * Minting error: NextAdjustmentInPast
+       **/
+      MintingErrorNextAdjustmentInPast: AugmentedError<ApiType>;
+      /**
+       * Cannot get the worker stake profile.
+       **/
+      NoWorkerStakeProfile: AugmentedError<ApiType>;
+      /**
+       * Opening does not exist.
+       **/
+      OpeningDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Opening text too long.
+       **/
+      OpeningTextTooLong: AugmentedError<ApiType>;
+      /**
+       * Opening text too short.
+       **/
+      OpeningTextTooShort: AugmentedError<ApiType>;
+      /**
+       * Origin must be controller or root account of member.
+       **/
+      OriginIsNeitherMemberControllerOrRoot: AugmentedError<ApiType>;
+      /**
+       * Origin is not applicant.
+       **/
+      OriginIsNotApplicant: AugmentedError<ApiType>;
+      /**
+       * Next payment is not in the future.
+       **/
+      RecurringRewardsNextPaymentNotInFuture: AugmentedError<ApiType>;
+      /**
+       * Recipient not found.
+       **/
+      RecurringRewardsRecipientNotFound: AugmentedError<ApiType>;
+      /**
+       * Reward relationship not found.
+       **/
+      RecurringRewardsRewardRelationshipNotFound: AugmentedError<ApiType>;
+      /**
+       * Recipient reward source not found.
+       **/
+      RecurringRewardsRewardSourceNotFound: AugmentedError<ApiType>;
+      /**
+       * Relationship must exist.
+       **/
+      RelationshipMustExist: AugmentedError<ApiType>;
+      /**
+       * Require root origin in extrinsics.
+       **/
+      RequireRootOrigin: AugmentedError<ApiType>;
+      /**
+       * Require signed origin in extrinsics.
+       **/
+      RequireSignedOrigin: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter (role_staking_policy):
+       * crowded_out_unstaking_period_length should be non-zero.
+       **/
+      RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter (role_staking_policy):
+       * review_period_expired_unstaking_period_length should be non-zero.
+       **/
+      RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Signer is not worker role account.
+       **/
+      SignerIsNotWorkerRoleAccount: AugmentedError<ApiType>;
+      /**
+       * Provided stake balance cannot be zero.
+       **/
+      StakeBalanceCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Already unstaking.
+       **/
+      StakingErrorAlreadyUnstaking: AugmentedError<ApiType>;
+      /**
+       * Cannot change stake by zero.
+       **/
+      StakingErrorCannotChangeStakeByZero: AugmentedError<ApiType>;
+      /**
+       * Cannot decrease stake while slashes ongoing.
+       **/
+      StakingErrorCannotDecreaseWhileSlashesOngoing: AugmentedError<ApiType>;
+      /**
+       * Cannot increase stake while unstaking.
+       **/
+      StakingErrorCannotIncreaseStakeWhileUnstaking: AugmentedError<ApiType>;
+      /**
+       * Cannot unstake while slashes ongoing.
+       **/
+      StakingErrorCannotUnstakeWhileSlashesOngoing: AugmentedError<ApiType>;
+      /**
+       * Insufficient balance in source account.
+       **/
+      StakingErrorInsufficientBalanceInSourceAccount: AugmentedError<ApiType>;
+      /**
+       * Insufficient stake to decrease.
+       **/
+      StakingErrorInsufficientStake: AugmentedError<ApiType>;
+      /**
+       * Not staked.
+       **/
+      StakingErrorNotStaked: AugmentedError<ApiType>;
+      /**
+       * Slash amount should be greater than zero.
+       **/
+      StakingErrorSlashAmountShouldBeGreaterThanZero: AugmentedError<ApiType>;
+      /**
+       * Stake not found.
+       **/
+      StakingErrorStakeNotFound: AugmentedError<ApiType>;
+      /**
+       * Unstaking period should be greater than zero.
+       **/
+      StakingErrorUnstakingPeriodShouldBeGreaterThanZero: AugmentedError<ApiType>;
+      /**
+       * Successful worker application does not exist.
+       **/
+      SuccessfulWorkerApplicationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * terminate_application_stake_unstaking_period should be non-zero.
+       **/
+      TerminateApplicationStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Invalid OpeningPolicyCommitment parameter:
+       * terminate_role_stake_unstaking_period should be non-zero.
+       **/
+      TerminateRoleStakeUnstakingPeriodIsZero: AugmentedError<ApiType>;
+      /**
+       * Application does not exist.
+       **/
+      WithdrawWorkerApplicationApplicationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Application is not active.
+       **/
+      WithdrawWorkerApplicationApplicationNotActive: AugmentedError<ApiType>;
+      /**
+       * Opening not accepting applications.
+       **/
+      WithdrawWorkerApplicationOpeningNotAcceptingApplications: AugmentedError<ApiType>;
+      /**
+       * Redundant unstaking period provided
+       **/
+      WithdrawWorkerApplicationRedundantUnstakingPeriod: AugmentedError<ApiType>;
+      /**
+       * UnstakingPeriodTooShort .... // <== SHOULD REALLY BE TWO SEPARATE, ONE FOR EACH STAKING PURPOSE
+       **/
+      WithdrawWorkerApplicationUnstakingPeriodTooShort: AugmentedError<ApiType>;
+      /**
+       * Worker application does not exist.
+       **/
+      WorkerApplicationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Worker application text too long.
+       **/
+      WorkerApplicationTextTooLong: AugmentedError<ApiType>;
+      /**
+       * Worker application text too short.
+       **/
+      WorkerApplicationTextTooShort: AugmentedError<ApiType>;
+      /**
+       * Worker does not exist.
+       **/
+      WorkerDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Worker exit rationale text is too long.
+       **/
+      WorkerExitRationaleTextTooLong: AugmentedError<ApiType>;
+      /**
+       * Worker exit rationale text is too short.
+       **/
+      WorkerExitRationaleTextTooShort: AugmentedError<ApiType>;
+      /**
+       * Worker has no recurring reward.
+       **/
+      WorkerHasNoReward: AugmentedError<ApiType>;
+    };
     finalityTracker: {
       /**
        * Final hint must be updated only once in the block
@@ -1182,6 +1576,54 @@ declare module '@polkadot/api/types/errors' {
        **/
       DifferentStorageProviderInvited: AugmentedError<ApiType>;
       /**
+       * Distribution bucket doesn't accept new bags.
+       **/
+      DistributionBucketDoesntAcceptNewBags: AugmentedError<ApiType>;
+      /**
+       * Distribution bucket doesn't exist.
+       **/
+      DistributionBucketDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Distribution bucket family doesn't exist.
+       **/
+      DistributionBucketFamilyDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Distribution bucket id collections are empty.
+       **/
+      DistributionBucketIdCollectionsAreEmpty: AugmentedError<ApiType>;
+      /**
+       * Distribution bucket is bound to a bag.
+       **/
+      DistributionBucketIsBoundToBag: AugmentedError<ApiType>;
+      /**
+       * Distribution bucket is not bound to a bag.
+       **/
+      DistributionBucketIsNotBoundToBag: AugmentedError<ApiType>;
+      /**
+       * The new `DistributionBucketsPerBagLimit` number is too high.
+       **/
+      DistributionBucketsPerBagLimitTooHigh: AugmentedError<ApiType>;
+      /**
+       * The new `DistributionBucketsPerBagLimit` number is too low.
+       **/
+      DistributionBucketsPerBagLimitTooLow: AugmentedError<ApiType>;
+      /**
+       * Distribution family bound to a bag creation policy.
+       **/
+      DistributionFamilyBoundToBagCreationPolicy: AugmentedError<ApiType>;
+      /**
+       * Distribution provider operator already invited.
+       **/
+      DistributionProviderOperatorAlreadyInvited: AugmentedError<ApiType>;
+      /**
+       * Distribution provider operator doesn't exist.
+       **/
+      DistributionProviderOperatorDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Distribution provider operator already set.
+       **/
+      DistributionProviderOperatorSet: AugmentedError<ApiType>;
+      /**
        * Dynamic bag doesn't exist.
        **/
       DynamicBagDoesntExist: AugmentedError<ApiType>;
@@ -1214,9 +1656,33 @@ declare module '@polkadot/api/types/errors' {
        **/
       InvitedStorageProvider: AugmentedError<ApiType>;
       /**
+       * Max distribution bucket family number limit exceeded.
+       **/
+      MaxDistributionBucketFamilyNumberLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Max distribution bucket number per bag limit exceeded.
+       **/
+      MaxDistributionBucketNumberPerBagLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Max distribution bucket number per family limit exceeded.
+       **/
+      MaxDistributionBucketNumberPerFamilyLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Max number of pending invitations limit for a distribution bucket reached.
+       **/
+      MaxNumberOfPendingInvitationsLimitForDistributionBucketReached: AugmentedError<ApiType>;
+      /**
        * Max storage bucket number limit exceeded.
        **/
       MaxStorageBucketNumberLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Invalid operations: must be a distribution provider operator for a bucket.
+       **/
+      MustBeDistributionProviderOperatorForBucket: AugmentedError<ApiType>;
+      /**
+       * No distribution bucket invitation.
+       **/
+      NoDistributionBucketInvitation: AugmentedError<ApiType>;
       /**
        * Empty "data object creation" collection.
        **/

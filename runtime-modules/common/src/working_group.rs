@@ -20,4 +20,7 @@ pub enum WorkingGroup {
 
     /// Storage working group: working_group::Instance3.
     Content = 3isize,
+
+    /// Distribution working group: working_group::Instance4.
+    Distribution = 4isize,
 }
