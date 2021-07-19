@@ -1006,10 +1006,10 @@ decl_module! {
             new_metadata.len().saturated_into(),
         )]
         fn edit_thread_metadata(
-            origin, 
-            forum_user_id: ForumUserId<T>, 
-            category_id: T::CategoryId, 
-            thread_id: T::ThreadId, 
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
             new_metadata: Vec<u8>
         ) -> DispatchResult {
             // Ensure data migration is done
