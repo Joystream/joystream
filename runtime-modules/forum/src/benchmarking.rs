@@ -1694,9 +1694,9 @@ benchmarks! {
             text.clone(), text.clone(), poll
         );
         let hide = false;
-        let mut posts = Vec::new();
+        let mut posts = BTreeMap::new();
         for _ in 0 .. k {
-            posts.push((
+            posts.insert((
                     category_id,
                     thread_id,
                     add_thread_post::<T>(
@@ -1705,9 +1705,8 @@ benchmarks! {
                         category_id,
                         thread_id,
                         vec![0u8],
-                    ),
+                    )),
                     hide
-                )
             );
         }
 
@@ -1734,7 +1733,7 @@ benchmarks! {
         thread.number_of_posts -= k as u64;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        for post in posts.clone() {
+        for (post, _) in &posts {
             assert!(!<PostById<T>>::contains_key(post.1, post.2));
         }
 
