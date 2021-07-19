@@ -17,6 +17,7 @@ use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_runtime::{ModuleId, SaturatedConversion};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::fmt::Debug;
 use sp_std::prelude::*;
@@ -526,7 +527,7 @@ decl_event!(
         PostModerated(PostId, Vec<u8>, PrivilegedActor, CategoryId, ThreadId),
 
         /// Post with givne id was deleted.
-        PostDeleted(Vec<u8>, ForumUserId, Vec<(CategoryId, ThreadId, PostId, bool)>),
+        PostDeleted(Vec<u8>, ForumUserId, BTreeMap<(CategoryId, ThreadId, PostId), bool>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -1444,20 +1445,17 @@ decl_module! {
         fn delete_posts(
             origin,
             forum_user_id: ForumUserId<T>,
-            posts: Vec<(T::CategoryId, T::ThreadId, T::PostId, bool)>,
+            posts: BTreeMap<(T::CategoryId, T::ThreadId, T::PostId), bool>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
-
-            // Check only unique post instances.
-            let unique_posts: BTreeSet<_> = posts.into_iter().collect();
 
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
-            let mut deleting_posts = BTreeSet::new();
-            for (category_id, thread_id, post_id, hide) in &unique_posts {
+            let mut deleting_posts = Vec::new();
+            for ((category_id, thread_id, post_id), hide) in &posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
@@ -1468,7 +1466,7 @@ decl_module! {
                     *hide,
                 )?;
 
-                deleting_posts.insert((category_id, thread_id, post_id, post));
+                deleting_posts.push((category_id, thread_id, post_id, post));
             }
 
             //
@@ -1484,7 +1482,7 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(
-                RawEvent::PostDeleted(rationale, forum_user_id, unique_posts.into_iter().collect())
+                RawEvent::PostDeleted(rationale, forum_user_id, posts)
             );
 
             Ok(())
