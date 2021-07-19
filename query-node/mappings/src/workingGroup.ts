@@ -4,6 +4,7 @@ import { FindConditions } from 'typeorm'
 import { Bytes } from '@polkadot/types'
 
 import {
+  convertBytesToString,
   inconsistentState,
   logger,
 } from './common'
@@ -138,7 +139,7 @@ export async function workingGroup_WorkerStorageUpdated(db: DatabaseManager, wor
     return inconsistentState('Non-existing worker update requested', workerId)
   }
 
-  worker.metadata = newMetadata.toUtf8()
+  worker.metadata = convertBytesToString(newMetadata)
 
   await db.save<Worker>(worker)
 

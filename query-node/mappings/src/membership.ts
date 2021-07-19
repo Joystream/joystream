@@ -1,5 +1,4 @@
 import { fixBlockTimestamp } from './eventFix'
-import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
@@ -7,6 +6,7 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
 
 import {
+  convertBytesToString,
   inconsistentState,
   logger,
   extractExtrinsicArgs,
@@ -201,24 +201,6 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 }
 
 /////////////////// Helpers ////////////////////////////////////////////////////
-
-/*
-  Helper for converting Bytes type to string
-*/
-function convertBytesToString(b: Bytes | null): string {
-  if (!b) {
-    return ''
-  }
-
-  const result = Buffer.from(b.toU8a(true)).toString()
-
-  // prevent utf-8 null character
-  if (result.match(/^\0$/)) {
-    return ''
-  }
-
-  return result
-}
 
 function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   // paid membership?

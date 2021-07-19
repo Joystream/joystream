@@ -1,7 +1,5 @@
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { u64 } from '@polkadot/types/primitive';
-import { SubstrateExtrinsic, ExtrinsicArg } from '@dzlzv/hydra-common'
+import { SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@dzlzv/hydra-common'
+import { Bytes } from '@polkadot/types'
 
 // Asset
 import {
@@ -188,3 +186,21 @@ class Logger {
 }
 
 export const logger = new Logger()
+
+/*
+  Helper for converting Bytes type to string
+*/
+export function convertBytesToString(b: Bytes | null): string {
+  if (!b) {
+    return ''
+  }
+
+  const result = Buffer.from(b.toU8a(true)).toString()
+
+  // prevent utf-8 null character
+  if (result.match(/^\0$/)) {
+    return ''
+  }
+
+  return result
+}
