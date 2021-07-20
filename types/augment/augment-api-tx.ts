@@ -1,9 +1,9 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { BTreeSet, Bytes, Compact, Option, Vec, bool, u16, u32, u64, u8 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u16, u32, u64, u8 } from '@polkadot/types';
 import type { AnyNumber, ITuple } from '@polkadot/types/types';
-import type { ActorId, ApplicationId, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ForumUserId, FundingRequestParameters, GeneralProposalParameters, InviteMembershipParameters, MemberId, MemoText, ModeratorId, ObjectOwner, OpeningId, OpeningType, OracleJudgment, ParticipantId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Poll, PostId, PostReactionId, PrivilegedActor, ProposalDetailsOf, ProposalId, ReplyId, ReplyToDelete, SeriesId, SeriesParameters, StakePolicy, StorageProviderId, ThreadId, ThreadMode, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
+import type { ActorId, ApplicationId, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ForumUserId, FundingRequestParameters, GeneralProposalParameters, InviteMembershipParameters, MemberId, MemoText, ModeratorId, ObjectOwner, OpeningId, OpeningType, OracleJudgment, ParticipantId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PollInput, PostId, PostReactionId, PrivilegedActor, ProposalDetailsOf, ProposalId, ReplyId, ReplyToDelete, SeriesId, SeriesParameters, StakePolicy, StorageProviderId, ThreadId, ThreadMode, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
 import type { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import type { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import type { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -862,7 +862,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(W)
        * # </weight>
        **/
-      createThread: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, poll: Option<Poll> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, CategoryId, Bytes, Bytes, Option<Poll>]>;
+      createThread: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, pollInput: Option<PollInput> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, CategoryId, Bytes, Bytes, Option<PollInput>]>;
       /**
        * Delete category
        * 
@@ -891,7 +891,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(W + P)
        * # </weight>
        **/
-      deletePosts: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, posts: Vec<ITuple<[CategoryId, ThreadId, PostId, bool]>> | ([CategoryId | AnyNumber | Uint8Array, ThreadId | AnyNumber | Uint8Array, PostId | AnyNumber | Uint8Array, bool | boolean | Uint8Array])[], rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, Vec<ITuple<[CategoryId, ThreadId, PostId, bool]>>, Bytes]>;
+      deletePosts: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, posts: BTreeMap<ITuple<[CategoryId, ThreadId, PostId]>, bool>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, BTreeMap<ITuple<[CategoryId, ThreadId, PostId]>, bool>, Bytes]>;
       /**
        * Delete thread
        * 
@@ -932,7 +932,7 @@ declare module '@polkadot/api/types/submittable' {
        * - O(W)
        * # </weight>
        **/
-      editThreadTitle: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newTitle: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, CategoryId, ThreadId, Bytes]>;
+      editThreadMetadata: AugmentedSubmittable<(forumUserId: ForumUserId | AnyNumber | Uint8Array, categoryId: CategoryId | AnyNumber | Uint8Array, threadId: ThreadId | AnyNumber | Uint8Array, newMetadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ForumUserId, CategoryId, ThreadId, Bytes]>;
       /**
        * Moderate post
        * 

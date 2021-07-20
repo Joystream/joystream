@@ -1,4 +1,4 @@
-import { bool, u32, u64, Option, Vec, Null } from '@polkadot/types'
+import { bool, u32, u64, Option, Vec, Null, Bytes } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces'
 import { Hash, ThreadId, PostId, JoyStructDecorated, JoyEnum } from './common'
 import { RegistryTypes } from '@polkadot/types/types'
@@ -62,6 +62,17 @@ export class PrivilegedActor extends JoyEnum({
   Moderator: ModeratorId,
 }) {}
 
+export class PollAlternativeInput extends JoyStructDecorated({
+  alternative_text: Bytes,
+  vote_count: u32,
+}) {}
+
+export class PollInput extends JoyStructDecorated({
+  description: Bytes,
+  end_time: u64,
+  poll_alternatives: Vec.with(PollAlternativeInput),
+}) {}
+
 export const forumTypes: RegistryTypes = {
   ForumUserId,
   ModeratorId,
@@ -73,6 +84,8 @@ export const forumTypes: RegistryTypes = {
   PollAlternative,
   Poll,
   PrivilegedActor,
+  PollAlternativeInput,
+  PollInput,
   // runtime alias
   ThreadOf: Thread,
 }

@@ -139,6 +139,15 @@
             "Moderator": "ModeratorId"
         }
     },
+    "PollAlternativeInput": {
+        "alternative_text": "Bytes",
+        "vote_count": "u32"
+    },
+    "PollInput": {
+        "description": "Bytes",
+        "end_time": "u64",
+        "poll_alternatives": "Vec<PollAlternativeInput>"
+    },
     "ThreadOf": {
         "title_hash": "Hash",
         "category_id": "CategoryId",
