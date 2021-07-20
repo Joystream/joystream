@@ -6,7 +6,7 @@ import { FindConditions, In } from 'typeorm'
 
 import { Content } from '../../../generated/types'
 
-import { inconsistentState, logger, createPredictableId } from '../common'
+import { inconsistentState, logger, getNextId } from '../common'
 
 import { convertContentActorToDataObjectOwner, readProtobuf, readProtobufWithAssets, RawVideoMetadata } from './utils'
 
@@ -368,7 +368,7 @@ async function integrateVideoMediaMetadata(
   db: DatabaseManager,
   existingRecord: Video | null,
   metadata: Partial<Video>,
-  event: SubstrateEvent
+  event: SubstrateEvent,
 ): Promise<Partial<Video>> {
   if (!metadata.mediaMetadata) {
     return metadata
@@ -418,10 +418,10 @@ async function integrateVideoMediaMetadata(
 
   // ensure predictable ids
   if (!mediaMetadata.encoding.id) {
-    mediaMetadata.encoding.id = await createPredictableId(db)
+    mediaMetadata.encoding.id = await getNextId(db)
   }
   if (!mediaMetadata.id) {
-    mediaMetadata.id = await createPredictableId(db)
+    mediaMetadata.id = await getNextId(db)
   }
 
   /// ///////////////// update updatedAt if needed ///////////////////////////////

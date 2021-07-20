@@ -1,6 +1,6 @@
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { Worker, WorkerType } from 'query-node'
-import { logger, createPredictableId } from '../src/common'
+import { logger, getNextId } from '../src/common'
 
 export interface IBootstrapWorkers {
   storage: IBootstrapWorker[]
@@ -30,7 +30,7 @@ export async function bootWorkersInGroup(
     // create new membership
     const worker = new Worker({
       // main data
-      id: await createPredictableId(db),
+      id: await getNextId(db),
       workerId: rawWorker.id,
       type: workerType,
       isActive: true,

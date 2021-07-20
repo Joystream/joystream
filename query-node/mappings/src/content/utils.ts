@@ -28,7 +28,13 @@ import {
 
 import { Content } from '../../../generated/types'
 
-import { invalidMetadata, inconsistentState, logger, prepareDataObject, createPredictableId } from '../common'
+import {
+  invalidMetadata,
+  inconsistentState,
+  logger,
+  prepareDataObject,
+  getNextId,
+} from '../common'
 
 import {
   // primary entities
@@ -284,8 +290,8 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
       result.mediaMetadata = (prepareVideoMetadata(
         metaAsObject,
         videoSize,
-        parameters.event.blockNumber
-      ) as unknown) as VideoMediaMetadata
+        parameters.event.blockNumber,
+      ) as unknown as VideoMediaMetadata)
 
       // remove extra values
       delete metaAsObject.mediaType
@@ -446,7 +452,7 @@ function handlePublishedBeforeJoystream(
 interface IConvertAssetParameters {
   rawAsset: NewAsset
   db: DatabaseManager
-  event: SubstrateEvent
+  event: SubstrateEvent,
   contentOwner: typeof DataObjectOwner
 }
 
@@ -469,7 +475,7 @@ async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetS
     parameters.db,
     contentParameters,
     parameters.event,
-    parameters.contentOwner
+    parameters.contentOwner,
   )
 
   return dataObject
@@ -594,7 +600,7 @@ function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): n
 async function prepareLanguage(
   languageIso: string | undefined,
   db: DatabaseManager,
-  event: SubstrateEvent
+  event: SubstrateEvent,
 ): Promise<PropertyChange<Language>> {
   // is language being unset?
   if (languageIso === undefined) {
@@ -620,7 +626,7 @@ async function prepareLanguage(
 
   // create new language
   const newLanguage = new Language({
-    id: await createPredictableId(db),
+    id: await getNextId(db),
     iso: languageIso,
     createdInBlock: event.blockNumber,
 
@@ -658,7 +664,7 @@ async function prepareLicense(
   // crete new license
   const license = new License({
     ...licenseProtobuf,
-    id: await createPredictableId(db),
+    id: await getNextId(db),
 
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
     updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),

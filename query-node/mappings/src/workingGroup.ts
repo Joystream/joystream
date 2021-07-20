@@ -4,7 +4,7 @@ import { FindConditions } from 'typeorm'
 import { Bytes } from '@polkadot/types'
 import { fixBlockTimestamp } from './eventFix'
 
-import { inconsistentState, logger, createPredictableId } from './common'
+import { inconsistentState, logger, getNextId } from './common'
 
 import { Channel, Worker, WorkerType } from 'query-node'
 import { GatewayWorkingGroup, StorageWorkingGroup } from '../../generated/types'
@@ -106,7 +106,7 @@ export async function workingGroup_OpeningFilled(
   db: DatabaseManager,
   workerType: WorkerType,
   applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap,
-  event: SubstrateEvent
+  event: SubstrateEvent,
 ): Promise<void> {
   const workerIds = [...applicationIdToWorkerIdMap.values()]
 
@@ -190,11 +190,11 @@ async function createWorker(
   db: DatabaseManager,
   workerId: WorkerId,
   workerType: WorkerType,
-  event: SubstrateEvent
+  event: SubstrateEvent,
 ): Promise<void> {
   // create entity
   const newWorker = new Worker({
-    id: await createPredictableId(db),
+    id: await getNextId(db),
     workerId: workerId.toString(),
     type: workerType,
     isActive: true,
