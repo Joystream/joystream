@@ -19,7 +19,7 @@ const dataObjectIgnoredFields = [
 const exampleDate = `"2018-01-31 23:59"`
 
 export const queryTemplates: IQueryTemplate[] = [
-  ...queryTemplateUtils.getOneGetAllTemplates('video', 'videos', 'videos', commonIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('video', 'videos', 'videos', dataObjectIgnoredFields),
   {
     title: 'Featured videos',
     description: 'Get all featured videos.',
@@ -51,7 +51,7 @@ export const queryTemplates: IQueryTemplate[] = [
       videos(where: { categoryId_eq: 1 }) { ${queryTemplateUtils.allPropsMarker} }
     }`,
   },
-  ...queryTemplateUtils.getOneGetAllTemplates('channel', 'channels', 'channels', commonIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('channel', 'channels', 'channels', dataObjectIgnoredFields),
   ...queryTemplateUtils.getOneGetAllTemplates('channel category', 'channels categories', 'channelCategories', commonIgnoredFields),
 
   {
@@ -68,5 +68,5 @@ export const queryTemplates: IQueryTemplate[] = [
   ...queryTemplateUtils.getOneGetAllTemplates('membership', 'memberships', 'memberships', commonIgnoredFields),
 
   ...queryTemplateUtils.getOneGetAllTemplates('curator group', 'curator groups', 'curatorGroups', commonIgnoredFields),
-  ...queryTemplateUtils.getOneGetAllTemplates('worker', 'workers', 'workers', commonIgnoredFields),
+  ...queryTemplateUtils.getOneGetAllTemplates('worker', 'workers', 'workers', dataObjectIgnoredFields),
 ].map(queryTemplateUtils.formatQuery)
