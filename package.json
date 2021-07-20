@@ -1,3 +1,4 @@
+
 {
   "private": true,
   "name": "joystream",
@@ -37,7 +38,7 @@
     "@polkadot/util": "^6.0.5",
     "@polkadot/util-crypto": "^6.0.5",
     "@polkadot/wasm-crypto": "^4.0.2",
-    "warthog": "https://github.com/ondratra/warthog/releases/download/v2.23.1/warthog-v2.23.1.tgz",
+    "warthog": "https://github.com/Joystream/warthog/releases/download/v2.37.0/joystream-warthog-v2.37.0.tgz",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",

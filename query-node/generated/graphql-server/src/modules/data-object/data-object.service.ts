@@ -13,7 +13,7 @@ export class DataObjectService extends BaseService<DataObject> {
 
   async find<W extends WhereInput>(
     where?: any,
-    orderBy?: string,
+    orderBy?: string | string[],
     limit?: number,
     offset?: number,
     fields?: string[]

@@ -22,7 +22,13 @@ export class VideoMediaEncoding extends BaseModel {
   })
   mimeMediaType?: string;
 
-  @OneToMany(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.encoding, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.encoding, {
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'VideoMediaEncoding',
+    relModelName: 'VideoMediaMetadata',
+    propertyName: 'videomediametadataencoding',
+  })
   videomediametadataencoding?: VideoMediaMetadata[];
 
   constructor(init?: Partial<VideoMediaEncoding>) {

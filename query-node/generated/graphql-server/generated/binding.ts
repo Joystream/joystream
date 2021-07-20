@@ -6,47 +6,44 @@ import { IResolvers } from 'graphql-tools/dist/Interfaces'
 import * as schema from  './schema.graphql'
 
 export interface Query {
-    curatorGroups: <T = Array<CuratorGroup>>(args: { offset?: Int | null, limit?: Int | null, where?: CuratorGroupWhereInput | null, orderBy?: CuratorGroupOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    curatorGroups: <T = Array<CuratorGroup>>(args: { offset?: Int | null, limit?: Int | null, where?: CuratorGroupWhereInput | null, orderBy?: Array<CuratorGroupOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     curatorGroupByUniqueInput: <T = CuratorGroup | null>(args: { where: CuratorGroupWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     curatorGroupsConnection: <T = CuratorGroupConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: CuratorGroupWhereInput | null, orderBy?: CuratorGroupOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    dataObjects: <T = Array<DataObject>>(args: { offset?: Int | null, limit?: Int | null, where?: DataObjectWhereInput | null, orderBy?: DataObjectOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    dataObjects: <T = Array<DataObject>>(args: { offset?: Int | null, limit?: Int | null, where?: DataObjectWhereInput | null, orderBy?: Array<DataObjectOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     dataObjectByUniqueInput: <T = DataObject | null>(args: { where: DataObjectWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     dataObjectsConnection: <T = DataObjectConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: DataObjectWhereInput | null, orderBy?: DataObjectOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    featuredVideos: <T = Array<FeaturedVideo>>(args: { offset?: Int | null, limit?: Int | null, where?: FeaturedVideoWhereInput | null, orderBy?: FeaturedVideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    featuredVideoByUniqueInput: <T = FeaturedVideo | null>(args: { where: FeaturedVideoWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
-    featuredVideosConnection: <T = FeaturedVideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: FeaturedVideoWhereInput | null, orderBy?: FeaturedVideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    channelCategories: <T = Array<ChannelCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelCategoryWhereInput | null, orderBy?: ChannelCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    channelCategories: <T = Array<ChannelCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelCategoryWhereInput | null, orderBy?: Array<ChannelCategoryOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     channelCategoryByUniqueInput: <T = ChannelCategory | null>(args: { where: ChannelCategoryWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     channelCategoriesConnection: <T = ChannelCategoryConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: ChannelCategoryWhereInput | null, orderBy?: ChannelCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    channels: <T = Array<Channel>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelWhereInput | null, orderBy?: ChannelOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    channels: <T = Array<Channel>>(args: { offset?: Int | null, limit?: Int | null, where?: ChannelWhereInput | null, orderBy?: Array<ChannelOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     channelByUniqueInput: <T = Channel | null>(args: { where: ChannelWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     channelsConnection: <T = ChannelConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: ChannelWhereInput | null, orderBy?: ChannelOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    languages: <T = Array<Language>>(args: { offset?: Int | null, limit?: Int | null, where?: LanguageWhereInput | null, orderBy?: LanguageOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    languages: <T = Array<Language>>(args: { offset?: Int | null, limit?: Int | null, where?: LanguageWhereInput | null, orderBy?: Array<LanguageOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     languageByUniqueInput: <T = Language | null>(args: { where: LanguageWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     languagesConnection: <T = LanguageConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: LanguageWhereInput | null, orderBy?: LanguageOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    licenses: <T = Array<License>>(args: { offset?: Int | null, limit?: Int | null, where?: LicenseWhereInput | null, orderBy?: LicenseOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    licenses: <T = Array<License>>(args: { offset?: Int | null, limit?: Int | null, where?: LicenseWhereInput | null, orderBy?: Array<LicenseOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     licenseByUniqueInput: <T = License | null>(args: { where: LicenseWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     licensesConnection: <T = LicenseConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: LicenseWhereInput | null, orderBy?: LicenseOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    memberships: <T = Array<Membership>>(args: { offset?: Int | null, limit?: Int | null, where?: MembershipWhereInput | null, orderBy?: MembershipOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    memberships: <T = Array<Membership>>(args: { offset?: Int | null, limit?: Int | null, where?: MembershipWhereInput | null, orderBy?: Array<MembershipOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     membershipByUniqueInput: <T = Membership | null>(args: { where: MembershipWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     membershipsConnection: <T = MembershipConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: MembershipWhereInput | null, orderBy?: MembershipOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     channelCategoriesByName: <T = Array<ChannelCategoriesByNameFTSOutput>>(args: { whereChannelCategory?: ChannelCategoryWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     membersByHandle: <T = Array<MembersByHandleFTSOutput>>(args: { whereMembership?: MembershipWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     search: <T = Array<SearchFTSOutput>>(args: { whereVideo?: VideoWhereInput | null, whereChannel?: ChannelWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoCategoriesByName: <T = Array<VideoCategoriesByNameFTSOutput>>(args: { whereVideoCategory?: VideoCategoryWhereInput | null, skip?: Int | null, limit?: Int | null, text: String }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    videoCategories: <T = Array<VideoCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoCategoryWhereInput | null, orderBy?: VideoCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    videoCategories: <T = Array<VideoCategory>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoCategoryWhereInput | null, orderBy?: Array<VideoCategoryOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoCategoryByUniqueInput: <T = VideoCategory | null>(args: { where: VideoCategoryWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     videoCategoriesConnection: <T = VideoCategoryConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoCategoryWhereInput | null, orderBy?: VideoCategoryOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    videoMediaEncodings: <T = Array<VideoMediaEncoding>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoMediaEncodingWhereInput | null, orderBy?: VideoMediaEncodingOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    videoMediaEncodings: <T = Array<VideoMediaEncoding>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoMediaEncodingWhereInput | null, orderBy?: Array<VideoMediaEncodingOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoMediaEncodingByUniqueInput: <T = VideoMediaEncoding | null>(args: { where: VideoMediaEncodingWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     videoMediaEncodingsConnection: <T = VideoMediaEncodingConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoMediaEncodingWhereInput | null, orderBy?: VideoMediaEncodingOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    videoMediaMetadata: <T = Array<VideoMediaMetadata>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoMediaMetadataWhereInput | null, orderBy?: VideoMediaMetadataOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    videoMediaMetadata: <T = Array<VideoMediaMetadata>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoMediaMetadataWhereInput | null, orderBy?: Array<VideoMediaMetadataOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoMediaMetadataByUniqueInput: <T = VideoMediaMetadata | null>(args: { where: VideoMediaMetadataWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     videoMediaMetadataConnection: <T = VideoMediaMetadataConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoMediaMetadataWhereInput | null, orderBy?: VideoMediaMetadataOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    videos: <T = Array<Video>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    videos: <T = Array<Video>>(args: { offset?: Int | null, limit?: Int | null, where?: VideoWhereInput | null, orderBy?: Array<VideoOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     videoByUniqueInput: <T = Video | null>(args: { where: VideoWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     videosConnection: <T = VideoConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: VideoWhereInput | null, orderBy?: VideoOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
-    workers: <T = Array<Worker>>(args: { offset?: Int | null, limit?: Int | null, where?: WorkerWhereInput | null, orderBy?: WorkerOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
+    workers: <T = Array<Worker>>(args: { offset?: Int | null, limit?: Int | null, where?: WorkerWhereInput | null, orderBy?: Array<WorkerOrderByInput> | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> ,
     workerByUniqueInput: <T = Worker | null>(args: { where: WorkerWhereUniqueInput }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T | null> ,
     workersConnection: <T = WorkerConnection>(args: { first?: Int | null, after?: String | null, last?: Int | null, before?: String | null, where?: WorkerWhereInput | null, orderBy?: WorkerOrderByInput | null }, info?: GraphQLResolveInfo | string, options?: Options) => Promise<T> 
   }
@@ -106,23 +103,14 @@ export type DataObjectOrderByInput =   'createdAt_ASC' |
   'typeId_DESC' |
   'size_ASC' |
   'size_DESC' |
-  'liaisonId_ASC' |
-  'liaisonId_DESC' |
+  'liaison_ASC' |
+  'liaison_DESC' |
   'liaisonJudgement_ASC' |
   'liaisonJudgement_DESC' |
   'ipfsContentId_ASC' |
   'ipfsContentId_DESC' |
   'joystreamContentId_ASC' |
   'joystreamContentId_DESC'
-
-export type FeaturedVideoOrderByInput =   'createdAt_ASC' |
-  'createdAt_DESC' |
-  'updatedAt_ASC' |
-  'updatedAt_DESC' |
-  'deletedAt_ASC' |
-  'deletedAt_DESC' |
-  'videoId_ASC' |
-  'videoId_DESC'
 
 export type ChannelCategoryOrderByInput =   'createdAt_ASC' |
   'createdAt_DESC' |
@@ -141,32 +129,32 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'updatedAt_DESC' |
   'deletedAt_ASC' |
   'deletedAt_DESC' |
-  'ownerMemberId_ASC' |
-  'ownerMemberId_DESC' |
-  'ownerCuratorGroupId_ASC' |
-  'ownerCuratorGroupId_DESC' |
-  'categoryId_ASC' |
-  'categoryId_DESC' |
+  'ownerMember_ASC' |
+  'ownerMember_DESC' |
+  'ownerCuratorGroup_ASC' |
+  'ownerCuratorGroup_DESC' |
+  'category_ASC' |
+  'category_DESC' |
   'rewardAccount_ASC' |
   'rewardAccount_DESC' |
   'title_ASC' |
   'title_DESC' |
   'description_ASC' |
   'description_DESC' |
-  'coverPhotoDataObjectId_ASC' |
-  'coverPhotoDataObjectId_DESC' |
+  'coverPhotoDataObject_ASC' |
+  'coverPhotoDataObject_DESC' |
   'coverPhotoAvailability_ASC' |
   'coverPhotoAvailability_DESC' |
-  'avatarPhotoDataObjectId_ASC' |
-  'avatarPhotoDataObjectId_DESC' |
+  'avatarPhotoDataObject_ASC' |
+  'avatarPhotoDataObject_DESC' |
   'avatarPhotoAvailability_ASC' |
   'avatarPhotoAvailability_DESC' |
   'isPublic_ASC' |
   'isPublic_DESC' |
   'isCensored_ASC' |
   'isCensored_DESC' |
-  'languageId_ASC' |
-  'languageId_DESC' |
+  'language_ASC' |
+  'language_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC'
 
@@ -254,8 +242,8 @@ export type VideoMediaMetadataOrderByInput =   'createdAt_ASC' |
   'updatedAt_DESC' |
   'deletedAt_ASC' |
   'deletedAt_DESC' |
-  'encodingId_ASC' |
-  'encodingId_DESC' |
+  'encoding_ASC' |
+  'encoding_DESC' |
   'pixelWidth_ASC' |
   'pixelWidth_DESC' |
   'pixelHeight_ASC' |
@@ -271,22 +259,22 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'updatedAt_DESC' |
   'deletedAt_ASC' |
   'deletedAt_DESC' |
-  'channelId_ASC' |
-  'channelId_DESC' |
-  'categoryId_ASC' |
-  'categoryId_DESC' |
+  'channel_ASC' |
+  'channel_DESC' |
+  'category_ASC' |
+  'category_DESC' |
   'title_ASC' |
   'title_DESC' |
   'description_ASC' |
   'description_DESC' |
   'duration_ASC' |
   'duration_DESC' |
-  'thumbnailPhotoDataObjectId_ASC' |
-  'thumbnailPhotoDataObjectId_DESC' |
+  'thumbnailPhotoDataObject_ASC' |
+  'thumbnailPhotoDataObject_DESC' |
   'thumbnailPhotoAvailability_ASC' |
   'thumbnailPhotoAvailability_DESC' |
-  'languageId_ASC' |
-  'languageId_DESC' |
+  'language_ASC' |
+  'language_DESC' |
   'hasMarketing_ASC' |
   'hasMarketing_DESC' |
   'publishedBeforeJoystream_ASC' |
@@ -297,14 +285,14 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'isCensored_DESC' |
   'isExplicit_ASC' |
   'isExplicit_DESC' |
-  'licenseId_ASC' |
-  'licenseId_DESC' |
-  'mediaDataObjectId_ASC' |
-  'mediaDataObjectId_DESC' |
+  'license_ASC' |
+  'license_DESC' |
+  'mediaDataObject_ASC' |
+  'mediaDataObject_DESC' |
   'mediaAvailability_ASC' |
   'mediaAvailability_DESC' |
-  'mediaMetadataId_ASC' |
-  'mediaMetadataId_DESC' |
+  'mediaMetadata_ASC' |
+  'mediaMetadata_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC' |
   'isFeatured_ASC' |
@@ -387,8 +375,16 @@ export interface CuratorGroupWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
+  curatorIds_containsAll?: Int[] | Int | null
+  curatorIds_containsNone?: Int[] | Int | null
+  curatorIds_containsAny?: Int[] | Int | null
   isActive_eq?: Boolean | null
   isActive_in?: Boolean[] | Boolean | null
+  channels_none?: ChannelWhereInput | null
+  channels_some?: ChannelWhereInput | null
+  channels_every?: ChannelWhereInput | null
+  AND?: CuratorGroupWhereInput[] | CuratorGroupWhereInput | null
+  OR?: CuratorGroupWhereInput[] | CuratorGroupWhereInput | null
 }
 
 export interface CuratorGroupWhereUniqueInput {
@@ -400,7 +396,7 @@ export interface DataObjectCreateInput {
   createdInBlock: Float
   typeId: Float
   size: Float
-  liaisonId?: ID_Input | null
+  liaison?: ID_Input | null
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
@@ -445,6 +441,8 @@ export interface DataObjectOwnerCouncilWhereInput {
   dummy_lt?: Int | null
   dummy_lte?: Int | null
   dummy_in?: Int[] | Int | null
+  AND?: DataObjectOwnerCouncilWhereInput[] | DataObjectOwnerCouncilWhereInput | null
+  OR?: DataObjectOwnerCouncilWhereInput[] | DataObjectOwnerCouncilWhereInput | null
 }
 
 export interface DataObjectOwnerCouncilWhereUniqueInput {
@@ -490,6 +488,8 @@ export interface DataObjectOwnerDaoWhereInput {
   dao_lt?: Int | null
   dao_lte?: Int | null
   dao_in?: Int[] | Int | null
+  AND?: DataObjectOwnerDaoWhereInput[] | DataObjectOwnerDaoWhereInput | null
+  OR?: DataObjectOwnerDaoWhereInput[] | DataObjectOwnerDaoWhereInput | null
 }
 
 export interface DataObjectOwnerDaoWhereUniqueInput {
@@ -543,6 +543,8 @@ export interface DataObjectOwnerChannelWhereInput {
   dummy_lt?: Int | null
   dummy_lte?: Int | null
   dummy_in?: Int[] | Int | null
+  AND?: DataObjectOwnerChannelWhereInput[] | DataObjectOwnerChannelWhereInput | null
+  OR?: DataObjectOwnerChannelWhereInput[] | DataObjectOwnerChannelWhereInput | null
 }
 
 export interface DataObjectOwnerChannelWhereUniqueInput {
@@ -596,6 +598,8 @@ export interface DataObjectOwnerMemberWhereInput {
   dummy_lt?: Int | null
   dummy_lte?: Int | null
   dummy_in?: Int[] | Int | null
+  AND?: DataObjectOwnerMemberWhereInput[] | DataObjectOwnerMemberWhereInput | null
+  OR?: DataObjectOwnerMemberWhereInput[] | DataObjectOwnerMemberWhereInput | null
 }
 
 export interface DataObjectOwnerMemberWhereUniqueInput {
@@ -641,6 +645,8 @@ export interface DataObjectOwnerWorkingGroupWhereInput {
   workingGroup_lt?: Int | null
   workingGroup_lte?: Int | null
   workingGroup_in?: Int[] | Int | null
+  AND?: DataObjectOwnerWorkingGroupWhereInput[] | DataObjectOwnerWorkingGroupWhereInput | null
+  OR?: DataObjectOwnerWorkingGroupWhereInput[] | DataObjectOwnerWorkingGroupWhereInput | null
 }
 
 export interface DataObjectOwnerWorkingGroupWhereUniqueInput {
@@ -652,7 +658,7 @@ export interface DataObjectUpdateInput {
   createdInBlock?: Float | null
   typeId?: Float | null
   size?: Float | null
-  liaisonId?: ID_Input | null
+  liaison?: ID_Input | null
   liaisonJudgement?: LiaisonJudgement | null
   ipfsContentId?: String | null
   joystreamContentId?: String | null
@@ -702,8 +708,6 @@ export interface DataObjectWhereInput {
   size_lt?: Float | null
   size_lte?: Float | null
   size_in?: Float[] | Float | null
-  liaisonId_eq?: ID_Input | null
-  liaisonId_in?: ID_Output[] | ID_Output | null
   liaisonJudgement_eq?: LiaisonJudgement | null
   liaisonJudgement_in?: LiaisonJudgement[] | LiaisonJudgement | null
   ipfsContentId_eq?: String | null
@@ -716,50 +720,24 @@ export interface DataObjectWhereInput {
   joystreamContentId_startsWith?: String | null
   joystreamContentId_endsWith?: String | null
   joystreamContentId_in?: String[] | String | null
+  liaison?: WorkerWhereInput | null
+  channelcoverPhotoDataObject_none?: ChannelWhereInput | null
+  channelcoverPhotoDataObject_some?: ChannelWhereInput | null
+  channelcoverPhotoDataObject_every?: ChannelWhereInput | null
+  channelavatarPhotoDataObject_none?: ChannelWhereInput | null
+  channelavatarPhotoDataObject_some?: ChannelWhereInput | null
+  channelavatarPhotoDataObject_every?: ChannelWhereInput | null
+  videothumbnailPhotoDataObject_none?: VideoMediaMetadataWhereInput | null
+  videothumbnailPhotoDataObject_some?: VideoMediaMetadataWhereInput | null
+  videothumbnailPhotoDataObject_every?: VideoMediaMetadataWhereInput | null
+  videomediaDataObject_none?: VideoMediaMetadataWhereInput | null
+  videomediaDataObject_some?: VideoMediaMetadataWhereInput | null
+  videomediaDataObject_every?: VideoMediaMetadataWhereInput | null
+  AND?: DataObjectWhereInput[] | DataObjectWhereInput | null
+  OR?: DataObjectWhereInput[] | DataObjectWhereInput | null
 }
 
 export interface DataObjectWhereUniqueInput {
-  id: ID_Output
-}
-
-export interface FeaturedVideoCreateInput {
-  videoId: ID_Output
-}
-
-export interface FeaturedVideoUpdateInput {
-  videoId?: ID_Input | null
-}
-
-export interface FeaturedVideoWhereInput {
-  id_eq?: ID_Input | null
-  id_in?: ID_Output[] | ID_Output | null
-  createdAt_eq?: DateTime | null
-  createdAt_lt?: DateTime | null
-  createdAt_lte?: DateTime | null
-  createdAt_gt?: DateTime | null
-  createdAt_gte?: DateTime | null
-  createdById_eq?: ID_Input | null
-  createdById_in?: ID_Output[] | ID_Output | null
-  updatedAt_eq?: DateTime | null
-  updatedAt_lt?: DateTime | null
-  updatedAt_lte?: DateTime | null
-  updatedAt_gt?: DateTime | null
-  updatedAt_gte?: DateTime | null
-  updatedById_eq?: ID_Input | null
-  updatedById_in?: ID_Output[] | ID_Output | null
-  deletedAt_all?: Boolean | null
-  deletedAt_eq?: DateTime | null
-  deletedAt_lt?: DateTime | null
-  deletedAt_lte?: DateTime | null
-  deletedAt_gt?: DateTime | null
-  deletedAt_gte?: DateTime | null
-  deletedById_eq?: ID_Input | null
-  deletedById_in?: ID_Output[] | ID_Output | null
-  videoId_eq?: ID_Input | null
-  videoId_in?: ID_Output[] | ID_Output | null
-}
-
-export interface FeaturedVideoWhereUniqueInput {
   id: ID_Output
 }
 
@@ -809,6 +787,11 @@ export interface ChannelCategoryWhereInput {
   createdInBlock_lt?: Int | null
   createdInBlock_lte?: Int | null
   createdInBlock_in?: Int[] | Int | null
+  channels_none?: ChannelWhereInput | null
+  channels_some?: ChannelWhereInput | null
+  channels_every?: ChannelWhereInput | null
+  AND?: ChannelCategoryWhereInput[] | ChannelCategoryWhereInput | null
+  OR?: ChannelCategoryWhereInput[] | ChannelCategoryWhereInput | null
 }
 
 export interface ChannelCategoryWhereUniqueInput {
@@ -816,40 +799,40 @@ export interface ChannelCategoryWhereUniqueInput {
 }
 
 export interface ChannelCreateInput {
-  ownerMemberId?: ID_Input | null
-  ownerCuratorGroupId?: ID_Input | null
-  categoryId?: ID_Input | null
+  ownerMember?: ID_Input | null
+  ownerCuratorGroup?: ID_Input | null
+  category?: ID_Input | null
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
-  coverPhotoDataObjectId?: ID_Input | null
+  coverPhotoDataObject?: ID_Input | null
   coverPhotoUrls: Array<String>
   coverPhotoAvailability: AssetAvailability
-  avatarPhotoDataObjectId?: ID_Input | null
+  avatarPhotoDataObject?: ID_Input | null
   avatarPhotoUrls: Array<String>
   avatarPhotoAvailability: AssetAvailability
   isPublic?: Boolean | null
   isCensored: Boolean
-  languageId?: ID_Input | null
+  language?: ID_Input | null
   createdInBlock: Float
 }
 
 export interface ChannelUpdateInput {
-  ownerMemberId?: ID_Input | null
-  ownerCuratorGroupId?: ID_Input | null
-  categoryId?: ID_Input | null
+  ownerMember?: ID_Input | null
+  ownerCuratorGroup?: ID_Input | null
+  category?: ID_Input | null
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
-  coverPhotoDataObjectId?: ID_Input | null
+  coverPhotoDataObject?: ID_Input | null
   coverPhotoUrls?: String[] | String | null
   coverPhotoAvailability?: AssetAvailability | null
-  avatarPhotoDataObjectId?: ID_Input | null
+  avatarPhotoDataObject?: ID_Input | null
   avatarPhotoUrls?: String[] | String | null
   avatarPhotoAvailability?: AssetAvailability | null
   isPublic?: Boolean | null
   isCensored?: Boolean | null
-  languageId?: ID_Input | null
+  language?: ID_Input | null
   createdInBlock?: Float | null
 }
 
@@ -878,12 +861,6 @@ export interface ChannelWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  ownerMemberId_eq?: ID_Input | null
-  ownerMemberId_in?: ID_Output[] | ID_Output | null
-  ownerCuratorGroupId_eq?: ID_Input | null
-  ownerCuratorGroupId_in?: ID_Output[] | ID_Output | null
-  categoryId_eq?: ID_Input | null
-  categoryId_in?: ID_Output[] | ID_Output | null
   rewardAccount_eq?: String | null
   rewardAccount_contains?: String | null
   rewardAccount_startsWith?: String | null
@@ -899,26 +876,37 @@ export interface ChannelWhereInput {
   description_startsWith?: String | null
   description_endsWith?: String | null
   description_in?: String[] | String | null
-  coverPhotoDataObjectId_eq?: ID_Input | null
-  coverPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  coverPhotoUrls_containsAll?: String[] | String | null
+  coverPhotoUrls_containsNone?: String[] | String | null
+  coverPhotoUrls_containsAny?: String[] | String | null
   coverPhotoAvailability_eq?: AssetAvailability | null
   coverPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
-  avatarPhotoDataObjectId_eq?: ID_Input | null
-  avatarPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  avatarPhotoUrls_containsAll?: String[] | String | null
+  avatarPhotoUrls_containsNone?: String[] | String | null
+  avatarPhotoUrls_containsAny?: String[] | String | null
   avatarPhotoAvailability_eq?: AssetAvailability | null
   avatarPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
   isPublic_eq?: Boolean | null
   isPublic_in?: Boolean[] | Boolean | null
   isCensored_eq?: Boolean | null
   isCensored_in?: Boolean[] | Boolean | null
-  languageId_eq?: ID_Input | null
-  languageId_in?: ID_Output[] | ID_Output | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null
   createdInBlock_lt?: Int | null
   createdInBlock_lte?: Int | null
   createdInBlock_in?: Int[] | Int | null
+  ownerMember?: MembershipWhereInput | null
+  ownerCuratorGroup?: CuratorGroupWhereInput | null
+  category?: ChannelCategoryWhereInput | null
+  coverPhotoDataObject?: DataObjectWhereInput | null
+  avatarPhotoDataObject?: DataObjectWhereInput | null
+  language?: LanguageWhereInput | null
+  videos_none?: VideoWhereInput | null
+  videos_some?: VideoWhereInput | null
+  videos_every?: VideoWhereInput | null
+  AND?: ChannelWhereInput[] | ChannelWhereInput | null
+  OR?: ChannelWhereInput[] | ChannelWhereInput | null
 }
 
 export interface ChannelWhereUniqueInput {
@@ -971,6 +959,14 @@ export interface LanguageWhereInput {
   createdInBlock_lt?: Int | null
   createdInBlock_lte?: Int | null
   createdInBlock_in?: Int[] | Int | null
+  channellanguage_none?: ChannelWhereInput | null
+  channellanguage_some?: ChannelWhereInput | null
+  channellanguage_every?: ChannelWhereInput | null
+  videolanguage_none?: VideoWhereInput | null
+  videolanguage_some?: VideoWhereInput | null
+  videolanguage_every?: VideoWhereInput | null
+  AND?: LanguageWhereInput[] | LanguageWhereInput | null
+  OR?: LanguageWhereInput[] | LanguageWhereInput | null
 }
 
 export interface LanguageWhereUniqueInput {
@@ -1030,6 +1026,11 @@ export interface LicenseWhereInput {
   customText_startsWith?: String | null
   customText_endsWith?: String | null
   customText_in?: String[] | String | null
+  videolanguage_none?: VideoWhereInput | null
+  videolanguage_some?: VideoWhereInput | null
+  videolanguage_every?: VideoWhereInput | null
+  AND?: LicenseWhereInput[] | LicenseWhereInput | null
+  OR?: LicenseWhereInput[] | LicenseWhereInput | null
 }
 
 export interface LicenseWhereUniqueInput {
@@ -1122,6 +1123,11 @@ export interface MembershipWhereInput {
   subscription_lt?: Int | null
   subscription_lte?: Int | null
   subscription_in?: Int[] | Int | null
+  channels_none?: ChannelWhereInput | null
+  channels_some?: ChannelWhereInput | null
+  channels_every?: ChannelWhereInput | null
+  AND?: MembershipWhereInput[] | MembershipWhereInput | null
+  OR?: MembershipWhereInput[] | MembershipWhereInput | null
 }
 
 export interface MembershipWhereUniqueInput {
@@ -1175,6 +1181,11 @@ export interface VideoCategoryWhereInput {
   createdInBlock_lt?: Int | null
   createdInBlock_lte?: Int | null
   createdInBlock_in?: Int[] | Int | null
+  videos_none?: VideoWhereInput | null
+  videos_some?: VideoWhereInput | null
+  videos_every?: VideoWhereInput | null
+  AND?: VideoCategoryWhereInput[] | VideoCategoryWhereInput | null
+  OR?: VideoCategoryWhereInput[] | VideoCategoryWhereInput | null
 }
 
 export interface VideoCategoryWhereUniqueInput {
@@ -1182,25 +1193,25 @@ export interface VideoCategoryWhereUniqueInput {
 }
 
 export interface VideoCreateInput {
-  channelId?: ID_Input | null
-  categoryId?: ID_Input | null
+  channel?: ID_Input | null
+  category?: ID_Input | null
   title?: String | null
   description?: String | null
   duration?: Float | null
-  thumbnailPhotoDataObjectId?: ID_Input | null
+  thumbnailPhotoDataObject?: ID_Input | null
   thumbnailPhotoUrls: Array<String>
   thumbnailPhotoAvailability: AssetAvailability
-  languageId?: ID_Input | null
+  language?: ID_Input | null
   hasMarketing?: Boolean | null
   publishedBeforeJoystream?: DateTime | null
   isPublic?: Boolean | null
   isCensored: Boolean
   isExplicit?: Boolean | null
-  licenseId?: ID_Input | null
-  mediaDataObjectId?: ID_Input | null
+  license?: ID_Input | null
+  mediaDataObject?: ID_Input | null
   mediaUrls: Array<String>
   mediaAvailability: AssetAvailability
-  mediaMetadataId?: ID_Input | null
+  mediaMetadata?: ID_Input | null
   createdInBlock: Float
   isFeatured: Boolean
 }
@@ -1257,6 +1268,11 @@ export interface VideoMediaEncodingWhereInput {
   mimeMediaType_startsWith?: String | null
   mimeMediaType_endsWith?: String | null
   mimeMediaType_in?: String[] | String | null
+  videomediametadataencoding_none?: VideoMediaMetadataWhereInput | null
+  videomediametadataencoding_some?: VideoMediaMetadataWhereInput | null
+  videomediametadataencoding_every?: VideoMediaMetadataWhereInput | null
+  AND?: VideoMediaEncodingWhereInput[] | VideoMediaEncodingWhereInput | null
+  OR?: VideoMediaEncodingWhereInput[] | VideoMediaEncodingWhereInput | null
 }
 
 export interface VideoMediaEncodingWhereUniqueInput {
@@ -1264,7 +1280,7 @@ export interface VideoMediaEncodingWhereUniqueInput {
 }
 
 export interface VideoMediaMetadataCreateInput {
-  encodingId?: ID_Input | null
+  encoding?: ID_Input | null
   pixelWidth?: Float | null
   pixelHeight?: Float | null
   size?: Float | null
@@ -1272,7 +1288,7 @@ export interface VideoMediaMetadataCreateInput {
 }
 
 export interface VideoMediaMetadataUpdateInput {
-  encodingId?: ID_Input | null
+  encoding?: ID_Input | null
   pixelWidth?: Float | null
   pixelHeight?: Float | null
   size?: Float | null
@@ -1304,8 +1320,6 @@ export interface VideoMediaMetadataWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  encodingId_eq?: ID_Input | null
-  encodingId_in?: ID_Output[] | ID_Output | null
   pixelWidth_eq?: Int | null
   pixelWidth_gt?: Int | null
   pixelWidth_gte?: Int | null
@@ -1330,6 +1344,10 @@ export interface VideoMediaMetadataWhereInput {
   createdInBlock_lt?: Int | null
   createdInBlock_lte?: Int | null
   createdInBlock_in?: Int[] | Int | null
+  encoding?: VideoMediaEncodingWhereInput | null
+  video?: VideoWhereInput | null
+  AND?: VideoMediaMetadataWhereInput[] | VideoMediaMetadataWhereInput | null
+  OR?: VideoMediaMetadataWhereInput[] | VideoMediaMetadataWhereInput | null
 }
 
 export interface VideoMediaMetadataWhereUniqueInput {
@@ -1337,25 +1355,25 @@ export interface VideoMediaMetadataWhereUniqueInput {
 }
 
 export interface VideoUpdateInput {
-  channelId?: ID_Input | null
-  categoryId?: ID_Input | null
+  channel?: ID_Input | null
+  category?: ID_Input | null
   title?: String | null
   description?: String | null
   duration?: Float | null
-  thumbnailPhotoDataObjectId?: ID_Input | null
+  thumbnailPhotoDataObject?: ID_Input | null
   thumbnailPhotoUrls?: String[] | String | null
   thumbnailPhotoAvailability?: AssetAvailability | null
-  languageId?: ID_Input | null
+  language?: ID_Input | null
   hasMarketing?: Boolean | null
   publishedBeforeJoystream?: DateTime | null
   isPublic?: Boolean | null
   isCensored?: Boolean | null
   isExplicit?: Boolean | null
-  licenseId?: ID_Input | null
-  mediaDataObjectId?: ID_Input | null
+  license?: ID_Input | null
+  mediaDataObject?: ID_Input | null
   mediaUrls?: String[] | String | null
   mediaAvailability?: AssetAvailability | null
-  mediaMetadataId?: ID_Input | null
+  mediaMetadata?: ID_Input | null
   createdInBlock?: Float | null
   isFeatured?: Boolean | null
 }
@@ -1385,10 +1403,6 @@ export interface VideoWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
-  channelId_eq?: ID_Input | null
-  channelId_in?: ID_Output[] | ID_Output | null
-  categoryId_eq?: ID_Input | null
-  categoryId_in?: ID_Output[] | ID_Output | null
   title_eq?: String | null
   title_contains?: String | null
   title_startsWith?: String | null
@@ -1405,12 +1419,11 @@ export interface VideoWhereInput {
   duration_lt?: Int | null
   duration_lte?: Int | null
   duration_in?: Int[] | Int | null
-  thumbnailPhotoDataObjectId_eq?: ID_Input | null
-  thumbnailPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
+  thumbnailPhotoUrls_containsAll?: String[] | String | null
+  thumbnailPhotoUrls_containsNone?: String[] | String | null
+  thumbnailPhotoUrls_containsAny?: String[] | String | null
   thumbnailPhotoAvailability_eq?: AssetAvailability | null
   thumbnailPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
-  languageId_eq?: ID_Input | null
-  languageId_in?: ID_Output[] | ID_Output | null
   hasMarketing_eq?: Boolean | null
   hasMarketing_in?: Boolean[] | Boolean | null
   publishedBeforeJoystream_eq?: DateTime | null
@@ -1424,14 +1437,11 @@ export interface VideoWhereInput {
   isCensored_in?: Boolean[] | Boolean | null
   isExplicit_eq?: Boolean | null
   isExplicit_in?: Boolean[] | Boolean | null
-  licenseId_eq?: ID_Input | null
-  licenseId_in?: ID_Output[] | ID_Output | null
-  mediaDataObjectId_eq?: ID_Input | null
-  mediaDataObjectId_in?: ID_Output[] | ID_Output | null
+  mediaUrls_containsAll?: String[] | String | null
+  mediaUrls_containsNone?: String[] | String | null
+  mediaUrls_containsAny?: String[] | String | null
   mediaAvailability_eq?: AssetAvailability | null
   mediaAvailability_in?: AssetAvailability[] | AssetAvailability | null
-  mediaMetadataId_eq?: ID_Input | null
-  mediaMetadataId_in?: ID_Output[] | ID_Output | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null
@@ -1440,6 +1450,15 @@ export interface VideoWhereInput {
   createdInBlock_in?: Int[] | Int | null
   isFeatured_eq?: Boolean | null
   isFeatured_in?: Boolean[] | Boolean | null
+  channel?: ChannelWhereInput | null
+  category?: VideoCategoryWhereInput | null
+  thumbnailPhotoDataObject?: DataObjectWhereInput | null
+  language?: LanguageWhereInput | null
+  license?: LicenseWhereInput | null
+  mediaDataObject?: DataObjectWhereInput | null
+  mediaMetadata?: VideoMediaMetadataWhereInput | null
+  AND?: VideoWhereInput[] | VideoWhereInput | null
+  OR?: VideoWhereInput[] | VideoWhereInput | null
 }
 
 export interface VideoWhereUniqueInput {
@@ -1499,6 +1518,11 @@ export interface WorkerWhereInput {
   metadata_startsWith?: String | null
   metadata_endsWith?: String | null
   metadata_in?: String[] | String | null
+  dataObjects_none?: DataObjectWhereInput | null
+  dataObjects_some?: DataObjectWhereInput | null
+  dataObjects_every?: DataObjectWhereInput | null
+  AND?: WorkerWhereInput[] | WorkerWhereInput | null
+  OR?: WorkerWhereInput[] | WorkerWhereInput | null
 }
 
 export interface WorkerWhereUniqueInput {
@@ -1626,30 +1650,6 @@ export interface DataObjectOwnerMember {
 
 export interface DataObjectOwnerWorkingGroup {
   workingGroup: Int
-}
-
-export interface FeaturedVideo extends BaseGraphQLObject {
-  id: ID_Output
-  createdAt: DateTime
-  createdById: String
-  updatedAt?: DateTime | null
-  updatedById?: String | null
-  deletedAt?: DateTime | null
-  deletedById?: String | null
-  version: Int
-  video: Video
-  videoId: String
-}
-
-export interface FeaturedVideoConnection {
-  totalCount: Int
-  edges: Array<FeaturedVideoEdge>
-  pageInfo: PageInfo
-}
-
-export interface FeaturedVideoEdge {
-  node: FeaturedVideo
-  cursor: String
 }
 
 export interface Channel extends BaseGraphQLObject {
@@ -1889,7 +1889,6 @@ export interface Video extends BaseGraphQLObject {
   mediaMetadataId?: String | null
   createdInBlock: Int
   isFeatured: Boolean
-  featured?: FeaturedVideo | null
 }
 
 export interface VideoCategoriesByNameFTSOutput {

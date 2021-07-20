@@ -43,8 +43,6 @@ import { VideoMediaEncoding } from "../src/modules/video-media-encoding/video-me
 // @ts-ignore
 import { VideoMediaMetadata } from "../src/modules/video-media-metadata/video-media-metadata.model";
 // @ts-ignore
-import { FeaturedVideo } from "../src/modules/featured-video/featured-video.model";
-// @ts-ignore
 import { Video } from "../src/modules/video/video.model";
 // @ts-ignore
 import { Language } from "../src/modules/language/language.model";
@@ -185,6 +183,12 @@ export class DataObjectOwnerChannelWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   dummy_in?: number[];
+
+  @TypeGraphQLField(() => DataObjectOwnerChannelWhereInput, { nullable: true })
+  AND?: [DataObjectOwnerChannelWhereInput];
+
+  @TypeGraphQLField(() => DataObjectOwnerChannelWhereInput, { nullable: true })
+  OR?: [DataObjectOwnerChannelWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -217,7 +221,7 @@ export class DataObjectOwnerChannelWhereArgs extends PaginationArgs {
   where?: DataObjectOwnerChannelWhereInput;
 
   @TypeGraphQLField(() => DataObjectOwnerChannelOrderByEnum, { nullable: true })
-  orderBy?: DataObjectOwnerChannelOrderByEnum;
+  orderBy?: DataObjectOwnerChannelOrderByEnum[];
 }
 
 @ArgsType()
@@ -341,6 +345,12 @@ export class DataObjectOwnerCouncilWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   dummy_in?: number[];
+
+  @TypeGraphQLField(() => DataObjectOwnerCouncilWhereInput, { nullable: true })
+  AND?: [DataObjectOwnerCouncilWhereInput];
+
+  @TypeGraphQLField(() => DataObjectOwnerCouncilWhereInput, { nullable: true })
+  OR?: [DataObjectOwnerCouncilWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -367,7 +377,7 @@ export class DataObjectOwnerCouncilWhereArgs extends PaginationArgs {
   where?: DataObjectOwnerCouncilWhereInput;
 
   @TypeGraphQLField(() => DataObjectOwnerCouncilOrderByEnum, { nullable: true })
-  orderBy?: DataObjectOwnerCouncilOrderByEnum;
+  orderBy?: DataObjectOwnerCouncilOrderByEnum[];
 }
 
 @ArgsType()
@@ -491,6 +501,12 @@ export class DataObjectOwnerDaoWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   dao_in?: number[];
+
+  @TypeGraphQLField(() => DataObjectOwnerDaoWhereInput, { nullable: true })
+  AND?: [DataObjectOwnerDaoWhereInput];
+
+  @TypeGraphQLField(() => DataObjectOwnerDaoWhereInput, { nullable: true })
+  OR?: [DataObjectOwnerDaoWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -517,7 +533,7 @@ export class DataObjectOwnerDaoWhereArgs extends PaginationArgs {
   where?: DataObjectOwnerDaoWhereInput;
 
   @TypeGraphQLField(() => DataObjectOwnerDaoOrderByEnum, { nullable: true })
-  orderBy?: DataObjectOwnerDaoOrderByEnum;
+  orderBy?: DataObjectOwnerDaoOrderByEnum[];
 }
 
 @ArgsType()
@@ -662,6 +678,12 @@ export class DataObjectOwnerMemberWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   dummy_in?: number[];
+
+  @TypeGraphQLField(() => DataObjectOwnerMemberWhereInput, { nullable: true })
+  AND?: [DataObjectOwnerMemberWhereInput];
+
+  @TypeGraphQLField(() => DataObjectOwnerMemberWhereInput, { nullable: true })
+  OR?: [DataObjectOwnerMemberWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -694,7 +716,7 @@ export class DataObjectOwnerMemberWhereArgs extends PaginationArgs {
   where?: DataObjectOwnerMemberWhereInput;
 
   @TypeGraphQLField(() => DataObjectOwnerMemberOrderByEnum, { nullable: true })
-  orderBy?: DataObjectOwnerMemberOrderByEnum;
+  orderBy?: DataObjectOwnerMemberOrderByEnum[];
 }
 
 @ArgsType()
@@ -818,6 +840,16 @@ export class DataObjectOwnerWorkingGroupWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   workingGroup_in?: number[];
+
+  @TypeGraphQLField(() => DataObjectOwnerWorkingGroupWhereInput, {
+    nullable: true
+  })
+  AND?: [DataObjectOwnerWorkingGroupWhereInput];
+
+  @TypeGraphQLField(() => DataObjectOwnerWorkingGroupWhereInput, {
+    nullable: true
+  })
+  OR?: [DataObjectOwnerWorkingGroupWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -848,7 +880,7 @@ export class DataObjectOwnerWorkingGroupWhereArgs extends PaginationArgs {
   @TypeGraphQLField(() => DataObjectOwnerWorkingGroupOrderByEnum, {
     nullable: true
   })
-  orderBy?: DataObjectOwnerWorkingGroupOrderByEnum;
+  orderBy?: DataObjectOwnerWorkingGroupOrderByEnum[];
 }
 
 @ArgsType()
@@ -1092,6 +1124,21 @@ export class MembershipWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   subscription_in?: number[];
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_none?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_some?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_every?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => MembershipWhereInput, { nullable: true })
+  AND?: [MembershipWhereInput];
+
+  @TypeGraphQLField(() => MembershipWhereInput, { nullable: true })
+  OR?: [MembershipWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -1163,7 +1210,7 @@ export class MembershipWhereArgs extends PaginationArgs {
   where?: MembershipWhereInput;
 
   @TypeGraphQLField(() => MembershipOrderByEnum, { nullable: true })
-  orderBy?: MembershipOrderByEnum;
+  orderBy?: MembershipOrderByEnum[];
 }
 
 @ArgsType()
@@ -1270,11 +1317,35 @@ export class CuratorGroupWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  curatorIds_containsAll?: [number];
+
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  curatorIds_containsNone?: [number];
+
+  @TypeGraphQLField(() => [Int], { nullable: true })
+  curatorIds_containsAny?: [number];
+
   @TypeGraphQLField(() => Boolean, { nullable: true })
   isActive_eq?: Boolean;
 
   @TypeGraphQLField(() => [Boolean], { nullable: true })
   isActive_in?: Boolean[];
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_none?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_some?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_every?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => CuratorGroupWhereInput, { nullable: true })
+  AND?: [CuratorGroupWhereInput];
+
+  @TypeGraphQLField(() => CuratorGroupWhereInput, { nullable: true })
+  OR?: [CuratorGroupWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -1307,7 +1378,7 @@ export class CuratorGroupWhereArgs extends PaginationArgs {
   where?: CuratorGroupWhereInput;
 
   @TypeGraphQLField(() => CuratorGroupOrderByEnum, { nullable: true })
-  orderBy?: CuratorGroupOrderByEnum;
+  orderBy?: CuratorGroupOrderByEnum[];
 }
 
 @ArgsType()
@@ -1449,6 +1520,21 @@ export class ChannelCategoryWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   createdInBlock_in?: number[];
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_none?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_some?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channels_every?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelCategoryWhereInput, { nullable: true })
+  AND?: [ChannelCategoryWhereInput];
+
+  @TypeGraphQLField(() => ChannelCategoryWhereInput, { nullable: true })
+  OR?: [ChannelCategoryWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -1481,7 +1567,7 @@ export class ChannelCategoryWhereArgs extends PaginationArgs {
   where?: ChannelCategoryWhereInput;
 
   @TypeGraphQLField(() => ChannelCategoryOrderByEnum, { nullable: true })
-  orderBy?: ChannelCategoryOrderByEnum;
+  orderBy?: ChannelCategoryOrderByEnum[];
 }
 
 @ArgsType()
@@ -1623,6 +1709,21 @@ export class VideoCategoryWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   createdInBlock_in?: number[];
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videos_none?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videos_some?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videos_every?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoCategoryWhereInput, { nullable: true })
+  AND?: [VideoCategoryWhereInput];
+
+  @TypeGraphQLField(() => VideoCategoryWhereInput, { nullable: true })
+  OR?: [VideoCategoryWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -1655,7 +1756,7 @@ export class VideoCategoryWhereArgs extends PaginationArgs {
   where?: VideoCategoryWhereInput;
 
   @TypeGraphQLField(() => VideoCategoryOrderByEnum, { nullable: true })
-  orderBy?: VideoCategoryOrderByEnum;
+  orderBy?: VideoCategoryOrderByEnum[];
 }
 
 @ArgsType()
@@ -1815,6 +1916,21 @@ export class LicenseWhereInput {
 
   @TypeGraphQLField(() => [String], { nullable: true })
   customText_in?: string[];
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videolanguage_none?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videolanguage_some?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videolanguage_every?: VideoWhereInput;
+
+  @TypeGraphQLField(() => LicenseWhereInput, { nullable: true })
+  AND?: [LicenseWhereInput];
+
+  @TypeGraphQLField(() => LicenseWhereInput, { nullable: true })
+  OR?: [LicenseWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -1853,7 +1969,7 @@ export class LicenseWhereArgs extends PaginationArgs {
   where?: LicenseWhereInput;
 
   @TypeGraphQLField(() => LicenseOrderByEnum, { nullable: true })
-  orderBy?: LicenseOrderByEnum;
+  orderBy?: LicenseOrderByEnum[];
 }
 
 @ArgsType()
@@ -2010,6 +2126,21 @@ export class VideoMediaEncodingWhereInput {
 
   @TypeGraphQLField(() => [String], { nullable: true })
   mimeMediaType_in?: string[];
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videomediametadataencoding_none?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videomediametadataencoding_some?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videomediametadataencoding_every?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaEncodingWhereInput, { nullable: true })
+  AND?: [VideoMediaEncodingWhereInput];
+
+  @TypeGraphQLField(() => VideoMediaEncodingWhereInput, { nullable: true })
+  OR?: [VideoMediaEncodingWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -2048,7 +2179,7 @@ export class VideoMediaEncodingWhereArgs extends PaginationArgs {
   where?: VideoMediaEncodingWhereInput;
 
   @TypeGraphQLField(() => VideoMediaEncodingOrderByEnum, { nullable: true })
-  orderBy?: VideoMediaEncodingOrderByEnum;
+  orderBy?: VideoMediaEncodingOrderByEnum[];
 }
 
 @ArgsType()
@@ -2073,8 +2204,8 @@ export enum VideoMediaMetadataOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
-  encodingId_ASC = "encodingId_ASC",
-  encodingId_DESC = "encodingId_DESC",
+  encoding_ASC = "encoding_ASC",
+  encoding_DESC = "encoding_DESC",
 
   pixelWidth_ASC = "pixelWidth_ASC",
   pixelWidth_DESC = "pixelWidth_DESC",
@@ -2167,12 +2298,6 @@ export class VideoMediaMetadataWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  encodingId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  encodingId_in?: string[];
-
   @TypeGraphQLField(() => Int, { nullable: true })
   pixelWidth_eq?: number;
 
@@ -2244,6 +2369,18 @@ export class VideoMediaMetadataWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   createdInBlock_in?: number[];
+
+  @TypeGraphQLField(() => VideoMediaEncodingWhereInput, { nullable: true })
+  encoding?: VideoMediaEncodingWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  video?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  AND?: [VideoMediaMetadataWhereInput];
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  OR?: [VideoMediaMetadataWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -2255,7 +2392,7 @@ export class VideoMediaMetadataWhereUniqueInput {
 @TypeGraphQLInputType()
 export class VideoMediaMetadataCreateInput {
   @TypeGraphQLField(() => ID, { nullable: true })
-  encodingId?: string;
+  encoding?: string;
 
   @TypeGraphQLField({ nullable: true })
   pixelWidth?: number;
@@ -2273,7 +2410,7 @@ export class VideoMediaMetadataCreateInput {
 @TypeGraphQLInputType()
 export class VideoMediaMetadataUpdateInput {
   @TypeGraphQLField(() => ID, { nullable: true })
-  encodingId?: string;
+  encoding?: string;
 
   @TypeGraphQLField({ nullable: true })
   pixelWidth?: number;
@@ -2294,7 +2431,7 @@ export class VideoMediaMetadataWhereArgs extends PaginationArgs {
   where?: VideoMediaMetadataWhereInput;
 
   @TypeGraphQLField(() => VideoMediaMetadataOrderByEnum, { nullable: true })
-  orderBy?: VideoMediaMetadataOrderByEnum;
+  orderBy?: VideoMediaMetadataOrderByEnum[];
 }
 
 @ArgsType()
@@ -2309,144 +2446,6 @@ export class VideoMediaMetadataUpdateArgs {
   @TypeGraphQLField() where!: VideoMediaMetadataWhereUniqueInput;
 }
 
-export enum FeaturedVideoOrderByEnum {
-  createdAt_ASC = "createdAt_ASC",
-  createdAt_DESC = "createdAt_DESC",
-
-  updatedAt_ASC = "updatedAt_ASC",
-  updatedAt_DESC = "updatedAt_DESC",
-
-  deletedAt_ASC = "deletedAt_ASC",
-  deletedAt_DESC = "deletedAt_DESC",
-
-  videoId_ASC = "videoId_ASC",
-  videoId_DESC = "videoId_DESC"
-}
-
-registerEnumType(FeaturedVideoOrderByEnum, {
-  name: "FeaturedVideoOrderByInput"
-});
-
-@TypeGraphQLInputType()
-export class FeaturedVideoWhereInput {
-  @TypeGraphQLField(() => ID, { nullable: true })
-  id_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  id_in?: string[];
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_eq?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_lt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_lte?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_gt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  createdAt_gte?: Date;
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  createdById_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  createdById_in?: string[];
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_eq?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_lt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_lte?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_gt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  updatedAt_gte?: Date;
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  updatedById_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  updatedById_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  deletedAt_all?: Boolean;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_eq?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_lt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_lte?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_gt?: Date;
-
-  @TypeGraphQLField(() => DateTime, { nullable: true })
-  deletedAt_gte?: Date;
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  deletedById_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  deletedById_in?: string[];
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  videoId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  videoId_in?: string[];
-}
-
-@TypeGraphQLInputType()
-export class FeaturedVideoWhereUniqueInput {
-  @TypeGraphQLField(() => ID)
-  id?: string;
-}
-
-@TypeGraphQLInputType()
-export class FeaturedVideoCreateInput {
-  @TypeGraphQLField(() => ID)
-  videoId!: string;
-}
-
-@TypeGraphQLInputType()
-export class FeaturedVideoUpdateInput {
-  @TypeGraphQLField(() => ID, { nullable: true })
-  videoId?: string;
-}
-
-@ArgsType()
-export class FeaturedVideoWhereArgs extends PaginationArgs {
-  @TypeGraphQLField(() => FeaturedVideoWhereInput, { nullable: true })
-  where?: FeaturedVideoWhereInput;
-
-  @TypeGraphQLField(() => FeaturedVideoOrderByEnum, { nullable: true })
-  orderBy?: FeaturedVideoOrderByEnum;
-}
-
-@ArgsType()
-export class FeaturedVideoCreateManyArgs {
-  @TypeGraphQLField(() => [FeaturedVideoCreateInput])
-  data!: FeaturedVideoCreateInput[];
-}
-
-@ArgsType()
-export class FeaturedVideoUpdateArgs {
-  @TypeGraphQLField() data!: FeaturedVideoUpdateInput;
-  @TypeGraphQLField() where!: FeaturedVideoWhereUniqueInput;
-}
-
 export enum VideoOrderByEnum {
   createdAt_ASC = "createdAt_ASC",
   createdAt_DESC = "createdAt_DESC",
@@ -2457,11 +2456,11 @@ export enum VideoOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
-  channelId_ASC = "channelId_ASC",
-  channelId_DESC = "channelId_DESC",
+  channel_ASC = "channel_ASC",
+  channel_DESC = "channel_DESC",
 
-  categoryId_ASC = "categoryId_ASC",
-  categoryId_DESC = "categoryId_DESC",
+  category_ASC = "category_ASC",
+  category_DESC = "category_DESC",
 
   title_ASC = "title_ASC",
   title_DESC = "title_DESC",
@@ -2472,14 +2471,14 @@ export enum VideoOrderByEnum {
   duration_ASC = "duration_ASC",
   duration_DESC = "duration_DESC",
 
-  thumbnailPhotoDataObjectId_ASC = "thumbnailPhotoDataObjectId_ASC",
-  thumbnailPhotoDataObjectId_DESC = "thumbnailPhotoDataObjectId_DESC",
+  thumbnailPhotoDataObject_ASC = "thumbnailPhotoDataObject_ASC",
+  thumbnailPhotoDataObject_DESC = "thumbnailPhotoDataObject_DESC",
 
   thumbnailPhotoAvailability_ASC = "thumbnailPhotoAvailability_ASC",
   thumbnailPhotoAvailability_DESC = "thumbnailPhotoAvailability_DESC",
 
-  languageId_ASC = "languageId_ASC",
-  languageId_DESC = "languageId_DESC",
+  language_ASC = "language_ASC",
+  language_DESC = "language_DESC",
 
   hasMarketing_ASC = "hasMarketing_ASC",
   hasMarketing_DESC = "hasMarketing_DESC",
@@ -2496,17 +2495,17 @@ export enum VideoOrderByEnum {
   isExplicit_ASC = "isExplicit_ASC",
   isExplicit_DESC = "isExplicit_DESC",
 
-  licenseId_ASC = "licenseId_ASC",
-  licenseId_DESC = "licenseId_DESC",
+  license_ASC = "license_ASC",
+  license_DESC = "license_DESC",
 
-  mediaDataObjectId_ASC = "mediaDataObjectId_ASC",
-  mediaDataObjectId_DESC = "mediaDataObjectId_DESC",
+  mediaDataObject_ASC = "mediaDataObject_ASC",
+  mediaDataObject_DESC = "mediaDataObject_DESC",
 
   mediaAvailability_ASC = "mediaAvailability_ASC",
   mediaAvailability_DESC = "mediaAvailability_DESC",
 
-  mediaMetadataId_ASC = "mediaMetadataId_ASC",
-  mediaMetadataId_DESC = "mediaMetadataId_DESC",
+  mediaMetadata_ASC = "mediaMetadata_ASC",
+  mediaMetadata_DESC = "mediaMetadata_DESC",
 
   createdInBlock_ASC = "createdInBlock_ASC",
   createdInBlock_DESC = "createdInBlock_DESC",
@@ -2593,18 +2592,6 @@ export class VideoWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  channelId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  channelId_in?: string[];
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  categoryId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  categoryId_in?: string[];
-
   @TypeGraphQLField({ nullable: true })
   title_eq?: string;
 
@@ -2653,23 +2640,20 @@ export class VideoWhereInput {
   @TypeGraphQLField(() => [Int], { nullable: true })
   duration_in?: number[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  thumbnailPhotoDataObjectId_eq?: string;
+  @TypeGraphQLField(() => [String], { nullable: true })
+  thumbnailPhotoUrls_containsAll?: [string];
 
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  thumbnailPhotoDataObjectId_in?: string[];
+  @TypeGraphQLField(() => [String], { nullable: true })
+  thumbnailPhotoUrls_containsNone?: [string];
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  thumbnailPhotoUrls_containsAny?: [string];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
   thumbnailPhotoAvailability_eq?: AssetAvailability;
 
   @TypeGraphQLField(() => [AssetAvailability], { nullable: true })
   thumbnailPhotoAvailability_in?: AssetAvailability[];
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  languageId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  languageId_in?: string[];
 
   @TypeGraphQLField(() => Boolean, { nullable: true })
   hasMarketing_eq?: Boolean;
@@ -2710,29 +2694,20 @@ export class VideoWhereInput {
   @TypeGraphQLField(() => [Boolean], { nullable: true })
   isExplicit_in?: Boolean[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  licenseId_eq?: string;
+  @TypeGraphQLField(() => [String], { nullable: true })
+  mediaUrls_containsAll?: [string];
 
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  licenseId_in?: string[];
+  @TypeGraphQLField(() => [String], { nullable: true })
+  mediaUrls_containsNone?: [string];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  mediaDataObjectId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  mediaDataObjectId_in?: string[];
+  @TypeGraphQLField(() => [String], { nullable: true })
+  mediaUrls_containsAny?: [string];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
   mediaAvailability_eq?: AssetAvailability;
 
   @TypeGraphQLField(() => [AssetAvailability], { nullable: true })
   mediaAvailability_in?: AssetAvailability[];
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  mediaMetadataId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  mediaMetadataId_in?: string[];
 
   @TypeGraphQLField(() => Int, { nullable: true })
   createdInBlock_eq?: number;
@@ -2757,6 +2732,33 @@ export class VideoWhereInput {
 
   @TypeGraphQLField(() => [Boolean], { nullable: true })
   isFeatured_in?: Boolean[];
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channel?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => VideoCategoryWhereInput, { nullable: true })
+  category?: VideoCategoryWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  thumbnailPhotoDataObject?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => LanguageWhereInput, { nullable: true })
+  language?: LanguageWhereInput;
+
+  @TypeGraphQLField(() => LicenseWhereInput, { nullable: true })
+  license?: LicenseWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  mediaDataObject?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  mediaMetadata?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  AND?: [VideoWhereInput];
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  OR?: [VideoWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -2768,10 +2770,10 @@ export class VideoWhereUniqueInput {
 @TypeGraphQLInputType()
 export class VideoCreateInput {
   @TypeGraphQLField(() => ID, { nullable: true })
-  channelId?: string;
+  channel?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  categoryId?: string;
+  category?: string;
 
   @TypeGraphQLField({ nullable: true })
   title?: string;
@@ -2783,7 +2785,7 @@ export class VideoCreateInput {
   duration?: number;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  thumbnailPhotoDataObjectId?: string;
+  thumbnailPhotoDataObject?: string;
 
   @TypeGraphQLField(() => [String])
   thumbnailPhotoUrls!: string[];
@@ -2792,7 +2794,7 @@ export class VideoCreateInput {
   thumbnailPhotoAvailability!: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  languageId?: string;
+  language?: string;
 
   @TypeGraphQLField({ nullable: true })
   hasMarketing?: boolean;
@@ -2810,10 +2812,10 @@ export class VideoCreateInput {
   isExplicit?: boolean;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  licenseId?: string;
+  license?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  mediaDataObjectId?: string;
+  mediaDataObject?: string;
 
   @TypeGraphQLField(() => [String])
   mediaUrls!: string[];
@@ -2822,7 +2824,7 @@ export class VideoCreateInput {
   mediaAvailability!: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  mediaMetadataId?: string;
+  mediaMetadata?: string;
 
   @TypeGraphQLField()
   createdInBlock!: number;
@@ -2834,10 +2836,10 @@ export class VideoCreateInput {
 @TypeGraphQLInputType()
 export class VideoUpdateInput {
   @TypeGraphQLField(() => ID, { nullable: true })
-  channelId?: string;
+  channel?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  categoryId?: string;
+  category?: string;
 
   @TypeGraphQLField({ nullable: true })
   title?: string;
@@ -2849,7 +2851,7 @@ export class VideoUpdateInput {
   duration?: number;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  thumbnailPhotoDataObjectId?: string;
+  thumbnailPhotoDataObject?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
   thumbnailPhotoUrls?: string[];
@@ -2858,7 +2860,7 @@ export class VideoUpdateInput {
   thumbnailPhotoAvailability?: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  languageId?: string;
+  language?: string;
 
   @TypeGraphQLField({ nullable: true })
   hasMarketing?: boolean;
@@ -2876,10 +2878,10 @@ export class VideoUpdateInput {
   isExplicit?: boolean;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  licenseId?: string;
+  license?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  mediaDataObjectId?: string;
+  mediaDataObject?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
   mediaUrls?: string[];
@@ -2888,7 +2890,7 @@ export class VideoUpdateInput {
   mediaAvailability?: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  mediaMetadataId?: string;
+  mediaMetadata?: string;
 
   @TypeGraphQLField({ nullable: true })
   createdInBlock?: number;
@@ -2903,7 +2905,7 @@ export class VideoWhereArgs extends PaginationArgs {
   where?: VideoWhereInput;
 
   @TypeGraphQLField(() => VideoOrderByEnum, { nullable: true })
-  orderBy?: VideoOrderByEnum;
+  orderBy?: VideoOrderByEnum[];
 }
 
 @ArgsType()
@@ -3045,6 +3047,30 @@ export class LanguageWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   createdInBlock_in?: number[];
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channellanguage_none?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channellanguage_some?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channellanguage_every?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videolanguage_none?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videolanguage_some?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videolanguage_every?: VideoWhereInput;
+
+  @TypeGraphQLField(() => LanguageWhereInput, { nullable: true })
+  AND?: [LanguageWhereInput];
+
+  @TypeGraphQLField(() => LanguageWhereInput, { nullable: true })
+  OR?: [LanguageWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -3077,7 +3103,7 @@ export class LanguageWhereArgs extends PaginationArgs {
   where?: LanguageWhereInput;
 
   @TypeGraphQLField(() => LanguageOrderByEnum, { nullable: true })
-  orderBy?: LanguageOrderByEnum;
+  orderBy?: LanguageOrderByEnum[];
 }
 
 @ArgsType()
@@ -3102,14 +3128,14 @@ export enum ChannelOrderByEnum {
   deletedAt_ASC = "deletedAt_ASC",
   deletedAt_DESC = "deletedAt_DESC",
 
-  ownerMemberId_ASC = "ownerMemberId_ASC",
-  ownerMemberId_DESC = "ownerMemberId_DESC",
+  ownerMember_ASC = "ownerMember_ASC",
+  ownerMember_DESC = "ownerMember_DESC",
 
-  ownerCuratorGroupId_ASC = "ownerCuratorGroupId_ASC",
-  ownerCuratorGroupId_DESC = "ownerCuratorGroupId_DESC",
+  ownerCuratorGroup_ASC = "ownerCuratorGroup_ASC",
+  ownerCuratorGroup_DESC = "ownerCuratorGroup_DESC",
 
-  categoryId_ASC = "categoryId_ASC",
-  categoryId_DESC = "categoryId_DESC",
+  category_ASC = "category_ASC",
+  category_DESC = "category_DESC",
 
   rewardAccount_ASC = "rewardAccount_ASC",
   rewardAccount_DESC = "rewardAccount_DESC",
@@ -3120,14 +3146,14 @@ export enum ChannelOrderByEnum {
   description_ASC = "description_ASC",
   description_DESC = "description_DESC",
 
-  coverPhotoDataObjectId_ASC = "coverPhotoDataObjectId_ASC",
-  coverPhotoDataObjectId_DESC = "coverPhotoDataObjectId_DESC",
+  coverPhotoDataObject_ASC = "coverPhotoDataObject_ASC",
+  coverPhotoDataObject_DESC = "coverPhotoDataObject_DESC",
 
   coverPhotoAvailability_ASC = "coverPhotoAvailability_ASC",
   coverPhotoAvailability_DESC = "coverPhotoAvailability_DESC",
 
-  avatarPhotoDataObjectId_ASC = "avatarPhotoDataObjectId_ASC",
-  avatarPhotoDataObjectId_DESC = "avatarPhotoDataObjectId_DESC",
+  avatarPhotoDataObject_ASC = "avatarPhotoDataObject_ASC",
+  avatarPhotoDataObject_DESC = "avatarPhotoDataObject_DESC",
 
   avatarPhotoAvailability_ASC = "avatarPhotoAvailability_ASC",
   avatarPhotoAvailability_DESC = "avatarPhotoAvailability_DESC",
@@ -3138,8 +3164,8 @@ export enum ChannelOrderByEnum {
   isCensored_ASC = "isCensored_ASC",
   isCensored_DESC = "isCensored_DESC",
 
-  languageId_ASC = "languageId_ASC",
-  languageId_DESC = "languageId_DESC",
+  language_ASC = "language_ASC",
+  language_DESC = "language_DESC",
 
   createdInBlock_ASC = "createdInBlock_ASC",
   createdInBlock_DESC = "createdInBlock_DESC"
@@ -3223,24 +3249,6 @@ export class ChannelWhereInput {
   @TypeGraphQLField(() => [ID], { nullable: true })
   deletedById_in?: string[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  ownerMemberId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  ownerMemberId_in?: string[];
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  ownerCuratorGroupId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  ownerCuratorGroupId_in?: string[];
-
-  @TypeGraphQLField(() => ID, { nullable: true })
-  categoryId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  categoryId_in?: string[];
-
   @TypeGraphQLField({ nullable: true })
   rewardAccount_eq?: string;
 
@@ -3286,11 +3294,14 @@ export class ChannelWhereInput {
   @TypeGraphQLField(() => [String], { nullable: true })
   description_in?: string[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  coverPhotoDataObjectId_eq?: string;
+  @TypeGraphQLField(() => [String], { nullable: true })
+  coverPhotoUrls_containsAll?: [string];
 
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  coverPhotoDataObjectId_in?: string[];
+  @TypeGraphQLField(() => [String], { nullable: true })
+  coverPhotoUrls_containsNone?: [string];
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  coverPhotoUrls_containsAny?: [string];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
   coverPhotoAvailability_eq?: AssetAvailability;
@@ -3298,11 +3309,14 @@ export class ChannelWhereInput {
   @TypeGraphQLField(() => [AssetAvailability], { nullable: true })
   coverPhotoAvailability_in?: AssetAvailability[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  avatarPhotoDataObjectId_eq?: string;
+  @TypeGraphQLField(() => [String], { nullable: true })
+  avatarPhotoUrls_containsAll?: [string];
 
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  avatarPhotoDataObjectId_in?: string[];
+  @TypeGraphQLField(() => [String], { nullable: true })
+  avatarPhotoUrls_containsNone?: [string];
+
+  @TypeGraphQLField(() => [String], { nullable: true })
+  avatarPhotoUrls_containsAny?: [string];
 
   @TypeGraphQLField(() => AssetAvailability, { nullable: true })
   avatarPhotoAvailability_eq?: AssetAvailability;
@@ -3322,12 +3336,6 @@ export class ChannelWhereInput {
   @TypeGraphQLField(() => [Boolean], { nullable: true })
   isCensored_in?: Boolean[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  languageId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  languageId_in?: string[];
-
   @TypeGraphQLField(() => Int, { nullable: true })
   createdInBlock_eq?: number;
 
@@ -3345,6 +3353,39 @@ export class ChannelWhereInput {
 
   @TypeGraphQLField(() => [Int], { nullable: true })
   createdInBlock_in?: number[];
+
+  @TypeGraphQLField(() => MembershipWhereInput, { nullable: true })
+  ownerMember?: MembershipWhereInput;
+
+  @TypeGraphQLField(() => CuratorGroupWhereInput, { nullable: true })
+  ownerCuratorGroup?: CuratorGroupWhereInput;
+
+  @TypeGraphQLField(() => ChannelCategoryWhereInput, { nullable: true })
+  category?: ChannelCategoryWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  coverPhotoDataObject?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  avatarPhotoDataObject?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => LanguageWhereInput, { nullable: true })
+  language?: LanguageWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videos_none?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videos_some?: VideoWhereInput;
+
+  @TypeGraphQLField(() => VideoWhereInput, { nullable: true })
+  videos_every?: VideoWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  AND?: [ChannelWhereInput];
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  OR?: [ChannelWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -3356,13 +3397,13 @@ export class ChannelWhereUniqueInput {
 @TypeGraphQLInputType()
 export class ChannelCreateInput {
   @TypeGraphQLField(() => ID, { nullable: true })
-  ownerMemberId?: string;
+  ownerMember?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  ownerCuratorGroupId?: string;
+  ownerCuratorGroup?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  categoryId?: string;
+  category?: string;
 
   @TypeGraphQLField({ nullable: true })
   rewardAccount?: string;
@@ -3374,7 +3415,7 @@ export class ChannelCreateInput {
   description?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  coverPhotoDataObjectId?: string;
+  coverPhotoDataObject?: string;
 
   @TypeGraphQLField(() => [String])
   coverPhotoUrls!: string[];
@@ -3383,7 +3424,7 @@ export class ChannelCreateInput {
   coverPhotoAvailability!: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  avatarPhotoDataObjectId?: string;
+  avatarPhotoDataObject?: string;
 
   @TypeGraphQLField(() => [String])
   avatarPhotoUrls!: string[];
@@ -3398,7 +3439,7 @@ export class ChannelCreateInput {
   isCensored!: boolean;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  languageId?: string;
+  language?: string;
 
   @TypeGraphQLField()
   createdInBlock!: number;
@@ -3407,13 +3448,13 @@ export class ChannelCreateInput {
 @TypeGraphQLInputType()
 export class ChannelUpdateInput {
   @TypeGraphQLField(() => ID, { nullable: true })
-  ownerMemberId?: string;
+  ownerMember?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  ownerCuratorGroupId?: string;
+  ownerCuratorGroup?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  categoryId?: string;
+  category?: string;
 
   @TypeGraphQLField({ nullable: true })
   rewardAccount?: string;
@@ -3425,7 +3466,7 @@ export class ChannelUpdateInput {
   description?: string;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  coverPhotoDataObjectId?: string;
+  coverPhotoDataObject?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
   coverPhotoUrls?: string[];
@@ -3434,7 +3475,7 @@ export class ChannelUpdateInput {
   coverPhotoAvailability?: AssetAvailability;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  avatarPhotoDataObjectId?: string;
+  avatarPhotoDataObject?: string;
 
   @TypeGraphQLField(() => [String], { nullable: true })
   avatarPhotoUrls?: string[];
@@ -3449,7 +3490,7 @@ export class ChannelUpdateInput {
   isCensored?: boolean;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  languageId?: string;
+  language?: string;
 
   @TypeGraphQLField({ nullable: true })
   createdInBlock?: number;
@@ -3461,7 +3502,7 @@ export class ChannelWhereArgs extends PaginationArgs {
   where?: ChannelWhereInput;
 
   @TypeGraphQLField(() => ChannelOrderByEnum, { nullable: true })
-  orderBy?: ChannelOrderByEnum;
+  orderBy?: ChannelOrderByEnum[];
 }
 
 @ArgsType()
@@ -3495,8 +3536,8 @@ export enum DataObjectOrderByEnum {
   size_ASC = "size_ASC",
   size_DESC = "size_DESC",
 
-  liaisonId_ASC = "liaisonId_ASC",
-  liaisonId_DESC = "liaisonId_DESC",
+  liaison_ASC = "liaison_ASC",
+  liaison_DESC = "liaison_DESC",
 
   liaisonJudgement_ASC = "liaisonJudgement_ASC",
   liaisonJudgement_DESC = "liaisonJudgement_DESC",
@@ -3643,12 +3684,6 @@ export class DataObjectWhereInput {
   @TypeGraphQLField(() => [Float], { nullable: true })
   size_in?: number[];
 
-  @TypeGraphQLField(() => ID, { nullable: true })
-  liaisonId_eq?: string;
-
-  @TypeGraphQLField(() => [ID], { nullable: true })
-  liaisonId_in?: string[];
-
   @TypeGraphQLField(() => LiaisonJudgement, { nullable: true })
   liaisonJudgement_eq?: LiaisonJudgement;
 
@@ -3684,6 +3719,51 @@ export class DataObjectWhereInput {
 
   @TypeGraphQLField(() => [String], { nullable: true })
   joystreamContentId_in?: string[];
+
+  @TypeGraphQLField(() => WorkerWhereInput, { nullable: true })
+  liaison?: WorkerWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channelcoverPhotoDataObject_none?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channelcoverPhotoDataObject_some?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channelcoverPhotoDataObject_every?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channelavatarPhotoDataObject_none?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channelavatarPhotoDataObject_some?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => ChannelWhereInput, { nullable: true })
+  channelavatarPhotoDataObject_every?: ChannelWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videothumbnailPhotoDataObject_none?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videothumbnailPhotoDataObject_some?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videothumbnailPhotoDataObject_every?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videomediaDataObject_none?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videomediaDataObject_some?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => VideoMediaMetadataWhereInput, { nullable: true })
+  videomediaDataObject_every?: VideoMediaMetadataWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  AND?: [DataObjectWhereInput];
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  OR?: [DataObjectWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -3707,7 +3787,7 @@ export class DataObjectCreateInput {
   size!: number;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  liaisonId?: string;
+  liaison?: string;
 
   @TypeGraphQLField(() => LiaisonJudgement)
   liaisonJudgement!: LiaisonJudgement;
@@ -3734,7 +3814,7 @@ export class DataObjectUpdateInput {
   size?: number;
 
   @TypeGraphQLField(() => ID, { nullable: true })
-  liaisonId?: string;
+  liaison?: string;
 
   @TypeGraphQLField(() => LiaisonJudgement, { nullable: true })
   liaisonJudgement?: LiaisonJudgement;
@@ -3752,7 +3832,7 @@ export class DataObjectWhereArgs extends PaginationArgs {
   where?: DataObjectWhereInput;
 
   @TypeGraphQLField(() => DataObjectOrderByEnum, { nullable: true })
-  orderBy?: DataObjectOrderByEnum;
+  orderBy?: DataObjectOrderByEnum[];
 }
 
 @ArgsType()
@@ -3909,6 +3989,21 @@ export class WorkerWhereInput {
 
   @TypeGraphQLField(() => [String], { nullable: true })
   metadata_in?: string[];
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  dataObjects_none?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  dataObjects_some?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => DataObjectWhereInput, { nullable: true })
+  dataObjects_every?: DataObjectWhereInput;
+
+  @TypeGraphQLField(() => WorkerWhereInput, { nullable: true })
+  AND?: [WorkerWhereInput];
+
+  @TypeGraphQLField(() => WorkerWhereInput, { nullable: true })
+  OR?: [WorkerWhereInput];
 }
 
 @TypeGraphQLInputType()
@@ -3953,7 +4048,7 @@ export class WorkerWhereArgs extends PaginationArgs {
   where?: WorkerWhereInput;
 
   @TypeGraphQLField(() => WorkerOrderByEnum, { nullable: true })
-  orderBy?: WorkerOrderByEnum;
+  orderBy?: WorkerOrderByEnum[];
 }
 
 @ArgsType()

@@ -10,7 +10,12 @@ export class VideoCategory extends BaseModel {
   })
   name?: string;
 
-  @OneToMany(() => Video, (param: Video) => param.category, { cascade: ["insert", "update"] })
+  @OneToMany(() => Video, (param: Video) => param.category, {
+    cascade: ["insert", "update"],
+    modelName: 'VideoCategory',
+    relModelName: 'Video',
+    propertyName: 'videos',
+  })
   videos?: Video[];
 
   @IntField({})

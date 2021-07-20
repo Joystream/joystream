@@ -24,10 +24,24 @@ export { AssetAvailability };
 
 @Model({ api: {} })
 export class Video extends BaseModel {
-  @ManyToOne(() => Channel, (param: Channel) => param.videos, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => Channel, (param: Channel) => param.videos, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'Channel',
+    propertyName: 'channel',
+  })
   channel!: Channel;
 
-  @ManyToOne(() => VideoCategory, (param: VideoCategory) => param.videos, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => VideoCategory, (param: VideoCategory) => param.videos, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'VideoCategory',
+    propertyName: 'category',
+  })
   category?: VideoCategory;
 
   @StringField({
@@ -52,6 +66,9 @@ export class Video extends BaseModel {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'DataObject',
+    propertyName: 'thumbnailPhotoDataObject',
   })
   thumbnailPhotoDataObject?: DataObject;
 
@@ -66,7 +83,14 @@ export class Video extends BaseModel {
   })
   thumbnailPhotoAvailability!: AssetAvailability;
 
-  @ManyToOne(() => Language, (param: Language) => param.videolanguage, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => Language, (param: Language) => param.videolanguage, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'Language',
+    propertyName: 'language',
+  })
   language?: Language;
 
   @BooleanField({
@@ -98,13 +122,23 @@ export class Video extends BaseModel {
   })
   isExplicit?: boolean;
 
-  @ManyToOne(() => License, (param: License) => param.videolicense, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => License, (param: License) => param.videolicense, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'License',
+    propertyName: 'license',
+  })
   license?: License;
 
   @ManyToOne(() => DataObject, (param: DataObject) => param.videomediaDataObject, {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'DataObject',
+    propertyName: 'mediaDataObject',
   })
   mediaDataObject?: DataObject;
 
@@ -119,7 +153,13 @@ export class Video extends BaseModel {
   })
   mediaAvailability!: AssetAvailability;
 
-  @OneToOneJoin(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.video, { nullable: true, cascade: ["insert", "update"] })
+  @OneToOneJoin(() => VideoMediaMetadata, (param: VideoMediaMetadata) => param.video, {
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Video',
+    relModelName: 'VideoMediaMetadata',
+    propertyName: 'mediaMetadata',
+  })
   mediaMetadata?: VideoMediaMetadata;
 
   @IntField({})
