@@ -58,32 +58,6 @@ export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
 
-// const subkeyJob = new k8s.batch.v1.Job(
-//   'subkey-job',
-//   {
-//     metadata: {
-//       namespace: namespaceName,
-//     },
-//     spec: {
-//       completions: 3,
-//       backoffLimit: 0,
-//       template: {
-//         spec: {
-//           containers: [
-//             {
-//               name: 'subkey-node',
-//               image: 'parity/subkey:latest',
-//               args: ['generate-node-key'],
-//             },
-//           ],
-//           restartPolicy: 'Never',
-//         },
-//       },
-//     },
-//   },
-//   { ...resourceOptions }
-// )
-
 const jsonModifyConfig = new configMapFromFile(
   'json-modify-config',
   {
@@ -95,6 +69,8 @@ const jsonModifyConfig = new configMapFromFile(
 
 const dataPath = '/subkey-data'
 const builderPath = '/builder-data'
+const networkPrefix = '8129'
+const chainSpecPath = `${builderPath}/chainspec-raw.json`
 
 const deployment = new k8s.apps.v1.Deployment(
   name,
@@ -116,9 +92,7 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'subkey-node',
               image: 'parity/subkey:latest',
               command: ['/bin/sh', '-c'],
-              args: [
-                `subkey generate-node-key >> ${dataPath}/subkey 2>> ${dataPath}/subkey; echo '\n\n' >> ${dataPath}/subkey`,
-              ],
+              args: [`subkey generate-node-key >> ${dataPath}/privatekey1 2>> ${dataPath}/publickey1`],
               volumeMounts: [
                 {
                   name: 'subkey-data',
@@ -130,19 +104,7 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'subkey-node-1',
               image: 'parity/subkey:latest',
               command: ['/bin/sh', '-c'],
-              args: [`subkey generate-node-key >> ${dataPath}/subkey 2>> ${dataPath}/subkey`],
-              volumeMounts: [
-                {
-                  name: 'subkey-data',
-                  mountPath: dataPath,
-                },
-              ],
-            },
-            {
-              name: 'busybox',
-              image: 'busybox',
-              command: ['/bin/sh', '-c'],
-              args: [`cat ${dataPath}/subkey`],
+              args: [`subkey generate-node-key >> ${dataPath}/privatekey2 2>> ${dataPath}/publickey2`],
               volumeMounts: [
                 {
                   name: 'subkey-data',
@@ -155,7 +117,7 @@ const deployment = new k8s.apps.v1.Deployment(
               image: 'joystream/node:latest',
               command: ['/bin/sh', '-c'],
               args: [
-                '/joystream/chain-spec-builder generate -a 2 --chain-spec-path /builder-data/chainspec.json --deployment live --endowed 1 --keystore-path /builder-data/data >> /builder-data/seeds.txt',
+                `/joystream/chain-spec-builder generate -a 2 --chain-spec-path ${builderPath}/chainspec.json --deployment live --endowed 1 --keystore-path ${builderPath}/data >> ${builderPath}/seeds.txt`,
               ],
               volumeMounts: [
                 {
@@ -168,13 +130,29 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'json-modify',
               image: 'python',
               command: ['python'],
-              args: ['/scripts/json_modify.py', '--path', '/builder-data/chainspec.json', '--prefix', '8129'],
+              args: ['/scripts/json_modify.py', '--path', `${builderPath}/chainspec.json`, '--prefix', networkPrefix],
               volumeMounts: [
                 {
                   mountPath: '/scripts/json_modify.py',
                   name: 'json-modify-script',
                   subPath: 'fileData',
                 },
+                {
+                  name: 'builder-data',
+                  mountPath: builderPath,
+                },
+                {
+                  name: 'subkey-data',
+                  mountPath: dataPath,
+                },
+              ],
+            },
+            {
+              name: 'raw-chain-spec',
+              image: 'joystream/node:latest',
+              command: ['/bin/sh', '-c'],
+              args: [`/joystream/node build-spec --chain ${builderPath}/chainspec.json --raw > ${chainSpecPath}`],
+              volumeMounts: [
                 {
                   name: 'builder-data',
                   mountPath: builderPath,
@@ -187,7 +165,77 @@ const deployment = new k8s.apps.v1.Deployment(
               name: 'joystream-node',
               image: 'joystream/node:latest',
               ports: [{ containerPort: 9944 }, { containerPort: 9933 }],
-              args: ['--dev'],
+              args: [
+                '--chain',
+                chainSpecPath,
+                '--pruning',
+                'archive',
+                '--node-key-file',
+                `${dataPath}/privatekey1`,
+                '--keystore-path',
+                `${builderPath}/data/auth-0`,
+                '--validator',
+                '--log',
+                'runtime,txpool,transaction-pool,trace=sync',
+              ],
+              volumeMounts: [
+                {
+                  name: 'subkey-data',
+                  mountPath: dataPath,
+                },
+                {
+                  name: 'builder-data',
+                  mountPath: builderPath,
+                },
+              ],
+            },
+            {
+              name: 'joystream-node-2',
+              image: 'joystream/node:latest',
+              ports: [{ containerPort: 9944 }, { containerPort: 9933 }],
+              args: [
+                '--chain',
+                chainSpecPath,
+                '--pruning',
+                'archive',
+                '--node-key-file',
+                `${dataPath}/privatekey2`,
+                '--keystore-path',
+                `${builderPath}/data/auth-1`,
+                '--validator',
+                '--log',
+                'runtime,txpool,transaction-pool,trace=sync',
+              ],
+              volumeMounts: [
+                {
+                  name: 'subkey-data',
+                  mountPath: dataPath,
+                },
+                {
+                  name: 'builder-data',
+                  mountPath: builderPath,
+                },
+              ],
+            },
+            {
+              name: 'rpc-node',
+              image: 'joystream/node:latest',
+              ports: [{ containerPort: 9944 }, { containerPort: 9933 }, { containerPort: 30333 }],
+              args: [
+                '--chain',
+                chainSpecPath,
+                '--ws-external',
+                '--rpc-cors',
+                'all',
+                '--pruning',
+                'archive',
+                '--ws-max-connections',
+                '512',
+                '--telemetry-url',
+                'wss://telemetry.joystream.org/submit/ 0',
+                '--telemetry-url',
+                'wss://telemetry.polkadot.io/submit/ 0',
+              ],
               volumeMounts: [
                 {
                   name: 'subkey-data',
@@ -233,7 +281,6 @@ const service = new k8s.core.v1.Service(
     metadata: {
       labels: appLabels,
       namespace: namespaceName,
-      name: 'query-node',
     },
     spec: {
       type: 'NodePort',
