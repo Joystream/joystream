@@ -45,7 +45,7 @@ export async function dataDirectory_ContentAdded(db: DatabaseManager, event: Sub
   // save all content objects
   for (let parameters of contentParameters) {
     const owner = convertStorageObjectOwner(storageObjectOwner)
-    const dataObject = await prepareDataObject(db, parameters, event, owner)
+    const dataObject = await prepareDataObject(db, parameters, event.blockNumber, owner)
 
     // fill in auto-generated fields
     dataObject.createdAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())

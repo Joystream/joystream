@@ -67,7 +67,7 @@ export async function getNextId(db: DatabaseManager): Promise<string> {
 export async function prepareDataObject(
   db: DatabaseManager,
   contentParameters: ContentParameters,
-  event: SubstrateEvent,
+  blockNumber: number,
   owner: typeof DataObjectOwner,
 ): Promise<DataObject> {
   // convert generic content parameters coming from processor to custom Joystream data type
@@ -76,7 +76,7 @@ export async function prepareDataObject(
   const dataObject = new DataObject({
     id: await getNextId(db),
     owner,
-    createdInBlock: event.blockNumber,
+    createdInBlock: blockNumber,
     typeId: contentParameters.type_id.toNumber(),
     size: customContentParameters.size_in_bytes.toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected

@@ -93,7 +93,7 @@ function isAssetInStorage(dataObject: AssetStorageOrUrls): dataObject is DataObj
 export interface IReadProtobufArguments {
   metadata: Bytes
   db: DatabaseManager
-  event: SubstrateEvent
+  blockNumber: number
 }
 
 export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments {
@@ -249,7 +249,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assetIndex: metaAsObject.coverPhoto,
         assets: parameters.assets,
         db: parameters.db,
-        event: parameters.event,
+        blockNumber: parameters.blockNumber,
         contentOwner: parameters.contentOwner,
       })
       integrateAsset('coverPhoto', result, asset) // changes `result` inline!
@@ -262,7 +262,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assetIndex: metaAsObject.avatarPhoto,
         assets: parameters.assets,
         db: parameters.db,
-        event: parameters.event,
+        blockNumber: parameters.blockNumber,
         contentOwner: parameters.contentOwner,
       })
       integrateAsset('avatarPhoto', result, asset) // changes `result` inline!
@@ -271,7 +271,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare language if needed
     if ('language' in metaAsObject) {
-      const language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.event)
+      const language = await prepareLanguage(metaAsObject.language, parameters.db, parameters.blockNumber)
       delete metaAsObject.language // make sure temporary value will not interfere
       language.integrateInto(result, 'language')
     }
@@ -302,7 +302,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
       result.mediaMetadata = prepareVideoMetadata(
         metaAsObject,
         videoSize,
-        parameters.event.blockNumber,
+        parameters.blockNumber,
       ) as unknown as VideoMediaMetadata
 
       // remove extra values
@@ -313,7 +313,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
 
     // prepare license if needed
     if ('license' in metaAsObject) {
-      result.license = await prepareLicense(parameters.db, metaAsObject.license, parameters.event)
+      result.license = await prepareLicense(parameters.db, metaAsObject.license)
     }
 
     // prepare thumbnail photo asset if needed
@@ -322,7 +322,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assetIndex: metaAsObject.thumbnailPhoto,
         assets: parameters.assets,
         db: parameters.db,
-        event: parameters.event,
+        blockNumber: parameters.blockNumber,
         contentOwner: parameters.contentOwner,
       })
       integrateAsset('thumbnailPhoto', result, asset) // changes `result` inline!
@@ -335,7 +335,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assetIndex: metaAsObject.video,
         assets: parameters.assets,
         db: parameters.db,
-        event: parameters.event,
+        blockNumber: parameters.blockNumber,
         contentOwner: parameters.contentOwner,
       })
       integrateAsset('media', result, asset) // changes `result` inline!
@@ -347,7 +347,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
       const language = await prepareLanguage(
         metaAsObject.language,
         parameters.db,
-        parameters.event,
+        parameters.blockNumber,
       )
       delete metaAsObject.language // make sure temporary value will not interfere
       language.integrateInto(result, 'language')
@@ -459,7 +459,7 @@ function handlePublishedBeforeJoystream(video: Partial<Video>, metadata: Publish
 interface IConvertAssetParameters {
   rawAsset: NewAsset
   db: DatabaseManager
-  event: SubstrateEvent
+  blockNumber: number
   contentOwner: typeof DataObjectOwner
 }
 
@@ -481,7 +481,7 @@ async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetS
   const dataObject = await prepareDataObject(
     parameters.db,
     contentParameters,
-    parameters.event,
+    parameters.blockNumber,
     parameters.contentOwner,
   )
 
@@ -492,7 +492,7 @@ interface IExtractAssetParameters {
   assetIndex: number | undefined
   assets: NewAsset[]
   db: DatabaseManager
-  event: SubstrateEvent
+  blockNumber: number
   contentOwner: typeof DataObjectOwner
 }
 
@@ -518,7 +518,7 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<Proper
   const asset = await convertAsset({
     rawAsset: parameters.assets[parameters.assetIndex],
     db: parameters.db,
-    event: parameters.event,
+    blockNumber: parameters.blockNumber,
     contentOwner: parameters.contentOwner,
   })
 
@@ -607,7 +607,7 @@ function extractVideoSize(assets: NewAsset[], assetIndex: number | undefined): n
 async function prepareLanguage(
   languageIso: string | undefined,
   db: DatabaseManager,
-  event: SubstrateEvent,
+  blockNumber: number,
 ): Promise<PropertyChange<Language>> {
   // is language being unset?
   if (languageIso === undefined) {
@@ -636,7 +636,7 @@ async function prepareLanguage(
   const newLanguage = new Language({
     id: await getNextId(db),
     iso: languageIso,
-    createdInBlock: event.blockNumber,
+    createdInBlock: blockNumber,
 
     // TODO: remove these lines after Hydra auto-fills the values when cascading save (remove them on all places)
     createdById: '1',
@@ -651,7 +651,6 @@ async function prepareLanguage(
 async function prepareLicense(
   db: DatabaseManager,
   licenseProtobuf: LicenseMetadata.AsObject | undefined,
-  event: SubstrateEvent,
 ): Promise<License | undefined> {
   // NOTE: Deletion of any previous license should take place in appropriate event handling function
   //       and not here even it might appear so.

@@ -31,7 +31,7 @@ export async function storageWorkingGroup_OpeningFilled(db: DatabaseManager, eve
   const {applicationIdToWorkerIdMap} = new StorageWorkingGroup.OpeningFilledEvent(event).data
 
   // call generic processing
-  await workingGroup_OpeningFilled(db, WorkerType.STORAGE, applicationIdToWorkerIdMap, event)
+  await workingGroup_OpeningFilled(db, WorkerType.STORAGE, applicationIdToWorkerIdMap)
 }
 
 export async function storageWorkingGroup_WorkerStorageUpdated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -73,7 +73,7 @@ export async function gatewayWorkingGroup_OpeningFilled(db: DatabaseManager, eve
   const {applicationIdToWorkerIdMap} = new GatewayWorkingGroup.OpeningFilledEvent(event).data
 
   // call generic processing
-  await workingGroup_OpeningFilled(db, WorkerType.GATEWAY, applicationIdToWorkerIdMap, event)
+  await workingGroup_OpeningFilled(db, WorkerType.GATEWAY, applicationIdToWorkerIdMap)
 }
 
 export async function gatewayWorkingGroup_WorkerStorageUpdated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
@@ -114,12 +114,11 @@ export async function workingGroup_OpeningFilled(
   db: DatabaseManager,
   workerType: WorkerType,
   applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap,
-  event: SubstrateEvent,
 ): Promise<void> {
   const workerIds = [...applicationIdToWorkerIdMap.values()]
 
   for (const workerId of workerIds) {
-    await createWorker(db, workerId, workerType, event)
+    await createWorker(db, workerId, workerType)
   }
 
   // emit log event
@@ -178,7 +177,6 @@ async function createWorker(
   db: DatabaseManager,
   workerId: WorkerId,
   workerType: WorkerType,
-  event: SubstrateEvent,
 ): Promise<void> {
   const newWorker = new Worker({
     id: await getNextId(db),

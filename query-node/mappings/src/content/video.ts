@@ -57,7 +57,7 @@ export async function content_VideoCategoryCreated(
     {
       metadata: videoCategoryCreationParameters.meta,
       db,
-      event,
+      blockNumber: event.blockNumber,
     }
   )
 
@@ -109,7 +109,7 @@ export async function content_VideoCategoryUpdated(
     {
       metadata: videoCategoryUpdateParameters.new_meta,
       db,
-      event,
+      blockNumber: event.blockNumber,
     }
   )
 
@@ -172,7 +172,7 @@ export async function content_VideoCreated(
     {
       metadata: videoCreationParameters.meta,
       db,
-      event,
+      blockNumber: event.blockNumber,
       assets: videoCreationParameters.assets,
       contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
     }
@@ -187,7 +187,7 @@ export async function content_VideoCreated(
   }
 
   // prepare video media metadata (if any)
-  const fixedProtobuf = await integrateVideoMediaMetadata(db, null, protobufContent, event)
+  const fixedProtobuf = await integrateVideoMediaMetadata(db, null, protobufContent, event.blockNumber)
 
   const licenseIsEmpty = fixedProtobuf.license && !Object.keys(fixedProtobuf.license).length
   if (licenseIsEmpty) { // license deletion was requested - ignore it and consider it empty
@@ -258,14 +258,14 @@ export async function content_VideoUpdated(
       {
         metadata: newMetadata,
         db,
-        event,
+        blockNumber: event.blockNumber,
         assets: videoUpdateParameters.assets.unwrapOr([]),
         contentOwner: convertContentActorToDataObjectOwner(contentActor, (new BN(video.channel.id)).toNumber()),
       }
     )
 
     // prepare video media metadata (if any)
-    const fixedProtobuf = await integrateVideoMediaMetadata(db, video, protobufContent, event)
+    const fixedProtobuf = await integrateVideoMediaMetadata(db, video, protobufContent, event.blockNumber)
 
     // remember original license
     const originalLicense = video.license
@@ -430,7 +430,7 @@ async function integrateVideoMediaMetadata(
   db: DatabaseManager,
   existingRecord: Video | null,
   metadata: Partial<Video>,
-  event: SubstrateEvent,
+  blockNumber: number,
 ): Promise<Partial<Video>> {
   if (!metadata.mediaMetadata) {
     return metadata
@@ -453,7 +453,7 @@ async function integrateVideoMediaMetadata(
 
   // ensure media metadata object
   const mediaMetadata = (existingRecord && existingRecord.mediaMetadata) || new VideoMediaMetadata({
-    createdInBlock: event.blockNumber,
+    createdInBlock: blockNumber,
 
     createdById: '1',
     updatedById: '1',
