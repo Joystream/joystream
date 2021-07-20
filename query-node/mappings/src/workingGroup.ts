@@ -106,7 +106,7 @@ export async function workingGroup_OpeningFilled(
   db: DatabaseManager,
   workerType: WorkerType,
   applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap,
-  event: SubstrateEvent,
+  event: SubstrateEvent
 ): Promise<void> {
   const workerIds = [...applicationIdToWorkerIdMap.values()]
 
@@ -190,7 +190,7 @@ async function createWorker(
   db: DatabaseManager,
   workerId: WorkerId,
   workerType: WorkerType,
-  event: SubstrateEvent,
+  event: SubstrateEvent
 ): Promise<void> {
   // create entity
   const newWorker = new Worker({

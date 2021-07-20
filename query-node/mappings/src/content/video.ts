@@ -368,7 +368,7 @@ async function integrateVideoMediaMetadata(
   db: DatabaseManager,
   existingRecord: Video | null,
   metadata: Partial<Video>,
-  event: SubstrateEvent,
+  event: SubstrateEvent
 ): Promise<Partial<Video>> {
   if (!metadata.mediaMetadata) {
     return metadata

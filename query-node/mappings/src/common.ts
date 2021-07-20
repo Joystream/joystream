@@ -60,7 +60,7 @@ export async function prepareDataObject(
   db: DatabaseManager,
   contentParameters: ContentParameters,
   event: SubstrateEvent,
-  owner: typeof DataObjectOwner,
+  owner: typeof DataObjectOwner
 ): Promise<DataObject> {
   // convert generic content parameters coming from processor to custom Joystream data type
   const customContentParameters = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
