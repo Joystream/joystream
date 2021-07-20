@@ -13,7 +13,7 @@ export class CuratorGroupService extends BaseService<CuratorGroup> {
 
   async find<W extends WhereInput>(
     where?: any,
-    orderBy?: string,
+    orderBy?: string | string[],
     limit?: number,
     offset?: number,
     fields?: string[]

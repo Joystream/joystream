@@ -13,7 +13,7 @@ export class NextEntityIdService extends BaseService<NextEntityId> {
 
   async find<W extends WhereInput>(
     where?: any,
-    orderBy?: string,
+    orderBy?: string | string[],
     limit?: number,
     offset?: number,
     fields?: string[]

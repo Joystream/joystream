@@ -44,6 +44,9 @@ export class DataObject extends BaseModel {
   @ManyToOne(() => Worker, (param: Worker) => param.dataObjects, {
     skipGraphQLField: true,
     nullable: true,
+    modelName: 'DataObject',
+    relModelName: 'Worker',
+    propertyName: 'liaison',
   })
   liaison?: Worker;
 
@@ -62,16 +65,40 @@ export class DataObject extends BaseModel {
   })
   joystreamContentId!: string;
 
-  @OneToMany(() => Channel, (param: Channel) => param.coverPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => Channel, (param: Channel) => param.coverPhotoDataObject, {
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'DataObject',
+    relModelName: 'Channel',
+    propertyName: 'channelcoverPhotoDataObject',
+  })
   channelcoverPhotoDataObject?: Channel[];
 
-  @OneToMany(() => Channel, (param: Channel) => param.avatarPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => Channel, (param: Channel) => param.avatarPhotoDataObject, {
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'DataObject',
+    relModelName: 'Channel',
+    propertyName: 'channelavatarPhotoDataObject',
+  })
   channelavatarPhotoDataObject?: Channel[];
 
-  @OneToMany(() => Video, (param: Video) => param.thumbnailPhotoDataObject, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => Video, (param: Video) => param.thumbnailPhotoDataObject, {
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'DataObject',
+    relModelName: 'VideoMediaMetadata',
+    propertyName: 'videothumbnailPhotoDataObject',
+  })
   videothumbnailPhotoDataObject?: Video[];
 
-  @OneToMany(() => Video, (param: Video) => param.mediaDataObject, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => Video, (param: Video) => param.mediaDataObject, {
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'DataObject',
+    relModelName: 'VideoMediaMetadata',
+    propertyName: 'videomediaDataObject',
+  })
   videomediaDataObject?: Video[];
 
   constructor(init?: Partial<DataObject>) {

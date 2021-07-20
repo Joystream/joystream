@@ -28,7 +28,11 @@ export class Worker extends BaseModel {
   })
   metadata?: string;
 
-  @OneToMany(() => DataObject, (param: DataObject) => param.liaison)
+  @OneToMany(() => DataObject, (param: DataObject) => param.liaison, {
+    modelName: 'Worker',
+    relModelName: 'DataObject',
+    propertyName: 'dataObjects',
+  })
   dataObjects?: DataObject[];
 
   constructor(init?: Partial<Worker>) {
