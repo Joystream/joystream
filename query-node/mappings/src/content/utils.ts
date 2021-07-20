@@ -34,7 +34,7 @@ import {
   inconsistentState,
   logger,
   prepareDataObject,
-  createPredictableId,
+  getNextId,
 } from '../common'
 
 
@@ -634,7 +634,7 @@ async function prepareLanguage(
 
   // create new language
   const newLanguage = new Language({
-    id: await createPredictableId(db),
+    id: await getNextId(db),
     iso: languageIso,
     createdInBlock: event.blockNumber,
 
@@ -669,7 +669,7 @@ async function prepareLicense(
   // crete new license
   const license = new License({
     ...licenseProtobuf,
-    id: await createPredictableId(db),
+    id: await getNextId(db),
 
     createdById: '1',
     updatedById: '1',

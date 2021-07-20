@@ -6,7 +6,7 @@ import { Bytes } from '@polkadot/types'
 import {
   inconsistentState,
   logger,
-  createPredictableId,
+  getNextId,
 } from './common'
 
 import {
@@ -181,7 +181,7 @@ async function createWorker(
   event: SubstrateEvent,
 ): Promise<void> {
   const newWorker = new Worker({
-    id: await createPredictableId(db),
+    id: await getNextId(db),
     workerId: workerId.toString(),
     type: workerType,
     isActive: true,

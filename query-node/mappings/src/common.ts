@@ -45,9 +45,9 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 /*
   Creates a predictable and unique ID for the given content.
 */
-export async function createPredictableId(db: DatabaseManager): Promise<string> {
+export async function getNextId(db: DatabaseManager): Promise<string> {
   // load or create record
-  const existingRecord = await db.get(NextEntityId, {}) || new NextEntityId({id: '0', nextId: 0})
+  const existingRecord = await db.get(NextEntityId, {}) || new NextEntityId({id: '0', nextId: 1})
 
   // remember id
   const entityId = existingRecord.nextId
@@ -74,7 +74,7 @@ export async function prepareDataObject(
   const customContentParameters = new Custom_ContentParameters(registry, contentParameters.toJSON() as any)
 
   const dataObject = new DataObject({
-    id: await createPredictableId(db),
+    id: await getNextId(db),
     owner,
     createdInBlock: event.blockNumber,
     typeId: contentParameters.type_id.toNumber(),

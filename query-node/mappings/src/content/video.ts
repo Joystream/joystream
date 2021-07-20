@@ -11,7 +11,7 @@ import {
 import {
   inconsistentState,
   logger,
-  createPredictableId,
+  getNextId,
 } from '../common'
 
 import {
@@ -469,10 +469,10 @@ async function integrateVideoMediaMetadata(
 
   // ensure predictable ids
   if (!mediaMetadata.encoding.id) {
-    mediaMetadata.encoding.id = await createPredictableId(db)
+    mediaMetadata.encoding.id = await getNextId(db)
   }
   if (!mediaMetadata.id) {
-    mediaMetadata.id = await createPredictableId(db)
+    mediaMetadata.id = await getNextId(db)
   }
 
   return {
