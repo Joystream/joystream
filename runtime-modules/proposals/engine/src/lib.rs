@@ -259,11 +259,6 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as frame_system::Trait>::BlockNumber,
     {
-        /// Emits on proposal creation.
-        /// Params:
-        /// - Member id of a proposer.
-        /// - Id of a newly created proposal after it was saved in storage.
-        ProposalCreated(MemberId, ProposalId),
 
         /// Emits on proposal creation.
         /// Params:
@@ -603,11 +598,6 @@ impl<T: Trait> Module<T> {
         );
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
-
-        Self::deposit_event(RawEvent::ProposalCreated(
-            creation_params.proposer_id,
-            proposal_id,
-        ));
 
         Ok(proposal_id)
     }
