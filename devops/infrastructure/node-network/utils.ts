@@ -28,7 +28,6 @@ export const getValidatorContainers = (
     result.push({
       name: `joystream-node-${i}`,
       image: 'joystream/node:latest',
-      ports: [{ containerPort: 9944 }, { containerPort: 9933 }],
       args: [
         '--chain',
         chainSpecPath,

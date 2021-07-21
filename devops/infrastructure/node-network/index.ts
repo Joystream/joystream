@@ -23,9 +23,9 @@ if (isMinikube) {
   const cluster = new eks.Cluster('eksctl-node-network', {
     vpcId: vpc.id,
     subnetIds: vpc.publicSubnetIds,
-    desiredCapacity: 3,
-    maxSize: 3,
-    instanceType: 't2.large',
+    desiredCapacity: 2,
+    maxSize: 2,
+    instanceType: 't2.medium',
     providerCredentialOpts: {
       profileName: awsConfig.get('profile'),
     },
@@ -139,10 +139,16 @@ const deployment = new k8s.apps.v1.Deployment(
             {
               name: 'rpc-node',
               image: 'joystream/node:latest',
-              ports: [{ containerPort: 9944 }, { containerPort: 9933 }, { containerPort: 30333 }],
+              ports: [
+                { name: 'rpc-9944', containerPort: 9944 },
+                { name: 'rpc-9933', containerPort: 9933 },
+                { name: 'rpc-30333', containerPort: 30333 },
+              ],
               args: [
                 '--chain',
                 chainSpecPath,
+                '--unsafe-rpc-external',
+                '--unsafe-ws-external',
                 '--ws-external',
                 '--rpc-cors',
                 'all',
@@ -204,8 +210,9 @@ const service = new k8s.core.v1.Service(
     },
     spec: {
       ports: [
-        { name: 'port-1', port: 9944 },
-        { name: 'port-2', port: 9933 },
+        { name: 'port-1', port: 9944, targetPort: 'rpc-9944' },
+        { name: 'port-2', port: 9933, targetPort: 'rpc-9933' },
+        { name: 'port-3', port: 30333, targetPort: 'rpc-30333' },
       ],
       selector: appLabels,
     },
