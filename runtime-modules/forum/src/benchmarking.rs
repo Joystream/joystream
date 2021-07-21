@@ -341,10 +341,7 @@ pub fn generate_poll_input<T: Trait>(
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..alternatives_number {
-                alternatives.push(PollAlternativeInput {
-                    alternative_text: good_poll_alternative_text(),
-                    vote_count: 0,
-                });
+                alternatives.push(good_poll_alternative_text());
             }
             alternatives
         },
