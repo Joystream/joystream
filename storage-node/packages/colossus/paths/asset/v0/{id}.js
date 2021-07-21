@@ -25,7 +25,10 @@ const assert = require('assert')
 
 function errorHandler(response, err, code) {
   debug(err)
-  response.status(err.code || code || 500).send({ message: err.toString() })
+  // Some err types don't have a valid http status code such as one that come from ipfs node for example
+  const statusCode = typeof err.code === 'number' ? err.code : code
+  response.status(statusCode || 500).send({ message: err.toString() })
+  response.end()
 }
 
 // The maximum total estimated balance that will be spent submitting transactions
@@ -143,7 +146,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         })
 
-        stream.on('finish', async () => {
+        stream.on('end', async () => {
           if (!aborted) {
             try {
               // try to get file info and compute ipfs hash before committing the stream to ifps node.
@@ -206,7 +209,11 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           }
         })
 
-        stream.on('error', (err) => errorHandler(res, err))
+        stream.on('error', (err) => {
+          stream.end()
+          stream.cleanup()
+          errorHandler(res, err)
+        })
         req.pipe(stream)
       } catch (err) {
         errorHandler(res, err)

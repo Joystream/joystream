@@ -103,7 +103,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: RUNTIME=antioch tests/network-tests/run-tests.sh full
+        run: RUNTIME=sumer tests/network-tests/run-tests.sh full
 
   basic_runtime:
     name: Integration Tests (New Chain)
@@ -193,7 +193,7 @@ jobs:
           docker-compose up -d joystream-node
       - name: Configure and start development storage node
         run: |
-          DEBUG=* yarn storage-cli dev-init
+          DEBUG=joystream:* yarn storage-cli dev-init
           docker-compose up -d colossus
       - name: Test uploading
         run: |
