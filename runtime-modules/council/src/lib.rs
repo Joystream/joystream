@@ -515,7 +515,7 @@ decl_module! {
         /// Exports const - candidacy lock id.
         const CandidacyLockId: LockIdentifier = T::CandidacyLock::lock_id();
 
-        /// Exports const - candidacy lock id.
+        /// Exports const - councilor lock id.
         const CouncilorLockId: LockIdentifier = T::CouncilorLock::lock_id();
 
         /////////////////// Lifetime ///////////////////////////////////////////
