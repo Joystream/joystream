@@ -1,12 +1,17 @@
 import { fixBlockTimestamp } from './eventFix'
-import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
 
-import { inconsistentState, logger, extractExtrinsicArgs, extractSudoCallParameters } from './common'
+import {
+  convertBytesToString,
+  inconsistentState,
+  logger,
+  extractExtrinsicArgs,
+  extractSudoCallParameters,
+} from './common'
 import { Members } from '../../generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node'
 import { EntryMethod } from '@joystream/types/augment'
@@ -194,22 +199,6 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
 }
 
 /// ///////////////// Helpers ////////////////////////////////////////////////////
-
-/*
-  Helper for converting Bytes type to string
-*/
-function convertBytesToString(b: Bytes | null): string {
-  if (!b) {
-    return ''
-  }
-
-  const result = Buffer.from(b.toU8a(true))
-    .toString()
-    // eslint-disable-next-line no-control-regex
-    .replace(/\u0000/g, '')
-
-  return result
-}
 
 function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   // paid membership?

@@ -4,7 +4,7 @@ import { FindConditions } from 'typeorm'
 import { Bytes } from '@polkadot/types'
 import { fixBlockTimestamp } from './eventFix'
 
-import { inconsistentState, logger, getNextId } from './common'
+import { convertBytesToString, inconsistentState, logger, getNextId } from './common'
 
 import { Channel, Worker, WorkerType } from 'query-node'
 import { GatewayWorkingGroup, StorageWorkingGroup } from '../../generated/types'
@@ -137,7 +137,7 @@ export async function workingGroup_WorkerStorageUpdated(
     return inconsistentState('Non-existing worker update requested', workerId)
   }
 
-  worker.metadata = newMetadata.toUtf8()
+  worker.metadata = convertBytesToString(newMetadata)
 
   await db.save<Worker>(worker)
 

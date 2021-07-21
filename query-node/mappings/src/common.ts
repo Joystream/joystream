@@ -1,6 +1,6 @@
 import { SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@dzlzv/hydra-common'
 import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { u64 } from '@polkadot/types/primitive'
+import { u64, Bytes } from '@polkadot/types/primitive'
 import { fixBlockTimestamp } from './eventFix'
 
 // Asset
@@ -72,7 +72,7 @@ export async function prepareDataObject(
     typeId: contentParameters.type_id.toNumber(),
     size: customContentParameters.size_in_bytes.toNumber(),
     liaisonJudgement: LiaisonJudgement.PENDING, // judgement is pending at start; liaison id is set when content is accepted/rejected
-    ipfsContentId: contentParameters.ipfs_content_id.toUtf8(),
+    ipfsContentId: convertBytesToString(contentParameters.ipfs_content_id),
     joystreamContentId: customContentParameters.content_id.encode(),
 
     createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
@@ -208,3 +208,21 @@ class Logger {
 }
 
 export const logger = new Logger()
+
+/*
+  Helper for converting Bytes type to string
+*/
+export function convertBytesToString(b: Bytes | null): string {
+  if (!b) {
+    return ''
+  }
+
+  const result = Buffer.from(b.toU8a(true)).toString()
+
+  // prevent utf-8 null character
+  if (result.match(/^\0$/)) {
+    return ''
+  }
+
+  return result
+}
