@@ -951,7 +951,6 @@ impl UpdateStorageBucketsPerBagLimitFixture {
 
 pub struct SetStorageBucketVoucherLimitsFixture {
     origin: RawOrigin<u64>,
-    worker_id: u64,
     storage_bucket_id: u64,
     new_objects_size_limit: u64,
     new_objects_number_limit: u64,
@@ -961,7 +960,6 @@ impl SetStorageBucketVoucherLimitsFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
             new_objects_size_limit: 0,
             new_objects_number_limit: 0,
@@ -970,10 +968,6 @@ impl SetStorageBucketVoucherLimitsFixture {
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
     }
 
     pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
@@ -1001,7 +995,6 @@ impl SetStorageBucketVoucherLimitsFixture {
         let old_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id).voucher;
         let actual_result = Storage::set_storage_bucket_voucher_limits(
             self.origin.clone().into(),
-            self.worker_id,
             self.storage_bucket_id,
             self.new_objects_size_limit.clone(),
             self.new_objects_number_limit.clone(),
