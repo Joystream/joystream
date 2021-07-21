@@ -323,14 +323,15 @@ fn add_thread_post<T: Trait>(
     Module::<T>::next_post_id() - T::PostId::one()
 }
 
-pub fn good_poll_alternative_text() -> Vec<u8> {
+fn good_poll_alternative_text() -> Vec<u8> {
     b"poll alternative".to_vec()
 }
 
-pub fn good_poll_description() -> Vec<u8> {
+fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
 
+/// Generates poll input
 pub fn generate_poll_input<T: Trait>(
     expiration_diff: T::Moment,
     alternatives_number: u32,
