@@ -64,13 +64,7 @@ function sendExtrinsic(
               let errorMsg = dispatchError.toString()
               if (dispatchError.isModule) {
                 try {
-                  // Need to assert that registry is of TypeRegistry type, since Registry intefrace
-                  // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
-                  const typeRegistry = api.registry as TypeRegistry
-                  const { name, documentation } = typeRegistry.findMetaError(
-                    dispatchError.asModule
-                  )
-                  errorMsg = `${name} (${documentation})`
+                  errorMsg = formatDispatchError(api, dispatchError)
                 } catch (e) {
                   // This probably means we don't have this error in the metadata
                   // In this case - continue (we'll just display dispatchError.toString())
@@ -88,13 +82,17 @@ function sendExtrinsic(
               const sudid = result.findRecord('sudo', 'Sudid')
 
               if (sudid) {
-                const dispatchSuccess = sudid.event.data[0] as DispatchResult
-                if (dispatchSuccess.isOk) {
+                const dispatchResult = sudid.event.data[0] as DispatchResult
+                if (dispatchResult.isOk) {
                   resolve(result)
                 } else {
+                  const errorMsg = formatDispatchError(
+                    api,
+                    dispatchResult.asErr
+                  )
                   reject(
                     new ExtrinsicFailedError(
-                      'Sudo extrinsic execution error!',
+                      `Sudo extrinsic execution error! ${errorMsg}`,
                       {
                         exit: ExitCodes.ApiError,
                       }
@@ -128,6 +126,23 @@ function sendExtrinsic(
         )
       )
   })
+}
+
+/**
+ * Helper function for formatting dispatch error.
+ *
+ * @param api - API promise
+ * @param error - DispatchError instance
+ * @returns error string.
+ */
+function formatDispatchError(api: ApiPromise, error: DispatchError): string {
+  // Need to assert that registry is of TypeRegistry type, since Registry intefrace
+  // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
+  const typeRegistry = api.registry as TypeRegistry
+  const { name, documentation } = typeRegistry.findMetaError(error.asModule)
+  const errorMsg = `${name} (${documentation})`
+
+  return errorMsg
 }
 
 /**
