@@ -10,7 +10,8 @@
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:graphql-types": "graphql-codegen"
+    "generate:graphql-types": "graphql-codegen",
+    "generate:all": "yarn generate:graphql-types"
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",

@@ -69,8 +69,7 @@ typegen:
     - forum.CategoryDeleted
     - forum.ThreadCreated
     - forum.ThreadModerated
-    # - forum.ThreadUpdated FIXME: Not emitted by the runtime
-    - forum.ThreadTitleUpdated
+    - forum.ThreadMetadataUpdated
     - forum.ThreadDeleted
     - forum.ThreadMoved
     - forum.VoteOnPoll
@@ -495,8 +494,8 @@ mappings:
       handler: forum_ThreadCreated
     - event: forum.ThreadModerated
       handler: forum_ThreadModerated
-    - event: forum.ThreadTitleUpdated
-      handler: forum_ThreadTitleUpdated
+    - event: forum.ThreadMetadataUpdated
+      handler: forum_ThreadMetadataUpdated
     - event: forum.ThreadDeleted
       handler: forum_ThreadDeleted
     - event: forum.ThreadMoved

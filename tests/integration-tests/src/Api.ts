@@ -551,7 +551,8 @@ export class Api {
     const details = await this.retrieveForumEventDetails(result, 'ThreadCreated')
     return {
       ...details,
-      threadId: details.event.data[0] as ThreadId,
+      threadId: details.event.data[1] as ThreadId,
+      postId: details.event.data[2] as PostId,
     }
   }
 

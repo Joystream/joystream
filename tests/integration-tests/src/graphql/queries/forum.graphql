@@ -120,6 +120,8 @@ fragment ForumThreadWithPostsFields on ForumThread {
   isSticky
   createdInEvent {
     id
+    title
+    text
   }
   status {
     __typename
@@ -139,10 +141,13 @@ fragment ForumThreadWithPostsFields on ForumThread {
       }
     }
   }
-  titleUpdates {
+  metadataUpdates {
     id
   }
   movedInEvents {
+    id
+  }
+  tags {
     id
   }
 }

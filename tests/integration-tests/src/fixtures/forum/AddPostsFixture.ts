@@ -68,10 +68,10 @@ export class AddPostsFixture extends StandardizedFixture {
     return this.api.retrievePostAddedEventDetails(result)
   }
 
-  protected getPostExpectedText(postParams: PostParams): string {
-    const expectedMetadata = Utils.getDeserializedMetadataFormInput(ForumPostMetadata, postParams.metadata)
-    const metadataBytes = Utils.getMetadataBytesFromInput(ForumPostMetadata, postParams.metadata)
-    return typeof expectedMetadata?.text === 'string' ? expectedMetadata.text : Utils.bytesToString(metadataBytes)
+  protected getPostExpectedText({ metadata: inputMeta }: PostParams): string {
+    const meta = Utils.getDeserializedMetadataFormInput(ForumPostMetadata, inputMeta)
+    const metaBytes = Utils.getMetadataBytesFromInput(ForumPostMetadata, inputMeta)
+    return meta ? meta.text || '' : Utils.bytesToString(metaBytes)
   }
 
   protected assertQueriedPostsAreValid(

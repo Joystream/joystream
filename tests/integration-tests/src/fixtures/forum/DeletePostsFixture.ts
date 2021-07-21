@@ -8,8 +8,9 @@ import { ForumPostFieldsFragment, PostDeletedEventFieldsFragment } from '../../g
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { MemberId, PostId, ThreadId } from '@joystream/types/common'
-import { CategoryId } from '@joystream/types/forum'
+import { CategoryId, PostsToDeleteMap } from '@joystream/types/forum'
 import _ from 'lodash'
+import { registry } from '../../../../../types'
 
 const DEFAULT_RATIONALE = 'State cleanup'
 
@@ -40,16 +41,14 @@ export class DeletePostsFixture extends StandardizedFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.removals.map((r) =>
-      this.api.tx.forum.deletePosts(
-        r.asMember,
-        r.posts.map(
-          ({ categoryId, threadId, postId, hide }) =>
-            [categoryId, threadId, postId, hide === undefined || hide] as [CategoryId, ThreadId, PostId, boolean]
-        ),
-        r.rationale || DEFAULT_RATIONALE
+    return this.removals.map((r) => {
+      const postsToDeleteEntries = r.posts.map(
+        ({ categoryId, threadId, postId, hide }) =>
+          [[categoryId, threadId, postId], hide === undefined || hide] as [[CategoryId, ThreadId, PostId], boolean]
       )
-    )
+      const postsToDeleteMap = new PostsToDeleteMap(registry, new Map(postsToDeleteEntries))
+      return this.api.tx.forum.deletePosts(r.asMember, postsToDeleteMap, r.rationale || DEFAULT_RATIONALE)
+    })
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {

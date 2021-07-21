@@ -139,6 +139,7 @@ export interface CategoryCreatedEventDetails extends EventDetails {
 
 export interface ThreadCreatedEventDetails extends EventDetails {
   threadId: ThreadId
+  postId: PostId
 }
 
 export interface PostAddedEventDetails extends EventDetails {
@@ -152,7 +153,7 @@ export type ForumEventName =
   | 'ThreadCreated'
   | 'ThreadModerated'
   | 'ThreadUpdated'
-  | 'ThreadTitleUpdated'
+  | 'ThreadMetadataUpdated'
   | 'ThreadDeleted'
   | 'ThreadMoved'
   | 'PostAdded'

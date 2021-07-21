@@ -51,14 +51,15 @@ export type ForumThreadWithPostsFieldsFragment = {
     endTime: any
     pollAlternatives: Array<{ index: number; text: string; votes: Array<{ votingMember: { id: string } }> }>
   }>
-  createdInEvent: { id: string }
+  createdInEvent: { id: string; title: string; text: string }
   status:
     | { __typename: 'ThreadStatusActive' }
     | { __typename: 'ThreadStatusLocked'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'ThreadStatusModerated'; threadModeratedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'ThreadStatusRemoved'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
-  titleUpdates: Array<{ id: string }>
+  metadataUpdates: Array<{ id: string }>
   movedInEvents: Array<{ id: string }>
+  tags: Array<{ id: string }>
 }
 
 export type GetCategoriesByIdsQueryVariables = Types.Exact<{
@@ -143,6 +144,8 @@ export type ThreadCreatedEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
+  title: string
+  text: string
   thread: { id: string }
 }
 
@@ -152,7 +155,7 @@ export type GetThreadCreatedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetThreadCreatedEventsByEventIdsQuery = { threadCreatedEvents: Array<ThreadCreatedEventFieldsFragment> }
 
-export type ThreadTitleUpdatedEventFieldsFragment = {
+export type ThreadMetadataUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
@@ -163,12 +166,12 @@ export type ThreadTitleUpdatedEventFieldsFragment = {
   thread: { id: string }
 }
 
-export type GetThreadTitleUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+export type GetThreadMetadataUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadTitleUpdatedEventsByEventIdsQuery = {
-  threadTitleUpdatedEvents: Array<ThreadTitleUpdatedEventFieldsFragment>
+export type GetThreadMetadataUpdatedEventsByEventIdsQuery = {
+  threadMetadataUpdatedEvents: Array<ThreadMetadataUpdatedEventFieldsFragment>
 }
 
 export type VoteOnPollEventFieldsFragment = {
@@ -1844,6 +1847,8 @@ export const ForumThreadWithPostsFields = gql`
     isSticky
     createdInEvent {
       id
+      title
+      text
     }
     status {
       __typename
@@ -1863,10 +1868,13 @@ export const ForumThreadWithPostsFields = gql`
         }
       }
     }
-    titleUpdates {
+    metadataUpdates {
       id
     }
     movedInEvents {
+      id
+    }
+    tags {
       id
     }
   }
@@ -1926,13 +1934,15 @@ export const ThreadCreatedEventFields = gql`
     network
     inExtrinsic
     indexInBlock
+    title
+    text
     thread {
       id
     }
   }
 `
-export const ThreadTitleUpdatedEventFields = gql`
-  fragment ThreadTitleUpdatedEventFields on ThreadTitleUpdatedEvent {
+export const ThreadMetadataUpdatedEventFields = gql`
+  fragment ThreadMetadataUpdatedEventFields on ThreadMetadataUpdatedEvent {
     id
     createdAt
     inBlock
@@ -3356,13 +3366,13 @@ export const GetThreadCreatedEventsByEventIds = gql`
   }
   ${ThreadCreatedEventFields}
 `
-export const GetThreadTitleUpdatedEventsByEventIds = gql`
-  query getThreadTitleUpdatedEventsByEventIds($eventIds: [ID!]) {
-    threadTitleUpdatedEvents(where: { id_in: $eventIds }) {
-      ...ThreadTitleUpdatedEventFields
+export const GetThreadMetadataUpdatedEventsByEventIds = gql`
+  query getThreadMetadataUpdatedEventsByEventIds($eventIds: [ID!]) {
+    threadMetadataUpdatedEvents(where: { id_in: $eventIds }) {
+      ...ThreadMetadataUpdatedEventFields
     }
   }
-  ${ThreadTitleUpdatedEventFields}
+  ${ThreadMetadataUpdatedEventFields}
 `
 export const GetVoteOnPollEventsByEventIds = gql`
   query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {

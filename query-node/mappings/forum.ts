@@ -2,7 +2,14 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
-import { bytesToString, deserializeMetadata, genericEventFields, getWorker } from './common'
+import {
+  bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  getWorker,
+  inconsistentState,
+  perpareString,
+} from './common'
 import {
   CategoryCreatedEvent,
   CategoryStatusActive,
@@ -20,7 +27,7 @@ import {
   ForumPollAlternative,
   ThreadModeratedEvent,
   ThreadStatusModerated,
-  ThreadTitleUpdatedEvent,
+  ThreadMetadataUpdatedEvent,
   ThreadDeletedEvent,
   ThreadStatusLocked,
   ThreadStatusRemoved,
@@ -46,11 +53,20 @@ import {
   PostTextUpdatedEvent,
   PostDeletedEvent,
   PostStatusRemoved,
+  ForumThreadTag,
 } from 'query-node/dist/model'
 import { Forum } from './generated/types'
 import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
-import { ForumPostMetadata, ForumPostReaction as SupportedPostReactions } from '@joystream/metadata-protobuf'
+import {
+  ForumPostMetadata,
+  ForumPostReaction as SupportedPostReactions,
+  ForumThreadMetadata,
+} from '@joystream/metadata-protobuf'
+import { isSet } from '@joystream/metadata-protobuf/utils'
+import { MAX_TAGS_PER_FORUM_THREAD } from '@joystream/metadata-protobuf/consts'
 import { Not, In } from 'typeorm'
+import { Bytes } from '@polkadot/types'
+import _ from 'lodash'
 
 async function getCategory(store: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
   const category = await store.get(ForumCategory, { where: { id: categoryId }, relations })
@@ -70,8 +86,8 @@ async function getThread(store: DatabaseManager, threadId: string): Promise<Foru
   return thread
 }
 
-async function getPost(store: DatabaseManager, postId: string): Promise<ForumPost> {
-  const post = await store.get(ForumPost, { where: { id: postId } })
+async function getPost(store: DatabaseManager, postId: string, relations?: 'thread'[]): Promise<ForumPost> {
+  const post = await store.get(ForumPost, { where: { id: postId }, relations })
   if (!post) {
     throw new Error(`Forum post not found by id: ${postId.toString()}`)
   }
@@ -106,6 +122,60 @@ async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): P
   }
 
   return worker
+}
+
+function normalizeForumTagLabel(label: string): string {
+  // Optionally: normalize to lowercase & ASCII only?
+  return perpareString(label)
+}
+
+function parseThreadMetadata(metaBytes: Bytes) {
+  const meta = deserializeMetadata(ForumThreadMetadata, metaBytes)
+  return {
+    title: meta ? meta.title : bytesToString(metaBytes),
+    tags:
+      meta && isSet(meta.tags)
+        ? _.uniq(meta.tags.slice(0, MAX_TAGS_PER_FORUM_THREAD).map((label) => normalizeForumTagLabel(label))).filter(
+            (v) => v // Filter out empty strings
+          )
+        : undefined,
+  }
+}
+
+async function prepareThreadTagsToSet(
+  { event, store }: StoreContext & EventContext,
+  labels: string[]
+): Promise<ForumThreadTag[]> {
+  const eventTime = new Date(event.blockTimestamp)
+  return Promise.all(
+    labels.map(async (label) => {
+      const forumTag =
+        (await store.get(ForumThreadTag, { where: { id: label } })) ||
+        new ForumThreadTag({
+          id: label,
+          createdAt: eventTime,
+          visibleThreadsCount: 0,
+        })
+      forumTag.updatedAt = eventTime
+      ++forumTag.visibleThreadsCount
+      await store.save<ForumThreadTag>(forumTag)
+      return forumTag
+    })
+  )
+}
+
+async function unsetThreadTags({ event, store }: StoreContext & EventContext, tags: ForumThreadTag[]): Promise<void> {
+  const eventTime = new Date(event.blockTimestamp)
+  await Promise.all(
+    tags.map(async (forumTag) => {
+      --forumTag.visibleThreadsCount
+      if (forumTag.visibleThreadsCount < 0) {
+        inconsistentState('Trying to update forumTag.visibleThreadsCount to a number below 0!')
+      }
+      forumTag.updatedAt = eventTime
+      await store.save<ForumThreadTag>(forumTag)
+    })
+  )
 }
 
 // Get standarized PostReactionResult by PostReactionId
@@ -201,11 +271,21 @@ export async function forum_CategoryDeleted({ event, store }: EventContext & Sto
   await store.save<ForumCategory>(category)
 }
 
-export async function forum_ThreadCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const { forumUserId, categoryId, title, text, poll } = new Forum.CreateThreadCall(event).args
-  const [threadId] = new Forum.ThreadCreatedEvent(event).params
+export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [
+    categoryId,
+    threadId,
+    postId,
+    memberId,
+    threadMetaBytes,
+    postTextBytes,
+    pollInput,
+  ] = new Forum.ThreadCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
-  const author = new Membership({ id: forumUserId.toString() })
+  const author = new Membership({ id: memberId.toString() })
+
+  const { title, tags } = parseThreadMetadata(threadMetaBytes)
 
   const thread = new ForumThread({
     createdAt: eventTime,
@@ -213,28 +293,30 @@ export async function forum_ThreadCreated({ event, store }: EventContext & Store
     id: threadId.toString(),
     author,
     category: new ForumCategory({ id: categoryId.toString() }),
-    title: bytesToString(title),
+    title: title || '',
     isSticky: false,
     status: new ThreadStatusActive(),
+    visiblePostsCount: 1,
+    tags: tags ? await prepareThreadTagsToSet(ctx, tags) : [],
   })
   await store.save<ForumThread>(thread)
 
-  if (poll.isSome) {
+  if (pollInput.isSome) {
     const threadPoll = new ForumPoll({
       createdAt: eventTime,
       updatedAt: eventTime,
-      description: bytesToString(poll.unwrap().description_hash), // FIXME: This should be raw description!
-      endTime: new Date(poll.unwrap().end_time.toNumber()),
+      description: bytesToString(pollInput.unwrap().description),
+      endTime: new Date(pollInput.unwrap().end_time.toNumber()),
       thread,
     })
     await store.save<ForumPoll>(threadPoll)
     await Promise.all(
-      poll.unwrap().poll_alternatives.map(async (alt, index) => {
+      pollInput.unwrap().poll_alternatives.map(async (alt, index) => {
         const alternative = new ForumPollAlternative({
           createdAt: eventTime,
           updatedAt: eventTime,
           poll: threadPoll,
-          text: bytesToString(alt.alternative_text_hash), // FIXME: This should be raw text!
+          text: bytesToString(alt.alternative_text),
           index,
         })
 
@@ -246,8 +328,8 @@ export async function forum_ThreadCreated({ event, store }: EventContext & Store
   const threadCreatedEvent = new ThreadCreatedEvent({
     ...genericEventFields(event),
     thread,
-    title: bytesToString(title),
-    text: bytesToString(text),
+    title: title || '',
+    text: bytesToString(postTextBytes),
   })
   await store.save<ThreadCreatedEvent>(threadCreatedEvent)
 
@@ -255,19 +337,20 @@ export async function forum_ThreadCreated({ event, store }: EventContext & Store
   postOrigin.threadCreatedEventId = threadCreatedEvent.id
 
   const initialPost = new ForumPost({
-    // FIXME: The postId is unknown
+    id: postId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
     author,
     thread,
-    text: bytesToString(text),
+    text: bytesToString(postTextBytes),
     status: new PostStatusActive(),
     origin: postOrigin,
   })
   await store.save<ForumPost>(initialPost)
 }
 
-export async function forum_ThreadModerated({ event, store }: EventContext & StoreContext): Promise<void> {
+export async function forum_ThreadModerated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
   const [threadId, rationaleBytes, privilegedActor] = new Forum.ThreadModeratedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const actorWorker = await getActorWorker(store, privilegedActor)
@@ -287,28 +370,50 @@ export async function forum_ThreadModerated({ event, store }: EventContext & Sto
 
   thread.updatedAt = eventTime
   thread.status = newStatus
+  thread.visiblePostsCount = 0
+  await unsetThreadTags(ctx, thread.tags || [])
   await store.save<ForumThread>(thread)
 }
 
-export async function forum_ThreadTitleUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [threadId, , , newTitleBytes] = new Forum.ThreadTitleUpdatedEvent(event).params
+export async function forum_ThreadMetadataUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [threadId, , , newMetadataBytes] = new Forum.ThreadMetadataUpdatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const thread = await getThread(store, threadId.toString())
 
-  const threadTitleUpdatedEvent = new ThreadTitleUpdatedEvent({
-    ...genericEventFields(event),
-    thread,
-    newTitle: bytesToString(newTitleBytes),
-  })
+  const { title: newTitle, tags: newTagIds } = parseThreadMetadata(newMetadataBytes)
 
-  await store.save<ThreadTitleUpdatedEvent>(threadTitleUpdatedEvent)
+  // Only update tags if set
+  if (isSet(newTagIds)) {
+    const currentTagIds = (thread.tags || []).map((t) => t.id)
+    const tagIdsToSet = _.difference(newTagIds, currentTagIds)
+    const tagIdsToUnset = _.difference(currentTagIds, newTagIds)
+    const newTags = await prepareThreadTagsToSet(ctx, tagIdsToSet)
+    await unsetThreadTags(
+      ctx,
+      (thread.tags || []).filter((t) => tagIdsToUnset.includes(t.id))
+    )
+    thread.tags = newTags
+  }
+
+  if (isSet(newTitle)) {
+    thread.title = newTitle
+  }
 
   thread.updatedAt = eventTime
-  thread.title = bytesToString(newTitleBytes)
   await store.save<ForumThread>(thread)
+
+  const threadMetadataUpdatedEvent = new ThreadMetadataUpdatedEvent({
+    ...genericEventFields(event),
+    thread,
+    newTitle: newTitle || undefined,
+  })
+
+  await store.save<ThreadMetadataUpdatedEvent>(threadMetadataUpdatedEvent)
 }
 
-export async function forum_ThreadDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
+export async function forum_ThreadDeleted(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
   const [threadId, , , hide] = new Forum.ThreadDeletedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const thread = await getThread(store, threadId.toString())
@@ -324,6 +429,10 @@ export async function forum_ThreadDeleted({ event, store }: EventContext & Store
   status.threadDeletedEventId = threadDeletedEvent.id
   thread.status = status
   thread.updatedAt = eventTime
+  if (hide.valueOf()) {
+    thread.visiblePostsCount = 0
+    await unsetThreadTags(ctx, thread.tags || [])
+  }
   await store.save<ForumThread>(thread)
 }
 
@@ -366,6 +475,7 @@ export async function forum_PostAdded({ event, store }: EventContext & StoreCont
   const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new Forum.PostAddedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
 
+  const thread = await getThread(store, threadId.toString())
   const metadata = deserializeMetadata(ForumPostMetadata, metadataBytes)
   const postText = metadata ? metadata.text || '' : bytesToString(metadataBytes)
   const repliesToPost =
@@ -380,7 +490,7 @@ export async function forum_PostAdded({ event, store }: EventContext & StoreCont
     createdAt: eventTime,
     updatedAt: eventTime,
     text: postText,
-    thread: new ForumThread({ id: threadId.toString() }),
+    thread,
     status: postStatus,
     author: new Membership({ id: forumUserId.toString() }),
     origin: postOrigin,
@@ -399,6 +509,10 @@ export async function forum_PostAdded({ event, store }: EventContext & StoreCont
   // Update the other side of cross-relationship
   postOrigin.postAddedEventId = postAddedEvent.id
   await store.save<ForumPost>(post)
+
+  ++thread.visiblePostsCount
+  thread.updatedAt = eventTime
+  await store.save<ForumThread>(thread)
 }
 
 export async function forum_CategoryStickyThreadUpdate({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -469,7 +583,7 @@ export async function forum_PostModerated({ event, store }: EventContext & Store
   const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const actorWorker = await getActorWorker(store, privilegedActor)
-  const post = await getPost(store, postId.toString())
+  const post = await getPost(store, postId.toString(), ['thread'])
 
   const postModeratedEvent = new PostModeratedEvent({
     ...genericEventFields(event),
@@ -486,6 +600,11 @@ export async function forum_PostModerated({ event, store }: EventContext & Store
   post.updatedAt = eventTime
   post.status = newStatus
   await store.save<ForumPost>(post)
+
+  const { thread } = post
+  --thread.visiblePostsCount
+  thread.updatedAt = eventTime
+  await store.save<ForumThread>(thread)
 }
 
 export async function forum_PostReacted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -546,6 +665,12 @@ export async function forum_PostTextUpdated({ event, store }: EventContext & Sto
 }
 
 export async function forum_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
+  // FIXME: Custom posts BTreeMap fix (because of invalid BTreeMap json encoding/decoding)
+  // See: https://github.com/polkadot-js/api/pull/3789
+  event.params[2].value = new Map(
+    Object.entries(event.params[2].value).map(([key, val]) => [JSON.parse(key), val])
+  ) as any
+
   const [rationaleBytes, userId, postsData] = new Forum.PostDeletedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
 
@@ -558,14 +683,21 @@ export async function forum_PostDeleted({ event, store }: EventContext & StoreCo
   await store.save<PostDeletedEvent>(postDeletedEvent)
 
   await Promise.all(
-    postsData.map(async ([, , postId, hideFlag]) => {
-      const post = await getPost(store, postId.toString())
+    Array.from(postsData.entries()).map(async ([[, , postId], hideFlag]) => {
+      const post = await getPost(store, postId.toString(), ['thread'])
       const newStatus = hideFlag.valueOf() ? new PostStatusRemoved() : new PostStatusLocked()
       newStatus.postDeletedEventId = postDeletedEvent.id
       post.updatedAt = eventTime
       post.status = newStatus
       post.deletedInEvent = postDeletedEvent
       await store.save<ForumPost>(post)
+
+      if (hideFlag.valueOf()) {
+        const { thread } = post
+        --thread.visiblePostsCount
+        thread.updatedAt = eventTime
+        await store.save<ForumThread>(thread)
+      }
     })
   )
 }

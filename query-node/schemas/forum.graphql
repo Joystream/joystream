@@ -83,6 +83,9 @@ type ForumThread @entity {
   "All posts in the thread"
   posts: [ForumPost!] @derivedFrom(field: "thread")
 
+  "Number of non-deleted posts in the thread"
+  visiblePostsCount: Int!
+
   "Optional poll associated with the thread"
   poll: ForumPoll @derivedFrom(field: "thread")
 
@@ -95,8 +98,8 @@ type ForumThread @entity {
   "Current thread status"
   status: ThreadStatus!
 
-  "Theread title update events"
-  titleUpdates: [ThreadTitleUpdatedEvent!] @derivedFrom(field: "thread")
+  "Theread metadata update events"
+  metadataUpdates: [ThreadMetadataUpdatedEvent!] @derivedFrom(field: "thread")
 
   # Required to create Many-to-Many relation
   "The events the thred was made sticky in"
@@ -104,6 +107,20 @@ type ForumThread @entity {
 
   "List of events that moved the thread to a different category"
   movedInEvents: [ThreadMovedEvent!] @derivedFrom(field: "thread")
+
+  "Assigned thread tags"
+  tags: [ForumThreadTag!]
+}
+
+type ForumThreadTag @entity {
+  "Tag id (and simultaneously - tag label)"
+  id: ID!
+
+  "Forum threads assigned to the tag"
+  threads: [ForumThread!] @derivedFrom(field: "tags")
+
+  "Number of non-removed threads currently assigned to the tag"
+  visibleThreadsCount: Int!
 }
 
 type ForumPoll @entity {

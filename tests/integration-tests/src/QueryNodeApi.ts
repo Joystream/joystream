@@ -226,10 +226,10 @@ import {
   GetPostAddedEventsByEventIdsQuery,
   GetPostAddedEventsByEventIdsQueryVariables,
   GetPostAddedEventsByEventIds,
-  ThreadTitleUpdatedEventFieldsFragment,
-  GetThreadTitleUpdatedEventsByEventIdsQuery,
-  GetThreadTitleUpdatedEventsByEventIdsQueryVariables,
-  GetThreadTitleUpdatedEventsByEventIds,
+  ThreadMetadataUpdatedEventFieldsFragment,
+  GetThreadMetadataUpdatedEventsByEventIds,
+  GetThreadMetadataUpdatedEventsByEventIdsQuery,
+  GetThreadMetadataUpdatedEventsByEventIdsQueryVariables,
   ThreadMovedEventFieldsFragment,
   GetThreadMovedEventsByEventIdsQuery,
   GetThreadMovedEventsByEventIdsQueryVariables,
@@ -834,12 +834,14 @@ export class QueryNodeApi {
     >(GetThreadCreatedEventsByEventIds, { eventIds }, 'threadCreatedEvents')
   }
 
-  public async getThreadTitleUpdatedEvents(events: EventDetails[]): Promise<ThreadTitleUpdatedEventFieldsFragment[]> {
+  public async getThreadMetadataUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<ThreadMetadataUpdatedEventFieldsFragment[]> {
     const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
-      GetThreadTitleUpdatedEventsByEventIdsQuery,
-      GetThreadTitleUpdatedEventsByEventIdsQueryVariables
-    >(GetThreadTitleUpdatedEventsByEventIds, { eventIds }, 'threadTitleUpdatedEvents')
+      GetThreadMetadataUpdatedEventsByEventIdsQuery,
+      GetThreadMetadataUpdatedEventsByEventIdsQueryVariables
+    >(GetThreadMetadataUpdatedEventsByEventIds, { eventIds }, 'threadMetadataUpdatedEvents')
   }
 
   public async getThreadsWithPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithPostsFieldsFragment[]> {

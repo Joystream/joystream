@@ -1,7 +1,7 @@
-import { bool, u32, u64, Option, Vec, Null, Bytes } from '@polkadot/types'
+import { bool, u32, u64, Option, Vec, Null, Bytes, Tuple } from '@polkadot/types'
 import { Moment } from '@polkadot/types/interfaces'
-import { Hash, ThreadId, PostId, JoyStructDecorated, JoyEnum } from './common'
-import { RegistryTypes } from '@polkadot/types/types'
+import { Hash, ThreadId, PostId, JoyStructDecorated, JoyEnum, JoyBTreeMap } from './common'
+import { Constructor, ITuple, RegistryTypes } from '@polkadot/types/types'
 
 export class ForumUserId extends u64 {}
 export class ModeratorId extends u64 {}
@@ -72,6 +72,12 @@ export class PollInput extends JoyStructDecorated({
   end_time: u64,
   poll_alternatives: Vec.with(PollAlternativeInput),
 }) {}
+
+export class PostIdTuple extends ((Tuple.with([CategoryId, ThreadId, PostId]) as unknown) as Constructor<
+  ITuple<[CategoryId, ThreadId, PostId]>
+>) {}
+
+export class PostsToDeleteMap extends JoyBTreeMap(PostIdTuple, bool) {}
 
 export const forumTypes: RegistryTypes = {
   ForumUserId,

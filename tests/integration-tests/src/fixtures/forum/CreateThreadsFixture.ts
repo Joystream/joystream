@@ -1,16 +1,18 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { ThreadCreatedEventDetails } from '../../types'
+import { MetadataInput, ThreadCreatedEventDetails } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithPostsFieldsFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId, Poll } from '@joystream/types/forum'
+import { CategoryId, PollAlternativeInput, PollInput } from '@joystream/types/forum'
 import { MemberId, ThreadId } from '@joystream/types/common'
 import { CreateInterface } from '@joystream/types'
 import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
+import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
 export type PollParams = {
   description: string
@@ -19,7 +21,7 @@ export type PollParams = {
 }
 
 export type ThreadParams = {
-  title: string
+  metadata: MetadataInput<IForumThreadMetadata>
   text: string
   categoryId: CategoryId
   asMember: MemberId
@@ -58,18 +60,19 @@ export class CreateThreadsFixture extends StandardizedFixture {
     await super.execute()
   }
 
-  protected parsePollParams(pollParams?: PollParams): CreateInterface<Poll> | null {
+  protected parsePollParams(pollParams?: PollParams): CreateInterface<PollInput> | null {
     if (!pollParams) {
       return null
     }
 
+    const alternatives: CreateInterface<PollAlternativeInput>[] = pollParams.alternatives.map((a) => ({
+      alternative_text: a,
+    }))
+
     return {
-      description_hash: pollParams.description,
+      description: pollParams.description,
       end_time: pollParams.endTime.getTime(),
-      poll_alternatives: pollParams.alternatives.map((a) => ({
-        alternative_text_hash: a,
-        vote_count: 0,
-      })),
+      poll_alternatives: alternatives,
     }
   }
 
@@ -78,7 +81,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
       this.api.tx.forum.createThread(
         params.asMember,
         params.categoryId,
-        params.title,
+        Utils.getMetadataBytesFromInput(ForumThreadMetadata, params.metadata),
         params.text,
         this.parsePollParams(params.poll)
       )
@@ -89,6 +92,12 @@ export class CreateThreadsFixture extends StandardizedFixture {
     return this.api.retrieveThreadCreatedEventDetails(result)
   }
 
+  protected getExpectedThreadTitle({ metadata: inputMeta }: ThreadParams): string {
+    const meta = Utils.getDeserializedMetadataFormInput(ForumThreadMetadata, inputMeta)
+    const metaBytes = Utils.getMetadataBytesFromInput(ForumThreadMetadata, inputMeta)
+    return meta ? meta.title || '' : Utils.bytesToString(metaBytes)
+  }
+
   protected assertQueriedThreadsAreValid(
     qThreads: ForumThreadWithPostsFieldsFragment[],
     qEvents: ThreadCreatedEventFieldsFragment[]
@@ -97,8 +106,10 @@ export class CreateThreadsFixture extends StandardizedFixture {
       const qThread = qThreads.find((t) => t.id === e.threadId.toString())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const threadParams = this.threadsParams[i]
+      const metadata = Utils.getDeserializedMetadataFormInput(ForumThreadMetadata, threadParams.metadata)
+      const expectedTitle = this.getExpectedThreadTitle(threadParams)
       Utils.assert(qThread, 'Query node: Thread not found')
-      assert.equal(qThread.title, threadParams.title)
+      assert.equal(qThread.title, expectedTitle)
       assert.equal(qThread.category.id, threadParams.categoryId.toString())
       assert.equal(qThread.author.id, threadParams.asMember.toString())
       assert.equal(qThread.status.__typename, 'ThreadStatusActive')
@@ -106,6 +117,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
       assert.equal(qThread.createdInEvent.id, qEvent.id)
       const initialPost = qThread.posts.find((p) => p.origin.__typename === 'PostOriginThreadInitial')
       Utils.assert(initialPost, "Query node: Thread's initial post not found!")
+      assert.equal(initialPost.id, e.postId.toString())
       assert.equal(initialPost.text, threadParams.text)
       Utils.assert(initialPost.origin.__typename === 'PostOriginThreadInitial')
       // FIXME: Temporarly not working (https://github.com/Joystream/hydra/issues/396)
@@ -116,13 +128,25 @@ export class CreateThreadsFixture extends StandardizedFixture {
       if (threadParams.poll) {
         Utils.assert(qThread.poll, 'Query node: Thread poll is missing')
         assert.equal(qThread.poll.description, threadParams.poll.description)
+        assert.sameDeepMembers(
+          qThread.poll.pollAlternatives.map((a) => [a.text, a.index]),
+          threadParams.poll.alternatives.map((text, index) => [text, index])
+        )
         assert.equal(new Date(qThread.poll.endTime).getTime(), threadParams.poll.endTime.getTime())
+      }
+      if (metadata && isSet(metadata?.tags)) {
+        assert.sameDeepMembers(
+          qThread.tags.map((t) => t.id),
+          metadata.tags
+        )
       }
     })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ThreadCreatedEventFieldsFragment, i: number): void {
     assert.equal(qEvent.thread.id, this.events[i].threadId.toString())
+    assert.equal(qEvent.title, this.getExpectedThreadTitle(this.threadsParams[i]))
+    assert.equal(qEvent.text, this.threadsParams[i].text)
   }
 
   async runQueryNodeChecks(): Promise<void> {
