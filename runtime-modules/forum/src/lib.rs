@@ -207,7 +207,7 @@ pub struct PollInput<Timestamp> {
     /// description
     pub description: Vec<u8>,
 
-    /// pallet_timestamp of poll end
+    /// timestamp of poll end
     pub end_time: Timestamp,
 
     /// Alternative polls description
@@ -221,7 +221,7 @@ pub struct Poll<Timestamp, Hash> {
     /// hash of description
     pub description_hash: Hash,
 
-    /// pallet_timestamp of poll end
+    /// timestamp of poll end
     pub end_time: Timestamp,
 
     /// Alternative description and count
@@ -1618,6 +1618,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    /// Add new posts & increase thread counter
     pub fn add_new_post(
         thread_id: T::ThreadId,
         category_id: T::CategoryId,
