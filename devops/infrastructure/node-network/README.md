@@ -38,7 +38,7 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH> --plaintext isMinikube=true
+    --plaintext numberOfValidators=2 --plaintext isMinikube=true
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
@@ -46,10 +46,6 @@ After cloning this repo, from this working directory, run these commands:
    ```bash
    $ pulumi config set isMinikube false
    ```
-
-1. Create a `.env` file in this directory (`cp ../../../.env ./.env`) and set the database and other variables in it
-
-   Make sure to set `GRAPHQL_SERVER_PORT=4001`
 
 1. Stand up the Kubernetes cluster:
 
