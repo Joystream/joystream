@@ -173,7 +173,7 @@ pub trait Trait:
 }
 
 /// Upper bounds for storage maps and double maps. Needed to prevent potential block exhaustion during deletion, etc.
-/// MaxSubcategories, MaxThreadsInCategory, and MaxPostsInThread should be reasonably small because when the category is deleted
+/// MaxSubcategories, and MaxCategories should be reasonably small because when the category is deleted
 /// all of it's subcategories with their threads and posts will be iterated over and deleted.
 pub trait StorageLimits {
     /// Maximum direct subcategories in a category
@@ -200,17 +200,6 @@ pub struct PollAlternative<Hash> {
     pub vote_count: u32,
 }
 
-/// Represents all poll alternative texts and vote count for each one
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct PollAlternativeInput {
-    /// alternative description
-    pub alternative_text: Vec<u8>,
-
-    /// Vote count for the alternative
-    pub vote_count: u32,
-}
-
 /// Represents a poll input
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -221,8 +210,8 @@ pub struct PollInput<Timestamp> {
     /// pallet_timestamp of poll end
     pub end_time: Timestamp,
 
-    /// Alternative description and count
-    pub poll_alternatives: Vec<PollAlternativeInput>,
+    /// Alternative polls description
+    pub poll_alternatives: Vec<Vec<u8>>,
 }
 
 /// Represents a poll
@@ -1574,10 +1563,8 @@ impl<T: Trait> Module<T> {
                 .poll_alternatives
                 .into_iter()
                 .map(|poll_alternative| PollAlternative {
-                    alternative_text_hash: T::calculate_hash(
-                        poll_alternative.alternative_text.as_slice(),
-                    ),
-                    vote_count: poll_alternative.vote_count,
+                    alternative_text_hash: T::calculate_hash(poll_alternative.as_slice()),
+                    vote_count: 0,
                 })
                 .collect(),
             end_time: poll_input.end_time,
