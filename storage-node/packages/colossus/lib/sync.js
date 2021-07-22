@@ -27,6 +27,8 @@ const { sleep } = require('@joystream/storage-utils/sleep')
 const MAX_CONCURRENT_SYNC_ITEMS = 20
 
 async function syncContent({ api, storage, contentBeingSynced, contentCompleteSynced }) {
+  if (contentBeingSynced.size === MAX_CONCURRENT_SYNC_ITEMS) return
+
   const knownEncodedContentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
 
   // Select ids which we have not yet fully synced
@@ -67,54 +69,6 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
   }
 }
 
-async function createNewRelationships({ api, contentCompleteSynced }) {
-  const roleAddress = api.identities.key.address
-  const providerId = api.storageProviderId
-
-  // Create new relationships for synced content if required and
-  // compose list of relationship ids to be set to ready.
-  return (
-    await Promise.all(
-      [...contentCompleteSynced.keys()].map(async (id) => {
-        const contentId = ContentId.decode(api.api.registry, id)
-        const { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
-
-        if (relationship) {
-          // maybe prior transaction to set ready failed for some reason..
-          if (!relationship.ready) {
-            return relationshipId
-          }
-        } else {
-          // create relationship
-          debug(`Creating new storage relationship for ${id}`)
-          try {
-            return await api.assets.createStorageRelationship(roleAddress, providerId, contentId)
-          } catch (err) {
-            debug(`Error creating new storage relationship ${id}: ${err.stack}`)
-          }
-        }
-
-        return null
-      })
-    )
-  ).filter((id) => id !== null)
-}
-
-async function setRelationshipsReady({ api, relationshipIds }) {
-  const roleAddress = api.identities.key.address
-  const providerId = api.storageProviderId
-
-  return Promise.all(
-    relationshipIds.map(async (relationshipId) => {
-      try {
-        await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
-      } catch (err) {
-        debug('Error setting relationship ready')
-      }
-    })
-  )
-}
-
 async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced }) {
   const retry = () => {
     setTimeout(syncPeriodic, flags.syncPeriod, {
@@ -127,46 +81,15 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
   }
 
   try {
-    debug('Sync run started.')
-
     const chainIsSyncing = await api.chainIsSyncing()
+
     if (chainIsSyncing) {
-      debug('Chain is syncing. Postponing sync run.')
-      return retry()
+      debug('Chain is syncing. Postponing sync.')
+    } else {
+      await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
     }
-
-    if (!flags.anonymous) {
-      // Retry later if provider is not active
-      if (!(await api.providerIsActiveWorker())) {
-        debug(
-          'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
-        )
-        return retry()
-      }
-
-      const recommendedBalance = await api.providerHasMinimumBalance(300)
-      if (!recommendedBalance) {
-        debug('Warning: Provider role account is running low on balance.')
-      }
-
-      const sufficientBalance = await api.providerHasMinimumBalance(100)
-      if (!sufficientBalance) {
-        debug('Provider role account does not have sufficient balance. Postponing sync run!')
-        return retry()
-      }
-    }
-
-    await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
-
-    // Do not create relationships.. not used anywhere... and can end the sync run sooner.
-    // // Only update on-chain state if not in anonymous mode
-    // if (!flags.anonymous) {
-    //   const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
-    //   await setRelationshipsReady({ api, relationshipIds })
-    //   debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
-    // }
   } catch (err) {
-    debug(`Error in sync run ${err.stack}`)
+    debug(`Error during sync ${err.stack}`)
   }
 
   // always try again
