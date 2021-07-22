@@ -85,7 +85,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, ExistenceRequirement, Get};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
@@ -128,7 +128,12 @@ pub trait Trait:
     type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Work entry Id type
     type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;
@@ -704,6 +709,9 @@ decl_module! {
 
         /// Exports const - min work entrant stake for a bounty.
         const MinWorkEntrantStake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+
+        /// Exports const - bounty lock id.
+        const BountyLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>

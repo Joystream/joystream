@@ -5,6 +5,7 @@ use super::*;
 
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
+use frame_support::traits::LockIdentifier;
 use frame_system::RawOrigin;
 use proposals_codex::CreateOpeningParameters;
 use sp_runtime::SaturatedConversion;
@@ -646,6 +647,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
         <T as common::membership::MembershipTypes>::MemberId,
+        LockIdentifier,
     >,
 >(
     working_group: WorkingGroup,
@@ -806,6 +808,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
         <T as common::membership::MembershipTypes>::MemberId,
+        LockIdentifier,
     >,
 >(
     working_group: WorkingGroup,
@@ -1323,6 +1326,7 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
         <T as common::membership::MembershipTypes>::MemberId,
+        LockIdentifier,
     >,
 >(
     working_group: WorkingGroup,
@@ -1479,6 +1483,7 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         <T as frame_system::Trait>::AccountId,
         <T as pallet_balances::Trait>::Balance,
         <T as common::membership::MembershipTypes>::MemberId,
+        LockIdentifier,
     >,
 >(
     working_group: WorkingGroup,
