@@ -555,83 +555,93 @@ pub const FORUM_MODERATOR_2_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERA
 const EXTRA_MODERATOR_COUNT: usize = 5;
 pub const EXTRA_MODERATORS: [u128; EXTRA_MODERATOR_COUNT] = [125, 126, 127, 128, 129];
 
+/// Get a good category title
 pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
 }
 
+/// Get a new good category title
 pub fn good_category_title_new() -> Vec<u8> {
     b"Great new category title".to_vec()
 }
 
+/// Get a good category description
 pub fn good_category_description() -> Vec<u8> {
     b"This is a great new category for the forum".to_vec()
 }
 
+/// Get a good new category description
 pub fn good_category_description_new() -> Vec<u8> {
     b"This is a great new category description for the forum".to_vec()
 }
 
+/// Get a new good thread title
 pub fn good_thread_title() -> Vec<u8> {
     b"Great new thread".to_vec()
 }
 
+/// Get a new good thread text
 pub fn good_thread_text() -> Vec<u8> {
     b"The first post in this thread".to_vec()
 }
 
+/// Get a new title ofr the  good  thread
 pub fn good_thread_new_title() -> Vec<u8> {
     b"Brand new thread title".to_vec()
 }
 
+/// Get a good post text
 pub fn good_post_text() -> Vec<u8> {
     b"A response in the thread".to_vec()
 }
 
+/// Get a good new post text
 pub fn good_post_new_text() -> Vec<u8> {
     b"Changed post's text".to_vec()
 }
 
+/// Get a good moderation rationale
 pub fn good_moderation_rationale() -> Vec<u8> {
     b"Moderation rationale".to_vec()
 }
 
+/// Get a good poll description
 pub fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
 
+/// Get a good poll alternative text
 pub fn good_poll_alternative_text() -> Vec<u8> {
     b"poll alternative".to_vec()
 }
 
-pub fn generate_poll(
+/// Generate a valid poll input
+pub fn generate_poll_input(
     expiration_diff: u64,
-) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash> {
-    Poll {
-        description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
+) -> PollInput<<Runtime as pallet_timestamp::Trait>::Moment> {
+    PollInput {
+        description: good_poll_description(),
         end_time: Timestamp::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..5 {
-                alternatives.push(PollAlternative {
-                    alternative_text_hash: Runtime::calculate_hash(
-                        good_poll_alternative_text().as_slice(),
-                    ),
-                    vote_count: 0,
-                });
+                alternatives.push(good_poll_alternative_text());
             }
             alternatives
         },
     }
 }
 
-pub fn generate_poll_timestamp_cases(
+/// Generate poll input for different timestamp cases
+pub fn generate_poll_input_timestamp_cases(
     index: usize,
     expiration_diff: u64,
-) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash> {
-    let test_cases = vec![generate_poll(expiration_diff), generate_poll(1)];
+) -> PollInput<<Runtime as pallet_timestamp::Trait>::Moment> {
+    let test_cases = vec![generate_poll_input(expiration_diff), generate_poll_input(1)];
     test_cases[index].clone()
 }
 
+/// Create category mock
 pub fn create_category_mock(
     origin: OriginType,
     parent: Option<<Runtime as Trait>::CategoryId>,
@@ -664,6 +674,7 @@ pub fn create_category_mock(
     category_id
 }
 
+/// Create thread mock
 pub fn create_thread_mock(
     origin: OriginType,
     account_id: <Runtime as frame_system::Trait>::AccountId,
@@ -671,9 +682,7 @@ pub fn create_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll_data: Option<
-        Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash>,
-    >,
+    poll_input_data: Option<PollInput<<Runtime as pallet_timestamp::Trait>::Moment>>,
     result: DispatchResult,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
@@ -686,7 +695,7 @@ pub fn create_thread_mock(
             category_id,
             title.clone(),
             text.clone(),
-            poll_data.clone(),
+            poll_input_data.clone(),
         ),
         result
     );
@@ -701,7 +710,7 @@ pub fn create_thread_mock(
                 forum_user_id,
                 title.clone(),
                 text.clone(),
-                poll_data.clone()
+                poll_input_data.clone()
             ))
         );
 
@@ -720,6 +729,7 @@ pub fn create_thread_mock(
     thread_id
 }
 
+/// Create edit thread title mock
 pub fn edit_thread_title_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
@@ -756,6 +766,7 @@ pub fn edit_thread_title_mock(
     thread_id
 }
 
+/// Create delete thread mock
 pub fn delete_thread_mock(
     origin: OriginType,
     account_id: <Runtime as frame_system::Trait>::AccountId,
@@ -810,6 +821,7 @@ pub fn delete_thread_mock(
     }
 }
 
+/// Create delete post mock
 pub fn delete_post_mock(
     origin: OriginType,
     account_id: <Runtime as frame_system::Trait>::AccountId,
@@ -863,6 +875,7 @@ pub fn delete_post_mock(
     }
 }
 
+/// Create move thread mock
 pub fn move_thread_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
@@ -898,6 +911,7 @@ pub fn move_thread_mock(
     }
 }
 
+/// Made a create post mock
 pub fn create_post_mock(
     origin: OriginType,
     account_id: <Runtime as frame_system::Trait>::AccountId,
@@ -960,6 +974,7 @@ pub fn create_post_mock(
     post_id
 }
 
+/// Create edit post text mock
 pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
@@ -998,10 +1013,12 @@ pub fn edit_post_text_mock(
     post_id
 }
 
+/// Change current timestamp
 pub fn change_current_time(diff: u64) -> () {
     Timestamp::set_timestamp(Timestamp::now() + diff);
 }
 
+/// Create update category membership of moderator mock
 pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
@@ -1036,6 +1053,7 @@ pub fn update_category_membership_of_moderator_mock(
     category_id
 }
 
+/// Create vote on poll mock
 pub fn vote_on_poll_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
@@ -1081,6 +1099,7 @@ pub fn vote_on_poll_mock(
     thread_id
 }
 
+/// Create update category archival status mock
 pub fn update_category_archival_status_mock(
     origin: OriginType,
     actor: PrivilegedActor<Runtime>,
@@ -1109,6 +1128,7 @@ pub fn update_category_archival_status_mock(
     }
 }
 
+/// Create update category title mock
 pub fn update_category_title_mock(
     origin: OriginType,
     actor: PrivilegedActor<Runtime>,
@@ -1138,6 +1158,7 @@ pub fn update_category_title_mock(
     }
 }
 
+/// Create update category description mock
 pub fn update_category_description_mock(
     origin: OriginType,
     actor: PrivilegedActor<Runtime>,
@@ -1167,6 +1188,7 @@ pub fn update_category_description_mock(
     }
 }
 
+/// Create delete category mock
 pub fn delete_category_mock(
     origin: OriginType,
     moderator_id: PrivilegedActor<Runtime>,
@@ -1186,6 +1208,7 @@ pub fn delete_category_mock(
     }
 }
 
+/// Create moderate thread mock
 pub fn moderate_thread_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
@@ -1227,6 +1250,7 @@ pub fn moderate_thread_mock(
     thread_id
 }
 
+/// Create moderate post mock
 pub fn moderate_post_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
@@ -1275,6 +1299,7 @@ pub fn moderate_post_mock(
     post_id
 }
 
+/// Create set stickied threads mock
 pub fn set_stickied_threads_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
@@ -1308,6 +1333,7 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
+/// Create react post mock
 pub fn react_post_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
@@ -1342,14 +1368,17 @@ pub fn react_post_mock(
     };
 }
 
+/// Create default genesis config
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     create_genesis_config(true)
 }
 
+/// Create config without data migration
 pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
     create_genesis_config(false)
 }
 
+/// Create genesis config
 pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         category_by_id: vec![],
@@ -1380,6 +1409,7 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestEx
     t.into()
 }
 
+/// Generate enviroment with test externalities
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let default_genesis_config = default_genesis_config();
     /*
@@ -1407,11 +1437,11 @@ pub fn run_to_block(n: u64) {
     }
 }
 
-// pub type System = system::Module<Runtime>;
+/// System module on a test runtime
 pub type System = frame_system::Module<Runtime>;
 
+/// Timestamp module on a test runtime
 pub type Timestamp = pallet_timestamp::Module<Runtime>;
-// pub type System = frame_system::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
