@@ -40,9 +40,6 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
   // we simply shuffle.
   const candidatesForSync = _.shuffle(needsSync)
 
-  // TODO: get the data object
-  // make sure the data object was Accepted by the liaison,
-  // don't just blindly attempt to fetch them
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
     const id = candidatesForSync.shift()
 
@@ -61,7 +58,7 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
 
       // Allow short time for checking if content is already stored locally.
       // So we can handle more new items per run.
-      await sleep(100)
+      await sleep(250)
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
