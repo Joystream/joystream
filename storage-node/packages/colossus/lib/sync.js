@@ -21,7 +21,9 @@
 const debug = require('debug')('joystream:sync')
 const _ = require('lodash')
 const { ContentId } = require('@joystream/types/storage')
-// The number of concurrent sync sessions allowed. Must be greater than zero.
+const { sleep } = require('@joystream/storage-utils/sleep')
+
+// The number of concurrent items to attemp to fetch. Must be greater than zero.
 const MAX_CONCURRENT_SYNC_ITEMS = 20
 
 async function syncContent({ api, storage, contentBeingSynced, contentCompleteSynced }) {
@@ -56,6 +58,10 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
           contentCompleteSynced.set(id)
         }
       })
+
+      // Allow short time for checking if content is already stored locally.
+      // So we can handle more new items per run.
+      await sleep(100)
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
@@ -155,12 +161,13 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
 
     await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
 
-    // Only update on-chain state if not in anonymous mode
-    if (!flags.anonymous) {
-      const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
-      await setRelationshipsReady({ api, relationshipIds })
-      debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
-    }
+    // Do not create relationships.. not used anywhere... and can end the sync run sooner.
+    // // Only update on-chain state if not in anonymous mode
+    // if (!flags.anonymous) {
+    //   const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
+    //   await setRelationshipsReady({ api, relationshipIds })
+    //   debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
+    // }
   } catch (err) {
     debug(`Error in sync run ${err.stack}`)
   }
