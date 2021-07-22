@@ -19,7 +19,7 @@ const debug = require('debug')('joystream:colossus')
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
 // Number of milliseconds to wait between synchronization runs.
-const SYNC_PERIOD_MS = 120000 // 2min
+const SYNC_PERIOD_MS = 30000
 
 // Parse CLI
 const FLAG_DEFINITIONS = {
