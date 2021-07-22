@@ -58,17 +58,135 @@ const jsonModifyConfig = new configMapFromFile(
   resourceOptions
 ).configName
 
-const dataPath = '/subkey-data'
-const builderPath = '/builder-data'
+const chainDataPath = '/chain-data'
 const networkSuffix = config.get('networkSuffix') || '8129'
-const chainSpecPath = `${builderPath}/chainspec-raw.json`
+const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
 const numberOfValidators = config.getNumber('numberOfValidators') || 2
 
-const subkeyContainers = getSubkeyContainers(numberOfValidators, dataPath)
-const validatorContainers = getValidatorContainers(numberOfValidators, dataPath, builderPath, chainSpecPath)
+const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
+// const validatorContainers = getValidatorContainers(numberOfValidators, dataPath, builderPath, chainSpecPath)
+
+const pvc = new k8s.core.v1.PersistentVolumeClaim(
+  `${name}-pvc`,
+  {
+    metadata: {
+      labels: appLabels,
+      namespace: namespaceName,
+      name: `${name}-pvc`,
+    },
+    spec: {
+      accessModes: ['ReadWriteMany'],
+      resources: {
+        requests: {
+          storage: `1Gi`,
+        },
+      },
+    },
+  },
+  resourceOptions
+)
+
+if (isMinikube) {
+  const pv = new k8s.core.v1.PersistentVolume(`${name}-pv`, {
+    metadata: {
+      labels: { ...appLabels, type: 'local' },
+      namespace: namespaceName,
+      name: `${name}-pv`,
+    },
+    spec: {
+      accessModes: ['ReadWriteMany'],
+      capacity: {
+        storage: `1Gi`,
+      },
+      hostPath: {
+        path: '/mnt/data/ckan',
+      },
+    },
+  })
+}
+
+const chainDataPrepareJob = new k8s.batch.v1.Job(
+  'chain-data',
+  {
+    metadata: {
+      namespace: namespaceName,
+    },
+    spec: {
+      backoffLimit: 0,
+      template: {
+        spec: {
+          containers: [
+            ...subkeyContainers,
+            {
+              name: 'builder-node',
+              image: 'joystream/node:latest',
+              command: ['/bin/sh', '-c'],
+              args: [
+                `/joystream/chain-spec-builder generate -a ${numberOfValidators} \
+                --chain-spec-path ${chainDataPath}/chainspec.json --deployment live \
+                --endowed 1 --keystore-path ${chainDataPath}/data >> ${chainDataPath}/seeds.txt`,
+              ],
+              volumeMounts: [
+                {
+                  name: 'config-data',
+                  mountPath: chainDataPath,
+                },
+              ],
+            },
+            {
+              name: 'json-modify',
+              image: 'python',
+              command: ['python'],
+              args: ['/scripts/json_modify.py', '--path', `${chainDataPath}/chainspec.json`, '--prefix', networkSuffix],
+              volumeMounts: [
+                {
+                  mountPath: '/scripts/json_modify.py',
+                  name: 'json-modify-script',
+                  subPath: 'fileData',
+                },
+                {
+                  name: 'config-data',
+                  mountPath: chainDataPath,
+                },
+              ],
+            },
+            {
+              name: 'raw-chain-spec',
+              image: 'joystream/node:latest',
+              command: ['/bin/sh', '-c'],
+              args: [`/joystream/node build-spec --chain ${chainDataPath}/chainspec.json --raw > ${chainSpecPath}`],
+              volumeMounts: [
+                {
+                  name: 'config-data',
+                  mountPath: chainDataPath,
+                },
+              ],
+            },
+          ],
+          volumes: [
+            {
+              name: 'json-modify-script',
+              configMap: {
+                name: jsonModifyConfig,
+              },
+            },
+            {
+              name: 'config-data',
+              persistentVolumeClaim: {
+                claimName: `${name}-pvc`,
+              },
+            },
+          ],
+          restartPolicy: 'Never',
+        },
+      },
+    },
+  },
+  { ...resourceOptions }
+)
 
 const deployment = new k8s.apps.v1.Deployment(
-  name,
+  `rpc-node`,
   {
     metadata: {
       namespace: namespaceName,
@@ -82,60 +200,8 @@ const deployment = new k8s.apps.v1.Deployment(
           labels: appLabels,
         },
         spec: {
-          initContainers: [
-            ...subkeyContainers,
-            {
-              name: 'builder-node',
-              image: 'joystream/node:latest',
-              command: ['/bin/sh', '-c'],
-              args: [
-                `/joystream/chain-spec-builder generate -a ${numberOfValidators} \
-                --chain-spec-path ${builderPath}/chainspec.json --deployment live \
-                --endowed 1 --keystore-path ${builderPath}/data >> ${builderPath}/seeds.txt`,
-              ],
-              volumeMounts: [
-                {
-                  name: 'builder-data',
-                  mountPath: builderPath,
-                },
-              ],
-            },
-            {
-              name: 'json-modify',
-              image: 'python',
-              command: ['python'],
-              args: ['/scripts/json_modify.py', '--path', `${builderPath}/chainspec.json`, '--prefix', networkSuffix],
-              volumeMounts: [
-                {
-                  mountPath: '/scripts/json_modify.py',
-                  name: 'json-modify-script',
-                  subPath: 'fileData',
-                },
-                {
-                  name: 'builder-data',
-                  mountPath: builderPath,
-                },
-                {
-                  name: 'subkey-data',
-                  mountPath: dataPath,
-                },
-              ],
-            },
-            {
-              name: 'raw-chain-spec',
-              image: 'joystream/node:latest',
-              command: ['/bin/sh', '-c'],
-              args: [`/joystream/node build-spec --chain ${builderPath}/chainspec.json --raw > ${chainSpecPath}`],
-              volumeMounts: [
-                {
-                  name: 'builder-data',
-                  mountPath: builderPath,
-                },
-              ],
-            },
-          ],
+          initContainers: [],
           containers: [
-            ...validatorContainers,
             {
               name: 'rpc-node',
               image: 'joystream/node:latest',
@@ -147,8 +213,6 @@ const deployment = new k8s.apps.v1.Deployment(
               args: [
                 '--chain',
                 chainSpecPath,
-                '--unsafe-rpc-external',
-                '--unsafe-ws-external',
                 '--ws-external',
                 '--rpc-cors',
                 'all',
@@ -163,29 +227,17 @@ const deployment = new k8s.apps.v1.Deployment(
               ],
               volumeMounts: [
                 {
-                  name: 'subkey-data',
-                  mountPath: dataPath,
-                },
-                {
-                  name: 'builder-data',
-                  mountPath: builderPath,
+                  name: 'config-data',
+                  mountPath: chainDataPath,
                 },
               ],
             },
           ],
           volumes: [
             {
-              name: 'subkey-data',
-              emptyDir: {},
-            },
-            {
-              name: 'builder-data',
-              emptyDir: {},
-            },
-            {
-              name: 'json-modify-script',
-              configMap: {
-                name: jsonModifyConfig,
+              name: 'config-data',
+              persistentVolumeClaim: {
+                claimName: `${name}-pvc`,
               },
             },
           ],
@@ -193,7 +245,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { ...resourceOptions }
+  { ...resourceOptions, dependsOn: chainDataPrepareJob }
 )
 
 // Export the Deployment name
@@ -210,9 +262,8 @@ const service = new k8s.core.v1.Service(
     },
     spec: {
       ports: [
-        { name: 'port-1', port: 9944, targetPort: 'rpc-9944' },
-        { name: 'port-2', port: 9933, targetPort: 'rpc-9933' },
-        { name: 'port-3', port: 30333, targetPort: 'rpc-30333' },
+        { name: 'port-1', port: 9944 },
+        { name: 'port-2', port: 9933 },
       ],
       selector: appLabels,
     },

@@ -8,7 +8,7 @@ export const getSubkeyContainers = (validators: number, dataPath: string) => {
       args: [`subkey generate-node-key >> ${dataPath}/privatekey${i} 2>> ${dataPath}/publickey${i}`],
       volumeMounts: [
         {
-          name: 'subkey-data',
+          name: 'config-data',
           mountPath: dataPath,
         },
       ],
@@ -17,12 +17,7 @@ export const getSubkeyContainers = (validators: number, dataPath: string) => {
   return result
 }
 
-export const getValidatorContainers = (
-  validators: number,
-  dataPath: string,
-  builderPath: string,
-  chainSpecPath: string
-) => {
+export const getValidatorContainers = (validators: number, dataPath: string, chainSpecPath: string) => {
   const result = []
   for (let i = 1; i <= validators; i++) {
     result.push({
@@ -36,19 +31,15 @@ export const getValidatorContainers = (
         '--node-key-file',
         `${dataPath}/privatekey${i}`,
         '--keystore-path',
-        `${builderPath}/data/auth-${i - 1}`,
+        `${dataPath}/data/auth-${i - 1}`,
         '--validator',
         '--log',
         'runtime,txpool,transaction-pool,trace=sync',
       ],
       volumeMounts: [
         {
-          name: 'subkey-data',
+          name: 'config-data',
           mountPath: dataPath,
-        },
-        {
-          name: 'builder-data',
-          mountPath: builderPath,
         },
       ],
     })
