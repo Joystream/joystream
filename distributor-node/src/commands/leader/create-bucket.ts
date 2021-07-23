@@ -11,22 +11,23 @@ export default class LeaderCreateBucket extends AccountsCommandBase {
       description: 'Distribution bucket family id',
       required: true,
     }),
-    acceptBags: flags.boolean({
+    acceptingBags: flags.enum({
       char: 'a',
-      description: 'Whether the new bucket should accept new bags',
-      default: false,
+      description: 'Whether the created bucket should accept new bags',
+      options: ['yes', 'no'],
+      default: 'no',
     }),
     ...DefaultCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { familyId, acceptBags } = this.parse(LeaderCreateBucket).flags
+    const { familyId, acceptingBags } = this.parse(LeaderCreateBucket).flags
     const leadKey = await this.getDistributorLeadKey()
 
     this.log('Creating new distribution bucket...')
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
-      this.api.tx.storage.createDistributionBucket(familyId, acceptBags)
+      this.api.tx.storage.createDistributionBucket(familyId, acceptingBags === 'yes')
     )
     const event = this.api.getEvent(result, 'storage', 'DistributionBucketCreated')
 
