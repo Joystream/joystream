@@ -53,7 +53,7 @@ export default abstract class DefaultCommandBase extends Command {
     }),
     configPath: flags.string({
       required: false,
-      default: './config.yml',
+      default: process.env.CONFIG_PATH || './config.yml',
       description: 'Path to config JSON/YAML file (relative to current working directory)',
       char: 'c',
     }),

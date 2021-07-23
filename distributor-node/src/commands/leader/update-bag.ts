@@ -16,16 +16,20 @@ export default class LeaderUpdateBag extends AccountsCommandBase {
     }),
     add: flags.integerArr({
       char: 'a',
-      description: 'IDs of buckets to add to bag',
+      description: 'ID of a bucket to add to bag',
       default: [],
+      multiple: true,
     }),
     remove: flags.integerArr({
       char: 'r',
-      description: 'IDs of buckets to remove from bag',
+      description: 'ID of a bucket to remove from bag',
       default: [],
+      multiple: true,
     }),
     ...DefaultCommandBase.flags,
   }
+
+  static examples = [`$ joystream-distributor leader:update-bag -b 1 -f 1 -a 1 -a 2 -a 3 -r 4 -r 5`]
 
   async run(): Promise<void> {
     const { bagId, familyId, add, remove } = this.parse(LeaderUpdateBag).flags
