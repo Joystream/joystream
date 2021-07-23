@@ -1,0 +1,10 @@
+fragment StorageBucketDetails on StorageBucket {
+  id
+  acceptingNewBags
+}
+
+query getStorageBucketDetails($id: ID!) {
+  storageBucketByUniqueInput(where: { id: $id }) {
+    ...StorageBucketDetails
+  }
+}

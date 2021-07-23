@@ -1,0 +1,34 @@
+# Paths are relative to root package directory
+overwrite: true
+
+# schema: '../../../../../query-node/generated/graphql-server/generated/schema.graphql'
+schema: '../../temp_runtime/joystream/query-node/generated/graphql-server/generated/schema.graphql'
+
+documents:
+  - 'src/services/query-node/queries/*.graphql'
+
+config:
+  scalars:
+    Date: Date
+  preResolveTypes: true # avoid using Pick
+  skipTypename: true # skip __typename field in typings unless it's part of the query
+
+generates:
+  src/services/query-node/generated/schema.ts:
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+        - eslint --fix
+    plugins:
+      - typescript
+  src/services/query-node/generated/queries.ts:
+    preset: import-types
+    presetConfig:
+      typesPath: ./schema
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+        - eslint --fix
+    plugins:
+      - typescript-operations
+      - typescript-document-nodes
