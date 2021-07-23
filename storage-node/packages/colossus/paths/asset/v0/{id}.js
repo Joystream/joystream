@@ -242,17 +242,6 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
             if (dataObject.liaison_judgement.type === 'Pending') {
               await runtime.assets.acceptContent(roleAddress, providerId, id)
             }
-
-            // Is there any real value in updating this state? Nobody uses it!
-            const { relationshipId } = await runtime.assets.getStorageRelationshipAndId(providerId, id)
-            if (!relationshipId) {
-              debug('creating storage relationship for newly uploaded content')
-              // Create storage relationship and flip it to ready.
-              const dosrId = await runtime.assets.createStorageRelationship(roleAddress, providerId, id)
-
-              debug('toggling storage relationship for newly uploaded content')
-              await runtime.assets.toggleStorageRelationshipReady(roleAddress, providerId, dosrId, true)
-            }
           } catch (err) {
             debug(`${err.message}`)
           }
