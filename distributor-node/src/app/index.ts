@@ -19,7 +19,7 @@ export class App {
 
   constructor(config: ReadonlyConfig) {
     this.config = config
-    this.logging = new LoggingService(config)
+    this.logging = LoggingService.withAppConfig(config)
     this.stateCache = new StateCacheService(config, this.logging)
     this.content = new ContentService(config, this.logging, this.stateCache)
     this.networking = new NetworkingService(config, this.stateCache, this.logging)

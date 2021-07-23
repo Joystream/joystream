@@ -1,0 +1,13 @@
+endpoints:
+  queryNode: http://localhost:8081/graphql
+  substrateNode: ws://localhost:9944
+directories:
+  data: /data
+  cache: /cache
+  logs: /logs
+log:
+  file: debug
+  console: debug
+port: 3334
+keys: [//Alice]
+buckets: [1]
