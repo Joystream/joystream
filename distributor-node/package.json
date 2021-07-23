@@ -92,7 +92,8 @@
     "build": "tsc --build tsconfig.json",
     "lint": "eslint ./src --ext .ts",
     "format": "prettier ./ --write",
-    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint"
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "cli": "./bin/run"
   },
   "types": "lib/index.d.ts"
 }

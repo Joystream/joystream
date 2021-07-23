@@ -5,7 +5,11 @@ import { ReadonlyConfig } from '../../types'
 export class LoggingService {
   private loggerOptions: LoggerOptions
 
-  public constructor(config: ReadonlyConfig) {
+  private constructor(options: LoggerOptions) {
+    this.loggerOptions = options
+  }
+
+  public static withAppConfig(config: ReadonlyConfig): LoggingService {
     const transports: winston.LoggerOptions['transports'] = [
       new winston.transports.File({
         filename: `${config.directories.logs}/logs.json`,
@@ -19,10 +23,35 @@ export class LoggingService {
         })
       )
     }
-    this.loggerOptions = {
+    return new LoggingService({
       format: escFormat(),
       transports,
+    })
+  }
+
+  public static withCLIConfig(): LoggingService {
+    const colors = {
+      error: 'red',
+      warn: 'yellow',
+      info: 'green',
+      http: 'magenta',
+      debug: 'grey',
     }
+
+    winston.addColors(colors)
+
+    const format = winston.format.combine(
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+      winston.format.colorize({ all: true }),
+      winston.format.printf((info) => `${info.timestamp} ${info.label} ${info.level}: ${info.message}`)
+    )
+    return new LoggingService({
+      transports: new winston.transports.Console({
+        // Log everything to stderr, only the command output value will be written to stdout
+        stderrLevels: Object.keys(winston.config.npm.levels),
+      }),
+      format,
+    })
   }
 
   public createLogger(label: string): Logger {

@@ -1,1 +1,0 @@
-export { configSchema } from './configSchema'
