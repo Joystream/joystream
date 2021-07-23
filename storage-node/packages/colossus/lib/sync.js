@@ -36,24 +36,18 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
   const MAX_CONCURRENT_SYNC_ITEMS = Math.max(MIN_CONCURRENT_SYNC_ITEMS, flags.maxSync)
 
   // Select ids which may need to be synced
-  const needsSync = contentIds.filter((id) => !contentCompletedSync.has(id)).filter((id) => !contentBeingSynced.has(id))
+  const idsNotSynced = contentIds
+    .filter((id) => !contentCompletedSync.has(id))
+    .filter((id) => !contentBeingSynced.has(id))
 
   // We are limiting how many content ids can be synced concurrently, so to ensure
   // better distribution of content across storage nodes during a potentially long
   // sync process we don't want all nodes to replicate items in the same order, so
   // we simply shuffle.
-  const candidatesForSync = _.shuffle(needsSync)
+  const idsToSync = _.shuffle(idsNotSynced)
 
-  // Number of items synced in current run
-  let syncedItemsCount = 0
-
-  while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
-    const id = candidatesForSync.shift()
-
-    // Log progress
-    if (syncedItemsCount % 100 === 0) {
-      debug(`${candidatesForSync.length} items remaining to process`)
-    }
+  while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && idsToSync.length) {
+    const id = idsToSync.shift()
 
     try {
       contentBeingSynced.set(id)
@@ -63,7 +57,6 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
           contentBeingSynced.delete(id)
           debug(`Error Syncing ${err}`)
         } else if (status.synced) {
-          syncedItemsCount++
           contentBeingSynced.delete(id)
           contentCompletedSync.set(id)
         }
@@ -96,12 +89,18 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
     if (await api.chainIsSyncing()) {
       debug('Chain is syncing. Postponing sync.')
     } else {
-      // Do not fetch content ids on every singe run as it is expensive operation
       const now = Date.now()
+
+      // Do not fetch content ids on every singe run as it is expensive operation
       if (!contentIds || now - contentIds.fetchedAt > CONTENT_ID_REFRESH_INTERVAL_MS) {
         // re-fetch content ids
         contentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
         contentIds.fetchedAt = Date.now()
+
+        debug(`======== sync status ==========`)
+        debug(`objects syncing : ${contentBeingSynced.size}`)
+        debug(`objects local   : ${contentCompletedSync.size}`)
+        debug(`objects known   : ${contentIds.length}`)
       }
 
       await syncRun({
