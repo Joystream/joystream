@@ -42,6 +42,9 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
   // we simply shuffle.
   const candidatesForSync = _.shuffle(needsSync)
 
+  debug(`${candidatesForSync.length} items remaining to process`)
+  let syncedItemsCount = 0
+
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
     const id = candidatesForSync.shift()
 
@@ -53,6 +56,7 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
           contentBeingSynced.delete(id)
           debug(`Error Syncing ${err}`)
         } else if (status.synced) {
+          syncedItemsCount++
           contentBeingSynced.delete(id)
           contentCompleteSynced.set(id)
         }
@@ -67,6 +71,8 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
       contentBeingSynced.delete(id)
     }
   }
+
+  debug(`Items processed in this sync run ${syncedItemsCount}`)
 }
 
 async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced }) {

@@ -407,7 +407,7 @@ class Storage {
     // TODO: validate resolved id is proper ipfs_cid, not null or empty string
 
     if (!this.pinning[resolved] && !this.pinned[resolved]) {
-      debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
+      // debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
       this.pinning[resolved] = true
 
       // Callback passed to add() will be called on error or when the entire file
@@ -418,7 +418,7 @@ class Storage {
           debug(`Error Pinning: ${resolved}`)
           callback && callback(err)
         } else {
-          debug(`Pinned ${resolved}`)
+          // debug(`Pinned ${resolved}`)
           this.pinned[resolved] = true
           callback && callback(null, this.syncStatus(resolved))
         }
