@@ -486,6 +486,9 @@ export interface DynamicBagCreationPolicy extends Struct {
   readonly families: BTreeMap<DistributionBucketFamilyId, u32>;
 }
 
+/** @name DynamicBagCreationPolicyDistributorFamiliesMap */
+export interface DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap<DistributionBucketFamilyId, u32> {}
+
 /** @name DynamicBagId */
 export interface DynamicBagId extends Enum {
   readonly isMember: boolean;

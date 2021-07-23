@@ -1064,5 +1064,6 @@
         "size": "u64"
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
-    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>"
+    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
+    "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>"
 }

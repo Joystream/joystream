@@ -214,6 +214,8 @@ export class DistributionBucketFamily extends JoyStructDecorated({
   distributionBuckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
 }) {}
 
+export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
+
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
@@ -245,5 +247,6 @@ export const storageTypes: RegistryTypes = {
   DataObject,
   DataObjectIdMap,
   DistributionBucketIdSet,
+  DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes
