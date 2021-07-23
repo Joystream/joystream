@@ -461,6 +461,9 @@ export interface DistributionBucketFamilyId extends u64 {}
 /** @name DistributionBucketId */
 export interface DistributionBucketId extends u64 {}
 
+/** @name DistributionBucketIdSet */
+export interface DistributionBucketIdSet extends BTreeSet<DistributionBucketId> {}
+
 /** @name Dynamic */
 export interface Dynamic extends Enum {
   readonly isMember: boolean;
@@ -473,7 +476,7 @@ export interface Dynamic extends Enum {
 export interface DynamicBag extends Struct {
   readonly objects: DataObjectIdMap;
   readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: Vec<DistributionBucketId>;
+  readonly distributed_by: DistributionBucketIdSet;
   readonly deletion_prize: u128;
 }
 
@@ -1265,7 +1268,7 @@ export interface Static extends Enum {
 export interface StaticBag extends Struct {
   readonly objects: DataObjectIdMap;
   readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: Vec<DistributionBucketId>;
+  readonly distributed_by: DistributionBucketIdSet;
 }
 
 /** @name StaticBagId */
@@ -1513,8 +1516,10 @@ export interface WorkerOf extends Struct {
 
 /** @name WorkingGroup */
 export interface WorkingGroup extends Enum {
+  readonly isForum: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
+  readonly isDistribution: boolean;
 }
 
 /** @name WorkingGroupOpeningPolicyCommitment */

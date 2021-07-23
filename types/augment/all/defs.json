@@ -13,8 +13,10 @@
     },
     "WorkingGroup": {
         "_enum": [
+            "Forum",
             "Storage",
-            "Content"
+            "Content",
+            "Distribution"
         ]
     },
     "SlashingTerms": {
@@ -980,13 +982,13 @@
     "DynamicBag": {
         "objects": "DataObjectIdMap",
         "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<DistributionBucketId>",
+        "distributed_by": "DistributionBucketIdSet",
         "deletion_prize": "u128"
     },
     "StaticBag": {
         "objects": "DataObjectIdMap",
         "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<DistributionBucketId>"
+        "distributed_by": "DistributionBucketIdSet"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
@@ -1061,5 +1063,6 @@
         "deletion_prize": "u128",
         "size": "u64"
     },
-    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>"
+    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
+    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>"
 }

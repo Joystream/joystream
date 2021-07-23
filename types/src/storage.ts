@@ -51,26 +51,26 @@ export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
 export class DistributionBucketId extends u64 {}
 export class DistributionBucketFamilyId extends u64 {}
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
-export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
+export class DistributionBucketIdSet extends JoyBTreeSet(DistributionBucketId) {}
 
 export type StaticBagType = {
   objects: DataObjectIdMap
   stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketSet
+  distributed_by: DistributionBucketIdSet
 }
 
 export class StaticBag
   extends JoyStructDecorated({
     objects: DataObjectIdMap,
     stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketSet,
+    distributed_by: DistributionBucketIdSet,
   })
   implements StaticBagType {}
 
 export type DynamicBagTypeDef = {
   objects: DataObjectIdMap
   stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketSet
+  distributed_by: DistributionBucketIdSet
   deletion_prize: BalanceOf
 }
 
@@ -78,7 +78,7 @@ export class DynamicBag
   extends JoyStructDecorated({
     objects: DataObjectIdMap,
     stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketSet,
+    distributed_by: DistributionBucketIdSet,
     deletion_prize: BalanceOf,
   })
   implements DynamicBagTypeDef {}
@@ -244,5 +244,6 @@ export const storageTypes: RegistryTypes = {
   DistributionBucketFamilyId,
   DataObject,
   DataObjectIdMap,
+  DistributionBucketIdSet,
 }
 export default storageTypes
