@@ -96,11 +96,7 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
         // re-fetch content ids
         contentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
         contentIds.fetchedAt = Date.now()
-
-        debug(`======== sync status ==========`)
-        debug(`objects syncing : ${contentBeingSynced.size}`)
-        debug(`objects local   : ${contentCompletedSync.size}`)
-        debug(`objects known   : ${contentIds.length}`)
+        debug(`objects known: ${contentIds.length}`)
       }
 
       await syncRun({
@@ -127,6 +123,11 @@ function startSyncing(api, flags, storage) {
   const contentCompletedSync = new Map()
 
   syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync })
+
+  setInterval(() => {
+    debug(`objects syncing: ${contentBeingSynced.size}`)
+    debug(`objects local: ${contentCompletedSync.size}`)
+  }, 60000)
 }
 
 module.exports = {
