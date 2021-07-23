@@ -23,26 +23,28 @@ const _ = require('lodash')
 const { ContentId } = require('@joystream/types/storage')
 const { nextTick } = require('@joystream/storage-utils/sleep')
 
-// The number of concurrent items to attemp to fetch. Must be greater than zero.
-const MAX_CONCURRENT_SYNC_ITEMS = 30
+// Time to wait between sync runs. The lower the better chance to consume all
+// available sync sessions allowed.
+const INTERVAL_BETWEEN_SYNC_RUNS_MS = 3000
+// Time between refreshing content ids from chain
+const CONTENT_ID_REFRESH_INTERVAL_MS = 60000
+// Minimum concurrency. Must be greater than zero.
+const MIN_CONCURRENT_SYNC_ITEMS = 5
 
-async function syncContent({ api, storage, contentBeingSynced, contentCompleteSynced }) {
-  if (contentBeingSynced.size === MAX_CONCURRENT_SYNC_ITEMS) return
+async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags, contentIds }) {
+  // The number of concurrent items to attemp to fetch.
+  const MAX_CONCURRENT_SYNC_ITEMS = Math.max(MIN_CONCURRENT_SYNC_ITEMS, flags.maxSync)
 
-  const knownEncodedContentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
+  // Select ids which may need to be synced
+  const needsSync = contentIds.filter((id) => !contentCompletedSync.has(id)).filter((id) => !contentBeingSynced.has(id))
 
-  // Select ids which we have not yet fully synced
-  const needsSync = knownEncodedContentIds
-    .filter((id) => !contentCompleteSynced.has(id))
-    .filter((id) => !contentBeingSynced.has(id))
-
-  // Since we are limiting concurrent content ids being synced, to ensure
+  // We are limiting how many content ids can be synced concurrently, so to ensure
   // better distribution of content across storage nodes during a potentially long
   // sync process we don't want all nodes to replicate items in the same order, so
   // we simply shuffle.
   const candidatesForSync = _.shuffle(needsSync)
 
-  debug(`${candidatesForSync.length} items remaining to process`)
+  // Number of items synced in current run
   let syncedItemsCount = 0
 
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
@@ -63,57 +65,69 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
         } else if (status.synced) {
           syncedItemsCount++
           contentBeingSynced.delete(id)
-          contentCompleteSynced.set(id)
+          contentCompletedSync.set(id)
         }
       })
-
-      // Allow short time for checking if content is already stored locally.
-      // So we can handle more new items per run.
-      await nextTick()
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
       contentBeingSynced.delete(id)
     }
-  }
 
-  debug(`Items processed in this sync run ${syncedItemsCount}`)
+    // Allow callbacks to call to storage.synchronize() to be invoked during this sync run
+    // This will happen if content is found to be local and will speed overall sync process.
+    await nextTick()
+  }
 }
 
-async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced }) {
+async function syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync, contentIds }) {
   const retry = () => {
-    setTimeout(syncPeriodic, flags.syncPeriod, {
+    setTimeout(syncRunner, INTERVAL_BETWEEN_SYNC_RUNS_MS, {
       api,
       flags,
       storage,
       contentBeingSynced,
-      contentCompleteSynced,
+      contentCompletedSync,
+      contentIds,
     })
   }
 
   try {
-    const chainIsSyncing = await api.chainIsSyncing()
-
-    if (chainIsSyncing) {
+    if (await api.chainIsSyncing()) {
       debug('Chain is syncing. Postponing sync.')
     } else {
-      await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
+      // Do not fetch content ids on every singe run as it is expensive operation
+      const now = Date.now()
+      if (!contentIds || now - contentIds.fetchedAt > CONTENT_ID_REFRESH_INTERVAL_MS) {
+        // re-fetch content ids
+        contentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
+        contentIds.fetchedAt = Date.now()
+      }
+
+      await syncRun({
+        api,
+        storage,
+        contentBeingSynced,
+        contentCompletedSync,
+        flags,
+        contentIds,
+      })
     }
   } catch (err) {
     debug(`Error during sync ${err.stack}`)
   }
 
-  // always try again
+  // schedule next sync run
   retry()
 }
 
 function startSyncing(api, flags, storage) {
   // ids of content currently being synced
   const contentBeingSynced = new Map()
-  // ids of content that completed sync and may require creating a new relationship
-  const contentCompleteSynced = new Map()
+  // ids of content that completed sync
+  const contentCompletedSync = new Map()
 
-  syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced })
+  syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync })
 }
 
 module.exports = {
