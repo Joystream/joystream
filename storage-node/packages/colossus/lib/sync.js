@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:sync')
 const _ = require('lodash')
 const { ContentId } = require('@joystream/types/storage')
-const { sleep } = require('@joystream/storage-utils/sleep')
+const { nextTick } = require('@joystream/storage-utils/sleep')
 
 // The number of concurrent items to attemp to fetch. Must be greater than zero.
 const MAX_CONCURRENT_SYNC_ITEMS = 30
@@ -69,7 +69,7 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
 
       // Allow short time for checking if content is already stored locally.
       // So we can handle more new items per run.
-      await sleep(50)
+      await nextTick()
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
