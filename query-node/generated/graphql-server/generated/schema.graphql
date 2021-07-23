@@ -203,6 +203,7 @@ input DataObjectCreateInput {
   typeId: Float!
   size: Float!
   liaison: ID
+  liaisonId: ID
   liaisonJudgement: LiaisonJudgement!
   ipfsContentId: String!
   joystreamContentId: String!
@@ -228,6 +229,8 @@ enum DataObjectOrderByInput {
   size_DESC
   liaison_ASC
   liaison_DESC
+  liaisonId_ASC
+  liaisonId_DESC
   liaisonJudgement_ASC
   liaisonJudgement_DESC
   ipfsContentId_ASC
@@ -526,6 +529,7 @@ input DataObjectUpdateInput {
   typeId: Float
   size: Float
   liaison: ID
+  liaisonId: ID
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
@@ -575,6 +579,8 @@ input DataObjectWhereInput {
   size_lt: Float
   size_lte: Float
   size_in: [Float!]
+  liaisonId_eq: ID
+  liaisonId_in: [ID!]
   liaisonJudgement_eq: LiaisonJudgement
   liaisonJudgement_in: [LiaisonJudgement!]
   ipfsContentId_eq: String
@@ -784,20 +790,26 @@ type ChannelConnection {
 
 input ChannelCreateInput {
   ownerMember: ID
+  ownerMemberId: ID
   ownerCuratorGroup: ID
+  ownerCuratorGroupId: ID
   category: ID
+  categoryId: ID
   rewardAccount: String
   title: String
   description: String
   coverPhotoDataObject: ID
+  coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]!
   coverPhotoAvailability: AssetAvailability!
   avatarPhotoDataObject: ID
+  avatarPhotoDataObjectId: ID
   avatarPhotoUrls: [String!]!
   avatarPhotoAvailability: AssetAvailability!
   isPublic: Boolean
   isCensored: Boolean!
   language: ID
+  languageId: ID
   createdInBlock: Float!
 }
 
@@ -815,10 +827,16 @@ enum ChannelOrderByInput {
   deletedAt_DESC
   ownerMember_ASC
   ownerMember_DESC
+  ownerMemberId_ASC
+  ownerMemberId_DESC
   ownerCuratorGroup_ASC
   ownerCuratorGroup_DESC
+  ownerCuratorGroupId_ASC
+  ownerCuratorGroupId_DESC
   category_ASC
   category_DESC
+  categoryId_ASC
+  categoryId_DESC
   rewardAccount_ASC
   rewardAccount_DESC
   title_ASC
@@ -827,10 +845,14 @@ enum ChannelOrderByInput {
   description_DESC
   coverPhotoDataObject_ASC
   coverPhotoDataObject_DESC
+  coverPhotoDataObjectId_ASC
+  coverPhotoDataObjectId_DESC
   coverPhotoAvailability_ASC
   coverPhotoAvailability_DESC
   avatarPhotoDataObject_ASC
   avatarPhotoDataObject_DESC
+  avatarPhotoDataObjectId_ASC
+  avatarPhotoDataObjectId_DESC
   avatarPhotoAvailability_ASC
   avatarPhotoAvailability_DESC
   isPublic_ASC
@@ -839,26 +861,34 @@ enum ChannelOrderByInput {
   isCensored_DESC
   language_ASC
   language_DESC
+  languageId_ASC
+  languageId_DESC
   createdInBlock_ASC
   createdInBlock_DESC
 }
 
 input ChannelUpdateInput {
   ownerMember: ID
+  ownerMemberId: ID
   ownerCuratorGroup: ID
+  ownerCuratorGroupId: ID
   category: ID
+  categoryId: ID
   rewardAccount: String
   title: String
   description: String
   coverPhotoDataObject: ID
+  coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]
   coverPhotoAvailability: AssetAvailability
   avatarPhotoDataObject: ID
+  avatarPhotoDataObjectId: ID
   avatarPhotoUrls: [String!]
   avatarPhotoAvailability: AssetAvailability
   isPublic: Boolean
   isCensored: Boolean
   language: ID
+  languageId: ID
   createdInBlock: Float
 }
 
@@ -887,6 +917,12 @@ input ChannelWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  ownerMemberId_eq: ID
+  ownerMemberId_in: [ID!]
+  ownerCuratorGroupId_eq: ID
+  ownerCuratorGroupId_in: [ID!]
+  categoryId_eq: ID
+  categoryId_in: [ID!]
   rewardAccount_eq: String
   rewardAccount_contains: String
   rewardAccount_startsWith: String
@@ -902,11 +938,15 @@ input ChannelWhereInput {
   description_startsWith: String
   description_endsWith: String
   description_in: [String!]
+  coverPhotoDataObjectId_eq: ID
+  coverPhotoDataObjectId_in: [ID!]
   coverPhotoUrls_containsAll: [String!]
   coverPhotoUrls_containsNone: [String!]
   coverPhotoUrls_containsAny: [String!]
   coverPhotoAvailability_eq: AssetAvailability
   coverPhotoAvailability_in: [AssetAvailability!]
+  avatarPhotoDataObjectId_eq: ID
+  avatarPhotoDataObjectId_in: [ID!]
   avatarPhotoUrls_containsAll: [String!]
   avatarPhotoUrls_containsNone: [String!]
   avatarPhotoUrls_containsAny: [String!]
@@ -916,6 +956,8 @@ input ChannelWhereInput {
   isPublic_in: [Boolean!]
   isCensored_eq: Boolean
   isCensored_in: [Boolean!]
+  languageId_eq: ID
+  languageId_in: [ID!]
   createdInBlock_eq: Int
   createdInBlock_gt: Int
   createdInBlock_gte: Int
@@ -1688,24 +1730,31 @@ type VideoConnection {
 
 input VideoCreateInput {
   channel: ID
+  channelId: ID
   category: ID
+  categoryId: ID
   title: String
   description: String
   duration: Float
   thumbnailPhotoDataObject: ID
+  thumbnailPhotoDataObjectId: ID
   thumbnailPhotoUrls: [String!]!
   thumbnailPhotoAvailability: AssetAvailability!
   language: ID
+  languageId: ID
   hasMarketing: Boolean
   publishedBeforeJoystream: DateTime
   isPublic: Boolean
   isCensored: Boolean!
   isExplicit: Boolean
   license: ID
+  licenseId: ID
   mediaDataObject: ID
+  mediaDataObjectId: ID
   mediaUrls: [String!]!
   mediaAvailability: AssetAvailability!
   mediaMetadata: ID
+  mediaMetadataId: ID
   createdInBlock: Float!
   isFeatured: Boolean!
 }
@@ -1857,6 +1906,7 @@ type VideoMediaMetadataConnection {
 
 input VideoMediaMetadataCreateInput {
   encoding: ID
+  encodingId: ID
   pixelWidth: Float
   pixelHeight: Float
   size: Float
@@ -1877,6 +1927,8 @@ enum VideoMediaMetadataOrderByInput {
   deletedAt_DESC
   encoding_ASC
   encoding_DESC
+  encodingId_ASC
+  encodingId_DESC
   pixelWidth_ASC
   pixelWidth_DESC
   pixelHeight_ASC
@@ -1889,6 +1941,7 @@ enum VideoMediaMetadataOrderByInput {
 
 input VideoMediaMetadataUpdateInput {
   encoding: ID
+  encodingId: ID
   pixelWidth: Float
   pixelHeight: Float
   size: Float
@@ -1920,6 +1973,8 @@ input VideoMediaMetadataWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  encodingId_eq: ID
+  encodingId_in: [ID!]
   pixelWidth_eq: Int
   pixelWidth_gt: Int
   pixelWidth_gte: Int
@@ -1963,8 +2018,12 @@ enum VideoOrderByInput {
   deletedAt_DESC
   channel_ASC
   channel_DESC
+  channelId_ASC
+  channelId_DESC
   category_ASC
   category_DESC
+  categoryId_ASC
+  categoryId_DESC
   title_ASC
   title_DESC
   description_ASC
@@ -1973,10 +2032,14 @@ enum VideoOrderByInput {
   duration_DESC
   thumbnailPhotoDataObject_ASC
   thumbnailPhotoDataObject_DESC
+  thumbnailPhotoDataObjectId_ASC
+  thumbnailPhotoDataObjectId_DESC
   thumbnailPhotoAvailability_ASC
   thumbnailPhotoAvailability_DESC
   language_ASC
   language_DESC
+  languageId_ASC
+  languageId_DESC
   hasMarketing_ASC
   hasMarketing_DESC
   publishedBeforeJoystream_ASC
@@ -1989,12 +2052,18 @@ enum VideoOrderByInput {
   isExplicit_DESC
   license_ASC
   license_DESC
+  licenseId_ASC
+  licenseId_DESC
   mediaDataObject_ASC
   mediaDataObject_DESC
+  mediaDataObjectId_ASC
+  mediaDataObjectId_DESC
   mediaAvailability_ASC
   mediaAvailability_DESC
   mediaMetadata_ASC
   mediaMetadata_DESC
+  mediaMetadataId_ASC
+  mediaMetadataId_DESC
   createdInBlock_ASC
   createdInBlock_DESC
   isFeatured_ASC
@@ -2003,24 +2072,31 @@ enum VideoOrderByInput {
 
 input VideoUpdateInput {
   channel: ID
+  channelId: ID
   category: ID
+  categoryId: ID
   title: String
   description: String
   duration: Float
   thumbnailPhotoDataObject: ID
+  thumbnailPhotoDataObjectId: ID
   thumbnailPhotoUrls: [String!]
   thumbnailPhotoAvailability: AssetAvailability
   language: ID
+  languageId: ID
   hasMarketing: Boolean
   publishedBeforeJoystream: DateTime
   isPublic: Boolean
   isCensored: Boolean
   isExplicit: Boolean
   license: ID
+  licenseId: ID
   mediaDataObject: ID
+  mediaDataObjectId: ID
   mediaUrls: [String!]
   mediaAvailability: AssetAvailability
   mediaMetadata: ID
+  mediaMetadataId: ID
   createdInBlock: Float
   isFeatured: Boolean
 }
@@ -2050,6 +2126,10 @@ input VideoWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  channelId_eq: ID
+  channelId_in: [ID!]
+  categoryId_eq: ID
+  categoryId_in: [ID!]
   title_eq: String
   title_contains: String
   title_startsWith: String
@@ -2066,11 +2146,15 @@ input VideoWhereInput {
   duration_lt: Int
   duration_lte: Int
   duration_in: [Int!]
+  thumbnailPhotoDataObjectId_eq: ID
+  thumbnailPhotoDataObjectId_in: [ID!]
   thumbnailPhotoUrls_containsAll: [String!]
   thumbnailPhotoUrls_containsNone: [String!]
   thumbnailPhotoUrls_containsAny: [String!]
   thumbnailPhotoAvailability_eq: AssetAvailability
   thumbnailPhotoAvailability_in: [AssetAvailability!]
+  languageId_eq: ID
+  languageId_in: [ID!]
   hasMarketing_eq: Boolean
   hasMarketing_in: [Boolean!]
   publishedBeforeJoystream_eq: DateTime
@@ -2084,11 +2168,17 @@ input VideoWhereInput {
   isCensored_in: [Boolean!]
   isExplicit_eq: Boolean
   isExplicit_in: [Boolean!]
+  licenseId_eq: ID
+  licenseId_in: [ID!]
+  mediaDataObjectId_eq: ID
+  mediaDataObjectId_in: [ID!]
   mediaUrls_containsAll: [String!]
   mediaUrls_containsNone: [String!]
   mediaUrls_containsAny: [String!]
   mediaAvailability_eq: AssetAvailability
   mediaAvailability_in: [AssetAvailability!]
+  mediaMetadataId_eq: ID
+  mediaMetadataId_in: [ID!]
   createdInBlock_eq: Int
   createdInBlock_gt: Int
   createdInBlock_gte: Int

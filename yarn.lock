@@ -28736,9 +28736,9 @@ warning@^4.0.1, warning@^4.0.2, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-"warthog@https://github.com/Joystream/warthog/releases/download/v2.37.0/joystream-warthog-v2.37.0.tgz", "warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz":
-  version "2.37.0"
-  resolved "https://github.com/Joystream/warthog/releases/download/v2.37.0/joystream-warthog-v2.37.0.tgz#479310cc35d321fd0d2f63b3255c71d42667f457"
+"warthog@https://github.com/Joystream/warthog/releases/download/v2.37.0/joystream-warthog-v2.37.0.tgz", "warthog@https://github.com/Joystream/warthog/releases/download/v2.37.2-sumer/joystream-warthog-v2.37.2-sumer.tgz", "warthog@https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz":
+  version "2.37.2-sumer"
+  resolved "https://github.com/Joystream/warthog/releases/download/v2.37.2-sumer/joystream-warthog-v2.37.2-sumer.tgz#137cba2542502f21acf158d64e54dd700091db71"
   dependencies:
     "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/query-templates%401.7.27/graphql-playground-react-v1.7.27.tgz"
     "@types/app-root-path" "^1.2.4"

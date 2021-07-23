@@ -108,6 +108,8 @@ export type DataObjectOrderByInput =   'createdAt_ASC' |
   'size_DESC' |
   'liaison_ASC' |
   'liaison_DESC' |
+  'liaisonId_ASC' |
+  'liaisonId_DESC' |
   'liaisonJudgement_ASC' |
   'liaisonJudgement_DESC' |
   'ipfsContentId_ASC' |
@@ -134,10 +136,16 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'ownerMember_ASC' |
   'ownerMember_DESC' |
+  'ownerMemberId_ASC' |
+  'ownerMemberId_DESC' |
   'ownerCuratorGroup_ASC' |
   'ownerCuratorGroup_DESC' |
+  'ownerCuratorGroupId_ASC' |
+  'ownerCuratorGroupId_DESC' |
   'category_ASC' |
   'category_DESC' |
+  'categoryId_ASC' |
+  'categoryId_DESC' |
   'rewardAccount_ASC' |
   'rewardAccount_DESC' |
   'title_ASC' |
@@ -146,10 +154,14 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'description_DESC' |
   'coverPhotoDataObject_ASC' |
   'coverPhotoDataObject_DESC' |
+  'coverPhotoDataObjectId_ASC' |
+  'coverPhotoDataObjectId_DESC' |
   'coverPhotoAvailability_ASC' |
   'coverPhotoAvailability_DESC' |
   'avatarPhotoDataObject_ASC' |
   'avatarPhotoDataObject_DESC' |
+  'avatarPhotoDataObjectId_ASC' |
+  'avatarPhotoDataObjectId_DESC' |
   'avatarPhotoAvailability_ASC' |
   'avatarPhotoAvailability_DESC' |
   'isPublic_ASC' |
@@ -158,6 +170,8 @@ export type ChannelOrderByInput =   'createdAt_ASC' |
   'isCensored_DESC' |
   'language_ASC' |
   'language_DESC' |
+  'languageId_ASC' |
+  'languageId_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC'
 
@@ -256,6 +270,8 @@ export type VideoMediaMetadataOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'encoding_ASC' |
   'encoding_DESC' |
+  'encodingId_ASC' |
+  'encodingId_DESC' |
   'pixelWidth_ASC' |
   'pixelWidth_DESC' |
   'pixelHeight_ASC' |
@@ -273,8 +289,12 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'deletedAt_DESC' |
   'channel_ASC' |
   'channel_DESC' |
+  'channelId_ASC' |
+  'channelId_DESC' |
   'category_ASC' |
   'category_DESC' |
+  'categoryId_ASC' |
+  'categoryId_DESC' |
   'title_ASC' |
   'title_DESC' |
   'description_ASC' |
@@ -283,10 +303,14 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'duration_DESC' |
   'thumbnailPhotoDataObject_ASC' |
   'thumbnailPhotoDataObject_DESC' |
+  'thumbnailPhotoDataObjectId_ASC' |
+  'thumbnailPhotoDataObjectId_DESC' |
   'thumbnailPhotoAvailability_ASC' |
   'thumbnailPhotoAvailability_DESC' |
   'language_ASC' |
   'language_DESC' |
+  'languageId_ASC' |
+  'languageId_DESC' |
   'hasMarketing_ASC' |
   'hasMarketing_DESC' |
   'publishedBeforeJoystream_ASC' |
@@ -299,12 +323,18 @@ export type VideoOrderByInput =   'createdAt_ASC' |
   'isExplicit_DESC' |
   'license_ASC' |
   'license_DESC' |
+  'licenseId_ASC' |
+  'licenseId_DESC' |
   'mediaDataObject_ASC' |
   'mediaDataObject_DESC' |
+  'mediaDataObjectId_ASC' |
+  'mediaDataObjectId_DESC' |
   'mediaAvailability_ASC' |
   'mediaAvailability_DESC' |
   'mediaMetadata_ASC' |
   'mediaMetadata_DESC' |
+  'mediaMetadataId_ASC' |
+  'mediaMetadataId_DESC' |
   'createdInBlock_ASC' |
   'createdInBlock_DESC' |
   'isFeatured_ASC' |
@@ -409,6 +439,7 @@ export interface DataObjectCreateInput {
   typeId: Float
   size: Float
   liaison?: ID_Input | null
+  liaisonId?: ID_Input | null
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
   joystreamContentId: String
@@ -671,6 +702,7 @@ export interface DataObjectUpdateInput {
   typeId?: Float | null
   size?: Float | null
   liaison?: ID_Input | null
+  liaisonId?: ID_Input | null
   liaisonJudgement?: LiaisonJudgement | null
   ipfsContentId?: String | null
   joystreamContentId?: String | null
@@ -720,6 +752,8 @@ export interface DataObjectWhereInput {
   size_lt?: Float | null
   size_lte?: Float | null
   size_in?: Float[] | Float | null
+  liaisonId_eq?: ID_Input | null
+  liaisonId_in?: ID_Output[] | ID_Output | null
   liaisonJudgement_eq?: LiaisonJudgement | null
   liaisonJudgement_in?: LiaisonJudgement[] | LiaisonJudgement | null
   ipfsContentId_eq?: String | null
@@ -812,39 +846,51 @@ export interface ChannelCategoryWhereUniqueInput {
 
 export interface ChannelCreateInput {
   ownerMember?: ID_Input | null
+  ownerMemberId?: ID_Input | null
   ownerCuratorGroup?: ID_Input | null
+  ownerCuratorGroupId?: ID_Input | null
   category?: ID_Input | null
+  categoryId?: ID_Input | null
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
   coverPhotoDataObject?: ID_Input | null
+  coverPhotoDataObjectId?: ID_Input | null
   coverPhotoUrls: Array<String>
   coverPhotoAvailability: AssetAvailability
   avatarPhotoDataObject?: ID_Input | null
+  avatarPhotoDataObjectId?: ID_Input | null
   avatarPhotoUrls: Array<String>
   avatarPhotoAvailability: AssetAvailability
   isPublic?: Boolean | null
   isCensored: Boolean
   language?: ID_Input | null
+  languageId?: ID_Input | null
   createdInBlock: Float
 }
 
 export interface ChannelUpdateInput {
   ownerMember?: ID_Input | null
+  ownerMemberId?: ID_Input | null
   ownerCuratorGroup?: ID_Input | null
+  ownerCuratorGroupId?: ID_Input | null
   category?: ID_Input | null
+  categoryId?: ID_Input | null
   rewardAccount?: String | null
   title?: String | null
   description?: String | null
   coverPhotoDataObject?: ID_Input | null
+  coverPhotoDataObjectId?: ID_Input | null
   coverPhotoUrls?: String[] | String | null
   coverPhotoAvailability?: AssetAvailability | null
   avatarPhotoDataObject?: ID_Input | null
+  avatarPhotoDataObjectId?: ID_Input | null
   avatarPhotoUrls?: String[] | String | null
   avatarPhotoAvailability?: AssetAvailability | null
   isPublic?: Boolean | null
   isCensored?: Boolean | null
   language?: ID_Input | null
+  languageId?: ID_Input | null
   createdInBlock?: Float | null
 }
 
@@ -873,6 +919,12 @@ export interface ChannelWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
+  ownerMemberId_eq?: ID_Input | null
+  ownerMemberId_in?: ID_Output[] | ID_Output | null
+  ownerCuratorGroupId_eq?: ID_Input | null
+  ownerCuratorGroupId_in?: ID_Output[] | ID_Output | null
+  categoryId_eq?: ID_Input | null
+  categoryId_in?: ID_Output[] | ID_Output | null
   rewardAccount_eq?: String | null
   rewardAccount_contains?: String | null
   rewardAccount_startsWith?: String | null
@@ -888,11 +940,15 @@ export interface ChannelWhereInput {
   description_startsWith?: String | null
   description_endsWith?: String | null
   description_in?: String[] | String | null
+  coverPhotoDataObjectId_eq?: ID_Input | null
+  coverPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
   coverPhotoUrls_containsAll?: String[] | String | null
   coverPhotoUrls_containsNone?: String[] | String | null
   coverPhotoUrls_containsAny?: String[] | String | null
   coverPhotoAvailability_eq?: AssetAvailability | null
   coverPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  avatarPhotoDataObjectId_eq?: ID_Input | null
+  avatarPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
   avatarPhotoUrls_containsAll?: String[] | String | null
   avatarPhotoUrls_containsNone?: String[] | String | null
   avatarPhotoUrls_containsAny?: String[] | String | null
@@ -902,6 +958,8 @@ export interface ChannelWhereInput {
   isPublic_in?: Boolean[] | Boolean | null
   isCensored_eq?: Boolean | null
   isCensored_in?: Boolean[] | Boolean | null
+  languageId_eq?: ID_Input | null
+  languageId_in?: ID_Output[] | ID_Output | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null
@@ -1253,24 +1311,31 @@ export interface VideoCategoryWhereUniqueInput {
 
 export interface VideoCreateInput {
   channel?: ID_Input | null
+  channelId?: ID_Input | null
   category?: ID_Input | null
+  categoryId?: ID_Input | null
   title?: String | null
   description?: String | null
   duration?: Float | null
   thumbnailPhotoDataObject?: ID_Input | null
+  thumbnailPhotoDataObjectId?: ID_Input | null
   thumbnailPhotoUrls: Array<String>
   thumbnailPhotoAvailability: AssetAvailability
   language?: ID_Input | null
+  languageId?: ID_Input | null
   hasMarketing?: Boolean | null
   publishedBeforeJoystream?: DateTime | null
   isPublic?: Boolean | null
   isCensored: Boolean
   isExplicit?: Boolean | null
   license?: ID_Input | null
+  licenseId?: ID_Input | null
   mediaDataObject?: ID_Input | null
+  mediaDataObjectId?: ID_Input | null
   mediaUrls: Array<String>
   mediaAvailability: AssetAvailability
   mediaMetadata?: ID_Input | null
+  mediaMetadataId?: ID_Input | null
   createdInBlock: Float
   isFeatured: Boolean
 }
@@ -1340,6 +1405,7 @@ export interface VideoMediaEncodingWhereUniqueInput {
 
 export interface VideoMediaMetadataCreateInput {
   encoding?: ID_Input | null
+  encodingId?: ID_Input | null
   pixelWidth?: Float | null
   pixelHeight?: Float | null
   size?: Float | null
@@ -1348,6 +1414,7 @@ export interface VideoMediaMetadataCreateInput {
 
 export interface VideoMediaMetadataUpdateInput {
   encoding?: ID_Input | null
+  encodingId?: ID_Input | null
   pixelWidth?: Float | null
   pixelHeight?: Float | null
   size?: Float | null
@@ -1379,6 +1446,8 @@ export interface VideoMediaMetadataWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
+  encodingId_eq?: ID_Input | null
+  encodingId_in?: ID_Output[] | ID_Output | null
   pixelWidth_eq?: Int | null
   pixelWidth_gt?: Int | null
   pixelWidth_gte?: Int | null
@@ -1415,24 +1484,31 @@ export interface VideoMediaMetadataWhereUniqueInput {
 
 export interface VideoUpdateInput {
   channel?: ID_Input | null
+  channelId?: ID_Input | null
   category?: ID_Input | null
+  categoryId?: ID_Input | null
   title?: String | null
   description?: String | null
   duration?: Float | null
   thumbnailPhotoDataObject?: ID_Input | null
+  thumbnailPhotoDataObjectId?: ID_Input | null
   thumbnailPhotoUrls?: String[] | String | null
   thumbnailPhotoAvailability?: AssetAvailability | null
   language?: ID_Input | null
+  languageId?: ID_Input | null
   hasMarketing?: Boolean | null
   publishedBeforeJoystream?: DateTime | null
   isPublic?: Boolean | null
   isCensored?: Boolean | null
   isExplicit?: Boolean | null
   license?: ID_Input | null
+  licenseId?: ID_Input | null
   mediaDataObject?: ID_Input | null
+  mediaDataObjectId?: ID_Input | null
   mediaUrls?: String[] | String | null
   mediaAvailability?: AssetAvailability | null
   mediaMetadata?: ID_Input | null
+  mediaMetadataId?: ID_Input | null
   createdInBlock?: Float | null
   isFeatured?: Boolean | null
 }
@@ -1462,6 +1538,10 @@ export interface VideoWhereInput {
   deletedAt_gte?: DateTime | null
   deletedById_eq?: ID_Input | null
   deletedById_in?: ID_Output[] | ID_Output | null
+  channelId_eq?: ID_Input | null
+  channelId_in?: ID_Output[] | ID_Output | null
+  categoryId_eq?: ID_Input | null
+  categoryId_in?: ID_Output[] | ID_Output | null
   title_eq?: String | null
   title_contains?: String | null
   title_startsWith?: String | null
@@ -1478,11 +1558,15 @@ export interface VideoWhereInput {
   duration_lt?: Int | null
   duration_lte?: Int | null
   duration_in?: Int[] | Int | null
+  thumbnailPhotoDataObjectId_eq?: ID_Input | null
+  thumbnailPhotoDataObjectId_in?: ID_Output[] | ID_Output | null
   thumbnailPhotoUrls_containsAll?: String[] | String | null
   thumbnailPhotoUrls_containsNone?: String[] | String | null
   thumbnailPhotoUrls_containsAny?: String[] | String | null
   thumbnailPhotoAvailability_eq?: AssetAvailability | null
   thumbnailPhotoAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  languageId_eq?: ID_Input | null
+  languageId_in?: ID_Output[] | ID_Output | null
   hasMarketing_eq?: Boolean | null
   hasMarketing_in?: Boolean[] | Boolean | null
   publishedBeforeJoystream_eq?: DateTime | null
@@ -1496,11 +1580,17 @@ export interface VideoWhereInput {
   isCensored_in?: Boolean[] | Boolean | null
   isExplicit_eq?: Boolean | null
   isExplicit_in?: Boolean[] | Boolean | null
+  licenseId_eq?: ID_Input | null
+  licenseId_in?: ID_Output[] | ID_Output | null
+  mediaDataObjectId_eq?: ID_Input | null
+  mediaDataObjectId_in?: ID_Output[] | ID_Output | null
   mediaUrls_containsAll?: String[] | String | null
   mediaUrls_containsNone?: String[] | String | null
   mediaUrls_containsAny?: String[] | String | null
   mediaAvailability_eq?: AssetAvailability | null
   mediaAvailability_in?: AssetAvailability[] | AssetAvailability | null
+  mediaMetadataId_eq?: ID_Input | null
+  mediaMetadataId_in?: ID_Output[] | ID_Output | null
   createdInBlock_eq?: Int | null
   createdInBlock_gt?: Int | null
   createdInBlock_gte?: Int | null
