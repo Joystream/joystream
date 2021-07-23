@@ -7,7 +7,9 @@ CLI=../bin/run
 CONFIG_PATH="../config.yml"
 ${CLI} leader:set-buckets-per-bag-limit -l 10 -c ${CONFIG_PATH} -y
 FAMILY_ID=`${CLI} leader:create-bucket-family -c "${CONFIG_PATH}" -y`
-BUCKET_ID=`${CLI} leader:create-bucket -f "${FAMILY_ID}" -a -c "${CONFIG_PATH}" -y`
+BUCKET_ID=`${CLI} leader:create-bucket -f "${FAMILY_ID}" -a yes -c "${CONFIG_PATH}" -y`
 ${CLI} leader:update-bag -b static:council -f "${FAMILY_ID}" -a "${BUCKET_ID}" -c "${CONFIG_PATH}" -y
+${CLI} leader:update-bucket-status -f "${FAMILY_ID}" -B "${BUCKET_ID}"  --acceptingBags yes -c "${CONFIG_PATH}" -y
+${CLI} leader:update-bucket-mode -f "${FAMILY_ID}" -B "${BUCKET_ID}" --mode on -c "${CONFIG_PATH}" -y
 ${CLI} leader:delete-bucket -f "${FAMILY_ID}" -B "${BUCKET_ID}" -c "${CONFIG_PATH}" -y
 ${CLI} leader:delete-bucket-family -f "${FAMILY_ID}" -c "${CONFIG_PATH}" -y
