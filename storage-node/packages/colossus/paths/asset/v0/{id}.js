@@ -38,21 +38,68 @@ function errorHandler(response, err, code) {
 const PROCESS_UPLOAD_TX_COSTS = 3
 
 module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
+  debug('created path handler')
+
   // Creat the IPFS HTTP Gateway proxy middleware
   const proxy = ipfsProxy.createProxy(ipfsHttpGatewayUrl)
 
-  const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
-    // make sure id exists and was Accepted only then proxy
-    // todo? stat file only server if local
-    // cache id -> ipfs hash mapping
-    const dataObject = await runtime.assets.getDataObject(req.params.id)
+  // Cache of known content mappings and local availability info
+  const ipfsContentIdMap = new Map()
 
-    if (dataObject && dataObject.liaison_judgement.type === 'Accepted') {
-      req.params.ipfs_content_id = dataObject.ipfs_content_id.toString()
-      proxy(req, res, next)
-    } else {
-      res.status(404).send({ message: 'Content not found' })
+  // Make sure id is valid and was 'Accepted', only then proxy if content is local
+  const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
+    const content_id = req.params.id
+
+    if (!ipfsContentIdMap.has(content_id)) {
+      const dataObject = await runtime.assets.getDataObject(req.params.id)
+
+      if (!dataObject) {
+        return res.status(404).send({ message: 'Unknown content' })
+      }
+
+      // Has content ever been uploaded and accepted by a provider?
+      if (dataObject.liaison_judgement.type !== 'Accepted') {
+        return res.status(404).send({ message: 'Not processed yet' })
+      }
+
+      ipfsContentIdMap.set(content_id, {
+        local: false,
+        ipfs_content_id: dataObject.ipfs_content_id.toString(),
+      })
     }
+
+    const { ipfs_content_id, local } = ipfsContentIdMap.get(content_id)
+
+    // Pass on the ipfs hash to the middleware
+    req.params.ipfs_content_id = ipfs_content_id
+
+    // Serve it if we know we have it, or it was recently synced successfully
+    if (local || storage.syncStatus(ipfs_content_id).synced) {
+      return proxy(req, res, next)
+    }
+
+    // Not yet processed by sync run, check if we have it locally
+    try {
+      const stat = await storage.statIpfs(ipfs_content_id, 250)
+
+      if (stat.local) {
+        ipfsContentIdMap.set(content_id, {
+          local: true,
+          ipfs_content_id,
+        })
+
+        // We know we have the full content locally, serve it
+        return proxy(req, res, next)
+      }
+    } catch (_err) {
+      // timeout of some other error trying to stat
+      debug('Failed to stat', ipfs_content_id)
+    }
+
+    // Valid content but no certainty that the node has it locally yet.
+    // We a void serving it to prevent poor performance (ipfs node will have to retrieve it on demand
+    // which might be slow and wasteful if content is not cached locally)
+    res.status(404).send({ message: 'Content not available locally' })
   }
 
   const doc = {

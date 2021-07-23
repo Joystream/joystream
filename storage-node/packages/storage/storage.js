@@ -302,8 +302,15 @@ class Storage {
   async stat(contentId, timeout) {
     const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
 
-    return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
-      this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
+    return this.ipfsStat(resolved, timeout)
+  }
+
+  /*
+   * Stat IPFS hash
+   */
+  async ipfsStat(hash, timeout) {
+    return this.withSpecifiedTimeout(timeout, (resolve, reject) => {
+      this.ipfs.files.stat(`/ipfs/${hash}`, { withLocal: true }, (err, res) => {
         if (err) {
           reject(err)
           return
