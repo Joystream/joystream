@@ -48,9 +48,9 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
     const id = candidatesForSync.shift()
 
-    // Log progress every 100 items
+    // Log progress
     if (syncedItemsCount % 100 === 0) {
-      debug(`${candidatesForSync.length} items remaining to sync.`)
+      debug(`${candidatesForSync.length} items remaining to process`)
     }
 
     try {
