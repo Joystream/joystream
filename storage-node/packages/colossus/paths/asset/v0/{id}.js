@@ -43,6 +43,8 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
 
   const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
     // make sure id exists and was Accepted only then proxy
+    // todo? stat file only server if local
+    // cache id -> ipfs hash mapping
     const dataObject = await runtime.assets.getDataObject(req.params.id)
 
     if (dataObject && dataObject.liaison_judgement.type === 'Accepted') {
