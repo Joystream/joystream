@@ -8,6 +8,7 @@
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
+    "@apollo/client": "^3.3.21",
     "@joystream/types": "^0.17.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
@@ -24,6 +25,7 @@
     "await-lock": "^2.1.0",
     "base64url": "^3.0.1",
     "blake3": "^2.1.4",
+    "cross-fetch": "^3.1.4",
     "express": "4.17.1",
     "express-openapi-validator": "^4.12.4",
     "express-winston": "^4.1.0",
@@ -38,6 +40,11 @@
     "winston": "^3.3.3"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
     "@joystream/eslint-config": "^1.0.0",
     "@oclif/dev-cli": "^1",
     "@oclif/test": "^1",
@@ -109,7 +116,8 @@
     "build": "tsc --build tsconfig.json",
     "format": "prettier ./src --write",
     "lint": "eslint ./src --ext .ts",
-    "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021"
+    "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021",
+    "generate:types:graphql": "yarn graphql-codegen -c ./src/services/query-node/codegen.yml"
   },
   "types": "lib/index.d.ts"
 }
