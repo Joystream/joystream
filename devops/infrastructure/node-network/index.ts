@@ -5,12 +5,15 @@ import * as k8s from '@pulumi/kubernetes'
 import { configMapFromFile } from './configMap'
 import { CaddyServiceDeployment } from './caddy'
 import { getSubkeyContainers, getValidatorContainers } from './utils'
+// const { exec } = require('child_process')
 
 const config = new pulumi.Config()
 const awsConfig = new pulumi.Config('aws')
 const isMinikube = config.getBoolean('isMinikube')
+
 export let kubeconfig: pulumi.Output<any>
 export let joystreamAppsImage: pulumi.Output<string>
+
 let provider: k8s.Provider
 
 if (isMinikube) {
@@ -41,7 +44,6 @@ const resourceOptions = { provider: provider }
 const name = 'node-network'
 
 // Create a Kubernetes Namespace
-// const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
 const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 
 // Export the Namespace name
@@ -61,10 +63,10 @@ const jsonModifyConfig = new configMapFromFile(
 const chainDataPath = '/chain-data'
 const networkSuffix = config.get('networkSuffix') || '8129'
 const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
-const numberOfValidators = config.getNumber('numberOfValidators') || 2
+const numberOfValidators = config.getNumber('numberOfValidators') || 1
 
 const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
-// const validatorContainers = getValidatorContainers(numberOfValidators, dataPath, builderPath, chainSpecPath)
+const validatorContainers = getValidatorContainers(numberOfValidators, chainDataPath, chainSpecPath)
 
 const pvc = new k8s.core.v1.PersistentVolumeClaim(
   `${name}-pvc`,
@@ -137,7 +139,15 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
               name: 'json-modify',
               image: 'python',
               command: ['python'],
-              args: ['/scripts/json_modify.py', '--path', `${chainDataPath}/chainspec.json`, '--prefix', networkSuffix],
+              args: [
+                '/scripts/json_modify.py',
+                '--path',
+                `${chainDataPath}`,
+                '--prefix',
+                networkSuffix,
+                '--validators',
+                `${numberOfValidators}`,
+              ],
               volumeMounts: [
                 {
                   mountPath: '/scripts/json_modify.py',
@@ -183,6 +193,68 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
     },
   },
   { ...resourceOptions }
+)
+
+// async function executeCommand(url: string): Promise<string> {
+//   return new Promise((resolve, reject) => {
+//     exec(url, (err: string, stdout: string, stderr: string) => {
+//       if (err) reject(err)
+//       resolve(stdout.replace(/\r?\n|\r/g, ''))
+//     })
+//   })
+// }
+
+// const res = executeCommand("kubectl get pods | grep 'caddy-proxy' | awk '{print $1}'")
+
+// export const result = res
+
+const validatorLabels = { app: 'validator-nodes' }
+
+const validatorNode = new k8s.apps.v1.Deployment(
+  `validator-node`,
+  {
+    metadata: {
+      namespace: namespaceName,
+      labels: validatorLabels,
+    },
+    spec: {
+      replicas: 1,
+      selector: { matchLabels: validatorLabels },
+      template: {
+        metadata: {
+          labels: validatorLabels,
+        },
+        spec: {
+          containers: [...validatorContainers],
+          volumes: [
+            {
+              name: 'config-data',
+              persistentVolumeClaim: {
+                claimName: `${name}-pvc`,
+              },
+            },
+          ],
+        },
+      },
+    },
+  },
+  { ...resourceOptions, dependsOn: chainDataPrepareJob }
+)
+
+const validatorService = new k8s.core.v1.Service(
+  `node-1`,
+  {
+    metadata: {
+      labels: validatorLabels,
+      namespace: namespaceName,
+      name: 'node-1',
+    },
+    spec: {
+      ports: [{ name: 'port-1', port: 30333 }],
+      selector: validatorLabels,
+    },
+  },
+  resourceOptions
 )
 
 const deployment = new k8s.apps.v1.Deployment(
@@ -245,7 +317,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { ...resourceOptions, dependsOn: chainDataPrepareJob }
+  { ...resourceOptions, dependsOn: validatorNode }
 )
 
 // Export the Deployment name

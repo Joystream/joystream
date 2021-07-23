@@ -5,7 +5,7 @@ export const getSubkeyContainers = (validators: number, dataPath: string) => {
       name: `subkey-node-${i}`,
       image: 'parity/subkey:latest',
       command: ['/bin/sh', '-c'],
-      args: [`subkey generate-node-key >> ${dataPath}/privatekey${i} 2>> ${dataPath}/publickey${i}`],
+      args: [`subkey generate-node-key > ${dataPath}/privatekey${i} 2> ${dataPath}/publickey${i}`],
       volumeMounts: [
         {
           name: 'config-data',
