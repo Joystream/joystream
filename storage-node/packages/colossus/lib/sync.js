@@ -24,7 +24,7 @@ const { ContentId } = require('@joystream/types/storage')
 const { sleep } = require('@joystream/storage-utils/sleep')
 
 // The number of concurrent items to attemp to fetch. Must be greater than zero.
-const MAX_CONCURRENT_SYNC_ITEMS = 20
+const MAX_CONCURRENT_SYNC_ITEMS = 30
 
 async function syncContent({ api, storage, contentBeingSynced, contentCompleteSynced }) {
   if (contentBeingSynced.size === MAX_CONCURRENT_SYNC_ITEMS) return
@@ -48,6 +48,11 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
     const id = candidatesForSync.shift()
 
+    // Log progress every 100 items
+    if (syncedItemsCount % 100 === 0) {
+      debug(`${candidatesForSync.length} items remaining to sync.`)
+    }
+
     try {
       contentBeingSynced.set(id)
       const contentId = ContentId.decode(api.api.registry, id)
@@ -64,7 +69,7 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
 
       // Allow short time for checking if content is already stored locally.
       // So we can handle more new items per run.
-      await sleep(250)
+      await sleep(50)
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
