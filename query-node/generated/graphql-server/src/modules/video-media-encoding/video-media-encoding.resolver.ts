@@ -77,7 +77,7 @@ export class VideoMediaEncodingConnectionWhereArgs extends ConnectionPageInputOp
   where?: VideoMediaEncodingWhereInput;
 
   @Field(() => VideoMediaEncodingOrderByEnum, { nullable: true })
-  orderBy?: VideoMediaEncodingOrderByEnum;
+  orderBy?: [VideoMediaEncodingOrderByEnum];
 }
 
 @Resolver(VideoMediaEncoding)

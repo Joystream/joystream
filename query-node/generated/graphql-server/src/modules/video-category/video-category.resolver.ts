@@ -77,7 +77,7 @@ export class VideoCategoryConnectionWhereArgs extends ConnectionPageInputOptions
   where?: VideoCategoryWhereInput;
 
   @Field(() => VideoCategoryOrderByEnum, { nullable: true })
-  orderBy?: VideoCategoryOrderByEnum;
+  orderBy?: [VideoCategoryOrderByEnum];
 }
 
 @Resolver(VideoCategory)

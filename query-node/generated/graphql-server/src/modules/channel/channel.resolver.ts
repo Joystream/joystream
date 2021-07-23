@@ -82,7 +82,7 @@ export class ChannelConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: ChannelWhereInput;
 
   @Field(() => ChannelOrderByEnum, { nullable: true })
-  orderBy?: ChannelOrderByEnum;
+  orderBy?: [ChannelOrderByEnum];
 }
 
 @Resolver(Channel)

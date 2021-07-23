@@ -77,7 +77,7 @@ export class LicenseConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: LicenseWhereInput;
 
   @Field(() => LicenseOrderByEnum, { nullable: true })
-  orderBy?: LicenseOrderByEnum;
+  orderBy?: [LicenseOrderByEnum];
 }
 
 @Resolver(License)

@@ -1489,47 +1489,47 @@ type ProcessorState {
 type Query {
   curatorGroups(offset: Int, limit: Int = 50, where: CuratorGroupWhereInput, orderBy: [CuratorGroupOrderByInput!]): [CuratorGroup!]!
   curatorGroupByUniqueInput(where: CuratorGroupWhereUniqueInput!): CuratorGroup
-  curatorGroupsConnection(first: Int, after: String, last: Int, before: String, where: CuratorGroupWhereInput, orderBy: CuratorGroupOrderByInput): CuratorGroupConnection!
+  curatorGroupsConnection(first: Int, after: String, last: Int, before: String, where: CuratorGroupWhereInput, orderBy: [CuratorGroupOrderByInput!]): CuratorGroupConnection!
   dataObjects(offset: Int, limit: Int = 50, where: DataObjectWhereInput, orderBy: [DataObjectOrderByInput!]): [DataObject!]!
   dataObjectByUniqueInput(where: DataObjectWhereUniqueInput!): DataObject
-  dataObjectsConnection(first: Int, after: String, last: Int, before: String, where: DataObjectWhereInput, orderBy: DataObjectOrderByInput): DataObjectConnection!
+  dataObjectsConnection(first: Int, after: String, last: Int, before: String, where: DataObjectWhereInput, orderBy: [DataObjectOrderByInput!]): DataObjectConnection!
   channelCategories(offset: Int, limit: Int = 50, where: ChannelCategoryWhereInput, orderBy: [ChannelCategoryOrderByInput!]): [ChannelCategory!]!
   channelCategoryByUniqueInput(where: ChannelCategoryWhereUniqueInput!): ChannelCategory
-  channelCategoriesConnection(first: Int, after: String, last: Int, before: String, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): ChannelCategoryConnection!
+  channelCategoriesConnection(first: Int, after: String, last: Int, before: String, where: ChannelCategoryWhereInput, orderBy: [ChannelCategoryOrderByInput!]): ChannelCategoryConnection!
   channels(offset: Int, limit: Int = 50, where: ChannelWhereInput, orderBy: [ChannelOrderByInput!]): [Channel!]!
   channelByUniqueInput(where: ChannelWhereUniqueInput!): Channel
-  channelsConnection(first: Int, after: String, last: Int, before: String, where: ChannelWhereInput, orderBy: ChannelOrderByInput): ChannelConnection!
+  channelsConnection(first: Int, after: String, last: Int, before: String, where: ChannelWhereInput, orderBy: [ChannelOrderByInput!]): ChannelConnection!
   languages(offset: Int, limit: Int = 50, where: LanguageWhereInput, orderBy: [LanguageOrderByInput!]): [Language!]!
   languageByUniqueInput(where: LanguageWhereUniqueInput!): Language
-  languagesConnection(first: Int, after: String, last: Int, before: String, where: LanguageWhereInput, orderBy: LanguageOrderByInput): LanguageConnection!
+  languagesConnection(first: Int, after: String, last: Int, before: String, where: LanguageWhereInput, orderBy: [LanguageOrderByInput!]): LanguageConnection!
   licenses(offset: Int, limit: Int = 50, where: LicenseWhereInput, orderBy: [LicenseOrderByInput!]): [License!]!
   licenseByUniqueInput(where: LicenseWhereUniqueInput!): License
-  licensesConnection(first: Int, after: String, last: Int, before: String, where: LicenseWhereInput, orderBy: LicenseOrderByInput): LicenseConnection!
+  licensesConnection(first: Int, after: String, last: Int, before: String, where: LicenseWhereInput, orderBy: [LicenseOrderByInput!]): LicenseConnection!
   memberships(offset: Int, limit: Int = 50, where: MembershipWhereInput, orderBy: [MembershipOrderByInput!]): [Membership!]!
   membershipByUniqueInput(where: MembershipWhereUniqueInput!): Membership
-  membershipsConnection(first: Int, after: String, last: Int, before: String, where: MembershipWhereInput, orderBy: MembershipOrderByInput): MembershipConnection!
+  membershipsConnection(first: Int, after: String, last: Int, before: String, where: MembershipWhereInput, orderBy: [MembershipOrderByInput!]): MembershipConnection!
   nextEntityIds(offset: Int, limit: Int = 50, where: NextEntityIdWhereInput, orderBy: [NextEntityIdOrderByInput!]): [NextEntityId!]!
   nextEntityIdByUniqueInput(where: NextEntityIdWhereUniqueInput!): NextEntityId
-  nextEntityIdsConnection(first: Int, after: String, last: Int, before: String, where: NextEntityIdWhereInput, orderBy: NextEntityIdOrderByInput): NextEntityIdConnection!
+  nextEntityIdsConnection(first: Int, after: String, last: Int, before: String, where: NextEntityIdWhereInput, orderBy: [NextEntityIdOrderByInput!]): NextEntityIdConnection!
   channelCategoriesByName(whereChannelCategory: ChannelCategoryWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [ChannelCategoriesByNameFTSOutput!]!
   membersByHandle(whereMembership: MembershipWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [MembersByHandleFTSOutput!]!
   search(whereVideo: VideoWhereInput, whereChannel: ChannelWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [SearchFTSOutput!]!
   videoCategoriesByName(whereVideoCategory: VideoCategoryWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [VideoCategoriesByNameFTSOutput!]!
   videoCategories(offset: Int, limit: Int = 50, where: VideoCategoryWhereInput, orderBy: [VideoCategoryOrderByInput!]): [VideoCategory!]!
   videoCategoryByUniqueInput(where: VideoCategoryWhereUniqueInput!): VideoCategory
-  videoCategoriesConnection(first: Int, after: String, last: Int, before: String, where: VideoCategoryWhereInput, orderBy: VideoCategoryOrderByInput): VideoCategoryConnection!
+  videoCategoriesConnection(first: Int, after: String, last: Int, before: String, where: VideoCategoryWhereInput, orderBy: [VideoCategoryOrderByInput!]): VideoCategoryConnection!
   videoMediaEncodings(offset: Int, limit: Int = 50, where: VideoMediaEncodingWhereInput, orderBy: [VideoMediaEncodingOrderByInput!]): [VideoMediaEncoding!]!
   videoMediaEncodingByUniqueInput(where: VideoMediaEncodingWhereUniqueInput!): VideoMediaEncoding
-  videoMediaEncodingsConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaEncodingWhereInput, orderBy: VideoMediaEncodingOrderByInput): VideoMediaEncodingConnection!
+  videoMediaEncodingsConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaEncodingWhereInput, orderBy: [VideoMediaEncodingOrderByInput!]): VideoMediaEncodingConnection!
   videoMediaMetadata(offset: Int, limit: Int = 50, where: VideoMediaMetadataWhereInput, orderBy: [VideoMediaMetadataOrderByInput!]): [VideoMediaMetadata!]!
   videoMediaMetadataByUniqueInput(where: VideoMediaMetadataWhereUniqueInput!): VideoMediaMetadata
-  videoMediaMetadataConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaMetadataWhereInput, orderBy: VideoMediaMetadataOrderByInput): VideoMediaMetadataConnection!
+  videoMediaMetadataConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaMetadataWhereInput, orderBy: [VideoMediaMetadataOrderByInput!]): VideoMediaMetadataConnection!
   videos(offset: Int, limit: Int = 50, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): [Video!]!
   videoByUniqueInput(where: VideoWhereUniqueInput!): Video
-  videosConnection(first: Int, after: String, last: Int, before: String, where: VideoWhereInput, orderBy: VideoOrderByInput): VideoConnection!
+  videosConnection(first: Int, after: String, last: Int, before: String, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): VideoConnection!
   workers(offset: Int, limit: Int = 50, where: WorkerWhereInput, orderBy: [WorkerOrderByInput!]): [Worker!]!
   workerByUniqueInput(where: WorkerWhereUniqueInput!): Worker
-  workersConnection(first: Int, after: String, last: Int, before: String, where: WorkerWhereInput, orderBy: WorkerOrderByInput): WorkerConnection!
+  workersConnection(first: Int, after: String, last: Int, before: String, where: WorkerWhereInput, orderBy: [WorkerOrderByInput!]): WorkerConnection!
 }
 
 type SearchFTSOutput {

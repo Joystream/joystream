@@ -74,7 +74,7 @@ export class NextEntityIdConnectionWhereArgs extends ConnectionPageInputOptions 
   where?: NextEntityIdWhereInput;
 
   @Field(() => NextEntityIdOrderByEnum, { nullable: true })
-  orderBy?: NextEntityIdOrderByEnum;
+  orderBy?: [NextEntityIdOrderByEnum];
 }
 
 @Resolver(NextEntityId)
