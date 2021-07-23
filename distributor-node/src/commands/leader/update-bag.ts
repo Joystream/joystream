@@ -5,11 +5,11 @@ export default class LeaderUpdateBag extends AccountsCommandBase {
   static description = 'Add/remove distribution buckets from a bag.'
 
   static flags = {
-    id: flags.bagId({
+    bagId: flags.bagId({
       char: 'b',
       required: true,
     }),
-    family: flags.integer({
+    familyId: flags.integer({
       char: 'f',
       description: 'ID of the distribution bucket family',
       required: true,
@@ -28,19 +28,19 @@ export default class LeaderUpdateBag extends AccountsCommandBase {
   }
 
   async run(): Promise<void> {
-    const { id, family, add, remove } = this.parse(LeaderUpdateBag).flags
+    const { bagId, familyId, add, remove } = this.parse(LeaderUpdateBag).flags
     const leadKey = await this.getDistributorLeadKey()
 
     this.log(
-      `Updating distribution buckets for bag ${id} (adding: ${add.join(',' || 'NONE')}, removing: ${
+      `Updating distribution buckets for bag ${bagId} (adding: ${add.join(',' || 'NONE')}, removing: ${
         remove.join(',') || 'NONE'
       })...`
     )
     await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateDistributionBucketsForBag(
-        id,
-        family,
+        bagId,
+        familyId,
         this.api.createType('DistributionBucketIdSet', add),
         this.api.createType('DistributionBucketIdSet', remove)
       )

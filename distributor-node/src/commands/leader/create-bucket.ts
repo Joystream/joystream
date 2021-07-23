@@ -6,7 +6,7 @@ export default class LeaderCreateBucket extends AccountsCommandBase {
   static description = `Create new distribution bucket. Requires distribution working group leader permissions.`
 
   static flags = {
-    family: flags.integer({
+    familyId: flags.integer({
       char: 'f',
       description: 'Distribution bucket family id',
       required: true,
@@ -20,13 +20,13 @@ export default class LeaderCreateBucket extends AccountsCommandBase {
   }
 
   async run(): Promise<void> {
-    const { family, acceptBags } = this.parse(LeaderCreateBucket).flags
+    const { familyId, acceptBags } = this.parse(LeaderCreateBucket).flags
     const leadKey = await this.getDistributorLeadKey()
 
     this.log('Creating new distribution bucket...')
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(leadKey),
-      this.api.tx.storage.createDistributionBucket(family, acceptBags)
+      this.api.tx.storage.createDistributionBucket(familyId, acceptBags)
     )
     const event = this.api.getEvent(result, 'storage', 'DistributionBucketCreated')
 
