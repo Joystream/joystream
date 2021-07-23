@@ -66,6 +66,10 @@ After cloning this repo, from this working directory, run these commands:
 
    Run `pulumi up -y` to update the Caddy config
 
+1. You can now access the endpoints using `pulumi stack output endpoint1` or `pulumi stack output endpoint2`
+
+   The GraphQl server is accessible at `https://<ENDPOINT>/server/graphql` and indexer at `https://<ENDPOINT>/indexer/graphql`
+
 1. Access the Kubernetes Cluster using `kubectl`
 
    To access your new Kubernetes cluster using `kubectl`, we need to set up the

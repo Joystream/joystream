@@ -63,8 +63,8 @@ export class CaddyServiceDeployment extends pulumi.ComponentResource {
           reverse_proxy query-node:4000
         }
 
-        ${ipAddress}.nip.io/graphql/* {
-          uri strip_prefix /graphql
+        ${ipAddress}.nip.io/server/* {
+          uri strip_prefix /server
           reverse_proxy query-node:8081
         }
         `
