@@ -18,7 +18,7 @@ async function countContentAvailability(providerId, endpoint, contentIds) {
   // Avoid opening too many connections, do it in chunks.. otherwise we get
   // "Client network socket disconnected before secure TLS connection was established" errors
   while (contentIds.length) {
-    const chunk = contentIds.splice(0, 500)
+    const chunk = contentIds.splice(0, 100)
     requestsSent += chunk.length
     const results = await Promise.allSettled(chunk.map((id) => axios.head(makeAssetUrl(id, endpoint))))
 
