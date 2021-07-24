@@ -10,49 +10,34 @@ function makeAssetUrl(contentId, source) {
   return `${source}/asset/v0/${encodeAddress(contentId)}`
 }
 
-async function assetRelationshipState(api, contentId, providers) {
-  const dataObject = await api.query.dataDirectory.dataByContentId(contentId)
-
-  const relationshipIds = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId)
-
-  // how many relationships associated with active providers and in ready state
-  const activeRelationships = await Promise.all(
-    relationshipIds.map(async (id) => {
-      let relationship = await api.query.dataObjectStorageRegistry.relationships(id)
-      relationship = relationship.unwrap()
-      // only interested in ready relationships
-      if (!relationship.ready) {
-        return undefined
-      }
-      // Does the relationship belong to an active provider ?
-      return providers.find((provider) => relationship.storage_provider.eq(provider))
-    })
-  )
-
-  return [activeRelationships.filter((active) => active).length, dataObject.liaison_judgement]
-}
-
 // HTTP HEAD with axios all known content ids on each provider
 async function countContentAvailability(contentIds, source) {
-  const content = {}
   let found = 0
-  let missing = 0
-  for (let i = 0; i < contentIds.length; i++) {
-    const assetUrl = makeAssetUrl(contentIds[i], source)
-    try {
-      const info = await axios.head(assetUrl)
-      content[encodeAddress(contentIds[i])] = {
-        type: info.headers['content-type'],
-        bytes: info.headers['content-length'],
-      }
-      // TODO: cross check against dataobject size
-      found++
-    } catch (err) {
-      missing++
-    }
-  }
+  let errored = 0
 
-  return { found, missing, content }
+  // TODO: To avoid opening too many connections do it in chunks.. otherwise were are getting
+  // Error: Client network socket disconnected before secure TLS connection was established
+  contentIds = contentIds.slice(0, 200)
+
+  // use axios.all() instead ?
+  const results = await Promise.allSettled(contentIds.map((id) => axios.head(makeAssetUrl(id, source))))
+
+  results.forEach((result, _ix) => {
+    if (result.status === 'rejected') {
+      errored++
+    } else {
+      found++
+    }
+  })
+
+  return { found, errored }
+}
+
+async function testProviderHasAssets(providerId, endpoint, contentIds) {
+  const total = contentIds.length
+  const { found, errored } = await countContentAvailability(contentIds, endpoint)
+  console.log(`provider ${providerId}: has ${errored} errored assets`)
+  console.log(`provider ${providerId}: has ${found} out of ${total}`)
 }
 
 async function main() {
@@ -97,16 +82,10 @@ async function main() {
     })
   )
 
-  const knownContentIds = await runtime.assets.getKnownContentIds()
-  const assetStatuses = {}
-  await Promise.all(
-    knownContentIds.map(async (contentId) => {
-      const [, judgement] = await assetRelationshipState(api, contentId, storageProviders)
-      const j = judgement.toString()
-      assetStatuses[j] = assetStatuses[j] ? assetStatuses[j] + 1 : 1
-    })
-  )
-  console.log(`\nData Directory has ${knownContentIds.length} assets:`, assetStatuses)
+  const allContentIds = await runtime.assets.getKnownContentIds()
+  const acceptedContentIds = await runtime.assets.getAcceptedContentIds()
+
+  console.log(`\nData Directory has ${acceptedContentIds.length} 'Accepted' objects out of ${allContentIds.length}`)
 
   // interesting disconnect doesn't work unless an explicit provider was created
   // for underlying api instance
@@ -114,13 +93,14 @@ async function main() {
   api.disconnect()
 
   console.log(`\nChecking available assets on providers (this can take some time)...`)
+
+  // TODO: Do it sequentially one provider at a time.. to control connections/s to avoid
+  // connection resets?
   endpoints.forEach(async ({ providerId, endpoint }) => {
     if (!endpoint) {
       return
     }
-    const total = knownContentIds.length
-    const { found } = await countContentAvailability(knownContentIds, endpoint)
-    console.log(`provider ${providerId}: has ${found} out of ${total}`)
+    return testProviderHasAssets(providerId, endpoint, acceptedContentIds)
   })
 }
 
