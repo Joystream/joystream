@@ -99,7 +99,7 @@ const cli = meow(
     --ipfs-host   hostname  ipfs host to use, default to 'localhost'. Default port 5001 is always used
     --anonymous             Runs server in anonymous mode. Replicates content without need to register
                             on-chain, and can serve content. Cannot be used to upload content.
-    --maxSync               The max number of items to sync concurrently. Defaults to 30. Must be greater than 0.
+    --maxSync               The max number of items to sync concurrently. Defaults to 30.
   `,
   { flags: FLAG_DEFINITIONS }
 )

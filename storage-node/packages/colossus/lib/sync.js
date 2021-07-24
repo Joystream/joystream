@@ -28,12 +28,10 @@ const { nextTick } = require('@joystream/storage-utils/sleep')
 const INTERVAL_BETWEEN_SYNC_RUNS_MS = 3000
 // Time between refreshing content ids from chain
 const CONTENT_ID_REFRESH_INTERVAL_MS = 60000
-// Minimum concurrency. Must be greater than zero.
-const MIN_CONCURRENT_SYNC_ITEMS = 5
 
 async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags, contentIds }) {
   // The number of concurrent items to attemp to fetch.
-  const MAX_CONCURRENT_SYNC_ITEMS = Math.max(MIN_CONCURRENT_SYNC_ITEMS, flags.maxSync)
+  const MAX_CONCURRENT_SYNC_ITEMS = Math.max(1, flags.maxSync)
 
   // Select ids which may need to be synced
   const idsNotSynced = contentIds
