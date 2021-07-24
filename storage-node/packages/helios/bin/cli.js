@@ -11,7 +11,7 @@ function makeAssetUrl(contentId, source) {
 }
 
 // HTTP HEAD with axios all known content ids on given endpoint
-async function countContentAvailability(contentIds, endpoint) {
+async function countContentAvailability(providerId, endpoint, contentIds) {
   let found = 0
   let errored = 0
   let requestsSent = 0
@@ -31,7 +31,7 @@ async function countContentAvailability(contentIds, endpoint) {
     })
 
     // show some progress
-    console.error(`${endpoint}:`, `total requests sent: ${requestsSent}`, `found: ${found}`, `failed: ${errored}`)
+    console.error(`provider: ${providerId}:`, `total checks: ${requestsSent}`, `ok: ${found}`, `errors: ${errored}`)
   }
 
   return { found, errored }
@@ -40,13 +40,16 @@ async function countContentAvailability(contentIds, endpoint) {
 async function testProviderHasAssets(providerId, endpoint, contentIds) {
   const total = contentIds.length
   const startedAt = Date.now()
-  const { found, errored } = await countContentAvailability(contentIds, endpoint)
+  const { found, errored } = await countContentAvailability(providerId, endpoint, contentIds)
   const completedAt = Date.now()
   console.log(`
+    ---------------------------------------
     Final Result for provider ${providerId}
+    url: ${endpoint}
     fetched: ${found}/${total}
     failed: ${errored}
-    took: ${(completedAt - startedAt) / 1000}s
+    check took: ${(completedAt - startedAt) / 1000}s
+    ------------------------------------------
   `)
 }
 
