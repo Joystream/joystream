@@ -49,8 +49,7 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
 
     try {
       contentBeingSynced.set(id)
-      const contentId = ContentId.decode(api.api.registry, id)
-      await storage.pin(contentId, (err, status) => {
+      await storage.pin(id, (err, status) => {
         if (err) {
           contentBeingSynced.delete(id)
           debug(`Error Syncing ${err}`)
