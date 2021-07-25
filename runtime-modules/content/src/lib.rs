@@ -17,13 +17,18 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 use frame_support::{
-    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
+    decl_event, decl_module, decl_storage,
+    dispatch::DispatchResult,
+    ensure,
+    traits::{Currency, ExistenceRequirement, Get},
+    Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::traits::{AccountIdConversion, MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -78,6 +83,8 @@ pub trait NumericIdentifier:
 {
 }
 
+type Balances<T> = balances::Module<T>;
+
 impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for Content Directory Module
@@ -88,6 +95,7 @@ pub trait Trait:
     + StorageOwnership
     + MembershipTypes
     + GovernanceCurrency
+    + balances::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -139,6 +147,9 @@ pub trait Trait:
 
     /// maximum depth for a category
     type MaxCategoryDepth: Get<u64>;
+
+    // module id
+    type ModuleId: Get<ModuleId>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -2275,6 +2286,20 @@ impl<T: Trait> Module<T> {
         );
 
         Ok(())
+    }
+
+    fn transfer_to_state_cleanup_treasury_account(
+        amount: BalanceOf<T>,
+        thread_id: T::ThreadId,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            account_id,
+            &state_cleanup_treasury_account,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
     }
 }
 
