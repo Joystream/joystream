@@ -26,12 +26,12 @@ const { nextTick } = require('@joystream/storage-utils/sleep')
 // Time to wait between sync runs. The lower the better chance to consume all
 // available sync sessions allowed.
 const INTERVAL_BETWEEN_SYNC_RUNS_MS = 3000
-// Time between refreshing content ids from chain
-const CONTENT_ID_REFRESH_INTERVAL_MS = 60000
 
-async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags, contentIds }) {
+async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags }) {
   // The number of concurrent items to attemp to fetch.
   const MAX_CONCURRENT_SYNC_ITEMS = Math.max(1, flags.maxSync)
+
+  const contentIds = api.assets.getAcceptedIpfsHashes()
 
   // Select ids which may need to be synced
   const idsNotSynced = contentIds
@@ -50,7 +50,7 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
     try {
       contentBeingSynced.set(id)
       const contentId = ContentId.decode(api.api.registry, id)
-      await storage.synchronize(contentId, (err, status) => {
+      await storage.pin(contentId, (err, status) => {
         if (err) {
           contentBeingSynced.delete(id)
           debug(`Error Syncing ${err}`)
@@ -71,7 +71,7 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
   }
 }
 
-async function syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync, contentIds }) {
+async function syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync }) {
   const retry = () => {
     setTimeout(syncRunner, INTERVAL_BETWEEN_SYNC_RUNS_MS, {
       api,
@@ -79,7 +79,6 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
       storage,
       contentBeingSynced,
       contentCompletedSync,
-      contentIds,
     })
   }
 
@@ -87,23 +86,12 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
     if (await api.chainIsSyncing()) {
       debug('Chain is syncing. Postponing sync.')
     } else {
-      const now = Date.now()
-
-      // Do not fetch content ids on every singe run as it is expensive operation
-      if (!contentIds || now - contentIds.fetchedAt > CONTENT_ID_REFRESH_INTERVAL_MS) {
-        // re-fetch content ids
-        contentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
-        contentIds.fetchedAt = Date.now()
-        debug(`objects known: ${contentIds.length}`)
-      }
-
       await syncRun({
         api,
         storage,
         contentBeingSynced,
         contentCompletedSync,
         flags,
-        contentIds,
       })
     }
   } catch (err) {

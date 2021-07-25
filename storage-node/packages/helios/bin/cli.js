@@ -97,10 +97,17 @@ async function main() {
     })
   )
 
-  const allContentIds = await runtime.assets.getKnownContentIds()
-  const acceptedContentIds = await runtime.assets.getAcceptedContentIds()
+  // Load data objects
+  await runtime.assets.fetchDataObjects()
 
-  console.log(`\nData Directory has ${acceptedContentIds.length} 'Accepted' objects out of ${allContentIds.length}`)
+  const allContentIds = await runtime.assets.getKnownContentIds()
+  const acceptedContentIds = runtime.assets.getAcceptedContentIds()
+  const ipfsHashes = runtime.assets.getAcceptedIpfsHashes()
+
+  console.log('\nData Directory objects:')
+  console.log(allContentIds.length, 'created')
+  console.log(acceptedContentIds.length, 'accepted')
+  console.log(ipfsHashes.length, 'unique accepted hashes')
 
   // We no longer need a connection to the chain
   api.disconnect()

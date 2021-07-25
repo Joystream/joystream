@@ -159,8 +159,11 @@ class AssetsApi {
    * Returns array of all content ids in storage where liaison judgement was Accepted
    */
   async getAcceptedContentIds() {
-    const entries = await this.base.api.query.dataDirectory.dataByContentId.entries()
-    return entries
+    if (!this._cachedEntries) {
+      return []
+    }
+
+    return this._cachedEntries
       .filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
       .map(
         ([
@@ -169,6 +172,36 @@ class AssetsApi {
           },
         ]) => contentId
       )
+  }
+
+  /*
+   * Returns array of all ipfs hashes in storage where liaison judgement was Accepted
+   */
+  async getAcceptedIpfsHashes() {
+    if (!this._cachedEntries) {
+      return []
+    }
+    const hashes = new Map()
+    this._cachedEntries
+      .filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
+      .forEach(([, dataObject]) => hashes.set(dataObject.ipfs_content_id.toString()))
+    return Array.from(hashes.keys())
+  }
+
+  /*
+   * Fetch and cache all data objects
+   */
+  async fetchDataObjects() {
+    this._cachedEntries = await this.base.api.query.dataDirectory.dataByContentId.entries()
+    this._idMappings = new Map()
+    this._cachedEntries.forEach(([{ args: [contentId] }, dataObject]) =>
+      this._idMappings.set(contentId.encode(), dataObject.ipfs_content_id.toString())
+    )
+  }
+
+  resolveContentIdToIpfsHash(contentId) {
+    if (!this._idMappings) return null
+    return this._idMappings.get(contentId)
   }
 }
 

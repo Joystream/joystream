@@ -51,20 +51,15 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
     const content_id = req.params.id
 
     if (!ipfsContentIdMap.has(content_id)) {
-      const dataObject = await runtime.assets.getDataObject(req.params.id)
+      const hash = runtime.assets.resolveContentIdToIpfsHash(req.params.id)
 
-      if (!dataObject) {
+      if (!hash) {
         return res.status(404).send({ message: 'Unknown content' })
-      }
-
-      // Has content ever been uploaded and accepted by a provider?
-      if (dataObject.liaison_judgement.type !== 'Accepted') {
-        return res.status(404).send({ message: 'Not processed yet' })
       }
 
       ipfsContentIdMap.set(content_id, {
         local: false,
-        ipfs_content_id: dataObject.ipfs_content_id.toString(),
+        ipfs_content_id: hash,
       })
     }
 
@@ -92,7 +87,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         return proxy(req, res, next)
       }
     } catch (_err) {
-      // timeout of some other error trying to stat
+      // timeout or some other error trying to stat
       debug('Failed to stat', ipfs_content_id)
     }
 

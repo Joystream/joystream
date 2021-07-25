@@ -141,6 +141,10 @@ function getStorage(runtimeApi, { ipfsHost }) {
 
   const options = {
     resolve_content_id: async (contentId) => {
+      // Resolve accepted content from cache
+      const hash = runtimeApi.assets.resolveContentIdToIpfsHash(contentId)
+      if (hash) return hash
+
       // Resolve via API
       const obj = await runtimeApi.assets.getDataObject(contentId)
       if (!obj) {
@@ -270,6 +274,28 @@ const commands = {
       publicUrl = cli.flags.publicUrl
       port = cli.flags.port
     }
+
+    // Get initlal data objects into cache
+    while (true) {
+      try {
+        debug('Fetching data objects')
+        await api.assets.fetchDataObjects()
+        break
+      } catch (err) {
+        debug('Failed fetching data objects', err)
+        await sleep(5000)
+      }
+    }
+
+    // Regularly update data objects
+    setInterval(async () => {
+      try {
+        debug('Fetching data objects')
+        await api.assets.fetchDataObjects()
+      } catch (err) {
+        debug('Failed updating data objects from chain', err)
+      }
+    }, 60000)
 
     // TODO: check valid url, and valid port number
     const store = getStorage(api, cli.flags)
