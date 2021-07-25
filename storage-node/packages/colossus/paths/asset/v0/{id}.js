@@ -227,6 +227,11 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           // they cannot be different unless we did something stupid!
           assert(hash === dataObject.ipfs_content_id.toString())
 
+          ipfsContentIdMap.set(id, {
+            ipfs_content_id: hash,
+            local: true,
+          })
+
           // Send ok response early, no need for client to wait for relationships to be created.
           debug('Sending OK response.')
           res.status(200).send({ message: 'Asset uploaded.' })
