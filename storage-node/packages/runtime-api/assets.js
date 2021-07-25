@@ -158,7 +158,7 @@ class AssetsApi {
   /*
    * Returns array of all content ids in storage where liaison judgement was Accepted
    */
-  async getAcceptedContentIds() {
+  getAcceptedContentIds() {
     if (!this._cachedEntries) {
       return []
     }
@@ -177,7 +177,7 @@ class AssetsApi {
   /*
    * Returns array of all ipfs hashes in storage where liaison judgement was Accepted
    */
-  async getAcceptedIpfsHashes() {
+  getAcceptedIpfsHashes() {
     if (!this._cachedEntries) {
       return []
     }
