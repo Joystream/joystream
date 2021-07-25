@@ -74,7 +74,7 @@ const FLAG_DEFINITIONS = {
   },
   maxSync: {
     type: 'number',
-    default: 30,
+    default: 200,
   },
 }
 
