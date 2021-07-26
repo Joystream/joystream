@@ -50,6 +50,14 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     return worker.role_account_id.toString()
   }
 
+  async getDistributorWorkerRoleKey(workerId: number): Promise<string> {
+    const worker = await this.api.query.distributionWorkingGroup.workerById(workerId)
+    if (!worker) {
+      throw new CLIError(`Worker not found by id: ${workerId}!`)
+    }
+    return worker.role_account_id.toString()
+  }
+
   async init(): Promise<void> {
     await super.init()
     await this.initKeyring()
