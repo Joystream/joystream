@@ -1398,7 +1398,8 @@ decl_module! {
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
             // ensure valid channel && thread can be added to subreddit
-            Self::ensure_subreddit_is_editable(&channel_id)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            Self::ensure_subreddit_is_editable(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1497,9 +1498,14 @@ decl_module! {
             origin,
             forum_user_id: ForumUserId<T>,
             thread_id: T::ThreadId,
+            channel_id: T::ChannelId,
             text_hash: <T as frame_system::Trait>::Hash,
     ) -> DispatchResult {
-         let account_id = ensure_signed(origin)?;
+        let account_id = ensure_signed(origin)?;
+
+        // ensure subreddit can be edited
+        let channel = Self::ensure_channel_exists(&channel_id)?;
+        Self::ensure_subreddit_is_editable(&channel)?;
 
         // Make sure thread exists and is mutable
         Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
@@ -1537,6 +1543,7 @@ decl_module! {
             forum_user_id: ForumUserId<T>,
             thread_id: T::ThreadId,
             post_id: T::PostId,
+            channel_id: T::ChannelId,
             new_text_hash: T::Hash,
         ) -> DispatchResult {
             // Ensure data migration is done
@@ -1551,6 +1558,10 @@ decl_module! {
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, Error::<T>::AccountDoesNotMatchPostAuthor);
+
+            // ensure subreddit can be modified
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            Self::ensure_subreddit_is_editable(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1579,13 +1590,21 @@ decl_module! {
            forum_user_id: ForumUserId<T>,
            thread_id: T::ThreadId,
            post_id: T::PostId,
+           channel_id: T::ChannelId,
           ) -> DispatchResult {
 
         let account_id = ensure_signed(origin)?;
 
         let thread = Self::ensure_thread_exists(&thread_id)?;
 
-        let post = Self::ensure_can_delete_post(&account_id, &forum_user_id, &thread_id, &post_id)?;
+        let post = Self::ensure_can_delete_post(
+            &account_id,
+            &forum_user_id,
+            &thread_id,
+            &post_id,
+            &channel_id,
+        )?;
+
         //
         // == MUTATION SAFE ==
         //
@@ -1614,7 +1633,7 @@ decl_module! {
               post_id: T::PostId,
               react: T::ReactionId
     ) -> DispatchResult {
-                    let account_id = ensure_signed(origin)?;
+            let account_id = ensure_signed(origin)?;
 
             // Check that account is forum member
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
@@ -1630,8 +1649,7 @@ decl_module! {
             );
 
             Ok(())
-    }
-
+        }
     }
 }
 
@@ -1749,8 +1767,9 @@ impl<T: Trait> Module<T> {
         thread_id: &T::ThreadId,
         channel_id: &T::ChannelId,
     ) -> Result<Thread<T>, Error<T>> {
-        // Ensure subreddit editable
-        Self::ensure_subreddit_is_editable(channel_id)?;
+        // Ensure channel_id is valid and subreddit editable
+        let channel = Self::ensure_channel_exists(channel_id)?;
+        Self::ensure_subreddit_is_editable(&channel)?;
 
         // Ensure thread exists and is mutable
         let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1804,10 +1823,15 @@ impl<T: Trait> Module<T> {
         forum_user_id: &ForumUserId<T>,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
+        channel_id: &T::ChannelId,
     ) -> Result<Post<T>, Error<T>> {
         Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
         let post = Self::ensure_post_exists(&thread_id, &post_id)?;
+
+        // ensure can edit subreddit
+        let channel = Self::ensure_channel_exists(channel_id)?;
+        Self::ensure_subreddit_is_editable(&channel)?;
 
         ensure!(
             post.author_id == *forum_user_id,
@@ -1875,8 +1899,7 @@ impl<T: Trait> Module<T> {
             ExistenceRequirement::AllowDeath,
         )
     }
-    fn ensure_subreddit_is_editable(channel_id: &T::ChannelId) -> Result<(), Error<T>> {
-        let channel = Self::ensure_channel_exists(channel_id)?;
+    fn ensure_subreddit_is_editable(channel: &Channel<T>) -> Result<(), Error<T>> {
         ensure!(
             channel.subreddit_editable,
             Error::<T>::SubredditCannotBeModified
