@@ -1,9 +1,10 @@
-import { Null, u64, Text, Vec, GenericAccountId as AccountId, BTreeSet } from '@polkadot/types'
+import { Null, u128, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
 import { ChannelId } from './content-working-group'
 import { MemberId } from './members'
 
+export class BalanceOf extends u128 {}
 export class DataObjectId extends u64 {}
 export class StorageBucketId extends u64 {}
 
@@ -61,6 +62,16 @@ export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
 
 export class Static extends StaticBagId {}
 
+export class ChannelId extends u64 {}
+export const DynamicBagIdDef = {
+  Member: MemberId,
+  Channel: ChannelId,
+} as const
+export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
+export class DynamicBagId extends JoyEnum(DynamicBagIdDef) {}
+
+export class Dynamic extends DynamicBagId {}
+
 export const BagIdDef = {
   Static,
   Dynamic: DynamicBagIdType,
@@ -87,9 +98,29 @@ export class Voucher
   })
   implements VoucherType {}
 
-export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
+export const StorageBucketOperatorStatusDef = {
+  Missing: Null,
+  InvitedStorageWorker: u64,
+  StorageWorker: u64,
+} as const
+export type StorageBucketOperatorStatusKey = keyof typeof StorageBucketOperatorStatusDef
+export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
 
-export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export type StorageBucketType = {
+  operator_status: StorageBucketOperatorStatus
+  accepting_new_bags: bool
+  voucher: Voucher
+  metadata: Text
+}
+
+export class StorageBucket
+  extends JoyStructDecorated({
+    operator_status: StorageBucketOperatorStatus,
+    accepting_new_bags: bool,
+    voucher: Voucher,
+    metadata: Text,
+  })
+  implements StorageBucketType {}
 
 export type DataObjectCreationParametersType = {
   size: u64
@@ -136,6 +167,7 @@ export const storageTypes: RegistryTypes = {
   StorageBucket,
   StaticBagId,
   Static,
+  Dynamic,
   BagId,
   DataObjectCreationParameters,
   BagIdType,

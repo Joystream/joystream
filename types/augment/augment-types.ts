@@ -151,8 +151,6 @@ declare module '@polkadot/types/types/registry' {
     'Compact<SlotNumber>': Compact<SlotNumber>;
     'Compact<SpanIndex>': Compact<SpanIndex>;
     'Compact<StakeId>': Compact<StakeId>;
-    'Compact<StaticBag>': Compact<StaticBag>;
-    'Compact<StorageBucket>': Compact<StorageBucket>;
     'Compact<StorageBucketId>': Compact<StorageBucketId>;
     'Compact<StorageProviderId>': Compact<StorageProviderId>;
     'Compact<StrikeCount>': Compact<StrikeCount>;
@@ -444,6 +442,7 @@ declare module '@polkadot/types/types/registry' {
     'Option<DoubleMapTypeV9>': Option<DoubleMapTypeV9>;
     'Option<DoubleVoteReport>': Option<DoubleVoteReport>;
     'Option<DownwardMessage>': Option<DownwardMessage>;
+    'Option<Dynamic>': Option<Dynamic>;
     'Option<DynamicBag>': Option<DynamicBag>;
     'Option<DynamicBagCreationPolicy>': Option<DynamicBagCreationPolicy>;
     'Option<DynamicBagId>': Option<DynamicBagId>;
@@ -1004,6 +1003,7 @@ declare module '@polkadot/types/types/registry' {
     'Option<StorageBucket>': Option<StorageBucket>;
     'Option<StorageBucketId>': Option<StorageBucketId>;
     'Option<StorageBucketIdSet>': Option<StorageBucketIdSet>;
+    'Option<StorageBucketOperatorStatus>': Option<StorageBucketOperatorStatus>;
     'Option<StorageBucketsPerBagValueConstraint>': Option<StorageBucketsPerBagValueConstraint>;
     'Option<StorageChangeSet>': Option<StorageChangeSet>;
     'Option<StorageData>': Option<StorageData>;
@@ -1416,6 +1416,7 @@ declare module '@polkadot/types/types/registry' {
     'Vec<DoubleMapTypeV9>': Vec<DoubleMapTypeV9>;
     'Vec<DoubleVoteReport>': Vec<DoubleVoteReport>;
     'Vec<DownwardMessage>': Vec<DownwardMessage>;
+    'Vec<Dynamic>': Vec<Dynamic>;
     'Vec<DynamicBag>': Vec<DynamicBag>;
     'Vec<DynamicBagCreationPolicy>': Vec<DynamicBagCreationPolicy>;
     'Vec<DynamicBagId>': Vec<DynamicBagId>;
@@ -1976,6 +1977,7 @@ declare module '@polkadot/types/types/registry' {
     'Vec<StorageBucket>': Vec<StorageBucket>;
     'Vec<StorageBucketId>': Vec<StorageBucketId>;
     'Vec<StorageBucketIdSet>': Vec<StorageBucketIdSet>;
+    'Vec<StorageBucketOperatorStatus>': Vec<StorageBucketOperatorStatus>;
     'Vec<StorageBucketsPerBagValueConstraint>': Vec<StorageBucketsPerBagValueConstraint>;
     'Vec<StorageChangeSet>': Vec<StorageChangeSet>;
     'Vec<StorageData>': Vec<StorageData>;
@@ -2388,6 +2390,7 @@ declare module '@polkadot/types/types/registry' {
     DoubleMapTypeV9: DoubleMapTypeV9;
     DoubleVoteReport: DoubleVoteReport;
     DownwardMessage: DownwardMessage;
+    Dynamic: Dynamic;
     DynamicBag: DynamicBag;
     DynamicBagCreationPolicy: DynamicBagCreationPolicy;
     DynamicBagId: DynamicBagId;
@@ -2948,6 +2951,7 @@ declare module '@polkadot/types/types/registry' {
     StorageBucket: StorageBucket;
     StorageBucketId: StorageBucketId;
     StorageBucketIdSet: StorageBucketIdSet;
+    StorageBucketOperatorStatus: StorageBucketOperatorStatus;
     StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint;
     StorageChangeSet: StorageChangeSet;
     StorageData: StorageData;

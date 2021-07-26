@@ -1004,9 +1004,23 @@
     "DynamicBagCreationPolicy": {
         "numberOfStorageBuckets": "u64"
     },
-    "DynamicBag": "u64",
-    "StaticBag": "u64",
-    "StorageBucket": "u64",
+    "DynamicBag": {
+        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
+        "stored_by": "StorageBucketIdSet",
+        "distributed_by": "Vec<u64>",
+        "deletion_prize": "u128"
+    },
+    "StaticBag": {
+        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
+        "stored_by": "StorageBucketIdSet",
+        "distributed_by": "Vec<u64>"
+    },
+    "StorageBucket": {
+        "operator_status": "StorageBucketOperatorStatus",
+        "accepting_new_bags": "bool",
+        "voucher": "Voucher",
+        "metadata": "Text"
+    },
     "StaticBagId": {
         "_enum": {
             "Council": "Null",

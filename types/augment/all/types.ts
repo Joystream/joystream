@@ -465,8 +465,21 @@ export interface DiscussionThread extends Struct {
   readonly author_id: MemberId;
 }
 
+/** @name Dynamic */
+export interface Dynamic extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
+
 /** @name DynamicBag */
-export interface DynamicBag extends u64 {}
+export interface DynamicBag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: Vec<u64>;
+  readonly deletion_prize: u128;
+}
 
 /** @name DynamicBagCreationPolicy */
 export interface DynamicBagCreationPolicy extends Struct {
@@ -1259,7 +1272,11 @@ export interface Static extends Enum {
 }
 
 /** @name StaticBag */
-export interface StaticBag extends u64 {}
+export interface StaticBag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: Vec<u64>;
+}
 
 /** @name StaticBagId */
 export interface StaticBagId extends Enum {
@@ -1272,13 +1289,27 @@ export interface StaticBagId extends Enum {
 export interface Status extends bool {}
 
 /** @name StorageBucket */
-export interface StorageBucket extends u64 {}
+export interface StorageBucket extends Struct {
+  readonly operator_status: StorageBucketOperatorStatus;
+  readonly accepting_new_bags: bool;
+  readonly voucher: Voucher;
+  readonly metadata: Text;
+}
 
 /** @name StorageBucketId */
 export interface StorageBucketId extends u64 {}
 
 /** @name StorageBucketIdSet */
 export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
+
+/** @name StorageBucketOperatorStatus */
+export interface StorageBucketOperatorStatus extends Enum {
+  readonly isMissing: boolean;
+  readonly isInvitedStorageWorker: boolean;
+  readonly asInvitedStorageWorker: u64;
+  readonly isStorageWorker: boolean;
+  readonly asStorageWorker: u64;
+}
 
 /** @name StorageBucketsPerBagValueConstraint */
 export interface StorageBucketsPerBagValueConstraint extends Struct {

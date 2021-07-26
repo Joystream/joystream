@@ -204,6 +204,17 @@ impl<T: Trait> BagManager<T> {
         )
     }
 
+    // Gets distribution bucket ID set from the bag container.
+    pub(crate) fn get_distribution_bucket_ids(
+        bag_id: &BagId<T>,
+    ) -> BTreeSet<T::DistributionBucketId> {
+        Self::query(
+            bag_id,
+            |bag| bag.distributed_by.clone(),
+            |bag| bag.distributed_by.clone(),
+        )
+    }
+
     // Gets storage bucket ID set from the bag container.
     pub(crate) fn get_storage_bucket_ids(bag_id: &BagId<T>) -> BTreeSet<T::StorageBucketId> {
         Self::query(
@@ -211,6 +222,42 @@ impl<T: Trait> BagManager<T> {
             |bag| bag.stored_by.clone(),
             |bag| bag.stored_by.clone(),
         )
+    }
+
+    // Add distribution buckets to a bag.
+    pub(crate) fn add_distribution_buckets(
+        bag_id: &BagId<T>,
+        buckets: BTreeSet<T::DistributionBucketId>,
+    ) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                bag.distributed_by.append(&mut buckets.clone());
+            },
+            |bag| {
+                bag.distributed_by.append(&mut buckets.clone());
+            },
+        );
+    }
+
+    // Remove distribution buckets from a bag.
+    pub(crate) fn remove_distribution_buckets(
+        bag_id: &BagId<T>,
+        buckets: BTreeSet<T::DistributionBucketId>,
+    ) {
+        Self::mutate(
+            &bag_id,
+            |bag| {
+                for bucket_id in buckets.iter() {
+                    bag.distributed_by.remove(bucket_id);
+                }
+            },
+            |bag| {
+                for bucket_id in buckets.iter() {
+                    bag.distributed_by.remove(bucket_id);
+                }
+            },
+        );
     }
 
     // Abstract bag query function. Accepts two closures that should have similar result type.

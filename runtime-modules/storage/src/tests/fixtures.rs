@@ -2,16 +2,21 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 
 use super::mocks::{
     Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, WG_LEADER_ACCOUNT_ID,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
+use crate::tests::mocks::{
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+};
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
-    DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, UploadParameters,
+    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
+    DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -44,6 +49,8 @@ impl EventFixture {
             DynamicBagId<Test>,
             u64,
             u64,
+            u64,
+            u64,
         >,
     ) {
         let converted_event = TestEvent::storage(expected_raw_event);
@@ -59,6 +66,8 @@ impl EventFixture {
             UploadParameters<Test>,
             BagId<Test>,
             DynamicBagId<Test>,
+            u64,
+            u64,
             u64,
             u64,
         >,
@@ -454,7 +463,7 @@ pub struct CancelStorageBucketInvitationFixture {
 impl CancelStorageBucketInvitationFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             storage_bucket_id: Default::default(),
         }
     }
@@ -556,7 +565,7 @@ pub struct UpdateUploadingBlockedStatusFixture {
 impl UpdateUploadingBlockedStatusFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_status: false,
         }
     }
@@ -736,7 +745,7 @@ pub struct UpdateBlacklistFixture {
 impl UpdateBlacklistFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             remove_hashes: BTreeSet::new(),
             add_hashes: BTreeSet::new(),
         }
@@ -846,7 +855,7 @@ pub struct RemoveStorageBucketOperatorFixture {
 impl RemoveStorageBucketOperatorFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             storage_bucket_id: Default::default(),
         }
     }
@@ -892,7 +901,7 @@ pub struct UpdateDataObjectPerMegabyteFeeFixture {
 impl UpdateDataObjectPerMegabyteFeeFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_fee: 0,
         }
     }
@@ -928,7 +937,7 @@ pub struct UpdateStorageBucketsPerBagLimitFixture {
 impl UpdateStorageBucketsPerBagLimitFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_limit: 0,
         }
     }
@@ -1038,7 +1047,7 @@ pub struct UpdateStorageBucketsVoucherMaxLimitsFixture {
 impl UpdateStorageBucketsVoucherMaxLimitsFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_objects_size_limit: 0,
             new_objects_number_limit: 0,
         }
@@ -1128,7 +1137,7 @@ pub struct UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
 impl UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
     pub fn default() -> Self {
         Self {
-            origin: RawOrigin::Signed(WG_LEADER_ACCOUNT_ID),
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_storage_buckets_number: 0,
             dynamic_bag_type: Default::default(),
         }
@@ -1173,5 +1182,680 @@ impl UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
         } else {
             assert_eq!(old_policy, new_policy);
         }
+    }
+}
+
+pub struct CreateDistributionBucketFamilyFixture {
+    origin: RawOrigin<u64>,
+}
+
+impl CreateDistributionBucketFamilyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
+        let next_family_id = Storage::next_distribution_bucket_family_id();
+        let family_number = Storage::distribution_bucket_family_number();
+        let actual_result = Storage::create_distribution_bucket_family(self.origin.clone().into());
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                next_family_id + 1,
+                Storage::next_distribution_bucket_family_id()
+            );
+            assert_eq!(
+                family_number + 1,
+                Storage::distribution_bucket_family_number()
+            );
+            assert!(<crate::DistributionBucketFamilyById<Test>>::contains_key(
+                next_family_id
+            ));
+
+            Some(next_family_id)
+        } else {
+            assert_eq!(
+                next_family_id,
+                Storage::next_distribution_bucket_family_id()
+            );
+            assert_eq!(family_number, Storage::distribution_bucket_family_number());
+            assert!(!<crate::DistributionBucketFamilyById<Test>>::contains_key(
+                next_family_id
+            ));
+
+            None
+        }
+    }
+}
+
+pub struct DeleteDistributionBucketFamilyFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+}
+
+impl DeleteDistributionBucketFamilyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            family_id: Default::default(),
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let family_number = Storage::distribution_bucket_family_number();
+        let actual_result =
+            Storage::delete_distribution_bucket_family(self.origin.clone().into(), self.family_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                family_number - 1,
+                Storage::distribution_bucket_family_number()
+            );
+            assert!(!<crate::DistributionBucketFamilyById<Test>>::contains_key(
+                self.family_id
+            ));
+        } else {
+            assert_eq!(family_number, Storage::distribution_bucket_family_number());
+        }
+    }
+}
+
+pub struct CreateDistributionBucketFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    accept_new_bags: bool,
+}
+
+impl CreateDistributionBucketFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            family_id: Default::default(),
+            accept_new_bags: false,
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_accept_new_bags(self, accept_new_bags: bool) -> Self {
+        Self {
+            accept_new_bags,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
+        let next_bucket_id = Storage::next_distribution_bucket_id();
+        let actual_result = Storage::create_distribution_bucket(
+            self.origin.clone().into(),
+            self.family_id,
+            self.accept_new_bags,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(next_bucket_id + 1, Storage::next_distribution_bucket_id());
+
+            let family: DistributionBucketFamily<Test> =
+                Storage::distribution_bucket_family_by_id(self.family_id);
+
+            assert!(family.distribution_buckets.contains_key(&next_bucket_id));
+            assert_eq!(
+                family
+                    .distribution_buckets
+                    .get(&next_bucket_id)
+                    .unwrap()
+                    .accepting_new_bags,
+                self.accept_new_bags
+            );
+
+            Some(next_bucket_id)
+        } else {
+            assert_eq!(next_bucket_id, Storage::next_distribution_bucket_id());
+
+            None
+        }
+    }
+}
+
+pub struct UpdateDistributionBucketStatusFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    distribution_bucket_id: u64,
+    new_status: bool,
+}
+
+impl UpdateDistributionBucketStatusFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            family_id: Default::default(),
+            distribution_bucket_id: Default::default(),
+            new_status: false,
+        }
+    }
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self {
+            distribution_bucket_id: bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_status(self, new_status: bool) -> Self {
+        Self { new_status, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_distribution_bucket_status(
+            self.origin.clone().into(),
+            self.family_id,
+            self.distribution_bucket_id,
+            self.new_status,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct DeleteDistributionBucketFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    distribution_bucket_id: u64,
+}
+
+impl DeleteDistributionBucketFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            family_id: Default::default(),
+            distribution_bucket_id: Default::default(),
+        }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self {
+            distribution_bucket_id: bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::delete_distribution_bucket(
+            self.origin.clone().into(),
+            self.family_id,
+            self.distribution_bucket_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct UpdateDistributionBucketForBagsFixture {
+    origin: RawOrigin<u64>,
+    bag_id: BagId<Test>,
+    family_id: u64,
+    add_bucket_ids: BTreeSet<u64>,
+    remove_bucket_ids: BTreeSet<u64>,
+}
+
+impl UpdateDistributionBucketForBagsFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            bag_id: Default::default(),
+            family_id: Default::default(),
+            add_bucket_ids: Default::default(),
+            remove_bucket_ids: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_add_bucket_ids(self, add_bucket_ids: BTreeSet<u64>) -> Self {
+        Self {
+            add_bucket_ids,
+            ..self
+        }
+    }
+
+    pub fn with_remove_bucket_ids(self, remove_bucket_ids: BTreeSet<u64>) -> Self {
+        Self {
+            remove_bucket_ids,
+            ..self
+        }
+    }
+
+    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
+        Self { bag_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_distribution_buckets_for_bag(
+            self.origin.clone().into(),
+            self.bag_id.clone(),
+            self.family_id,
+            self.add_bucket_ids.clone(),
+            self.remove_bucket_ids.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct UpdateDistributionBucketsPerBagLimitFixture {
+    origin: RawOrigin<u64>,
+    new_limit: u64,
+}
+
+impl UpdateDistributionBucketsPerBagLimitFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID),
+            new_limit: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_new_limit(self, new_limit: u64) -> Self {
+        Self { new_limit, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_limit = Storage::distribution_buckets_per_bag_limit();
+
+        let actual_result = Storage::update_distribution_buckets_per_bag_limit(
+            self.origin.clone().into(),
+            self.new_limit,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                Storage::distribution_buckets_per_bag_limit(),
+                self.new_limit
+            );
+        } else {
+            assert_eq!(old_limit, Storage::distribution_buckets_per_bag_limit());
+        }
+    }
+}
+
+pub struct UpdateDistributionBucketModeFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    distribution_bucket_id: u64,
+    distributing: bool,
+}
+
+impl UpdateDistributionBucketModeFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            family_id: Default::default(),
+            distribution_bucket_id: Default::default(),
+            distributing: true,
+        }
+    }
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self {
+            distribution_bucket_id: bucket_id,
+            ..self
+        }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_distributing(self, distributing: bool) -> Self {
+        Self {
+            distributing,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::update_distribution_bucket_mode(
+            self.origin.clone().into(),
+            self.family_id,
+            self.distribution_bucket_id,
+            self.distributing,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct UpdateFamiliesInDynamicBagCreationPolicyFixture {
+    origin: RawOrigin<u64>,
+    dynamic_bag_type: DynamicBagType,
+    families: BTreeMap<u64, u32>,
+}
+
+impl UpdateFamiliesInDynamicBagCreationPolicyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            dynamic_bag_type: Default::default(),
+            families: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_families(self, families: BTreeMap<u64, u32>) -> Self {
+        Self { families, ..self }
+    }
+
+    pub fn with_dynamic_bag_type(self, dynamic_bag_type: DynamicBagType) -> Self {
+        Self {
+            dynamic_bag_type,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+
+        let actual_result = Storage::update_families_in_dynamic_bag_creation_policy(
+            self.origin.clone().into(),
+            self.dynamic_bag_type,
+            self.families.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_policy = Storage::get_dynamic_bag_creation_policy(self.dynamic_bag_type);
+        if actual_result.is_ok() {
+            assert_eq!(new_policy.families, self.families);
+        } else {
+            assert_eq!(old_policy, new_policy);
+        }
+    }
+}
+
+pub struct InviteDistributionBucketOperatorFixture {
+    origin: RawOrigin<u64>,
+    operator_worker_id: u64,
+    family_id: u64,
+    bucket_id: u64,
+}
+
+impl InviteDistributionBucketOperatorFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            operator_worker_id: DEFAULT_WORKER_ID,
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
+        Self {
+            operator_worker_id,
+            ..self
+        }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::invite_distribution_bucket_operator(
+            self.origin.clone().into(),
+            self.family_id,
+            self.bucket_id,
+            self.operator_worker_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(new_bucket
+                .pending_invitations
+                .contains(&self.operator_worker_id),);
+        }
+    }
+}
+
+pub struct CancelDistributionBucketInvitationFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    operator_worker_id: u64,
+}
+
+impl CancelDistributionBucketInvitationFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            operator_worker_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
+        Self {
+            operator_worker_id,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::cancel_distribution_bucket_operator_invite(
+            self.origin.clone().into(),
+            self.family_id,
+            self.bucket_id,
+            self.operator_worker_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(!new_bucket
+                .pending_invitations
+                .contains(&self.operator_worker_id));
+        }
+    }
+}
+
+pub struct AcceptDistributionBucketInvitationFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    worker_id: u64,
+}
+
+impl AcceptDistributionBucketInvitationFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            worker_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::accept_distribution_bucket_invitation(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.family_id,
+            self.bucket_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(!new_bucket.pending_invitations.contains(&self.worker_id));
+
+            assert!(new_bucket.operators.contains(&self.worker_id));
+        }
+    }
+}
+
+pub struct SetDistributionBucketMetadataFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    worker_id: u64,
+    metadata: Vec<u8>,
+}
+
+impl SetDistributionBucketMetadataFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            worker_id: Default::default(),
+            metadata: Default::default(),
+        }
+    }
+
+    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
+        Self { metadata, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_worker_id(self, worker_id: u64) -> Self {
+        Self { worker_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::set_distribution_operator_metadata(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.family_id,
+            self.bucket_id,
+            self.metadata.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
     }
 }
