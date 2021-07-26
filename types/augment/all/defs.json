@@ -13,8 +13,10 @@
     },
     "WorkingGroup": {
         "_enum": [
+            "Forum",
             "Storage",
-            "Content"
+            "Content",
+            "Distribution"
         ]
     },
     "SlashingTerms": {
@@ -552,34 +554,6 @@
         "identity": "IPNSIdentity",
         "expires_at": "u32"
     },
-    "LiaisonJudgement": {
-        "_enum": [
-            "Pending",
-            "Accepted",
-            "Rejected"
-        ]
-    },
-    "DataObject": {
-        "owner": "MemberId",
-        "added_at": "BlockAndTime",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "liaison": "StorageProviderId",
-        "liaison_judgement": "LiaisonJudgement",
-        "ipfs_content_id": "Text"
-    },
-    "DataObjectStorageRelationshipId": "u64",
-    "DataObjectStorageRelationship": {
-        "content_id": "Hash",
-        "storage_provider": "StorageProviderId",
-        "ready": "bool"
-    },
-    "DataObjectTypeId": "u64",
-    "DataObjectType": {
-        "description": "Text",
-        "active": "bool"
-    },
-    "DataObjectsMap": "BTreeMap<[u8;32],DataObject>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -1002,18 +976,19 @@
         ]
     },
     "DynamicBagCreationPolicy": {
-        "numberOfStorageBuckets": "u64"
+        "numberOfStorageBuckets": "u64",
+        "families": "BTreeMap<DistributionBucketFamilyId,u32>"
     },
     "DynamicBag": {
-        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
+        "objects": "DataObjectIdMap",
         "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<u64>",
+        "distributed_by": "DistributionBucketIdSet",
         "deletion_prize": "u128"
     },
     "StaticBag": {
-        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
+        "objects": "DataObjectIdMap",
         "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<u64>"
+        "distributed_by": "DistributionBucketIdSet"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
@@ -1033,10 +1008,16 @@
             "WorkingGroup": "WorkingGroup"
         }
     },
+    "Dynamic": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "ChannelId"
+        }
+    },
     "BagId": {
         "_enum": {
             "Static": "Static",
-            "Dynamic": "DynamicBagIdType"
+            "Dynamic": "Dynamic"
         }
     },
     "DataObjectCreationParameters": {
@@ -1046,7 +1027,7 @@
     "BagIdType": {
         "_enum": {
             "Static": "Static",
-            "Dynamic": "DynamicBagIdType"
+            "Dynamic": "Dynamic"
         }
     },
     "UploadParameters": {
@@ -1058,5 +1039,31 @@
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
     "ContentIdSet": "BTreeSet<ContentId>",
-    "ContentId": "Text"
+    "ContentId": "Text",
+    "StorageBucketOperatorStatus": {
+        "_enum": {
+            "Missing": "Null",
+            "InvitedStorageWorker": "u64",
+            "StorageWorker": "u64"
+        }
+    },
+    "DistributionBucket": {
+        "acceptingNewBags": "bool",
+        "distributing": "bool",
+        "pendingInvitations": "Vec<WorkerId>",
+        "operators": "Vec<WorkerId>"
+    },
+    "DistributionBucketId": "u64",
+    "DistributionBucketFamily": {
+        "distributionBuckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
+    },
+    "DistributionBucketFamilyId": "u64",
+    "DataObject": {
+        "accepted": "bool",
+        "deletion_prize": "u128",
+        "size": "u64"
+    },
+    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
+    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
+    "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>"
 }

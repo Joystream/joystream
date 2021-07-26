@@ -1,8 +1,20 @@
-import { Null, u128, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap } from '@polkadot/types'
+import {
+  Null,
+  u128,
+  u64,
+  Text,
+  Vec,
+  bool,
+  GenericAccountId as AccountId,
+  BTreeSet,
+  BTreeMap,
+  u32,
+} from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
 import { ChannelId } from './content-working-group'
 import { MemberId } from './members'
+import { WorkerId } from './working-group'
 
 export class BalanceOf extends u128 {}
 export class DataObjectId extends u64 {}
@@ -20,29 +32,66 @@ export class StorageBucketsPerBagValueConstraint
   })
   implements StorageBucketsPerBagValueConstraintType {}
 
-export const DynamicBagIdDef = {
-  Member: MemberId,
-  Channel: ChannelId,
+export type DataObjectType = {
+  accepted: bool
+  deletion_prize: BalanceOf
+  size: u64
 }
-export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
-export class DynamicBagIdType extends JoyEnum(DynamicBagIdDef) {}
 
-// Runtime alias
-export class DynamicBagId extends DynamicBagIdType {}
+export class DataObject
+  extends JoyStructDecorated({
+    accepted: bool,
+    deletion_prize: BalanceOf,
+    size: u64,
+  })
+  implements DataObjectType {}
 
-// TODO: implement these types:
-export class DynamicBag extends u64 {}
-export class StaticBag extends u64 {}
-export class StorageBucket extends u64 {}
-//
+export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
+export class DistributionBucketId extends u64 {}
+export class DistributionBucketFamilyId extends u64 {}
+export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
+export class DistributionBucketIdSet extends JoyBTreeSet(DistributionBucketId) {}
+
+export type StaticBagType = {
+  objects: DataObjectIdMap
+  stored_by: StorageBucketIdSet
+  distributed_by: DistributionBucketIdSet
+}
+
+export class StaticBag
+  extends JoyStructDecorated({
+    objects: DataObjectIdMap,
+    stored_by: StorageBucketIdSet,
+    distributed_by: DistributionBucketIdSet,
+  })
+  implements StaticBagType {}
+
+export type DynamicBagTypeDef = {
+  objects: DataObjectIdMap
+  stored_by: StorageBucketIdSet
+  distributed_by: DistributionBucketIdSet
+  deletion_prize: BalanceOf
+}
+
+export class DynamicBag
+  extends JoyStructDecorated({
+    objects: DataObjectIdMap,
+    stored_by: StorageBucketIdSet,
+    distributed_by: DistributionBucketIdSet,
+    deletion_prize: BalanceOf,
+  })
+  implements DynamicBagTypeDef {}
 
 export type DynamicBagCreationPolicyType = {
   numberOfStorageBuckets: u64
+  families: BTreeMap<DistributionBucketFamilyId, u32>
 }
 
 export class DynamicBagCreationPolicy
   extends JoyStructDecorated({
     numberOfStorageBuckets: u64,
+    families: BTreeMap.with(DistributionBucketFamilyId, u32),
   })
   implements DynamicBagCreationPolicyType {}
 
@@ -53,6 +102,16 @@ export const DynamicBagTypeDef = {
 export type DynamicBagTypeKey = keyof typeof DynamicBagTypeDef
 export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
 
+export const DynamicBagIdDef = {
+  Member: MemberId,
+  Channel: ChannelId,
+}
+export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
+export class DynamicBagIdType extends JoyEnum(DynamicBagIdDef) {}
+
+// Runtime alias
+export class DynamicBagId extends DynamicBagIdType {}
+
 export const StaticBagIdDef = {
   Council: Null,
   WorkingGroup: WorkingGroup,
@@ -61,20 +120,11 @@ export type StaticBagIdKey = keyof typeof StaticBagIdDef
 export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
 
 export class Static extends StaticBagId {}
-
-export class ChannelId extends u64 {}
-export const DynamicBagIdDef = {
-  Member: MemberId,
-  Channel: ChannelId,
-} as const
-export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
-export class DynamicBagId extends JoyEnum(DynamicBagIdDef) {}
-
 export class Dynamic extends DynamicBagId {}
 
 export const BagIdDef = {
   Static,
-  Dynamic: DynamicBagIdType,
+  Dynamic,
 } as const
 export type BagIdKey = keyof typeof BagIdDef
 export class BagId extends JoyEnum(BagIdDef) {}
@@ -153,6 +203,19 @@ export class UploadParameters
 export class ContentId extends Text {}
 export class ContentIdSet extends BTreeSet.with(ContentId) {}
 
+export class DistributionBucket extends JoyStructDecorated({
+  acceptingNewBags: bool,
+  distributing: bool,
+  pendingInvitations: JoyBTreeSet(WorkerId),
+  operators: JoyBTreeSet(WorkerId),
+}) {}
+
+export class DistributionBucketFamily extends JoyStructDecorated({
+  distributionBuckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
+}) {}
+
+export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
+
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
@@ -176,5 +239,14 @@ export const storageTypes: RegistryTypes = {
   DataObjectIdSet,
   ContentIdSet,
   ContentId,
+  StorageBucketOperatorStatus,
+  DistributionBucket,
+  DistributionBucketId,
+  DistributionBucketFamily,
+  DistributionBucketFamilyId,
+  DataObject,
+  DataObjectIdMap,
+  DistributionBucketIdSet,
+  DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes
