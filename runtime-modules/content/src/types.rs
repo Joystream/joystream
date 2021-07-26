@@ -232,14 +232,14 @@ pub struct VideoRecord<
 }
 
 impl<
-        ChannelId,
-        SeriesId,
-        AccountId: PartialEq + Default,
+        ChannelId: Clone,
+        SeriesId: Clone,
+        AccountId: PartialEq + Default + Clone,
         Moment: BaseArithmetic + Copy,
         CuratorGroupId: Default + Copy,
         CuratorId: Default + Copy,
         MemberId: Default + Copy,
-        Balance,
+        Balance: Clone,
     >
     VideoRecord<
         ChannelId,
@@ -280,6 +280,32 @@ impl<
         )
     }
 
+    /// Ensure nft auction is not started
+    pub fn ensure_nft_auction_is_not_started<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            !self.is_nft_auction_started(),
+            Error::<T>::AuctionAlreadyStarted
+        );
+        Ok(())
+    }
+
+    pub fn ensure_nft_auction_started<T: Trait>(
+        &self,
+    ) -> Result<
+        AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
+        Error<T>,
+    > {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::Auction(auction),
+            ..
+        }) = &self.nft_status
+        {
+            Ok(auction.clone())
+        } else {
+            Err(Error::<T>::AuctionDidNotStart)
+        }
+    }
+
     pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
         let is_idle = matches!(
             self.nft_status,
@@ -305,6 +331,14 @@ impl<
                 transactional_status: TransactionalStatus::Auction(auction),
                 creator_royalty: None,
             });
+        }
+        self
+    }
+
+    /// Cancels nft auction
+    pub fn cancel_auction(mut self) -> Self {
+        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+            owned_nft.transactional_status = TransactionalStatus::Idle;
         }
         self
     }

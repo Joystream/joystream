@@ -26,34 +26,25 @@ impl<T: Trait> Module<T> {
 
                 video.ensure_vnft_ownership::<T>(&account_id)?;
             } else {
-                return Err(Error::<T>::AuctionDoesNotExist.into())
+                return Err(Error::<T>::ActorNotAuthorizedToManageAuction.into());
             }
         } else {
             // TODO: Move to common pallet
-            ensure_actor_authorized_to_create_channel::<T>(origin, actor)
-                .map_err(|_| Error::<T>::ActorNotAuthorizedToIssueNft)?;
+            Self::authorize_content_actor(origin, actor)?;
         }
         Ok(account_id)
     }
 
-    // /// Authorize participant under given member id
-    // pub(crate) fn authorize_participant(
-    //     origin: T::Origin,
-    //     member_id: MemberId<T>,
-    // ) -> Result<T::AccountId, Error<T>> {
-    //     T::MemberOriginValidator::ensure_actor_origin(origin, member_id)
-    //         .map_err(|_| Error::<T>::ActorOriginAuthError)
-    // }
-
-    // /// Authorize content actor
-    // pub(crate) fn authorize_content_actor(
-    //     origin: T::Origin,
-    //     actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-    // ) -> Result<(), Error<T>> {
-    //     // TODO: Move to common pallet
-    //     content::ensure_actor_authorized_to_create_channel::<T>(origin.clone(), actor)
-    //
-    // }
+    /// Authorize content actor
+    pub(crate) fn authorize_content_actor(
+        origin: T::Origin,
+        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+    ) -> Result<(), Error<T>> {
+        // TODO: Move to common pallet
+        ensure_actor_authorized_to_create_channel::<T>(origin, actor)
+            .map_err(|_| Error::<T>::ActorNotAuthorizedToManageAuction)?;
+        Ok(())
+    }
 
     // /// Ensure auction participant has sufficient balance to make bid
     // pub(crate) fn ensure_has_sufficient_balance(

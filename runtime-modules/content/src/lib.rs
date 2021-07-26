@@ -952,7 +952,7 @@ decl_module! {
 
             let video_id = auction_params.video_id;
 
-            // Ensure given video exist
+            // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
             let auctioneer_account_id = Self::authorize_auctioneer(origin, &auctioneer, &auction_params, &video)?;
@@ -961,7 +961,7 @@ decl_module! {
             Self::validate_auction_params(&auction_params, &video)?;
 
             // Ensure nft auction is not started
-            ensure!(!video.is_nft_auction_started(), Error::<T>::AuctionAlreadyStarted);
+            video.ensure_nft_auction_is_not_started::<T>()?;
 
             //
             // == MUTATION SAFE ==
@@ -978,39 +978,46 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionStarted(auctioneer, auction_params));
         }
 
-        // /// Cancel video auction
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn cancel_auction(
-        //     origin,
-        //     auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-        //     auction_id: AuctionId<VideoId<T>, T::VNFTId>,
-        // ) {
+        /// Cancel video auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_auction(
+            origin,
+            auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+        ) {
 
-        //     Self::authorize_content_actor(origin, &auctioneer)?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-        //     // Ensure auction for given video id exists
-        //     let auction = Self::ensure_auction_exists(auction_id)?;
+            Self::authorize_content_actor(origin, &auctioneer)?;
 
-        //     // Ensure given auction has no participants
-        //     auction.ensure_is_not_active::<T>()?;
+            // Ensure auction for given video id exists
+            let auction = video.ensure_nft_auction_started::<T>()?;
 
-        //     // Ensure given conntent actor is auctioneer
-        //     auction.ensure_is_auctioneer::<T>(&auctioneer)?;
+            // Return if auction round time expired
+            let now = pallet_timestamp::Module::<T>::now();
+            if auction.is_nft_auction_round_time_expired(now) {
+                return Ok(())
+            }
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            // Ensure given conntent actor is auctioneer
+            auction.ensure_is_auctioneer::<T>(&auctioneer)?;
 
-        //     // Try complete previous auction
-        //     if Self::try_complete_auction(&auction) {
-        //         return Ok(())
-        //     }
+            // Ensure auction is not active
+            auction.ensure_is_not_active::<T>()?;
 
-        //     <AuctionById<T>>::remove(auction_id);
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //     // Trigger event
-        //     Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, auction_id));
-        // }
+            // Update the video
+            let video = video.cancel_auction();
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, video_id));
+        }
 
         // /// Make auction bid
         // #[weight = 10_000_000] // TODO: adjust weight

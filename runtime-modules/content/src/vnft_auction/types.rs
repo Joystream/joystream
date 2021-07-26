@@ -255,6 +255,11 @@ impl<
         );
         Ok(())
     }
+
+    /// Check whether auction round time expired
+    pub fn is_nft_auction_round_time_expired(&self, now: Moment) -> bool {
+        (now - self.last_bid_time) >= self.round_time
+    }
 }
 
 /// Auction alias type for simplification.

@@ -67,8 +67,8 @@ decl_error! {
         // Auction Errors
         // ---------------------
 
-        /// Auction does not exist
-        AuctionDoesNotExist,
+        /// Auction for given video did not start
+        AuctionDidNotStart,
 
         /// Vnft auction for given video_id have been started already
         AuctionAlreadyStarted,
@@ -85,8 +85,8 @@ decl_error! {
         /// Actor origin authorization error happened
         ActorOriginAuthError,
 
-        /// Actor not authorized to issue nft
-        ActorNotAuthorizedToIssueNft,
+        /// Actor not authorized to manage auction
+        ActorNotAuthorizedToManageAuction,
 
         /// Given origin does not own vnft
         DoesNotOwnVNFT,
