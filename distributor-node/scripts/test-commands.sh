@@ -7,6 +7,7 @@ export AUTO_CONFIRM=true
 export CONFIG_PATH="../config.yml"
 CLI=../bin/run
 
+${CLI} dev:init
 ${CLI} leader:set-buckets-per-bag-limit -l 10
 FAMILY_ID=`${CLI} leader:create-bucket-family ${CONFIG}`
 BUCKET_ID=`${CLI} leader:create-bucket -f ${FAMILY_ID} -a yes`
@@ -15,5 +16,7 @@ ${CLI} leader:update-bucket-status -f ${FAMILY_ID} -B ${BUCKET_ID}  --acceptingB
 ${CLI} leader:update-bucket-mode -f ${FAMILY_ID} -B ${BUCKET_ID} --mode on
 ${CLI} leader:update-dynamic-bag-policy -t Member -p ${FAMILY_ID}:5
 ${CLI} leader:update-dynamic-bag-policy -t Member
+${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
+${CLI} leader:cancel-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
 ${CLI} leader:delete-bucket -f ${FAMILY_ID} -B ${BUCKET_ID}
 ${CLI} leader:delete-bucket-family -f ${FAMILY_ID}
