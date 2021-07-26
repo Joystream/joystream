@@ -409,6 +409,7 @@ declare module '@polkadot/types/types/registry' {
     'Option<DataObject>': Option<DataObject>;
     'Option<DataObjectCreationParameters>': Option<DataObjectCreationParameters>;
     'Option<DataObjectId>': Option<DataObjectId>;
+    'Option<DataObjectIdMap>': Option<DataObjectIdMap>;
     'Option<DataObjectIdSet>': Option<DataObjectIdSet>;
     'Option<Deactivated>': Option<Deactivated>;
     'Option<DeferredOffenceOf>': Option<DeferredOffenceOf>;
@@ -1413,6 +1414,7 @@ declare module '@polkadot/types/types/registry' {
     'Vec<DataObject>': Vec<DataObject>;
     'Vec<DataObjectCreationParameters>': Vec<DataObjectCreationParameters>;
     'Vec<DataObjectId>': Vec<DataObjectId>;
+    'Vec<DataObjectIdMap>': Vec<DataObjectIdMap>;
     'Vec<DataObjectIdSet>': Vec<DataObjectIdSet>;
     'Vec<Deactivated>': Vec<Deactivated>;
     'Vec<DeferredOffenceOf>': Vec<DeferredOffenceOf>;
@@ -2417,6 +2419,7 @@ declare module '@polkadot/types/types/registry' {
     DataObject: DataObject;
     DataObjectCreationParameters: DataObjectCreationParameters;
     DataObjectId: DataObjectId;
+    DataObjectIdMap: DataObjectIdMap;
     DataObjectIdSet: DataObjectIdSet;
     Deactivated: Deactivated;
     DeferredOffenceOf: DeferredOffenceOf;

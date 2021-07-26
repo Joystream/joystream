@@ -71,11 +71,13 @@ export class Bag
 
 export type IDynamicBagCreationPolicy = {
   numberOfStorageBuckets: u64
+  families: BTreeMap<DistributionBucketFamilyId, u32>
 }
 
 export class DynamicBagCreationPolicy
   extends JoyStructDecorated({
     numberOfStorageBuckets: u64,
+    families: BTreeMap.with(DistributionBucketFamilyId, u32),
   })
   implements IDynamicBagCreationPolicy {}
 
@@ -85,6 +87,16 @@ export const DynamicBagTypeDef = {
 } as const
 export type DynamicBagTypeKey = keyof typeof DynamicBagTypeDef
 export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
+
+export const DynamicBagIdDef = {
+  Member: MemberId,
+  Channel: ChannelId,
+}
+export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
+export class DynamicBagIdType extends JoyEnum(DynamicBagIdDef) {}
+
+// Runtime alias
+export class DynamicBagId extends DynamicBagIdType {}
 
 export const StaticBagIdDef = {
   Council: Null,
@@ -211,6 +223,19 @@ export class DistributionBucketFamily
     distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
   })
   implements IDistributionBucketFamily {}
+
+export class DistributionBucket extends JoyStructDecorated({
+  acceptingNewBags: bool,
+  distributing: bool,
+  pendingInvitations: JoyBTreeSet(WorkerId),
+  operators: JoyBTreeSet(WorkerId),
+}) {}
+
+export class DistributionBucketFamily extends JoyStructDecorated({
+  distributionBuckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
+}) {}
+
+export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
 
 export const storageTypes: RegistryTypes = {
   StorageBucketId,

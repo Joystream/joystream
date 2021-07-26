@@ -376,6 +376,9 @@ export interface DataObjectCreationParameters extends Struct {
 /** @name DataObjectId */
 export interface DataObjectId extends u64 {}
 
+/** @name DataObjectIdMap */
+export interface DataObjectIdMap extends BTreeMap<DataObjectId, DataObject> {}
+
 /** @name DataObjectIdSet */
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
@@ -429,12 +432,13 @@ export interface Dynamic extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isChannel: boolean;
-  readonly asChannel: u64;
+  readonly asChannel: ChannelId;
 }
 
 /** @name DynamicBagCreationPolicy */
 export interface DynamicBagCreationPolicy extends Struct {
   readonly numberOfStorageBuckets: u64;
+  readonly families: BTreeMap<DistributionBucketFamilyId, u32>;
 }
 
 /** @name DynamicBagDeletionPrize */
@@ -1394,6 +1398,7 @@ export interface WorkerOf extends Struct {
 
 /** @name WorkingGroup */
 export interface WorkingGroup extends Enum {
+  readonly isForum: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
   readonly isOperations: boolean;

@@ -2340,6 +2340,14 @@ declare module '@polkadot/api/types/errors' {
        **/
       NoDistributionBucketInvitation: AugmentedError<ApiType>;
       /**
+       * Invalid operations: must be a distribution provider operator for a bucket.
+       **/
+      MustBeDistributionProviderOperatorForBucket: AugmentedError<ApiType>;
+      /**
+       * No distribution bucket invitation.
+       **/
+      NoDistributionBucketInvitation: AugmentedError<ApiType>;
+      /**
        * Empty "data object creation" collection.
        **/
       NoObjectsOnUpload: AugmentedError<ApiType>;
@@ -2827,7 +2835,7 @@ declare module '@polkadot/api/types/errors' {
     system: {
       /**
        * Failed to extract the runtime version from the new runtime.
-       * 
+       *
        * Either calling `Core_version` or decoding `RuntimeVersion` failed.
        **/
       FailedToExtractRuntimeVersion: AugmentedError<ApiType>;

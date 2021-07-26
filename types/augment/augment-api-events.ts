@@ -758,7 +758,7 @@ declare module '@polkadot/api/types/events' {
     staking: {
       /**
        * An account has bonded this amount. \[stash, amount\]
-       * 
+       *
        * NOTE: This event is only emitted when funds are bonded via a dispatchable. Notably,
        * it will not be emitted for staking rewards when they are added to stake.
        **/
@@ -922,6 +922,96 @@ declare module '@polkadot/api/types/events' {
        * - distribution bucket operator ID
        **/
       DistributionBucketOperatorRemoved: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Emits on changing the "Distribution buckets per bag" number limit.
+       * Params
+       * - new limit
+       **/
+      DistributionBucketsPerBagLimitUpdated: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * Emits on storage bucket status update (accepting new bags).
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - new status (accepting new bags)
+       **/
+      DistributionBucketStatusUpdated: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
+      /**
+       * Emits on updating distribution buckets for bag.
+       * Params
+       * - bag ID
+       * - storage buckets to add ID collection
+       * - storage buckets to remove ID collection
+       **/
+      DistributionBucketsUpdatedForBag: AugmentedEvent<ApiType, [BagId, DistributionBucketFamilyId, BTreeSet<DistributionBucketId>, BTreeSet<DistributionBucketId>]>;
+      /**
+       * Emits on creating distribution bucket.
+       * Params
+       * - distribution bucket family ID
+       * - accepting new bags
+       * - distribution bucket ID
+       **/
+      DistributionBucketCreated: AugmentedEvent<ApiType, [DistributionBucketFamilyId, bool, DistributionBucketId]>;
+      /**
+       * Emits on deleting distribution bucket.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       **/
+      DistributionBucketDeleted: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId]>;
+      /**
+       * Emits on creating distribution bucket family.
+       * Params
+       * - distribution family bucket ID
+       **/
+      DistributionBucketFamilyCreated: AugmentedEvent<ApiType, [DistributionBucketFamilyId]>;
+      /**
+       * Emits on deleting distribution bucket family.
+       * Params
+       * - distribution family bucket ID
+       **/
+      DistributionBucketFamilyDeleted: AugmentedEvent<ApiType, [DistributionBucketFamilyId]>;
+      /**
+       * Emits on accepting a distribution bucket invitation for the operator.
+       * Params
+       * - worker ID
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       **/
+      DistributionBucketInvitationAccepted: AugmentedEvent<ApiType, [WorkerId, DistributionBucketFamilyId, DistributionBucketId]>;
+      /**
+       * Emits on canceling a distribution bucket invitation for the operator.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - operator worker ID
+       **/
+      DistributionBucketInvitationCancelled: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Emits on setting the metadata by a distribution bucket operator.
+       * Params
+       * - worker ID
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - metadata
+       **/
+      DistributionBucketMetadataSet: AugmentedEvent<ApiType, [WorkerId, DistributionBucketFamilyId, DistributionBucketId, Bytes]>;
+      /**
+       * Emits on storage bucket mode update (distributing flag).
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - distributing
+       **/
+      DistributionBucketModeUpdated: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
+      /**
+       * Emits on creating a distribution bucket invitation for the operator.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - worker ID
+       **/
+      DistributionBucketOperatorInvited: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
       /**
        * Emits on changing the "Distribution buckets per bag" number limit.
        * Params
