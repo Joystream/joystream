@@ -52,6 +52,19 @@ pub type ThreadOf<T> = Thread<
     BalanceOf<T>,
 >;
 
+/// Type alias for `ExtendedPostIdObject`
+pub type ExtendedPostId<T> =
+    ExtendedPostIdObject<<T as Trait>::CategoryId, <T as Trait>::ThreadId, <T as Trait>::PostId>;
+
+/// Extended post id representation
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
+    pub category_id: CategoryId,
+    pub thread_id: ThreadId,
+    pub post_id: PostId,
+}
+
 type Balances<T> = balances::Module<T>;
 
 /// pallet_forum WeightInfo.
@@ -482,6 +495,7 @@ decl_event!(
         <T as Trait>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
         Poll = Poll<<T as pallet_timestamp::Trait>::Moment, <T as frame_system::Trait>::Hash>,
+        ExtendedPostId = ExtendedPostId<T>,
     {
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
@@ -527,7 +541,7 @@ decl_event!(
         PostModerated(PostId, Vec<u8>, PrivilegedActor, CategoryId, ThreadId),
 
         /// Post with givne id was deleted.
-        PostDeleted(Vec<u8>, ForumUserId, BTreeMap<(CategoryId, ThreadId, PostId), bool>),
+        PostDeleted(Vec<u8>, ForumUserId, BTreeMap<ExtendedPostId, bool>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -1445,7 +1459,7 @@ decl_module! {
         fn delete_posts(
             origin,
             forum_user_id: ForumUserId<T>,
-            posts: BTreeMap<(T::CategoryId, T::ThreadId, T::PostId), bool>,
+            posts: BTreeMap<ExtendedPostId<T>, bool>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
 
@@ -1455,7 +1469,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             let mut deleting_posts = Vec::new();
-            for ((category_id, thread_id, post_id), hide) in &posts {
+            for (ExtendedPostIdObject {category_id, thread_id, post_id}, hide) in &posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
