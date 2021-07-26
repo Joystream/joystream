@@ -64,14 +64,6 @@ import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
 
-// FIXME: https://github.com/Joystream/joystream/issues/2457
-type ProposalsMappingsMemoryCache = {
-  lastCreatedProposalId: ProposalId | null
-}
-const proposalsMappingsMemoryCache: ProposalsMappingsMemoryCache = {
-  lastCreatedProposalId: null,
-}
-
 async function getProposal(store: DatabaseManager, id: string) {
   const proposal = await store.get(Proposal, { where: { id } })
   if (!proposal) {
@@ -321,24 +313,15 @@ async function parseProposalDetails(
   }
 }
 
-export async function proposalsEngine_ProposalCreated({ event }: EventContext & StoreContext): Promise<void> {
-  const [, proposalId] = new ProposalsEngine.ProposalCreatedEvent(event).params
-
-  // Cache the id
-  proposalsMappingsMemoryCache.lastCreatedProposalId = proposalId
-}
-
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(event).params
+  const [proposalId, generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(
+    event
+  ).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
-  if (!proposalsMappingsMemoryCache.lastCreatedProposalId) {
-    throw new Error('Unexpected state: proposalsMappingsMemoryCache.lastCreatedProposalId is empty')
-  }
-
   const proposal = new Proposal({
-    id: proposalsMappingsMemoryCache.lastCreatedProposalId.toString(),
+    id: proposalId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
     details: proposalDetails,
