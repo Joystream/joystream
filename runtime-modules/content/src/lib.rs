@@ -554,7 +554,7 @@ pub type Post<T> = Post_<
     ForumUserId<T>,
     <T as Trait>::ThreadId,
     <T as frame_system::Trait>::Hash,
-    BalanceOf<T>,
+    <T as balances::Trait>::Balance,
     <T as frame_system::Trait>::BlockNumber,
 >;
 
@@ -1670,7 +1670,12 @@ decl_module! {
 
         let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
 
-        Self::ensure_can_delete_post(&account_id, &forum_user_id, &thread_id, &post_id)?;
+        let post = Self::ensure_can_delete_post(&account_id, &forum_user_id, &thread_id, &post_id)?;
+        //
+        // == MUTATION SAFE ==
+        //
+
+        Self::pay_off(thread_id, post.cleanup_pay_off, &account_id)?;
 
         let mut thread = thread;
         thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one());
@@ -2021,7 +2026,7 @@ impl<T: Trait> Module<T> {
         forum_user_id: &ForumUserId<T>,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> DispatchResult {
+    ) -> Result<Post<T>, Error<T>> {
         Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
         let post = Self::ensure_post_exists(&thread_id, &post_id)?;
@@ -2032,7 +2037,7 @@ impl<T: Trait> Module<T> {
         );
 
         // deposit event
-        Ok(())
+        Ok(post)
     }
 
     fn ensure_can_delete_category(
@@ -2222,7 +2227,7 @@ impl<T: Trait> Module<T> {
             text_hash: text_hash,
             thread_id,
             author_id,
-            cleanup_pay_off: BalanceOf::<T>::zero(),
+            cleanup_pay_off: T::PostDeposit::get(),
             last_edited: frame_system::Module::<T>::block_number(),
         };
 
