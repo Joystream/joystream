@@ -75,7 +75,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
 
     // Not yet processed by sync run, check if we have it locally
     try {
-      const stat = await storage.ipfsStat(ipfs_content_id, 250)
+      const stat = await storage.ipfsStat(ipfs_content_id, 4000)
 
       if (stat.local) {
         ipfsContentIdMap.set(content_id, {
@@ -87,8 +87,8 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         return proxy(req, res, next)
       }
     } catch (_err) {
-      // timeout or some other error trying to stat
-      debug('Failed to stat', ipfs_content_id)
+      // timeout trying to stat which most likely means we do not have it
+      // debug('Failed to stat', ipfs_content_id)
     }
 
     // Valid content but no certainty that the node has it locally yet.
