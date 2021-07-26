@@ -10,8 +10,9 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagId,
-    DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, UploadParameters,
+    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DynamicBagDeletionPrize,
+    DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -1070,12 +1071,14 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 
 pub struct CreateDynamicBagFixture {
     bag_id: DynamicBagId<Test>,
+    deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
 }
 
 impl CreateDynamicBagFixture {
     pub fn default() -> Self {
         Self {
             bag_id: Default::default(),
+            deletion_prize: Default::default(),
         }
     }
 
@@ -1083,13 +1086,22 @@ impl CreateDynamicBagFixture {
         Self { bag_id, ..self }
     }
 
+    pub fn with_deletion_prize(self, deletion_prize: DynamicBagDeletionPrize<Test>) -> Self {
+        Self {
+            deletion_prize: Some(deletion_prize),
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Storage::create_dynamic_bag(self.bag_id.clone());
+        let actual_result =
+            Storage::create_dynamic_bag(self.bag_id.clone(), self.deletion_prize.clone());
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(<crate::DynamicBags<Test>>::contains_key(&self.bag_id));
+            let bag_id: BagId<Test> = self.bag_id.clone().into();
+            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
         }
     }
 }
