@@ -309,24 +309,36 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
 
   // calculate diff sets
   const toRemove = existingFeaturedVideos.filter(
-    (existingFV) => !videoIds.map((item) => item.toHex()).some(isSame(existingFV.id))
+    (existingFV) => !videoIds.map((item) => item.toString()).some(isSame(existingFV.id))
   )
-  const toAdd = videoIds.filter((video) => !existingFeaturedVideos.map((item) => item.id).some(isSame(video.toHex())))
+  const toAdd = videoIds.filter(
+    (video) => !existingFeaturedVideos.map((item) => item.id).some(isSame(video.toString()))
+  )
 
-  // mark previously featured videos as not-featured
-  for (const video of toRemove) {
-    video.isFeatured = false
-
-    // set last update time
-    video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
-
-    await db.save<Video>(video)
-  }
-
-  // escape if no featured video needs to be added
-  if (!toAdd) {
+  // escape if no featured video needs to be added or removed
+  if (!toRemove.length && !toAdd.length) {
     // emit log event
     logger.info('Featured videos unchanged')
+
+    return
+  }
+
+  // mark previously featured videos as not-featured
+  await Promise.all(
+    toRemove.map(async (video) => {
+      video.isFeatured = false
+
+      // set last update time
+      video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+
+      await db.save<Video>(video)
+    })
+  )
+
+  // escape if no featured video needs to be added
+  if (!toAdd.length) {
+    // emit log event
+    logger.info('Some featured videos have been unset.', { videoIds: toRemove.map((item) => item.id.toString()) })
 
     return
   }
@@ -343,14 +355,16 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
   }
 
   // mark previously not-featured videos as featured
-  for (const video of videosToAdd) {
-    video.isFeatured = true
+  await Promise.all(
+    videosToAdd.map(async (video) => {
+      video.isFeatured = true
 
-    // set last update time
-    video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+      // set last update time
+      video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
 
-    await db.save<Video>(video)
-  }
+      await db.save<Video>(video)
+    })
+  )
 
   // emit log event
   logger.info('New featured videos have been set', { videoIds })
