@@ -1532,6 +1532,7 @@ decl_module! {
              forum_user_id,
              thread_id,
              text_hash,
+             channel_id,
          ));
 
             Ok(())
@@ -1580,6 +1581,7 @@ decl_module! {
                     forum_user_id,
                     thread_id,
                     new_text_hash,
+                    channel_id,
                 ));
 
             Ok(())
@@ -1621,6 +1623,7 @@ decl_module! {
             post_id,
             forum_user_id,
             thread_id,
+            channel_id,
         ));
 
         Ok(())
@@ -1631,7 +1634,8 @@ decl_module! {
               forum_user_id: ForumUserId<T>,
               thread_id: T::ThreadId,
               post_id: T::PostId,
-              react: T::ReactionId
+              react: T::ReactionId,
+              channel_id: T::ChannelId,
     ) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
 
@@ -1640,12 +1644,45 @@ decl_module! {
 
             let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
+            // subreddit is editable
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            Self::ensure_subreddit_is_editable(&channel)?;
+
             //
             // == MUTATION SAFE ==
             //
 
             Self::deposit_event(
-                RawEvent::PostReacted(post_id, forum_user_id, thread_id, react)
+                RawEvent::PostReacted(post_id, forum_user_id, thread_id, react, channel_id)
+            );
+
+            Ok(())
+    }
+
+        #[weight = 10_000_000]
+        fn react_thread(origin,
+              forum_user_id: ForumUserId<T>,
+              thread_id: T::ThreadId,
+              react: T::ReactionId,
+              channel_id: T::ChannelId,
+        ) -> DispatchResult {
+            let account_id = ensure_signed(origin)?;
+
+            // Check that account is forum member
+            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+
+            let _thread = Self::ensure_thread_exists(&thread_id)?;
+
+            // subreddit is editable
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            Self::ensure_subreddit_is_editable(&channel)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(
+                RawEvent::ThreadReacted(thread_id, forum_user_id, channel_id, react)
             );
 
             Ok(())
@@ -2074,9 +2111,10 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, ForumUserId, Hash, ChannelId),
         ThreadDeleted(ThreadId, ForumUserId, ChannelId),
-        PostAdded(PostId, ForumUserId, ThreadId, Hash),
-        PostTextUpdated(PostId, ForumUserId, ThreadId, Hash),
-        PostDeleted(PostId, ForumUserId, ThreadId),
-        PostReacted(PostId, ForumUserId, ThreadId, ReactionId),
+        PostAdded(PostId, ForumUserId, ThreadId, Hash, ChannelId),
+        PostTextUpdated(PostId, ForumUserId, ThreadId, Hash, ChannelId),
+        PostDeleted(PostId, ForumUserId, ThreadId, ChannelId),
+        PostReacted(PostId, ForumUserId, ThreadId, ReactionId, ChannelId),
+        ThreadReacted(ThreadId, ForumUserId, ChannelId, ReactionId),
     }
 );
