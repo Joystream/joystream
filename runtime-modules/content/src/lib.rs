@@ -150,6 +150,12 @@ pub trait Trait:
 
     // module id
     type ModuleId: Get<ModuleId>;
+
+    /// deposit for creating a thread
+    type ThreadDeposit: Get<Self::Balance>;
+
+    /// deposit for creating a post
+    type PostDeposit: Get<Self::Balance>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -519,7 +525,7 @@ pub type Thread<T> = Thread_<
     ForumUserId<T>,
     <T as Trait>::CategoryId,
     <T as frame_system::Trait>::Hash,
-    BalanceOf<T>,
+    <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
     <T as StorageOwnership>::ChannelId,
 >;
@@ -1471,12 +1477,21 @@ decl_module! {
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
 
+           // reserve cleanup payoff in the thread + the cost of creating the first post
+           let cleanup_payoff = T::ThreadDeposit::get() + T::PostDeposit::get();
+
+           Self::transfer_to_state_cleanup_treasury_account(
+                cleanup_payoff,
+                new_thread_id,
+                &account_id
+            )?;
+
             // Build a new thread
             let new_thread = Thread_ {
                 title_hash: title_hash,
                 category_id: category_id,
                 author_id: forum_user_id,
-                cleanup_pay_off: BalanceOf::<T>::zero(),
+                cleanup_pay_off: cleanup_payoff,
                 number_of_posts: T::PostId::zero(),
                 channel_id: channel_id,
             };
@@ -1507,7 +1522,7 @@ decl_module! {
                     forum_user_id,
                     category_id,
                     title_hash,
-            channel_id,
+                    channel_id,
                 )
             );
 
@@ -1526,7 +1541,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            Self::ensure_can_delete_thread(
+            let thread = Self::ensure_can_delete_thread(
                 &account_id,
                 &forum_user_id,
                 &category_id,
@@ -1538,7 +1553,7 @@ decl_module! {
             //
 
             // Pay off to thread deleter
-//            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
+            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
 
             // Delete thread
             <ThreadById<T>>::remove(category_id, thread_id);
@@ -1953,7 +1968,7 @@ impl<T: Trait> Module<T> {
         forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> DispatchResult {
+    ) -> Result<Thread<T>, Error<T>> {
         // Ensure thread exists and is mutable
         let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
 
@@ -1963,20 +1978,25 @@ impl<T: Trait> Module<T> {
         // Ensure forum user is author of the thread
         Self::ensure_is_thread_author(&thread, &forum_user_id)?;
 
-        Ok(())
+        Ok(thread)
     }
 
     fn ensure_is_forum_user(
         account_id: &T::AccountId,
         forum_user_id: &ForumUserId<T>,
-    ) -> DispatchResult {
-        ensure_member_auth_success::<T>(forum_user_id, account_id)
+    ) -> Result<(), Error<T>> {
+        //  This is a temporary solution in order to convert DispatchError into Error<T>
+        if let Ok(()) = ensure_member_auth_success::<T>(forum_user_id, account_id) {
+            Ok(())
+        } else {
+            Err(Error::<T>::MemberAuthFailed)
+        }
     }
 
     fn ensure_is_thread_author(
         thread: &Thread<T>,
         forum_user_id: &ForumUserId<T>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             thread.author_id == *forum_user_id,
             Error::<T>::AccountDoesNotMatchThreadAuthor
@@ -2289,7 +2309,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn transfer_to_state_cleanup_treasury_account(
-        amount: BalanceOf<T>,
+        amount: <T as balances::Trait>::Balance,
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
@@ -2297,6 +2317,20 @@ impl<T: Trait> Module<T> {
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    fn pay_off(
+        thread_id: T::ThreadId,
+        amount: <T as balances::Trait>::Balance,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &state_cleanup_treasury_account,
+            account_id,
             amount,
             ExistenceRequirement::AllowDeath,
         )
