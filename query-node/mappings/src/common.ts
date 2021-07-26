@@ -217,12 +217,11 @@ export function convertBytesToString(b: Bytes | null): string {
     return ''
   }
 
-  const result = Buffer.from(b.toU8a(true)).toString()
+  const text = Buffer.from(b.toU8a(true)).toString()
 
   // prevent utf-8 null character
-  if (result.match(/^\0+$/)) {
-    return ''
-  }
+  // eslint-disable-next-line no-control-regex
+  const result = text.replace(/\u0000/g, '')
 
   return result
 }
