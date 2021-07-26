@@ -62,15 +62,10 @@ export class PrivilegedActor extends JoyEnum({
   Moderator: ModeratorId,
 }) {}
 
-export class PollAlternativeInput extends JoyStructDecorated({
-  alternative_text: Bytes,
-  vote_count: u32,
-}) {}
-
 export class PollInput extends JoyStructDecorated({
   description: Bytes,
   end_time: u64,
-  poll_alternatives: Vec.with(PollAlternativeInput),
+  poll_alternatives: Vec.with(Bytes),
 }) {}
 
 export class PostIdTuple extends ((Tuple.with([CategoryId, ThreadId, PostId]) as unknown) as Constructor<
@@ -90,7 +85,6 @@ export const forumTypes: RegistryTypes = {
   PollAlternative,
   Poll,
   PrivilegedActor,
-  PollAlternativeInput,
   PollInput,
   // runtime alias
   ThreadOf: Thread,

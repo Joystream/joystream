@@ -1425,10 +1425,11 @@ declare module '@polkadot/api/types/events' {
       /**
        * A proposal was created
        * Params:
+       * - Id of a newly created proposal after it was saved in storage.
        * - General proposal parameter. Parameters shared by all proposals
        * - Proposal Details. Parameter of proposal with a variant for each kind of proposal
        **/
-      ProposalCreated: AugmentedEvent<ApiType, [GeneralProposalParameters, ProposalDetailsOf]>;
+      ProposalCreated: AugmentedEvent<ApiType, [ProposalId, GeneralProposalParameters, ProposalDetailsOf]>;
     };
     proposalsDiscussion: {
       /**
@@ -1460,13 +1461,6 @@ declare module '@polkadot/api/types/events' {
        * - Id of the proposal
        **/
       ProposalCancelled: AugmentedEvent<ApiType, [MemberId, ProposalId]>;
-      /**
-       * Emits on proposal creation.
-       * Params:
-       * - Member id of a proposer.
-       * - Id of a newly created proposal after it was saved in storage.
-       **/
-      ProposalCreated: AugmentedEvent<ApiType, [MemberId, ProposalId]>;
       /**
        * Emits on getting a proposal status decision.
        * Params:

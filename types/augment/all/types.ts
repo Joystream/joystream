@@ -582,17 +582,11 @@ export interface PollAlternative extends Struct {
   readonly vote_count: u32;
 }
 
-/** @name PollAlternativeInput */
-export interface PollAlternativeInput extends Struct {
-  readonly alternative_text: Bytes;
-  readonly vote_count: u32;
-}
-
 /** @name PollInput */
 export interface PollInput extends Struct {
   readonly description: Bytes;
   readonly end_time: u64;
-  readonly poll_alternatives: Vec<PollAlternativeInput>;
+  readonly poll_alternatives: Vec<Bytes>;
 }
 
 /** @name Post */

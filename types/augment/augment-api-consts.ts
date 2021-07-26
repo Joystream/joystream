@@ -101,7 +101,7 @@ declare module '@polkadot/api/types/consts' {
        **/
       candidacyLockId: LockIdentifier & AugmentedConst<ApiType>;
       /**
-       * Exports const - candidacy lock id.
+       * Exports const - councilor lock id.
        **/
       councilorLockId: LockIdentifier & AugmentedConst<ApiType>;
       /**
