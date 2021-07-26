@@ -1480,6 +1480,9 @@ decl_module! {
             // Pay off to thread deleter
             Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
 
+            // delete all the posts in the thread
+            <PostById<T>>::remove_prefix(&thread_id);
+
             // Delete thread
             <ThreadById<T>>::remove(thread_id);
 
