@@ -43,7 +43,7 @@
 
 // used dependencies
 use codec::{Decode, Encode};
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 
@@ -234,21 +234,35 @@ pub trait Trait:
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
     type MinNumberOfExtraCandidates: Get<u64>;
+
     /// Council member count
     type CouncilSize: Get<u64>;
+
     /// Minimum stake candidate has to lock
     type MinCandidateStake: Get<Balance<Self>>;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CandidacyLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
+    type CandidacyLock: StakingHandler<
+        Self::AccountId,
+        Balance<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
+
     /// Identifier for currency lock used for candidacy staking.
-    type CouncilorLock: StakingHandler<Self::AccountId, Balance<Self>, Self::MemberId>;
+    type CouncilorLock: StakingHandler<
+        Self::AccountId,
+        Balance<Self>,
+        Self::MemberId,
+        LockIdentifier,
+    >;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
+
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
@@ -479,18 +493,30 @@ decl_module! {
         /// Minimum number of extra candidates needed for the valid election.
         /// Number of total candidates is equal to council size plus extra candidates.
         const MinNumberOfExtraCandidates: u64 = T::MinNumberOfExtraCandidates::get();
+
         /// Council member count
         const CouncilSize: u64 = T::CouncilSize::get();
+
         /// Minimum stake candidate has to lock
         const MinCandidateStake: Balance<T> = T::MinCandidateStake::get();
+
         /// Duration of annoncing period
         const AnnouncingPeriodDuration: T::BlockNumber = T::AnnouncingPeriodDuration::get();
+
         /// Duration of idle period
         const IdlePeriodDuration: T::BlockNumber = T::IdlePeriodDuration::get();
+
         /// Interval for automatic reward payments.
         const ElectedMemberRewardPeriod: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
+
         /// Interval between automatic budget refills.
         const BudgetRefillPeriod: T::BlockNumber = T::BudgetRefillPeriod::get();
+
+        /// Exports const - candidacy lock id.
+        const CandidacyLockId: LockIdentifier = T::CandidacyLock::lock_id();
+
+        /// Exports const - councilor lock id.
+        const CouncilorLockId: LockIdentifier = T::CouncilorLock::lock_id();
 
         /////////////////// Lifetime ///////////////////////////////////////////
 

@@ -143,7 +143,7 @@ mod tests;
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
-use frame_support::traits::Get;
+use frame_support::traits::{Get, LockIdentifier};
 use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
@@ -204,7 +204,12 @@ pub trait Trait:
     type ProposalId: From<u32> + Parameter + Default + Copy;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
     type CancellationFee: Get<BalanceOf<Self>>;
@@ -259,11 +264,6 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as frame_system::Trait>::BlockNumber,
     {
-        /// Emits on proposal creation.
-        /// Params:
-        /// - Member id of a proposer.
-        /// - Id of a newly created proposal after it was saved in storage.
-        ProposalCreated(MemberId, ProposalId),
 
         /// Emits on proposal creation.
         /// Params:
@@ -414,6 +414,9 @@ decl_module! {
 
         /// Exports const -  max simultaneous active proposals number.
         const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
+
+        /// Exports const - staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// Block Initialization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
@@ -603,11 +606,6 @@ impl<T: Trait> Module<T> {
         );
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
-
-        Self::deposit_event(RawEvent::ProposalCreated(
-            creation_params.proposer_id,
-            proposal_id,
-        ));
 
         Ok(proposal_id)
     }
