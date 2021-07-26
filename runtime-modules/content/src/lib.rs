@@ -238,6 +238,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
+    /// Channel Subreddit is ON/OFF
+    subreddit_editable: bool,
 }
 
 // Channel alias type for simplification.
@@ -288,6 +290,8 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId> {
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
+    /// subreddit editable or not
+    subreddit_editable: bool,
 }
 
 /// Information about channel being updated.
@@ -300,6 +304,8 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
+    /// subreddit editable or not
+    subreddit_editable: Option<bool>,
 }
 
 /// A category that videos can belong to.
@@ -782,6 +788,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                subreddit_editable: params.subreddit_editable,
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -833,6 +840,12 @@ decl_module! {
             if let Some(reward_account) = &params.reward_account {
                 channel.reward_account = reward_account.clone();
             }
+
+            // Maybe update the subreddit state
+            if let Some(subreddit_state) = &params.subreddit_editable {
+                channel.subreddit_editable = *subreddit_state;
+            }
+
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -1381,11 +1394,11 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-        // ensure that signer is forum_user_id and forum_user_id refers to a valid member
+            // ensure that signer is forum_user_id and forum_user_id refers to a valid member
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
-            // ensure valid channel
-            Self::ensure_channel_exists(&channel_id)?;
+            // ensure valid channel && thread can be added to subreddit
+            Self::ensure_subreddit_is_editable(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1445,6 +1458,7 @@ decl_module! {
             origin,
             forum_user_id: ForumUserId<T>,
             thread_id: T::ThreadId,
+            channel_id: T::ChannelId,
         ) -> DispatchResult {
             // Ensure data migration is done
             // Self::ensure_data_migration_done()?;
@@ -1454,7 +1468,8 @@ decl_module! {
             let thread = Self::ensure_can_delete_thread(
                 &account_id,
                 &forum_user_id,
-                &thread_id
+                &thread_id,
+                &channel_id,
             )?;
 
             //
@@ -1732,7 +1747,11 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
         forum_user_id: &ForumUserId<T>,
         thread_id: &T::ThreadId,
+        channel_id: &T::ChannelId,
     ) -> Result<Thread<T>, Error<T>> {
+        // Ensure subreddit editable
+        Self::ensure_subreddit_is_editable(channel_id)?;
+
         // Ensure thread exists and is mutable
         let thread = Self::ensure_thread_exists(&thread_id)?;
 
@@ -1855,6 +1874,14 @@ impl<T: Trait> Module<T> {
             amount,
             ExistenceRequirement::AllowDeath,
         )
+    }
+    fn ensure_subreddit_is_editable(channel_id: &T::ChannelId) -> Result<(), Error<T>> {
+        let channel = Self::ensure_channel_exists(channel_id)?;
+        ensure!(
+            channel.subreddit_editable,
+            Error::<T>::SubredditCannotBeModified
+        );
+        Ok(())
     }
 }
 

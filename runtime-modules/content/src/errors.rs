@@ -106,5 +106,9 @@ decl_error! {
         /// maximum category depth exceeded
         CategoryModeratorDoesNotExist,
 
+        /// Subreddit cannot be Modified
+        SubredditCannotBeModified,
+
+
     }
 }
