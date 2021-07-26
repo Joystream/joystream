@@ -575,7 +575,7 @@ pub fn good_category_description_new() -> Vec<u8> {
     b"This is a great new category description for the forum".to_vec()
 }
 
-/// Get a new good thread title
+/// Get a new good thread metadata
 pub fn good_thread_metadata() -> Vec<u8> {
     b"Great new thread".to_vec()
 }
