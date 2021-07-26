@@ -44,7 +44,7 @@ pub use common::{
     MembershipTypes, StorageOwnership, Url,
 };
 
-pub type ForumUserId<T> = common::MemberId<T>;
+pub type SubredditUserId<T> = common::MemberId<T>;
 
 /// Moderator ID alias for the actor of the system.
 pub type ModeratorId<T> = common::ActorId<T>;
@@ -501,12 +501,12 @@ pub struct Person<MemberId> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
-pub struct Thread_<ForumUserId, Hash, Balance, NumberOfPosts, ChannelId> {
+pub struct Thread_<SubredditUserId, Hash, Balance, NumberOfPosts, ChannelId> {
     /// Title hash
     pub title_hash: Hash,
 
     /// Author of post.
-    pub author_id: ForumUserId,
+    pub author_id: SubredditUserId,
 
     /// Pay off by deleting
     pub cleanup_pay_off: Balance,
@@ -519,7 +519,7 @@ pub struct Thread_<ForumUserId, Hash, Balance, NumberOfPosts, ChannelId> {
 }
 
 pub type Thread<T> = Thread_<
-    ForumUserId<T>,
+    SubredditUserId<T>,
     <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
@@ -529,7 +529,7 @@ pub type Thread<T> = Thread_<
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Post_<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
+pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
@@ -537,7 +537,7 @@ pub struct Post_<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     pub text_hash: Hash,
 
     /// Author of post.
-    pub author_id: ForumUserId,
+    pub author_id: SubredditUserId,
 
     /// Cleanup pay off
     pub cleanup_pay_off: Balance,
@@ -547,7 +547,7 @@ pub struct Post_<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 }
 
 pub type Post<T> = Post_<
-    ForumUserId<T>,
+    SubredditUserId<T>,
     <T as Trait>::ThreadId,
     <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
@@ -611,7 +611,7 @@ decl_storage! {
 
      /// Moderator set for each Subreddit
         pub SubredditByModerator get(fn category_by_moderator) config(): double_map
-            hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) ForumUserId<T> => ();
+            hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) SubredditUserId<T> => ();
     }
 }
 
@@ -1389,7 +1389,7 @@ decl_module! {
     #[weight = 10_000_000]
      fn create_thread(
             origin,
-            forum_user_id: ForumUserId<T>,
+            forum_user_id: SubredditUserId<T>,
             title_hash: T::Hash,
             text_hash: T::Hash,
             channel_id: T::ChannelId,
@@ -1460,7 +1460,7 @@ decl_module! {
     #[weight = 10_000_000]
     fn delete_thread(
             origin,
-            forum_user_id: ForumUserId<T>,
+            forum_user_id: SubredditUserId<T>,
             thread_id: T::ThreadId,
             channel_id: T::ChannelId,
         ) -> DispatchResult {
@@ -1502,7 +1502,7 @@ decl_module! {
     #[weight = 10_000_000]
     fn add_post(
             origin,
-            forum_user_id: ForumUserId<T>,
+            forum_user_id: SubredditUserId<T>,
             thread_id: T::ThreadId,
             channel_id: T::ChannelId,
             text_hash: <T as frame_system::Trait>::Hash,
@@ -1547,7 +1547,7 @@ decl_module! {
     #[weight = 10_000_000]
     fn edit_post_text(
             origin,
-            forum_user_id: ForumUserId<T>,
+            forum_user_id: SubredditUserId<T>,
             thread_id: T::ThreadId,
             post_id: T::PostId,
             channel_id: T::ChannelId,
@@ -1595,7 +1595,7 @@ decl_module! {
 
     #[weight = 10_000_000]
     fn delete_post(origin,
-           forum_user_id: ForumUserId<T>,
+           forum_user_id: SubredditUserId<T>,
            thread_id: T::ThreadId,
            post_id: T::PostId,
            channel_id: T::ChannelId,
@@ -1637,7 +1637,7 @@ decl_module! {
 
     #[weight = 10_000_000]
     fn react_post(origin,
-              forum_user_id: ForumUserId<T>,
+              forum_user_id: SubredditUserId<T>,
               thread_id: T::ThreadId,
               post_id: T::PostId,
               react: T::ReactionId,
@@ -1667,7 +1667,7 @@ decl_module! {
 
         #[weight = 10_000_000]
         fn react_thread(origin,
-              forum_user_id: ForumUserId<T>,
+              forum_user_id: SubredditUserId<T>,
               thread_id: T::ThreadId,
               react: T::ReactionId,
               channel_id: T::ChannelId,
@@ -1806,7 +1806,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_delete_thread(
         account_id: &T::AccountId,
-        forum_user_id: &ForumUserId<T>,
+        forum_user_id: &SubredditUserId<T>,
         thread_id: &T::ThreadId,
         channel_id: &T::ChannelId,
     ) -> Result<Thread<T>, Error<T>> {
@@ -1828,7 +1828,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_is_forum_user(
         account_id: &T::AccountId,
-        forum_user_id: &ForumUserId<T>,
+        forum_user_id: &SubredditUserId<T>,
     ) -> Result<(), Error<T>> {
         //  This is a temporary solution in order to convert DispatchError into Error<T>
         if let Ok(()) = ensure_member_auth_success::<T>(forum_user_id, account_id) {
@@ -1840,7 +1840,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_is_thread_author(
         thread: &Thread<T>,
-        forum_user_id: &ForumUserId<T>,
+        forum_user_id: &SubredditUserId<T>,
     ) -> Result<(), Error<T>> {
         ensure!(
             thread.author_id == *forum_user_id,
@@ -1863,7 +1863,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_delete_post(
         account_id: &T::AccountId,
-        forum_user_id: &ForumUserId<T>,
+        forum_user_id: &SubredditUserId<T>,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
         channel_id: &T::ChannelId,
@@ -1888,7 +1888,7 @@ impl<T: Trait> Module<T> {
     pub fn add_new_post(
         thread_id: T::ThreadId,
         text_hash: T::Hash,
-        author_id: ForumUserId<T>,
+        author_id: SubredditUserId<T>,
     ) -> T::PostId {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
@@ -1992,7 +1992,7 @@ decl_event!(
         ContentId = ContentId<T>,
         IsCensored = bool,
         Hash = <T as frame_system::Trait>::Hash,
-        ForumUserId = ForumUserId<T>,
+        SubredditUserId = SubredditUserId<T>,
         ThreadId = <T as Trait>::ThreadId,
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
@@ -2115,12 +2115,12 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
-        ThreadCreated(ThreadId, ForumUserId, Hash, ChannelId),
-        ThreadDeleted(ThreadId, ForumUserId, ChannelId),
-        PostAdded(PostId, ForumUserId, ThreadId, Hash, ChannelId),
-        PostTextUpdated(PostId, ForumUserId, ThreadId, Hash, ChannelId),
-        PostDeleted(PostId, ForumUserId, ThreadId, ChannelId),
-        PostReacted(PostId, ForumUserId, ThreadId, ReactionId, ChannelId),
-        ThreadReacted(ThreadId, ForumUserId, ChannelId, ReactionId),
+        ThreadCreated(ThreadId, SubredditUserId, Hash, ChannelId),
+        ThreadDeleted(ThreadId, SubredditUserId, ChannelId),
+        PostAdded(PostId, SubredditUserId, ThreadId, Hash, ChannelId),
+        PostTextUpdated(PostId, SubredditUserId, ThreadId, Hash, ChannelId),
+        PostDeleted(PostId, SubredditUserId, ThreadId, ChannelId),
+        PostReacted(PostId, SubredditUserId, ThreadId, ReactionId, ChannelId),
+        ThreadReacted(ThreadId, SubredditUserId, ChannelId, ReactionId),
     }
 );
