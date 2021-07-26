@@ -1006,7 +1006,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            let thread = Self::ensure_can_edit_thread_title(account_id, &category_id, &thread_id, &forum_user_id)?;
+            let thread = Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1818,7 +1818,7 @@ impl<T: Trait> Module<T> {
         Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
-    fn ensure_can_edit_thread_title(
+    fn ensure_can_edit_thread_metadata(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
