@@ -18,5 +18,11 @@ ${CLI} leader:update-dynamic-bag-policy -t Member -p ${FAMILY_ID}:5
 ${CLI} leader:update-dynamic-bag-policy -t Member
 ${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
 ${CLI} leader:cancel-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
-${CLI} leader:delete-bucket -f ${FAMILY_ID} -B ${BUCKET_ID}
-${CLI} leader:delete-bucket-family -f ${FAMILY_ID}
+${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
+${CLI} operator:accept-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
+
+# Deletion commands tested separately, since bucket operator removal is not yet supported
+FAMILY_TO_DELETE_ID=`${CLI} leader:create-bucket-family ${CONFIG}`
+BUCKET_TO_DELETE_ID=`${CLI} leader:create-bucket -f ${FAMILY_TO_DELETE_ID} -a yes`
+${CLI} leader:delete-bucket -f ${FAMILY_TO_DELETE_ID} -B ${BUCKET_TO_DELETE_ID}
+${CLI} leader:delete-bucket-family -f ${FAMILY_TO_DELETE_ID}
