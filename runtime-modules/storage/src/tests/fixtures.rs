@@ -366,7 +366,6 @@ impl SetStorageOperatorMetadataFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_metadata = Storage::storage_bucket_by_id(self.storage_bucket_id).metadata;
         let actual_result = Storage::set_storage_operator_metadata(
             self.origin.clone().into(),
             self.worker_id,
@@ -375,13 +374,6 @@ impl SetStorageOperatorMetadataFixture {
         );
 
         assert_eq!(actual_result, expected_result);
-        let new_metadata = Storage::storage_bucket_by_id(self.storage_bucket_id).metadata;
-
-        if actual_result.is_ok() {
-            assert_eq!(new_metadata, self.metadata);
-        } else {
-            assert_eq!(old_metadata, new_metadata);
-        }
     }
 }
 
