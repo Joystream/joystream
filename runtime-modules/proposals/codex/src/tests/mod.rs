@@ -123,6 +123,7 @@ where
         assert_eq!(proposal.parameters, self.proposal_parameters);
         assert_last_event(
             RawEvent::ProposalCreated(
+                proposal_id,
                 self.general_proposal_parameters.clone(),
                 self.proposal_details.clone(),
             )

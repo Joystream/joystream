@@ -259,12 +259,14 @@ decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
         ProposalDetailsOf = ProposalDetailsOf<T>,
+        <T as proposals_engine::Trait>::ProposalId,
     {
         /// A proposal was created
         /// Params:
+        /// - Id of a newly created proposal after it was saved in storage.
         /// - General proposal parameter. Parameters shared by all proposals
         /// - Proposal Details. Parameter of proposal with a variant for each kind of proposal
-        ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
+        ProposalCreated(ProposalId, GeneralProposalParameters, ProposalDetailsOf),
     }
 }
 
@@ -513,7 +515,7 @@ decl_module! {
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
 
-            Self::deposit_event(RawEvent::ProposalCreated(general_proposal_parameters, proposal_details));
+            Self::deposit_event(RawEvent::ProposalCreated(proposal_id, general_proposal_parameters, proposal_details));
         }
     }
 }

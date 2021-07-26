@@ -159,7 +159,9 @@ fn create_proposal_verify<T: Trait>(
         "Active proposal count not updated"
     );
 
-    assert_last_event::<T>(RawEvent::ProposalCreated(proposal_parameters, proposal_details).into());
+    assert_last_event::<T>(
+        RawEvent::ProposalCreated(proposal_id, proposal_parameters, proposal_details).into(),
+    );
 
     assert!(
         ThreadIdByProposalId::<T>::contains_key(proposal_id),

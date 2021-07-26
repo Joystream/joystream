@@ -187,7 +187,7 @@ pub trait Trait:
 }
 
 /// Upper bounds for storage maps and double maps. Needed to prevent potential block exhaustion during deletion, etc.
-/// MaxSubcategories, MaxThreadsInCategory, and MaxPostsInThread should be reasonably small because when the category is deleted
+/// MaxSubcategories, and MaxCategories should be reasonably small because when the category is deleted
 /// all of it's subcategories with their threads and posts will be iterated over and deleted.
 pub trait StorageLimits {
     /// Maximum direct subcategories in a category
@@ -203,7 +203,7 @@ pub trait StorageLimits {
     type MaxPollAlternativesNumber: Get<u64>;
 }
 
-/// Represents all poll alternatives and vote count for each one
+/// Represents all poll alternative text hashes and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PollAlternative<Hash> {
@@ -214,6 +214,20 @@ pub struct PollAlternative<Hash> {
     pub vote_count: u32,
 }
 
+/// Represents a poll input
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct PollInput<Timestamp> {
+    /// description
+    pub description: Vec<u8>,
+
+    /// timestamp of poll end
+    pub end_time: Timestamp,
+
+    /// Alternative polls description
+    pub poll_alternatives: Vec<Vec<u8>>,
+}
+
 /// Represents a poll
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -221,7 +235,7 @@ pub struct Poll<Timestamp, Hash> {
     /// hash of description
     pub description_hash: Hash,
 
-    /// pallet_timestamp of poll end
+    /// timestamp of poll end
     pub end_time: Timestamp,
 
     /// Alternative description and count
@@ -494,8 +508,8 @@ decl_event!(
         ForumUserId = ForumUserId<T>,
         <T as Trait>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
-        Poll = Poll<<T as pallet_timestamp::Trait>::Moment, <T as frame_system::Trait>::Hash>,
         ExtendedPostId = ExtendedPostId<T>,
+        PollInput = PollInput<<T as pallet_timestamp::Trait>::Moment>,
     {
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
@@ -516,7 +530,8 @@ decl_event!(
         CategoryDeleted(CategoryId, PrivilegedActor),
 
         /// A thread with given id was created.
-        ThreadCreated(ThreadId, ForumUserId, CategoryId, Vec<u8>, Vec<u8>, Option<Poll>),
+        /// A third argument reflects the initial post id of the thread.
+        ThreadCreated(CategoryId, ThreadId, PostId, ForumUserId, Vec<u8>, Vec<u8>, Option<PollInput>),
 
         /// A thread with given id was moderated.
         ThreadModerated(ThreadId, Vec<u8>, PrivilegedActor, CategoryId),
@@ -568,6 +583,14 @@ decl_module! {
         type Error = Error<T>;
 
         fn deposit_event() = default;
+
+        /// Exports const
+
+        /// Deposit needed to create a post
+        const PostDeposit: BalanceOf<T> = T::PostDeposit::get();
+
+        /// Deposit needed to create a thread
+        const ThreadDeposit: BalanceOf<T> = T::ThreadDeposit::get();
 
         /// Enable a moderator can moderate a category and its sub categories.
         ///
@@ -889,7 +912,7 @@ decl_module! {
             category_id: T::CategoryId,
             title: Vec<u8>,
             text: Vec<u8>,
-            poll: Option<Poll<T::Moment, T::Hash>>,
+            poll_input: Option<PollInput<T::Moment>>,
         ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -899,12 +922,12 @@ decl_module! {
             Self::ensure_can_create_thread(&account_id, &forum_user_id, &category_id)?;
 
             // Ensure poll is valid
-            if let Some(ref data) = poll {
+            if let Some(ref data) = poll_input {
                 // Check all poll alternatives
                 Self::ensure_poll_alternatives_length_is_valid(&data.poll_alternatives)?;
 
                 // Check poll self information
-                Self::ensure_poll_is_valid(data)?;
+                Self::ensure_poll_input_is_valid(data)?;
             }
 
             //
@@ -922,12 +945,15 @@ decl_module! {
                 &account_id
             )?;
 
+            // Hash poll description and poll alternatives description
+            let poll = poll_input.clone().map(Self::from_poll_input);
+
             // Build a new thread
             let new_thread = Thread {
                 category_id,
                 title_hash: T::calculate_hash(&title),
                 author_id: forum_user_id,
-                poll: poll.clone(),
+                poll,
                 cleanup_pay_off: T::ThreadDeposit::get(),
                 number_of_posts: 0,
             };
@@ -938,7 +964,7 @@ decl_module! {
             });
 
             // Add inital post to thread
-            let _ = Self::add_new_post(
+            let initial_post_id = Self::add_new_post(
                 new_thread_id,
                 category_id,
                 &text,
@@ -955,12 +981,13 @@ decl_module! {
             // Generate event
             Self::deposit_event(
                 RawEvent::ThreadCreated(
-                    new_thread_id,
-                    forum_user_id,
                     category_id,
+                    new_thread_id,
+                    initial_post_id,
+                    forum_user_id,
                     title,
                     text,
-                    poll,
+                    poll_input,
                 )
             );
 
@@ -1548,6 +1575,22 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    /// Hash poll description and poll alternatives descriptions, coverting `PollInput` into `Poll`
+    fn from_poll_input(poll_input: PollInput<T::Moment>) -> Poll<T::Moment, T::Hash> {
+        Poll {
+            description_hash: T::calculate_hash(poll_input.description.as_slice()),
+            poll_alternatives: poll_input
+                .poll_alternatives
+                .into_iter()
+                .map(|poll_alternative| PollAlternative {
+                    alternative_text_hash: T::calculate_hash(poll_alternative.as_slice()),
+                    vote_count: 0,
+                })
+                .collect(),
+            end_time: poll_input.end_time,
+        }
+    }
+
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         let _ = Balances::<T>::slash(&thread_account_id, amount);
@@ -1581,6 +1624,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    /// Add new posts & increase thread counter
     pub fn add_new_post(
         thread_id: T::ThreadId,
         category_id: T::CategoryId,
@@ -1638,7 +1682,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure poll is valid
-    fn ensure_poll_is_valid(poll: &Poll<T::Moment, T::Hash>) -> Result<(), Error<T>> {
+    fn ensure_poll_input_is_valid(poll: &PollInput<T::Moment>) -> Result<(), Error<T>> {
         // Poll end time must larger than now
         if poll.end_time < <pallet_timestamp::Module<T>>::now() {
             return Err(Error::<T>::PollTimeSetting);
@@ -1648,9 +1692,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure poll alternative size is valid
-    fn ensure_poll_alternatives_length_is_valid(
-        alternatives: &[PollAlternative<T::Hash>],
-    ) -> Result<(), Error<T>> {
+    fn ensure_poll_alternatives_length_is_valid<K>(alternatives: &[K]) -> Result<(), Error<T>> {
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>(
             alternatives.len() as u64,
         )?;

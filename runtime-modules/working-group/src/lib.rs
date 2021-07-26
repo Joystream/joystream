@@ -42,7 +42,7 @@ mod errors;
 mod tests;
 mod types;
 
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
@@ -104,12 +104,17 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type MaxWorkerNumberLimit: Get<u32>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
-    /// Validates member id and origin combination
+    /// Validates member id and origin combination.
     type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines min unstaking period in the group.
@@ -121,7 +126,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    /// Minimum stake required for applying into an opening
+    /// Minimum stake required for applying into an opening.
     type MinimumApplicationStake: Get<Self::Balance>;
 
     /// Stake needed to create an opening
@@ -339,8 +344,25 @@ decl_module! {
         /// Predefined errors
         type Error = Error<T, I>;
 
-        /// Exports const -  max simultaneous active worker number.
+        /// Exports const
+
+        /// Max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
+
+        /// Defines min unstaking period in the group.
+        const MinUnstakingPeriodLimit: T::BlockNumber = T::MinUnstakingPeriodLimit::get();
+
+        /// Minimum stake required for applying into an opening.
+        const MinimumApplicationStake: T::Balance = T::MinimumApplicationStake::get();
+
+        /// Stake needed to create an opening.
+        const LeaderOpeningStake: T::Balance = T::LeaderOpeningStake::get();
+
+        /// Defines the period every worker gets paid in blocks.
+        const RewardPeriod: u32 = T::RewardPeriod::get();
+
+        /// Staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// # <weight>
         ///
