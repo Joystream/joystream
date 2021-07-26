@@ -316,7 +316,7 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
           createdAt: eventTime,
           updatedAt: eventTime,
           poll: threadPoll,
-          text: bytesToString(alt.alternative_text),
+          text: bytesToString(alt),
           index,
         })
 

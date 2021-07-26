@@ -7,7 +7,7 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithPostsFieldsFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId, PollAlternativeInput, PollInput } from '@joystream/types/forum'
+import { CategoryId, PollInput } from '@joystream/types/forum'
 import { MemberId, ThreadId } from '@joystream/types/common'
 import { CreateInterface } from '@joystream/types'
 import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
@@ -65,14 +65,10 @@ export class CreateThreadsFixture extends StandardizedFixture {
       return null
     }
 
-    const alternatives: CreateInterface<PollAlternativeInput>[] = pollParams.alternatives.map((a) => ({
-      alternative_text: a,
-    }))
-
     return {
       description: pollParams.description,
       end_time: pollParams.endTime.getTime(),
-      poll_alternatives: alternatives,
+      poll_alternatives: pollParams.alternatives,
     }
   }
 
