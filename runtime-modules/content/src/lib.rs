@@ -609,6 +609,9 @@ decl_storage! {
         double_map hasher(blake2_128_concat) T::ThreadId,
         hasher(blake2_128_concat) T::PostId => Post<T>;
 
+     /// Moderator set for each Subreddit
+        pub SubredditByModerator get(fn category_by_moderator) config(): double_map
+            hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) ForumUserId<T> => ();
     }
 }
 
