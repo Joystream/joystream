@@ -6,35 +6,35 @@ use frame_support::StorageMap;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    // /// Authorize auctioneer
-    // pub(crate) fn authorize_auctioneer(
-    //     origin: T::Origin,
-    //     actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-    //     auction_params: &AuctionParams<
-    //         <T as timestamp::Trait>::Moment,
-    //         BalanceOf<T>,
-    //     >,
-    // ) -> Result<T::AccountId, DispatchError> {
-    //     if let AuctionMode::WithoutIsuance(vnft_id) = auction_params.auction_mode {
-    //         let vnft = Self::ensure_vnft_exists(vnft_id)?;
+    /// Authorize auctioneer
+    pub(crate) fn authorize_auctioneer(
+        origin: T::Origin,
+        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        auction_params: &AuctionParams<
+            T::VideoId,
+            <T as pallet_timestamp::Trait>::Moment,
+            BalanceOf<T>,
+        >,
+        video: &Video<T>,
+    ) -> Result<T::AccountId, DispatchError> {
+        let account_id = ensure_signed(origin.clone())?;
 
-    //         // Only members are supposed to start auctions for already existing nfts
-    //         if let ContentActor::Member(member_id) = actor {
-    //             let account_id = Self::authorize_participant(origin, *member_id)?;
+        if let AuctionMode::WithoutIsuance = auction_params.auction_mode {
+            // Only members are supposed to start auctions for already existing nfts
+            if let ContentActor::Member(member_id) = actor {
+                ensure_member_auth_success::<T>(member_id, &account_id)?;
 
-    //             vnft.ensure_ownership::<T>(&account_id)?;
-
-    //             Ok(account_id)
-    //         } else {
-    //             Err(Error::<T>::AuctionDoesNotExist.into())
-    //         }
-    //     } else {
-    //         // TODO: Move to common pallet
-    //         Self::authorize_content_actor(origin.clone(), actor)?;
-    //         let account_id = ensure_signed(origin)?;
-    //         Ok(account_id)
-    //     }
-    // }
+                video.ensure_vnft_ownership::<T>(&account_id)?;
+            } else {
+                return Err(Error::<T>::AuctionDoesNotExist.into())
+            }
+        } else {
+            // TODO: Move to common pallet
+            ensure_actor_authorized_to_create_channel::<T>(origin, actor)
+                .map_err(|_| Error::<T>::ActorNotAuthorizedToIssueNft)?;
+        }
+        Ok(account_id)
+    }
 
     // /// Authorize participant under given member id
     // pub(crate) fn authorize_participant(
@@ -52,7 +52,7 @@ impl<T: Trait> Module<T> {
     // ) -> Result<(), Error<T>> {
     //     // TODO: Move to common pallet
     //     content::ensure_actor_authorized_to_create_channel::<T>(origin.clone(), actor)
-    //         .map_err(|_| Error::<T>::ActorNotAuthorizedToIssueNft)
+    //
     // }
 
     // /// Ensure auction participant has sufficient balance to make bid
@@ -69,15 +69,20 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<<T as pallet_timestamp::Trait>::Moment, BalanceOf<T>>,
+        auction_params: &AuctionParams<
+            T::VideoId,
+            <T as pallet_timestamp::Trait>::Moment,
+            BalanceOf<T>,
+        >,
+        video: &Video<T>,
     ) -> DispatchResult {
         match auction_params.auction_mode {
             AuctionMode::WithIssuance(Some(royalty), _) => {
-                // Self::ensure_vnft_does_not_exist(video_id)?;
+                video.ensure_vnft_not_issued::<T>()?;
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
             AuctionMode::WithoutIsuance => {
-                // Self::ensure_pending_transfer_does_not_exist(vnft_id)?;
+                video.ensure_nft_transactional_status_is_idle::<T>()?;
             }
             _ => (),
         }

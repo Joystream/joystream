@@ -127,8 +127,8 @@ decl_error! {
         /// Provided actor is not an auction auctioneer.
         ActorIsNotAnAuctioneer,
 
-        /// Can not create aution for vNFT, which is already locked for transfer
-        PendingTransferFound,
+        /// Can not create aution for vNFT, if auction have been already started or nft is locked for the transfer
+        NftIsNotIdle,
 
         /// No pending transfers for given vNFT
         PendingTransferDoesNotExist,

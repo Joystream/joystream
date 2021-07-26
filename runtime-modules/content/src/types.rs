@@ -231,7 +231,86 @@ pub struct VideoRecord<
     pub nft_status: NFTStatus<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
 }
 
-// Video alias type for simplification.
+impl<
+        ChannelId,
+        SeriesId,
+        AccountId: PartialEq + Default,
+        Moment: BaseArithmetic + Copy,
+        CuratorGroupId: Default + Copy,
+        CuratorId: Default + Copy,
+        MemberId: Default + Copy,
+        Balance,
+    >
+    VideoRecord<
+        ChannelId,
+        SeriesId,
+        AccountId,
+        Moment,
+        CuratorGroupId,
+        CuratorId,
+        MemberId,
+        Balance,
+    >
+{
+    /// Ensure vnft for given video was not issued
+    pub fn ensure_vnft_not_issued<T: Trait>(&self) -> DispatchResult {
+        if let NFTStatus::NoneIssued = self.nft_status {
+            Ok(())
+        } else {
+            Err(Error::<T>::VNFTAlreadyExists.into())
+        }
+    }
+
+    pub fn ensure_vnft_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
+        if let NFTStatus::Owned(owned_nft) = &self.nft_status {
+            ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
+            Ok(())
+        } else {
+            Err(Error::<T>::VNFTDoesNotExist.into())
+        }
+    }
+
+    pub fn is_nft_auction_started(&self) -> bool {
+        matches!(
+            self.nft_status,
+            NFTStatus::Owned(OwnedNFT {
+                transactional_status: TransactionalStatus::Auction(..),
+                ..
+            })
+        )
+    }
+
+    pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
+        let is_idle = matches!(
+            self.nft_status,
+            NFTStatus::Owned(OwnedNFT {
+                transactional_status: TransactionalStatus::Idle,
+                ..
+            })
+        );
+        ensure!(is_idle, Error::<T>::NftIsNotIdle);
+        Ok(())
+    }
+
+    /// Sets nft transactional status to auction
+    pub fn set_auction_status(
+        mut self,
+        auction: AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
+    ) -> Self {
+        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+            owned_nft.transactional_status = TransactionalStatus::Auction(auction);
+        } else {
+            self.nft_status = NFTStatus::Owned(OwnedNFT {
+                owner: AccountId::default(),
+                transactional_status: TransactionalStatus::Auction(auction),
+                creator_royalty: None,
+            });
+        }
+        self
+    }
+}
+
+/// Video alias type for simplification.
 pub type Video<T> = VideoRecord<
     <T as StorageOwnership>::ChannelId,
     <T as Trait>::SeriesId,

@@ -66,6 +66,7 @@ impl<
     }
 }
 
+/// Owned vNFT representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct OwnedNFT<
@@ -80,6 +81,20 @@ pub struct OwnedNFT<
     pub transactional_status:
         TransactionalStatus<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
     pub creator_royalty: Option<(AccountId, Royalty)>,
+}
+
+impl<
+        AccountId: PartialEq,
+        Moment: BaseArithmetic + Copy,
+        CuratorGroupId: Default + Copy,
+        CuratorId: Default + Copy,
+        MemberId: Default + Copy,
+        Balance,
+    > OwnedNFT<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
+{
+    pub fn is_owner(&self, account_id: &AccountId) -> bool {
+        self.owner.eq(account_id)
+    }
 }
 
 /// Enum, representing nft issuance status
@@ -160,10 +175,10 @@ impl<
     > AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
 {
     /// Create a new auction record with provided parameters
-    pub fn new(
+    pub fn new<VideoId>(
         auctioneer: ContentActor<CuratorGroupId, CuratorId, MemberId>,
         auctioneer_account_id: AccountId,
-        auction_params: AuctionParams<Moment, Balance>,
+        auction_params: AuctionParams<VideoId, Moment, Balance>,
     ) -> Self {
         let AuctionParams {
             auction_mode,
@@ -255,7 +270,8 @@ pub type Auction<T> = AuctionRecord<
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParams<Moment, Balance> {
+pub struct AuctionParams<VideoId, Moment, Balance> {
+    pub video_id: VideoId,
     pub auction_mode: AuctionMode,
     pub round_time: Moment,
     pub starting_price: Balance,

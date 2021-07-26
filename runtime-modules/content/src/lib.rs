@@ -21,7 +21,11 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 use frame_support::{
-    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
+    decl_event, decl_module, decl_storage,
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+    traits::Get,
+    Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
@@ -937,6 +941,276 @@ decl_module! {
         ) {
             Self::not_implemented()?;
         }
+
+        /// Start video auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn start_video_auction(
+            origin,
+            auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            auction_params: AuctionParams<T::VideoId, <T as pallet_timestamp::Trait>::Moment, BalanceOf<T>>,
+        ) {
+
+            let video_id = auction_params.video_id;
+
+            // Ensure given video exist
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            let auctioneer_account_id = Self::authorize_auctioneer(origin, &auctioneer, &auction_params, &video)?;
+
+            // Validate round_time & starting_price
+            Self::validate_auction_params(&auction_params, &video)?;
+
+            // Ensure nft auction is not started
+            ensure!(!video.is_nft_auction_started(), Error::<T>::AuctionAlreadyStarted);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Create new auction
+            let auction = AuctionRecord::new(auctioneer, auctioneer_account_id, auction_params.clone());
+            let video = video.set_auction_status(auction);
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionStarted(auctioneer, auction_params));
+        }
+
+        // /// Cancel video auction
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn cancel_auction(
+        //     origin,
+        //     auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        //     auction_id: AuctionId<VideoId<T>, T::VNFTId>,
+        // ) {
+
+        //     Self::authorize_content_actor(origin, &auctioneer)?;
+
+        //     // Ensure auction for given video id exists
+        //     let auction = Self::ensure_auction_exists(auction_id)?;
+
+        //     // Ensure given auction has no participants
+        //     auction.ensure_is_not_active::<T>()?;
+
+        //     // Ensure given conntent actor is auctioneer
+        //     auction.ensure_is_auctioneer::<T>(&auctioneer)?;
+
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+
+        //     // Try complete previous auction
+        //     if Self::try_complete_auction(&auction) {
+        //         return Ok(())
+        //     }
+
+        //     <AuctionById<T>>::remove(auction_id);
+
+        //     // Trigger event
+        //     Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, auction_id));
+        // }
+
+        // /// Make auction bid
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn make_bid(
+        //     origin,
+        //     participant: MemberId<T>,
+        //     auction_id: AuctionId<VideoId<T>, T::VNFTId>,
+        //     bid: BalanceOf<T>,
+        // ) {
+
+        //     let auction_participant = Self::authorize_participant(origin, participant)?;
+
+        //     // Ensure auction exists
+        //     let auction = Self::ensure_auction_exists(auction_id)?;
+
+
+        //     // Ensure bidder have sufficient balance amount to reserve for bid
+        //     Self::ensure_has_sufficient_balance(&auction_participant, bid)?;
+
+        //     // Ensure new bid is greater then last bid + minimal bid step
+        //     auction.ensure_is_valid_bid::<T>(bid)?;
+
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+
+        //     // Try complete previous auction
+        //     if Self::try_complete_auction(&auction) {
+        //         return Ok(())
+        //     }
+
+        //     let last_bid_time = timestamp::Module::<T>::now();
+
+        //     // Unreserve previous bidder balance
+        //     T::NftCurrencyProvider::unreserve(&auction.last_bidder, auction.last_bid);
+
+        //     // Make auction bid & update auction data
+        //     let auction = match *&auction.buy_now_price {
+        //         // Instantly complete auction if bid is greater or equal then buy now price
+        //         Some(buy_now_price) if bid >= buy_now_price => {
+        //             // Reseve balance for current bid
+        //             // Can not fail, needed check made
+        //             T::NftCurrencyProvider::reserve(&auction_participant, buy_now_price)?;
+
+        //             let auction = auction.make_bid::<T>(auction_participant, buy_now_price, last_bid_time);
+        //             Self::complete_auction(&auction);
+        //             return Ok(())
+        //         }
+        //         _ => {
+        //             // Reseve balance for current bid
+        //             // Can not fail, needed check made
+        //             T::NftCurrencyProvider::reserve(&auction_participant, bid)?;
+        //             auction.make_bid::<T>(auction_participant, bid, last_bid_time)
+        //         }
+        //     };
+
+        //     <AuctionById<T>>::insert(auction_id, auction);
+
+        //     // Trigger event
+        //     Self::deposit_event(RawEvent::AuctionBidMade(participant, auction_id, bid));
+        // }
+
+        // /// Issue vNFT
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn issue(
+        //     origin,
+        //     auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        //     video_id: T::VideoId,
+        //     royalty: Option<Royalty>,
+        // ) {
+
+        //     // Authorize content actor
+        //     Self::authorize_content_actor(origin.clone(), &auctioneer)?;
+
+        //     let content_actor_account_id = ensure_signed(origin)?;
+
+        //     Self::ensure_vnft_does_not_exist(video_id)?;
+
+        //     // Enure royalty bounds satisfied, if provided
+        //     if let Some(royalty) = royalty {
+        //         Self::ensure_royalty_bounds_satisfied(royalty)?;
+        //     }
+
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+
+        //     let auction_id = AuctionId::VideoId(video_id);
+
+        //     // Try complete auction
+        //     if Self::is_auction_exist(auction_id) {
+
+        //         let auction = Self::auction_by_id(auction_id);
+
+        //         // Try finalize already completed auction (issues new nft if required)
+        //         Self::try_complete_auction(&auction);
+        //         return Ok(())
+        //     }
+
+        //     // Issue vNFT
+
+        //     let royalty = royalty.map(|royalty| (content_actor_account_id.clone(), royalty));
+
+        //     Self::issue_vnft(content_actor_account_id, video_id, royalty);
+        // }
+
+        // /// Start vNFT transfer
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn start_transfer(
+        //     origin,
+        //     vnft_id: T::VNFTId,
+        //     from: MemberId<T>,
+        //     to: MemberId<T>,
+        // ) {
+
+        //     // Authorize participant under given member id
+        //     let from_account_id = Self::authorize_participant(origin, from)?;
+
+        //     // Ensure given vnft exists
+        //     let vnft = Self::ensure_vnft_exists(vnft_id)?;
+
+        //     // Ensure from_account_id is vnft owner
+        //     vnft.ensure_ownership::<T>(&from_account_id)?;
+
+        //     // Ensure there is no auction for given vnft
+        //     Self::ensure_auction_does_not_exist(AuctionId::VNFTId(vnft_id))?;
+
+        //     // Ensure pending transfer isn`t started
+        //     Self::ensure_pending_transfer_does_not_exist(vnft_id)?;
+
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+
+        //     // Add vNFT transfer data to pending transfers storage
+        //     <PendingTransfers<T>>::insert(vnft_id, to, ());
+
+        //     // Trigger event
+        //     Self::deposit_event(RawEvent::TransferStarted(vnft_id, from, to));
+        // }
+
+        // /// Cancel vNFT transfer
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn cancel_transfer(
+        //     origin,
+        //     vnft_id: T::VNFTId,
+        //     participant: MemberId<T>,
+        // ) {
+
+        //     let participant_account_id = Self::authorize_participant(origin, participant)?;
+
+        //     Self::ensure_pending_transfer_exists(vnft_id)?;
+
+        //     let vnft = Self::ensure_vnft_exists(vnft_id)?;
+        //     vnft.ensure_ownership::<T>(&participant_account_id)?;
+
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+
+        //     // Remove vNFT transfer data from pending transfers storage
+        //     // Safe to call, because we always have one transfers per vnft_id
+        //     <PendingTransfers<T>>::remove_prefix(vnft_id);
+
+        //     // Trigger event
+        //     Self::deposit_event(RawEvent::TransferCancelled(vnft_id, participant));
+        // }
+
+        // /// Accept incoming vNFT transfer
+        // #[weight = 10_000_000] // TODO: adjust weight
+        // pub fn accept_incoming_vnft(
+        //     origin,
+        //     vnft_id: T::VNFTId,
+        //     participant: MemberId<T>,
+        // ) {
+
+        //     let participant_account_id = Self::authorize_participant(origin, participant)?;
+
+        //     Self::ensure_pending_transfer_exists(vnft_id)?;
+
+        //     // Ensure new pending transfer available to proceed
+        //     Self::ensure_new_pending_transfer_available(vnft_id, participant)?;
+
+        //     let mut vnft = Self::ensure_vnft_exists(vnft_id)?;
+
+        //     //
+        //     // == MUTATION SAFE ==
+        //     //
+
+        //     // Remove vNFT transfer data from pending transfers storage
+        //     // Safe to call, because we always have one transfers per vnft_id
+        //     <PendingTransfers<T>>::remove_prefix(vnft_id);
+
+
+        //     vnft.owner = participant_account_id;
+        //     <VNFTById<T>>::insert(vnft_id, vnft);
+
+        //     // Trigger event
+        //     Self::deposit_event(RawEvent::TransferAccepted(vnft_id, participant));
+        // }
     }
 }
 
@@ -1061,6 +1335,7 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             <T as MembershipTypes>::MemberId,
         >,
+        <T as MembershipTypes>::MemberId,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
@@ -1079,6 +1354,14 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        AuctionParams = AuctionParams<
+            <T as Trait>::VideoId,
+            <T as pallet_timestamp::Trait>::Moment,
+            BalanceOf<T>,
+        >,
+        Balance = BalanceOf<T>,
+        Auction = Auction<T>,
+        CreatorRoyalty = Option<(<T as frame_system::Trait>::AccountId, Royalty)>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1198,5 +1481,15 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
+
+        // vNFT auction
+        AuctionStarted(ContentActor, AuctionParams),
+        NftIssued(VideoId, CreatorRoyalty),
+        AuctionBidMade(MemberId, VideoId, Balance),
+        AuctionCancelled(ContentActor, VideoId),
+        AuctionCompleted(Auction),
+        TransferStarted(VideoId, MemberId, MemberId),
+        TransferCancelled(VideoId, MemberId),
+        TransferAccepted(VideoId, MemberId),
     }
 );

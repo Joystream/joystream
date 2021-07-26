@@ -55,4 +55,3 @@ pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
         content_ids: &[T::ContentId],
     ) -> DispatchResult;
 }
-
