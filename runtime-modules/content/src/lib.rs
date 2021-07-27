@@ -1102,6 +1102,44 @@ decl_module! {
             }
         }
 
+        /// Complete video auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn complete_video_auction(
+            origin,
+            participant_id: T::MemberId,
+            video_id: T::VideoId,
+        ) {
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure auction for given video id exists
+            video.ensure_nft_auction_started::<T>()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if let Some(auction) = video.get_nft_auction_ref() {
+
+                // Complete auction if round time expired
+                let now = pallet_timestamp::Module::<T>::now();
+
+                if auction.is_nft_auction_round_time_expired(now) {
+                    let last_bid = auction.last_bid;
+                    let video = Self::complete_auction(video, video_id);
+
+                    // Update the video
+                    VideoById::<T>::insert(video_id, video);
+
+                    // Trigger event
+                    Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, last_bid));
+                }
+            }
+        }
+
         /// Issue vNFT
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn issue(

@@ -379,10 +379,7 @@ impl<
     }
 
     /// Completes vnft transfer
-    pub fn complete_vnft_transfer(
-        mut self,
-        new_owner: AccountId,
-    ) -> Self {
+    pub fn complete_vnft_transfer(mut self, new_owner: AccountId) -> Self {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::PendingTransferTo(..),
             ref mut owner,
