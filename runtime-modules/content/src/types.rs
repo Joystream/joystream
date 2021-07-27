@@ -289,20 +289,54 @@ impl<
         Ok(())
     }
 
-    pub fn ensure_nft_auction_started<T: Trait>(
+    pub fn ensure_nft_auction_started<T: Trait>(&self) -> DispatchResult {
+        self.get_nft_auction_ref()
+            .ok_or(Error::<T>::AuctionDidNotStart)?;
+        Ok(())
+    }
+
+    pub fn get_nft_auction(
         &self,
-    ) -> Result<
-        AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
-        Error<T>,
-    > {
+    ) -> Option<AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
+    {
         if let NFTStatus::Owned(OwnedNFT {
-            transactional_status: TransactionalStatus::Auction(auction),
+            transactional_status: TransactionalStatus::Auction(ref auction),
             ..
-        }) = &self.nft_status
+        }) = self.nft_status
         {
-            Ok(auction.clone())
+            Some(auction.clone())
         } else {
-            Err(Error::<T>::AuctionDidNotStart)
+            None
+        }
+    }
+
+    pub fn get_nft_auction_ref(
+        &self,
+    ) -> Option<&AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
+    {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::Auction(ref auction),
+            ..
+        }) = self.nft_status
+        {
+            Some(auction)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_nft_auction_ref_mut(
+        &mut self,
+    ) -> Option<&mut AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
+    {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::Auction(ref mut auction),
+            ..
+        }) = self.nft_status
+        {
+            Some(auction)
+        } else {
+            None
         }
     }
 

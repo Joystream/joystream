@@ -47,6 +47,7 @@ pub use common::{
     working_group::WorkingGroup,
     MembershipTypes, StorageOwnership, Url,
 };
+use frame_support::traits::{Currency, ReservableCurrency};
 
 /// A numeric identifier trait
 pub trait NumericIdentifier:
@@ -992,19 +993,24 @@ decl_module! {
             Self::authorize_content_actor(origin, &auctioneer)?;
 
             // Ensure auction for given video id exists
-            let auction = video.ensure_nft_auction_started::<T>()?;
+            video.ensure_nft_auction_started::<T>()?;
 
-            // Return if auction round time expired
-            let now = pallet_timestamp::Module::<T>::now();
-            if auction.is_nft_auction_round_time_expired(now) {
-                return Ok(())
+
+            if let Some(auction) = video.get_nft_auction_ref() {
+
+                // Return if auction round time expired
+                let now = pallet_timestamp::Module::<T>::now();
+
+                if auction.is_nft_auction_round_time_expired(now) {
+                    return Ok(())
+                }
+
+                // Ensure given conntent actor is auctioneer
+                auction.ensure_is_auctioneer::<T>(&auctioneer)?;
+
+                // Ensure auction is not active
+                auction.ensure_is_not_active::<T>()?;
             }
-
-            // Ensure given conntent actor is auctioneer
-            auction.ensure_is_auctioneer::<T>(&auctioneer)?;
-
-            // Ensure auction is not active
-            auction.ensure_is_not_active::<T>()?;
 
             //
             // == MUTATION SAFE ==
@@ -1019,66 +1025,82 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, video_id));
         }
 
-        // /// Make auction bid
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn make_bid(
-        //     origin,
-        //     participant: MemberId<T>,
-        //     auction_id: AuctionId<VideoId<T>, T::VNFTId>,
-        //     bid: BalanceOf<T>,
-        // ) {
+        /// Make auction bid
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn make_bid(
+            origin,
+            participant_id: T::MemberId,
+            video_id: T::VideoId,
+            bid: BalanceOf<T>,
+        ) {
 
-        //     let auction_participant = Self::authorize_participant(origin, participant)?;
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
-        //     // Ensure auction exists
-        //     let auction = Self::ensure_auction_exists(auction_id)?;
+            // Ensure bidder have sufficient balance amount to reserve for bid
+            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
 
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-        //     // Ensure bidder have sufficient balance amount to reserve for bid
-        //     Self::ensure_has_sufficient_balance(&auction_participant, bid)?;
+            // Ensure auction for given video id exists
+            video.ensure_nft_auction_started::<T>()?;
 
-        //     // Ensure new bid is greater then last bid + minimal bid step
-        //     auction.ensure_is_valid_bid::<T>(bid)?;
+            if let Some(auction) = video.get_nft_auction_ref() {
+                // Return if auction round time expired
+                let now = pallet_timestamp::Module::<T>::now();
+                if auction.is_nft_auction_round_time_expired(now) {
+                    return Ok(())
+                }
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+                // Ensure new bid is greater then last bid + minimal bid step
+                auction.ensure_is_valid_bid::<T>(bid)?;
+            }
 
-        //     // Try complete previous auction
-        //     if Self::try_complete_auction(&auction) {
-        //         return Ok(())
-        //     }
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //     let last_bid_time = timestamp::Module::<T>::now();
+            let mut video = video;
 
-        //     // Unreserve previous bidder balance
-        //     T::NftCurrencyProvider::unreserve(&auction.last_bidder, auction.last_bid);
+            if let Some(auction) = video.get_nft_auction_ref_mut() {
 
-        //     // Make auction bid & update auction data
-        //     let auction = match *&auction.buy_now_price {
-        //         // Instantly complete auction if bid is greater or equal then buy now price
-        //         Some(buy_now_price) if bid >= buy_now_price => {
-        //             // Reseve balance for current bid
-        //             // Can not fail, needed check made
-        //             T::NftCurrencyProvider::reserve(&auction_participant, buy_now_price)?;
+                let last_bid_time = pallet_timestamp::Module::<T>::now();
 
-        //             let auction = auction.make_bid::<T>(auction_participant, buy_now_price, last_bid_time);
-        //             Self::complete_auction(&auction);
-        //             return Ok(())
-        //         }
-        //         _ => {
-        //             // Reseve balance for current bid
-        //             // Can not fail, needed check made
-        //             T::NftCurrencyProvider::reserve(&auction_participant, bid)?;
-        //             auction.make_bid::<T>(auction_participant, bid, last_bid_time)
-        //         }
-        //     };
+                // Unreserve previous bidder balance
+                T::Currency::unreserve(&auction.last_bidder, auction.last_bid);
 
-        //     <AuctionById<T>>::insert(auction_id, auction);
+                // TODO switch to StakingHandler representation after merging with olympia
 
-        //     // Trigger event
-        //     Self::deposit_event(RawEvent::AuctionBidMade(participant, auction_id, bid));
-        // }
+                // Make auction bid & update auction data
+                match *&auction.buy_now_price {
+                    // Instantly complete auction if bid is greater or equal then buy now price
+                    Some(buy_now_price) if bid >= buy_now_price => {
+                        // Reseve balance for current bid
+                        // Can not fail, needed check made
+                        T::Currency::reserve(&participant_account_id, buy_now_price)?;
+                        auction.make_bid::<T>(participant_account_id, buy_now_price, last_bid_time);
+
+                        let video = Self::complete_auction(video, video_id);
+                        VideoById::<T>::insert(video_id, video);
+
+                        // Trigger event
+                        Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, buy_now_price));
+                    }
+                    _ => {
+                        // Reseve balance for current bid
+                        // Can not fail, needed check made
+                        T::Currency::reserve(&participant_account_id, bid)?;
+                        auction.make_bid::<T>(participant_account_id, bid, last_bid_time);
+
+                        VideoById::<T>::insert(video_id, video);
+
+                        // Trigger event
+                        Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
+                    }
+                };
+            }
+        }
 
         // /// Issue vNFT
         // #[weight = 10_000_000] // TODO: adjust weight
@@ -1367,8 +1389,14 @@ decl_event!(
             BalanceOf<T>,
         >,
         Balance = BalanceOf<T>,
-        Auction = Auction<T>,
-        CreatorRoyalty = Option<(<T as frame_system::Trait>::AccountId, Royalty)>,
+        NFTStatus = NFTStatus<
+            <T as frame_system::Trait>::AccountId,
+            <T as pallet_timestamp::Trait>::Moment,
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            <T as ContentActorAuthenticator>::CuratorId,
+            <T as MembershipTypes>::MemberId,
+            BalanceOf<T>
+        >,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1491,10 +1519,10 @@ decl_event!(
 
         // vNFT auction
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(VideoId, CreatorRoyalty),
+        NftIssued(VideoId, NFTStatus),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionCancelled(ContentActor, VideoId),
-        AuctionCompleted(Auction),
+        AuctionCompleted(MemberId, VideoId, Balance),
         TransferStarted(VideoId, MemberId, MemberId),
         TransferCancelled(VideoId, MemberId),
         TransferAccepted(VideoId, MemberId),

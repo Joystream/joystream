@@ -221,16 +221,10 @@ impl<
     }
 
     /// Make auction bid
-    pub fn make_bid<T: Trait>(
-        mut self,
-        who: AccountId,
-        bid: Balance,
-        last_bid_time: Moment,
-    ) -> Self {
+    pub fn make_bid<T: Trait>(&mut self, who: AccountId, bid: Balance, last_bid_time: Moment) {
         self.last_bidder = who;
         self.last_bid = bid;
         self.last_bid_time = last_bid_time;
-        self
     }
 
     // We assume that default AccountId can not make any bids

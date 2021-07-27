@@ -46,17 +46,17 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // /// Ensure auction participant has sufficient balance to make bid
-    // pub(crate) fn ensure_has_sufficient_balance(
-    //     participant: &T::AccountId,
-    //     bid: BalanceOf<T>,
-    // ) -> DispatchResult {
-    //     ensure!(
-    //         T::NftCurrencyProvider::can_reserve(participant, bid),
-    //         Error::<T>::InsufficientBalance
-    //     );
-    //     Ok(())
-    // }
+    /// Ensure auction participant has sufficient balance to make bid
+    pub(crate) fn ensure_has_sufficient_balance(
+        participant: &T::AccountId,
+        bid: BalanceOf<T>,
+    ) -> DispatchResult {
+        ensure!(
+            T::Currency::can_reserve(participant, bid),
+            Error::<T>::InsufficientBalance
+        );
+        Ok(())
+    }
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
@@ -139,6 +139,92 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Issue vnft
+    pub(crate) fn issue_vnft(
+        video: &mut Video<T>,
+        video_id: T::VideoId,
+        owner: T::AccountId,
+        creator_royalty: Option<(T::AccountId, Royalty)>,
+    ) {
+        video.nft_status = NFTStatus::Owned(OwnedNFT {
+            owner,
+            transactional_status: TransactionalStatus::Idle,
+            creator_royalty,
+        });
+
+        Self::deposit_event(RawEvent::NftIssued(video_id, video.nft_status.clone()));
+    }
+
+    /// Complete vnft transfer
+    pub(crate) fn complete_vnft_auction_transfer(video: &mut Video<T>) {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::Auction(auction),
+            creator_royalty,
+            ..
+        }) = &video.nft_status
+        {
+            let last_bid = auction.last_bid;
+
+            if let Some((creator_account_id, creator_royalty)) = creator_royalty {
+                let royalty = *creator_royalty * last_bid;
+
+                // Slash last bidder bid
+                T::Currency::slash_reserved(&auction.last_bidder, last_bid);
+
+                // Deposit bid, exluding royalty amount into auctioneer account
+                T::Currency::deposit_creating(&auction.auctioneer_account_id, last_bid - royalty);
+
+                // Deposit royalty into creator account
+                T::Currency::deposit_creating(&creator_account_id, royalty);
+            } else {
+                // Slash last bidder bid and deposit it into auctioneer account
+                T::Currency::slash_reserved(&auction.last_bidder, last_bid);
+
+                T::Currency::deposit_creating(&auction.auctioneer_account_id, last_bid);
+            }
+
+            video.nft_status = NFTStatus::Owned(OwnedNFT {
+                owner: auction.last_bidder.clone(),
+                transactional_status: TransactionalStatus::Idle,
+                creator_royalty: creator_royalty.clone(),
+            });
+        }
+    }
+
+    /// Complete auction
+    pub(crate) fn complete_auction(mut video: Video<T>, video_id: T::VideoId) -> Video<T> {
+        let auction = video.get_nft_auction();
+
+        if let Some(auction) = auction {
+            match &auction.auction_mode {
+                AuctionMode::WithIssuance(royalty, _) => {
+                    let last_bid = auction.last_bid;
+
+                    // Slash last bidder bid and deposit it into auctioneer account
+                    T::Currency::slash_reserved(&auction.last_bidder, last_bid);
+                    T::Currency::deposit_creating(&auction.auctioneer_account_id, last_bid);
+
+                    let creator_royalty = if let Some(royalty) = royalty {
+                        Some((auction.auctioneer_account_id.clone(), royalty.to_owned()))
+                    } else {
+                        None
+                    };
+
+                    Self::issue_vnft(
+                        &mut video,
+                        video_id,
+                        auction.last_bidder.clone(),
+                        creator_royalty,
+                    );
+                }
+                AuctionMode::WithoutIsuance => {
+                    Self::complete_vnft_auction_transfer(&mut video);
+                }
+            }
+        }
+        video
+    }
+
     // /// Check whether auction for given video id exists
     // pub(crate) fn is_auction_exist(auction_id: AuctionId<VideoId<T>, T::VNFTId>) -> bool {
     //     <AuctionById<T>>::contains_key(auction_id)
@@ -217,93 +303,5 @@ impl<T: Trait> Module<T> {
     //         Error::<T>::VNFTAlreadyExists
     //     );
     //     Ok(())
-    // }
-
-    // /// Try complete auction when round time expired
-    // pub(crate) fn try_complete_auction(auction: &Auction<T>) -> bool {
-    //     let now = timestamp::Module::<T>::now();
-    //     if (now - auction.last_bid_time) >= auction.round_time {
-    //         Self::complete_auction(auction);
-    //         true
-    //     } else {
-    //         false
-    //     }
-    // }
-
-    // /// Complete auction
-    // pub(crate) fn complete_auction(auction: &Auction<T>) {
-    //     let auction_id = auction.auction_mode.get_auction_id();
-
-    //     // Remove auction entry
-    //     <AuctionById<T>>::remove(auction_id);
-
-    //     match auction.auction_mode.clone() {
-    //         AuctionMode::WithIssuance(video_id, royalty, _) => {
-    //             let last_bid = auction.last_bid;
-
-    //             // Slash last bidder bid and deposit it into auctioneer account
-    //             T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
-    //             T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
-
-    //             let creator_royalty = if let Some(royalty) = royalty {
-    //                 Some((auction.auctioneer_account_id.clone(), royalty))
-    //             } else {
-    //                 None
-    //             };
-
-    //             <Module<T>>::issue_vnft(auction.last_bidder.clone(), video_id, creator_royalty)
-    //         }
-    //         AuctionMode::WithoutIsuance(vnft_id) => {
-    //             <Module<T>>::complete_vnft_auction_transfer(auction, vnft_id)
-    //         }
-    //     }
-    //     Self::deposit_event(RawEvent::AuctionCompleted(auction.to_owned()));
-    // }
-
-    // /// Issue vnft and update mapping relations
-    // pub(crate) fn issue_vnft(
-    //     who: T::AccountId,
-    //     video_id: T::VideoId,
-    //     creator_royalty: Option<(T::AccountId, Royalty)>,
-    // ) {
-    //     // Issue vnft
-    //     let vnft_id = Self::next_video_nft_id();
-
-    //     <VNFTIdByVideo<T>>::insert(video_id, vnft_id);
-
-    //     <VNFTById<T>>::insert(vnft_id, VNFT::new(who, creator_royalty.clone()));
-
-    //     NextVNFTId::<T>::put(vnft_id + T::VNFTId::one());
-
-    //     Self::deposit_event(RawEvent::NftIssued(video_id, vnft_id, creator_royalty));
-    // }
-
-    // /// Complete vnft transfer
-    // pub(crate) fn complete_vnft_auction_transfer(auction: &Auction<T>, vnft_id: T::VNFTId) {
-    //     let vnft = Self::vnft_by_vnft_id(vnft_id);
-    //     let last_bid = auction.last_bid;
-
-    //     if let Some((creator_account_id, creator_royalty)) = vnft.creator_royalty {
-    //         let royalty = creator_royalty * last_bid;
-
-    //         // Slash last bidder bid
-    //         T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
-
-    //         // Deposit bid, exluding royalty amount into auctioneer account
-    //         T::NftCurrencyProvider::deposit_creating(
-    //             &auction.auctioneer_account_id,
-    //             last_bid - royalty,
-    //         );
-
-    //         // Deposit royalty into creator account
-    //         T::NftCurrencyProvider::deposit_creating(&creator_account_id, royalty);
-    //     } else {
-    //         // Slash last bidder bid and deposit it into auctioneer account
-    //         T::NftCurrencyProvider::slash_reserved(&auction.last_bidder, last_bid);
-
-    //         T::NftCurrencyProvider::deposit_creating(&auction.auctioneer_account_id, last_bid);
-    //     }
-
-    //     <VNFTById<T>>::mutate(vnft_id, |vnft| vnft.owner = auction.last_bidder.clone());
     // }
 }
