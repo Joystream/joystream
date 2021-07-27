@@ -58,9 +58,6 @@ input BaseWhereInput {
 """GraphQL representation of BigInt"""
 scalar BigInt
 
-"""GraphQL representation of Bytes"""
-scalar Bytes
-
 """
 The javascript `Date` as string. Type represents date and time as the ISO Date string.
 """
@@ -79,10 +76,16 @@ type DistributionBucket implements BaseGraphQLObject {
   deletedAt: DateTime
   deletedById: String
   version: Int!
-  distributedBags: [StorageBag!]!
+  family: DistributionBucketFamily!
+  familyId: String!
+  operators: [DistributionBucketOperator!]!
 
-  """Distribution bucket operator metadata"""
-  operatorMetadata: Bytes
+  """Whether the bucket is accepting any new bags"""
+  acceptingNewBags: Boolean!
+
+  """Whether the bucket is currently distributing content"""
+  distributing: Boolean!
+  distributedBags: [StorageBag!]!
 }
 
 type DistributionBucketConnection {
@@ -92,12 +95,423 @@ type DistributionBucketConnection {
 }
 
 input DistributionBucketCreateInput {
-  operatorMetadata: Bytes
+  family: ID!
+  acceptingNewBags: Boolean!
+  distributing: Boolean!
 }
 
 type DistributionBucketEdge {
   node: DistributionBucket!
   cursor: String!
+}
+
+type DistributionBucketFamily implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+  metadata: DistributionBucketFamilyMetadata
+  metadataId: String
+  buckets: [DistributionBucket!]!
+}
+
+type DistributionBucketFamilyConnection {
+  totalCount: Int!
+  edges: [DistributionBucketFamilyEdge!]!
+  pageInfo: PageInfo!
+}
+
+input DistributionBucketFamilyCreateInput {
+  metadata: ID
+}
+
+type DistributionBucketFamilyEdge {
+  node: DistributionBucketFamily!
+  cursor: String!
+}
+
+type DistributionBucketFamilyMetadata implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Name of the geographical region covered by the family (ie.: us-east-1)"""
+  region: String
+
+  """
+  Optional, more specific description of the region covered by the family
+  """
+  description: String
+  boundary: [GeoCoordinates!]!
+  distributionbucketfamilymetadata: [DistributionBucketFamily!]
+}
+
+type DistributionBucketFamilyMetadataConnection {
+  totalCount: Int!
+  edges: [DistributionBucketFamilyMetadataEdge!]!
+  pageInfo: PageInfo!
+}
+
+input DistributionBucketFamilyMetadataCreateInput {
+  region: String
+  description: String
+}
+
+type DistributionBucketFamilyMetadataEdge {
+  node: DistributionBucketFamilyMetadata!
+  cursor: String!
+}
+
+enum DistributionBucketFamilyMetadataOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  region_ASC
+  region_DESC
+  description_ASC
+  description_DESC
+}
+
+input DistributionBucketFamilyMetadataUpdateInput {
+  region: String
+  description: String
+}
+
+input DistributionBucketFamilyMetadataWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  region_eq: String
+  region_contains: String
+  region_startsWith: String
+  region_endsWith: String
+  region_in: [String!]
+  description_eq: String
+  description_contains: String
+  description_startsWith: String
+  description_endsWith: String
+  description_in: [String!]
+  boundary_none: GeoCoordinatesWhereInput
+  boundary_some: GeoCoordinatesWhereInput
+  boundary_every: GeoCoordinatesWhereInput
+  distributionbucketfamilymetadata_none: DistributionBucketFamilyWhereInput
+  distributionbucketfamilymetadata_some: DistributionBucketFamilyWhereInput
+  distributionbucketfamilymetadata_every: DistributionBucketFamilyWhereInput
+  AND: [DistributionBucketFamilyMetadataWhereInput!]
+  OR: [DistributionBucketFamilyMetadataWhereInput!]
+}
+
+input DistributionBucketFamilyMetadataWhereUniqueInput {
+  id: ID!
+}
+
+enum DistributionBucketFamilyOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  metadata_ASC
+  metadata_DESC
+}
+
+input DistributionBucketFamilyUpdateInput {
+  metadata: ID
+}
+
+input DistributionBucketFamilyWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  metadata_eq: ID
+  metadata_in: [ID!]
+  metadata: DistributionBucketFamilyMetadataWhereInput
+  buckets_none: DistributionBucketWhereInput
+  buckets_some: DistributionBucketWhereInput
+  buckets_every: DistributionBucketWhereInput
+  AND: [DistributionBucketFamilyWhereInput!]
+  OR: [DistributionBucketFamilyWhereInput!]
+}
+
+input DistributionBucketFamilyWhereUniqueInput {
+  id: ID!
+}
+
+type DistributionBucketOperator implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+  distributionBucket: DistributionBucket!
+  distributionBucketId: String!
+
+  """ID of the distribution group worker"""
+  workerId: Int!
+
+  """Current operator status"""
+  status: DistributionBucketOperatorStatus!
+  metadata: DistributionBucketOperatorMetadata
+  metadataId: String
+}
+
+type DistributionBucketOperatorConnection {
+  totalCount: Int!
+  edges: [DistributionBucketOperatorEdge!]!
+  pageInfo: PageInfo!
+}
+
+input DistributionBucketOperatorCreateInput {
+  distributionBucket: ID!
+  workerId: Float!
+  status: DistributionBucketOperatorStatus!
+  metadata: ID
+}
+
+type DistributionBucketOperatorEdge {
+  node: DistributionBucketOperator!
+  cursor: String!
+}
+
+type DistributionBucketOperatorMetadata implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Root distributor node api endpoint"""
+  nodeEndpoint: String
+  nodeLocation: NodeLocationMetadata
+  nodeLocationId: String
+
+  """Additional information about the node/operator"""
+  extra: String
+  distributionbucketoperatormetadata: [DistributionBucketOperator!]
+}
+
+type DistributionBucketOperatorMetadataConnection {
+  totalCount: Int!
+  edges: [DistributionBucketOperatorMetadataEdge!]!
+  pageInfo: PageInfo!
+}
+
+input DistributionBucketOperatorMetadataCreateInput {
+  nodeEndpoint: String
+  nodeLocation: ID
+  extra: String
+}
+
+type DistributionBucketOperatorMetadataEdge {
+  node: DistributionBucketOperatorMetadata!
+  cursor: String!
+}
+
+enum DistributionBucketOperatorMetadataOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  nodeEndpoint_ASC
+  nodeEndpoint_DESC
+  nodeLocation_ASC
+  nodeLocation_DESC
+  extra_ASC
+  extra_DESC
+}
+
+input DistributionBucketOperatorMetadataUpdateInput {
+  nodeEndpoint: String
+  nodeLocation: ID
+  extra: String
+}
+
+input DistributionBucketOperatorMetadataWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  nodeEndpoint_eq: String
+  nodeEndpoint_contains: String
+  nodeEndpoint_startsWith: String
+  nodeEndpoint_endsWith: String
+  nodeEndpoint_in: [String!]
+  nodeLocation_eq: ID
+  nodeLocation_in: [ID!]
+  extra_eq: String
+  extra_contains: String
+  extra_startsWith: String
+  extra_endsWith: String
+  extra_in: [String!]
+  nodeLocation: NodeLocationMetadataWhereInput
+  distributionbucketoperatormetadata_none: DistributionBucketOperatorWhereInput
+  distributionbucketoperatormetadata_some: DistributionBucketOperatorWhereInput
+  distributionbucketoperatormetadata_every: DistributionBucketOperatorWhereInput
+  AND: [DistributionBucketOperatorMetadataWhereInput!]
+  OR: [DistributionBucketOperatorMetadataWhereInput!]
+}
+
+input DistributionBucketOperatorMetadataWhereUniqueInput {
+  id: ID!
+}
+
+enum DistributionBucketOperatorOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  distributionBucket_ASC
+  distributionBucket_DESC
+  workerId_ASC
+  workerId_DESC
+  status_ASC
+  status_DESC
+  metadata_ASC
+  metadata_DESC
+}
+
+enum DistributionBucketOperatorStatus {
+  INVITED
+  ACTIVE
+}
+
+input DistributionBucketOperatorUpdateInput {
+  distributionBucket: ID
+  workerId: Float
+  status: DistributionBucketOperatorStatus
+  metadata: ID
+}
+
+input DistributionBucketOperatorWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  distributionBucket_eq: ID
+  distributionBucket_in: [ID!]
+  workerId_eq: Int
+  workerId_gt: Int
+  workerId_gte: Int
+  workerId_lt: Int
+  workerId_lte: Int
+  workerId_in: [Int!]
+  status_eq: DistributionBucketOperatorStatus
+  status_in: [DistributionBucketOperatorStatus!]
+  metadata_eq: ID
+  metadata_in: [ID!]
+  distributionBucket: DistributionBucketWhereInput
+  metadata: DistributionBucketOperatorMetadataWhereInput
+  AND: [DistributionBucketOperatorWhereInput!]
+  OR: [DistributionBucketOperatorWhereInput!]
+}
+
+input DistributionBucketOperatorWhereUniqueInput {
+  id: ID!
 }
 
 enum DistributionBucketOrderByInput {
@@ -107,12 +521,18 @@ enum DistributionBucketOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
-  operatorMetadata_ASC
-  operatorMetadata_DESC
+  family_ASC
+  family_DESC
+  acceptingNewBags_ASC
+  acceptingNewBags_DESC
+  distributing_ASC
+  distributing_DESC
 }
 
 input DistributionBucketUpdateInput {
-  operatorMetadata: Bytes
+  family: ID
+  acceptingNewBags: Boolean
+  distributing: Boolean
 }
 
 input DistributionBucketWhereInput {
@@ -140,8 +560,16 @@ input DistributionBucketWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  operatorMetadata_eq: Bytes
-  operatorMetadata_in: [Bytes!]
+  family_eq: ID
+  family_in: [ID!]
+  acceptingNewBags_eq: Boolean
+  acceptingNewBags_in: [Boolean!]
+  distributing_eq: Boolean
+  distributing_in: [Boolean!]
+  family: DistributionBucketFamilyWhereInput
+  operators_none: DistributionBucketOperatorWhereInput
+  operators_some: DistributionBucketOperatorWhereInput
+  operators_every: DistributionBucketOperatorWhereInput
   distributedBags_none: StorageBagWhereInput
   distributedBags_some: StorageBagWhereInput
   distributedBags_every: StorageBagWhereInput
@@ -153,10 +581,226 @@ input DistributionBucketWhereUniqueInput {
   id: ID!
 }
 
+type GeoCoordinates implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+  latitude: Float!
+  longitude: Float!
+  boundarySourceBucketFamilyMeta: DistributionBucketFamilyMetadata
+  boundarySourceBucketFamilyMetaId: String
+  nodelocationmetadatacoordinates: [NodeLocationMetadata!]
+}
+
+type GeoCoordinatesConnection {
+  totalCount: Int!
+  edges: [GeoCoordinatesEdge!]!
+  pageInfo: PageInfo!
+}
+
+input GeoCoordinatesCreateInput {
+  latitude: Float!
+  longitude: Float!
+  boundarySourceBucketFamilyMeta: ID
+}
+
+type GeoCoordinatesEdge {
+  node: GeoCoordinates!
+  cursor: String!
+}
+
+enum GeoCoordinatesOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  latitude_ASC
+  latitude_DESC
+  longitude_ASC
+  longitude_DESC
+  boundarySourceBucketFamilyMeta_ASC
+  boundarySourceBucketFamilyMeta_DESC
+}
+
+input GeoCoordinatesUpdateInput {
+  latitude: Float
+  longitude: Float
+  boundarySourceBucketFamilyMeta: ID
+}
+
+input GeoCoordinatesWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  latitude_eq: Float
+  latitude_gt: Float
+  latitude_gte: Float
+  latitude_lt: Float
+  latitude_lte: Float
+  latitude_in: [Float!]
+  longitude_eq: Float
+  longitude_gt: Float
+  longitude_gte: Float
+  longitude_lt: Float
+  longitude_lte: Float
+  longitude_in: [Float!]
+  boundarySourceBucketFamilyMeta_eq: ID
+  boundarySourceBucketFamilyMeta_in: [ID!]
+  boundarySourceBucketFamilyMeta: DistributionBucketFamilyMetadataWhereInput
+  nodelocationmetadatacoordinates_none: NodeLocationMetadataWhereInput
+  nodelocationmetadatacoordinates_some: NodeLocationMetadataWhereInput
+  nodelocationmetadatacoordinates_every: NodeLocationMetadataWhereInput
+  AND: [GeoCoordinatesWhereInput!]
+  OR: [GeoCoordinatesWhereInput!]
+}
+
+input GeoCoordinatesWhereUniqueInput {
+  id: ID!
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSONObject
+
+type NodeLocationMetadata implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """ISO 3166-1 alpha-2 country code (2 letters)"""
+  countryCode: String
+
+  """City name"""
+  city: String
+  coordinates: GeoCoordinates
+  coordinatesId: String
+  distributionbucketoperatormetadatanodeLocation: [DistributionBucketOperatorMetadata!]
+  storagebucketoperatormetadatanodeLocation: [StorageBucketOperatorMetadata!]
+}
+
+type NodeLocationMetadataConnection {
+  totalCount: Int!
+  edges: [NodeLocationMetadataEdge!]!
+  pageInfo: PageInfo!
+}
+
+input NodeLocationMetadataCreateInput {
+  countryCode: String
+  city: String
+  coordinates: ID
+}
+
+type NodeLocationMetadataEdge {
+  node: NodeLocationMetadata!
+  cursor: String!
+}
+
+enum NodeLocationMetadataOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  countryCode_ASC
+  countryCode_DESC
+  city_ASC
+  city_DESC
+  coordinates_ASC
+  coordinates_DESC
+}
+
+input NodeLocationMetadataUpdateInput {
+  countryCode: String
+  city: String
+  coordinates: ID
+}
+
+input NodeLocationMetadataWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  countryCode_eq: String
+  countryCode_contains: String
+  countryCode_startsWith: String
+  countryCode_endsWith: String
+  countryCode_in: [String!]
+  city_eq: String
+  city_contains: String
+  city_startsWith: String
+  city_endsWith: String
+  city_in: [String!]
+  coordinates_eq: ID
+  coordinates_in: [ID!]
+  coordinates: GeoCoordinatesWhereInput
+  distributionbucketoperatormetadatanodeLocation_none: DistributionBucketOperatorMetadataWhereInput
+  distributionbucketoperatormetadatanodeLocation_some: DistributionBucketOperatorMetadataWhereInput
+  distributionbucketoperatormetadatanodeLocation_every: DistributionBucketOperatorMetadataWhereInput
+  storagebucketoperatormetadatanodeLocation_none: StorageBucketOperatorMetadataWhereInput
+  storagebucketoperatormetadatanodeLocation_some: StorageBucketOperatorMetadataWhereInput
+  storagebucketoperatormetadatanodeLocation_every: StorageBucketOperatorMetadataWhereInput
+  AND: [NodeLocationMetadataWhereInput!]
+  OR: [NodeLocationMetadataWhereInput!]
+}
+
+input NodeLocationMetadataWhereUniqueInput {
+  id: ID!
+}
 
 type PageInfo {
   hasNextPage: Boolean!
@@ -173,12 +817,33 @@ type ProcessorState {
 }
 
 type Query {
+  distributionBucketFamilyMetadata(offset: Int, limit: Int = 50, where: DistributionBucketFamilyMetadataWhereInput, orderBy: [DistributionBucketFamilyMetadataOrderByInput!]): [DistributionBucketFamilyMetadata!]!
+  distributionBucketFamilyMetadataByUniqueInput(where: DistributionBucketFamilyMetadataWhereUniqueInput!): DistributionBucketFamilyMetadata
+  distributionBucketFamilyMetadataConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketFamilyMetadataWhereInput, orderBy: [DistributionBucketFamilyMetadataOrderByInput!]): DistributionBucketFamilyMetadataConnection!
+  distributionBucketFamilies(offset: Int, limit: Int = 50, where: DistributionBucketFamilyWhereInput, orderBy: [DistributionBucketFamilyOrderByInput!]): [DistributionBucketFamily!]!
+  distributionBucketFamilyByUniqueInput(where: DistributionBucketFamilyWhereUniqueInput!): DistributionBucketFamily
+  distributionBucketFamiliesConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketFamilyWhereInput, orderBy: [DistributionBucketFamilyOrderByInput!]): DistributionBucketFamilyConnection!
+  distributionBucketOperatorMetadata(offset: Int, limit: Int = 50, where: DistributionBucketOperatorMetadataWhereInput, orderBy: [DistributionBucketOperatorMetadataOrderByInput!]): [DistributionBucketOperatorMetadata!]!
+  distributionBucketOperatorMetadataByUniqueInput(where: DistributionBucketOperatorMetadataWhereUniqueInput!): DistributionBucketOperatorMetadata
+  distributionBucketOperatorMetadataConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketOperatorMetadataWhereInput, orderBy: [DistributionBucketOperatorMetadataOrderByInput!]): DistributionBucketOperatorMetadataConnection!
+  distributionBucketOperators(offset: Int, limit: Int = 50, where: DistributionBucketOperatorWhereInput, orderBy: [DistributionBucketOperatorOrderByInput!]): [DistributionBucketOperator!]!
+  distributionBucketOperatorByUniqueInput(where: DistributionBucketOperatorWhereUniqueInput!): DistributionBucketOperator
+  distributionBucketOperatorsConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketOperatorWhereInput, orderBy: [DistributionBucketOperatorOrderByInput!]): DistributionBucketOperatorConnection!
   distributionBuckets(offset: Int, limit: Int = 50, where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!]): [DistributionBucket!]!
   distributionBucketByUniqueInput(where: DistributionBucketWhereUniqueInput!): DistributionBucket
   distributionBucketsConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!]): DistributionBucketConnection!
+  geoCoordinates(offset: Int, limit: Int = 50, where: GeoCoordinatesWhereInput, orderBy: [GeoCoordinatesOrderByInput!]): [GeoCoordinates!]!
+  geoCoordinatesByUniqueInput(where: GeoCoordinatesWhereUniqueInput!): GeoCoordinates
+  geoCoordinatesConnection(first: Int, after: String, last: Int, before: String, where: GeoCoordinatesWhereInput, orderBy: [GeoCoordinatesOrderByInput!]): GeoCoordinatesConnection!
+  nodeLocationMetadata(offset: Int, limit: Int = 50, where: NodeLocationMetadataWhereInput, orderBy: [NodeLocationMetadataOrderByInput!]): [NodeLocationMetadata!]!
+  nodeLocationMetadataByUniqueInput(where: NodeLocationMetadataWhereUniqueInput!): NodeLocationMetadata
+  nodeLocationMetadataConnection(first: Int, after: String, last: Int, before: String, where: NodeLocationMetadataWhereInput, orderBy: [NodeLocationMetadataOrderByInput!]): NodeLocationMetadataConnection!
   storageBags(offset: Int, limit: Int = 50, where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!]): [StorageBag!]!
   storageBagByUniqueInput(where: StorageBagWhereUniqueInput!): StorageBag
   storageBagsConnection(first: Int, after: String, last: Int, before: String, where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!]): StorageBagConnection!
+  storageBucketOperatorMetadata(offset: Int, limit: Int = 50, where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!]): [StorageBucketOperatorMetadata!]!
+  storageBucketOperatorMetadataByUniqueInput(where: StorageBucketOperatorMetadataWhereUniqueInput!): StorageBucketOperatorMetadata
+  storageBucketOperatorMetadataConnection(first: Int, after: String, last: Int, before: String, where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!]): StorageBucketOperatorMetadataConnection!
   storageBuckets(offset: Int, limit: Int = 50, where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!]): [StorageBucket!]!
   storageBucketByUniqueInput(where: StorageBucketWhereUniqueInput!): StorageBucket
   storageBucketsConnection(first: Int, after: String, last: Int, before: String, where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!]): StorageBucketConnection!
@@ -203,9 +868,6 @@ type StorageBag implements BaseGraphQLObject {
   deletedAt: DateTime
   deletedById: String
   version: Int!
-
-  """Last time the bag contents (data objects) was updated"""
-  contentsUpdatedAt: DateTime
   objects: [StorageDataObject!]!
   storedBy: [StorageBucket!]!
   distributedBy: [DistributionBucket!]!
@@ -221,7 +883,6 @@ type StorageBagConnection {
 }
 
 input StorageBagCreateInput {
-  contentsUpdatedAt: DateTime
   owner: JSONObject!
 }
 
@@ -237,8 +898,6 @@ enum StorageBagOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
-  contentsUpdatedAt_ASC
-  contentsUpdatedAt_DESC
 }
 
 union StorageBagOwner = StorageBagOwnerCouncil | StorageBagOwnerWorkingGroup | StorageBagOwnerMember | StorageBagOwnerChannel | StorageBagOwnerDAO
@@ -498,7 +1157,6 @@ input StorageBagOwnerWorkingGroupWhereUniqueInput {
 }
 
 input StorageBagUpdateInput {
-  contentsUpdatedAt: DateTime
   owner: JSONObject
 }
 
@@ -527,11 +1185,6 @@ input StorageBagWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  contentsUpdatedAt_eq: DateTime
-  contentsUpdatedAt_lt: DateTime
-  contentsUpdatedAt_lte: DateTime
-  contentsUpdatedAt_gt: DateTime
-  contentsUpdatedAt_gte: DateTime
   owner_json: JSONObject
   objects_none: StorageDataObjectWhereInput
   objects_some: StorageDataObjectWhereInput
@@ -562,9 +1215,8 @@ type StorageBucket implements BaseGraphQLObject {
 
   """Current bucket operator status"""
   operatorStatus: StorageBucketOperatorStatus!
-
-  """Storage bucket operator metadata"""
-  operatorMetadata: Bytes
+  operatorMetadata: StorageBucketOperatorMetadata
+  operatorMetadataId: String
 
   """Whether the bucket is accepting any new storage bags"""
   acceptingNewBags: Boolean!
@@ -585,7 +1237,7 @@ type StorageBucketConnection {
 
 input StorageBucketCreateInput {
   operatorStatus: JSONObject!
-  operatorMetadata: Bytes
+  operatorMetadata: ID
   acceptingNewBags: Boolean!
   dataObjectsSizeLimit: BigInt!
   dataObjectCountLimit: BigInt!
@@ -594,6 +1246,113 @@ input StorageBucketCreateInput {
 type StorageBucketEdge {
   node: StorageBucket!
   cursor: String!
+}
+
+type StorageBucketOperatorMetadata implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Root node endpoint"""
+  nodeEndpoint: String
+  nodeLocation: NodeLocationMetadata
+  nodeLocationId: String
+
+  """Additional information about the node/operator"""
+  extra: String
+  storagebucketoperatorMetadata: [StorageBucket!]
+}
+
+type StorageBucketOperatorMetadataConnection {
+  totalCount: Int!
+  edges: [StorageBucketOperatorMetadataEdge!]!
+  pageInfo: PageInfo!
+}
+
+input StorageBucketOperatorMetadataCreateInput {
+  nodeEndpoint: String
+  nodeLocation: ID
+  extra: String
+}
+
+type StorageBucketOperatorMetadataEdge {
+  node: StorageBucketOperatorMetadata!
+  cursor: String!
+}
+
+enum StorageBucketOperatorMetadataOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  nodeEndpoint_ASC
+  nodeEndpoint_DESC
+  nodeLocation_ASC
+  nodeLocation_DESC
+  extra_ASC
+  extra_DESC
+}
+
+input StorageBucketOperatorMetadataUpdateInput {
+  nodeEndpoint: String
+  nodeLocation: ID
+  extra: String
+}
+
+input StorageBucketOperatorMetadataWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  nodeEndpoint_eq: String
+  nodeEndpoint_contains: String
+  nodeEndpoint_startsWith: String
+  nodeEndpoint_endsWith: String
+  nodeEndpoint_in: [String!]
+  nodeLocation_eq: ID
+  nodeLocation_in: [ID!]
+  extra_eq: String
+  extra_contains: String
+  extra_startsWith: String
+  extra_endsWith: String
+  extra_in: [String!]
+  nodeLocation: NodeLocationMetadataWhereInput
+  storagebucketoperatorMetadata_none: StorageBucketWhereInput
+  storagebucketoperatorMetadata_some: StorageBucketWhereInput
+  storagebucketoperatorMetadata_every: StorageBucketWhereInput
+  AND: [StorageBucketOperatorMetadataWhereInput!]
+  OR: [StorageBucketOperatorMetadataWhereInput!]
+}
+
+input StorageBucketOperatorMetadataWhereUniqueInput {
+  id: ID!
 }
 
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
@@ -770,7 +1529,7 @@ enum StorageBucketOrderByInput {
 
 input StorageBucketUpdateInput {
   operatorStatus: JSONObject
-  operatorMetadata: Bytes
+  operatorMetadata: ID
   acceptingNewBags: Boolean
   dataObjectsSizeLimit: BigInt
   dataObjectCountLimit: BigInt
@@ -802,8 +1561,8 @@ input StorageBucketWhereInput {
   deletedById_eq: ID
   deletedById_in: [ID!]
   operatorStatus_json: JSONObject
-  operatorMetadata_eq: Bytes
-  operatorMetadata_in: [Bytes!]
+  operatorMetadata_eq: ID
+  operatorMetadata_in: [ID!]
   acceptingNewBags_eq: Boolean
   acceptingNewBags_in: [Boolean!]
   dataObjectsSizeLimit_eq: BigInt
@@ -818,6 +1577,7 @@ input StorageBucketWhereInput {
   dataObjectCountLimit_lt: BigInt
   dataObjectCountLimit_lte: BigInt
   dataObjectCountLimit_in: [BigInt!]
+  operatorMetadata: StorageBucketOperatorMetadataWhereInput
   storedBags_none: StorageBagWhereInput
   storedBags_some: StorageBagWhereInput
   storedBags_every: StorageBagWhereInput

@@ -6,14 +6,15 @@ fragment DataObjectDetails on StorageDataObject {
   storageBag {
     storedBy {
       id
-      operatorMetadata
+      operatorMetadata {
+        nodeEndpoint
+      }
       operatorStatus {
         __typename
       }
     }
     distributedBy {
       id
-      operatorMetadata
     }
   }
 }

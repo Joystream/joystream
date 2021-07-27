@@ -34,20 +34,22 @@ export class NetworkingService {
 
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
     return details.storageBag.storedBy
-      .filter((b) => b.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
+      .filter(
+        (b) => b.operatorStatus.__typename === 'StorageBucketOperatorStatusActive' && b.operatorMetadata?.nodeEndpoint
+      )
       .map((b) => ({
         bucketId: b.id,
-        endpoint: Buffer.from(b.operatorMetadata.replace('0x', ''), 'hex').toString(),
+        endpoint: b.operatorMetadata!.nodeEndpoint!,
       }))
       .filter((b) => {
         try {
           this.validateNodeEndpoint(b.endpoint)
           return true
-        } catch (e) {
+        } catch (err) {
           this.logger.warn('Invalid storage endpoint detected', {
             bucketId: b.bucketId,
             endpoint: b.endpoint,
-            error: e.toString(),
+            err,
           })
           return false
         }
