@@ -238,7 +238,7 @@ impl<
         Moment: BaseArithmetic + Copy,
         CuratorGroupId: Default + Copy,
         CuratorId: Default + Copy,
-        MemberId: Default + Copy,
+        MemberId: Default + Copy + PartialEq,
         Balance: Clone,
     >
     VideoRecord<
@@ -293,7 +293,10 @@ impl<
 
     /// Check whether nft auction have been started
     pub fn ensure_nft_auction_started<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_nft_auction_started(), Error::<T>::AuctionDidNotStart);
+        ensure!(
+            self.is_nft_auction_started(),
+            Error::<T>::AuctionDidNotStart
+        );
         Ok(())
     }
 
@@ -375,6 +378,22 @@ impl<
         self
     }
 
+    /// Completes vnft transfer
+    pub fn complete_vnft_transfer(
+        mut self,
+        new_owner: AccountId,
+    ) -> Self {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::PendingTransferTo(..),
+            ref mut owner,
+            ..
+        }) = self.nft_status
+        {
+            *owner = new_owner;
+        }
+        self.set_idle_transactional_status()
+    }
+
     /// Set nft transactional status to `Idle`
     pub fn set_idle_transactional_status(mut self) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
@@ -403,8 +422,28 @@ impl<
     }
 
     /// Ensure vNFT has pending transfer
-    pub(crate) fn ensure_pending_transfer_exists<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_pending_transfer_transactional_status(), Error::<T>::PendingTransferDoesNotExist);
+    pub fn ensure_pending_transfer_exists<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            self.is_pending_transfer_transactional_status(),
+            Error::<T>::PendingTransferDoesNotExist
+        );
+        Ok(())
+    }
+
+    /// Ensure new pending transfer for given participant available to proceed
+    pub fn ensure_new_pending_transfer_available<T: Trait>(
+        &self,
+        participant: MemberId,
+    ) -> DispatchResult {
+        let is_available = matches!(
+            self.nft_status,
+            NFTStatus::Owned(OwnedNFT {
+                transactional_status: TransactionalStatus::PendingTransferTo(to),
+                ..
+            }) if participant == to
+        );
+
+        ensure!(is_available, Error::<T>::NoIncomingTransfers);
         Ok(())
     }
 }

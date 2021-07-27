@@ -1203,38 +1203,38 @@ decl_module! {
             Self::deposit_event(RawEvent::TransferCancelled(video_id, participant_id));
         }
 
-        // /// Accept incoming vNFT transfer
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn accept_incoming_vnft(
-        //     origin,
-        //     vnft_id: T::VNFTId,
-        //     participant: MemberId<T>,
-        // ) {
+        /// Accept incoming vNFT transfer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn accept_incoming_vnft(
+            origin,
+            video_id: T::VideoId,
+            participant_id: MemberId<T>,
+        ) {
 
-        //     let participant_account_id = Self::authorize_participant(origin, participant)?;
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
-        //     Self::ensure_pending_transfer_exists(vnft_id)?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-        //     // Ensure new pending transfer available to proceed
-        //     Self::ensure_new_pending_transfer_available(vnft_id, participant)?;
+            // Ensure nft transactional status is set to PendingTransferTo
+            video.ensure_pending_transfer_exists::<T>()?;
 
-        //     let mut vnft = Self::ensure_vnft_exists(vnft_id)?;
+            // Ensure new pending transfer available to proceed
+            video.ensure_new_pending_transfer_available::<T>(participant_id)?;
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //     // Remove vNFT transfer data from pending transfers storage
-        //     // Safe to call, because we always have one transfers per vnft_id
-        //     <PendingTransfers<T>>::remove_prefix(vnft_id);
+            // Complete vnft transfer
+            let video = video.complete_vnft_transfer(participant_account_id);
 
+            VideoById::<T>::insert(video_id, video);
 
-        //     vnft.owner = participant_account_id;
-        //     <VNFTById<T>>::insert(vnft_id, vnft);
-
-        //     // Trigger event
-        //     Self::deposit_event(RawEvent::TransferAccepted(vnft_id, participant));
-        // }
+            // Trigger event
+            Self::deposit_event(RawEvent::TransferAccepted(video_id, participant_id));
+        }
     }
 }
 
