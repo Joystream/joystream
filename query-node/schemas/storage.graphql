@@ -25,6 +25,36 @@ type StorageBucketOperatorStatusActive @variant {
 
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
 
+type GeoCoordinates @entity {
+  latitude: Float!
+  longitude: Float!
+
+  "Optional DistributionBucketFamilyMetadata reference in case the coordinates are part of a region boundary"
+  boundarySourceBucketFamilyMeta: DistributionBucketFamilyMetadata
+}
+
+type NodeLocationMetadata @entity {
+  "ISO 3166-1 alpha-2 country code (2 letters)"
+  countryCode: String
+
+  "City name"
+  city: String
+
+  "Geographic coordinates"
+  coordinates: GeoCoordinates
+}
+
+type StorageBucketOperatorMetadata @entity {
+  "Root node endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
 type StorageBucket @entity {
   "Runtime bucket id"
   id: ID!
@@ -33,7 +63,7 @@ type StorageBucket @entity {
   operatorStatus: StorageBucketOperatorStatus!
 
   "Storage bucket operator metadata"
-  operatorMetadata: Bytes
+  operatorMetadata: StorageBucketOperatorMetadata
 
   "Whether the bucket is accepting any new storage bags"
   acceptingNewBags: Boolean!
@@ -88,6 +118,9 @@ type StorageBag @entity {
   "Storage buckets assigned to store the bag"
   storedBy: [StorageBucket!]
 
+  "Distribution buckets assigned to distribute the bag"
+  distributedBy: [DistributionBucket!]
+
   "Owner of the storage bag"
   owner: StorageBagOwner!
 }
@@ -116,4 +149,79 @@ type StorageDataObject @entity {
   # TODO: Use "Bytes" for better optimalization?
   "Public key used to authenticate the uploader by the storage provider"
   authenticationKey: String
+}
+
+type DistributionBucketFamilyMetadata @entity {
+  "Name of the geographical region covered by the family (ie.: us-east-1)"
+  region: String
+
+  "Optional, more specific description of the region covered by the family"
+  description: String
+
+  "Optional region boundary as geocoordiantes polygon"
+  boundary: [GeoCoordinates!] @derivedFrom(field: "boundarySourceBucketFamilyMeta")
+}
+
+type DistributionBucketOperatorMetadata @entity {
+  "Root distributor node api endpoint"
+  nodeEndpoint: String
+
+  "Optional node location metadata"
+  nodeLocation: NodeLocationMetadata
+
+  "Additional information about the node/operator"
+  extra: String
+}
+
+enum DistributionBucketOperatorStatus {
+  INVITED,
+  ACTIVE
+}
+
+type DistributionBucketOperator @entity {
+  "{bucketId}-{workerId}"
+  id: ID!
+
+  "Related distirbution bucket"
+  distributionBucket: DistributionBucket!
+
+  "ID of the distribution group worker"
+  workerId: Int!
+
+  "Current operator status"
+  status: DistributionBucketOperatorStatus!
+
+  "Operator metadata"
+  metadata: DistributionBucketOperatorMetadata
+}
+
+type DistributionBucket @entity {
+  "Runtime bucket id"
+  id: ID!
+
+  "Distribution family the bucket is part of"
+  family: DistributionBucketFamily!
+
+  "Distribution bucket operators (either active or invited)"
+  operators: [DistributionBucketOperator!] @derivedFrom(field: "distributionBucket")
+
+  "Whether the bucket is accepting any new bags"
+  acceptingNewBags: Boolean!
+
+  "Whether the bucket is currently distributing content"
+  distributing: Boolean!
+
+  "Bags assigned to be distributed by the bucket"
+  distributedBags: [StorageBag!] @derivedFrom(field: "distributedBy")
+}
+
+type DistributionBucketFamily @entity {
+  "Runtime bucket family id"
+  id: ID!
+
+  "Current bucket family metadata"
+  metadata: DistributionBucketFamilyMetadata
+
+  "Distribution buckets belonging to the family"
+  buckets: [DistributionBucket!] @derivedFrom(field: "family")
 }
