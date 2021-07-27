@@ -362,7 +362,7 @@ pub struct DataObject<Balance> {
 pub type Bag<T> =
     BagObject<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
 
-/// Static bag container.
+/// Bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct BagObject<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
@@ -606,8 +606,8 @@ impl VoucherUpdate {
         };
 
         Voucher {
-            objects_used,
             size_used,
+            objects_used,
             ..voucher.clone()
         }
     }
@@ -726,7 +726,7 @@ decl_storage! {
             map hasher(blake2_128_concat) DynamicBagType => DynamicBagCreationPolicy;
 
         /// 'Data objects for bags' storage double map.
-        pub BagDataObjectsById get (fn data_object_by_bag_id_by_id): double_map
+        pub DataObjectsById get (fn data_object_by_id): double_map
             hasher(blake2_128_concat) BagId<T>,
             hasher(blake2_128_concat) T::DataObjectId => DataObject<BalanceOf<T>>;
     }
@@ -1531,7 +1531,7 @@ decl_module! {
 
             // Accept data objects for a bag.
             for data_object_id in data_objects.iter() {
-                BagDataObjectsById::<T>::mutate(&bag_id, data_object_id, |data_object| {
+                DataObjectsById::<T>::mutate(&bag_id, data_object_id, |data_object| {
                     data_object.accepted = true;
                 });
             }
@@ -1580,7 +1580,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         // Insert new objects.
         for (data_object_id, data_object) in data.data_objects_map.iter() {
-            BagDataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
+            DataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
         }
 
         Self::change_storage_bucket_vouchers_for_bag(
@@ -1622,7 +1622,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         //
 
         for object_id in objects.iter() {
-            BagDataObjectsById::<T>::swap(&src_bag_id, &object_id, &dest_bag_id, &object_id);
+            DataObjectsById::<T>::swap(&src_bag_id, &object_id, &dest_bag_id, &object_id);
         }
 
         // Change source bag.
@@ -1672,7 +1672,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
 
         for data_object_id in objects.iter() {
-            BagDataObjectsById::<T>::remove(&bag_id, &data_object_id);
+            DataObjectsById::<T>::remove(&bag_id, &data_object_id);
         }
 
         Self::change_storage_bucket_vouchers_for_bag(
@@ -2417,10 +2417,10 @@ impl<T: Trait> Module<T> {
         data_object_id: &T::DataObjectId,
     ) -> Result<DataObject<BalanceOf<T>>, DispatchError> {
         ensure!(
-            <BagDataObjectsById<T>>::contains_key(bag_id, data_object_id),
+            <DataObjectsById<T>>::contains_key(bag_id, data_object_id),
             Error::<T>::DataObjectDoesntExist
         );
 
-        Ok(Self::data_object_by_bag_id_by_id(bag_id, data_object_id))
+        Ok(Self::data_object_by_id(bag_id, data_object_id))
     }
 }

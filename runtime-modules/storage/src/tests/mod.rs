@@ -688,7 +688,7 @@ fn upload_succeeded() {
             upload_params.object_creation_list[0].size
         );
         assert_eq!(
-            Storage::data_object_by_bag_id_by_id(&bag_id, &data_object_id),
+            Storage::data_object_by_id(&bag_id, &data_object_id),
             DataObject {
                 size: upload_params.object_creation_list[0].size,
                 deletion_prize: DataObjectDeletionPrize::get(),
@@ -881,7 +881,7 @@ fn upload_succeeded_with_dynamic_bag() {
             upload_params.object_creation_list[0].size
         );
         assert_eq!(
-            Storage::data_object_by_bag_id_by_id(&bag_id, &data_object_id),
+            Storage::data_object_by_id(&bag_id, &data_object_id),
             DataObject {
                 size: upload_params.object_creation_list[0].size,
                 deletion_prize: DataObjectDeletionPrize::get(),
@@ -1801,11 +1801,11 @@ fn move_data_objects_succeeded() {
         let ids = BTreeSet::from_iter(vec![data_object_id]);
 
         // Pre-checks
-        assert!(<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
             &src_bag_id,
             &data_object_id
         ));
-        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &dest_bag_id,
             &data_object_id
         ));
@@ -1817,11 +1817,11 @@ fn move_data_objects_succeeded() {
             .call_and_assert(Ok(()));
 
         // Post-checks
-        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &src_bag_id,
             &data_object_id
         ));
-        assert!(<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
             &dest_bag_id,
             &data_object_id
         ));
@@ -2115,7 +2115,7 @@ fn delete_data_objects_succeeded() {
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         // pre-checks
-        assert!(<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
             &data_object_id
         ));
@@ -2136,7 +2136,7 @@ fn delete_data_objects_succeeded() {
             .call_and_assert(Ok(()));
 
         // post-checks
-        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
             &data_object_id
         ));
@@ -2276,7 +2276,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
             .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
 
-        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+        assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
             &data_object_id
         ));
