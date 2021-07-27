@@ -103,14 +103,18 @@ decl_error! {
         /// maximum category depth exceeded
         MaxValidCategoryDepthExceeded,
 
-        /// maximum category depth exceeded
-        CategoryModeratorDoesNotExist,
+        /// User is not a moderator
+        ModeratorNotValid,
 
         /// Subreddit cannot be Modified
         SubredditCannotBeModified,
 
         /// Post cannot be Modified
         PostCannotBeModified,
+
+        /// Moderator Limits exceeded
+        ModeratorsLimitExceeded,
+
 
     }
 }

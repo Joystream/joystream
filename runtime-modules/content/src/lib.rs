@@ -44,8 +44,6 @@ pub use common::{
     MembershipTypes, StorageOwnership, Url,
 };
 
-pub type SubredditUserId<T> = common::MemberId<T>;
-
 /// Moderator ID alias for the actor of the system.
 pub type ModeratorId<T> = common::ActorId<T>;
 
@@ -152,7 +150,7 @@ pub trait Trait:
     type PostDeposit: Get<Self::Balance>;
 
     /// limits for ensuring correct working of the subreddit
-    type SubredditLimits: MapLimits;
+    type MapLimits: SubredditLimits;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -515,12 +513,12 @@ pub struct ThreadCreationParameters<Hash, ChannelId> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
-pub struct Thread_<SubredditUserId, Hash, Balance, NumberOfPosts, ChannelId> {
+pub struct Thread_<MemberId, Hash, Balance, NumberOfPosts, ChannelId> {
     /// Title hash
     pub title_hash: Hash,
 
     /// Author of post.
-    pub author_id: SubredditUserId,
+    pub author_id: MemberId,
 
     /// State bloat bond
     pub bloat_bond: Balance,
@@ -533,7 +531,7 @@ pub struct Thread_<SubredditUserId, Hash, Balance, NumberOfPosts, ChannelId> {
 }
 
 pub type Thread<T> = Thread_<
-    SubredditUserId<T>,
+    <T as MembershipTypes>::MemberId,
     <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
@@ -581,19 +579,27 @@ pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
 }
 
 pub type Post<T> = Post_<
-    SubredditUserId<T>,
+    <T as MembershipTypes>::MemberId,
     <T as Trait>::ThreadId,
     <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
     <T as frame_system::Trait>::BlockNumber,
 >;
 
-pub trait MapLimits {
+pub trait SubredditLimits {
     /// Maximum moderator count for a subreddit
     type MaxModeratorsForSubreddit: Get<u64>;
 
     /// Cap on bloat bond
     type BloatBondCap: Get<u64>;
+}
+
+/// Represents a thread post
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum ModSetOperation {
+    AddModerator,
+    RemoveModerator,
 }
 
 decl_storage! {
@@ -638,7 +644,7 @@ decl_storage! {
 
     /// Map thread identifier to corresponding thread.
     pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
-        T::ThreadId => Thread<T>;
+            T::ThreadId => Thread<T>;
 
     /// Thread identifier value to be used for next Thread in threadById.
     pub NextThreadId get(fn next_thread_id) config(): T::ThreadId;
@@ -651,9 +657,11 @@ decl_storage! {
         double_map hasher(blake2_128_concat) T::ThreadId,
         hasher(blake2_128_concat) T::PostId => Post<T>;
 
-     /// Moderator set for each Subreddit
-        pub SubredditByModerator get(fn category_by_moderator) config(): double_map
-            hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) SubredditUserId<T> => ();
+        /// Moderator set for each Subreddit
+        pub ModeratorSetForSubreddit get(fn category_by_moderator) config(): double_map
+            hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) T::MemberId => ();
+        /// Number of subreddit moderators
+        pub NumberOfSubredditModerators get(fn number_of_subreddit_moderator) config(): u64;
     }
 }
 
@@ -890,7 +898,6 @@ decl_module! {
             if let Some(subreddit_state) = &params.subreddit_mutable {
                 channel.subreddit_mutable = *subreddit_state;
             }
-
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -1431,14 +1438,14 @@ decl_module! {
     #[weight = 10_000_000]
      fn create_thread(
             origin,
-         forum_user_id: SubredditUserId<T>,
-     params: ThreadCreationParameters<<T as frame_system::Trait>::Hash, T::ChannelId>,
+            member_id: T::MemberId,
+            params: ThreadCreationParameters<<T as frame_system::Trait>::Hash, T::ChannelId>,
         ) -> DispatchResult {
 
          let account_id = ensure_signed(origin)?;
 
-            // ensure that signer is forum_user_id and forum_user_id refers to a valid member
-            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+            // ensure that signer is member_id and member_id refers to a valid member
+            Self::ensure_is_forum_user(&account_id, &member_id)?;
 
             // ensure valid channel && thread can be added to subreddit
             let channel = Self::ensure_channel_exists(&params.channel_id)?;
@@ -1463,7 +1470,7 @@ decl_module! {
             // Build a new thread
             let new_thread = Thread_ {
                 title_hash: params.title_hash,
-                author_id: forum_user_id,
+                author_id: member_id,
                 bloat_bond: cleanup_payoff,
                 number_of_posts: T::PostId::zero(),
                 channel_id: params.channel_id,
@@ -1478,7 +1485,7 @@ decl_module! {
             let _ = Self::add_new_post(
                 new_thread_id,
                 params.text_hash,
-                forum_user_id,
+                member_id,
                 params.post_mutable,
             );
 
@@ -1489,7 +1496,7 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::ThreadCreated(
                     new_thread_id,
-                    forum_user_id,
+                    member_id,
                     params.title_hash,
                     params.channel_id,
                 )
@@ -1501,7 +1508,7 @@ decl_module! {
        #[weight = 10_000_000]
        fn delete_thread(
             origin,
-            forum_user_id: SubredditUserId<T>,
+            member_id: T::MemberId,
             thread_id: T::ThreadId,
             channel_id: T::ChannelId,
         ) -> DispatchResult {
@@ -1512,7 +1519,7 @@ decl_module! {
 
             let thread = Self::ensure_can_delete_thread(
                 &account_id,
-                &forum_user_id,
+                &member_id,
                 &thread_id,
                 &channel_id,
             )?;
@@ -1533,7 +1540,7 @@ decl_module! {
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(
                 thread_id,
-                forum_user_id,
+                member_id,
                 thread.channel_id,
             ));
 
@@ -1543,7 +1550,7 @@ decl_module! {
     #[weight = 10_000_000]
     fn create_post(
          origin,
-         forum_user_id: SubredditUserId<T>,
+         member_id: T::MemberId,
          params: PostCreationParameters<<T as frame_system::Trait>::Hash, T::ThreadId>,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -1551,7 +1558,7 @@ decl_module! {
         let thread_id = params.thread_id.clone();
 
         // Make sure thread exists and is mutable
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(&account_id, &member_id)?;
 
         // make sure thread is valid
         let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1568,7 +1575,7 @@ decl_module! {
         let post_id = Self::add_new_post(
             thread_id,
             params.text_hash,
-            forum_user_id,
+            member_id,
             params.mutable,
         );
 
@@ -1576,7 +1583,7 @@ decl_module! {
         Self::deposit_event(
             RawEvent::PostAdded(
                 post_id,
-                forum_user_id,
+                member_id,
                 thread_id,
                 params.text_hash,
                 thread.channel_id,
@@ -1588,7 +1595,7 @@ decl_module! {
     #[weight = 10_000_000]
     fn edit_post(
             origin,
-            forum_user_id: SubredditUserId<T>,
+            member_id: T::MemberId,
             thread_id: T::ThreadId,
             post_id: T::PostId,
             params: PostUpdateParameters<<T as frame_system::Trait>::Hash>,
@@ -1598,7 +1605,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+            Self::ensure_is_forum_user(&account_id, &member_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let post = Self::ensure_post_exists(&thread_id, &post_id)?;
@@ -1607,14 +1614,18 @@ decl_module! {
             ensure!(post.mutable, Error::<T>::PostCannotBeModified);
 
             // Signer does not match creator of post with identifier postId
-            ensure!(post.author_id == forum_user_id, Error::<T>::AccountDoesNotMatchPostAuthor);
+            ensure!(post.author_id == member_id, Error::<T>::AccountDoesNotMatchPostAuthor);
             //
             // == MUTATION SAFE ==
             //
 
             // Update post parameters
             let mut post = post;
+
+            // Maybe update text hash
             if let Some(new_text_hash) = params.text_hash { post.text_hash = new_text_hash }
+
+            // Maybe update post mutability
             if let Some(new_mutability) = params.mutable { post.mutable = new_mutability }
 
             post.last_edited = frame_system::Module::<T>::block_number();
@@ -1624,7 +1635,7 @@ decl_module! {
             // Generate event
             Self::deposit_event(RawEvent::PostUpdated(
                     post_id,
-                    forum_user_id,
+                    member_id,
                     thread_id,
                     params,
                 ));
@@ -1634,7 +1645,7 @@ decl_module! {
 
     #[weight = 10_000_000]
     fn delete_post(origin,
-           forum_user_id: SubredditUserId<T>,
+           member_id: T::MemberId,
            thread_id: T::ThreadId,
            post_id: T::PostId,
            channel_id: T::ChannelId,
@@ -1646,7 +1657,7 @@ decl_module! {
 
         let post = Self::ensure_can_delete_post(
             &account_id,
-            &forum_user_id,
+            &member_id,
             &thread_id,
             &post_id,
             &channel_id,
@@ -1666,7 +1677,7 @@ decl_module! {
 
         Self::deposit_event(RawEvent::PostDeleted(
             post_id,
-            forum_user_id,
+            member_id,
             thread_id,
             channel_id,
         ));
@@ -1676,7 +1687,7 @@ decl_module! {
 
     #[weight = 10_000_000]
     fn react_post(origin,
-              forum_user_id: SubredditUserId<T>,
+              member_id: T::MemberId,
               thread_id: T::ThreadId,
               post_id: T::PostId,
               react: T::ReactionId,
@@ -1685,7 +1696,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+            Self::ensure_is_forum_user(&account_id, &member_id)?;
 
             // Issue https://github.com/Joystream/joystream/issues/2545 requires that
             // reaction business logic must be off-chain
@@ -1700,7 +1711,7 @@ decl_module! {
             //
 
             Self::deposit_event(
-                RawEvent::PostReacted(post_id, forum_user_id, thread_id, react, channel_id)
+                RawEvent::PostReacted(post_id, member_id, thread_id, react, channel_id)
             );
 
             Ok(())
@@ -1708,7 +1719,7 @@ decl_module! {
 
         #[weight = 10_000_000]
         fn react_thread(origin,
-              forum_user_id: SubredditUserId<T>,
+              member_id: T::MemberId,
               thread_id: T::ThreadId,
               react: T::ReactionId,
               channel_id: T::ChannelId,
@@ -1716,7 +1727,7 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             // Check that account is forum member
-            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+            Self::ensure_is_forum_user(&account_id, &member_id)?;
 
             let _thread = Self::ensure_thread_exists(&thread_id)?;
 
@@ -1729,11 +1740,72 @@ decl_module! {
             //
 
             Self::deposit_event(
-                RawEvent::ThreadReacted(thread_id, forum_user_id, channel_id, react)
+                RawEvent::ThreadReacted(thread_id, member_id, channel_id, react)
             );
 
             Ok(())
         }
+
+    #[weight = 10_000_000]
+    fn update_moderator_set(
+        origin,
+        channel_id: T::ChannelId,
+        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        moderator_member_id: T::MemberId,
+        moderator_account_id: T::AccountId,
+        op: ModSetOperation,
+    ) -> DispatchResult {
+
+        // check that channel exists
+        let channel = Self::ensure_channel_exists(&channel_id)?;
+
+        // ensure actor is channel_id owner
+
+        ensure_actor_authorized_to_update_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+        // ensure moderator is a valid user
+        ensure_member_auth_success::<T>(&moderator_member_id, &moderator_account_id)?;
+
+
+    let moderators_num = <NumberOfSubredditModerators>::get();
+    match op {
+        ModSetOperation::AddModerator => {
+            ensure!(
+                moderators_num
+                    <= <T::MapLimits as SubredditLimits>::MaxModeratorsForSubreddit::get(),
+                Error::<T>::ModeratorsLimitExceeded
+            );
+
+            let new_moderators_num = moderators_num.saturating_add(1);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <ModeratorSetForSubreddit<T>>::insert(channel_id, moderator_member_id, ());
+            <NumberOfSubredditModerators>::put(new_moderators_num);
+
+        },
+
+            ModSetOperation::RemoveModerator => {
+                Self::ensure_moderator_is_valid(&channel_id, &moderator_member_id)?;
+                let new_moderators_num = moderators_num.saturating_sub(1);
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                <ModeratorSetForSubreddit<T>>::remove(channel_id, moderator_member_id);
+                <NumberOfSubredditModerators>::put(new_moderators_num);
+            }
+        };
+
+        Ok(())
+    }
     }
 }
 
@@ -1847,7 +1919,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_delete_thread(
         account_id: &T::AccountId,
-        forum_user_id: &SubredditUserId<T>,
+        member_id: &T::MemberId,
         thread_id: &T::ThreadId,
         channel_id: &T::ChannelId,
     ) -> Result<Thread<T>, Error<T>> {
@@ -1859,20 +1931,20 @@ impl<T: Trait> Module<T> {
         let thread = Self::ensure_thread_exists(&thread_id)?;
 
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(&account_id, &member_id)?;
 
         // Ensure forum user is author of the thread
-        Self::ensure_is_thread_author(&thread, &forum_user_id)?;
+        Self::ensure_is_thread_author(&thread, &member_id)?;
 
         Ok(thread)
     }
 
     fn ensure_is_forum_user(
         account_id: &T::AccountId,
-        forum_user_id: &SubredditUserId<T>,
+        member_id: &T::MemberId,
     ) -> Result<(), Error<T>> {
         //  This is a temporary solution in order to convert DispatchError into Error<T>
-        if let Ok(()) = ensure_member_auth_success::<T>(forum_user_id, account_id) {
+        if let Ok(()) = ensure_member_auth_success::<T>(member_id, account_id) {
             Ok(())
         } else {
             Err(Error::<T>::MemberAuthFailed)
@@ -1881,10 +1953,10 @@ impl<T: Trait> Module<T> {
 
     fn ensure_is_thread_author(
         thread: &Thread<T>,
-        forum_user_id: &SubredditUserId<T>,
+        member_id: &T::MemberId,
     ) -> Result<(), Error<T>> {
         ensure!(
-            thread.author_id == *forum_user_id,
+            thread.author_id == *member_id,
             Error::<T>::AccountDoesNotMatchThreadAuthor
         );
 
@@ -1904,12 +1976,12 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_delete_post(
         account_id: &T::AccountId,
-        forum_user_id: &SubredditUserId<T>,
+        member_id: &T::MemberId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
         channel_id: &T::ChannelId,
     ) -> Result<Post<T>, Error<T>> {
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(&account_id, &member_id)?;
 
         let post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
@@ -1918,7 +1990,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_subreddit_is_mutable(&channel)?;
 
         ensure!(
-            post.author_id == *forum_user_id,
+            post.author_id == *member_id,
             Error::<T>::AccountDoesNotMatchPostAuthor,
         );
 
@@ -1929,7 +2001,7 @@ impl<T: Trait> Module<T> {
     pub fn add_new_post(
         thread_id: T::ThreadId,
         text_hash: T::Hash,
-        author_id: SubredditUserId<T>,
+        author_id: T::MemberId,
         mutable: bool,
     ) -> T::PostId {
         // Make and add initial post
@@ -1992,6 +2064,17 @@ impl<T: Trait> Module<T> {
         );
         Ok(())
     }
+
+    fn ensure_moderator_is_valid(
+        channel_id: &T::ChannelId,
+        moderator_member_id: &T::MemberId,
+    ) -> DispatchResult {
+        ensure!(
+            <ModeratorSetForSubreddit<T>>::contains_key(channel_id, moderator_member_id),
+            Error::<T>::ModeratorNotValid,
+        );
+        Ok(())
+    }
 }
 
 // Some initial config for the module on runtime upgrade
@@ -2035,11 +2118,11 @@ decl_event!(
         ContentId = ContentId<T>,
         IsCensored = bool,
         Hash = <T as frame_system::Trait>::Hash,
-        SubredditUserId = SubredditUserId<T>,
         ThreadId = <T as Trait>::ThreadId,
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
         PostUpdateParameters = PostUpdateParameters<<T as frame_system::Trait>::Hash>,
+        MemberId = <T as MembershipTypes>::MemberId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2159,12 +2242,12 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
-        ThreadCreated(ThreadId, SubredditUserId, Hash, ChannelId),
-        ThreadDeleted(ThreadId, SubredditUserId, ChannelId),
-        PostAdded(PostId, SubredditUserId, ThreadId, Hash, ChannelId),
-        PostUpdated(PostId, SubredditUserId, ThreadId, PostUpdateParameters),
-        PostDeleted(PostId, SubredditUserId, ThreadId, ChannelId),
-        PostReacted(PostId, SubredditUserId, ThreadId, ReactionId, ChannelId),
-        ThreadReacted(ThreadId, SubredditUserId, ChannelId, ReactionId),
+        ThreadCreated(ThreadId, MemberId, Hash, ChannelId),
+        ThreadDeleted(ThreadId, MemberId, ChannelId),
+        PostAdded(PostId, MemberId, ThreadId, Hash, ChannelId),
+        PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
+        PostDeleted(PostId, MemberId, ThreadId, ChannelId),
+        PostReacted(PostId, MemberId, ThreadId, ReactionId, ChannelId),
+        ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
     }
 );
