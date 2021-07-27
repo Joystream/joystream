@@ -42,8 +42,13 @@ export class LoggingService {
 
     const format = winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+      winston.format.metadata({ fillExcept: ['label', 'level', 'timestamp', 'message'] }),
       winston.format.colorize({ all: true }),
-      winston.format.printf((info) => `${info.timestamp} ${info.label} ${info.level}: ${info.message}`)
+      winston.format.printf(
+        (info) =>
+          `${info.timestamp} ${info.label} ${info.level}: ${info.message}` +
+          (Object.keys(info.metadata).length ? `\n${JSON.stringify(info.metadata, null, 4)}` : '')
+      )
     )
     return new LoggingService({
       transports: new winston.transports.Console({

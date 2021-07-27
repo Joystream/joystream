@@ -68,8 +68,8 @@ export default abstract class DefaultCommandBase extends Command {
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)
   }
 
-  public log(message: string, meta?: unknown[]): void {
-    this.logger.info(message, meta)
+  public log(message: string, ...meta: unknown[]): void {
+    this.logger.info(message, ...meta)
   }
 
   public output(value: unknown): void {
