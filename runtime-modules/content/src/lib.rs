@@ -1102,49 +1102,42 @@ decl_module! {
             }
         }
 
-        // /// Issue vNFT
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn issue(
-        //     origin,
-        //     auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-        //     video_id: T::VideoId,
-        //     royalty: Option<Royalty>,
-        // ) {
+        /// Issue vNFT
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn issue(
+            origin,
+            auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            video_id: T::VideoId,
+            royalty: Option<Royalty>,
+        ) {
 
-        //     // Authorize content actor
-        //     Self::authorize_content_actor(origin.clone(), &auctioneer)?;
+            // Authorize content actor
+            Self::authorize_content_actor(origin.clone(), &auctioneer)?;
 
-        //     let content_actor_account_id = ensure_signed(origin)?;
+            let content_actor_account_id = ensure_signed(origin)?;
 
-        //     Self::ensure_vnft_does_not_exist(video_id)?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-        //     // Enure royalty bounds satisfied, if provided
-        //     if let Some(royalty) = royalty {
-        //         Self::ensure_royalty_bounds_satisfied(royalty)?;
-        //     }
+            // Ensure have not been issued yet
+            video.ensure_vnft_not_issued::<T>()?;
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            // Enure royalty bounds satisfied, if provided
+            if let Some(royalty) = royalty {
+                Self::ensure_royalty_bounds_satisfied(royalty)?;
+            }
 
-        //     let auction_id = AuctionId::VideoId(video_id);
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //     // Try complete auction
-        //     if Self::is_auction_exist(auction_id) {
+            // Issue vNFT
 
-        //         let auction = Self::auction_by_id(auction_id);
+            let royalty = royalty.map(|royalty| (content_actor_account_id.clone(), royalty));
 
-        //         // Try finalize already completed auction (issues new nft if required)
-        //         Self::try_complete_auction(&auction);
-        //         return Ok(())
-        //     }
-
-        //     // Issue vNFT
-
-        //     let royalty = royalty.map(|royalty| (content_actor_account_id.clone(), royalty));
-
-        //     Self::issue_vnft(content_actor_account_id, video_id, royalty);
-        // }
+            let mut video = video;
+            Self::issue_vnft(&mut video, video_id, content_actor_account_id, royalty);
+        }
 
         // /// Start vNFT transfer
         // #[weight = 10_000_000] // TODO: adjust weight
