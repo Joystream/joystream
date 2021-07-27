@@ -20,6 +20,7 @@ ${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
 ${CLI} leader:cancel-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
 ${CLI} leader:invite-bucket-operator -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
 ${CLI} operator:accept-invitation -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0
+${CLI} operator:set-metadata -f ${FAMILY_ID} -B ${BUCKET_ID} -w 0 -i ./example-metadata.json
 
 # Deletion commands tested separately, since bucket operator removal is not yet supported
 FAMILY_TO_DELETE_ID=`${CLI} leader:create-bucket-family ${CONFIG}`

@@ -18,10 +18,8 @@ export interface ConfigJson {
   log?: {
     file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
     console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-    [k: string]: unknown
   }
   port: number
   keys: [string, ...string[]]
   buckets: [number, ...number[]]
-  [k: string]: unknown
 }

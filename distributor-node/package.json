@@ -81,7 +81,7 @@
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md",
-    "generate:types:json-schema": "yarn ts-node ./src/validation/generateTypes.ts",
+    "generate:types:json-schema": "yarn ts-node ./src/services/validation/generateTypes.ts",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/networking/query-node/codegen.yml",
     "generate:types:openapi": "yarn openapi-typescript ./src/api-spec/openapi.yml -o ./src/types/generated/OpenApi.ts -c ../prettierrc.js",
     "generate:types:all": "yarn generate:types:json-schema && yarn generate:types:graphql && yarn generate:types:openapi",

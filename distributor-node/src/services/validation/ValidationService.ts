@@ -17,7 +17,7 @@ export class ValidationService {
     this.ajv = new Ajv({ allErrors: true, schemas })
   }
 
-  validate(schemaKey: SchemaKey, input: unknown): TypeBySchemaKey<SchemaKey> {
+  validate<SK extends SchemaKey>(schemaKey: SK, input: unknown): TypeBySchemaKey<SK> {
     const valid = this.ajv.validate(schemaKey, input) as boolean
     if (!valid) {
       throw new ValidationError(
@@ -25,6 +25,6 @@ export class ValidationService {
         this.ajv.errors?.map((e) => `${e.instancePath}: ${e.message} (${JSON.stringify(e.params)})`) || []
       )
     }
-    return input as TypeBySchemaKey<SchemaKey>
+    return input as TypeBySchemaKey<SK>
   }
 }

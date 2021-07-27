@@ -6,6 +6,8 @@ import { schemas } from './schemas'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const prettierConfig = require('@joystream/prettier-config')
 
-compile(schemas.Config, 'ConfigJson', { style: prettierConfig }).then((output) =>
-  fs.writeFileSync(path.resolve(__dirname, '../../types/generated/ConfigJson.d.ts'), output)
-)
+Object.entries(schemas).forEach(([schemaKey, schema]) => {
+  compile(schema, `${schemaKey}Json`, { style: prettierConfig }).then((output) =>
+    fs.writeFileSync(path.resolve(__dirname, `../../types/generated/${schemaKey}Json.d.ts`), output)
+  )
+})
