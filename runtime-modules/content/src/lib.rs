@@ -150,6 +150,9 @@ pub trait Trait:
 
     /// deposit for creating a post
     type PostDeposit: Get<Self::Balance>;
+
+    /// limits for ensuring correct working of the subreddit
+    type SubredditLimits: MapLimits;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -584,6 +587,14 @@ pub type Post<T> = Post_<
     <T as balances::Trait>::Balance,
     <T as frame_system::Trait>::BlockNumber,
 >;
+
+pub trait MapLimits {
+    /// Maximum moderator count for a subreddit
+    type MaxModeratorsForSubreddit: Get<u64>;
+
+    /// Cap on bloat bond
+    type BloatBondCap: Get<u64>;
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
