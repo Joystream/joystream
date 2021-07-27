@@ -83,8 +83,6 @@ mod benchmarking;
 
 pub(crate) mod storage_bucket_picker;
 
-//TODO: counters to bag, and double map instead of inlined objects
-
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Randomness};
@@ -888,6 +886,13 @@ decl_event! {
         /// - dynamic bag type
         /// - new number of storage buckets
         NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(DynamicBagType, u64),
+
+        /// Bag objects changed.
+        /// Params
+        /// - bag id
+        /// - new total objects size
+        /// - new total objects number
+        BagObjectsChanged(BagId, u64, u64),
     }
 }
 
@@ -1570,8 +1575,10 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             bag_change.voucher_update.objects_total_size,
         );
 
+        // Save next object id.
         <NextDataObjectId<T>>::put(data.next_data_object_id);
 
+        // Insert new objects.
         for (data_object_id, data_object) in data.data_objects_map.iter() {
             BagDataObjectsById::<T>::insert(&params.bag_id, &data_object_id, data_object);
         }
@@ -2098,26 +2105,35 @@ impl<T: Trait> Module<T> {
         voucher_update: &VoucherUpdate,
         voucher_operation: OperationType,
     ) {
-        Bags::<T>::mutate(&bag_id, |bag| match voucher_operation {
-            OperationType::Increase => {
-                bag.objects_total_size = bag
-                    .objects_total_size
-                    .saturating_add(voucher_update.objects_total_size);
-                bag.objects_number = bag
-                    .objects_number
-                    .saturating_add(voucher_update.objects_number);
+        // Change bag object and size counters.
+        Bags::<T>::mutate(&bag_id, |bag| {
+            match voucher_operation {
+                OperationType::Increase => {
+                    bag.objects_total_size = bag
+                        .objects_total_size
+                        .saturating_add(voucher_update.objects_total_size);
+                    bag.objects_number = bag
+                        .objects_number
+                        .saturating_add(voucher_update.objects_number);
+                }
+                OperationType::Decrease => {
+                    bag.objects_total_size = bag
+                        .objects_total_size
+                        .saturating_sub(voucher_update.objects_total_size);
+                    bag.objects_number = bag
+                        .objects_number
+                        .saturating_sub(voucher_update.objects_number);
+                }
             }
-            OperationType::Decrease => {
-                bag.objects_total_size = bag
-                    .objects_total_size
-                    .saturating_sub(voucher_update.objects_total_size);
-                bag.objects_number = bag
-                    .objects_number
-                    .saturating_sub(voucher_update.objects_number);
-            }
-        });
-        //TODO: event
 
+            Self::deposit_event(RawEvent::BagObjectsChanged(
+                bag_id.clone(),
+                bag.objects_total_size,
+                bag.objects_number,
+            ));
+        });
+
+        // Change related buckets' vouchers.
         Self::change_storage_buckets_vouchers(&bag.stored_by, voucher_update, voucher_operation);
     }
 
@@ -2373,7 +2389,6 @@ impl<T: Trait> Module<T> {
     // Check the dynamic bag existence. Static bags always exist.
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
         if let BagId::<T>::Dynamic(_) = &bag_id {
-            // TODO: matches
             ensure!(
                 <Bags<T>>::contains_key(&bag_id),
                 Error::<T>::DynamicBagDoesntExist

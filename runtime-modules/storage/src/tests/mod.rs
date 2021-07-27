@@ -2231,6 +2231,9 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
 #[test]
 fn delete_data_objects_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
@@ -2251,6 +2254,12 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         UploadFixture::default()
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
+
+        EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(
+            bag_id.clone(),
+            object_creation_list[0].size,
+            1,
+        ));
 
         let data_object_id = 0; // just uploaded data object
 
@@ -2277,6 +2286,8 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         assert_eq!(bucket.voucher.objects_used, 0);
         assert_eq!(bucket.voucher.size_used, 0);
+
+        EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(bag_id.clone(), 0, 0));
     });
 }
 
