@@ -131,7 +131,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
     pub new_reward_account: Option<AccountId>,
 }
 
-// ChannelOwnershipTransferRequest type alias for simplification.
+/// ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
     <T as StorageOwnership>::ChannelId,
     <T as MembershipTypes>::MemberId,
@@ -261,6 +261,7 @@ impl<
         }
     }
 
+    /// Ensure given AccountId is vnft owner
     pub fn ensure_vnft_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
         if let NFTStatus::Owned(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
@@ -270,6 +271,7 @@ impl<
         }
     }
 
+    /// Check whether nft transactional status is set to `Auction`
     pub fn is_nft_auction_started(&self) -> bool {
         matches!(
             self.nft_status,
@@ -289,12 +291,13 @@ impl<
         Ok(())
     }
 
+    /// Check whether nft auction have been started
     pub fn ensure_nft_auction_started<T: Trait>(&self) -> DispatchResult {
-        self.get_nft_auction_ref()
-            .ok_or(Error::<T>::AuctionDidNotStart)?;
+        ensure!(self.is_nft_auction_started(), Error::<T>::AuctionDidNotStart);
         Ok(())
     }
 
+    /// Get nft auction record
     pub fn get_nft_auction(
         &self,
     ) -> Option<AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
@@ -310,6 +313,7 @@ impl<
         }
     }
 
+    /// Get nft auction record by reference
     pub fn get_nft_auction_ref(
         &self,
     ) -> Option<&AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
@@ -325,6 +329,7 @@ impl<
         }
     }
 
+    /// Get nft auction record by mutable reference
     pub fn get_nft_auction_ref_mut(
         &mut self,
     ) -> Option<&mut AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
@@ -340,6 +345,7 @@ impl<
         }
     }
 
+    ///  Ensure nft transactional status is set to `Idle`
     pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
         let is_idle = matches!(
             self.nft_status,
@@ -352,8 +358,8 @@ impl<
         Ok(())
     }
 
-    /// Sets nft transactional status to auction
-    pub fn set_auction_status(
+    /// Sets nft transactional status to provided `Auction`
+    pub fn set_auction_transactional_status(
         mut self,
         auction: AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
     ) -> Self {
@@ -369,12 +375,37 @@ impl<
         self
     }
 
-    /// Cancels nft auction
-    pub fn cancel_auction(mut self) -> Self {
+    /// Set nft transactional status to `Idle`
+    pub fn set_idle_transactional_status(mut self) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Idle;
         }
         self
+    }
+
+    /// Set nft transactional status to `PendingTransferTo`
+    pub fn set_pending_transfer_transactional_status(mut self, to: MemberId) -> Self {
+        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+            owned_nft.transactional_status = TransactionalStatus::PendingTransferTo(to);
+        }
+        self
+    }
+
+    /// Whether pending tansfer exist
+    pub fn is_pending_transfer_transactional_status(&self) -> bool {
+        matches!(
+            self.nft_status,
+            NFTStatus::Owned(OwnedNFT {
+                transactional_status: TransactionalStatus::PendingTransferTo(..),
+                ..
+            })
+        )
+    }
+
+    /// Ensure vNFT has pending transfer
+    pub(crate) fn ensure_pending_transfer_exists<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.is_pending_transfer_transactional_status(), Error::<T>::PendingTransferDoesNotExist);
+        Ok(())
     }
 }
 

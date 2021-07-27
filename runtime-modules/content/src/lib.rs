@@ -970,7 +970,7 @@ decl_module! {
 
             // Create new auction
             let auction = AuctionRecord::new(auctioneer, auctioneer_account_id, auction_params.clone());
-            let video = video.set_auction_status(auction);
+            let video = video.set_auction_transactional_status(auction);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -981,7 +981,7 @@ decl_module! {
 
         /// Cancel video auction
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_auction(
+        pub fn cancel_video_auction(
             origin,
             auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
@@ -1016,8 +1016,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Update the video
-            let video = video.cancel_auction();
+            // Cancel auction
+            let video = video.set_idle_transactional_status();
 
             VideoById::<T>::insert(video_id, video);
 
@@ -1139,67 +1139,69 @@ decl_module! {
             Self::issue_vnft(&mut video, video_id, content_actor_account_id, royalty);
         }
 
-        // /// Start vNFT transfer
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn start_transfer(
-        //     origin,
-        //     vnft_id: T::VNFTId,
-        //     from: MemberId<T>,
-        //     to: MemberId<T>,
-        // ) {
+        /// Start vNFT transfer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn start_transfer(
+            origin,
+            video_id: T::VideoId,
+            from: MemberId<T>,
+            to: MemberId<T>,
+        ) {
 
-        //     // Authorize participant under given member id
-        //     let from_account_id = Self::authorize_participant(origin, from)?;
+            // Authorize participant under given member id
+            let from_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&from, &from_account_id)?;
 
-        //     // Ensure given vnft exists
-        //     let vnft = Self::ensure_vnft_exists(vnft_id)?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-        //     // Ensure from_account_id is vnft owner
-        //     vnft.ensure_ownership::<T>(&from_account_id)?;
+            // Ensure from_account_id is vnft owner
+            video.ensure_vnft_ownership::<T>(&from_account_id)?;
 
-        //     // Ensure there is no auction for given vnft
-        //     Self::ensure_auction_does_not_exist(AuctionId::VNFTId(vnft_id))?;
+            // Ensure there is not pending transfer or existing auction for given nft.
+            video.ensure_nft_transactional_status_is_idle::<T>()?;
 
-        //     // Ensure pending transfer isn`t started
-        //     Self::ensure_pending_transfer_does_not_exist(vnft_id)?;
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            // Set nft transactional status to PendingTransferTo
+            video.set_pending_transfer_transactional_status(to);
 
-        //     // Add vNFT transfer data to pending transfers storage
-        //     <PendingTransfers<T>>::insert(vnft_id, to, ());
+            // Trigger event
+            Self::deposit_event(RawEvent::TransferStarted(video_id, from, to));
+        }
 
-        //     // Trigger event
-        //     Self::deposit_event(RawEvent::TransferStarted(vnft_id, from, to));
-        // }
+        /// Cancel vNFT transfer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_transfer(
+            origin,
+            video_id: T::VideoId,
+            participant_id: MemberId<T>,
+        ) {
 
-        // /// Cancel vNFT transfer
-        // #[weight = 10_000_000] // TODO: adjust weight
-        // pub fn cancel_transfer(
-        //     origin,
-        //     vnft_id: T::VNFTId,
-        //     participant: MemberId<T>,
-        // ) {
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
-        //     let participant_account_id = Self::authorize_participant(origin, participant)?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-        //     Self::ensure_pending_transfer_exists(vnft_id)?;
+            video.ensure_pending_transfer_exists::<T>()?;
 
-        //     let vnft = Self::ensure_vnft_exists(vnft_id)?;
-        //     vnft.ensure_ownership::<T>(&participant_account_id)?;
+            video.ensure_vnft_ownership::<T>(&participant_account_id)?;
 
-        //     //
-        //     // == MUTATION SAFE ==
-        //     //
+            //
+            // == MUTATION SAFE ==
+            //
 
-        //     // Remove vNFT transfer data from pending transfers storage
-        //     // Safe to call, because we always have one transfers per vnft_id
-        //     <PendingTransfers<T>>::remove_prefix(vnft_id);
+            // Cancel pending transfer
+            let video = video.set_idle_transactional_status();
 
-        //     // Trigger event
-        //     Self::deposit_event(RawEvent::TransferCancelled(vnft_id, participant));
-        // }
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::TransferCancelled(video_id, participant_id));
+        }
 
         // /// Accept incoming vNFT transfer
         // #[weight = 10_000_000] // TODO: adjust weight
