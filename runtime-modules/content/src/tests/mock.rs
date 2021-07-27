@@ -161,23 +161,6 @@ impl ContentActorAuthenticator for Test {
         *account_id == lead_account_id
     }
 
-    fn is_forum_lead(account_id: &Self::AccountId) -> bool {
-        let lead_account_id = ensure_signed(Origin::signed(FORUM_LEAD_ORIGIN)).unwrap();
-        *account_id == lead_account_id
-    }
-
-    fn is_forum_moderator(account_id: &Self::AccountId, moderator_id: &ModeratorId<Self>) -> bool {
-        match *moderator_id {
-            FIRST_MODERATOR_ID => {
-                ensure_signed(Origin::signed(FIRST_MODERATOR_ORIGIN)).unwrap() == *account_id
-            }
-            SECOND_MODERATOR_ID => {
-                ensure_signed(Origin::signed(SECOND_MODERATOR_ORIGIN)).unwrap() == *account_id
-            }
-            _ => false,
-        }
-    }
-
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
         let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
         let second_curator_account_id =

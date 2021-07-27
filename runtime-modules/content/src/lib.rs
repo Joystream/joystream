@@ -602,23 +602,6 @@ pub enum ModSetOperation {
     RemoveModerator,
 }
 
-/// Represents an subreddit actor authorized to perform operations on threads/posts
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub enum SubredditActor_<ChannelOwner, MemberId> {
-    ChannelOwner(ChannelOwner),
-    Moderator(MemberId),
-}
-
-type SubredditActor<T> = SubredditActor_<
-    ChannelOwner<
-        <T as MembershipTypes>::MemberId,
-        <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as StorageOwnership>::DAOId,
-    >,
-    <T as MembershipTypes>::MemberId,
->;
-
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -1525,7 +1508,7 @@ decl_module! {
        #[weight = 10_000_000]
        fn delete_thread(
             origin,
-            actor: SubredditActor<T>,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             thread_id: T::ThreadId,
         ) -> DispatchResult {
             // Ensure data migration is done
@@ -1663,7 +1646,7 @@ decl_module! {
 
     #[weight = 10_000_000]
     fn delete_post(origin,
-           actor: SubredditActor<T>,
+           actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
            thread_id: T::ThreadId,
            post_id: T::PostId,
           ) -> DispatchResult {
@@ -1953,21 +1936,43 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_delete_post_or_thread(
         account_id: &T::AccountId,
-        actor: &SubredditActor<T>,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: &T::ChannelId,
     ) -> DispatchResult {
         let channel = Self::ensure_channel_exists(channel_id)?;
         match actor {
-            SubredditActor_::ChannelOwner(owner) => {
-                // need to authenticate channel owner
-                ensure!(channel.owner == *owner, Error::<T>::ActorNotAuthorized);
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                // Authorize curator, performing all checks to ensure curator can act
+                CuratorGroup::<T>::perform_curator_in_group_auth(
+                    curator_id,
+                    curator_group_id,
+                    account_id,
+                )?;
+
+                // Ensure curator group is the channel owner.
+                ensure!(
+                    channel.owner == ChannelOwner::CuratorGroup(*curator_group_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+
                 Ok(())
             }
-            SubredditActor_::Moderator(member_id) => {
-                ensure_member_auth_success::<T>(&member_id, account_id)?;
-                Self::ensure_moderator_is_valid(channel_id, &member_id)?;
+            ContentActor::Member(member_id) => {
+                // check valid member
+                ensure_member_auth_success::<T>(member_id, account_id)?;
+
+                // Ensure the member is the channel owner or is a moderator
+                ensure!(
+                    channel.owner == ChannelOwner::Member(*member_id)
+                        || <ModeratorSetForSubreddit<T>>::contains_key(*channel_id, *member_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+
                 Ok(())
             }
+
+            // no permission for the lead at the moment
+            _ => Err(Error::<T>::ActorNotAuthorized.into()),
         }
     }
 
@@ -2095,7 +2100,6 @@ decl_event!(
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
         PostUpdateParameters = PostUpdateParameters<<T as frame_system::Trait>::Hash>,
-        SubredditActor = SubredditActor<T>,
         MemberId = <T as MembershipTypes>::MemberId,
     {
         // Curators
@@ -2217,10 +2221,10 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, MemberId, Hash, ChannelId),
-        ThreadDeleted(ThreadId, SubredditActor, ChannelId),
+        ThreadDeleted(ThreadId, ContentActor, ChannelId),
         PostAdded(PostId, MemberId, ThreadId, Hash, ChannelId),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
-        PostDeleted(PostId, SubredditActor, ThreadId, ChannelId),
+        PostDeleted(PostId, ContentActor, ThreadId, ChannelId),
         PostReacted(PostId, MemberId, ThreadId, ReactionId, ChannelId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
     }
