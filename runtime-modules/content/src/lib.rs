@@ -239,7 +239,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// Channel Subreddit is ON/OFF
-    subreddit_editable: bool,
+    subreddit_mutable: bool,
 }
 
 // Channel alias type for simplification.
@@ -290,8 +290,8 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId> {
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
-    /// subreddit editable or not
-    subreddit_editable: bool,
+    /// subreddit mutable or not
+    subreddit_mutable: bool,
 }
 
 /// Information about channel being updated.
@@ -304,8 +304,8 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
-    /// subreddit editable or not
-    subreddit_editable: Option<bool>,
+    /// subreddit mutable or not
+    subreddit_mutable: Option<bool>,
 }
 
 /// A category that videos can belong to.
@@ -498,6 +498,17 @@ pub struct Person<MemberId> {
 }
 
 // channel forum data structures
+
+/// Information about the thread being created
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct ThreadCreationParameters<Hash, ChannelId> {
+    title_hash: Hash,
+    text_hash: Hash,
+    post_mutable: bool,
+    channel_id: ChannelId,
+}
+
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
@@ -508,8 +519,8 @@ pub struct Thread_<SubredditUserId, Hash, Balance, NumberOfPosts, ChannelId> {
     /// Author of post.
     pub author_id: SubredditUserId,
 
-    /// Pay off by deleting
-    pub cleanup_pay_off: Balance,
+    /// State bloat bond
+    pub bloat_bond: Balance,
 
     /// Number of posts in the thread
     pub number_of_posts: NumberOfPosts,
@@ -526,6 +537,23 @@ pub type Thread<T> = Thread_<
     <T as StorageOwnership>::ChannelId,
 >;
 
+/// Information about the post being created
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PostCreationParameters<Hash, ThreadId> {
+    text_hash: Hash,
+    mutable: bool,
+    thread_id: ThreadId,
+}
+
+/// Information about the post being updated
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PostUpdateParameters<Hash> {
+    text_hash: Option<Hash>,
+    mutable: Option<bool>,
+}
+
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -539,11 +567,14 @@ pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Author of post.
     pub author_id: SubredditUserId,
 
-    /// Cleanup pay off
-    pub cleanup_pay_off: Balance,
-
     /// When it was created or last edited
     pub last_edited: BlockNumber,
+
+    /// Whether the post is mutable
+    pub mutable: bool,
+
+    /// State bloat Bond,
+    pub bloat_bond: Balance,
 }
 
 pub type Post<T> = Post_<
@@ -791,7 +822,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                subreddit_editable: params.subreddit_editable,
+                subreddit_mutable: params.subreddit_mutable,
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -845,8 +876,8 @@ decl_module! {
             }
 
             // Maybe update the subreddit state
-            if let Some(subreddit_state) = &params.subreddit_editable {
-                channel.subreddit_editable = *subreddit_state;
+            if let Some(subreddit_state) = &params.subreddit_mutable {
+                channel.subreddit_mutable = *subreddit_state;
             }
 
 
@@ -1389,20 +1420,18 @@ decl_module! {
     #[weight = 10_000_000]
      fn create_thread(
             origin,
-            forum_user_id: SubredditUserId<T>,
-            title_hash: T::Hash,
-            text_hash: T::Hash,
-            channel_id: T::ChannelId,
+         forum_user_id: SubredditUserId<T>,
+     params: ThreadCreationParameters<<T as frame_system::Trait>::Hash, T::ChannelId>,
         ) -> DispatchResult {
 
-            let account_id = ensure_signed(origin)?;
+         let account_id = ensure_signed(origin)?;
 
             // ensure that signer is forum_user_id and forum_user_id refers to a valid member
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
             // ensure valid channel && thread can be added to subreddit
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            Self::ensure_subreddit_is_editable(&channel)?;
+            let channel = Self::ensure_channel_exists(&params.channel_id)?;
+            Self::ensure_subreddit_is_mutable(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1422,11 +1451,11 @@ decl_module! {
 
             // Build a new thread
             let new_thread = Thread_ {
-                title_hash: title_hash,
+                title_hash: params.title_hash,
                 author_id: forum_user_id,
-                cleanup_pay_off: cleanup_payoff,
+                bloat_bond: cleanup_payoff,
                 number_of_posts: T::PostId::zero(),
-                channel_id: channel_id,
+                channel_id: params.channel_id,
             };
 
             // Store thread
@@ -1437,8 +1466,9 @@ decl_module! {
             // Add inital post to thread
             let _ = Self::add_new_post(
                 new_thread_id,
-                text_hash,
+                params.text_hash,
                 forum_user_id,
+                params.post_mutable,
             );
 
             // Update next thread id
@@ -1449,16 +1479,16 @@ decl_module! {
                 RawEvent::ThreadCreated(
                     new_thread_id,
                     forum_user_id,
-                    title_hash,
-                    channel_id,
+                    params.title_hash,
+                    params.channel_id,
                 )
             );
 
             Ok(())
      }
 
-    #[weight = 10_000_000]
-    fn delete_thread(
+       #[weight = 10_000_000]
+       fn delete_thread(
             origin,
             forum_user_id: SubredditUserId<T>,
             thread_id: T::ThreadId,
@@ -1481,7 +1511,7 @@ decl_module! {
             //
 
             // Pay off to thread deleter
-            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
+            Self::pay_off(thread_id, thread.bloat_bond, &account_id)?;
 
             // delete all the posts in the thread
             <PostById<T>>::remove_prefix(&thread_id);
@@ -1497,61 +1527,60 @@ decl_module! {
             ));
 
             Ok(())
-    }
+        }
 
     #[weight = 10_000_000]
-    fn add_post(
-            origin,
-            forum_user_id: SubredditUserId<T>,
-            thread_id: T::ThreadId,
-            channel_id: T::ChannelId,
-            text_hash: <T as frame_system::Trait>::Hash,
+    fn create_post(
+         origin,
+         forum_user_id: SubredditUserId<T>,
+         params: PostCreationParameters<<T as frame_system::Trait>::Hash, T::ThreadId>,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
-        // ensure subreddit can be edited
-        let channel = Self::ensure_channel_exists(&channel_id)?;
-        Self::ensure_subreddit_is_editable(&channel)?;
+        let thread_id = params.thread_id.clone();
 
         // Make sure thread exists and is mutable
         Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
         // make sure thread is valid
-        Self::ensure_thread_exists(&thread_id)?;
+        let thread = Self::ensure_thread_exists(&thread_id)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+        // ensure subreddit can be edited
+        let channel = Self::ensure_channel_exists(&thread.channel_id)?;
+        Self::ensure_subreddit_is_mutable(&channel)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
 
         // Add new post
         let post_id = Self::add_new_post(
-                    thread_id,
-                    text_hash,
-                    forum_user_id,
-                );
+            thread_id,
+            params.text_hash,
+            forum_user_id,
+            params.mutable,
+        );
 
+        // Generate event
+        Self::deposit_event(
+            RawEvent::PostAdded(
+                post_id,
+                forum_user_id,
+                thread_id,
+                params.text_hash,
+                thread.channel_id,
+            ));
 
-            // Generate event
-             Self::deposit_event(
-                 RawEvent::PostAdded(
-             post_id,
-             forum_user_id,
-             thread_id,
-             text_hash,
-             channel_id,
-         ));
-
-            Ok(())
+        Ok(())
     }
 
     #[weight = 10_000_000]
-    fn edit_post_text(
+    fn edit_post(
             origin,
             forum_user_id: SubredditUserId<T>,
             thread_id: T::ThreadId,
             post_id: T::PostId,
-            channel_id: T::ChannelId,
-            new_text_hash: T::Hash,
+            params: PostUpdateParameters<<T as frame_system::Trait>::Hash>,
         ) -> DispatchResult {
             // Ensure data migration is done
 
@@ -1563,31 +1592,30 @@ decl_module! {
             // Make sure there exists a mutable post with post id `post_id`
             let post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
+            // Post must be mutable in order to be modified
+            ensure!(post.mutable, Error::<T>::PostCannotBeModified);
+
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == forum_user_id, Error::<T>::AccountDoesNotMatchPostAuthor);
-
-            // ensure subreddit can be modified
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            Self::ensure_subreddit_is_editable(&channel)?;
-
             //
             // == MUTATION SAFE ==
             //
 
-            // Update post text
+            // Update post parameters
             let mut post = post;
-            post.text_hash = new_text_hash;
+            if let Some(new_text_hash) = params.text_hash { post.text_hash = new_text_hash }
+            if let Some(new_mutability) = params.mutable { post.mutable = new_mutability }
+
             post.last_edited = frame_system::Module::<T>::block_number();
 
             <PostById<T>>::insert(thread_id, post_id, post);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostTextUpdated(
+            Self::deposit_event(RawEvent::PostUpdated(
                     post_id,
                     forum_user_id,
                     thread_id,
-                    new_text_hash,
-                    channel_id,
+                    params,
                 ));
 
             Ok(())
@@ -1617,7 +1645,7 @@ decl_module! {
         // == MUTATION SAFE ==
         //
 
-        Self::pay_off(thread_id, post.cleanup_pay_off, &account_id)?;
+        Self::pay_off(thread_id, post.bloat_bond, &account_id)?;
 
         let mut thread = thread;
         thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one());
@@ -1648,11 +1676,13 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
 
-            let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
+            // Issue https://github.com/Joystream/joystream/issues/2545 requires that
+            // reaction business logic must be off-chain
+            // let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
-            // subreddit is editable
+            // subreddit is mutable
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            Self::ensure_subreddit_is_editable(&channel)?;
+            Self::ensure_subreddit_is_mutable(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1679,9 +1709,9 @@ decl_module! {
 
             let _thread = Self::ensure_thread_exists(&thread_id)?;
 
-            // subreddit is editable
+            // subreddit is mutable
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            Self::ensure_subreddit_is_editable(&channel)?;
+            Self::ensure_subreddit_is_mutable(&channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -1810,9 +1840,9 @@ impl<T: Trait> Module<T> {
         thread_id: &T::ThreadId,
         channel_id: &T::ChannelId,
     ) -> Result<Thread<T>, Error<T>> {
-        // Ensure channel_id is valid and subreddit editable
+        // Ensure channel_id is valid and subreddit mutable
         let channel = Self::ensure_channel_exists(channel_id)?;
-        Self::ensure_subreddit_is_editable(&channel)?;
+        Self::ensure_subreddit_is_mutable(&channel)?;
 
         // Ensure thread exists and is mutable
         let thread = Self::ensure_thread_exists(&thread_id)?;
@@ -1874,7 +1904,7 @@ impl<T: Trait> Module<T> {
 
         // ensure can edit subreddit
         let channel = Self::ensure_channel_exists(channel_id)?;
-        Self::ensure_subreddit_is_editable(&channel)?;
+        Self::ensure_subreddit_is_mutable(&channel)?;
 
         ensure!(
             post.author_id == *forum_user_id,
@@ -1889,6 +1919,7 @@ impl<T: Trait> Module<T> {
         thread_id: T::ThreadId,
         text_hash: T::Hash,
         author_id: SubredditUserId<T>,
+        mutable: bool,
     ) -> T::PostId {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
@@ -1901,8 +1932,9 @@ impl<T: Trait> Module<T> {
             text_hash: text_hash,
             thread_id,
             author_id,
-            cleanup_pay_off: T::PostDeposit::get(),
             last_edited: frame_system::Module::<T>::block_number(),
+            bloat_bond: T::PostDeposit::get(),
+            mutable: mutable,
         };
 
         <PostById<T>>::insert(thread_id, new_post_id, new_post);
@@ -1942,9 +1974,9 @@ impl<T: Trait> Module<T> {
             ExistenceRequirement::AllowDeath,
         )
     }
-    fn ensure_subreddit_is_editable(channel: &Channel<T>) -> Result<(), Error<T>> {
+    fn ensure_subreddit_is_mutable(channel: &Channel<T>) -> Result<(), Error<T>> {
         ensure!(
-            channel.subreddit_editable,
+            channel.subreddit_mutable,
             Error::<T>::SubredditCannotBeModified
         );
         Ok(())
@@ -1996,6 +2028,7 @@ decl_event!(
         ThreadId = <T as Trait>::ThreadId,
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
+        PostUpdateParameters = PostUpdateParameters<<T as frame_system::Trait>::Hash>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2118,7 +2151,7 @@ decl_event!(
         ThreadCreated(ThreadId, SubredditUserId, Hash, ChannelId),
         ThreadDeleted(ThreadId, SubredditUserId, ChannelId),
         PostAdded(PostId, SubredditUserId, ThreadId, Hash, ChannelId),
-        PostTextUpdated(PostId, SubredditUserId, ThreadId, Hash, ChannelId),
+        PostUpdated(PostId, SubredditUserId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, SubredditUserId, ThreadId, ChannelId),
         PostReacted(PostId, SubredditUserId, ThreadId, ReactionId, ChannelId),
         ThreadReacted(ThreadId, SubredditUserId, ChannelId, ReactionId),

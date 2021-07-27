@@ -109,6 +109,8 @@ decl_error! {
         /// Subreddit cannot be Modified
         SubredditCannotBeModified,
 
+        /// Post cannot be Modified
+        PostCannotBeModified,
 
     }
 }

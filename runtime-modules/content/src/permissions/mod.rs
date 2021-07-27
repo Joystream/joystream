@@ -45,12 +45,6 @@ pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
     /// Authorize actor as lead
     fn is_lead(account_id: &Self::AccountId) -> bool;
 
-    /// Authorize actor as forum lead
-    fn is_forum_lead(account_id: &Self::AccountId) -> bool;
-
-    /// Authorize actor as forum moderator
-    fn is_forum_moderator(account_id: &Self::AccountId, moderator_id: &ModeratorId<Self>) -> bool;
-
     /// Checks if Id represents a worker id in the working group
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool;
 
@@ -103,24 +97,6 @@ pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Dispatch
 pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     let account_id = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&account_id)
-}
-
-/// Ensure given 'AccountId' is lead
-pub fn ensure_is_forum_lead<T: Trait>(account_id: &T::AccountId) -> Result<(), Error<T>> {
-    ensure!(T::is_forum_lead(&account_id), Error::<T>::LeadAuthFailed);
-    Ok(())
-}
-
-/// Ensure given 'AccountId' is moderator
-pub fn ensure_is_moderator<T: Trait>(
-    account_id: &T::AccountId,
-    moderator_id: &ModeratorId<T>,
-) -> Result<(), Error<T>> {
-    ensure!(
-        T::is_forum_moderator(&account_id, moderator_id),
-        Error::<T>::LeadAuthFailed
-    );
-    Ok(())
 }
 
 pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
