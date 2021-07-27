@@ -38,7 +38,7 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext numberOfValidators=2 --plaintext isMinikube=true
+    --plaintext numberOfValidators=2 --plaintext isMinikube=true --plaintext networkSuffix=8122
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
@@ -52,7 +52,7 @@ After cloning this repo, from this working directory, run these commands:
    Running `pulumi up -y` will deploy the EKS cluster. Note, provisioning a
    new EKS cluster takes between 10-15 minutes.
 
-1. Once the stack is up and running, we will modify the Caddy config to get SSL certificate for the load balancer
+1. Once the stack is up and running, we will modify the Caddy config to get SSL certificate for the load balancer for AWS
 
    Modify the config variable `isLoadBalancerReady`
 

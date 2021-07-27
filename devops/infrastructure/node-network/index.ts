@@ -4,7 +4,8 @@ import * as pulumi from '@pulumi/pulumi'
 import * as k8s from '@pulumi/kubernetes'
 import { configMapFromFile } from './configMap'
 import { CaddyServiceDeployment } from './caddy'
-import { getSubkeyContainers, getValidatorContainers } from './utils'
+import { getSubkeyContainers } from './utils'
+import { ValidatorServiceDeployment } from './validator'
 // const { exec } = require('child_process')
 
 const config = new pulumi.Config()
@@ -12,7 +13,6 @@ const awsConfig = new pulumi.Config('aws')
 const isMinikube = config.getBoolean('isMinikube')
 
 export let kubeconfig: pulumi.Output<any>
-export let joystreamAppsImage: pulumi.Output<string>
 
 let provider: k8s.Provider
 
@@ -60,35 +60,34 @@ const jsonModifyConfig = new configMapFromFile(
   resourceOptions
 ).configName
 
-const chainDataPath = '/chain-data'
 const networkSuffix = config.get('networkSuffix') || '8129'
-const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
 const numberOfValidators = config.getNumber('numberOfValidators') || 1
+const chainDataPath = '/chain-data'
+const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
 
 const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
-const validatorContainers = getValidatorContainers(numberOfValidators, chainDataPath, chainSpecPath)
 
-const pvc = new k8s.core.v1.PersistentVolumeClaim(
-  `${name}-pvc`,
-  {
-    metadata: {
-      labels: appLabels,
-      namespace: namespaceName,
-      name: `${name}-pvc`,
-    },
-    spec: {
-      accessModes: ['ReadWriteMany'],
-      resources: {
-        requests: {
-          storage: `1Gi`,
+if (isMinikube) {
+  const pvc = new k8s.core.v1.PersistentVolumeClaim(
+    `${name}-pvc`,
+    {
+      metadata: {
+        labels: appLabels,
+        namespace: namespaceName,
+        name: `${name}-pvc`,
+      },
+      spec: {
+        accessModes: ['ReadWriteMany'],
+        resources: {
+          requests: {
+            storage: `1Gi`,
+          },
         },
       },
     },
-  },
-  resourceOptions
-)
+    resourceOptions
+  )
 
-if (isMinikube) {
   const pv = new k8s.core.v1.PersistentVolume(`${name}-pv`, {
     metadata: {
       labels: { ...appLabels, type: 'local' },
@@ -101,10 +100,146 @@ if (isMinikube) {
         storage: `1Gi`,
       },
       hostPath: {
-        path: '/mnt/data/ckan',
+        path: '/mnt/data/',
       },
     },
   })
+} else {
+  const pvcNFS = new k8s.core.v1.PersistentVolumeClaim(
+    `pvcfornfs`,
+    {
+      metadata: {
+        namespace: namespaceName,
+        name: `pvcfornfs`,
+      },
+      spec: {
+        accessModes: ['ReadWriteOnce'],
+        resources: {
+          requests: {
+            storage: `1Gi`,
+          },
+        },
+      },
+    },
+    resourceOptions
+  )
+
+  const nfsLabels = { role: 'nfs-server' }
+
+  const nfsServer = new k8s.apps.v1.Deployment(
+    `nfs-server`,
+    {
+      metadata: {
+        namespace: namespaceName,
+        labels: nfsLabels,
+        name: 'nfs-server',
+      },
+      spec: {
+        replicas: 1,
+        selector: { matchLabels: nfsLabels },
+        template: {
+          metadata: {
+            labels: nfsLabels,
+          },
+          spec: {
+            containers: [
+              {
+                name: 'nfs-server',
+                image: 'gcr.io/google_containers/volume-nfs:0.8',
+                ports: [
+                  { name: 'nfs', containerPort: 2049 },
+                  { name: 'mountd', containerPort: 20048 },
+                  { name: 'rpcbind', containerPort: 111 },
+                ],
+                command: ['/bin/sh', '-c'],
+                args: ['/usr/local/bin/run_nfs.sh /exports; chmod 777 /exports'],
+                securityContext: { 'privileged': true },
+                volumeMounts: [
+                  {
+                    name: 'nfsstore',
+                    mountPath: '/exports',
+                  },
+                ],
+              },
+            ],
+            volumes: [
+              {
+                name: 'nfsstore',
+                persistentVolumeClaim: {
+                  claimName: 'pvcfornfs',
+                },
+              },
+            ],
+          },
+        },
+      },
+    },
+    { ...resourceOptions, dependsOn: pvcNFS }
+  )
+
+  const nfsService = new k8s.core.v1.Service(
+    'nfs-server',
+    {
+      metadata: {
+        namespace: namespaceName,
+        name: 'nfs-server',
+      },
+      spec: {
+        ports: [
+          { name: 'nfs', port: 2049 },
+          { name: 'mountd', port: 20048 },
+          { name: 'rpcbind', port: 111 },
+        ],
+        selector: nfsLabels,
+      },
+    },
+    resourceOptions
+  )
+
+  const ip = nfsService.spec.apply((v) => v.clusterIP)
+
+  const pv = new k8s.core.v1.PersistentVolume(
+    `${name}-pvc`,
+    {
+      metadata: {
+        labels: appLabels,
+        namespace: namespaceName,
+        name: `${name}-pvc`,
+      },
+      spec: {
+        accessModes: ['ReadWriteMany'],
+        capacity: {
+          storage: `1Gi`,
+        },
+        nfs: {
+          server: ip, //pulumi.interpolate`nfs-server.${namespaceName}.svc.cluster.local`,
+          path: '/',
+        },
+      },
+    },
+    { ...resourceOptions, dependsOn: nfsService }
+  )
+
+  const pvc = new k8s.core.v1.PersistentVolumeClaim(
+    `${name}-pvc`,
+    {
+      metadata: {
+        namespace: namespaceName,
+        name: `${name}-pvc`,
+      },
+      spec: {
+        accessModes: ['ReadWriteMany'],
+        resources: {
+          requests: {
+            storage: `1Gi`,
+          },
+        },
+        storageClassName: '',
+        selector: { matchLabels: appLabels },
+      },
+    },
+    { ...resourceOptions }
+  )
 }
 
 const chainDataPrepareJob = new k8s.batch.v1.Job(
@@ -126,7 +261,7 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
               args: [
                 `/joystream/chain-spec-builder generate -a ${numberOfValidators} \
                 --chain-spec-path ${chainDataPath}/chainspec.json --deployment live \
-                --endowed 1 --keystore-path ${chainDataPath}/data >> ${chainDataPath}/seeds.txt`,
+                --endowed 1 --keystore-path ${chainDataPath}/data > ${chainDataPath}/seeds.txt`,
               ],
               volumeMounts: [
                 {
@@ -195,67 +330,17 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
   { ...resourceOptions }
 )
 
-// async function executeCommand(url: string): Promise<string> {
-//   return new Promise((resolve, reject) => {
-//     exec(url, (err: string, stdout: string, stderr: string) => {
-//       if (err) reject(err)
-//       resolve(stdout.replace(/\r?\n|\r/g, ''))
-//     })
-//   })
-// }
+// Create N validator service deployments
+const validators = []
 
-// const res = executeCommand("kubectl get pods | grep 'caddy-proxy' | awk '{print $1}'")
-
-// export const result = res
-
-const validatorLabels = { app: 'validator-nodes' }
-
-const validatorNode = new k8s.apps.v1.Deployment(
-  `validator-node`,
-  {
-    metadata: {
-      namespace: namespaceName,
-      labels: validatorLabels,
-    },
-    spec: {
-      replicas: 1,
-      selector: { matchLabels: validatorLabels },
-      template: {
-        metadata: {
-          labels: validatorLabels,
-        },
-        spec: {
-          containers: [...validatorContainers],
-          volumes: [
-            {
-              name: 'config-data',
-              persistentVolumeClaim: {
-                claimName: `${name}-pvc`,
-              },
-            },
-          ],
-        },
-      },
-    },
-  },
-  { ...resourceOptions, dependsOn: chainDataPrepareJob }
-)
-
-const validatorService = new k8s.core.v1.Service(
-  `node-1`,
-  {
-    metadata: {
-      labels: validatorLabels,
-      namespace: namespaceName,
-      name: 'node-1',
-    },
-    spec: {
-      ports: [{ name: 'port-1', port: 30333 }],
-      selector: validatorLabels,
-    },
-  },
-  resourceOptions
-)
+for (let i = 1; i <= numberOfValidators; i++) {
+  const validator = new ValidatorServiceDeployment(
+    `node-${i}`,
+    { namespace: namespaceName, index: i, chainSpecPath, dataPath: chainDataPath, pvc: `${name}-pvc` },
+    { ...resourceOptions, dependsOn: chainDataPrepareJob }
+  )
+  validators.push(validator)
+}
 
 const deployment = new k8s.apps.v1.Deployment(
   `rpc-node`,
@@ -317,13 +402,13 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { ...resourceOptions, dependsOn: validatorNode }
+  { ...resourceOptions, dependsOn: validators }
 )
 
 // Export the Deployment name
 export const deploymentName = deployment.metadata.name
 
-// Create a LoadBalancer Service for the NGINX Deployment
+// Create a Service for the RPC Node
 const service = new k8s.core.v1.Service(
   name,
   {
