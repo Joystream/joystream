@@ -28,7 +28,8 @@
     "content-directory-schemas",
     "query-node",
     "query-node/mappings",
-    "query-node/generated/*"
+    "query-node/generated/*",
+    "metadata-protobuf"
   ],
   "resolutions": {
     "@polkadot/api": "4.2.1",
