@@ -5,7 +5,7 @@ pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
-use frame_support::StorageMap;
+use frame_support::{StorageDoubleMap, StorageMap};
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
@@ -679,17 +679,21 @@ fn upload_succeeded() {
 
         // check bag content
         let data_object_id = 0u64;
-        let bag = Storage::static_bag(&StaticBagId::Council);
+        let bag_id: BagId<Test> = StaticBagId::Council.into();
+        let bag = Storage::bag(&bag_id);
+
+        assert_eq!(bag.objects_number, 1);
         assert_eq!(
-            bag.objects.iter().collect::<Vec<_>>(),
-            vec![(
-                &data_object_id,
-                &DataObject {
-                    size: upload_params.object_creation_list[0].size,
-                    deletion_prize: DataObjectDeletionPrize::get(),
-                    accepted: false,
-                }
-            )]
+            bag.objects_total_size,
+            upload_params.object_creation_list[0].size
+        );
+        assert_eq!(
+            Storage::data_object_by_bag_id_by_id(&bag_id, &data_object_id),
+            DataObject {
+                size: upload_params.object_creation_list[0].size,
+                deletion_prize: DataObjectDeletionPrize::get(),
+                accepted: false,
+            }
         );
 
         // check balances
@@ -869,17 +873,20 @@ fn upload_succeeded_with_dynamic_bag() {
         // check bag content
         let data_object_id = 0u64;
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
+        let bag_id: BagId<Test> = dynamic_bag_id.into();
 
+        assert_eq!(bag.objects_number, 1);
         assert_eq!(
-            bag.objects.iter().collect::<Vec<_>>(),
-            vec![(
-                &data_object_id,
-                &DataObject {
-                    size: upload_params.object_creation_list[0].size,
-                    deletion_prize: DataObjectDeletionPrize::get(),
-                    accepted: false,
-                }
-            )]
+            bag.objects_total_size,
+            upload_params.object_creation_list[0].size
+        );
+        assert_eq!(
+            Storage::data_object_by_bag_id_by_id(&bag_id, &data_object_id),
+            DataObject {
+                size: upload_params.object_creation_list[0].size,
+                deletion_prize: DataObjectDeletionPrize::get(),
+                accepted: false,
+            }
         );
     });
 }
@@ -933,7 +940,7 @@ fn upload_succeeded_with_non_empty_bag() {
             .call_and_assert(Ok(()));
 
         let bag = Storage::static_bag(&StaticBagId::Council);
-        assert_eq!(bag.objects.len(), 4);
+        assert_eq!(bag.objects_number, 4);
     });
 }
 
@@ -1303,9 +1310,10 @@ fn accept_pending_data_objects_succeeded() {
 
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
-        let bag = Storage::static_bag(&static_bag_id);
+        let bag_id = static_bag_id.into();
+        let data_object = Storage::ensure_data_object_exists(&bag_id, &data_object_id).unwrap();
         // Check `accepted` flag for the fist data object in the bag.
-        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, false);
+        assert_eq!(data_object.accepted, false);
 
         AcceptPendingDataObjectsFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
@@ -1315,9 +1323,9 @@ fn accept_pending_data_objects_succeeded() {
             .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::static_bag(&static_bag_id);
+        let data_object = Storage::ensure_data_object_exists(&bag_id, &data_object_id).unwrap();
         // Check `accepted` flag for the fist data object in the bag.
-        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
+        assert_eq!(data_object.accepted, true);
 
         EventFixture::assert_last_crate_event(RawEvent::PendingDataObjectsAccepted(
             bucket_id,
@@ -1470,9 +1478,10 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
             .with_data_object_ids(data_object_ids)
             .call_and_assert(Ok(()));
 
-        let bag = Storage::dynamic_bag(&dynamic_bag_id);
+        let bag_id = dynamic_bag_id.into();
+        let data_object = Storage::ensure_data_object_exists(&bag_id, &data_object_id).unwrap();
         // Check `accepted` flag for the fist data object in the bag.
-        assert_eq!(bag.objects.iter().collect::<Vec<_>>()[0].1.accepted, true);
+        assert_eq!(data_object.accepted, true);
     });
 }
 
@@ -1792,11 +1801,14 @@ fn move_data_objects_succeeded() {
         let ids = BTreeSet::from_iter(vec![data_object_id]);
 
         // Pre-checks
-        let src_bag = Storage::dynamic_bag(&src_dynamic_bag_id.clone());
-        let dest_bag = Storage::dynamic_bag(&dest_dynamic_bag_id.clone());
-
-        assert!(src_bag.objects.contains_key(&data_object_id));
-        assert!(!dest_bag.objects.contains_key(&data_object_id));
+        assert!(<crate::BagDataObjectsById<Test>>::contains_key(
+            &src_bag_id,
+            &data_object_id
+        ));
+        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+            &dest_bag_id,
+            &data_object_id
+        ));
 
         MoveDataObjectsFixture::default()
             .with_src_bag_id(src_bag_id.clone())
@@ -1805,11 +1817,14 @@ fn move_data_objects_succeeded() {
             .call_and_assert(Ok(()));
 
         // Post-checks
-        let src_bag = Storage::dynamic_bag(&src_dynamic_bag_id.clone());
-        let dest_bag = Storage::dynamic_bag(&dest_dynamic_bag_id.clone());
-
-        assert!(!src_bag.objects.contains_key(&data_object_id));
-        assert!(dest_bag.objects.contains_key(&data_object_id));
+        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+            &src_bag_id,
+            &data_object_id
+        ));
+        assert!(<crate::BagDataObjectsById<Test>>::contains_key(
+            &dest_bag_id,
+            &data_object_id
+        ));
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsMoved(
             src_bag_id,
@@ -2100,8 +2115,10 @@ fn delete_data_objects_succeeded() {
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         // pre-checks
-        let bag = Storage::dynamic_bag(&dynamic_bag_id);
-        assert!(bag.objects.contains_key(&data_object_id));
+        assert!(<crate::BagDataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id
+        ));
 
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
@@ -2119,8 +2136,10 @@ fn delete_data_objects_succeeded() {
             .call_and_assert(Ok(()));
 
         // post-checks
-        let bag = Storage::dynamic_bag(&dynamic_bag_id);
-        assert!(!bag.objects.contains_key(&data_object_id));
+        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id
+        ));
 
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
@@ -2212,9 +2231,9 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
 #[test]
 fn delete_data_objects_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
-        let council_bag_id = BagId::<Test>::Static(StaticBagId::Council);
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
-        let bucket_id = create_default_storage_bucket_and_assign_to_bag(council_bag_id.clone());
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -2222,7 +2241,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         let object_creation_list = create_single_data_object();
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: council_bag_id.clone(),
+            bag_id: bag_id.clone(),
             authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
@@ -2244,12 +2263,14 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
 
         DeleteDataObjectsFixture::default()
-            .with_bag_id(council_bag_id.clone())
+            .with_bag_id(bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::static_bag(&StaticBagId::Council);
-        assert!(!bag.objects.contains_key(&data_object_id));
+        assert!(!<crate::BagDataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id
+        ));
 
         //// Post-check voucher
         let bucket = Storage::storage_bucket_by_id(bucket_id);
