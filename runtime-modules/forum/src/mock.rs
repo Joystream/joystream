@@ -834,7 +834,14 @@ pub fn delete_post_mock(
 ) {
     let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
     let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
-    let deleted_posts = vec![(category_id, thread_id, post_id, hide)];
+    let mut deleted_posts = BTreeMap::new();
+    let extended_post_id = ExtendedPostIdObject {
+        category_id,
+        thread_id,
+        post_id,
+    };
+
+    deleted_posts.insert(extended_post_id, hide);
 
     assert_eq!(
         TestForumModule::delete_posts(
