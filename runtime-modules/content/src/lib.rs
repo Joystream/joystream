@@ -1659,11 +1659,10 @@ decl_module! {
         // obtain channel
         let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
-    // ensure actor is authorized to delete post
+        // ensure actor is authorized to delete post
         Self::ensure_can_delete_post(
             &account_id,
             &actor,
-            &channel_id,
             &post,
         )?;
 
@@ -1671,12 +1670,8 @@ decl_module! {
         // == MUTATION SAFE ==
         //
 
-        Self::pay_off(thread_id, post.bloat_bond, &account_id)?;
-
-        <ThreadById<T>>::mutate(thread_id,
-            |thread| thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one()));
-
-        <PostById<T>>::remove(thread_id, post_id);
+        //        Self::pay_off(thread_id, post.bloat_bond, &account_id)?;
+        Self::delete_post_inner(&thread_id, &post_id);
 
         Self::deposit_event(RawEvent::PostDeleted(
             post_id,
@@ -1687,6 +1682,33 @@ decl_module! {
 
         Ok(())
     }
+
+    #[weight = 10_000_000]
+    fn moderate_post(origin,
+           actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+           thread_id: T::ThreadId,
+           post_id: T::PostId,
+    ) -> DispatchResult {
+    // ensure signed
+    let account_id = ensure_signed(origin)?;
+
+    // ensure post exists
+    let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
+    let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
+
+    // ensure actor can moderate post
+    Self::ensure_can_moderate_post(
+            &account_id,
+            &actor,
+            &channel_id,
+        )?;
+
+    // slashing
+    // delete post
+    // deposit event
+    Ok(())
+    }
+
 
     #[weight = 10_000_000]
     fn react_post(origin,
@@ -1939,10 +1961,46 @@ impl<T: Trait> Module<T> {
     fn ensure_can_delete_post(
         account_id: &T::AccountId,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        channel_id: &T::ChannelId,
         post: &Post<T>,
     ) -> DispatchResult {
+        match actor {
+            ContentActor::Member(member_id) => {
+                // Authenticate valid member
+                ensure_member_auth_success::<T>(member_id, account_id)?;
+
+                // Conditions for a post to be deleted by a member actor:
+                // 1. post age is above ownership duration threshold OR
+                // 2. actor is post author
+
+                let is_post_ownership_expired = frame_system::Module::<T>::block_number()
+                    .saturating_sub(post.creation_time)
+                    <= <T as frame_system::Trait>::BlockNumber::from(
+                        <T::MapLimits as SubredditLimits>::PostOwnershipDuration::get(),
+                    );
+                let is_post_author = *member_id == post.author_id;
+
+                ensure!(
+                    is_post_ownership_expired || is_post_author,
+                    Error::<T>::ActorNotAuthorized
+                );
+
+                Ok(())
+            }
+
+            // no permission for other roles at the moment
+            _ => Err(Error::<T>::ActorNotAuthorized.into()),
+        }
+    }
+
+    fn ensure_can_moderate_post(
+        account_id: &T::AccountId,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        channel_id: &T::ChannelId,
+    ) -> DispatchResult {
         let channel = Self::ensure_channel_exists(channel_id)?;
+
+        // channel owner, curators and moderators can moderate
+
         match actor {
             ContentActor::Curator(curator_group_id, curator_id) => {
                 // Authorize curator, performing all checks to ensure curator can act
@@ -1952,36 +2010,22 @@ impl<T: Trait> Module<T> {
                     account_id,
                 )?;
 
-                // Ensure curator group is the channel owner.
-                ensure!(
-                    channel.owner == ChannelOwner::CuratorGroup(*curator_group_id),
-                    Error::<T>::ActorNotAuthorized
-                );
-
                 Ok(())
             }
             ContentActor::Member(member_id) => {
-                // check valid member
+                // Authorized a valid member
                 ensure_member_auth_success::<T>(member_id, account_id)?;
 
-                // Conditions for a post to be deleted by a member actor:
+                // Conditions for a post to be moderated by a member actor:
                 // 1. actor is channel owner OR
                 // 2. actor is a moderator OR
-                // 3. post age is above ownership duration threshold OR
-                // 4. actor is post author
 
                 let is_channel_owner = channel.owner == ChannelOwner::Member(*member_id);
                 let is_moderator =
                     <ModeratorSetForSubreddit<T>>::contains_key(*channel_id, *member_id);
-                let is_post_ownership_expired = frame_system::Module::<T>::block_number()
-                    .saturating_sub(post.creation_time)
-                    <= <T as frame_system::Trait>::BlockNumber::from(
-                        <T::MapLimits as SubredditLimits>::PostOwnershipDuration::get(),
-                    );
-                let is_post_author = *member_id == post.author_id;
 
                 ensure!(
-                    is_channel_owner || is_moderator || is_post_ownership_expired || is_post_author,
+                    is_channel_owner || is_moderator,
                     Error::<T>::ActorNotAuthorized
                 );
 
@@ -2081,19 +2125,6 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn pay_off(
-        thread_id: T::ThreadId,
-        amount: <T as balances::Trait>::Balance,
-        account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            &state_cleanup_treasury_account,
-            account_id,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
-    }
     fn ensure_subreddit_is_mutable(channel: &Channel<T>) -> Result<(), Error<T>> {
         ensure!(
             channel.subreddit_mutable,
@@ -2111,6 +2142,16 @@ impl<T: Trait> Module<T> {
             Error::<T>::ModeratorNotValid,
         );
         Ok(())
+    }
+
+    fn delete_post_inner(thread_id: &T::ThreadId, post_id: &T::PostId) {
+        //        Self::pay_off(thread_id, post.bloat_bond, &account_id)?;
+
+        <ThreadById<T>>::mutate(thread_id, |thread| {
+            thread.number_of_posts = thread.number_of_posts.saturating_sub(T::PostId::one())
+        });
+
+        <PostById<T>>::remove(thread_id, post_id);
     }
 }
 
