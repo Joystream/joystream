@@ -154,7 +154,7 @@ async function getDistributionBucketOperatorWithMetadata(store: DatabaseManager,
 async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string) {
   const bucket = await store.get(StorageBucket, {
     where: { id },
-    relations: ['metadata', 'metadata.nodeLocation', 'metadata.nodeLocation.coordinates'],
+    relations: ['operatorMetadata', 'operatorMetadata.nodeLocation', 'operatorMetadata.nodeLocation.coordinates'],
   })
   if (!bucket) {
     throw new Error(`StorageBucket not found by id: ${id}`)
