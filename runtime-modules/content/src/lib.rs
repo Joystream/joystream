@@ -1079,7 +1079,7 @@ decl_module! {
                 // TODO switch to StakingHandler representation after merging with olympia
 
                 // Make auction bid & update auction data
-                match *&auction.buy_now_price {
+                match auction.buy_now_price {
                     // Instantly complete auction if bid is greater or equal then buy now price
                     Some(buy_now_price) if bid >= buy_now_price => {
                         // Reseve balance for current bid
