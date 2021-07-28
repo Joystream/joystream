@@ -3,7 +3,7 @@
 
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
 import type { AnyNumber, ITuple } from '@polkadot/types/types';
-import type { ActivateOpeningAt, Actor, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ClassId, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentId, Credential, CredentialSet, CurationActor, CuratorApplicationId, CuratorApplicationIdSet, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagId, DynamicBagType, ElectionParameters, EntityController, EntityId, EntityPermissions, FillOpeningParameters, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningPolicyCommitment, OpeningType, Operation, OperationType, OptionalText, PaidTermId, PostId, Property, PropertyId, ProposalId, ReferenceConstraint, RewardPolicy, SchemaId, StorageBucketId, TerminateRoleParameters, ThreadId, UploadParameters, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
+import type { ActivateOpeningAt, Actor, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ClassId, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentId, Credential, CredentialSet, CurationActor, CuratorApplicationId, CuratorApplicationIdSet, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, ElectionParameters, EntityController, EntityId, EntityPermissions, FillOpeningParameters, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningPolicyCommitment, OpeningType, Operation, OperationType, OptionalText, PaidTermId, PostId, Property, PropertyId, ProposalId, ReferenceConstraint, RewardPolicy, SchemaId, StorageBucketId, TerminateRoleParameters, ThreadId, UploadParameters, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
 import type { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import type { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import type { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -1192,7 +1192,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Sets storage bucket voucher limits.
        **/
-      setStorageBucketVoucherLimits: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storageBucketId: StorageBucketId | AnyNumber | Uint8Array, newObjectsSizeLimit: u64 | AnyNumber | Uint8Array, newObjectsNumberLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, StorageBucketId, u64, u64]>;
+      setStorageBucketVoucherLimits: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, newObjectsSizeLimit: u64 | AnyNumber | Uint8Array, newObjectsNumberLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, u64, u64]>;
       /**
        * Sets storage operator metadata (eg.: storage node URL).
        **/
@@ -1200,11 +1200,11 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Create a dynamic bag. Development mode.
        **/
-      sudoCreateDynamicBag: AugmentedSubmittable<(bagId: DynamicBagId | { Member: any } | { Channel: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [DynamicBagId]>;
+      sudoCreateDynamicBag: AugmentedSubmittable<(bagId: DynamicBagId | { Member: any } | { Channel: any } | string | Uint8Array, deletionPrize: Option<DynamicBagDeletionPrize> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [DynamicBagId, Option<DynamicBagDeletionPrize>]>;
       /**
        * Upload new data objects. Development mode.
        **/
-      sudoUploadDataObjects: AugmentedSubmittable<(params: UploadParameters | { authenticationKey?: any; bagId?: any; objectCreationList?: any; deletionPrizeSourceAccountId?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [UploadParameters]>;
+      sudoUploadDataObjects: AugmentedSubmittable<(params: UploadParameters | { authenticationKey?: any; bagId?: any; objectCreationList?: any; deletionPrizeSourceAccountId?: any; expectedDataSizeFee?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [UploadParameters]>;
       /**
        * Add and remove hashes to the current blacklist.
        **/
@@ -1220,7 +1220,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Update whether new bags are being accepted for storage.
        **/
-      updateStorageBucketStatus: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, StorageBucketId, bool]>;
+      updateStorageBucketStatus: AugmentedSubmittable<(storageBucketId: StorageBucketId | AnyNumber | Uint8Array, acceptingNewBags: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [StorageBucketId, bool]>;
       /**
        * Updates storage buckets for a bag..
        **/

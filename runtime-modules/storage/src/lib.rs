@@ -2487,20 +2487,26 @@ decl_module! {
             );
         }
 
+        // ===== Sudo actions (development mode) =====
+
         /// Upload new data objects. Development mode.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
-          ensure_root(origin)?;
+            ensure_root(origin)?;
 
-          Self::upload_data_objects(params)?;
+            Self::upload_data_objects(params)?;
         }
 
         /// Create a dynamic bag. Development mode.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn sudo_create_dynamic_bag(origin, bag_id: DynamicBagId<T>) {
-          ensure_root(origin)?;
+        pub fn sudo_create_dynamic_bag(
+            origin,
+            bag_id: DynamicBagId<T>,
+            deletion_prize: Option<DynamicBagDeletionPrize<T>>,
+        ) {
+            ensure_root(origin)?;
 
-          Self::create_dynamic_bag(bag_id)?;
+            Self::create_dynamic_bag(bag_id, deletion_prize)?;
         }
     }
 }

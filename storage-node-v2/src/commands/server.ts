@@ -32,8 +32,6 @@ export default class Server extends ApiCommandBase {
     ...ApiCommandBase.flags,
   }
 
-  static args = [{ name: 'file' }]
-
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 

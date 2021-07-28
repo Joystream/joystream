@@ -165,10 +165,6 @@ declare module '@polkadot/api/types/consts' {
        **/
       maxNumberOfDataObjectsPerBag: u64 & AugmentedConst<ApiType>;
       /**
-       * Exports const - max allowed storage bucket number.
-       **/
-      maxStorageBucketNumber: u64 & AugmentedConst<ApiType>;
-      /**
        * Exports const - "Storage buckets per bag" value constraint.
        **/
       storageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint & AugmentedConst<ApiType>;

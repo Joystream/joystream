@@ -123,7 +123,7 @@ export async function uploadFile(
       [uploadRequest.dataObjectId]
     )
     res.status(201).json({
-      status: 'received',
+      id: hash,
     })
   } catch (err) {
     await cleanupFileOnError(cleanupFileName, err.toString())

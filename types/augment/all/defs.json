@@ -999,16 +999,19 @@
     "DynamicBagCreationPolicy": {
         "numberOfStorageBuckets": "u64"
     },
-    "DynamicBag": {
+    "DynamicBagDeletionPrize": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "DynamicBagDeletionPrizeObject": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "Bag": {
         "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
         "stored_by": "StorageBucketIdSet",
         "distributed_by": "Vec<u64>",
-        "deletion_prize": "u128"
-    },
-    "StaticBag": {
-        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
-        "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<u64>"
+        "deletion_prize": "Option<u128>"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
@@ -1054,7 +1057,8 @@
         "authenticationKey": "Text",
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
-        "deletionPrizeSourceAccountId": "GenericAccountId"
+        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "expectedDataSizeFee": "u128"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",

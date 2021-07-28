@@ -32,24 +32,23 @@ USAGE
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
-* [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
+* [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
 * [`storage-node leader:set-uploading-block`](#storage-node-leaderset-uploading-block)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
-* [`storage-node leader:update-blacklist [FILE]`](#storage-node-leaderupdate-blacklist-file)
+* [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
+* [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
 * [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
-* [`storage-node operator:set-bucket-limits`](#storage-node-operatorset-bucket-limits)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
-* [`storage-node operator:update-bucket-status`](#storage-node-operatorupdate-bucket-status)
-* [`storage-node server [FILE]`](#storage-node-server-file)
+* [`storage-node server`](#storage-node-server-file)
 
 ## `storage-node dev:init`
 
@@ -144,23 +143,6 @@ OPTIONS
 ```
 
 _See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/verify-bag-id.ts)_
-
-## `storage-node help [COMMAND]`
-
-display help for storage-node
-
-```
-USAGE
-  $ storage-node help [COMMAND]
-
-ARGUMENTS
-  COMMAND  command to show help for
-
-OPTIONS
-  --all  see all commands in CLI
-```
-
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.0.1/src/commands/help.ts)_
 
 ## `storage-node leader:cancel-invite`
 
@@ -261,6 +243,27 @@ OPTIONS
 
 _See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/remove-operator.ts)_
 
+## `storage-node leader:set-bucket-limits`
+
+Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.
+
+```
+USAGE
+  $ storage-node leader:set-bucket-limits
+
+OPTIONS
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -o, --objects=objects    (required) New 'voucher object number limit' value
+  -p, --password=password  Key file password (optional).
+  -s, --size=size          (required) New 'voucher object size limit' value
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+```
+
+_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-bucket-limits.ts)_
+
 ## `storage-node leader:set-uploading-block`
 
 Set global uploading block. Requires storage working group leader permissions.
@@ -347,21 +350,46 @@ OPTIONS
 
 _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag-limit.ts)_
 
-## `storage-node leader:update-blacklist [FILE]`
+## `storage-node leader:update-blacklist`
 
-describe the command here
+Add/remove a content ID from the blacklist (adds by default).
 
 ```
 USAGE
-  $ storage-node leader:update-blacklist [FILE]
+  $ storage-node leader:update-blacklist
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -c, --cid=cid            (required) Content ID
+  -h, --help               show CLI help
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -r, --remove             Remove a content ID from the blaclist
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-blacklist.ts)_
+
+## `storage-node leader:update-bucket-status`
+
+Update storage bucket status (accepting new bags).
+
+```
+USAGE
+  $ storage-node leader:update-bucket-status
+
+OPTIONS
+  -d, --disable            Disables accepting new bags.
+  -e, --enable             Enables accepting new bags (default).
+  -h, --help               show CLI help
+  -i, --bucketId=bucketId  (required) Storage bucket ID
+  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                Use development mode
+  -p, --password=password  Key file password (optional).
+  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+```
+
+_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bucket-status.ts)_
 
 ## `storage-node leader:update-data-fee`
 
@@ -443,28 +471,6 @@ OPTIONS
 
 _See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
 
-## `storage-node operator:set-bucket-limits`
-
-Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.
-
-```
-USAGE
-  $ storage-node operator:set-bucket-limits
-
-OPTIONS
-  -h, --help               show CLI help
-  -i, --bucketId=bucketId  (required) Storage bucket ID
-  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                Use development mode
-  -o, --objects=objects    (required) New 'voucher object number limit' value
-  -p, --password=password  Key file password (optional).
-  -s, --size=size          (required) New 'voucher object size limit' value
-  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
-  -w, --workerId=workerId  (required) Storage operator worker ID
-```
-
-_See code: [src/commands/operator/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-bucket-limits.ts)_
-
 ## `storage-node operator:set-metadata`
 
 Accept pending storage bucket invitation.
@@ -486,35 +492,13 @@ OPTIONS
 
 _See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-metadata.ts)_
 
-## `storage-node operator:update-bucket-status`
-
-Update storage bucket status (accepting new bags).
-
-```
-USAGE
-  $ storage-node operator:update-bucket-status
-
-OPTIONS
-  -d, --disable            Disables accepting new bags.
-  -e, --enable             Enables accepting new bags (default).
-  -h, --help               show CLI help
-  -i, --bucketId=bucketId  (required) Storage bucket ID
-  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                Use development mode
-  -p, --password=password  Key file password (optional).
-  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
-  -w, --workerId=workerId  (required) Storage operator worker ID
-```
-
-_See code: [src/commands/operator/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/update-bucket-status.ts)_
-
-## `storage-node server [FILE]`
+## `storage-node server`
 
 Starts the storage node server.
 
 ```
 USAGE
-  $ storage-node server [FILE]
+  $ storage-node server
 
 OPTIONS
   -d, --uploads=uploads    (required) Data uploading directory (absolute path).

@@ -8,19 +8,13 @@ import logger from '../../services/logger'
  * Updates the storage bucket status (accept new bags).
  *
  * @remarks
- * Storage provider (operator) command. Requires an additional worker ID for
- * runtime verification.
- * Shell command: "operator:set-metadata"
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-bucket-status"
  */
-export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
+export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
   static description = 'Update storage bucket status (accepting new bags).'
 
   static flags = {
-    workerId: flags.integer({
-      char: 'w',
-      required: true,
-      description: 'Storage operator worker ID',
-    }),
     bucketId: flags.integer({
       char: 'i',
       required: true,
@@ -38,9 +32,8 @@ export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(OperatorUpdateStorageBucketStatus)
+    const { flags } = this.parse(LeaderUpdateStorageBucketStatus)
 
-    const worker = flags.workerId ?? 0
     const bucket = flags.bucketId ?? 0
     const disable = flags.disable
     const newStatus = !disable
@@ -56,7 +49,6 @@ export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
     const success = await updateStorageBucketStatus(
       api,
       account,
-      worker,
       bucket,
       newStatus
     )

@@ -113,7 +113,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  id:
                     type: string
         401:
           description: Unauthorized

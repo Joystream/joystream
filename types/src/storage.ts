@@ -1,4 +1,15 @@
-import { Null, u128, u64, Text, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap } from '@polkadot/types'
+import {
+  Null,
+  u128,
+  u64,
+  Text,
+  Vec,
+  bool,
+  GenericAccountId as AccountId,
+  BTreeSet,
+  BTreeMap,
+  Option,
+} from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
 import { MemberId } from './members'
@@ -39,35 +50,35 @@ export class DistributionBucketId extends u64 {}
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
 export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
 
-export type StaticBagType = {
+export type DynamicBagDeletionPrizeTypeDef = {
+  account_id: AccountId
+  prize: BalanceOf
+}
+
+export class DynamicBagDeletionPrize
+  extends JoyStructDecorated({
+    account_id: AccountId,
+    prize: BalanceOf,
+  })
+  implements DynamicBagDeletionPrizeTypeDef {}
+
+export class DynamicBagDeletionPrizeObject extends DynamicBagDeletionPrize {}
+
+export type BagTypeDef = {
   objects: DataObjectIdMap
   stored_by: StorageBucketIdSet
   distributed_by: DistributionBucketSet
+  deletion_prize: Option<BalanceOf>
 }
 
-export class StaticBag
+export class Bag
   extends JoyStructDecorated({
     objects: DataObjectIdMap,
     stored_by: StorageBucketIdSet,
     distributed_by: DistributionBucketSet,
+    deletion_prize: Option.with(BalanceOf),
   })
-  implements StaticBagType {}
-
-export type DynamicBagTypeDef = {
-  objects: DataObjectIdMap
-  stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketSet
-  deletion_prize: BalanceOf
-}
-
-export class DynamicBag
-  extends JoyStructDecorated({
-    objects: DataObjectIdMap,
-    stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketSet,
-    deletion_prize: BalanceOf,
-  })
-  implements DynamicBagTypeDef {}
+  implements BagTypeDef {}
 
 export type DynamicBagCreationPolicyType = {
   numberOfStorageBuckets: u64
@@ -172,6 +183,7 @@ export type UploadParametersType = {
   bagId: BagId
   objectCreationList: Vec<DataObjectCreationParameters>
   deletionPrizeSourceAccountId: AccountId
+  expectedDataSizeFee: BalanceOf
 }
 
 export class UploadParameters
@@ -180,6 +192,7 @@ export class UploadParameters
     bagId: BagId,
     objectCreationList: Vec.with(DataObjectCreationParameters),
     deletionPrizeSourceAccountId: AccountId,
+    expectedDataSizeFee: BalanceOf,
   })
   implements UploadParametersType {}
 
@@ -194,8 +207,9 @@ export const storageTypes: RegistryTypes = {
   Voucher,
   DynamicBagType,
   DynamicBagCreationPolicy,
-  DynamicBag,
-  StaticBag,
+  DynamicBagDeletionPrize,
+  DynamicBagDeletionPrizeObject,
+  Bag,
   StorageBucket,
   StaticBagId,
   Static,

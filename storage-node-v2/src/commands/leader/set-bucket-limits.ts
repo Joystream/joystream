@@ -8,20 +8,14 @@ import logger from '../../services/logger'
  * Sets voucher limits for the storage bucket.
  *
  * @remarks
- * Storage provider (operator) command. Requires an additional worker ID for
- * runtime verification.
- * Shell command: "operator:set-bucket-limits"
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:set-bucket-limits"
  */
 export default class LeaderSetBucketLimits extends ApiCommandBase {
   static description =
     'Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.'
 
   static flags = {
-    workerId: flags.integer({
-      char: 'w',
-      required: true,
-      description: 'Storage operator worker ID',
-    }),
     bucketId: flags.integer({
       char: 'i',
       required: true,
@@ -49,7 +43,6 @@ export default class LeaderSetBucketLimits extends ApiCommandBase {
     }
 
     const account = this.getAccount(flags)
-    const worker = flags.workerId ?? 0
     const bucket = flags.bucketId ?? 0
     const objectsLimit = flags.objects ?? 0
     const sizeLimit = flags.size ?? 0
@@ -58,7 +51,6 @@ export default class LeaderSetBucketLimits extends ApiCommandBase {
     const success = await setStorageBucketVoucherLimits(
       api,
       account,
-      worker,
       bucket,
       sizeLimit,
       objectsLimit

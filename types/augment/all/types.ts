@@ -158,6 +158,14 @@ export interface Backer extends Struct {
 /** @name Backers */
 export interface Backers extends Vec<Backer> {}
 
+/** @name Bag */
+export interface Bag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: Vec<u64>;
+  readonly deletion_prize: Option<u128>;
+}
+
 /** @name BagId */
 export interface BagId extends Enum {
   readonly isStatic: boolean;
@@ -476,17 +484,21 @@ export interface Dynamic extends Enum {
   readonly asChannel: u64;
 }
 
-/** @name DynamicBag */
-export interface DynamicBag extends Struct {
-  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
-  readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: Vec<u64>;
-  readonly deletion_prize: u128;
-}
-
 /** @name DynamicBagCreationPolicy */
 export interface DynamicBagCreationPolicy extends Struct {
   readonly numberOfStorageBuckets: u64;
+}
+
+/** @name DynamicBagDeletionPrize */
+export interface DynamicBagDeletionPrize extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagDeletionPrizeObject */
+export interface DynamicBagDeletionPrizeObject extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
 }
 
 /** @name DynamicBagId */
@@ -1266,13 +1278,6 @@ export interface Static extends Enum {
   readonly asWorkingGroup: WorkingGroup;
 }
 
-/** @name StaticBag */
-export interface StaticBag extends Struct {
-  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
-  readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: Vec<u64>;
-}
-
 /** @name StaticBagId */
 export interface StaticBagId extends Enum {
   readonly isCouncil: boolean;
@@ -1414,6 +1419,7 @@ export interface UploadParameters extends Struct {
   readonly bagId: BagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
   readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly expectedDataSizeFee: u128;
 }
 
 /** @name Url */

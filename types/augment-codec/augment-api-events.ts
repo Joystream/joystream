@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { BTreeSet, Bytes, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
-import type { Actor, ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, ChannelId, ClassId, ContentId, CuratorApplicationId, CuratorApplicationIdToCuratorIdMap, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagId, DynamicBagType, EntityController, EntityCreationVoucher, EntityId, FailedAt, LeadId, MemberId, MintBalanceOf, MintId, Nonce, OpeningId, PostId, PropertyId, ProposalId, ProposalStatus, RationaleText, SchemaId, SideEffect, SideEffects, Status, StorageBucketId, ThreadId, UploadParameters, VecMaxLength, VoteKind, Voucher, WorkerId } from './all';
+import type { Actor, ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, ChannelId, ClassId, ContentId, CuratorApplicationId, CuratorApplicationIdToCuratorIdMap, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagDeletionPrizeObject, DynamicBagId, DynamicBagType, EntityController, EntityCreationVoucher, EntityId, FailedAt, LeadId, MemberId, MintBalanceOf, MintId, Nonce, OpeningId, PostId, PropertyId, ProposalId, ProposalStatus, RationaleText, SchemaId, SideEffect, SideEffects, Status, StorageBucketId, ThreadId, UploadParameters, VecMaxLength, VoteKind, Voucher, WorkerId } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -421,12 +421,13 @@ declare module '@polkadot/api/types/events' {
     };
     storage: {
       /**
-       * Emits on uploading data objects.
+       * Bag objects changed.
        * Params
-       * - data objects IDs
-       * - initial uploading parameters
+       * - bag id
+       * - new total objects size
+       * - new total objects number
        **/
-      DataObjectdUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters]>;
+      BagObjectsChanged: AugmentedEvent<ApiType, [BagId, u64, u64]>;
       /**
        * Emits on changing the size-based pricing of new objects uploaded.
        * Params
@@ -450,18 +451,19 @@ declare module '@polkadot/api/types/events' {
        **/
       DataObjectsMoved: AugmentedEvent<ApiType, [BagId, BagId, BTreeSet<DataObjectId>]>;
       /**
-       * Emits on changing the deletion prize for a dynamic bag.
+       * Emits on uploading data objects.
        * Params
-       * - dynamic bag ID
-       * - new deletion prize
+       * - data objects IDs
+       * - initial uploading parameters
        **/
-      DeletionPrizeChanged: AugmentedEvent<ApiType, [DynamicBagId, Balance]>;
+      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters]>;
       /**
        * Emits on creating a dynamic bag.
        * Params
        * - dynamic bag ID
+       * - optional DynamicBagDeletionPrize instance
        **/
-      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId]>;
+      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeObject>]>;
       /**
        * Emits on deleting a dynamic bag.
        * Params
@@ -537,10 +539,9 @@ declare module '@polkadot/api/types/events' {
        * Emits on storage bucket status update.
        * Params
        * - storage bucket ID
-       * - worker ID (storage provider ID)
        * - new status
        **/
-      StorageBucketStatusUpdated: AugmentedEvent<ApiType, [StorageBucketId, WorkerId, bool]>;
+      StorageBucketStatusUpdated: AugmentedEvent<ApiType, [StorageBucketId, bool]>;
       /**
        * Emits on updating storage buckets for bag.
        * Params
@@ -560,11 +561,10 @@ declare module '@polkadot/api/types/events' {
        * Emits on setting the storage bucket voucher limits.
        * Params
        * - storage bucket ID
-       * - invited worker ID
        * - new total objects size limit
        * - new total objects number limit
        **/
-      StorageBucketVoucherLimitsSet: AugmentedEvent<ApiType, [StorageBucketId, WorkerId, u64, u64]>;
+      StorageBucketVoucherLimitsSet: AugmentedEvent<ApiType, [StorageBucketId, u64, u64]>;
       /**
        * Emits on setting the storage operator metadata.
        * Params

@@ -1154,6 +1154,10 @@ declare module '@polkadot/api/types/errors' {
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Cannot delete non empty dynamic bag.
+       **/
+      CannotDeleteNonEmptyDynamicBag: AugmentedError<ApiType>;
+      /**
        * Cannot delete a non-empty storage bucket.
        **/
       CannotDeleteNonEmptyStorageBucket: AugmentedError<ApiType>;
@@ -1177,6 +1181,10 @@ declare module '@polkadot/api/types/errors' {
        * Upload data error: data objects per bag limit exceeded.
        **/
       DataObjectsPerBagLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Invalid extrinsic call: data size fee changed.
+       **/
+      DataSizeFeeChanged: AugmentedError<ApiType>;
       /**
        * Invalid operation with invites: another storage provider was invited.
        **/
@@ -1213,10 +1221,6 @@ declare module '@polkadot/api/types/errors' {
        * Invalid operation with invites: storage provider was already invited.
        **/
       InvitedStorageProvider: AugmentedError<ApiType>;
-      /**
-       * Max storage bucket number limit exceeded.
-       **/
-      MaxStorageBucketNumberLimitExceeded: AugmentedError<ApiType>;
       /**
        * Empty "data object creation" collection.
        **/

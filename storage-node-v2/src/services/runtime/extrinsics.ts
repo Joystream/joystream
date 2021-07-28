@@ -122,12 +122,14 @@ export async function updateStorageBucketsForBag(
  * @param account - KeyringPair instance
  * @param objectSize - object size in bytes
  * @param objectCid - object CID (Content ID - multihash)
+ * @param dataFee - expected 'DataObjectPerMegabyteFee' runtime value
  * @returns promise with a success flag.
  */
 export async function uploadDataObjects(
   api: ApiPromise,
   objectSize: number,
-  objectCid: string
+  objectCid: string,
+  dataFee: number
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const alice = getAlicePair()
@@ -140,6 +142,7 @@ export async function uploadDataObjects(
           IpfsContentId: objectCid,
         },
       ],
+      expectedDataSizeFee: dataFee,
     })
 
     return sendAndFollowSudoNamedTx(
@@ -465,7 +468,6 @@ export async function updateUploadingBlockedStatus(
  *
  * @param api - runtime API promise
  * @param account - KeyringPair instance
- * @param workerId - runtime storage provider ID (worker ID)
  * @param storageBucketId - runtime storage bucket ID
  * @param newStatus - new storage bucket status status (accepts new bag)
  * @returns promise with a success flag.
@@ -473,13 +475,11 @@ export async function updateUploadingBlockedStatus(
 export async function updateStorageBucketStatus(
   api: ApiPromise,
   account: KeyringPair,
-  workerId: number,
   storageBucketId: number,
   newStatus: boolean
 ): Promise<boolean> {
   return await extrinsicWrapper(() =>
     sendAndFollowNamedTx(api, account, 'storage', 'updateStorageBucketStatus', [
-      workerId,
       storageBucketId,
       newStatus,
     ])
@@ -503,7 +503,6 @@ export async function updateStorageBucketStatus(
 export async function setStorageBucketVoucherLimits(
   api: ApiPromise,
   account: KeyringPair,
-  workerId: number,
   storageBucketId: number,
   newSizeLimit: number,
   newObjectLimit: number
@@ -514,7 +513,7 @@ export async function setStorageBucketVoucherLimits(
       account,
       'storage',
       'setStorageBucketVoucherLimits',
-      [workerId, storageBucketId, newSizeLimit, newObjectLimit]
+      [storageBucketId, newSizeLimit, newObjectLimit]
     )
   )
 }
