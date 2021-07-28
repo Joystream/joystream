@@ -569,7 +569,7 @@ pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
     pub author_id: SubredditUserId,
 
     /// When it was created or last edited
-    pub last_edited: BlockNumber,
+    pub creation_time: BlockNumber,
 
     /// Whether the post is mutable
     pub mutable: bool,
@@ -592,6 +592,9 @@ pub trait SubredditLimits {
 
     /// Cap on bloat bond
     type BloatBondCap: Get<u64>;
+
+    /// Number of blocks after which a post can be deleted by anyone
+    type PostOwnershipDuration: Get<u32>;
 }
 
 /// Represents an operation in order to add/remove moderators
@@ -1519,7 +1522,7 @@ decl_module! {
            let channel_id = thread.channel_id;
 
 
-            Self::ensure_can_delete_post_or_thread(
+            Self::ensure_can_delete_thread(
                 &account_id,
                 &actor,
                 &channel_id,
@@ -1629,8 +1632,6 @@ decl_module! {
             // Maybe update post mutability
             if let Some(new_mutability) = params.mutable { post.mutable = new_mutability }
 
-            post.last_edited = frame_system::Module::<T>::block_number();
-
             <PostById<T>>::insert(thread_id, post_id, post);
 
             // Generate event
@@ -1659,10 +1660,11 @@ decl_module! {
         let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
     // ensure actor is authorized to delete post
-        Self::ensure_can_delete_post_or_thread(
+        Self::ensure_can_delete_post(
             &account_id,
             &actor,
             &channel_id,
+            &post,
         )?;
 
         //
@@ -1934,7 +1936,64 @@ impl<T: Trait> Module<T> {
         Ok(PostById::<T>::get(thread_id, post_id))
     }
 
-    fn ensure_can_delete_post_or_thread(
+    fn ensure_can_delete_post(
+        account_id: &T::AccountId,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        channel_id: &T::ChannelId,
+        post: &Post<T>,
+    ) -> DispatchResult {
+        let channel = Self::ensure_channel_exists(channel_id)?;
+        match actor {
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                // Authorize curator, performing all checks to ensure curator can act
+                CuratorGroup::<T>::perform_curator_in_group_auth(
+                    curator_id,
+                    curator_group_id,
+                    account_id,
+                )?;
+
+                // Ensure curator group is the channel owner.
+                ensure!(
+                    channel.owner == ChannelOwner::CuratorGroup(*curator_group_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+
+                Ok(())
+            }
+            ContentActor::Member(member_id) => {
+                // check valid member
+                ensure_member_auth_success::<T>(member_id, account_id)?;
+
+                // Conditions for a post to be deleted by a member actor:
+                // 1. actor is channel owner OR
+                // 2. actor is a moderator OR
+                // 3. post age is above ownership duration threshold OR
+                // 4. actor is post author
+
+                let is_channel_owner = channel.owner == ChannelOwner::Member(*member_id);
+                let is_moderator =
+                    <ModeratorSetForSubreddit<T>>::contains_key(*channel_id, *member_id);
+                let is_post_ownership_expired = frame_system::Module::<T>::block_number()
+                    .saturating_sub(post.creation_time)
+                    <= <T as frame_system::Trait>::BlockNumber::from(
+                        <T::MapLimits as SubredditLimits>::PostOwnershipDuration::get(),
+                    );
+                let is_post_author = *member_id == post.author_id;
+
+                ensure!(
+                    is_channel_owner || is_moderator || is_post_ownership_expired || is_post_author,
+                    Error::<T>::ActorNotAuthorized
+                );
+
+                Ok(())
+            }
+
+            // no permission for the content Lead at the moment
+            _ => Err(Error::<T>::ActorNotAuthorized.into()),
+        }
+    }
+
+    fn ensure_can_delete_thread(
         account_id: &T::AccountId,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: &T::ChannelId,
@@ -1993,7 +2052,7 @@ impl<T: Trait> Module<T> {
             text_hash: text_hash,
             thread_id,
             author_id,
-            last_edited: frame_system::Module::<T>::block_number(),
+            creation_time: frame_system::Module::<T>::block_number(),
             bloat_bond: T::PostDeposit::get(),
             mutable: mutable,
         };
