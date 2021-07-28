@@ -300,10 +300,17 @@ class Storage {
    * Stat a content ID.
    */
   async stat(contentId, timeout) {
-    const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
+    const ipfsHash = await this.resolveContentIdWithTimeout(timeout, contentId)
 
-    return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
-      this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
+    return this.ipfsStat(ipfsHash, timeout)
+  }
+
+  /*
+   * Stat IPFS hash
+   */
+  async ipfsStat(hash, timeout) {
+    return this.withSpecifiedTimeout(timeout, (resolve, reject) => {
+      this.ipfs.files.stat(`/ipfs/${hash}`, { withLocal: true }, (err, res) => {
         if (err) {
           reject(err)
           return
@@ -362,13 +369,13 @@ class Storage {
   }
 
   async createReadStream(contentId, timeout) {
-    const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
+    const ipfsHash = await this.resolveContentIdWithTimeout(timeout, contentId)
 
     let found = false
     return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
-      const ls = this.ipfs.getReadableStream(resolved)
+      const ls = this.ipfs.getReadableStream(ipfsHash)
       ls.on('data', async (result) => {
-        if (result.path === resolved) {
+        if (result.path === ipfsHash) {
           found = true
 
           const ftStream = await fileType.stream(result.content)
@@ -392,32 +399,28 @@ class Storage {
   }
 
   /*
-   * Synchronize the given content ID
+   * Pin the given IPFS CID
    */
-  async synchronize(contentId, callback) {
-    const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
-
-    // TODO: validate resolved id is proper ipfs_cid, not null or empty string
-
-    if (!this.pinning[resolved] && !this.pinned[resolved]) {
-      debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
-      this.pinning[resolved] = true
+  async pin(ipfsHash, callback) {
+    if (!this.pinning[ipfsHash] && !this.pinned[ipfsHash]) {
+      // debug(`Pinning hash: ${ipfsHash} content-id: ${contentId}`)
+      this.pinning[ipfsHash] = true
 
       // Callback passed to add() will be called on error or when the entire file
       // is retrieved. So on success we consider the content synced.
-      this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
-        delete this.pinning[resolved]
+      this.ipfs.pin.add(ipfsHash, { quiet: true, pin: true }, (err) => {
+        delete this.pinning[ipfsHash]
         if (err) {
-          debug(`Error Pinning: ${resolved}`)
+          debug(`Error Pinning: ${ipfsHash}`)
           callback && callback(err)
         } else {
-          debug(`Pinned ${resolved}`)
-          this.pinned[resolved] = true
-          callback && callback(null, this.syncStatus(resolved))
+          // debug(`Pinned ${ipfsHash}`)
+          this.pinned[ipfsHash] = true
+          callback && callback(null, this.syncStatus(ipfsHash))
         }
       })
     } else {
-      callback && callback(null, this.syncStatus(resolved))
+      callback && callback(null, this.syncStatus(ipfsHash))
     }
   }
 
