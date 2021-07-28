@@ -170,7 +170,7 @@ impl<T: Trait> Module<T> {
                 T::Currency::slash_reserved(&auction.last_bidder, last_bid);
 
                 // Deposit bid, exluding royalty amount and auction fee into auctioneer account
-                
+
                 if last_bid > royalty + auction_fee {
                     T::Currency::deposit_creating(
                         &auction.auctioneer_account_id,
@@ -214,7 +214,6 @@ impl<T: Trait> Module<T> {
 
             match &auction.auction_mode {
                 AuctionMode::WithIssuance(royalty, _) => {
-
                     // Slash last bidder bid
                     T::Currency::slash_reserved(&auction.last_bidder, last_bid);
                     // Deposit last bidder bid minus auction fee into auctioneer account
