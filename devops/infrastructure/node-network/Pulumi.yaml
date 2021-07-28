@@ -1,6 +1,6 @@
-name: query-node
+name: node-network
 runtime: nodejs
-description: Kubernetes IaC for Query Node
+description: Kubernetes IaC for Joystream RPC and Validator nodes
 template:
   config:
     aws:profile:

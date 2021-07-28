@@ -90,5 +90,5 @@ export interface ServiceDeploymentArgs {
   index: number
   chainSpecPath: string
   dataPath: string
-  pvc: string
+  pvc: pulumi.OutputInstance<any>
 }

@@ -6,6 +6,7 @@ import { configMapFromFile } from './configMap'
 import { CaddyServiceDeployment } from './caddy'
 import { getSubkeyContainers } from './utils'
 import { ValidatorServiceDeployment } from './validator'
+import { NFSServiceDeployment } from './nfsVolume'
 // const { exec } = require('child_process')
 
 const config = new pulumi.Config()
@@ -51,21 +52,13 @@ export const namespaceName = ns.metadata.name
 
 const appLabels = { appClass: name }
 
-const jsonModifyConfig = new configMapFromFile(
-  'json-modify-config',
-  {
-    filePath: 'json_modify.py',
-    namespaceName: namespaceName,
-  },
-  resourceOptions
-).configName
-
 const networkSuffix = config.get('networkSuffix') || '8129'
 const numberOfValidators = config.getNumber('numberOfValidators') || 1
 const chainDataPath = '/chain-data'
 const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
 
 const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
+let pvcClaimName: pulumi.Output<any>
 
 if (isMinikube) {
   const pvc = new k8s.core.v1.PersistentVolumeClaim(
@@ -104,143 +97,20 @@ if (isMinikube) {
       },
     },
   })
+  pvcClaimName = pvc.metadata.apply((m) => m.name)
 } else {
-  const pvcNFS = new k8s.core.v1.PersistentVolumeClaim(
-    `pvcfornfs`,
-    {
-      metadata: {
-        namespace: namespaceName,
-        name: `pvcfornfs`,
-      },
-      spec: {
-        accessModes: ['ReadWriteOnce'],
-        resources: {
-          requests: {
-            storage: `1Gi`,
-          },
-        },
-      },
-    },
-    resourceOptions
-  )
-
-  const nfsLabels = { role: 'nfs-server' }
-
-  const nfsServer = new k8s.apps.v1.Deployment(
-    `nfs-server`,
-    {
-      metadata: {
-        namespace: namespaceName,
-        labels: nfsLabels,
-        name: 'nfs-server',
-      },
-      spec: {
-        replicas: 1,
-        selector: { matchLabels: nfsLabels },
-        template: {
-          metadata: {
-            labels: nfsLabels,
-          },
-          spec: {
-            containers: [
-              {
-                name: 'nfs-server',
-                image: 'gcr.io/google_containers/volume-nfs:0.8',
-                ports: [
-                  { name: 'nfs', containerPort: 2049 },
-                  { name: 'mountd', containerPort: 20048 },
-                  { name: 'rpcbind', containerPort: 111 },
-                ],
-                command: ['/bin/sh', '-c'],
-                args: ['/usr/local/bin/run_nfs.sh /exports; chmod 777 /exports'],
-                securityContext: { 'privileged': true },
-                volumeMounts: [
-                  {
-                    name: 'nfsstore',
-                    mountPath: '/exports',
-                  },
-                ],
-              },
-            ],
-            volumes: [
-              {
-                name: 'nfsstore',
-                persistentVolumeClaim: {
-                  claimName: 'pvcfornfs',
-                },
-              },
-            ],
-          },
-        },
-      },
-    },
-    { ...resourceOptions, dependsOn: pvcNFS }
-  )
-
-  const nfsService = new k8s.core.v1.Service(
-    'nfs-server',
-    {
-      metadata: {
-        namespace: namespaceName,
-        name: 'nfs-server',
-      },
-      spec: {
-        ports: [
-          { name: 'nfs', port: 2049 },
-          { name: 'mountd', port: 20048 },
-          { name: 'rpcbind', port: 111 },
-        ],
-        selector: nfsLabels,
-      },
-    },
-    resourceOptions
-  )
-
-  const ip = nfsService.spec.apply((v) => v.clusterIP)
-
-  const pv = new k8s.core.v1.PersistentVolume(
-    `${name}-pvc`,
-    {
-      metadata: {
-        labels: appLabels,
-        namespace: namespaceName,
-        name: `${name}-pvc`,
-      },
-      spec: {
-        accessModes: ['ReadWriteMany'],
-        capacity: {
-          storage: `1Gi`,
-        },
-        nfs: {
-          server: ip, //pulumi.interpolate`nfs-server.${namespaceName}.svc.cluster.local`,
-          path: '/',
-        },
-      },
-    },
-    { ...resourceOptions, dependsOn: nfsService }
-  )
-
-  const pvc = new k8s.core.v1.PersistentVolumeClaim(
-    `${name}-pvc`,
-    {
-      metadata: {
-        namespace: namespaceName,
-        name: `${name}-pvc`,
-      },
-      spec: {
-        accessModes: ['ReadWriteMany'],
-        resources: {
-          requests: {
-            storage: `1Gi`,
-          },
-        },
-        storageClassName: '',
-        selector: { matchLabels: appLabels },
-      },
-    },
-    { ...resourceOptions }
-  )
+  const nfsVolume = new NFSServiceDeployment('nfs-server', { namespace: namespaceName }, resourceOptions)
+  pvcClaimName = nfsVolume.pvc.metadata.apply((m) => m.name)
 }
+
+const jsonModifyConfig = new configMapFromFile(
+  'json-modify-config',
+  {
+    filePath: 'json_modify.py',
+    namespaceName: namespaceName,
+  },
+  resourceOptions
+).configName
 
 const chainDataPrepareJob = new k8s.batch.v1.Job(
   'chain-data',
@@ -318,7 +188,7 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
             {
               name: 'config-data',
               persistentVolumeClaim: {
-                claimName: `${name}-pvc`,
+                claimName: pvcClaimName,
               },
             },
           ],
@@ -336,7 +206,7 @@ const validators = []
 for (let i = 1; i <= numberOfValidators; i++) {
   const validator = new ValidatorServiceDeployment(
     `node-${i}`,
-    { namespace: namespaceName, index: i, chainSpecPath, dataPath: chainDataPath, pvc: `${name}-pvc` },
+    { namespace: namespaceName, index: i, chainSpecPath, dataPath: chainDataPath, pvc: pvcClaimName },
     { ...resourceOptions, dependsOn: chainDataPrepareJob }
   )
   validators.push(validator)
@@ -394,7 +264,7 @@ const deployment = new k8s.apps.v1.Deployment(
             {
               name: 'config-data',
               persistentVolumeClaim: {
-                claimName: `${name}-pvc`,
+                claimName: pvcClaimName,
               },
             },
           ],

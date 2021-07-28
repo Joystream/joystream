@@ -6,7 +6,7 @@ export class configMapFromFile extends pulumi.ComponentResource {
   public readonly configName?: pulumi.Output<string>
 
   constructor(name: string, args: ConfigMapArgs, opts: pulumi.ComponentResourceOptions = {}) {
-    super('pkg:query-node:configMap', name, {}, opts)
+    super('pkg:node-network:configMap', name, {}, opts)
 
     this.configName = new k8s.core.v1.ConfigMap(
       name,

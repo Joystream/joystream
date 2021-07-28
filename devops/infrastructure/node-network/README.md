@@ -62,6 +62,10 @@ After cloning this repo, from this working directory, run these commands:
 
    Run `pulumi up -y` to update the Caddy config
 
+1. You can now access the endpoints using `pulumi stack output endpoint1` or `pulumi stack output endpoint2`
+
+   The wp-rpc endpoint is `https://<ENDPOINT>/ws-rpc` and http-rpc endpoint is `https://<ENDPOINT>/http-rpc`
+
 1. Access the Kubernetes Cluster using `kubectl`
 
    To access your new Kubernetes cluster using `kubectl`, we need to set up the
