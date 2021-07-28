@@ -176,6 +176,9 @@ decl_storage! {
 
         /// Max auction bid step
         pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
+
+        /// Auction platform fee
+        pub AuctionFee get(fn auction_fee) config(): BalanceOf<T>;
     }
 }
 
@@ -956,6 +959,7 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Authorize auctioneer
             let auctioneer_account_id = Self::authorize_auctioneer(origin, &auctioneer, &auction_params, &video)?;
 
             // Validate round_time & starting_price
@@ -990,6 +994,7 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Authorize content actor
             Self::authorize_content_actor(origin, &auctioneer)?;
 
             // Ensure auction for given video id exists
@@ -1034,6 +1039,7 @@ decl_module! {
             bid: BalanceOf<T>,
         ) {
 
+            // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
@@ -1109,6 +1115,7 @@ decl_module! {
             participant_id: T::MemberId,
             video_id: T::VideoId,
         ) {
+            // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
@@ -1218,14 +1225,17 @@ decl_module! {
             participant_id: MemberId<T>,
         ) {
 
+            // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Ensure given pending transfer exists
             video.ensure_pending_transfer_exists::<T>()?;
 
+            // Ensure provided participant owns vnft
             video.ensure_vnft_ownership::<T>(&participant_account_id)?;
 
             //
@@ -1249,6 +1259,7 @@ decl_module! {
             participant_id: MemberId<T>,
         ) {
 
+            // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 

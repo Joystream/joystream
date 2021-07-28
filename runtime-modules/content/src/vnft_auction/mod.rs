@@ -1,8 +1,6 @@
 mod types;
 pub use types::*;
 
-use frame_support::StorageMap;
-
 use crate::*;
 
 impl<T: Trait> Module<T> {
@@ -156,7 +154,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete vnft transfer
-    pub(crate) fn complete_vnft_auction_transfer(video: &mut Video<T>) {
+    pub(crate) fn complete_vnft_auction_transfer(video: &mut Video<T>, auction_fee: BalanceOf<T>) {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(auction),
             creator_royalty,
@@ -171,8 +169,11 @@ impl<T: Trait> Module<T> {
                 // Slash last bidder bid
                 T::Currency::slash_reserved(&auction.last_bidder, last_bid);
 
-                // Deposit bid, exluding royalty amount into auctioneer account
-                T::Currency::deposit_creating(&auction.auctioneer_account_id, last_bid - royalty);
+                // Deposit bid, exluding royalty amount and auction fee into auctioneer account
+                T::Currency::deposit_creating(
+                    &auction.auctioneer_account_id,
+                    last_bid - royalty - auction_fee,
+                );
 
                 // Deposit royalty into creator account
                 T::Currency::deposit_creating(&creator_account_id, royalty);
@@ -180,7 +181,11 @@ impl<T: Trait> Module<T> {
                 // Slash last bidder bid and deposit it into auctioneer account
                 T::Currency::slash_reserved(&auction.last_bidder, last_bid);
 
-                T::Currency::deposit_creating(&auction.auctioneer_account_id, last_bid);
+                // Deposit bid, exluding auction fee into auctioneer account
+                T::Currency::deposit_creating(
+                    &auction.auctioneer_account_id,
+                    last_bid - auction_fee,
+                );
             }
 
             video.nft_status = NFTStatus::Owned(OwnedNFT {
@@ -194,15 +199,20 @@ impl<T: Trait> Module<T> {
     /// Complete auction
     pub(crate) fn complete_auction(mut video: Video<T>, video_id: T::VideoId) -> Video<T> {
         let auction = video.get_nft_auction();
+        let auction_fee = Self::auction_fee();
 
         if let Some(auction) = auction {
             match &auction.auction_mode {
                 AuctionMode::WithIssuance(royalty, _) => {
                     let last_bid = auction.last_bid;
 
-                    // Slash last bidder bid and deposit it into auctioneer account
+                    // Slash last bidder bid
                     T::Currency::slash_reserved(&auction.last_bidder, last_bid);
-                    T::Currency::deposit_creating(&auction.auctioneer_account_id, last_bid);
+                    // Deposit last bidder bid minus auction fee into auctioneer account
+                    T::Currency::deposit_creating(
+                        &auction.auctioneer_account_id,
+                        last_bid - auction_fee,
+                    );
 
                     let creator_royalty = if let Some(royalty) = royalty {
                         Some((auction.auctioneer_account_id.clone(), royalty.to_owned()))
@@ -210,6 +220,7 @@ impl<T: Trait> Module<T> {
                         None
                     };
 
+                    // Issue vnft
                     Self::issue_vnft(
                         &mut video,
                         video_id,
@@ -218,7 +229,7 @@ impl<T: Trait> Module<T> {
                     );
                 }
                 AuctionMode::WithoutIsuance => {
-                    Self::complete_vnft_auction_transfer(&mut video);
+                    Self::complete_vnft_auction_transfer(&mut video, auction_fee);
                 }
             }
         }
