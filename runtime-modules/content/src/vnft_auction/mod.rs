@@ -170,10 +170,18 @@ impl<T: Trait> Module<T> {
                 T::Currency::slash_reserved(&auction.last_bidder, last_bid);
 
                 // Deposit bid, exluding royalty amount and auction fee into auctioneer account
-                T::Currency::deposit_creating(
-                    &auction.auctioneer_account_id,
-                    last_bid - royalty - auction_fee,
-                );
+                
+                if last_bid > royalty + auction_fee {
+                    T::Currency::deposit_creating(
+                        &auction.auctioneer_account_id,
+                        last_bid - royalty - auction_fee,
+                    );
+                } else {
+                    T::Currency::deposit_creating(
+                        &auction.auctioneer_account_id,
+                        last_bid - auction_fee,
+                    );
+                }
 
                 // Deposit royalty into creator account
                 T::Currency::deposit_creating(&creator_account_id, royalty);
@@ -199,12 +207,13 @@ impl<T: Trait> Module<T> {
     /// Complete auction
     pub(crate) fn complete_auction(mut video: Video<T>, video_id: T::VideoId) -> Video<T> {
         let auction = video.get_nft_auction();
-        let auction_fee = Self::auction_fee();
 
         if let Some(auction) = auction {
+            let last_bid = auction.last_bid;
+            let auction_fee = Self::auction_fee_percentage() * last_bid;
+
             match &auction.auction_mode {
                 AuctionMode::WithIssuance(royalty, _) => {
-                    let last_bid = auction.last_bid;
 
                     // Slash last bidder bid
                     T::Currency::slash_reserved(&auction.last_bidder, last_bid);

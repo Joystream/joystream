@@ -165,10 +165,10 @@ decl_storage! {
         /// Max auction staring price
         pub MaxStartingPrice get(fn max_starting_price) config(): BalanceOf<T>;
 
-        /// Min creator royalty
+        /// Min creator royalty percentage
         pub MinCreatorRoyalty get(fn min_creator_royalty) config(): Perbill;
 
-        /// Max creator royalty
+        /// Max creator royalty percentage
         pub MaxCreatorRoyalty get(fn max_creator_royalty) config(): Perbill;
 
         /// Min auction bid step
@@ -177,8 +177,8 @@ decl_storage! {
         /// Max auction bid step
         pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
 
-        /// Auction platform fee
-        pub AuctionFee get(fn auction_fee) config(): BalanceOf<T>;
+        /// Auction platform fee percentage
+        pub AuctionFeePercentage get(fn auction_fee_percentage) config(): Perbill;
     }
 }
 
