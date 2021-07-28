@@ -1705,7 +1705,14 @@ decl_module! {
 
     // slashing
     // delete post
+         Self::delete_post_inner(&thread_id, &post_id);
     // deposit event
+       Self::deposit_event(RawEvent::PostModerated(
+            post_id,
+            actor,
+            thread_id,
+            channel_id,
+        ));
     Ok(())
     }
 
@@ -2325,6 +2332,7 @@ decl_event!(
         PostAdded(PostId, MemberId, ThreadId, Hash, ChannelId),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, ContentActor, ThreadId, ChannelId),
+        PostModerated(PostId, ContentActor, ThreadId, ChannelId),
         PostReacted(PostId, MemberId, ThreadId, ReactionId, ChannelId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
     }
