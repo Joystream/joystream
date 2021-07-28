@@ -160,7 +160,7 @@ export interface Backers extends Vec<Backer> {}
 
 /** @name Bag */
 export interface Bag extends Struct {
-  readonly objects: BTreeMap<DataObjectId, {"accepted":"bool","deletion_prize":"u128","size":"u64"}>;
+  readonly objects: BTreeMap<DataObjectId, StorageDataObject>;
   readonly stored_by: StorageBucketIdSet;
   readonly distributed_by: Vec<u64>;
   readonly deletion_prize: Option<u128>;
@@ -1315,6 +1315,12 @@ export interface StorageBucketOperatorStatus extends Enum {
 export interface StorageBucketsPerBagValueConstraint extends Struct {
   readonly min: u64;
   readonly max_min_diff: u64;
+}
+
+/** @name StorageDataObject */
+export interface StorageDataObject extends Struct {
+  readonly accepted: bool;
+  readonly deletion_prize: u128;
 }
 
 /** @name StorageProviderId */

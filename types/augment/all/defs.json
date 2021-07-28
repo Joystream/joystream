@@ -1008,7 +1008,7 @@
         "prize": "u128"
     },
     "Bag": {
-        "objects": "BTreeMap<DataObjectId,{\"accepted\":\"bool\",\"deletion_prize\":\"u128\",\"size\":\"u64\"}>",
+        "objects": "BTreeMap<DataObjectId,StorageDataObject>",
         "stored_by": "StorageBucketIdSet",
         "distributed_by": "Vec<u64>",
         "deletion_prize": "Option<u128>"
@@ -1070,5 +1070,10 @@
             "InvitedStorageWorker": "u64",
             "StorageWorker": "u64"
         }
+    },
+    "StorageDataObject": {
+        "accepted": "bool",
+        "deletion_prize": "u128",
+        "size": "u64"
     }
 }

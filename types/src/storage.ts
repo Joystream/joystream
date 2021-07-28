@@ -30,22 +30,22 @@ export class StorageBucketsPerBagValueConstraint
   })
   implements StorageBucketsPerBagValueConstraintType {}
 
-export type DataObjectType = {
+export type StorageDataObjectType = {
   accepted: bool
   deletion_prize: BalanceOf
   size: u64
 }
 
-export class DataObject
+// DataObject from the storage pallet. Changed due to the types conflict resolution.
+export class StorageDataObject
   extends JoyStructDecorated({
     accepted: bool,
     deletion_prize: BalanceOf,
     size: u64,
   })
-  implements DataObjectType {}
+  implements StorageDataObjectType {}
 
 export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
-export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
 export class DistributionBucketId extends u64 {}
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
 export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
@@ -65,7 +65,7 @@ export class DynamicBagDeletionPrize
 export class DynamicBagDeletionPrizeObject extends DynamicBagDeletionPrize {}
 
 export type BagTypeDef = {
-  objects: DataObjectIdMap
+  objects: BTreeMap<DataObjectId, StorageDataObject>
   stored_by: StorageBucketIdSet
   distributed_by: DistributionBucketSet
   deletion_prize: Option<BalanceOf>
@@ -73,7 +73,7 @@ export type BagTypeDef = {
 
 export class Bag
   extends JoyStructDecorated({
-    objects: DataObjectIdMap,
+    objects: BTreeMap.with(DataObjectId, StorageDataObject),
     stored_by: StorageBucketIdSet,
     distributed_by: DistributionBucketSet,
     deletion_prize: Option.with(BalanceOf),
@@ -223,5 +223,6 @@ export const storageTypes: RegistryTypes = {
   ContentIdSet,
   Cid,
   StorageBucketOperatorStatus,
+  StorageDataObject,
 }
 export default storageTypes
