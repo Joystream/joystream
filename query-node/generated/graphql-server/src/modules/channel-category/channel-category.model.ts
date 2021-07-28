@@ -10,7 +10,11 @@ export class ChannelCategory extends BaseModel {
   })
   name?: string;
 
-  @OneToMany(() => Channel, (param: Channel) => param.category)
+  @OneToMany(() => Channel, (param: Channel) => param.category, {
+    modelName: 'ChannelCategory',
+    relModelName: 'Channel',
+    propertyName: 'channels',
+  })
   channels?: Channel[];
 
   @IntField({})

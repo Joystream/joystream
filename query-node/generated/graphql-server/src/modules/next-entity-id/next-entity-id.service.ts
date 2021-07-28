@@ -3,12 +3,12 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from 'typeorm-typedi-extensions';
 import { BaseService, WhereInput } from 'warthog';
 
-import { CuratorGroup } from './curator-group.model';
+import { NextEntityId } from './next-entity-id.model';
 
-@Service('CuratorGroupService')
-export class CuratorGroupService extends BaseService<CuratorGroup> {
-  constructor(@InjectRepository(CuratorGroup) protected readonly repository: Repository<CuratorGroup>) {
-    super(CuratorGroup, repository);
+@Service('NextEntityIdService')
+export class NextEntityIdService extends BaseService<NextEntityId> {
+  constructor(@InjectRepository(NextEntityId) protected readonly repository: Repository<NextEntityId>) {
+    super(NextEntityId, repository);
   }
 
   async find<W extends WhereInput>(
@@ -17,7 +17,7 @@ export class CuratorGroupService extends BaseService<CuratorGroup> {
     limit?: number,
     offset?: number,
     fields?: string[]
-  ): Promise<CuratorGroup[]> {
+  ): Promise<NextEntityId[]> {
     let f = fields;
     if (f == undefined) {
       f = [];

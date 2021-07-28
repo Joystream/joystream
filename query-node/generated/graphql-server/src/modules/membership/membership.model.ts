@@ -51,7 +51,12 @@ export class Membership extends BaseModel {
   })
   subscription?: number;
 
-  @OneToMany(() => Channel, (param: Channel) => param.ownerMember, { cascade: ["insert", "update"] })
+  @OneToMany(() => Channel, (param: Channel) => param.ownerMember, {
+    cascade: ["insert", "update"],
+    modelName: 'Membership',
+    relModelName: 'Channel',
+    propertyName: 'channels',
+  })
   channels?: Channel[];
 
   constructor(init?: Partial<Membership>) {

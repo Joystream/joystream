@@ -13,7 +13,7 @@ export class VideoMediaEncodingService extends BaseService<VideoMediaEncoding> {
 
   async find<W extends WhereInput>(
     where?: any,
-    orderBy?: string,
+    orderBy?: string | string[],
     limit?: number,
     offset?: number,
     fields?: string[]

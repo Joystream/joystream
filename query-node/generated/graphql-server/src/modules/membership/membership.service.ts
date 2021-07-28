@@ -13,7 +13,7 @@ export class MembershipService extends BaseService<Membership> {
 
   async find<W extends WhereInput>(
     where?: any,
-    orderBy?: string,
+    orderBy?: string | string[],
     limit?: number,
     offset?: number,
     fields?: string[]

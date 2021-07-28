@@ -77,7 +77,7 @@ export class ChannelCategoryConnectionWhereArgs extends ConnectionPageInputOptio
   where?: ChannelCategoryWhereInput;
 
   @Field(() => ChannelCategoryOrderByEnum, { nullable: true })
-  orderBy?: ChannelCategoryOrderByEnum;
+  orderBy?: [ChannelCategoryOrderByEnum];
 }
 
 @Resolver(ChannelCategory)
