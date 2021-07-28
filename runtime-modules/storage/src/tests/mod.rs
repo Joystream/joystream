@@ -5,7 +5,7 @@ pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
-use frame_support::{StorageMap, StorageValue, StorageDoubleMap};
+use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
@@ -26,11 +26,10 @@ use mocks::{
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     InitialStorageBucketsNumberForDynamicBag, MaxDistributionBucketFamilyNumber,
     MaxDistributionBucketNumberPerFamily, MaxNumberOfDataObjectsPerBag, MaxRandomIterationNumber,
-    MaxStorageBucketNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
-    ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
-    DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
-    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
+    Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -324,8 +323,6 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
     build_test_externalities().execute_with(|| {
-        set_default_storage_buckets_per_bag_limit();
-
         let static_bag_id = StaticBagId::Council;
         let bag_id = BagId::<Test>::Static(static_bag_id.clone());
 
@@ -1267,10 +1264,8 @@ fn accept_pending_data_objects_succeeded() {
         set_max_voucher_limits();
         set_default_update_storage_buckets_per_bag_limit();
 
-        let objects_limit = 1;
-        let size_limit = 100;
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::Static(static_bag_id.clone());
+        let bag_id: BagId<Test> = static_bag_id.into();
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let objects_limit = 1;
@@ -1302,7 +1297,6 @@ fn accept_pending_data_objects_succeeded() {
 
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
-        let bag_id = static_bag_id.into();
         let data_object = Storage::ensure_data_object_exists(&bag_id, &data_object_id).unwrap();
         // Check `accepted` flag for the fist data object in the bag.
         assert_eq!(data_object.accepted, false);
@@ -3854,7 +3848,7 @@ fn update_distribution_buckets_for_bags_succeeded() {
         set_default_distribution_buckets_per_bag_limit();
 
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+        let bag_id: BagId<Test> = static_bag_id.into();
 
         let family_id = CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
@@ -3877,7 +3871,7 @@ fn update_distribution_buckets_for_bags_succeeded() {
             .with_add_bucket_ids(add_buckets.clone())
             .call_and_assert(Ok(()));
 
-        let bag = Storage::static_bag(static_bag_id);
+        let bag = Storage::bag(&bag_id);
         assert_eq!(bag.distributed_by, add_buckets);
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketsUpdatedForBag(
@@ -3893,7 +3887,7 @@ fn update_distribution_buckets_for_bags_succeeded() {
 fn update_distribution_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::DynamicBag(dynamic_bag_id.clone());
+        let bag_id: BagId<Test> = dynamic_bag_id.into();
 
         let family_id = CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
@@ -3923,7 +3917,7 @@ fn update_distribution_buckets_for_bags_fails_with_non_accepting_new_bags_bucket
         set_default_distribution_buckets_per_bag_limit();
 
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::StaticBag(static_bag_id.clone());
+        let bag_id: BagId<Test> = static_bag_id.into();
 
         let family_id = CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
@@ -3979,7 +3973,7 @@ fn update_distribution_buckets_for_bags_fails_with_non_existing_distribution_buc
 
         let invalid_bucket_id = 11000;
         let buckets = BTreeSet::from_iter(vec![invalid_bucket_id]);
-        let bag_id = BagId::<Test>::StaticBag(StaticBagId::Council);
+        let bag_id: BagId<Test> = StaticBagId::Council.into();
 
         let family_id = CreateDistributionBucketFamilyFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))

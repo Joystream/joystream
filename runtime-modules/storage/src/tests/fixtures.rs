@@ -15,8 +15,8 @@ use crate::tests::mocks::{
 };
 use crate::{
     BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
-    DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    UploadParameters, DynamicBagDeletionPrize
+    DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize

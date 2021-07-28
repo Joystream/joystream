@@ -210,53 +210,53 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
 
     /// Data object ID type.
     type DataObjectId: Parameter
-    + Member
-    + BaseArithmetic
-    + Codec
-    + Default
-    + Copy
-    + MaybeSerialize
-    + PartialEq;
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 
     /// Storage bucket ID type.
     type StorageBucketId: Parameter
-    + Member
-    + BaseArithmetic
-    + Codec
-    + Default
-    + Copy
-    + MaybeSerialize
-    + PartialEq;
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 
     /// Distribution bucket ID type.
     type DistributionBucketId: Parameter
-    + Member
-    + BaseArithmetic
-    + Codec
-    + Default
-    + Copy
-    + MaybeSerialize
-    + PartialEq;
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 
     /// Distribution bucket family ID type.
     type DistributionBucketFamilyId: Parameter
-    + Member
-    + BaseArithmetic
-    + Codec
-    + Default
-    + Copy
-    + MaybeSerialize
-    + PartialEq;
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 
     /// Channel ID type (part of the dynamic bag ID).
     type ChannelId: Parameter
-    + Member
-    + BaseArithmetic
-    + Codec
-    + Default
-    + Copy
-    + MaybeSerialize
-    + PartialEq;
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
 
     /// Distribution bucket operator ID type (relationship between distribution bucket and
     /// distribution operator).
@@ -463,7 +463,7 @@ pub struct DataObject<Balance> {
 
 /// Type alias for the BagObject.
 pub type Bag<T> =
-BagObject<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
+    BagObject<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
 
 /// Bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -486,10 +486,10 @@ pub struct BagObject<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
 }
 
 impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
-BagObject<StorageBucketId, DistributionBucketId, Balance>
+    BagObject<StorageBucketId, DistributionBucketId, Balance>
 {
     // Add and/or remove storage buckets.
-    fn update_buckets(
+    fn update_storage_buckets(
         &mut self,
         add_buckets: &mut BTreeSet<StorageBucketId>,
         remove_buckets: &BTreeSet<StorageBucketId>,
@@ -501,6 +501,23 @@ BagObject<StorageBucketId, DistributionBucketId, Balance>
         if !remove_buckets.is_empty() {
             for bucket_id in remove_buckets.iter() {
                 self.stored_by.remove(bucket_id);
+            }
+        }
+    }
+
+    // Add and/or remove storage buckets.
+    fn update_distribution_buckets(
+        &mut self,
+        add_buckets: &mut BTreeSet<DistributionBucketId>,
+        remove_buckets: &BTreeSet<DistributionBucketId>,
+    ) {
+        if !add_buckets.is_empty() {
+            self.distributed_by.append(add_buckets);
+        }
+
+        if !remove_buckets.is_empty() {
+            for bucket_id in remove_buckets.iter() {
+                self.distributed_by.remove(bucket_id);
             }
         }
     }
@@ -598,7 +615,7 @@ impl<MemberId: Default, ChannelId> Default for DynamicBagIdType<MemberId, Channe
 }
 
 impl<MemberId, ChannelId> From<DynamicBagIdType<MemberId, ChannelId>>
-for BagIdType<MemberId, ChannelId>
+    for BagIdType<MemberId, ChannelId>
 {
     fn from(dynamic_bag_id: DynamicBagIdType<MemberId, ChannelId>) -> Self {
         BagIdType::Dynamic(dynamic_bag_id)
@@ -645,7 +662,7 @@ pub struct UploadParametersObject<MemberId, ChannelId, AccountId, Balance> {
 
 /// Alias for the DynamicBagDeletionPrizeObject
 pub type DynamicBagDeletionPrize<T> =
-DynamicBagDeletionPrizeObject<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+    DynamicBagDeletionPrizeObject<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
 
 /// Deletion prize data for the dynamic bag. Requires on the dynamic bag creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -1635,7 +1652,7 @@ decl_module! {
             }
 
             Bags::<T>::mutate(&bag_id, |bag| {
-                bag.update_buckets(&mut add_buckets.clone(), &remove_buckets);
+                bag.update_storage_buckets(&mut add_buckets.clone(), &remove_buckets);
             });
 
             Self::deposit_event(
@@ -2067,13 +2084,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Update vouchers.
-            if !add_buckets.is_empty() {
-                BagManager::<T>::add_distribution_buckets(&bag_id, add_buckets.clone());
-            }
-            if !remove_buckets.is_empty() {
-                BagManager::<T>::remove_distribution_buckets(&bag_id, remove_buckets.clone());
-            }
+            Bags::<T>::mutate(&bag_id, |bag| {
+                bag.update_distribution_buckets(&mut add_buckets.clone(), &remove_buckets);
+            });
 
             Self::deposit_event(
                 RawEvent::DistributionBucketsUpdatedForBag(
@@ -2328,7 +2341,6 @@ decl_module! {
     }
 }
 
-// -
 // Public methods
 impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn can_upload_data_objects(params: &UploadParameters<T>) -> DispatchResult {
@@ -2508,13 +2520,15 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     ) -> DispatchResult {
         Self::validate_create_dynamic_bag_params(&dynamic_bag_id, &deletion_prize)?;
 
-        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-
         //
         // == MUTATION SAFE ==
         //
 
-        let bag_type: DynamicBagType = bag_id.clone().into();
+        if let Some(deletion_prize) = deletion_prize.clone() {
+            <StorageTreasury<T>>::deposit(&deletion_prize.account_id, deletion_prize.prize)?;
+        }
+
+        let bag_type: DynamicBagType = dynamic_bag_id.clone().into();
 
         let storage_buckets = Self::pick_storage_buckets_for_dynamic_bag(bag_type);
         let distribution_buckets = Self::pick_distribution_buckets_for_dynamic_bag(bag_type);
@@ -2525,6 +2539,8 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             distributed_by: distribution_buckets,
             ..Default::default()
         };
+
+        let bag_id: BagId<T> = dynamic_bag_id.clone().into();
 
         <Bags<T>>::insert(&bag_id, bag);
 
@@ -2720,7 +2736,7 @@ impl<T: Trait> Module<T> {
 
             id
         })
-            .take(data_objects.len());
+        .take(data_objects.len());
 
         let data_objects_map = ids.zip(data_objects).collect::<BTreeMap<_, _>>();
 
@@ -3266,12 +3282,12 @@ impl<T: Trait> Module<T> {
             Error::<T>::DistributionBucketIdCollectionsAreEmpty
         );
 
-        BagManager::<T>::ensure_bag_exists(&bag_id)?;
+        let bag = Self::ensure_bag_exists(bag_id)?;
 
         let family = Self::ensure_distribution_bucket_family_exists(family_id)?;
 
-        let distribution_bucket_ids = BagManager::<T>::get_distribution_bucket_ids(bag_id);
-        let new_bucket_number = distribution_bucket_ids
+        let new_bucket_number = bag
+            .distributed_by
             .len()
             .saturating_add(add_buckets.len())
             .saturating_sub(remove_buckets.len())
@@ -3286,7 +3302,7 @@ impl<T: Trait> Module<T> {
             Self::ensure_distribution_bucket_exists(&family, bucket_id)?;
 
             ensure!(
-                distribution_bucket_ids.contains(&bucket_id),
+                bag.distributed_by.contains(&bucket_id),
                 Error::<T>::DistributionBucketIsNotBoundToBag
             );
         }
@@ -3300,7 +3316,7 @@ impl<T: Trait> Module<T> {
             );
 
             ensure!(
-                !distribution_bucket_ids.contains(&bucket_id),
+                !bag.distributed_by.contains(&bucket_id),
                 Error::<T>::DistributionBucketIsBoundToBag
             );
         }
