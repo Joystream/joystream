@@ -1665,14 +1665,14 @@ decl_module! {
         // obtain channel
         let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
-        // ensure actor is authorized to delete post
-        Self::ensure_can_delete_post(
-            &account_id,
-            &actor,
-            &post,
-        )?;
-
-    // reward
+        // if actor is channel owner
+    if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
+       Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
+           let _ = balances::Module::<T>::burn(post.bloat_bond);
+       }
+    if Self::actor_is_post_author(&account_id, &actor, &post, &channel_id) {
+        let _ = Self::payoff(account_id, &post.bloat_bond, &post_id);
+    }
 
         //
         // == MUTATION SAFE ==
@@ -1938,38 +1938,70 @@ impl<T: Trait> Module<T> {
         Ok(PostById::<T>::get(thread_id, post_id))
     }
 
-    fn ensure_can_delete_post(
+    fn actor_is_channel_owner(
+        account_id: &T::AccountId,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        channel_id: &T::ChannelId,
+    ) -> bool {
+        let owner = <ChannelById<T>>::get(channel_id).owner;
+
+        match actor {
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                // Authorize curator, performing all checks to ensure curator can act
+                CuratorGroup::<T>::perform_curator_in_group_auth(
+                    curator_id,
+                    curator_group_id,
+                    account_id,
+                )
+                .is_ok()
+                    && owner == ChannelOwner::CuratorGroup(*curator_group_id)
+            }
+            ContentActor::Member(member_id) => {
+                // Authenticate valid member
+                ensure_member_auth_success::<T>(member_id, account_id).is_ok()
+                    && owner == ChannelOwner::Member(*member_id)
+            }
+            _ => false,
+        }
+    }
+
+    fn actor_is_subreddit_moderator(
+        account_id: &T::AccountId,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        channel_id: &T::ChannelId,
+    ) -> bool {
+        match actor {
+            ContentActor::Member(member_id) => {
+                <ModeratorSetForSubreddit<T>>::contains_key(channel_id, member_id)
+                    && ensure_member_auth_success::<T>(member_id, account_id).is_ok()
+            }
+            _ => false,
+        }
+    }
+
+    fn actor_is_post_author(
         account_id: &T::AccountId,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         post: &Post<T>,
-    ) -> DispatchResult {
+        channel_id: &T::ChannelId,
+    ) -> bool {
         match actor {
             ContentActor::Member(member_id) => {
-                // Authenticate valid member
-                ensure_member_auth_success::<T>(member_id, account_id)?;
-
-                // Conditions for a post to be deleted by a member actor:
-                // 1. post age is above ownership duration threshold OR
-                // 2. actor is post author
-
-                let is_post_ownership_expired = frame_system::Module::<T>::block_number()
-                    .saturating_sub(post.creation_time)
-                    <= <T as frame_system::Trait>::BlockNumber::from(
-                        <T::MapLimits as SubredditLimits>::PostOwnershipDuration::get(),
-                    );
-                let is_post_author = *member_id == post.author_id;
-
-                ensure!(
-                    is_post_ownership_expired || is_post_author,
-                    Error::<T>::ActorNotAuthorized
-                );
-
-                Ok(())
+                <ModeratorSetForSubreddit<T>>::contains_key(channel_id, member_id)
+                    && post.author_id == *member_id
+                    && ensure_member_auth_success::<T>(member_id, account_id).is_ok()
             }
-
-            // no permission for other roles at the moment
-            _ => Err(Error::<T>::ActorNotAuthorized.into()),
+            _ => false,
         }
+    }
+
+    fn payoff(
+        _account_id: T::AccountId,
+        _amount: &T::Balance,
+        _post_id: &T::PostId,
+    ) -> DispatchResult {
+        Self::not_implemented()?;
+        Ok(())
     }
 
     fn ensure_can_delete_thread(
