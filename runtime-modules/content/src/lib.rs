@@ -1672,11 +1672,12 @@ decl_module! {
             &post,
         )?;
 
+    // reward
+
         //
         // == MUTATION SAFE ==
         //
 
-        //        Self::pay_off(thread_id, post.bloat_bond, &account_id)?;
         Self::delete_post_inner(&thread_id, &post_id);
 
         Self::deposit_event(RawEvent::PostDeleted(
@@ -1688,43 +1689,6 @@ decl_module! {
 
         Ok(())
     }
-
-    #[weight = 10_000_000]
-    fn moderate_post(origin,
-           actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-           thread_id: T::ThreadId,
-           post_id: T::PostId,
-    ) -> DispatchResult {
-    // ensure signed
-    let account_id = ensure_signed(origin)?;
-
-    // ensure post exists
-    let post = Self::ensure_post_exists(&thread_id, &post_id)?;
-    let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
-
-    // ensure actor can moderate post
-    Self::ensure_can_moderate_post(
-            &account_id,
-            &actor,
-            &channel_id,
-        )?;
-
-    // slashing
-    let _ = balances::Module::<T>::slash(&post.author_account, post.bloat_bond);
-
-    // delete post
-        Self::delete_post_inner(&thread_id, &post_id);
-
-    // deposit event
-       Self::deposit_event(RawEvent::PostModerated(
-            post_id,
-            actor,
-            thread_id,
-            channel_id,
-        ));
-    Ok(())
-    }
-
 
     #[weight = 10_000_000]
     fn react_post(origin,
@@ -2004,51 +1968,6 @@ impl<T: Trait> Module<T> {
             }
 
             // no permission for other roles at the moment
-            _ => Err(Error::<T>::ActorNotAuthorized.into()),
-        }
-    }
-
-    fn ensure_can_moderate_post(
-        account_id: &T::AccountId,
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        channel_id: &T::ChannelId,
-    ) -> DispatchResult {
-        let channel = Self::ensure_channel_exists(channel_id)?;
-
-        // channel owner, curators and moderators can moderate
-
-        match actor {
-            ContentActor::Curator(curator_group_id, curator_id) => {
-                // Authorize curator, performing all checks to ensure curator can act
-                CuratorGroup::<T>::perform_curator_in_group_auth(
-                    curator_id,
-                    curator_group_id,
-                    account_id,
-                )?;
-
-                Ok(())
-            }
-            ContentActor::Member(member_id) => {
-                // Authorized a valid member
-                ensure_member_auth_success::<T>(member_id, account_id)?;
-
-                // Conditions for a post to be moderated by a member actor:
-                // 1. actor is channel owner OR
-                // 2. actor is a moderator OR
-
-                let is_channel_owner = channel.owner == ChannelOwner::Member(*member_id);
-                let is_moderator =
-                    <ModeratorSetForSubreddit<T>>::contains_key(*channel_id, *member_id);
-
-                ensure!(
-                    is_channel_owner || is_moderator,
-                    Error::<T>::ActorNotAuthorized
-                );
-
-                Ok(())
-            }
-
-            // no permission for the content Lead at the moment
             _ => Err(Error::<T>::ActorNotAuthorized.into()),
         }
     }
