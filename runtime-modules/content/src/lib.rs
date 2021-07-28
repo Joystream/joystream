@@ -1699,7 +1699,7 @@ decl_module! {
     let account_id = ensure_signed(origin)?;
 
     // ensure post exists
-    let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
+    let post = Self::ensure_post_exists(&thread_id, &post_id)?;
     let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
     // ensure actor can moderate post
@@ -1710,8 +1710,11 @@ decl_module! {
         )?;
 
     // slashing
+    let _ = balances::Module::<T>::slash(&post.author_account, post.bloat_bond);
+
     // delete post
-         Self::delete_post_inner(&thread_id, &post_id);
+        Self::delete_post_inner(&thread_id, &post_id);
+
     // deposit event
        Self::deposit_event(RawEvent::PostModerated(
             post_id,
