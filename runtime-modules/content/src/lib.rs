@@ -558,7 +558,7 @@ pub struct PostUpdateParameters<Hash> {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
+pub struct Post_<MemberId, AccountId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
@@ -566,7 +566,10 @@ pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
     pub text_hash: Hash,
 
     /// Author of post.
-    pub author_id: SubredditUserId,
+    pub author_id: MemberId,
+
+    /// Author account (used for slashing)
+    pub author_account: AccountId,
 
     /// When it was created or last edited
     pub creation_time: BlockNumber,
@@ -580,6 +583,7 @@ pub struct Post_<SubredditUserId, ThreadId, Hash, Balance, BlockNumber> {
 
 pub type Post<T> = Post_<
     <T as MembershipTypes>::MemberId,
+    <T as frame_system::Trait>::AccountId,
     <T as Trait>::ThreadId,
     <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
@@ -1489,6 +1493,7 @@ decl_module! {
                 new_thread_id,
                 params.text_hash,
                 member_id,
+                account_id,
                 params.post_mutable,
             );
 
@@ -1580,6 +1585,7 @@ decl_module! {
             thread_id,
             params.text_hash,
             member_id,
+            account_id,
             params.mutable,
         );
 
@@ -2090,6 +2096,7 @@ impl<T: Trait> Module<T> {
         thread_id: T::ThreadId,
         text_hash: T::Hash,
         author_id: T::MemberId,
+        account_id: T::AccountId,
         mutable: bool,
     ) -> T::PostId {
         // Make and add initial post
@@ -2101,8 +2108,9 @@ impl<T: Trait> Module<T> {
         // Build a post
         let new_post = Post_ {
             text_hash: text_hash,
-            thread_id,
-            author_id,
+            thread_id: thread_id,
+            author_id: author_id,
+            author_account: account_id,
             creation_time: frame_system::Module::<T>::block_number(),
             bloat_bond: T::PostDeposit::get(),
             mutable: mutable,
