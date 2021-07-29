@@ -91,7 +91,6 @@ export default abstract class DefaultCommandBase extends Command {
 
   async finally(err: any): Promise<void> {
     if (!err) this.exit(ExitCodes.OK)
-    console.error(err)
     super.finally(err)
   }
 }

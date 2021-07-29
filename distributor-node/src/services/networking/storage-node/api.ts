@@ -1,8 +1,9 @@
 import { Configuration } from './generated'
 import { PublicApi } from './generated/api'
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import { LoggingService } from '../../logging'
 import { Logger } from 'winston'
+import { StorageNodeDownloadResponse } from '../../../types'
 
 const AXIOS_TIMEOUT = 10000
 
@@ -21,7 +22,7 @@ export class StorageNodeApi {
     })
     this.publicApi = new PublicApi(config)
     this.endpoint = new URL(endpoint).toString()
-    this.logger = logging.createLogger('StorageNodeApi')
+    this.logger = logging.createLogger('StorageNodeApi', { endpoint })
   }
 
   public async isObjectAvailable(contentHash: string): Promise<boolean> {
@@ -30,10 +31,10 @@ export class StorageNodeApi {
         Range: 'bytes=0-0',
       },
     }
-    this.logger.info('Checking object availibility', { endpoint: this.endpoint, contentHash })
+    this.logger.info('Checking object availibility', { contentHash })
     try {
       await this.publicApi.publicApiFiles(contentHash, options)
-      this.logger.info('Data object available', { contentHash, endpoint: this.endpoint })
+      this.logger.info('Data object available', { contentHash })
       return true
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -45,7 +46,8 @@ export class StorageNodeApi {
     }
   }
 
-  public async downloadObject(contentHash: string): Promise<AxiosResponse<NodeJS.ReadableStream>> {
+  public async downloadObject(contentHash: string): Promise<StorageNodeDownloadResponse> {
+    this.logger.info('Sending download request', { contentHash })
     const options: AxiosRequestConfig = {
       responseType: 'stream',
     }

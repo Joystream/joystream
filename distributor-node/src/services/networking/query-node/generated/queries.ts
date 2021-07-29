@@ -19,6 +19,13 @@ export type GetDistributionBucketsWithObjectsQueryVariables = Types.Exact<{
 
 export type GetDistributionBucketsWithObjectsQuery = { distributionBuckets: Array<DistirubtionBucketsWithObjectsFragment> };
 
+export type StorageBucketOperatorFieldsFragment = { id: string, operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }> };
+
+export type GetActiveStorageBucketOperatorsDataQueryVariables = Types.Exact<{ [key: string]: never; }>;
+
+
+export type GetActiveStorageBucketOperatorsDataQuery = { storageBuckets: Array<StorageBucketOperatorFieldsFragment> };
+
 export const DataObjectDetails = gql`
     fragment DataObjectDetails on StorageDataObject {
   id
@@ -53,6 +60,14 @@ export const DistirubtionBucketsWithObjects = gql`
   }
 }
     `;
+export const StorageBucketOperatorFields = gql`
+    fragment StorageBucketOperatorFields on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+    `;
 export const GetDataObjectDetails = gql`
     query getDataObjectDetails($id: ID!) {
   storageDataObjectByUniqueInput(where: {id: $id}) {
@@ -67,3 +82,10 @@ export const GetDistributionBucketsWithObjects = gql`
   }
 }
     ${DistirubtionBucketsWithObjects}`;
+export const GetActiveStorageBucketOperatorsData = gql`
+    query getActiveStorageBucketOperatorsData {
+  storageBuckets(where: {operatorStatus_json: {isTypeOf_eq: "StorageBucketOperatorStatusActive"}, operatorMetadata: {nodeEndpoint_contains: "http"}}, limit: 9999) {
+    ...StorageBucketOperatorFields
+  }
+}
+    ${StorageBucketOperatorFields}`;

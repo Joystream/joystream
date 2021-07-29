@@ -9,6 +9,10 @@ import {
   GetDistributionBucketsWithObjectsQuery,
   GetDistributionBucketsWithObjectsQueryVariables,
   GetDistributionBucketsWithObjects,
+  StorageBucketOperatorFieldsFragment,
+  GetActiveStorageBucketOperatorsDataQuery,
+  GetActiveStorageBucketOperatorsDataQueryVariables,
+  GetActiveStorageBucketOperatorsData,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
 
@@ -64,5 +68,12 @@ export class QueryNodeApi {
       GetDistributionBucketsWithObjectsQuery,
       GetDistributionBucketsWithObjectsQueryVariables
     >(GetDistributionBucketsWithObjects, { ids }, 'distributionBuckets')
+  }
+
+  public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetActiveStorageBucketOperatorsDataQuery,
+      GetActiveStorageBucketOperatorsDataQueryVariables
+    >(GetActiveStorageBucketOperatorsData, {}, 'storageBuckets')
   }
 }

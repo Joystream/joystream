@@ -1,10 +1,9 @@
 import fs from 'fs'
-import { ReadonlyConfig } from '../../types'
+import { ReadonlyConfig, DataObjectData } from '../../types'
 import { StateCacheService } from '../cache/StateCacheService'
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
 import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileContinousReadStream'
-import { DataObjectData } from '../../types/dataObject'
 import readChunk from 'read-chunk'
 import FileType from 'file-type'
 import _ from 'lodash'
@@ -82,5 +81,17 @@ export class ContentService {
     const chunk = await readChunk(this.path(contentHash), 0, 4100)
     const guessResult = await FileType.fromBuffer(chunk)
     return guessResult?.mime || DEFAULT_CONTENT_TYPE
+  }
+
+  public async handleNewContent(contentHash: string, dataStream: NodeJS.ReadableStream): Promise<void> {
+    const fileStream = this.createWriteStream(contentHash)
+    fileStream.on('ready', () => {
+      dataStream.pipe(fileStream)
+    })
+    fileStream.on('finish', async () => {
+      const mimeType = await this.guessMimeType(contentHash)
+      this.stateCache.setContentMimeType(contentHash, mimeType)
+      this.stateCache.dropPendingDownload(contentHash)
+    })
   }
 }

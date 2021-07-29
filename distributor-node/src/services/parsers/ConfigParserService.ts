@@ -13,7 +13,7 @@ export class ConfigParserService {
   }
 
   public resolveConfigDirectoryPaths(paths: Config['directories'], configFilePath: string): Config['directories'] {
-    return _.mapValues(paths, (v) => path.resolve(configFilePath, v))
+    return _.mapValues(paths, (v) => path.resolve(path.dirname(configFilePath), v))
   }
 
   public loadConfing(configPath: string): Config {
