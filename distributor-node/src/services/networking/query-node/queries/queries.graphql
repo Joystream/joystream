@@ -41,3 +41,22 @@ query getDistributionBucketsWithObjects($ids: [ID!]) {
     ...DistirubtionBucketsWithObjects
   }
 }
+
+fragment StorageBucketOperatorFields on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+
+query getActiveStorageBucketOperatorsData {
+  storageBuckets(
+    where: {
+      operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" },
+      operatorMetadata: { nodeEndpoint_contains: "http" }
+    },
+    limit: 9999
+  ) {
+    ...StorageBucketOperatorFields
+  }
+}

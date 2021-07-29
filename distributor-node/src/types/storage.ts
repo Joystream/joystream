@@ -1,12 +1,10 @@
+export type StorageNodeEndpointData = {
+  bucketId: string
+  endpoint: string
+}
+
 export type DataObjectAccessPoints = {
-  storageNodes: {
-    bucketId: string
-    endpoint: string
-  }[]
-  distributorNodes: {
-    bucketId: string
-    endpoint: string
-  }[]
+  storageNodes: StorageNodeEndpointData[]
 }
 
 export type DataObjectData = {

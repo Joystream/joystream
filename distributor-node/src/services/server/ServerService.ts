@@ -19,6 +19,18 @@ export class ServerService {
   private logger: Logger
   private expressApp: express.Application
 
+  private routeWrapper<T>(
+    handler: (req: express.Request<T>, res: express.Response, next: express.NextFunction) => Promise<void>
+  ) {
+    return async (req: express.Request<T>, res: express.Response, next: express.NextFunction) => {
+      try {
+        await handler(req, res, next)
+      } catch (err) {
+        next(err)
+      }
+    }
+  }
+
   public constructor(
     config: ReadonlyConfig,
     stateCache: StateCacheService,
@@ -53,7 +65,7 @@ export class ServerService {
     )
 
     // Routes
-    app.use('/api/v1/asset/:objectId', publicController.asset.bind(publicController))
+    app.use('/api/v1/asset/:objectId', this.routeWrapper(publicController.asset.bind(publicController)))
 
     // Error logger
     app.use(
@@ -77,7 +89,7 @@ export class ServerService {
           })
           .end()
       } else {
-        next(err)
+        res.status(err.status || 500).json({ type: 'exception', message: err.message })
       }
     })
 
