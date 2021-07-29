@@ -3521,6 +3521,45 @@ fn delete_distribution_bucket_family_succeeded() {
 }
 
 #[test]
+fn delete_distribution_bucket_family_fails_with_assgined_bags() {
+    build_test_externalities().execute_with(|| {
+        set_default_distribution_buckets_per_bag_limit();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id: BagId<Test> = static_bag_id.into();
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_accept_new_bags(true)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::bag(&bag_id);
+        assert_eq!(bag.distributed_by, add_buckets);
+
+        DeleteDistributionBucketFamilyFixture::default()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionBucketIsBoundToBag.into()));
+    });
+}
+
+#[test]
 fn delete_distribution_bucket_family_fails_with_bound_member_dynamic_bag_creation_policy() {
     build_test_externalities().execute_with(|| {
         let family_id = CreateDistributionBucketFamilyFixture::default()
@@ -3767,6 +3806,46 @@ fn delete_distribution_bucket_succeeded() {
 }
 
 #[test]
+fn delete_distribution_bucket_fails_with_assgined_bags() {
+    build_test_externalities().execute_with(|| {
+        set_default_distribution_buckets_per_bag_limit();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id: BagId<Test> = static_bag_id.into();
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_accept_new_bags(true)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::bag(&bag_id);
+        assert_eq!(bag.distributed_by, add_buckets);
+
+        DeleteDistributionBucketFixture::default()
+            .with_bucket_id(bucket_id)
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Err(Error::<Test>::DistributionBucketIsBoundToBag.into()));
+    });
+}
+
+#[test]
 fn delete_distribution_bucket_failed_with_existing_operators() {
     build_test_externalities().execute_with(|| {
         let family_id = CreateDistributionBucketFamilyFixture::default()
@@ -3880,6 +3959,61 @@ fn update_distribution_buckets_for_bags_succeeded() {
             add_buckets,
             BTreeSet::new(),
         ));
+    });
+}
+
+#[test]
+fn update_distribution_buckets_for_bags_succeeded_with_additioonal_checks_on_adding_and_removing() {
+    build_test_externalities().execute_with(|| {
+        set_default_distribution_buckets_per_bag_limit();
+
+        let static_bag_id = StaticBagId::Council;
+        let bag_id: BagId<Test> = static_bag_id.into();
+
+        let family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_id = CreateDistributionBucketFixture::default()
+            .with_family_id(family_id)
+            .with_accept_new_bags(true)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let add_buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_add_bucket_ids(add_buckets.clone())
+            .call_and_assert(Ok(()));
+
+        // Add check
+        let bag = Storage::bag(&bag_id);
+        assert_eq!(bag.distributed_by, add_buckets);
+
+        let family = Storage::distribution_bucket_family_by_id(family_id);
+        let bucket = family.distribution_buckets.get(&bucket_id).unwrap();
+        assert_eq!(bucket.assigned_bags, 1);
+
+        // ******
+
+        UpdateDistributionBucketForBagsFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(bag_id.clone())
+            .with_family_id(family_id)
+            .with_remove_bucket_ids(add_buckets.clone())
+            .call_and_assert(Ok(()));
+
+        let bag = Storage::bag(&bag_id);
+        assert_eq!(bag.distributed_by.len(), 0);
+
+        let family = Storage::distribution_bucket_family_by_id(family_id);
+        let bucket = family.distribution_buckets.get(&bucket_id).unwrap();
+        assert_eq!(bucket.assigned_bags, 0);
     });
 }
 

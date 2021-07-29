@@ -507,7 +507,7 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
         }
     }
 
-    // Add and/or remove storage buckets.
+    // Add and/or remove distribution buckets.
     fn update_distribution_buckets(
         &mut self,
         add_buckets: &mut BTreeSet<DistributionBucketId>,
@@ -819,6 +819,37 @@ pub struct DistributionBucketFamilyObject<DistributionBucketId: Ord, WorkerId: O
     pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketObject<WorkerId>>,
 }
 
+impl<DistributionBucketId: Ord, WorkerId: Ord>
+    DistributionBucketFamilyObject<DistributionBucketId, WorkerId>
+{
+    // Add and/or remove distribution buckets assignments to bags.
+    fn change_bag_assignments(
+        &mut self,
+        add_buckets: &BTreeSet<DistributionBucketId>,
+        remove_buckets: &BTreeSet<DistributionBucketId>,
+    ) {
+        for bucket_id in add_buckets.iter() {
+            if let Some(bucket) = self.distribution_buckets.get_mut(bucket_id) {
+                bucket.register_bag_assignment();
+            }
+        }
+
+        for bucket_id in remove_buckets.iter() {
+            if let Some(bucket) = self.distribution_buckets.get_mut(bucket_id) {
+                bucket.unregister_bag_assignment();
+            }
+        }
+    }
+
+    // Checks inner buckets for bag assignment number. Returns true only if all 'assigned_bags' are
+    // zero.
+    fn no_bags_assigned(&self) -> bool {
+        self.distribution_buckets
+            .values()
+            .all(|b| b.no_bags_assigned())
+    }
+}
+
 /// Type alias for the DistributionBucketObject.
 pub type DistributionBucket<T> = DistributionBucketObject<WorkerId<T>>;
 
@@ -837,6 +868,26 @@ pub struct DistributionBucketObject<WorkerId: Ord> {
 
     /// Active operators to distribute the bucket.
     pub operators: BTreeSet<WorkerId>,
+
+    /// Number of assigned bags.
+    pub assigned_bags: u64,
+}
+
+impl<WorkerId: Ord> DistributionBucketObject<WorkerId> {
+    // Increment the assigned bags number.
+    fn register_bag_assignment(&mut self) {
+        self.assigned_bags = self.assigned_bags.saturating_add(1);
+    }
+
+    // Decrement the assigned bags number.
+    fn unregister_bag_assignment(&mut self) {
+        self.assigned_bags = self.assigned_bags.saturating_sub(1);
+    }
+
+    // Checks the bag assignment number. Returns true if it equals zero.
+    fn no_bags_assigned(&self) -> bool {
+        self.assigned_bags == 0
+    }
 }
 
 decl_storage! {
@@ -1947,9 +1998,10 @@ decl_module! {
         pub fn delete_distribution_bucket_family(origin, family_id: T::DistributionBucketFamilyId) {
             T::ensure_distribution_working_group_leader_origin(origin)?;
 
-            Self::ensure_distribution_bucket_family_exists(&family_id)?;
+            let family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
 
-            // TODO: check for emptiness
+            // Check that no assigned bags left.
+            ensure!(family.no_bags_assigned(), Error::<T>::DistributionBucketIsBoundToBag);
 
             Self::check_dynamic_bag_creation_policy_for_dependencies(
                 &family_id,
@@ -1997,6 +2049,7 @@ decl_module! {
                 distributing: true,
                 pending_invitations: BTreeSet::new(),
                 operators: BTreeSet::new(),
+                assigned_bags: 0,
             };
 
             let bucket_id = Self::next_distribution_bucket_id();
@@ -2058,8 +2111,10 @@ decl_module! {
             let mut family = Self::ensure_distribution_bucket_family_exists(&family_id)?;
             let bucket = Self::ensure_distribution_bucket_exists(&family, &distribution_bucket_id)?;
 
-            //TODO: check emptiness
+            // Check that no assigned bags left.
+            ensure!(bucket.no_bags_assigned(), Error::<T>::DistributionBucketIsBoundToBag);
 
+            // Check that all operators were removed.
             ensure!(bucket.operators.is_empty(), Error::<T>::DistributionProviderOperatorSet);
 
             //
@@ -2099,6 +2154,10 @@ decl_module! {
 
             Bags::<T>::mutate(&bag_id, |bag| {
                 bag.update_distribution_buckets(&mut add_buckets.clone(), &remove_buckets);
+            });
+
+            <DistributionBucketFamilyById<T>>::mutate(family_id, |family| {
+                family.change_bag_assignments(&add_buckets, &remove_buckets);
             });
 
             Self::deposit_event(
