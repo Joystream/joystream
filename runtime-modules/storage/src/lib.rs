@@ -74,7 +74,9 @@
 //!  invites a distribution bucket operator.
 //! - [cancel_distribution_bucket_operator_invite](./struct.Module.html#method.cancel_distribution_bucket_operator_invite) -
 //!  Cancels pending invite for a distribution bucket.
-
+//! - [remove_distribution_bucket_operator](./struct.Module.html#method.remove_distribution_bucket_operator) -
+//!  Removes a distribution bucket operator.
+//!
 //! #### Distribution provider extrinsics
 //! - [accept_distribution_bucket_invitation](./struct.Module.html#method.accept_distribution_bucket_invitation) -
 //!  Accepts pending invite for a distribution bucket.
@@ -1175,6 +1177,17 @@ decl_event! {
             DistributionBucketId,
             Vec<u8>
         ),
+
+        /// Emits on the distribution bucket operator removal.
+        /// Params
+        /// - distribution bucket family ID
+        /// - distribution bucket ID
+        /// - distribution bucket operator ID
+        DistributionBucketOperatorRemoved(
+            DistributionBucketFamilyId,
+            DistributionBucketId,
+            WorkerId
+        ),
     }
 }
 
@@ -1711,7 +1724,7 @@ decl_module! {
             );
         }
 
-        /// Removes storage bucket operator. Must be invited.
+        /// Removes storage bucket operator.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_storage_bucket_operator(
             origin,
@@ -2251,6 +2264,47 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::DistributionBucketInvitationCancelled(
+                    distribution_bucket_family_id,
+                    distribution_bucket_id,
+                    operator_worker_id
+                )
+            );
+        }
+
+        /// Removes distribution bucket operator.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_distribution_bucket_operator(
+            origin,
+            distribution_bucket_family_id: T::DistributionBucketFamilyId,
+            distribution_bucket_id: T::DistributionBucketId,
+            operator_worker_id: WorkerId<T>,
+        ){
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            let mut family =
+                Self::ensure_distribution_bucket_family_exists(&distribution_bucket_family_id)?;
+            let mut bucket = Self::ensure_distribution_bucket_exists(
+                &family,
+                &distribution_bucket_id
+            )?;
+
+            ensure!(
+                bucket.operators.contains(&operator_worker_id),
+                Error::<T>::MustBeDistributionProviderOperatorForBucket
+            );
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bucket.operators.remove(&operator_worker_id);
+            family.distribution_buckets.insert(distribution_bucket_id, bucket);
+
+            <DistributionBucketFamilyById<T>>::insert(distribution_bucket_family_id, family);
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketOperatorRemoved(
                     distribution_bucket_family_id,
                     distribution_bucket_id,
                     operator_worker_id
