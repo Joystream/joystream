@@ -5,14 +5,29 @@ import {
   InMemoryCache,
   DocumentNode,
 } from '@apollo/client'
-import fetch from 'cross-fetch'
+import fetch from 'node-fetch'
 import {
   GetStorageBucketDetails,
   GetStorageBucketDetailsQuery,
   GetStorageBucketDetailsQueryVariables,
+  GetAllStorageBucketDetails,
+  GetAllStorageBucketDetailsQuery,
+  GetAllStorageBucketDetailsQueryVariables,
   StorageBucketDetailsFragment,
+  GetStorageBagDetailsQuery,
+  GetStorageBagDetails,
+  StorageBagDetailsFragment,
+  GetStorageBagDetailsQueryVariables,
+  DataObjectDetailsFragment,
+  GetDataObjectDetailsQuery,
+  GetDataObjectDetailsQueryVariables,
+  GetDataObjectDetails,
 } from './generated/queries'
-import { Maybe } from './generated/schema'
+import {
+  Maybe,
+  StorageBucketWhereInput,
+  StorageBagWhereInput,
+} from './generated/schema'
 
 export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
@@ -78,5 +93,34 @@ export class QueryNodeApi {
       GetStorageBucketDetailsQuery,
       GetStorageBucketDetailsQueryVariables
     >(GetStorageBucketDetails, { id: objectId }, 'storageBucketByUniqueInput')
+  }
+
+  public getAllStorageBucketDetails(): Promise<
+    Array<StorageBucketDetailsFragment>
+  > {
+    return this.multipleEntitiesQuery<
+      GetAllStorageBucketDetailsQuery,
+      GetAllStorageBucketDetailsQueryVariables
+    >(GetAllStorageBucketDetails, {}, 'storageBuckets')
+  }
+
+  public getStorageBagsDetails(
+    bucketIds: string[]
+  ): Promise<Array<StorageBagDetailsFragment>> {
+    const input: StorageBucketWhereInput = { id_in: bucketIds }
+    return this.multipleEntitiesQuery<
+      GetStorageBagDetailsQuery,
+      GetStorageBagDetailsQueryVariables
+    >(GetStorageBagDetails, { bucketIds: input }, 'storageBags')
+  }
+
+  public getDataObjectDetails(
+    bagIds: string[]
+  ): Promise<Array<DataObjectDetailsFragment>> {
+    const input: StorageBagWhereInput = { id_in: bagIds }
+    return this.multipleEntitiesQuery<
+      GetDataObjectDetailsQuery,
+      GetDataObjectDetailsQueryVariables
+    >(GetDataObjectDetails, { bagIds: input }, 'storageDataObjects')
   }
 }
