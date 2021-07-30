@@ -1,5 +1,6 @@
 import { Command, flags } from '@oclif/command'
-import { QueryNodeApi } from '../../services/query-node/api'
+import { performSync } from '../../services/sync/synchronizer'
+import sleep from 'sleep-promise'
 
 export default class DevSync extends Command {
   static description = 'describe the command here'
@@ -13,16 +14,20 @@ export default class DevSync extends Command {
 
     console.log('Syncing...')
 
-    const queryNodeUrl = 'http://localhost:8081/graphql'
-    const api = new QueryNodeApi(queryNodeUrl)
-    const id = '0'
-
     try {
-      const bucket = await api.getStorageBucketDetails(id)
-      console.log(bucket)
+      await performSync()
     } catch (err) {
       console.log(err)
       console.log(JSON.stringify(err, null, 2))
     }
   }
+}
+
+export function runSyncWithInterval() {
+  setTimeout(async () => {
+    await sleep(5000)
+    console.log('Syncing with timeout...')
+    await performSync()
+    runSyncWithInterval()
+  }, 0)
 }

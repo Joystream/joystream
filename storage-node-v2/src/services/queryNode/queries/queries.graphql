@@ -1,0 +1,50 @@
+fragment StorageBucketDetails on StorageBucket {
+  id
+  operatorMetadata
+  operatorStatus {
+    ... on StorageBucketOperatorStatusActive {
+      workerId
+    }
+    ... on StorageBucketOperatorStatusInvited {
+      workerId
+    }
+  }
+}
+
+query getStorageBucketDetails($id: ID!) {
+  storageBucketByUniqueInput(where: { id: $id }) {
+    ...StorageBucketDetails
+  }
+}
+
+query getAllStorageBucketDetails {
+  storageBuckets {
+    ...StorageBucketDetails
+  }
+}
+
+fragment StorageBagDetails on StorageBag {
+  id
+  storedBy {
+    id
+  }
+}
+
+query getStorageBagDetails($bucketIds: StorageBucketWhereInput) {
+  storageBags(where: { storedBy_some: $bucketIds }) {
+    ...StorageBagDetails
+  }
+}
+
+fragment DataObjectDetails on StorageDataObject {
+  ipfsHash
+  storageBag {
+    id
+  }
+}
+
+query getDataObjectDetails($bagIds: StorageBagWhereInput) {
+  storageDataObjects(where: { storageBag: $bagIds }) {
+    ...DataObjectDetails
+  }
+}
