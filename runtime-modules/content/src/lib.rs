@@ -12,6 +12,7 @@ pub use errors::*;
 pub use permissions::*;
 
 use core::hash::Hash;
+pub use sp_std::cmp::{max, min};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -149,11 +150,14 @@ pub trait Trait:
     /// deposit for creating a post
     type PostCleanupCost: Get<Self::Balance>;
 
+    /// Margin to incentivate cleanup
+    type CleanupMargin: Get<Self::Balance>;
+
     /// limits for ensuring correct working of the subreddit
     type MapLimits: SubredditLimits;
 
     /// function used for hash computation
-    fn calculate_hash(text: &[u8]) -> Self::Hash;
+    fn compute_hash(text: &[u8]) -> Self::Hash;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -506,9 +510,9 @@ pub struct Person<MemberId> {
 /// Information about the thread being created
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ThreadCreationParameters<Hash, ChannelId> {
-    title_hash: Hash,
-    text_hash: Hash,
+pub struct ThreadCreationParameters<ChannelId> {
+    title: Vec<u8>,
+    post_text: Vec<u8>,
     post_mutable: bool,
     channel_id: ChannelId,
 }
@@ -598,7 +602,7 @@ pub trait SubredditLimits {
     type MaxModeratorsForSubreddit: Get<u64>;
 
     /// Cap on bloat bond
-    type BloatBondCap: Get<u64>;
+    type BloatBondCap: Get<u32>;
 
     /// Number of blocks after which a post can be deleted by anyone
     type PostOwnershipDuration: Get<u32>;
@@ -672,9 +676,6 @@ decl_storage! {
             hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) T::MemberId => ();
         /// Number of subreddit moderators
         pub NumberOfSubredditModerators get(fn number_of_subreddit_moderator) config(): u64;
-
-        /// Cleanup margin
-        pub CleanupMargin get(fn cleanup_margin) config(): <T as balances::Trait>::Balance;
 
     }
 }
@@ -1453,7 +1454,7 @@ decl_module! {
      fn create_thread(
             origin,
             member_id: T::MemberId,
-            params: ThreadCreationParameters<<T as frame_system::Trait>::Hash, T::ChannelId>,
+            params: ThreadCreationParameters<T::ChannelId>,
         ) -> DispatchResult {
 
          let account_id = ensure_signed(origin)?;
@@ -1472,20 +1473,33 @@ decl_module! {
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
 
-           // reserve cleanup payoff in the thread + the cost of creating the first post
-           let bloat_bond = T::ThreadCleanupCost::get() + T::PostCleanupCost::get();
+            // reserve cleanup payoff in the thread + the cost of creating the first post
+            let thread_init_bloat_bond = Self::compute_bloat_bond(
+                params.post_text.len().saturating_add(params.title.len()),
+                T::PostCleanupCost::get() + T::ThreadCleanupCost::get()
+            );
 
-           Self::transfer_to_state_cleanup_treasury_account(
-                bloat_bond,
+            let first_post_init_bloat_bond = Self::compute_bloat_bond(
+                params.post_text.len(),
+                T::PostCleanupCost::get()
+            );
+
+
+
+            Self::transfer_to_state_cleanup_treasury_account(
+                thread_init_bloat_bond,
                 new_thread_id,
                 &account_id
             )?;
 
+            let title_hash = T::compute_hash(&params.title.encode());
+            let text_hash = T::compute_hash(&params.post_text.encode());
+
             // Build a new thread
             let new_thread = Thread_ {
-                title_hash: params.title_hash,
+                title_hash: title_hash,
                 author_id: member_id,
-                bloat_bond: bloat_bond,
+                bloat_bond: thread_init_bloat_bond,
                 number_of_posts: T::PostId::zero(),
                 channel_id: params.channel_id,
             };
@@ -1498,10 +1512,10 @@ decl_module! {
             // Add inital post to thread
             let _ = Self::add_new_post(
                 new_thread_id,
-                params.text_hash,
+                text_hash,
                 member_id,
                 account_id,
-                bloat_bond,
+                first_post_init_bloat_bond,
                 params.post_mutable,
             );
 
@@ -1513,7 +1527,7 @@ decl_module! {
                 RawEvent::ThreadCreated(
                     new_thread_id,
                     member_id,
-                    params.title_hash,
+                    title_hash,
                     params.channel_id,
                 )
             );
@@ -1585,8 +1599,8 @@ decl_module! {
         Self::ensure_subreddit_is_mutable(&channel)?;
 
         // computing text hash and post price
-        let text_hash = T::calculate_hash(&params.text.encode());
-        let init_bloat_bond = Self::compute_price(&params.text);
+        let text_hash = T::compute_hash(&params.text.encode());
+        let init_bloat_bond = Self::compute_bloat_bond(params.text.len(), T::PostCleanupCost::get());
 
         // transfer bond to threasury account
         Self::transfer_to_state_cleanup_treasury_account(
@@ -1664,7 +1678,7 @@ decl_module! {
 
             // Maybe update text hash
             if let Some(new_text) = &params.text {
-                let new_text_hash = T::calculate_hash(&new_text);
+                let new_text_hash = T::compute_hash(&new_text);
                 post.text_hash = new_text_hash;
 
                // update price
@@ -2047,8 +2061,19 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn compute_price(text: &Vec<u8>) -> <T as balances::Trait>::Balance {
-        <T as balances::Trait>::Balance::from(text.len().saturating_mul(T::BytePrice::get()) as u32)
+    fn compute_bloat_bond(
+        size: usize,
+        cleanup_cost: <T as balances::Trait>::Balance,
+    ) -> <T as balances::Trait>::Balance {
+        let price_for_size =
+            <T as balances::Trait>::Balance::from(size.saturating_mul(T::BytePrice::get()) as u32);
+        let price_for_cleanup = cleanup_cost.saturating_add(T::CleanupMargin::get());
+        min(
+            max(price_for_size, price_for_cleanup),
+            <T as balances::Trait>::Balance::from(
+                <T::MapLimits as SubredditLimits>::BloatBondCap::get(),
+            ),
+        )
     }
 
     fn transfer_to_state_cleanup_treasury_account(
