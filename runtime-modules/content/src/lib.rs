@@ -1587,11 +1587,10 @@ decl_module! {
                     &account_id
         )?;
 
-    let text_hash = T::calculate_hash(&params.text.encode());
-    let init_bloat_bond = params
-        .text.len()
-        .saturating_mul(T::BytePrice::get()
-    );
+
+        // computing text hash and post price
+        let text_hash = T::calculate_hash(&params.text.encode());
+        let init_bloat_bond = Self::compute_price(&params.text);
 
         //
         // == MUTATION SAFE ==
@@ -1603,7 +1602,7 @@ decl_module! {
             text_hash,
             member_id,
             account_id,
-            T::Balance::from(init_bloat_bond as u32),
+            init_bloat_bond,
             params.mutable,
         );
 
@@ -2043,6 +2042,10 @@ impl<T: Trait> Module<T> {
             amount,
             ExistenceRequirement::AllowDeath,
         )
+    }
+
+    fn compute_price(text: &Vec<u8>) -> <T as balances::Trait>::Balance {
+        <T as balances::Trait>::Balance::from(text.len().saturating_mul(T::BytePrice::get()) as u32)
     }
 
     fn transfer_to_state_cleanup_treasury_account(
