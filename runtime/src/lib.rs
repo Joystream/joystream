@@ -63,7 +63,6 @@ pub use runtime_api::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
 use governance::{council, election};
-use storage::DynamicBagCreationPolicy;
 
 // Node dependencies
 pub use common;
@@ -565,6 +564,9 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance4;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
@@ -575,6 +577,11 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<DistributionWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -645,19 +652,20 @@ parameter_types! {
 }
 
 parameter_types! {
+    pub const MaxDistributionBucketNumberPerFamily: u64 = 20; //TODO: adjust value
+    pub const MaxDistributionBucketFamilyNumber: u64 = 20; //TODO: adjust value
     pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
     pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxRandomIterationNumber: u64 = 30; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 30; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
-    pub const DefaultMemberDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
-        number_of_storage_buckets: 4
-    }; //TODO: adjust value
-    pub const DefaultChannelDynamicBagCreationPolicy: DynamicBagCreationPolicy = DynamicBagCreationPolicy{
-        number_of_storage_buckets: 4
-    }; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 4; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4; //TODO: adjust value
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+        storage::DistributionBucketsPerBagValueConstraint {min: 3, max_min_diff: 7}; //TODO: adjust value
 }
 
 impl storage::Trait for Runtime {
@@ -665,6 +673,7 @@ impl storage::Trait for Runtime {
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type DistributionBucketId = DistributionBucketId;
+    type DistributionBucketFamilyId = DistributionBucketFamilyId;
     type ChannelId = ChannelId;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
@@ -672,21 +681,46 @@ impl storage::Trait for Runtime {
     type ModuleId = StorageModuleId;
     type MemberOriginValidator = MembershipOriginValidator<Self>;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
-    type DefaultMemberDynamicBagCreationPolicy = DefaultMemberDynamicBagCreationPolicy;
-    type DefaultChannelDynamicBagCreationPolicy = DefaultChannelDynamicBagCreationPolicy;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
     type Randomness = RandomnessCollectiveFlip;
     type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type MaxDistributionBucketNumberPerFamily = MaxDistributionBucketNumberPerFamily;
+    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
+    type DistributionBucketOperatorId = DistributionBucketOperatorId;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
 
-    fn ensure_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
     }
 
-    fn ensure_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
+    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
         StorageWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
     }
 
-    fn ensure_worker_exists(worker_id: &ActorId) -> DispatchResult {
+    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
         StorageWorkingGroup::ensure_worker_exists(&worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
+    }
+
+    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
+        DistributionWorkingGroup::ensure_origin_is_active_leader(origin)
+    }
+
+    fn ensure_distribution_worker_origin(
+        origin: Self::Origin,
+        worker_id: ActorId,
+    ) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_signed(origin, &worker_id).map(|_| ())
+    }
+
+    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
+        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
             .map(|_| ())
             .map_err(|err| err.into())
     }
@@ -755,6 +789,7 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         //
         Storage: storage::{Module, Call, Storage, Event<T>},
     }

@@ -30,7 +30,7 @@ impl<T: Trait> StorageBucketPicker<T> {
 
         let required_bucket_num = creation_policy.number_of_storage_buckets as usize;
 
-        // Storage IDs accumulator.
+        // Storage bucket IDs accumulator.
         let bucket_ids_cell = RefCell::new(BTreeSet::new());
 
         RandomStorageBucketIdIterator::<T>::new()
@@ -109,34 +109,18 @@ impl<T: Trait> RandomStorageBucketIdIterator<T> {
     fn random_storage_bucket_id(&self) -> T::StorageBucketId {
         let total_buckets_number = Module::<T>::next_storage_bucket_id();
 
-        let random_bucket_id: T::StorageBucketId = self
-            .random_index(total_buckets_number.saturated_into())
-            .saturated_into();
+        let random_bucket_id: T::StorageBucketId = Module::<T>::random_index(
+            self.current_seed.as_ref(),
+            total_buckets_number.saturated_into(),
+        )
+        .saturated_into();
 
         random_bucket_id
     }
 
-    // Generate random number from zero to upper_bound (excluding).
-    fn random_index(&self, upper_bound: u64) -> u64 {
-        if upper_bound == 0 {
-            return upper_bound;
-        }
-
-        let mut rand: u64 = 0;
-        for offset in 0..8 {
-            rand += (self.current_seed.as_ref()[offset] as u64) << offset;
-        }
-        rand % upper_bound
-    }
-
     // Creates new iterator.
     pub(crate) fn new() -> Self {
-        // Cannot create randomness in the initial block (Substrate error).
-        let seed = if <frame_system::Module<T>>::block_number() == Zero::zero() {
-            Default::default()
-        } else {
-            T::Randomness::random_seed()
-        };
+        let seed = Module::<T>::get_initial_random_seed();
 
         Self {
             current_iteration: 0,
