@@ -11,7 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-//use core::hash::Hash;
+use core::hash::Hash;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -27,9 +27,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{
-    AccountIdConversion, Hash, MaybeSerializeDeserialize, Member, Saturating,
-};
+use sp_runtime::traits::{AccountIdConversion, MaybeSerializeDeserialize, Member, Saturating};
 use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -140,7 +138,7 @@ pub trait Trait:
     type ReactionId: NumericIdentifier;
 
     /// Price per byte
-    type BytePrice: Get<Self::Balance>;
+    type BytePrice: Get<usize>;
 
     // module id
     type ModuleId: Get<ModuleId>;
@@ -153,6 +151,9 @@ pub trait Trait:
 
     /// limits for ensuring correct working of the subreddit
     type MapLimits: SubredditLimits;
+
+    /// function used for hash computation
+    fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -1496,6 +1497,7 @@ decl_module! {
                 params.text_hash,
                 member_id,
                 account_id,
+                bloat_bond,
                 params.post_mutable,
             );
 
@@ -1585,10 +1587,11 @@ decl_module! {
                     &account_id
         )?;
 
-    let text_hash = <T as frame_system::Trait>::Hashing::hash(&params.text.encode());
+    let text_hash = T::calculate_hash(&params.text.encode());
     let init_bloat_bond = params
         .text.len()
-        .saturating_mul(T::BytePrice::get());
+        .saturating_mul(T::BytePrice::get()
+    );
 
         //
         // == MUTATION SAFE ==
@@ -1600,6 +1603,7 @@ decl_module! {
             text_hash,
             member_id,
             account_id,
+            T::Balance::from(init_bloat_bond as u32),
             params.mutable,
         );
 
@@ -1657,8 +1661,8 @@ decl_module! {
             let mut post = post;
 
             // Maybe update text hash
-            if let Some(text_hash) = params.text {
-                let new_text_hash = <T as frame_system::Trait>::Hashing::hash(&params.text);
+            if let Some(new_text) = &params.text {
+                let new_text_hash = T::calculate_hash(&new_text);
                 post.text_hash = new_text_hash;
 
                // update price
@@ -1666,7 +1670,7 @@ decl_module! {
             }
 
             // Maybe update post mutability
-            if let Some(new_mutability) = params.mutable { post.mutable = new_mutability }
+            if let Some(new_mutability) = &params.mutable { post.mutable = new_mutability.clone() }
 
             <PostById<T>>::insert(thread_id, post_id, post);
 
@@ -2102,6 +2106,7 @@ impl<T: Trait> Module<T> {
         text_hash: T::Hash,
         author_id: T::MemberId,
         account_id: T::AccountId,
+        init_bloat_bond: <T as balances::Trait>::Balance,
         mutable: bool,
     ) -> T::PostId {
         // Make and add initial post
@@ -2117,7 +2122,7 @@ impl<T: Trait> Module<T> {
             author_id: author_id,
             author_account: account_id,
             creation_time: frame_system::Module::<T>::block_number(),
-            bloat_bond: T::PostDeposit::get(),
+            bloat_bond: init_bloat_bond,
             mutable: mutable,
         };
 
