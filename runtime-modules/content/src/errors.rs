@@ -85,23 +85,8 @@ decl_error! {
         /// category does not exists
         ForumCategoryDoesNotExist,
 
-        /// non empty threads for a category
-        CategoryNotEmptyThreads,
-
-        /// non empty subcategories for a category
-        CategoryNotEmptySubCategories,
-
-        /// Error encountered when transversing forum categories
-        PathLengthShouldBeGreaterThanZero,
-
         /// Error encountered when transversing forum categories
         MapSizeLimit,
-
-        /// Ancestor category immutable
-        AncestorCategoryImmutable,
-
-        /// maximum category depth exceeded
-        MaxValidCategoryDepthExceeded,
 
         /// User is not a moderator
         ModeratorNotValid,
@@ -114,6 +99,9 @@ decl_error! {
 
         /// Moderator Limits exceeded
         ModeratorsLimitExceeded,
+
+        /// Thread Archived
+        ArchivedThreadCannotBeModified,
 
 
     }

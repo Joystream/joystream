@@ -535,6 +535,9 @@ pub struct Thread_<MemberId, Hash, Balance, NumberOfPosts, ChannelId> {
 
     /// channel whose forum this thread belongs to
     pub channel_id: ChannelId,
+
+    /// Thread Status
+    pub archived: bool,
 }
 
 pub type Thread<T> = Thread_<
@@ -1502,6 +1505,7 @@ decl_module! {
                 bloat_bond: thread_init_bloat_bond,
                 number_of_posts: T::PostId::zero(),
                 channel_id: params.channel_id,
+                archived: false,
             };
 
             // Store thread
@@ -1652,7 +1656,7 @@ decl_module! {
             Self::ensure_is_forum_user(&account_id, &member_id)?;
 
             // Cannot edit post belonging to deleted threads
-            let _ = Self::ensure_thread_exists(&thread_id)?;
+            let thread = Self::ensure_thread_exists(&thread_id)?;
 
             // Make sure there exists a mutable post with post id `post_id`
             let post = Self::ensure_post_exists(&thread_id, &post_id)?;
@@ -1668,6 +1672,9 @@ decl_module! {
                post.bloat_bond != <T as balances::Trait>::Balance::zero(),
                Error::<T>::PostCannotBeModified
             );
+
+            // ensure thread is not archived
+            ensure!(!thread.archived, Error::<T>::ArchivedThreadCannotBeModified);
 
             //
             // == MUTATION SAFE ==
@@ -1856,6 +1863,31 @@ decl_module! {
 
         Ok(())
     }
+
+    #[weight = 10_000_000]
+    fn archive_thread(
+        origin,
+        channel_id: T::ChannelId,
+        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        thread_id: T::ThreadId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        let thread = Self::ensure_thread_exists(&thread_id)?;
+        ensure!(
+            Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id)
+                || Self::actor_is_channel_owner(&account_id, &actor, &channel_id),
+            Error::<T>::ActorNotAuthorized
+        );
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        let mut thread = thread;
+        thread.archived = true;
+        <ThreadById<T>>::insert(thread_id, thread);
+        Ok(())
+        }
     }
 }
 
