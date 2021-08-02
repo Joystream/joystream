@@ -1466,10 +1466,10 @@ decl_module! {
             let new_thread_id = <NextThreadId<T>>::get();
 
            // reserve cleanup payoff in the thread + the cost of creating the first post
-           let cleanup_payoff = T::ThreadDeposit::get() + T::PostDeposit::get();
+           let bloat_bond = T::ThreadDeposit::get() + T::PostDeposit::get();
 
            Self::transfer_to_state_cleanup_treasury_account(
-                cleanup_payoff,
+                bloat_bond,
                 new_thread_id,
                 &account_id
             )?;
@@ -1478,7 +1478,7 @@ decl_module! {
             let new_thread = Thread_ {
                 title_hash: params.title_hash,
                 author_id: member_id,
-                bloat_bond: cleanup_payoff,
+                bloat_bond: bloat_bond,
                 number_of_posts: T::PostId::zero(),
                 channel_id: params.channel_id,
             };
@@ -2004,6 +2004,20 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    fn transfer_to_state_cleanup_treasury_account(
+        amount: <T as balances::Trait>::Balance,
+        thread_id: T::ThreadId,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            account_id,
+            &state_cleanup_treasury_account,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
     fn ensure_can_delete_thread(
         account_id: &T::AccountId,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2078,20 +2092,6 @@ impl<T: Trait> Module<T> {
         <ThreadById<T>>::mutate(thread_id, |value| *value = thread);
 
         new_post_id
-    }
-
-    fn transfer_to_state_cleanup_treasury_account(
-        amount: <T as balances::Trait>::Balance,
-        thread_id: T::ThreadId,
-        account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            account_id,
-            &state_cleanup_treasury_account,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
     }
 
     fn ensure_subreddit_is_mutable(channel: &Channel<T>) -> Result<(), Error<T>> {
