@@ -1576,6 +1576,13 @@ decl_module! {
         let channel = Self::ensure_channel_exists(&thread.channel_id)?;
         Self::ensure_subreddit_is_mutable(&channel)?;
 
+        // transfer bond to threasury account
+        Self::transfer_to_state_cleanup_treasury_account(
+                    T::PostDeposit::get(),
+                    thread_id,
+                    &account_id
+                )?;
+
         //
         // == MUTATION SAFE ==
         //
@@ -1617,6 +1624,9 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_user(&account_id, &member_id)?;
 
+            // Cannot edit post belonging to deleted threads
+            let _ = Self::ensure_thread_exists(&thread_id)?;
+
             // Make sure there exists a mutable post with post id `post_id`
             let post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
@@ -1625,6 +1635,13 @@ decl_module! {
 
             // Signer does not match creator of post with identifier postId
             ensure!(post.author_id == member_id, Error::<T>::AccountDoesNotMatchPostAuthor);
+
+            // bloat_bond == 0 -> cannot edit post
+            ensure!(
+               post.bloat_bond != <T as balances::Trait>::Balance::zero(),
+               Error::<T>::PostCannotBeModified
+            );
+
             //
             // == MUTATION SAFE ==
             //
@@ -1665,13 +1682,15 @@ decl_module! {
         // obtain channel
         let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
-        // if actor is channel owner
+        // if actor is channel owner bond is burned
     if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
        Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
            let _ = balances::Module::<T>::burn(post.bloat_bond);
        }
+
+    // if actor is author bond is returned
     if Self::actor_is_post_author(&account_id, &actor, &post, &channel_id) {
-        let _ = Self::payoff(account_id, &post.bloat_bond, &post_id);
+        let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
     }
 
         //
@@ -1995,13 +2014,18 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn payoff(
-        _account_id: T::AccountId,
-        _amount: &T::Balance,
-        _post_id: &T::PostId,
+    fn pay_off(
+        thread_id: T::ThreadId,
+        amount: <T as balances::Trait>::Balance,
+        account_id: &T::AccountId,
     ) -> DispatchResult {
-        Self::not_implemented()?;
-        Ok(())
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &state_cleanup_treasury_account,
+            account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
     }
 
     fn transfer_to_state_cleanup_treasury_account(
