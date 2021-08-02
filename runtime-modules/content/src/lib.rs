@@ -11,7 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::hash::Hash;
+//use core::hash::Hash;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -27,7 +27,9 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{AccountIdConversion, MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::traits::{
+    AccountIdConversion, Hash, MaybeSerializeDeserialize, Member, Saturating,
+};
 use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -137,8 +139,8 @@ pub trait Trait:
     // reaction id
     type ReactionId: NumericIdentifier;
 
-    /// maximum depth for a category
-    type MaxCategoryDepth: Get<u64>;
+    /// Price per byte
+    type BytePrice: Get<Self::Balance>;
 
     // module id
     type ModuleId: Get<ModuleId>;
@@ -541,8 +543,8 @@ pub type Thread<T> = Thread_<
 /// Information about the post being created
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostCreationParameters<Hash, ThreadId> {
-    text_hash: Hash,
+pub struct PostCreationParameters<ThreadId> {
+    text: Vec<u8>,
     mutable: bool,
     thread_id: ThreadId,
 }
@@ -550,8 +552,8 @@ pub struct PostCreationParameters<Hash, ThreadId> {
 /// Information about the post being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostUpdateParameters<Hash> {
-    text_hash: Option<Hash>,
+pub struct PostUpdateParameters {
+    text: Option<Vec<u8>>,
     mutable: Option<bool>,
 }
 
@@ -1560,7 +1562,7 @@ decl_module! {
     fn create_post(
          origin,
          member_id: T::MemberId,
-         params: PostCreationParameters<<T as frame_system::Trait>::Hash, T::ThreadId>,
+         params: PostCreationParameters<T::ThreadId>,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
@@ -1581,7 +1583,12 @@ decl_module! {
                     T::PostDeposit::get(),
                     thread_id,
                     &account_id
-                )?;
+        )?;
+
+    let text_hash = <T as frame_system::Trait>::Hashing::hash(&params.text.encode());
+    let init_bloat_bond = params
+        .text.len()
+        .saturating_mul(T::BytePrice::get());
 
         //
         // == MUTATION SAFE ==
@@ -1590,7 +1597,7 @@ decl_module! {
         // Add new post
         let post_id = Self::add_new_post(
             thread_id,
-            params.text_hash,
+            text_hash,
             member_id,
             account_id,
             params.mutable,
@@ -1602,7 +1609,7 @@ decl_module! {
                 post_id,
                 member_id,
                 thread_id,
-                params.text_hash,
+                text_hash,
                 thread.channel_id,
             ));
 
@@ -1615,7 +1622,7 @@ decl_module! {
             member_id: T::MemberId,
             thread_id: T::ThreadId,
             post_id: T::PostId,
-            params: PostUpdateParameters<<T as frame_system::Trait>::Hash>,
+            params: PostUpdateParameters,
         ) -> DispatchResult {
             // Ensure data migration is done
 
@@ -1650,7 +1657,13 @@ decl_module! {
             let mut post = post;
 
             // Maybe update text hash
-            if let Some(new_text_hash) = params.text_hash { post.text_hash = new_text_hash }
+            if let Some(text_hash) = params.text {
+                let new_text_hash = <T as frame_system::Trait>::Hashing::hash(&params.text);
+                post.text_hash = new_text_hash;
+
+               // update price
+
+            }
 
             // Maybe update post mutability
             if let Some(new_mutability) = params.mutable { post.mutable = new_mutability }
@@ -2192,7 +2205,7 @@ decl_event!(
         ThreadId = <T as Trait>::ThreadId,
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
-        PostUpdateParameters = PostUpdateParameters<<T as frame_system::Trait>::Hash>,
+        PostUpdateParameters = PostUpdateParameters,
         MemberId = <T as MembershipTypes>::MemberId,
     {
         // Curators
