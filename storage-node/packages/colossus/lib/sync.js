@@ -25,7 +25,7 @@ const { nextTick } = require('@joystream/storage-utils/sleep')
 
 // Time to wait between sync runs. The lower the better chance to consume all
 // available sync sessions allowed.
-const INTERVAL_BETWEEN_SYNC_RUNS_MS = 3000
+const INTERVAL_BETWEEN_SYNC_RUNS_MS = 500
 
 async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags }) {
   // The number of concurrent items to attemp to fetch.

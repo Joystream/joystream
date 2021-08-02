@@ -75,7 +75,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
 
     // Not yet processed by sync run, check if we have it locally
     try {
-      const stat = await storage.ipfsStat(ipfs_content_id, 4000)
+      const stat = await storage.ipfsStat(ipfs_content_id, 1000)
 
       if (stat.local) {
         ipfsContentIdMap.set(content_id, {
