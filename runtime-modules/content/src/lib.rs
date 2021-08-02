@@ -144,10 +144,10 @@ pub trait Trait:
     type ModuleId: Get<ModuleId>;
 
     /// deposit for creating a thread
-    type ThreadDeposit: Get<Self::Balance>;
+    type ThreadCleanupCost: Get<Self::Balance>;
 
     /// deposit for creating a post
-    type PostDeposit: Get<Self::Balance>;
+    type PostCleanupCost: Get<Self::Balance>;
 
     /// limits for ensuring correct working of the subreddit
     type MapLimits: SubredditLimits;
@@ -672,6 +672,10 @@ decl_storage! {
             hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) T::MemberId => ();
         /// Number of subreddit moderators
         pub NumberOfSubredditModerators get(fn number_of_subreddit_moderator) config(): u64;
+
+        /// Cleanup margin
+        pub CleanupMargin get(fn cleanup_margin) config(): <T as balances::Trait>::Balance;
+
     }
 }
 
@@ -1469,7 +1473,7 @@ decl_module! {
             let new_thread_id = <NextThreadId<T>>::get();
 
            // reserve cleanup payoff in the thread + the cost of creating the first post
-           let bloat_bond = T::ThreadDeposit::get() + T::PostDeposit::get();
+           let bloat_bond = T::ThreadCleanupCost::get() + T::PostCleanupCost::get();
 
            Self::transfer_to_state_cleanup_treasury_account(
                 bloat_bond,
@@ -1580,17 +1584,16 @@ decl_module! {
         let channel = Self::ensure_channel_exists(&thread.channel_id)?;
         Self::ensure_subreddit_is_mutable(&channel)?;
 
-        // transfer bond to threasury account
-        Self::transfer_to_state_cleanup_treasury_account(
-                    T::PostDeposit::get(),
-                    thread_id,
-                    &account_id
-        )?;
-
-
         // computing text hash and post price
         let text_hash = T::calculate_hash(&params.text.encode());
         let init_bloat_bond = Self::compute_price(&params.text);
+
+        // transfer bond to threasury account
+        Self::transfer_to_state_cleanup_treasury_account(
+            init_bloat_bond,
+            thread_id,
+            &account_id
+        )?;
 
         //
         // == MUTATION SAFE ==
