@@ -463,14 +463,14 @@ pub struct DataObject<Balance> {
     pub size: u64,
 }
 
-/// Type alias for the BagObject.
+/// Type alias for the BagRecord.
 pub type Bag<T> =
-    BagObject<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
+    BagRecord<<T as Trait>::StorageBucketId, <T as Trait>::DistributionBucketId, BalanceOf<T>>;
 
 /// Bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct BagObject<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
+pub struct BagRecord<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
     /// Associated storage buckets.
     pub stored_by: BTreeSet<StorageBucketId>,
 
@@ -488,7 +488,7 @@ pub struct BagObject<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
 }
 
 impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
-    BagObject<StorageBucketId, DistributionBucketId, Balance>
+    BagRecord<StorageBucketId, DistributionBucketId, Balance>
 {
     // Add and/or remove storage buckets.
     fn update_storage_buckets(
@@ -634,8 +634,8 @@ impl<MemberId: Default, ChannelId> Into<DynamicBagType> for DynamicBagIdType<Mem
     }
 }
 
-/// Alias for the UploadParametersObject
-pub type UploadParameters<T> = UploadParametersObject<
+/// Alias for the UploadParametersRecord
+pub type UploadParameters<T> = UploadParametersRecord<
     MemberId<T>,
     <T as Trait>::ChannelId,
     <T as frame_system::Trait>::AccountId,
@@ -645,7 +645,7 @@ pub type UploadParameters<T> = UploadParametersObject<
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct UploadParametersObject<MemberId, ChannelId, AccountId, Balance> {
+pub struct UploadParametersRecord<MemberId, ChannelId, AccountId, Balance> {
     /// Public key used authentication in upload to liaison.
     pub authentication_key: Vec<u8>,
 
@@ -662,14 +662,14 @@ pub struct UploadParametersObject<MemberId, ChannelId, AccountId, Balance> {
     pub expected_data_size_fee: Balance,
 }
 
-/// Alias for the DynamicBagDeletionPrizeObject
+/// Alias for the DynamicBagDeletionPrizeRecord
 pub type DynamicBagDeletionPrize<T> =
-    DynamicBagDeletionPrizeObject<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+    DynamicBagDeletionPrizeRecord<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
 
 /// Deletion prize data for the dynamic bag. Requires on the dynamic bag creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DynamicBagDeletionPrizeObject<AccountId, Balance> {
+pub struct DynamicBagDeletionPrizeRecord<AccountId, Balance> {
     /// Account ID to withdraw the deletion prize.
     pub account_id: AccountId,
 
@@ -807,20 +807,20 @@ impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     }
 }
 
-/// Type alias for the DistributionBucketObject.
+/// Type alias for the DistributionBucketFamilyRecord.
 pub type DistributionBucketFamily<T> =
-    DistributionBucketFamilyObject<<T as Trait>::DistributionBucketId, WorkerId<T>>;
+    DistributionBucketFamilyRecord<<T as Trait>::DistributionBucketId, WorkerId<T>>;
 
 /// Distribution bucket family.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DistributionBucketFamilyObject<DistributionBucketId: Ord, WorkerId: Ord> {
+pub struct DistributionBucketFamilyRecord<DistributionBucketId: Ord, WorkerId: Ord> {
     /// Distribution bucket map.
-    pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketObject<WorkerId>>,
+    pub distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucketRecord<WorkerId>>,
 }
 
 impl<DistributionBucketId: Ord, WorkerId: Ord>
-    DistributionBucketFamilyObject<DistributionBucketId, WorkerId>
+    DistributionBucketFamilyRecord<DistributionBucketId, WorkerId>
 {
     // Add and/or remove distribution buckets assignments to bags.
     fn change_bag_assignments(
@@ -850,13 +850,13 @@ impl<DistributionBucketId: Ord, WorkerId: Ord>
     }
 }
 
-/// Type alias for the DistributionBucketObject.
-pub type DistributionBucket<T> = DistributionBucketObject<WorkerId<T>>;
+/// Type alias for the DistributionBucketRecord.
+pub type DistributionBucket<T> = DistributionBucketRecord<WorkerId<T>>;
 
 /// Distribution bucket.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct DistributionBucketObject<WorkerId: Ord> {
+pub struct DistributionBucketRecord<WorkerId: Ord> {
     /// Distribution bucket accepts new bags.
     pub accepting_new_bags: bool,
 
@@ -873,7 +873,7 @@ pub struct DistributionBucketObject<WorkerId: Ord> {
     pub assigned_bags: u64,
 }
 
-impl<WorkerId: Ord> DistributionBucketObject<WorkerId> {
+impl<WorkerId: Ord> DistributionBucketRecord<WorkerId> {
     // Increment the assigned bags number.
     fn register_bag_assignment(&mut self) {
         self.assigned_bags = self.assigned_bags.saturating_add(1);
@@ -1094,7 +1094,7 @@ decl_event! {
         /// Params
         /// - dynamic bag ID
         /// - optional DynamicBagDeletionPrize instance
-        DynamicBagCreated(DynamicBagId, Option<DynamicBagDeletionPrizeObject<AccountId, Balance>>),
+        DynamicBagCreated(DynamicBagId, Option<DynamicBagDeletionPrizeRecord<AccountId, Balance>>),
 
         /// Emits on changing the voucher for a storage bucket.
         /// Params
