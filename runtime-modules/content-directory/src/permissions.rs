@@ -19,7 +19,7 @@ pub use serde::{Deserialize, Serialize};
 use common::working_group::WorkingGroupAuthenticator;
 
 /// Ensure curator authorization performed succesfully
-pub fn ensure_curator_auth_success<T: Trait>(
+pub fn ensure_curator_auth_success<T: Config>(
     curator_id: &CuratorId<T>,
     account_id: &T::AccountId,
 ) -> Result<(), Error<T>> {
@@ -31,7 +31,7 @@ pub fn ensure_curator_auth_success<T: Trait>(
 }
 
 /// Ensure member authorization performed succesfully
-pub fn ensure_member_auth_success<T: Trait>(
+pub fn ensure_member_auth_success<T: Config>(
     member_id: &T::MemberId,
     account_id: &T::AccountId,
 ) -> Result<(), Error<T>> {
@@ -44,7 +44,7 @@ pub fn ensure_member_auth_success<T: Trait>(
 }
 
 /// Ensure lead authorization performed succesfully
-pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Result<(), Error<T>> {
+pub fn ensure_lead_auth_success<T: Config>(account_id: &T::AccountId) -> Result<(), Error<T>> {
     ensure!(
         T::WorkingGroup::is_leader_account_id(account_id),
         Error::<T>::LeadAuthFailed
@@ -53,7 +53,7 @@ pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Result<(
 }
 
 /// Ensure given `Origin` is lead
-pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
+pub fn ensure_is_lead<T: Config>(origin: T::Origin) -> DispatchResult {
     let account_id = ensure_signed(origin)?;
     Ok(ensure_lead_auth_success::<T>(&account_id)?)
 }

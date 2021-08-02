@@ -70,7 +70,7 @@ parameter_types! {
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
-impl referendum::Trait<ReferendumInstance> for Test {
+impl referendum::Config<ReferendumInstance> for Test {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
@@ -91,7 +91,7 @@ impl referendum::Trait<ReferendumInstance> for Test {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        _: &<Self as frame_system::Trait>::AccountId,
+        _: &<Self as frame_system::Config>::AccountId,
         _: &Self::Balance,
     ) -> Self::VotePower {
         1
@@ -159,7 +159,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 10;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -169,7 +169,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl proposals::Trait for Test {}
+impl proposals::Config for Test {}
 
 parameter_types! {
     pub const CancellationFee: u64 = 5;
@@ -186,7 +186,7 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::Config for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -250,7 +250,7 @@ impl membership::WeightInfo for Weights {
     }
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
@@ -275,33 +275,33 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _origin: <Test as frame_system::Config>::Origin,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
         unimplemented!();
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!()
     }
 }
 
-impl crate::Trait for Test {
+impl crate::Config for Test {
     type Event = TestEvent;
     type ProposerOriginValidator = ();
     type CouncilOriginValidator = ();
@@ -413,7 +413,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -441,7 +441,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -464,7 +464,7 @@ parameter_types! {
 
 type ReferendumInstance = referendum::Instance1;
 
-impl council::Trait for Test {
+impl council::Config for Test {
     type Event = TestEvent;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
@@ -533,7 +533,7 @@ impl council::WeightInfo for CouncilWeightInfo {
     }
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         existing_locks.iter().any(|l| l == new_lock)
     }

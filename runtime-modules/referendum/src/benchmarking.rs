@@ -21,15 +21,15 @@ pub trait OptionCreator<AccountId, MemberId> {
     fn create_option(account_id: AccountId, member_id: MemberId);
 }
 
-fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
+fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
     Referendum::<T, I>::force_start(winning_target_count.into(), 0);
     assert_eq!(
         Stage::<T, I>::get(),
@@ -42,7 +42,7 @@ fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
     );
 }
 
-fn funded_account<T: Trait<I>, I: Instance>(name: &'static str, id: u32) -> T::AccountId {
+fn funded_account<T: Config<I>, I: Instance>(name: &'static str, id: u32) -> T::AccountId {
     let account_id = account::<T::AccountId>(name, id, SEED);
     balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
@@ -50,11 +50,11 @@ fn funded_account<T: Trait<I>, I: Instance>(name: &'static str, id: u32) -> T::A
 }
 
 fn make_multiple_votes_for_multiple_options<
-    T: Trait<I>
-        + membership::Trait
+    T: Config<I>
+        + membership::Config
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
-            <T as common::membership::Trait>::MemberId,
+            <T as frame_system::Config>::AccountId,
+            <T as common::membership::Config>::MemberId,
         >,
     I: Instance,
 >(
@@ -89,11 +89,11 @@ fn make_multiple_votes_for_multiple_options<
 }
 
 fn vote_for<
-    T: Trait<I>
-        + membership::Trait
+    T: Config<I>
+        + membership::Config
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
-            <T as common::membership::Trait>::MemberId,
+            <T as frame_system::Config>::AccountId,
+            <T as common::membership::Config>::MemberId,
         >,
     I: Instance,
 >(
@@ -140,11 +140,11 @@ fn vote_for<
 }
 
 fn create_account_and_vote<
-    T: Trait<I>
-        + membership::Trait
+    T: Config<I>
+        + membership::Config
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
-            <T as common::membership::Trait>::MemberId,
+            <T as frame_system::Config>::AccountId,
+            <T as common::membership::Config>::MemberId,
         >,
     I: Instance,
 >(
@@ -160,7 +160,7 @@ fn create_account_and_vote<
     vote_for::<T, I>(name, voter_id, member_option, cycle_id, extra_stake)
 }
 
-fn move_to_block<T: Trait<I>, I: Instance>(
+fn move_to_block<T: Config<I>, I: Instance>(
     target_block: T::BlockNumber,
     target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
 ) {
@@ -178,7 +178,7 @@ fn move_to_block<T: Trait<I>, I: Instance>(
     assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
 }
 
-fn move_to_block_before_initialize<T: Trait<I>, I: Instance>(
+fn move_to_block_before_initialize<T: Config<I>, I: Instance>(
     target_block: T::BlockNumber,
     target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
 ) {
@@ -207,7 +207,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait<I> + membership::Trait, I: Instance>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config<I> + membership::Config, I: Instance>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -217,7 +217,7 @@ fn handle_from_id<T: Trait<I> + membership::Trait, I: Instance>(id: u32) -> Vec<
     handle
 }
 
-fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
+fn member_funded_account<T: Config<I> + membership::Config, I: Instance>(
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
     let account_id = funded_account::<T, I>("account", id);
@@ -255,11 +255,11 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 }
 
 fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
-    T: Trait<I>
+    T: Config<I>
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
-            <T as common::membership::Trait>::MemberId,
-        > + membership::Trait,
+            <T as frame_system::Config>::AccountId,
+            <T as common::membership::Config>::MemberId,
+        > + membership::Config,
     I: Instance,
 >(
     target_winners: u32,
@@ -334,9 +334,9 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 
 benchmarks_instance! {
     where_clause {
-        where T: OptionCreator<<T as frame_system::Trait>::AccountId,
-        <T as common::membership::Trait>::MemberId>,
-        T: membership::Trait
+        where T: OptionCreator<<T as frame_system::Config>::AccountId,
+        <T as common::membership::Config>::MemberId>,
+        T: membership::Config
     }
     _ { }
 
@@ -696,13 +696,13 @@ mod tests {
 
     impl
         OptionCreator<
-            <Runtime as frame_system::Trait>::AccountId,
-            <Runtime as common::membership::Trait>::MemberId,
+            <Runtime as frame_system::Config>::AccountId,
+            <Runtime as common::membership::Config>::MemberId,
         > for Runtime
     {
         fn create_option(
-            _: <Runtime as frame_system::Trait>::AccountId,
-            _: <Runtime as common::membership::Trait>::MemberId,
+            _: <Runtime as frame_system::Config>::AccountId,
+            _: <Runtime as common::membership::Config>::MemberId,
         ) {
         }
     }

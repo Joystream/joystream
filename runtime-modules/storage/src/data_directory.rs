@@ -41,11 +41,11 @@ use crate::data_object_type_registry::IsActiveDataObjectType;
 use crate::{MemberId, StorageProviderId};
 
 /// The _Data directory_ main _Trait_.
-pub trait Trait:
-    pallet_timestamp::Trait + frame_system::Trait + data_object_type_registry::Trait
+pub trait Config:
+    pallet_timestamp::Config + frame_system::Config + data_object_type_registry::Config
 {
     /// _Data directory_ event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Content id.
     type ContentId: Parameter + Member + MaybeSerialize + Copy + Ord + Default;
@@ -64,7 +64,7 @@ pub trait Trait:
 
 decl_error! {
     /// _Data object storage registry_ module predefined errors.
-    pub enum Error for Module<T: Trait>{
+    pub enum Error for Module<T: Config>{
         /// Content with this ID not found.
         CidNotFound,
 
@@ -108,9 +108,9 @@ impl Default for LiaisonJudgement {
 /// Alias for DataObjectInternal
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as pallet_timestamp::Trait>::Moment,
-    <T as data_object_type_registry::Trait>::DataObjectTypeId,
+    <T as frame_system::Config>::BlockNumber,
+    <T as pallet_timestamp::Config>::Moment,
+    <T as data_object_type_registry::Config>::DataObjectTypeId,
     StorageProviderId<T>,
 >;
 
@@ -141,10 +141,10 @@ pub struct DataObjectInternal<MemberId, BlockNumber, Moment, DataObjectTypeId, S
 }
 
 /// A map collection of unique DataObjects keyed by the ContentId
-pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
+pub type DataObjectsMap<T> = BTreeMap<<T as Config>::ContentId, DataObject<T>>;
 
 decl_storage! {
-    trait Store for Module<T: Trait> as DataDirectory {
+    trait Store for Module<T: Config> as DataDirectory {
         /// List of ids known to the system.
         pub KnownContentIds get(fn known_content_ids) config(): Vec<T::ContentId> = Vec::new();
 
@@ -157,10 +157,10 @@ decl_storage! {
 decl_event! {
     /// _Data directory_ events
     pub enum Event<T> where
-        <T as Trait>::ContentId,
+        <T as Config>::ContentId,
         MemberId = MemberId<T>,
         StorageProviderId = StorageProviderId<T>,
-        DataObjectTypeId = <T as data_object_type_registry::Trait>::DataObjectTypeId
+        DataObjectTypeId = <T as data_object_type_registry::Config>::DataObjectTypeId
     {
         /// Emits on adding of the content.
         /// Params:
@@ -187,7 +187,7 @@ decl_event! {
 
 decl_module! {
     /// _Data directory_ substrate module.
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -204,11 +204,11 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             content_id: T::ContentId,
-            type_id: <T as data_object_type_registry::Trait>::DataObjectTypeId,
+            type_id: <T as data_object_type_registry::Config>::DataObjectTypeId,
             size: u64,
             ipfs_content_id: Vec<u8>
         ) {
-            <T as Trait>::MemberOriginValidator::ensure_member_controller_account_origin(
+            <T as Config>::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id,
             )?;
@@ -336,7 +336,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     fn update_content_judgement(
         storage_provider_id: &StorageProviderId<T>,
         content_id: T::ContentId,
@@ -359,13 +359,13 @@ impl<T: Trait> Module<T> {
 }
 
 /// Provides random storage provider id. We use it when assign the content to the storage provider.
-pub trait StorageProviderHelper<T: Trait> {
+pub trait StorageProviderHelper<T: Config> {
     /// Provides random storage provider id.
     fn get_random_storage_provider() -> Result<StorageProviderId<T>, &'static str>;
 }
 
 /// Content access helper.
-pub trait ContentIdExists<T: Trait> {
+pub trait ContentIdExists<T: Config> {
     /// Verifies the content existence.
     fn has_content(id: &T::ContentId) -> bool;
 
@@ -373,7 +373,7 @@ pub trait ContentIdExists<T: Trait> {
     fn get_data_object(id: &T::ContentId) -> Result<DataObject<T>, &'static str>;
 }
 
-impl<T: Trait> ContentIdExists<T> for Module<T> {
+impl<T: Config> ContentIdExists<T> for Module<T> {
     fn has_content(content_id: &T::ContentId) -> bool {
         Self::data_object_by_content_id(*content_id).is_some()
     }

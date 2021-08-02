@@ -11,7 +11,7 @@ use super::mock::{Balances, LockId, System, Test, TestEvent, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, RawEvent,
-    StakePolicy, Trait, Worker,
+    StakePolicy, Config, Worker,
 };
 
 pub struct EventFixture;
@@ -92,8 +92,8 @@ impl Default for AddOpeningFixture {
             opening_type: OpeningType::Regular,
             starting_block: 0,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
         }
@@ -116,7 +116,7 @@ impl AddOpeningFixture {
 
             let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
 
-            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
+            let expected_hash = <Test as frame_system::Config>::Hashing::hash(&self.description);
             let expected_opening = Opening {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
@@ -124,7 +124,7 @@ impl AddOpeningFixture {
                 stake_policy: self.stake_policy.clone(),
                 reward_per_block: self.reward_per_block.clone(),
                 creation_stake: if self.opening_type == OpeningType::Regular {
-                    <Test as Trait>::LeaderOpeningStake::get()
+                    <Test as Config>::LeaderOpeningStake::get()
                 } else {
                     0
                 },
@@ -238,10 +238,10 @@ impl ApplyOnOpeningFixture {
             reward_account_id: 2,
             description: b"human_text".to_vec(),
             stake_parameters: StakeParameters {
-                stake: <Test as Trait>::MinimumApplicationStake::get(),
+                stake: <Test as Config>::MinimumApplicationStake::get(),
                 staking_account_id: 2,
             },
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+            initial_balance: <Test as Config>::MinimumApplicationStake::get(),
         }
     }
 
@@ -286,7 +286,7 @@ impl ApplyOnOpeningFixture {
 
             let actual_application = TestWorkingGroup::application_by_id(application_id);
 
-            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
+            let expected_hash = <Test as frame_system::Config>::Hashing::hash(&self.description);
             let expected_application = Application::<Test> {
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
@@ -327,8 +327,8 @@ impl FillOpeningFixture {
             reward_account_id: 2,
             staking_account_id: 2,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             created_at: 0,
@@ -437,13 +437,13 @@ impl Default for HireLeadFixture {
         Self {
             setup_environment: true,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             lead_id: 1,
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get()
-                + <Test as Trait>::LeaderOpeningStake::get()
+            initial_balance: <Test as Config>::MinimumApplicationStake::get()
+                + <Test as Config>::LeaderOpeningStake::get()
                 + 1,
         }
     }
@@ -513,11 +513,11 @@ impl Default for HireRegularWorkerFixture {
         Self {
             setup_environment: true,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+            initial_balance: <Test as Config>::MinimumApplicationStake::get(),
         }
     }
 }
@@ -1136,7 +1136,7 @@ impl SetStatusTextFixture {
         let new_text_hash = TestWorkingGroup::status_text_hash();
 
         if actual_result.is_ok() {
-            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(
+            let expected_hash = <Test as frame_system::Config>::Hashing::hash(
                 &self.new_status_text.clone().unwrap(),
             );
 

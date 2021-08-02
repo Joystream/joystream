@@ -7,7 +7,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 5,
     cancellationFee: 0,
@@ -23,7 +23,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 10,
     cancellationFee: 5,
@@ -39,7 +39,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 100,
     cancellationFee: 10,
@@ -55,7 +55,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 100,
     cancellationFee: 10,
@@ -71,7 +71,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 500,
     cancellationFee: 60,
@@ -87,7 +87,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.validators,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 45,
     cancellationFee: 10,
@@ -103,7 +103,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 90,
     cancellationFee: 8,
@@ -119,7 +119,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 500,
     cancellationFee: 50,
@@ -135,7 +135,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
     category: Categories.council,
     description:
         'Change the total reward across all validators in a given block.' +
-        'This is not the direct reward, but base reward for Pallet staking module.' +
+        'This is not the direct reward, but base reward for Module staking module.' +
         'The minimum value must be greater than 450 tJOY based on current runtime.',
     stake: 1000,
     cancellationFee: 100,

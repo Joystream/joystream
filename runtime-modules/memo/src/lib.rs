@@ -7,27 +7,27 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 
-pub trait Trait: frame_system::Trait + balances::Trait {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+pub trait Config: frame_system::Config + balances::Config {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
 
 pub type MemoText = Vec<u8>;
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Memo {
+    trait Store for Module<T: Config> as Memo {
         Memo get(fn memo) : map hasher(blake2_128_concat) T::AccountId => MemoText;
         MaxMemoLength get(fn max_memo_length) : u32 = 4096;
     }
 }
 
 decl_event! {
-    pub enum Event<T> where <T as frame_system::Trait>::AccountId {
+    pub enum Event<T> where <T as frame_system::Config>::AccountId {
         MemoUpdated(AccountId, MemoText),
     }
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
         #[weight = 10_000_000] // TODO: adjust weight

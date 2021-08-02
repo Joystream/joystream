@@ -11,7 +11,7 @@ pub enum EntityController<MemberId: Default + PartialEq + Clone + Copy> {
 
 impl<MemberId: Default + PartialEq + Clone + Copy> EntityController<MemberId> {
     /// Create `EntityController` enum representation, using provided `Actor`
-    pub fn from_actor<T: Trait>(actor: &Actor<T::CuratorGroupId, CuratorId<T>, MemberId>) -> Self {
+    pub fn from_actor<T: Config>(actor: &Actor<T::CuratorGroupId, CuratorId<T>, MemberId>) -> Self {
         match &actor {
             Actor::Lead => Self::Lead,
             Actor::Member(member_id) => Self::Member(*member_id),
@@ -96,7 +96,7 @@ impl<MemberId: Default + PartialEq + Clone + Copy> EntityPermissions<MemberId> {
     }
 
     /// Ensure actor with given `EntityAccessLevel` can remove entity
-    pub fn ensure_group_can_remove_entity<T: Trait>(
+    pub fn ensure_group_can_remove_entity<T: Config>(
         access_level: EntityAccessLevel,
     ) -> Result<(), Error<T>> {
         match access_level {
@@ -107,7 +107,7 @@ impl<MemberId: Default + PartialEq + Clone + Copy> EntityPermissions<MemberId> {
     }
 
     /// Ensure provided new_entity_controller is not equal to current one
-    pub fn ensure_controllers_are_not_equal<T: Trait>(
+    pub fn ensure_controllers_are_not_equal<T: Config>(
         &self,
         new_entity_controller: &EntityController<MemberId>,
     ) -> Result<(), Error<T>> {
@@ -135,7 +135,7 @@ pub enum EntityAccessLevel {
 
 impl EntityAccessLevel {
     /// Derives the `EntityAccessLevel` for the actor, attempting to act.
-    pub fn derive<T: Trait>(
+    pub fn derive<T: Config>(
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T::MemberId>,
         class_permissions: &ClassPermissions<T::CuratorGroupId>,

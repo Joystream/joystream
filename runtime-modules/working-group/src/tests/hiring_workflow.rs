@@ -7,7 +7,7 @@ use crate::tests::fixtures::{
 };
 use crate::tests::mock::{Test, TestWorkingGroup};
 use crate::types::StakeParameters;
-use crate::{OpeningType, StakePolicy, Trait};
+use crate::{OpeningType, StakePolicy, Config};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
@@ -33,13 +33,13 @@ impl Default for HiringWorkflow {
             opening_type: OpeningType::Regular,
             expected_result: Ok(()),
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             applications: Vec::new(),
             setup_environment: true,
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get() + 1,
+            initial_balance: <Test as Config>::MinimumApplicationStake::get() + 1,
         }
     }
 }
@@ -129,8 +129,8 @@ impl HiringWorkflow {
         } else {
             balances::Module::<Test>::make_free_balance_be(
                 &1,
-                <Test as Trait>::MinimumApplicationStake::get()
-                    + <Test as Trait>::LeaderOpeningStake::get()
+                <Test as Config>::MinimumApplicationStake::get()
+                    + <Test as Config>::LeaderOpeningStake::get()
                     + 1,
             );
             //         setup_members(6);

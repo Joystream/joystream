@@ -3,7 +3,7 @@ use super::*;
 use crate::{
     BuyMembershipParameters, InviteMembershipParameters, MemberIdByHandleHash, Membership,
     MembershipById, MembershipObject, StakingAccountIdMemberStatus, StakingAccountMemberBinding,
-    Trait,
+    Config,
 };
 use balances::Module as Balances;
 use core::convert::TryInto;
@@ -18,7 +18,7 @@ use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 pub trait MembershipWorkingGroupHelper<AccountId, MemberId, ActorId> {
     /// Set membership working group lead
@@ -32,15 +32,15 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn member_funded_account<T: Trait + balances::Trait>(
+fn member_funded_account<T: Config + balances::Config>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -69,7 +69,7 @@ fn member_funded_account<T: Trait + balances::Trait>(
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for j in 0..4 {
@@ -84,8 +84,8 @@ fn handle_from_id<T: Trait>(id: u32) -> Vec<u8> {
 }
 
 benchmarks! {
-    where_clause { where T: balances::Trait, T: Trait, T: MembershipWorkingGroupHelper<<T as
-        frame_system::Trait>::AccountId, <T as common::membership::Trait>::MemberId, <T as common::membership::Trait>::ActorId> }
+    where_clause { where T: balances::Config, T: Config, T: MembershipWorkingGroupHelper<<T as
+        frame_system::Config>::AccountId, <T as common::membership::Config>::MemberId, <T as common::membership::Config>::ActorId> }
     _{  }
 
     buy_membership_without_referrer{

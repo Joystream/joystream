@@ -43,7 +43,7 @@ benchmark substrate_utility
 benchmark pallet_session
 benchmark pallet_timestamp
 
-# Pallet staking benchmarking takes too long.
+# Module staking benchmarking takes too long.
 # benchmark pallet_staking
 
 # Benchmark should be run on the reference machine because it affects the fee model (transfer fee).

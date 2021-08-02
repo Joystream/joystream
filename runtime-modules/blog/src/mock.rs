@@ -29,7 +29,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -47,7 +47,7 @@ parameter_types! {
 }
 
 // First, implement the system pallet's configuration trait for `Runtime`
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -94,7 +94,7 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl membership::Trait for Runtime {
+impl membership::Config for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
@@ -107,7 +107,7 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -135,27 +135,27 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_: &<Runtime as frame_system::Config>::AccountId) -> bool {
         unimplemented!();
     }
 
     fn is_worker_account_id(
-        _: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _: &<Runtime as frame_system::Config>::AccountId,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!();
     }
@@ -224,10 +224,10 @@ parameter_types! {
     pub const RepliesMaxNumber: u64 = 100;
     pub const ReplyDeposit: u64 = 500;
     pub const BlogModuleId: ModuleId = ModuleId(*b"m00:blog"); // module : blog
-    pub const ReplyLifetime: <Runtime as frame_system::Trait>::BlockNumber = 10;
+    pub const ReplyLifetime: <Runtime as frame_system::Config>::BlockNumber = 10;
 }
 
-impl Trait for Runtime {
+impl Config for Runtime {
     type Event = TestEvent;
 
     type PostsMaxNumber = PostsMaxNumber;
@@ -272,12 +272,12 @@ impl
     MemberOriginValidator<
         Origin,
         ParticipantId<Runtime>,
-        <Runtime as frame_system::Trait>::AccountId,
+        <Runtime as frame_system::Config>::AccountId,
     > for MockEnsureParticipant
 {
     fn is_member_controller_account(
         member_id: &ParticipantId<Runtime>,
-        _: &<Runtime as frame_system::Trait>::AccountId,
+        _: &<Runtime as frame_system::Config>::AccountId,
     ) -> bool {
         *member_id != BAD_MEMBER_ID
     }
@@ -285,12 +285,12 @@ impl
     fn ensure_member_controller_account_origin(
         _: Origin,
         _: ParticipantId<Runtime>,
-    ) -> Result<<Runtime as frame_system::Trait>::AccountId, DispatchError> {
+    ) -> Result<<Runtime as frame_system::Config>::AccountId, DispatchError> {
         unimplemented!();
     }
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -334,7 +334,7 @@ pub fn generate_text(len: usize) -> Vec<u8> {
 type RawTestEvent = RawEvent<
     ParticipantId<Runtime>,
     PostId,
-    <Runtime as Trait>::ReplyId,
+    <Runtime as Config>::ReplyId,
     Vec<u8>,
     Vec<u8>,
     Option<Vec<u8>>,
@@ -393,7 +393,7 @@ pub fn edit_post(origin: Origin, post_id: PostId) -> DispatchResult {
 // Replies
 pub fn reply_by_id(
     post_id: PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
+    reply_id: <Runtime as Config>::ReplyId,
 ) -> Option<Reply<Runtime, DefaultInstance>> {
     match TestBlogModule::reply_by_id(post_id, reply_id) {
         reply if reply != Reply::<Runtime, DefaultInstance>::default() => Some(reply),
@@ -407,14 +407,14 @@ pub fn get_reply_text() -> Vec<u8> {
 
 pub fn get_reply(
     owner: ParticipantId<Runtime>,
-    parent_id: ParentId<<Runtime as Trait>::ReplyId, PostId>,
+    parent_id: ParentId<<Runtime as Config>::ReplyId, PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
     Reply::new(
         reply_text,
         owner,
         parent_id,
-        <Runtime as Trait>::ReplyDeposit::get(),
+        <Runtime as Config>::ReplyDeposit::get(),
     )
 }
 
@@ -422,7 +422,7 @@ pub fn create_reply(
     origin_id: u128,
     participant_id: u64,
     post_id: PostId,
-    reply_id: Option<<Runtime as Trait>::ReplyId>,
+    reply_id: Option<<Runtime as Config>::ReplyId>,
     editable: bool,
 ) -> DispatchResult {
     let reply = get_reply_text();
@@ -440,7 +440,7 @@ pub fn delete_reply(
     origin_id: u128,
     participant_id: u64,
     post_id: PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
+    reply_id: <Runtime as Config>::ReplyId,
 ) -> DispatchResult {
     TestBlogModule::delete_replies(
         Origin::signed(origin_id),
@@ -457,7 +457,7 @@ pub fn edit_reply(
     origin_id: u128,
     participant_id: u64,
     post_id: PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
+    reply_id: <Runtime as Config>::ReplyId,
 ) -> DispatchResult {
     let reply = get_reply_text();
     TestBlogModule::edit_reply(

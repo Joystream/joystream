@@ -133,26 +133,26 @@ pub struct CastVote<Hash, Currency, MemberId> {
 // short names aliasing existing structs and enums
 
 // types simplifying access to common structs and enums
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 pub type CastVoteOf<T> = CastVote<
-    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Config>::Hash,
     BalanceOf<T>,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::Config>::MemberId,
 >;
 pub type ReferendumStageVotingOf<T> =
-    ReferendumStageVoting<<T as frame_system::Trait>::BlockNumber>;
+    ReferendumStageVoting<<T as frame_system::Config>::BlockNumber>;
 pub type ReferendumStageRevealingOf<T, I> = ReferendumStageRevealing<
-    <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
-    <T as Trait<I>>::VotePower,
+    <T as frame_system::Config>::BlockNumber,
+    <T as common::membership::Config>::MemberId,
+    <T as Config<I>>::VotePower,
 >;
 pub type OptionResultOf<T, I> =
-    OptionResult<<T as common::membership::Trait>::MemberId, <T as Trait<I>>::VotePower>;
+    OptionResult<<T as common::membership::Config>::MemberId, <T as Config<I>>::VotePower>;
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
     ReferendumStageRevealingOf<T, I>,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     CastVoteOf<T>,
 );
 
@@ -171,9 +171,9 @@ pub trait WeightInfo {
     fn release_vote_stake() -> Weight;
 }
 
-type ReferendumWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
+type ReferendumWeightInfo<T, I> = <T as Config<I>>::WeightInfo;
 
-/// Trait that should be used by other modules to start the referendum, etc.
+/// Config that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
@@ -209,11 +209,11 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
 }
 
 /// The main Referendum module's trait.
-pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + common::membership::Trait + balances::Trait
+pub trait Config<I: Instance = DefaultInstance>:
+    frame_system::Config + common::membership::Config + balances::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
     /// e.g. std::u64::MAX.
@@ -251,9 +251,9 @@ pub trait Trait<I: Instance = DefaultInstance>:
 
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
-    ) -> <Self as Trait<I>>::VotePower;
+    ) -> <Self as Config<I>>::VotePower;
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
@@ -275,7 +275,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance = DefaultInstance> as Referendum {
+    trait Store for Module<T: Config<I>, I: Instance = DefaultInstance> as Referendum {
         /// Current referendum stage.
         pub Stage get(fn stage) config():
             ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
@@ -295,10 +295,10 @@ decl_event! {
     pub enum Event<T, I = DefaultInstance>
     where
         Balance = BalanceOf<T>,
-        <T as frame_system::Trait>::Hash,
-        <T as frame_system::Trait>::AccountId,
-        <T as Trait<I>>::VotePower,
-        <T as common::membership::Trait>::MemberId,
+        <T as frame_system::Config>::Hash,
+        <T as frame_system::Config>::AccountId,
+        <T as Config<I>>::VotePower,
+        <T as common::membership::Config>::MemberId,
     {
         /// Referendum started
         ReferendumStarted(u64),
@@ -325,7 +325,7 @@ decl_event! {
 
 decl_error! {
     /// Referendum errors
-    pub enum Error for Module<T: Trait<I>, I: Instance> {
+    pub enum Error for Module<T: Config<I>, I: Instance> {
         /// Origin is invalid
         BadOrigin,
 
@@ -367,13 +367,13 @@ decl_error! {
     }
 }
 
-impl<T: Trait<I>, I: Instance> PartialEq for Error<T, I> {
+impl<T: Config<I>, I: Instance> PartialEq for Error<T, I> {
     fn eq(&self, other: &Self) -> bool {
         self.as_u8() == other.as_u8()
     }
 }
 
-impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
+impl<T: Config<I>, I: Instance> From<BadOrigin> for Error<T, I> {
     fn from(_error: BadOrigin) -> Self {
         Error::<T, I>::BadOrigin
     }
@@ -382,7 +382,7 @@ impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Trait<I>, I: Instance = DefaultInstance> for enum Call
+    pub struct Module<T: Config<I>, I: Instance = DefaultInstance> for enum Call
         where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T, I>;
@@ -458,7 +458,7 @@ decl_module! {
         pub fn reveal_vote(
             origin,
             salt: Vec<u8>,
-            vote_option_id: <T as common::membership::Trait>::MemberId
+            vote_option_id: <T as common::membership::Config>::MemberId
         ) -> Result<(), Error<T, I>> {
             let (stage_data, account_id, cast_vote) =
                 EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
@@ -505,7 +505,7 @@ decl_module! {
 
 /////////////////// Inner logic ////////////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> Module<T, I> {
+impl<T: Config<I>, I: Instance> Module<T, I> {
     // Calculate reveal_vote weight
     fn calculate_reveal_vote_weight(number_of_winners: u32) -> Weight {
         ReferendumWeightInfo::<T, I>::reveal_vote_space_for_new_winner(number_of_winners)
@@ -566,7 +566,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>
+impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>
     for Module<T, I>
 {
     type VotePower = T::VotePower;
@@ -623,10 +623,10 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
 
     // Calculate commitment for a vote.
     fn calculate_commitment(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_id: &<T as common::membership::Trait>::MemberId,
+        vote_option_id: &<T as common::membership::Config>::MemberId,
     ) -> T::Hash {
         let mut payload = account_id.encode();
         let mut mut_option_id = vote_option_id.encode();
@@ -643,11 +643,11 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
 
 /////////////////// Mutations //////////////////////////////////////////////////
 
-struct Mutations<T: Trait<I>, I: Instance> {
+struct Mutations<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> Mutations<T, I> {
+impl<T: Config<I>, I: Instance> Mutations<T, I> {
     // Change the referendum stage from inactive to voting stage.
     fn start_voting_period(winning_target_count: &u64, cycle_id: &u64) {
         // change referendum state
@@ -677,7 +677,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     // Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealingOf<T, I>,
-    ) -> Vec<OptionResult<<T as common::membership::Trait>::MemberId, <T as Trait<I>>::VotePower>>
+    ) -> Vec<OptionResult<<T as common::membership::Config>::MemberId, <T as Config<I>>::VotePower>>
     {
         // reset referendum state
         Stage::<T, I>::put(ReferendumStage::Inactive);
@@ -688,7 +688,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     // Cast a user's sealed vote for the current referendum cycle.
     fn vote(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         commitment: &T::Hash,
         stake: &BalanceOf<T>,
         current_cycle_id: &u64,
@@ -713,8 +713,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     // Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
-        account_id: &<T as frame_system::Trait>::AccountId,
-        option_id: &<T as common::membership::Trait>::MemberId,
+        account_id: &<T as frame_system::Config>::AccountId,
+        option_id: &<T as common::membership::Config>::MemberId,
         cast_vote: CastVoteOf<T>,
     ) -> Result<(), Error<T, I>> {
         // prepare new values
@@ -747,7 +747,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     // Release stake associated to the user's last vote.
-    fn release_vote_stake(account_id: &<T as frame_system::Trait>::AccountId) {
+    fn release_vote_stake(account_id: &<T as frame_system::Config>::AccountId) {
         // unlock stake amount
         T::StakingHandler::unlock(account_id);
 
@@ -763,7 +763,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         winning_target_count: u64,
     ) -> Vec<OptionResultOf<T, I>> {
         // Tries to place record to temporary place in the winning list.
-        fn place_record_to_winner_list<T: Trait<I>, I: Instance>(
+        fn place_record_to_winner_list<T: Config<I>, I: Instance>(
             option_result: OptionResultOf<T, I>,
             current_winners: &[OptionResultOf<T, I>],
             winning_target_count: u64,
@@ -846,11 +846,11 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
 /////////////////// Ensure checks //////////////////////////////////////////////
 
-struct EnsureChecks<T: Trait<I>, I: Instance> {
+struct EnsureChecks<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
+impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
     /////////////////// Common checks //////////////////////////////////////////
 
     fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
@@ -877,7 +877,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         stake: &BalanceOf<T>,
     ) -> Result<(u64, T::AccountId), Error<T, I>> {
-        fn prevent_repeated_vote<T: Trait<I>, I: Instance>(
+        fn prevent_repeated_vote<T: Config<I>, I: Instance>(
             cycle_id: &u64,
             account_id: &T::AccountId,
         ) -> Result<(), Error<T, I>> {
@@ -928,7 +928,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(
         origin: T::Origin,
         salt: &[u8],
-        vote_option_id: &<T as common::membership::Trait>::MemberId,
+        vote_option_id: &<T as common::membership::Config>::MemberId,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;

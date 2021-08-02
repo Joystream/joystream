@@ -20,7 +20,7 @@ pub enum WorkingGroup {
 }
 
 /// Working group interface to work with its members - workers and leaders.
-pub trait WorkingGroupAuthenticator<T: crate::membership::Trait> {
+pub trait WorkingGroupAuthenticator<T: crate::membership::Config> {
     /// Validate origin for the worker.
     fn ensure_worker_origin(origin: T::Origin, worker_id: &T::ActorId) -> DispatchResult;
 
@@ -38,7 +38,7 @@ pub trait WorkingGroupAuthenticator<T: crate::membership::Trait> {
 }
 
 /// Working group interface to work with the its budget.
-pub trait WorkingGroupBudgetHandler<T: balances::Trait> {
+pub trait WorkingGroupBudgetHandler<T: balances::Config> {
     /// Returns current working group balance.
     fn get_budget() -> T::Balance;
 

@@ -1691,7 +1691,7 @@ fn slash_balance_is_calculated_correctly() {
 
         assert_eq!(approved_slash_balance, 0);
 
-        let rejection_fee = <Test as crate::Trait>::RejectionFee::get();
+        let rejection_fee = <Test as crate::Config>::RejectionFee::get();
 
         let rejected_slash_balance = ProposalsEngine::calculate_slash_balance(
             &ProposalDecision::Rejected,
@@ -1707,7 +1707,7 @@ fn slash_balance_is_calculated_correctly() {
 
         assert_eq!(expired_slash_balance, rejection_fee);
 
-        let cancellation_fee = <Test as crate::Trait>::CancellationFee::get();
+        let cancellation_fee = <Test as crate::Config>::CancellationFee::get();
 
         let cancellation_slash_balance = ProposalsEngine::calculate_slash_balance(
             &ProposalDecision::Canceled,

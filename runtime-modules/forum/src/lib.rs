@@ -37,17 +37,17 @@ pub type ModeratorId<T> = common::ActorId<T>;
 
 /// Forum user ID alias for the member of the system.
 pub type ForumUserId<T> = common::MemberId<T>;
-type WeightInfoForum<T> = <T as Trait>::WeightInfo;
+type WeightInfoForum<T> = <T as Config>::WeightInfo;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Alias for the thread
 pub type ThreadOf<T> = Thread<
     ForumUserId<T>,
-    <T as Trait>::CategoryId,
-    <T as pallet_timestamp::Trait>::Moment,
-    <T as frame_system::Trait>::Hash,
+    <T as Config>::CategoryId,
+    <T as pallet_timestamp::Config>::Moment,
+    <T as frame_system::Config>::Hash,
     BalanceOf<T>,
 >;
 
@@ -85,10 +85,10 @@ pub trait WeightInfo {
     fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
 }
 
-pub trait Trait:
-    frame_system::Trait + pallet_timestamp::Trait + common::membership::Trait + balances::Trait
+pub trait Config:
+    frame_system::Config + pallet_timestamp::Config + common::membership::Config + balances::Config
 {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     type CategoryId: Parameter
         + Member
@@ -283,12 +283,12 @@ pub struct Category<CategoryId, ThreadId, Hash> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub enum PrivilegedActor<T: Trait> {
+pub enum PrivilegedActor<T: Config> {
     Lead,
     Moderator(ModeratorId<T>),
 }
 
-impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
+impl<T: Config> core::fmt::Debug for PrivilegedActor<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             PrivilegedActor::Lead => write!(formatter, "PrivilegedActor {{ Lead }}"),
@@ -309,7 +309,7 @@ type CategoryTreePathArg<CategoryId, ThreadId, Hash> =
 
 decl_error! {
     /// Forum predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Origin doesn't correspond to any lead account
         OriginNotForumLead,
 
@@ -421,7 +421,7 @@ decl_error! {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Forum_1_1 {
+    trait Store for Module<T: Config> as Forum_1_1 {
         /// Map category identifier to corresponding category.
         pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
 
@@ -469,15 +469,15 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as Trait>::CategoryId,
+        <T as Config>::CategoryId,
         ModeratorId = ModeratorId<T>,
-        <T as Trait>::ThreadId,
-        <T as Trait>::PostId,
-        <T as frame_system::Trait>::Hash,
+        <T as Config>::ThreadId,
+        <T as Config>::PostId,
+        <T as frame_system::Config>::Hash,
         ForumUserId = ForumUserId<T>,
-        <T as Trait>::PostReactionId,
+        <T as Config>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
-        Poll = Poll<<T as pallet_timestamp::Trait>::Moment, <T as frame_system::Trait>::Hash>,
+        Poll = Poll<<T as pallet_timestamp::Config>::Moment, <T as frame_system::Config>::Hash>,
     {
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
@@ -544,7 +544,7 @@ decl_event!(
 );
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
         /// Predefined errors
         type Error = Error<T>;
@@ -1532,7 +1532,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
         let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
         let _ = Balances::<T>::slash(&thread_account_id, amount);
@@ -2052,7 +2052,7 @@ impl<T: Trait> Module<T> {
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
-        fn check_moderator<T: Trait>(
+        fn check_moderator<T: Config>(
             category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
             moderator_id: &ModeratorId<T>,
         ) -> Result<(), Error<T>> {
@@ -2243,7 +2243,7 @@ impl<T: Trait> Module<T> {
 
     // supposed to be called before mutations - checks if next entity can be added
     fn ensure_map_limits<U: Get<u64>>(current_amount: u64) -> Result<(), Error<T>> {
-        fn check_limit<T: Trait>(amount: u64, limit: u64) -> Result<(), Error<T>> {
+        fn check_limit<T: Config>(amount: u64, limit: u64) -> Result<(), Error<T>> {
             if amount >= limit {
                 return Err(Error::<T>::MapSizeLimit);
             }

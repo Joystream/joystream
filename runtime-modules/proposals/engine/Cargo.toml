@@ -6,26 +6,26 @@ edition = '2018'
 
 [dependencies]
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
-codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive'] }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
 
 # Benchmark dependencies.
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca', optional = true}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353', optional = true}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership', optional = true}
 council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum', optional = true}
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 council = { package = 'pallet-council', default-features = false, path = '../../council'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum'}

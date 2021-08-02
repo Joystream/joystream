@@ -53,8 +53,9 @@ pub type SignedExtra = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
+
 /// We don't use specific Address types (like Indices).
-pub type Address = AccountId;
+pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
@@ -65,14 +66,8 @@ pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
-/// A Block signed with a Justification
-pub type SignedBlock = generic::SignedBlock<Block>;
-
-/// BlockId type as expected by this runtime.
-pub type BlockId = generic::BlockId<Block>;
-
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 
 // Default Executive type without the RuntimeUpgrade
 // pub type Executive = frame_executive::Executive<
@@ -212,7 +207,7 @@ impl_runtime_apis! {
         }
 
         fn generate_key_ownership_proof(
-            _slot_number: sp_consensus_babe::SlotNumber,
+            _slot: sp_consensus_babe::Slot,
             authority_id: sp_consensus_babe::AuthorityId,
         ) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
             use codec::Encode;
@@ -234,7 +229,15 @@ impl_runtime_apis! {
             )
         }
 
-        fn current_epoch_start() -> sp_consensus_babe::SlotNumber {
+        fn current_epoch() -> sp_consensus_babe::Epoch {
+            Babe::current_epoch()
+        }
+
+        fn next_epoch() -> sp_consensus_babe::Epoch {
+            Babe::next_epoch()
+        }
+
+        fn current_epoch_start() -> sp_consensus_babe::Slot {
             Babe::current_epoch_start()
         }
     }
@@ -257,6 +260,13 @@ impl_runtime_apis! {
     > for Runtime {
         fn query_info(uxt: <Block as BlockT>::Extrinsic, len: u32) -> RuntimeDispatchInfo<Balance> {
             TransactionPayment::query_info(uxt, len)
+        }
+
+        fn query_fee_details(
+            uxt: <Block as BlockT>::Extrinsic,
+            len: u32,
+        ) -> pallet_transaction_payment::FeeDetails<Balance> {
+            TransactionPayment::query_fee_details(uxt, len)
         }
     }
 
@@ -300,19 +310,19 @@ impl_runtime_apis! {
             use crate::Staking;
 
 
-            // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
+            // Trying to add benchmarks directly to the Session Module caused cyclic dependency issues.
             // To get around that, we separated the Session benchmarks into its own crate, which is why
             // we need these two lines below.
-            impl pallet_session_benchmarking::Trait for Runtime {}
-            impl frame_system_benchmarking::Trait for Runtime {}
-            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::Trait>::MemberId> for Runtime {
-                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::Trait>::MemberId) {
+            impl pallet_session_benchmarking::Config for Runtime {}
+            impl frame_system_benchmarking::Config for Runtime {}
+            impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::Config>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::Config>::MemberId) {
                     crate::council::Module::<Runtime>::announce_candidacy(
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
                         account_id.clone(),
                         account_id.clone(),
-                        <Runtime as council::Trait>::MinCandidateStake::get().into(),
+                        <Runtime as council::Config>::MinCandidateStake::get().into(),
                     ).expect(
                         "Should pass a valid member associated to the account and the account
                         should've enough
@@ -322,16 +332,16 @@ impl_runtime_apis! {
             }
 
             impl membership::MembershipWorkingGroupHelper<
-                <Runtime as frame_system::Trait>::AccountId,
-                <Runtime as common::membership::Trait>::MemberId,
-                <Runtime as common::membership::Trait>::ActorId,
+                <Runtime as frame_system::Config>::AccountId,
+                <Runtime as common::membership::Config>::MemberId,
+                <Runtime as common::membership::Config>::ActorId,
                     > for Runtime
             {
                 fn insert_a_lead(
                     opening_id: u32,
-                    caller_id: &<Runtime as frame_system::Trait>::AccountId,
-                    member_id: <Runtime as common::membership::Trait>::MemberId,
-                ) -> <Runtime as common::membership::Trait>::ActorId {
+                    caller_id: &<Runtime as frame_system::Config>::AccountId,
+                    member_id: <Runtime as common::membership::Config>::MemberId,
+                ) -> <Runtime as common::membership::Config>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
                         working_group::OpeningType::Leader,
                         opening_id,

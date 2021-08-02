@@ -17,14 +17,14 @@ use std::cell::RefCell;
 
 /// Runtime Types
 
-pub type ClassId = <Runtime as Trait>::ClassId;
-pub type EntityId = <Runtime as Trait>::EntityId;
-pub type Nonce = <Runtime as Trait>::Nonce;
-pub type Hashed = <Runtime as frame_system::Trait>::Hash;
+pub type ClassId = <Runtime as Config>::ClassId;
+pub type EntityId = <Runtime as Config>::EntityId;
+pub type Nonce = <Runtime as Config>::Nonce;
+pub type Hashed = <Runtime as frame_system::Config>::Hash;
 
 pub type TestCuratorId = CuratorId<Runtime>;
-pub type CuratorGroupId = <Runtime as Trait>::CuratorGroupId;
-pub type MemberId = <Runtime as common::membership::Trait>::MemberId;
+pub type CuratorGroupId = <Runtime as Config>::CuratorGroupId;
+pub type MemberId = <Runtime as common::membership::Config>::MemberId;
 
 /// Origins
 
@@ -208,7 +208,7 @@ impl Get<EntityId> for IndividualEntitiesCreationLimit {
     }
 }
 
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -247,7 +247,7 @@ impl_outer_event! {
     }
 }
 
-impl Trait for Runtime {
+impl Config for Runtime {
     type Event = TestEvent;
     type Nonce = u64;
     type ClassId = u64;
@@ -274,29 +274,29 @@ impl Trait for Runtime {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!()
     }
 
-    fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
 
         *account_id == lead_account_id
     }
 
     fn is_worker_account_id(
-        account_id: &<Runtime as frame_system::Trait>::AccountId,
-        worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        account_id: &<Runtime as frame_system::Config>::AccountId,
+        worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
         let second_curator_account_id =
@@ -306,7 +306,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     }
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -1010,7 +1010,7 @@ impl PropertyType<ClassId> {
     }
 }
 
-impl<T: Trait> InputPropertyValue<T> {
+impl<T: Config> InputPropertyValue<T> {
     pub fn vec_reference(entity_ids: Vec<EntityId>) -> InputPropertyValue<Runtime> {
         let vec_value = VecInputValue::<Runtime>::Reference(entity_ids);
         InputPropertyValue::<Runtime>::Vector(vec_value)

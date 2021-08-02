@@ -14,4 +14,5 @@ impl substrate_utility::WeightInfo for WeightInfo {
     fn as_derivative() -> Weight {
         (67_812_000 as Weight)
     }
+    fn batch_all(_: u32) -> u64 { todo!() }
 }

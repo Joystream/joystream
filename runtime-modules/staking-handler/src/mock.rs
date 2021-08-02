@@ -28,7 +28,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -56,7 +56,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_balances::Trait for Test {
+impl pallet_balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = ();
@@ -66,12 +66,12 @@ impl pallet_balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::Config for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
 
-impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as pallet_balances::Config>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         // simple check preventing lock reuse
         existing_locks
@@ -81,7 +81,7 @@ impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
     }
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

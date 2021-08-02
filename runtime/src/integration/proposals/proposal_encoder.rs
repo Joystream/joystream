@@ -152,7 +152,7 @@ struct Wg<T, I> {
 
 impl<T, I> Wg<T, I>
 where
-    T: working_group::Trait<I> + proposals_codex::Trait,
+    T: working_group::Config<I> + proposals_codex::Config,
     I: frame_support::traits::Instance,
 {
     // Generic call constructor for the add working group opening.

@@ -11,7 +11,7 @@ use sp_runtime::{
 };
 use staking_handler::LockComparator;
 
-use crate::{DefaultInstance, Module, Trait};
+use crate::{DefaultInstance, Module, Config};
 use frame_support::dispatch::DispatchError;
 
 impl_outer_origin! {
@@ -50,7 +50,7 @@ parameter_types! {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -78,14 +78,14 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -95,7 +95,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::Config for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -159,7 +159,7 @@ impl membership::WeightInfo for Weights {
     }
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
@@ -172,7 +172,7 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         existing_locks.to_vec().contains(new_lock)
     }
@@ -190,7 +190,7 @@ parameter_types! {
     pub const LeaderOpeningStake: u64 = 20;
 }
 
-impl Trait for Test {
+impl Config for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;

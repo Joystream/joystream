@@ -372,7 +372,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T: frame_system::Trait> {
+pub trait ProposalCodeDecoder<T: frame_system::Config> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -409,12 +409,12 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
 }
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 // Simplification of the 'Proposal' type
 pub(crate) type ProposalOf<T> = Proposal<
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     MemberId<T>,
     BalanceOf<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
 >;

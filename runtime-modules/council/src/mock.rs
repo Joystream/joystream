@@ -5,7 +5,7 @@ use crate::{
     AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
     CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
     CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, GenesisConfig, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Config, WeightInfo,
 };
 
 use balances;
@@ -69,12 +69,12 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
 
-impl Trait for Runtime {
+impl Config for Runtime {
     type Event = TestEvent;
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
@@ -211,7 +211,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Index = u64;
@@ -271,7 +271,7 @@ mod balances_mod {
     pub use balances::Event;
 }
 
-impl referendum::Trait<ReferendumInstance> for Runtime {
+impl referendum::Config<ReferendumInstance> for Runtime {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
@@ -291,7 +291,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Config>::AccountId,
         stake: &Balance<Self>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
@@ -429,7 +429,7 @@ impl membership::WeightInfo for Weights {
     }
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
     type Event = TestEvent;
     type DustRemoval = ();
@@ -439,7 +439,7 @@ impl balances::Trait for Runtime {
     type MaxLocks = MaxLocks;
 }
 
-impl membership::Trait for Runtime {
+impl membership::Config for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
@@ -464,33 +464,33 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _account_id: &<Runtime as frame_system::Config>::AccountId,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!()
     }
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -510,7 +510,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+impl LockComparator<<Runtime as balances::Config>::Balance> for Runtime {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -530,7 +530,7 @@ pub enum OriginType<AccountId> {
 }
 
 #[derive(Clone)]
-pub struct CandidateInfo<T: Trait> {
+pub struct CandidateInfo<T: Config> {
     pub origin: OriginType<T::AccountId>,
     pub account_id: T::MemberId,
     pub membership_id: T::MemberId,
@@ -539,7 +539,7 @@ pub struct CandidateInfo<T: Trait> {
 }
 
 #[derive(Clone)]
-pub struct VoterInfo<T: Trait> {
+pub struct VoterInfo<T: Config> {
     pub origin: OriginType<T::AccountId>,
     pub account_id: T::AccountId,
     pub commitment: T::Hash,
@@ -549,7 +549,7 @@ pub struct VoterInfo<T: Trait> {
 }
 
 #[derive(Clone)]
-pub struct CouncilSettings<T: Trait> {
+pub struct CouncilSettings<T: Config> {
     pub council_size: u64,
     pub min_candidate_count: u64,
     pub min_candidate_stake: Balance<T>,
@@ -562,7 +562,7 @@ pub struct CouncilSettings<T: Trait> {
     pub budget_refill_period: T::BlockNumber,
 }
 
-impl<T: Trait> CouncilSettings<T>
+impl<T: Config> CouncilSettings<T>
 where
     T::BlockNumber: From<u64>,
 {
@@ -570,20 +570,20 @@ where
         let council_size = T::CouncilSize::get();
 
         let reveal_stage_duration =
-            <Runtime as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into();
-        let announcing_stage_duration = <T as Trait>::AnnouncingPeriodDuration::get();
+            <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get().into();
+        let announcing_stage_duration = <T as Config>::AnnouncingPeriodDuration::get();
         let voting_stage_duration =
-            <Runtime as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into();
-        let idle_stage_duration = <T as Trait>::IdlePeriodDuration::get();
+            <Runtime as referendum::Config<ReferendumInstance>>::VoteStageDuration::get().into();
+        let idle_stage_duration = <T as Config>::IdlePeriodDuration::get();
 
         CouncilSettings {
             council_size,
-            min_candidate_count: council_size + <T as Trait>::MinNumberOfExtraCandidates::get(),
+            min_candidate_count: council_size + <T as Config>::MinNumberOfExtraCandidates::get(),
             min_candidate_stake: T::MinCandidateStake::get(),
             announcing_stage_duration,
             voting_stage_duration,
             reveal_stage_duration,
-            idle_stage_duration: <T as Trait>::IdlePeriodDuration::get(),
+            idle_stage_duration: <T as Config>::IdlePeriodDuration::get(),
 
             election_duration: reveal_stage_duration
                 + announcing_stage_duration
@@ -593,7 +593,7 @@ where
                 + voting_stage_duration
                 + idle_stage_duration,
 
-            budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
+            budget_refill_period: <T as Config>::BudgetRefillPeriod::get(),
         }
     }
 }
@@ -609,7 +609,7 @@ pub enum CouncilCycleInterrupt {
 }
 
 #[derive(Clone)]
-pub struct CouncilCycleParams<T: Trait> {
+pub struct CouncilCycleParams<T: Config> {
     pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
 
@@ -656,7 +656,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,
-        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
         budget_increment: 1,
         councilor_reward: 100,
     }
@@ -678,11 +678,11 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestEx
     result
 }
 
-pub struct InstanceMockUtils<T: Trait> {
+pub struct InstanceMockUtils<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMockUtils<T>
+impl<T: Config> InstanceMockUtils<T>
 where
     T::AccountId: From<u64>,
     T::MemberId: From<u64>,
@@ -703,7 +703,7 @@ where
         for _ in 0..increase {
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
-                <Runtime as frame_system::Trait>::BlockNumber,
+                <Runtime as frame_system::Config>::BlockNumber,
             >>::on_finalize(block_number.into());
 
             block_number = block_number + 1.into();
@@ -711,7 +711,7 @@ where
 
             <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
             <referendum::Module<Runtime, ReferendumInstance> as OnInitialize<
-                <Runtime as frame_system::Trait>::BlockNumber,
+                <Runtime as frame_system::Config>::BlockNumber,
             >>::on_initialize(block_number.into());
         }
     }
@@ -776,8 +776,8 @@ where
     }
 
     pub fn vote_commitment(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::membership::Trait>::MemberId,
+        account_id: &<T as frame_system::Config>::AccountId,
+        vote_option_index: &<T as common::membership::Config>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let salt = Self::generate_salt();
@@ -791,11 +791,11 @@ where
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
 
-pub struct InstanceMocks<T: Trait> {
+pub struct InstanceMocks<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMocks<T>
+impl<T: Config> InstanceMocks<T>
 where
     T::AccountId: From<u64> + Into<u64>,
     T::MemberId: From<u64> + Into<u64>,
@@ -803,9 +803,9 @@ where
     Balance<T>: From<u64> + Into<u64>,
 
     T::Hash:
-        From<<Runtime as frame_system::Trait>::Hash> + Into<<Runtime as frame_system::Trait>::Hash>,
-    T::Origin: From<<Runtime as frame_system::Trait>::Origin>
-        + Into<<Runtime as frame_system::Trait>::Origin>,
+        From<<Runtime as frame_system::Config>::Hash> + Into<<Runtime as frame_system::Config>::Hash>,
+    T::Origin: From<<Runtime as frame_system::Config>::Origin>
+        + Into<<Runtime as frame_system::Config>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MemberId: Into<T::AccountId>,
@@ -1110,7 +1110,7 @@ where
     }
 
     pub fn release_vote_stake(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
         expected_result: Result<(), ()>,
     ) -> () {
         // check method returns expected result
@@ -1404,7 +1404,7 @@ where
         users_offset: u64,
     ) -> CouncilCycleParams<T> {
         let council_settings = CouncilSettings::<T>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<T>> = (0..(council_settings.min_candidate_count + 1)

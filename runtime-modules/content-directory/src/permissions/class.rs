@@ -73,7 +73,7 @@ impl<CuratorGroupId: Ord + Default> ClassPermissions<CuratorGroupId> {
     }
 
     /// Ensure entities creation is not blocked on `Class` level
-    pub fn ensure_entity_creation_not_blocked<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_entity_creation_not_blocked<T: Config>(&self) -> Result<(), Error<T>> {
         ensure!(
             !self.entity_creation_blocked,
             Error::<T>::EntitiesCreationBlocked
@@ -82,7 +82,7 @@ impl<CuratorGroupId: Ord + Default> ClassPermissions<CuratorGroupId> {
     }
 
     /// Ensure maintainer, associated with given `curator_group_id` is already added to `maintainers` set
-    pub fn ensure_maintainer_exists<T: Trait>(
+    pub fn ensure_maintainer_exists<T: Config>(
         &self,
         curator_group_id: &CuratorGroupId,
     ) -> Result<(), Error<T>> {
@@ -94,7 +94,7 @@ impl<CuratorGroupId: Ord + Default> ClassPermissions<CuratorGroupId> {
     }
 
     /// Ensure maintainer, associated with given `curator_group_id` is not yet added to `maintainers` set
-    pub fn ensure_maintainer_does_not_exist<T: Trait>(
+    pub fn ensure_maintainer_does_not_exist<T: Config>(
         &self,
         curator_group_id: &CuratorGroupId,
     ) -> Result<(), Error<T>> {

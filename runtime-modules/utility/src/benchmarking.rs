@@ -10,15 +10,15 @@ use sp_std::convert::TryInto;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
+fn set_wg_and_council_budget<T: Config>(budget: u32, group: WorkingGroup) {
     Council::<T>::set_budget(RawOrigin::Root.into(), BalanceOf::<T>::from(budget)).unwrap();
 
     T::set_working_group_budget(group, BalanceOf::<T>::from(budget));
@@ -36,7 +36,7 @@ fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
     );
 }
 
-fn assert_new_budgets<T: Trait>(
+fn assert_new_budgets<T: Config>(
     new_budget_council: u32,
     new_budget_working_group: u32,
     group: WorkingGroup,

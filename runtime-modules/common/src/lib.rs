@@ -47,7 +47,7 @@ pub enum BalanceKind {
 /// Gathers current block and time information for the runtime.
 /// If this function is used inside a config() at genesis the timestamp will be 0
 /// because the timestamp is actually produced by validators.
-pub fn current_block_time<T: frame_system::Trait + pallet_timestamp::Trait>(
+pub fn current_block_time<T: frame_system::Config + pallet_timestamp::Config>(
 ) -> BlockAndTime<T::BlockNumber, T::Moment> {
     BlockAndTime {
         block: <frame_system::Module<T>>::block_number(),

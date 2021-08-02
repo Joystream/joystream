@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Trait, Weight, WeightInfo};
+pub use crate::{GenesisConfig, Config, Weight, WeightInfo};
 
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -47,7 +47,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -75,7 +75,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -90,7 +90,7 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -100,7 +100,7 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::Config for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -115,7 +115,7 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
+impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
@@ -302,7 +302,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl Trait for Test {
+impl Config for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -336,10 +336,10 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Trait>::Origin,
-        worker_id: &<Test as common::membership::Trait>::ActorId,
+        origin: <Test as frame_system::Config>::Origin,
+        worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> DispatchResult {
-        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Trait>::Origin> =
+        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Config>::Origin> =
             origin.into();
 
         if let RawOrigin::Signed(_) = raw_origin.unwrap() {
@@ -353,11 +353,11 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         }
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
         LEAD_SET.with(|lead_set| {
             if *lead_set.borrow() {
                 Some(ALICE_MEMBER_ID)
@@ -367,13 +367,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         })
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!()
     }
@@ -382,26 +382,26 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 #[cfg(feature = "runtime-benchmarks")]
 impl
     crate::MembershipWorkingGroupHelper<
-        <Test as frame_system::Trait>::AccountId,
-        <Test as common::membership::Trait>::MemberId,
-        <Test as common::membership::Trait>::ActorId,
+        <Test as frame_system::Config>::AccountId,
+        <Test as common::membership::Config>::MemberId,
+        <Test as common::membership::Config>::ActorId,
     > for Test
 {
     fn insert_a_lead(
         _opening_id: u32,
-        _caller_id: &<Test as frame_system::Trait>::AccountId,
-        _member_id: <Test as common::membership::Trait>::MemberId,
-    ) -> <Test as common::membership::Trait>::ActorId {
+        _caller_id: &<Test as frame_system::Config>::AccountId,
+        _member_id: <Test as common::membership::Config>::MemberId,
+    ) -> <Test as common::membership::Config>::ActorId {
         ALICE_MEMBER_ID
     }
 }
 
-pub struct TestExternalitiesBuilder<T: Trait> {
+pub struct TestExternalitiesBuilder<T: Config> {
     system_config: Option<frame_system::GenesisConfig>,
     membership_config: Option<GenesisConfig<T>>,
 }
 
-impl<T: Trait> Default for TestExternalitiesBuilder<T> {
+impl<T: Config> Default for TestExternalitiesBuilder<T> {
     fn default() -> Self {
         Self {
             system_config: None,
@@ -410,7 +410,7 @@ impl<T: Trait> Default for TestExternalitiesBuilder<T> {
     }
 }
 
-impl<T: Trait> TestExternalitiesBuilder<T> {
+impl<T: Config> TestExternalitiesBuilder<T> {
     pub fn set_membership_config(mut self, membership_config: GenesisConfig<T>) -> Self {
         self.membership_config = Some(membership_config);
         self

@@ -1,11 +1,11 @@
 #![warn(missing_docs)]
 
-use crate::{Instance, Module, Trait};
+use crate::{Instance, Module, Config};
 use frame_support::decl_error;
 
 decl_error! {
     /// Discussion module predefined errors
-    pub enum Error for Module<T: Trait<I>, I: Instance>{
+    pub enum Error for Module<T: Config<I>, I: Instance>{
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,
 

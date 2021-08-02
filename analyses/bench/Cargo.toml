@@ -10,26 +10,26 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 
 [dependencies]
 log = "0.4.8"
-node-primitives = { package = 'node-primitives', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-node-runtime = { package = 'node-runtime', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sc-cli = { package = 'sc-cli', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sc-client-api = { package = 'sc-client-api', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-runtime = { package = 'sp-runtime', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-state-machine = { package = 'sp-state-machine', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
+node-primitives = { package = 'node-primitives', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+node-runtime = { package = 'node-runtime', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sc-cli = { package = 'sc-cli', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sc-client-api = { package = 'sc-client-api', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-runtime = { package = 'sp-runtime', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-state-machine = { package = 'sp-state-machine', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 serde = "1.0.101"
 serde_json = "1.0.41"
 structopt = "0.3"
 derive_more = "0.99.2"
 kvdb = "0.7"
 kvdb-rocksdb = "0.9.1"
-sp-trie = { package = 'sp-trie', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-core = { package = 'sp-core', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-consensus = { package = 'sp-consensus', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-transaction-pool = { package = 'sp-transaction-pool', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sc-basic-authorship = { package = 'sc-basic-authorship', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-inherents = { package = 'sp-inherents', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-timestamp = { package = 'sp-timestamp', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
-sp-tracing = { package = 'sp-tracing', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
+sp-trie = { package = 'sp-trie', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-core = { package = 'sp-core', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-consensus = { package = 'sp-consensus', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-transaction-pool = { package = 'sp-transaction-pool', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sc-basic-authorship = { package = 'sc-basic-authorship', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-inherents = { package = 'sp-inherents', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-timestamp = { package = 'sp-timestamp', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sp-tracing = { package = 'sp-tracing', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 hash-db = "0.15.2"
 tempfile = "3.1.0"
 fs_extra = "1"
@@ -38,7 +38,7 @@ rand = { version = "0.7.2", features = ["small_rng"] }
 lazy_static = "1.4.0"
 parity-util-mem = { version = "0.7.0", default-features = false, features = ["primitive-types"] }
 parity-db = { version = "0.1.2" }
-sc-transaction-pool = { package = 'sc-transaction-pool', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
+sc-transaction-pool = { package = 'sc-transaction-pool', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 futures = { version = "0.3.4", features = ["thread-pool"] }
 
 # Extra

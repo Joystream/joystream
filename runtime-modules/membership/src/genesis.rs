@@ -2,7 +2,7 @@
 
 #![cfg(feature = "std")]
 
-use crate::{GenesisConfig, Trait};
+use crate::{GenesisConfig, Config};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -17,17 +17,17 @@ pub struct Member<MemberId, AccountId> {
 }
 
 /// Builder fo membership module genesis configuration.
-pub struct GenesisConfigBuilder<T: Trait> {
+pub struct GenesisConfigBuilder<T: Config> {
     members: Vec<(T::MemberId, T::AccountId)>,
 }
 
-impl<T: Trait> Default for GenesisConfigBuilder<T> {
+impl<T: Config> Default for GenesisConfigBuilder<T> {
     fn default() -> Self {
         Self { members: vec![] }
     }
 }
 
-impl<T: Trait> GenesisConfigBuilder<T> {
+impl<T: Config> GenesisConfigBuilder<T> {
     /// Assign a collection of MemberId and AccountId pairs, used to derive mock member at genesis
     pub fn members(mut self, members: Vec<(T::MemberId, T::AccountId)>) -> Self {
         self.members = members;

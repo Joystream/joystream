@@ -134,7 +134,7 @@ impl Default for DummyProposalFixture {
                 required_stake: None,
                 constitutionality: 1,
             },
-            account_id: <Runtime as frame_system::Trait>::AccountId::default(),
+            account_id: <Runtime as frame_system::Config>::AccountId::default(),
             proposer_id: 0,
             proposal_code: dummy_proposal.encode(),
             title,
@@ -214,7 +214,7 @@ struct CancelProposalFixture {
 
 impl CancelProposalFixture {
     fn new(proposal_id: u32) -> Self {
-        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
+        let account_id = <Runtime as frame_system::Config>::AccountId::default();
         CancelProposalFixture {
             proposal_id,
             origin: RawOrigin::Signed(account_id),
@@ -246,7 +246,7 @@ impl CancelProposalFixture {
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
-        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
+        let account_id = <Runtime as frame_system::Config>::AccountId::default();
 
         setup_members(2);
         let member_id = 0; // newly created member_id
@@ -275,7 +275,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         // for being a candidate for a staking account.
         assert_eq!(
             Balances::usable_balance(&account_id),
-            account_balance - <Runtime as membership::Trait>::CandidateStake::get()
+            account_balance - <Runtime as membership::Config>::CandidateStake::get()
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -314,7 +314,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             Balances::usable_balance(&account_id),
             account_balance
                 - cancellation_fee
-                - <Runtime as membership::Trait>::CandidateStake::get()
+                - <Runtime as membership::Config>::CandidateStake::get()
         );
     });
 }
@@ -364,7 +364,7 @@ fn proposal_reset_succeeds() {
         );
 
         // Check proposals CouncilElected hook just trigger the election hook (empty council).
-        //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
+        //<Runtime as governance::election::Config>::CouncilElected::council_elected(Vec::new(), 10);
 
         end_idle_period();
         setup_council(1);
@@ -396,7 +396,7 @@ fn proposal_reset_succeeds() {
 // Preconditions: currently in idle period, idle period started in currnet block
 fn end_idle_period() {
     let current_block = System::block_number();
-    let idle_period_duration = <Runtime as council::Trait>::IdlePeriodDuration::get();
+    let idle_period_duration = <Runtime as council::Config>::IdlePeriodDuration::get();
     run_to_block(current_block + idle_period_duration);
 }
 
@@ -470,7 +470,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         working_group::OpeningType::Leader,
         StakePolicy {
             stake_amount:
-                <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
+                <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
                 ) as u128,
             leaving_unstaking_period: 1000000,
         },
@@ -485,7 +485,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
         stake_parameters: StakeParameters {
-            stake: <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
+            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
                 u128,
             staking_account_id: lead_account_id.clone(),
         },

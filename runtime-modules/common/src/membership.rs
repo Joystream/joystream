@@ -5,13 +5,13 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 
 /// Member id type alias
-pub type MemberId<T> = <T as Trait>::MemberId;
+pub type MemberId<T> = <T as Config>::MemberId;
 
 /// Actor id type alias
-pub type ActorId<T> = <T as Trait>::ActorId;
+pub type ActorId<T> = <T as Config>::ActorId;
 
 /// Generic trait for membership dependent pallets.
-pub trait Trait: frame_system::Trait {
+pub trait Config: frame_system::Config {
     /// Describes the common type for the members.
     type MemberId: Parameter
         + Member
@@ -36,7 +36,7 @@ pub trait Trait: frame_system::Trait {
 }
 
 /// Validates staking account ownership for a member.
-pub trait StakingAccountValidator<T: Trait> {
+pub trait StakingAccountValidator<T: Config> {
     /// Verifies that staking account bound to the member.
     fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
 }
@@ -54,7 +54,7 @@ pub trait MemberOriginValidator<Origin, MemberId, AccountId> {
 }
 
 /// Gives access to some membership information.
-pub trait MembershipInfoProvider<T: Trait> {
+pub trait MembershipInfoProvider<T: Config> {
     /// Returns current controller account for a member.
     fn controller_account_id(member_id: MemberId<T>) -> Result<T::AccountId, DispatchError>;
 }

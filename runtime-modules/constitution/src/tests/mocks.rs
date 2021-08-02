@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::{Module, Trait};
+use crate::{Module, Config};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -34,7 +34,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -62,7 +62,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
     type Event = TestEvent;
     type WeightInfo = ();
 }

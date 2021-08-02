@@ -51,7 +51,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for Type<ClassId>
 
 impl<ClassId: Default + BaseArithmetic + Clone + Copy> Type<ClassId> {
     /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
-    pub fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_property_type_size_is_valid<T: Config>(&self) -> Result<(), Error<T>> {
         if let Type::Text(text_max_len) = self {
             ensure!(
                 *text_max_len <= T::TextMaxLengthConstraint::get(),
@@ -89,7 +89,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> VecPropertyType<ClassId> 
     }
 
     /// Ensure `Type` specific `TextMaxLengthConstraint` & `VecMaxLengthConstraint` satisfied
-    fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
+    fn ensure_property_type_size_is_valid<T: Config>(&self) -> Result<(), Error<T>> {
         // Ensure Type specific TextMaxLengthConstraint or HashedTextMaxLengthConstraint satisfied
         self.vec_type.ensure_property_type_size_is_valid()?;
 
@@ -205,7 +205,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure `Property` is unlocked from `Actor` with given `EntityAccessLevel`
-    pub fn ensure_unlocked_from<T: Trait>(
+    pub fn ensure_unlocked_from<T: Config>(
         &self,
         access_level: EntityAccessLevel,
     ) -> Result<(), Error<T>> {
@@ -218,7 +218,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
 
     /// Validate new `InputPropertyValue` against the type of this `Property`
     /// and check any additional constraints
-    pub fn ensure_property_value_to_update_is_valid<T: Trait>(
+    pub fn ensure_property_value_to_update_is_valid<T: Config>(
         property: &Property<T::ClassId>,
         value: &InputPropertyValue<T>,
         current_entity_controller: &EntityController<T::MemberId>,
@@ -242,7 +242,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure property vector length after value inserted is valid
-    fn validate_property_vector_length_after_value_insert<T: Trait, V>(
+    fn validate_property_vector_length_after_value_insert<T: Config, V>(
         vec: &[V],
         max_len: VecMaxLength,
     ) -> Result<(), Error<T>> {
@@ -255,7 +255,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
 
     /// Ensure `SingleInputPropertyValue` type is equal to the `VecInputPropertyValue` type
     /// and check all constraints
-    pub fn ensure_property_value_can_be_inserted_at_property_vector<T: Trait>(
+    pub fn ensure_property_value_can_be_inserted_at_property_vector<T: Config>(
         property: &Property<T::ClassId>,
         single_value: &InputValue<T>,
         vec_value: &VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
@@ -348,7 +348,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure text property does not exceed its max len
-    pub fn validate_max_len_if_text_property<T: Trait>(
+    pub fn validate_max_len_if_text_property<T: Config>(
         &self,
         value: &InputPropertyValue<T>,
     ) -> Result<(), Error<T>> {
@@ -369,7 +369,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
         }
     }
 
-    fn validate_max_len_of_text<T: Trait>(
+    fn validate_max_len_of_text<T: Config>(
         text: &[u8],
         text_max_len: TextMaxLength,
     ) -> Result<(), Error<T>> {
@@ -380,7 +380,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
         Ok(())
     }
 
-    fn validate_max_len_of_text_to_be_hashed<T: Trait>(
+    fn validate_max_len_of_text_to_be_hashed<T: Config>(
         text_to_be_hashed: &[u8],
         text_to_be_hashed_max_len: u16,
     ) -> Result<(), Error<T>> {
@@ -391,7 +391,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
         Ok(())
     }
 
-    fn validate_vec_len<V, T: Trait>(vec: &[V], max_len: VecMaxLength) -> Result<(), Error<T>> {
+    fn validate_vec_len<V, T: Config>(vec: &[V], max_len: VecMaxLength) -> Result<(), Error<T>> {
         ensure!(
             vec.len() <= max_len as usize,
             Error::<T>::VecPropertyTooLong
@@ -400,7 +400,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure `VecInputValue` does not exceed its max len
-    pub fn validate_max_len_if_vec_property<T: Trait>(
+    pub fn validate_max_len_if_vec_property<T: Config>(
         &self,
         value: &InputPropertyValue<T>,
     ) -> Result<(), Error<T>> {
@@ -450,7 +450,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure provided `InputPropertyValue` matches its `Type`
-    pub fn ensure_property_value_matches_its_type<T: Trait>(
+    pub fn ensure_property_value_matches_its_type<T: Config>(
         &self,
         value: &InputPropertyValue<T>,
     ) -> Result<(), Error<T>> {
@@ -462,7 +462,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Check if provided `InputPropertyValue` matches its `Type`
-    pub fn does_prop_value_match_type<T: Trait>(&self, value: &InputPropertyValue<T>) -> bool {
+    pub fn does_prop_value_match_type<T: Config>(&self, value: &InputPropertyValue<T>) -> bool {
         // A non required property can be updated to Bool(false):
         if !self.required && *value == InputPropertyValue::default() {
             return true;
@@ -506,7 +506,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
 
     /// Perform all required checks to ensure provided `InputPropertyValue` is valid,
     /// when current `PropertyType` is `Reference`
-    pub fn ensure_property_value_is_valid_reference<T: Trait>(
+    pub fn ensure_property_value_is_valid_reference<T: Config>(
         property: &Property<T::ClassId>,
         value: &InputPropertyValue<T>,
         current_entity_controller: &EntityController<T::MemberId>,
@@ -566,7 +566,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`, which `class_id` is equal to `class_id`,
     /// declared in corresponding `PropertyType`.
     /// Returns  corresponding `Entity` instance
-    pub fn ensure_referenced_entity_match_its_class<T: Trait>(
+    pub fn ensure_referenced_entity_match_its_class<T: Config>(
         entity_id: T::EntityId,
         class_id: T::ClassId,
     ) -> Result<EntityOf<T>, Error<T>> {
@@ -581,7 +581,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure `Entity` can be referenced.
-    pub fn ensure_entity_can_be_referenced<T: Trait>(
+    pub fn ensure_entity_can_be_referenced<T: Config>(
         entity: EntityOf<T>,
         same_controller_status: bool,
         current_entity_controller: &EntityController<T::MemberId>,
@@ -605,7 +605,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure `PropertyNameLengthConstraint` satisfied
-    pub fn ensure_name_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_name_is_valid<T: Config>(&self) -> Result<(), Error<T>> {
         T::PropertyNameLengthConstraint::get().ensure_valid(
             self.name.len(),
             Error::<T>::PropertyNameTooShort,
@@ -614,7 +614,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure `PropertyDescriptionLengthConstraint` satisfied
-    pub fn ensure_description_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_description_is_valid<T: Config>(&self) -> Result<(), Error<T>> {
         T::PropertyDescriptionLengthConstraint::get().ensure_valid(
             self.description.len(),
             Error::<T>::PropertyDescriptionTooShort,
@@ -623,7 +623,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     }
 
     /// Ensure `Type` specific constraints satisfied
-    pub fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_property_type_size_is_valid<T: Config>(&self) -> Result<(), Error<T>> {
         match &self.property_type {
             PropertyType::Single(single_property_type) => {
                 // Ensure Type specific TextMaxLengthConstraint satisfied

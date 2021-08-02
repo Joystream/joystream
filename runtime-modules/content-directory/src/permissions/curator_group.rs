@@ -67,7 +67,7 @@ impl<CuratorId: Ord> CuratorGroup<CuratorId> {
 }
 
 /// Ensure curator group does not maintain any `Class`
-pub fn ensure_curator_group_maintains_no_classes<T: Trait>(
+pub fn ensure_curator_group_maintains_no_classes<T: Config>(
     cg: &CuratorGroup<CuratorId<T>>,
 ) -> Result<(), Error<T>> {
     ensure!(
@@ -78,7 +78,7 @@ pub fn ensure_curator_group_maintains_no_classes<T: Trait>(
 }
 
 /// Ensure `MaxNumberOfCuratorsPerGroup` constraint satisfied
-pub fn ensure_max_number_of_curators_limit_not_reached<T: Trait>(
+pub fn ensure_max_number_of_curators_limit_not_reached<T: Config>(
     cg: &CuratorGroup<CuratorId<T>>,
 ) -> Result<(), Error<T>> {
     ensure!(
@@ -89,7 +89,7 @@ pub fn ensure_max_number_of_curators_limit_not_reached<T: Trait>(
 }
 
 /// Ensure curator under given `curator_id` exists in `CuratorGroup`
-pub fn ensure_curator_in_group_exists<T: Trait>(
+pub fn ensure_curator_in_group_exists<T: Config>(
     cg: &CuratorGroup<CuratorId<T>>,
     curator_id: &CuratorId<T>,
 ) -> Result<(), Error<T>> {
@@ -101,7 +101,7 @@ pub fn ensure_curator_in_group_exists<T: Trait>(
 }
 
 /// Ensure curator under given `curator_id` does not exist yet in `CuratorGroup`
-pub fn ensure_curator_in_group_does_not_exist<T: Trait>(
+pub fn ensure_curator_in_group_does_not_exist<T: Config>(
     cg: &CuratorGroup<CuratorId<T>>,
     curator_id: &CuratorId<T>,
 ) -> Result<(), Error<T>> {
@@ -113,7 +113,7 @@ pub fn ensure_curator_in_group_does_not_exist<T: Trait>(
 }
 
 /// Authorize curator, performing all checks to ensure curator can act
-pub fn perform_curator_in_group_auth<T: Trait>(
+pub fn perform_curator_in_group_auth<T: Config>(
     curator_id: &CuratorId<T>,
     curator_group_id: &T::CuratorGroupId,
     account_id: &T::AccountId,

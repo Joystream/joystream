@@ -33,9 +33,9 @@ const DEFAULT_TYPE_DESCRIPTION: &str = "Default data object type for audio and v
 const DEFAULT_FIRST_DATA_OBJECT_TYPE_ID: u8 = 1;
 
 /// The _Data object type registry_ main _Trait_.
-pub trait Trait: frame_system::Trait + common::membership::Trait {
+pub trait Config: frame_system::Config + common::membership::Config {
     /// _Data object type registry_ event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// _Data object type id_ type
     type DataObjectTypeId: Parameter
@@ -53,7 +53,7 @@ pub trait Trait: frame_system::Trait + common::membership::Trait {
 
 decl_error! {
     /// _Data object type registry_ module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Data Object Type with the given ID not found.
         DataObjectTypeNotFound,
 
@@ -82,7 +82,7 @@ impl Default for DataObjectType {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as DataObjectTypeRegistry {
+    trait Store for Module<T: Config> as DataObjectTypeRegistry {
         /// Data object type ids should start at this value.
         pub FirstDataObjectTypeId get(fn first_data_object_type_id)
             config(first_data_object_type_id): T::DataObjectTypeId =
@@ -102,7 +102,7 @@ decl_storage! {
 decl_event! {
     /// _Data object type registry_ events
     pub enum Event<T> where
-        <T as Trait>::DataObjectTypeId {
+        <T as Config>::DataObjectTypeId {
         /// Emits on the data object type registration.
         /// Params:
         /// - Id of the new data object type.
@@ -124,7 +124,7 @@ decl_event! {
 
 decl_module! {
     /// _Data object type registry_ substrate module.
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -228,19 +228,19 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     fn ensure_data_object_type(id: T::DataObjectTypeId) -> Result<DataObjectType, DispatchError> {
         Self::data_object_types(&id).ok_or_else(|| Error::<T>::DataObjectTypeNotFound.into())
     }
 }
 
 /// Active data object type validator trait.
-pub trait IsActiveDataObjectType<T: Trait> {
+pub trait IsActiveDataObjectType<T: Config> {
     /// Ensures that data object type with given id is active.
     fn is_active_data_object_type(id: &T::DataObjectTypeId) -> bool;
 }
 
-impl<T: Trait> IsActiveDataObjectType<T> for Module<T> {
+impl<T: Config> IsActiveDataObjectType<T> for Module<T> {
     fn is_active_data_object_type(id: &T::DataObjectTypeId) -> bool {
         match Self::ensure_data_object_type(*id) {
             Ok(do_type) => do_type.active,

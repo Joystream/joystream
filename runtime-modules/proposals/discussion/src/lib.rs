@@ -27,10 +27,10 @@
 //! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Trait: discussions::Trait + common::membership::Trait {}
+//! pub trait Config: discussions::Config + common::membership::Config {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
@@ -74,7 +74,7 @@ use types::{DiscussionPost, DiscussionThread};
 pub use types::ThreadMode;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 type Balances<T> = balances::Module<T>;
 
@@ -87,15 +87,15 @@ pub trait WeightInfo {
     fn change_thread_mode(i: u32) -> Weight;
 }
 
-type WeightInfoDiscussion<T> = <T as Trait>::WeightInfo;
+type WeightInfoDiscussion<T> = <T as Config>::WeightInfo;
 
 decl_event!(
     /// Proposals engine events
     pub enum Event<T>
     where
-        <T as Trait>::ThreadId,
+        <T as Config>::ThreadId,
         MemberId = MemberId<T>,
-        <T as Trait>::PostId,
+        <T as Config>::PostId,
     {
         /// Emits on thread creation.
         ThreadCreated(ThreadId, MemberId),
@@ -120,10 +120,10 @@ pub trait CouncilMembership<AccountId, MemberId> {
     fn is_council_member(account_id: &AccountId, member_id: &MemberId) -> bool;
 }
 
-/// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
+/// 'Proposal discussion' substrate module Config
+pub trait Config: frame_system::Config + balances::Config + common::membership::Config {
     /// Discussion event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Validates post author id and origin combination
     type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
@@ -159,7 +159,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
 
 decl_error! {
     /// Discussion module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Thread doesn't exist
         ThreadDoesntExist,
 
@@ -188,7 +188,7 @@ decl_error! {
 
 // Storage for the proposals discussion module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalDiscussion {
+    pub trait Store for Module<T: Config> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
             T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber, MemberId<T>>;
@@ -208,7 +208,7 @@ decl_storage! {
 
 decl_module! {
     /// 'Proposal discussion' substrate module
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -425,7 +425,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Create the discussion thread.
     /// times in a row by the same author.
     pub fn create_thread(
@@ -468,7 +468,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()

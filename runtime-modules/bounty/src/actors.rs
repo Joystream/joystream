@@ -3,7 +3,7 @@
 //! BountyActorManager contains methods to validate actor origin, transfer funds to/from the bounty
 //! account, etc.
 
-use crate::{BalanceOf, BountyActor, Error, Module, Trait};
+use crate::{BalanceOf, BountyActor, Error, Module, Config};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;
@@ -15,7 +15,7 @@ use common::council::CouncilBudgetManager;
 use common::membership::{MemberId, MemberOriginValidator, MembershipInfoProvider};
 
 // Helper enum for the bounty management.
-pub(crate) enum BountyActorManager<T: Trait> {
+pub(crate) enum BountyActorManager<T: Config> {
     // Bounty was created or funded by a council.
     Council,
 
@@ -23,7 +23,7 @@ pub(crate) enum BountyActorManager<T: Trait> {
     Member(T::AccountId, MemberId<T>),
 }
 
-impl<T: Trait> BountyActorManager<T> {
+impl<T: Config> BountyActorManager<T> {
     // Construct BountyActor by extrinsic origin and optional member_id.
     pub(crate) fn ensure_bounty_actor_manager(
         origin: T::Origin,

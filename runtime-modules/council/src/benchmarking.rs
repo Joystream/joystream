@@ -40,9 +40,9 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
     }
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -51,9 +51,9 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -66,11 +66,11 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     );
 }
 
-fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
+fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T>) {
     Balances::<T>::make_free_balance_be(&account_id, balance);
 }
 
-fn start_announcing_period<T: Trait>() {
+fn start_announcing_period<T: Config>() {
     Mutations::<T>::start_announcing_period();
 
     let current_state = CouncilStageAnnouncing {
@@ -94,7 +94,7 @@ fn start_announcing_period<T: Trait>() {
     );
 }
 
-fn start_period_announce_multiple_candidates<T: Trait + membership::Trait>(
+fn start_period_announce_multiple_candidates<T: Config + membership::Config>(
     number_of_candidates: u32,
 ) -> (Vec<T::AccountId>, Vec<T::MemberId>)
 where
@@ -119,7 +119,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config + membership::Config>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -129,7 +129,7 @@ fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+fn member_funded_account<T: Config + membership::Config>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
     T::MemberId: From<u32>,
@@ -175,7 +175,7 @@ where
     (account_id, member_id)
 }
 
-fn announce_candidate<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+fn announce_candidate<T: Config + membership::Config>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
     T::MemberId: From<u32>,
@@ -215,7 +215,7 @@ where
     (account_id, member_id)
 }
 
-fn start_period_announce_candidacy<T: Trait + membership::Trait>(
+fn start_period_announce_candidacy<T: Config + membership::Config>(
     id: u32,
 ) -> (T::AccountId, T::MemberId)
 where
@@ -227,7 +227,7 @@ where
     announce_candidate::<T>(id)
 }
 
-fn start_period_announce_candidacy_and_restart_period<T: Trait + membership::Trait>(
+fn start_period_announce_candidacy_and_restart_period<T: Config + membership::Config>(
 ) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
@@ -255,7 +255,7 @@ where
     (account_id, member_id)
 }
 
-fn finalize_block<T: Trait>(block: T::BlockNumber) {
+fn finalize_block<T: Config>(block: T::BlockNumber) {
     System::<T>::on_finalize(block);
     Council::<T>::on_finalize(block);
 
@@ -263,7 +263,7 @@ fn finalize_block<T: Trait>(block: T::BlockNumber) {
     System::<T>::set_block_number(block);
 }
 
-fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
+fn move_to_block<T: Config>(target_block: T::BlockNumber) {
     let mut current_block_number = System::<T>::block_number();
 
     Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
@@ -278,7 +278,7 @@ fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
     }
 }
 
-fn move_to_block_before_initialize_assert_stage<T: Trait>(
+fn move_to_block_before_initialize_assert_stage<T: Config>(
     target_block: T::BlockNumber,
     target_stage: CouncilStageUpdate<T::BlockNumber>,
 ) {
@@ -295,7 +295,7 @@ const MAX_FUNDING_REQUESTS: u32 = 100;
 
 benchmarks! {
     where_clause {
-        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait
+        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Config
     }
     _ { }
 

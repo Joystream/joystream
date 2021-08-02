@@ -59,7 +59,7 @@ pub struct TestUserInfo {
 
 pub fn get_alice_info() -> TestUserInfo {
     let handle = b"alice".to_vec();
-    let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
+    let hashed = <Test as frame_system::Config>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
     let metadata = b"
@@ -80,7 +80,7 @@ pub fn get_alice_info() -> TestUserInfo {
 
 pub fn get_bob_info() -> TestUserInfo {
     let handle = b"bobby".to_vec();
-    let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
+    let hashed = <Test as frame_system::Config>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
     let metadata = b"
@@ -567,7 +567,7 @@ impl Default for AddStakingAccountFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
             staking_account_id: ALICE_ACCOUNT_ID,
-            initial_balance: <Test as Trait>::CandidateStake::get(),
+            initial_balance: <Test as Config>::CandidateStake::get(),
         }
     }
 }
@@ -631,7 +631,7 @@ impl RemoveStakingAccountFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 Balances::usable_balance(&self.staking_account_id),
-                initial_balance + <Test as Trait>::CandidateStake::get()
+                initial_balance + <Test as Config>::CandidateStake::get()
             );
 
             assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(

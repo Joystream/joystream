@@ -20,9 +20,9 @@ use sp_std::prelude::*;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     assert!(
         events.len() > 0,
         "If you are checking for last event there must be at least 1 event"
@@ -47,7 +47,7 @@ fn handle_from_id(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(
+fn member_funded_account<T: Config + membership::Config>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -85,7 +85,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-fn create_proposal_parameters<T: Trait + membership::Trait>(
+fn create_proposal_parameters<T: Config + membership::Config>(
     title_length: u32,
     description_length: u32,
 ) -> (T::AccountId, T::MemberId, GeneralProposalParameters<T>) {
@@ -102,7 +102,7 @@ fn create_proposal_parameters<T: Trait + membership::Trait>(
     (account_id, member_id, general_proposal_paramters)
 }
 
-fn create_proposal_verify<T: Trait>(
+fn create_proposal_verify<T: Config>(
     account_id: T::AccountId,
     member_id: T::MemberId,
     proposal_parameters: GeneralProposalParameters<T>,
@@ -174,9 +174,9 @@ fn create_proposal_verify<T: Trait>(
 
 benchmarks! {
     where_clause {
-        where T: membership::Trait,
-        T: council::Trait,
-        T: working_group::Trait<working_group::Instance1>
+        where T: membership::Config,
+        T: council::Config,
+        T: working_group::Config<working_group::Instance1>
     }
 
     _ {
@@ -325,7 +325,7 @@ benchmarks! {
                 description: vec![0u8; i.try_into().unwrap()],
                 stake_policy: working_group::StakePolicy {
                     stake_amount:
-                        <T as working_group::Trait<working_group::Instance1>>
+                        <T as working_group::Config<working_group::Instance1>>
                             ::MinimumApplicationStake::get(),
                     leaving_unstaking_period: Zero::zero(),
                 },

@@ -75,7 +75,7 @@ pub trait WeightInfo {
     fn withdraw_work_entrant_funds() -> Weight;
 }
 
-type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
+type WeightInfoBounty<T> = <T as Config>::WeightInfo;
 
 pub(crate) use actors::BountyActorManager;
 pub(crate) use stages::BountyStageCalculator;
@@ -103,9 +103,9 @@ use common::membership::{
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Trait {
+pub trait Config: frame_system::Config + balances::Config + common::membership::Config {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// The bounty's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
@@ -147,8 +147,8 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::membership::Tra
 /// Alias type for the BountyParameters.
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as frame_system::Config>::BlockNumber,
+    <T as common::membership::Config>::MemberId,
 >;
 
 /// Defines who can submit the work.
@@ -320,8 +320,8 @@ impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
 /// Alias type for the Bounty.
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::Trait>::MemberId,
+    <T as frame_system::Config>::BlockNumber,
+    <T as common::membership::Config>::MemberId,
 >;
 
 /// Crowdfunded bounty record.
@@ -382,9 +382,9 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
 
 /// Alias type for the Entry.
 pub type Entry<T> = EntryRecord<
-    <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::AccountId,
+    <T as common::membership::Config>::MemberId,
+    <T as frame_system::Config>::BlockNumber,
     BalanceOf<T>,
 >;
 
@@ -435,10 +435,10 @@ impl<Balance> OracleWorkEntryJudgment<Balance> {
 }
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 // Entrant stake helper struct.
-struct RequiredStakeInfo<T: Trait> {
+struct RequiredStakeInfo<T: Config> {
     // stake amount
     amount: BalanceOf<T>,
     // staking_account_id
@@ -446,13 +446,13 @@ struct RequiredStakeInfo<T: Trait> {
 }
 
 /// An alias for the OracleJudgment.
-pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::EntryId, BalanceOf<T>>;
+pub type OracleJudgmentOf<T> = OracleJudgment<<T as Config>::EntryId, BalanceOf<T>>;
 
 /// The collection of the oracle judgments for the work entries.
 pub type OracleJudgment<EntryId, Balance> = BTreeMap<EntryId, OracleWorkEntryJudgment<Balance>>;
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Bounty {
+    trait Store for Module<T: Config> as Bounty {
         /// Bounty storage.
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
@@ -475,11 +475,11 @@ decl_storage! {
 decl_event! {
     pub enum Event<T>
     where
-        <T as Trait>::BountyId,
-        <T as Trait>::EntryId,
+        <T as Config>::BountyId,
+        <T as Config>::EntryId,
         Balance = BalanceOf<T>,
         MemberId = MemberId<T>,
-        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Config>::AccountId,
         BountyCreationParameters = BountyCreationParameters<T>,
         OracleJudgment = OracleJudgmentOf<T>,
     {
@@ -577,7 +577,7 @@ decl_event! {
 
 decl_error! {
     /// Bounty pallet predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
 
@@ -684,7 +684,7 @@ decl_error! {
 
 decl_module! {
     /// Bounty pallet Substrate Module
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1236,7 +1236,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Wrapper-function over System::block_number()
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()

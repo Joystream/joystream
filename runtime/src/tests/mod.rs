@@ -47,8 +47,8 @@ fn get_account_membership(account: AccountId32, i: usize) -> u64 {
 pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     let mut voters = Vec::<AccountId32>::new();
 
-    let councilor_stake: u128 = <Runtime as council::Trait>::MinCandidateStake::get().into();
-    let extra_candidates = <Runtime as council::Trait>::MinNumberOfExtraCandidates::get() + 1;
+    let councilor_stake: u128 = <Runtime as council::Config>::MinCandidateStake::get().into();
+    let extra_candidates = <Runtime as council::Config>::MinNumberOfExtraCandidates::get() + 1;
     let mut council_member_ids = Vec::new();
 
     for (i, councilor) in council.iter().enumerate() {
@@ -101,10 +101,10 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     }
 
     let current_block = System::block_number();
-    run_to_block(current_block + <Runtime as council::Trait>::AnnouncingPeriodDuration::get());
+    run_to_block(current_block + <Runtime as council::Config>::AnnouncingPeriodDuration::get());
 
     let voter_stake: u128 =
-        <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get().into();
+        <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get().into();
     for (i, voter) in voters.iter().enumerate() {
         increase_total_balance_issuance_using_account_id(voter.clone().into(), voter_stake + 1);
 
@@ -126,7 +126,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     let current_block = System::block_number();
     run_to_block(
         current_block
-            + <Runtime as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+            + <Runtime as referendum::Config<ReferendumInstance>>::VoteStageDuration::get(),
     );
 
     for (i, voter) in voters.iter().enumerate() {
@@ -141,7 +141,7 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
     let current_block = System::block_number();
     run_to_block(
         current_block
-            + <Runtime as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+            + <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get(),
     );
 
     let council_members = council::Module::<Runtime>::council_members();
@@ -181,12 +181,12 @@ pub(crate) fn set_staking_account(
 
     let _ = pallet_balances::Module::<Runtime>::deposit_creating(
         &staking_account_id,
-        <Runtime as membership::Trait>::CandidateStake::get(),
+        <Runtime as membership::Config>::CandidateStake::get(),
     );
 
     assert_eq!(
         pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
-        current_balance + <Runtime as membership::Trait>::CandidateStake::get()
+        current_balance + <Runtime as membership::Config>::CandidateStake::get()
     );
 
     membership::Module::<Runtime>::add_staking_account_candidate(

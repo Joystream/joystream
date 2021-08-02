@@ -172,32 +172,32 @@ impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-pub type Balance<T> = <T as balances::Trait>::Balance;
-pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
-    <T as frame_system::Trait>::Origin,
-    <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
-    <T as frame_system::Trait>::Hash,
+pub type Balance<T> = <T as balances::Config>::Balance;
+pub type VotePowerOf<T> = <<T as Config>::Referendum as ReferendumManager<
+    <T as frame_system::Config>::Origin,
+    <T as frame_system::Config>::AccountId,
+    <T as common::membership::Config>::MemberId,
+    <T as frame_system::Config>::Hash,
 >>::VotePower;
 pub type CastVoteOf<T> = CastVote<
-    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Config>::Hash,
     Balance<T>,
-    <T as common::membership::Trait>::MemberId,
+    <T as common::membership::Config>::MemberId,
 >;
 
 pub type CouncilMemberOf<T> = CouncilMember<
-    <T as frame_system::Trait>::AccountId,
-    <T as common::membership::Trait>::MemberId,
+    <T as frame_system::Config>::AccountId,
+    <T as common::membership::Config>::MemberId,
     Balance<T>,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
 >;
 pub type CandidateOf<T> = Candidate<
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     Balance<T>,
-    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Config>::Hash,
     VotePowerOf<T>,
 >;
-pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>::BlockNumber>;
+pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Config>::BlockNumber>;
 
 /////////////////// Traits, Storage, Errors, and Events /////////////////////////
 
@@ -219,12 +219,12 @@ pub trait WeightInfo {
     fn plan_budget_refill() -> Weight;
 }
 
-type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
+type CouncilWeightInfo<T> = <T as Config>::WeightInfo;
 
 /// The main council trait.
-pub trait Trait: frame_system::Trait + common::membership::Trait + balances::Trait {
+pub trait Config: frame_system::Config + common::membership::Config + balances::Config {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Referendum used for council elections.
     type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::MemberId, Self::Hash>;
@@ -270,13 +270,13 @@ pub trait Trait: frame_system::Trait + common::membership::Trait + balances::Tra
     >;
 }
 
-/// Trait with functions that MUST be called by the runtime with values received from the
+/// Config with functions that MUST be called by the runtime with values received from the
 /// referendum module.
-pub trait ReferendumConnection<T: Trait> {
+pub trait ReferendumConnection<T: Config> {
     /// Process referendum results. This function MUST be called in runtime's implementation of
     /// referendum's `process_results()`.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<<T as common::membership::Config>::MemberId, VotePowerOf<T>>],
     );
 
     /// Process referendum results. This function MUST be called in runtime's implementation of
@@ -295,7 +295,7 @@ pub trait ReferendumConnection<T: Trait> {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Council {
+    trait Store for Module<T: Config> as Council {
         /// Current council voting stage
         pub Stage get(fn stage) config(): CouncilStageUpdate<T::BlockNumber>;
 
@@ -331,9 +331,9 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = Balance<T>,
-        <T as frame_system::Trait>::BlockNumber,
-        <T as common::membership::Trait>::MemberId,
-        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Config>::BlockNumber,
+        <T as common::membership::Config>::MemberId,
+        <T as frame_system::Config>::AccountId,
     {
         /// New council was elected
         AnnouncingPeriodStarted(),
@@ -387,7 +387,7 @@ decl_event! {
 
 decl_error! {
     /// Council errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Origin is invalid.
         BadOrigin,
 
@@ -449,13 +449,13 @@ decl_error! {
     }
 }
 
-impl<T: Trait> PartialEq for Error<T> {
+impl<T: Config> PartialEq for Error<T> {
     fn eq(&self, other: &Self) -> bool {
         self.as_u8() == other.as_u8()
     }
 }
 
-impl<T: Trait> From<BadOrigin> for Error<T> {
+impl<T: Config> From<BadOrigin> for Error<T> {
     fn from(_error: BadOrigin) -> Self {
         Error::<T>::BadOrigin
     }
@@ -464,7 +464,7 @@ impl<T: Trait> From<BadOrigin> for Error<T> {
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -829,7 +829,7 @@ decl_module! {
 
 /////////////////// Inner logic ////////////////////////////////////////////////
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /////////////////// Lifetime ///////////////////////////////////////////
 
     // Checkout expire of referendum stage.
@@ -892,7 +892,7 @@ impl<T: Trait> Module<T> {
 
     // Conclude election period and elect new council if possible.
     fn end_election_period(
-        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<<T as common::membership::Config>::MemberId, VotePowerOf<T>>],
     ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
@@ -917,7 +917,7 @@ impl<T: Trait> Module<T> {
                 // clear candidate record and unlock their candidacy stake
                 Mutations::<T>::clear_candidate(&membership_id, &candidate);
 
-                (candidate, membership_id, now, 0.into()).into()
+                (candidate, membership_id, now, 0_u32.into()).into()
             })
             .collect();
         // prepare council users for event
@@ -981,7 +981,7 @@ impl<T: Trait> Module<T> {
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
                 // depleted budget or no accumulated reward to be paid?
-                if balance == 0.into() || unpaid_reward == 0.into() {
+                if balance == 0_u32.into() || unpaid_reward == 0_u32.into() {
                     // no need to update council member record here; their unpaid reward will be
                     // recalculated next time rewards are paid
 
@@ -989,7 +989,7 @@ impl<T: Trait> Module<T> {
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
                         council_member.reward_account_id.clone(),
-                        0.into(),
+                        0_u32.into(),
                         unpaid_reward,
                     ));
                     return balance;
@@ -1067,10 +1067,10 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> ReferendumConnection<T> for Module<T> {
+impl<T: Config> ReferendumConnection<T> for Module<T> {
     // Process candidates' results recieved from the referendum.
     fn recieve_referendum_results(
-        winners: &[OptionResult<<T as common::membership::Trait>::MemberId, VotePowerOf<T>>],
+        winners: &[OptionResult<<T as common::membership::Config>::MemberId, VotePowerOf<T>>],
     ) {
         //
         // == MUTATION SAFE ==
@@ -1155,11 +1155,11 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
 
 /////////////////// Calculations ///////////////////////////////////////////////
 
-struct Calculations<T: Trait> {
+struct Calculations<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> Calculations<T> {
+impl<T: Config> Calculations<T> {
     // Calculate current reward for the recipient.
     fn get_current_reward(
         council_member: &CouncilMemberOf<T>,
@@ -1172,7 +1172,7 @@ impl<T: Trait> Calculations<T> {
         // reward_per_block
         council_member.unpaid_reward.saturating_add(
             now.saturating_sub(council_member.last_payment_block)
-                .saturated_into()
+                .saturated_into::<u32>()
                 .saturating_mul(reward_per_block.saturated_into())
                 .saturated_into(),
         )
@@ -1185,7 +1185,7 @@ impl<T: Trait> Calculations<T> {
     ) -> (Balance<T>, Balance<T>) {
         // check if reward has enough balance
         if reward_amount <= budget_balance {
-            return (*reward_amount, 0.into());
+            return (*reward_amount, 0_u32.into());
         }
 
         // calculate missing balance
@@ -1197,11 +1197,11 @@ impl<T: Trait> Calculations<T> {
 
 /////////////////// Mutations //////////////////////////////////////////////////
 
-struct Mutations<T: Trait> {
+struct Mutations<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> Mutations<T> {
+impl<T: Config> Mutations<T> {
     /////////////////// Election-related ///////////////////////////////////
 
     // Change the council stage to candidacy announcing stage.
@@ -1380,11 +1380,11 @@ impl<T: Trait> Mutations<T> {
 
 /////////////////// Ensure checks //////////////////////////////////////////////
 
-struct EnsureChecks<T: Trait> {
+struct EnsureChecks<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> EnsureChecks<T> {
+impl<T: Config> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
     fn ensure_user_membership(
@@ -1570,7 +1570,7 @@ impl<T: Trait> EnsureChecks<T> {
     }
 }
 
-impl<T: Trait + common::membership::Trait>
+impl<T: Config + common::membership::Config>
     CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T>
 {
     fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
@@ -1586,7 +1586,7 @@ impl<T: Trait + common::membership::Trait>
     }
 }
 
-impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
+impl<T: Config + balances::Config> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
     fn get_budget() -> Balance<T> {
         Self::budget()
     }

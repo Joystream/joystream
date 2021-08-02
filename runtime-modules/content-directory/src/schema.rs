@@ -53,7 +53,7 @@ impl Schema {
     }
 
     /// Ensure schema in `active` status
-    pub fn ensure_is_active<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_is_active<T: Config>(&self) -> Result<(), Error<T>> {
         ensure!(self.is_active, Error::<T>::ClassSchemaNotActive);
         Ok(())
     }
@@ -64,7 +64,7 @@ impl Schema {
     }
 
     /// Ensure keys of provided `property_values` are valid indices of current `Schema`
-    pub fn ensure_has_properties<T: Trait>(
+    pub fn ensure_has_properties<T: Config>(
         &self,
         property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> Result<(), Error<T>> {

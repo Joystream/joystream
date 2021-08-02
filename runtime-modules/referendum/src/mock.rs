@@ -3,7 +3,7 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
     BalanceOf, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
+    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Config, Votes,
     WeightInfo,
 };
 
@@ -62,7 +62,7 @@ thread_local! {
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 
     // complete intermediate results
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait>::VotePower>::new());
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Config>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Config>::VotePower>::new());
 }
 
 impl LockComparator<u64> for Runtime {
@@ -74,7 +74,7 @@ impl LockComparator<u64> for Runtime {
     }
 }
 
-impl Trait for Runtime {
+impl Config for Runtime {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
@@ -94,9 +94,9 @@ impl Trait for Runtime {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
-    ) -> <Self as Trait<DefaultInstance>>::VotePower {
+    ) -> <Self as Config<DefaultInstance>>::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
@@ -239,7 +239,7 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl membership::Trait for Runtime {
+impl membership::Config for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
@@ -252,7 +252,7 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -271,33 +271,33 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         true
     }
 
     fn is_worker_account_id(
-        _account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _account_id: &<Runtime as frame_system::Config>::AccountId,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         true
     }
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -307,7 +307,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
     type Event = TestEvent;
     type DustRemoval = ();
@@ -367,7 +367,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -448,11 +448,11 @@ fn topup_account(account_id: u64, amount: u64) {
     let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount);
 }
 
-pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
+pub struct InstanceMockUtils<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I>
+impl<T: Config<I>, I: Instance> InstanceMockUtils<T, I>
 where
     T::BlockNumber: From<u64> + Into<u64>,
 {
@@ -500,16 +500,16 @@ where
     }
 
     pub fn calculate_commitment(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::membership::Trait>::MemberId,
+        account_id: &<T as frame_system::Config>::AccountId,
+        vote_option_index: &<T as common::membership::Config>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
     }
 
     pub fn calculate_commitment_custom_salt(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        vote_option_index: &<T as common::membership::Trait>::MemberId,
+        account_id: &<T as frame_system::Config>::AccountId,
+        vote_option_index: &<T as common::membership::Config>::MemberId,
         custom_salt: &[u8],
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
@@ -528,9 +528,9 @@ where
     }
 
     pub fn calculate_commitment_for_cycle(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         cycle_id: &u64,
-        vote_option_index: &<T as common::membership::Trait>::MemberId,
+        vote_option_index: &<T as common::membership::Config>::MemberId,
         custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
         let salt = match custom_salt {
@@ -540,10 +540,10 @@ where
 
         (
             <Module<T, I> as ReferendumManager<
-                <T as frame_system::Trait>::Origin,
-                <T as frame_system::Trait>::AccountId,
-                <T as common::membership::Trait>::MemberId,
-                <T as frame_system::Trait>::Hash,
+                <T as frame_system::Config>::Origin,
+                <T as frame_system::Config>::AccountId,
+                <T as common::membership::Config>::MemberId,
+                <T as frame_system::Config>::Hash,
             >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
         )
@@ -563,13 +563,13 @@ where
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
 
-pub struct InstanceMocks<T: Trait<I>, I: Instance> {
+pub struct InstanceMocks<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
 impl InstanceMocks<Runtime, DefaultInstance> {
     pub fn start_referendum_extrinsic(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
         winning_target_count: u64,
         cycle_id: u64,
         expected_result: Result<(), ()>,
@@ -609,10 +609,10 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime> as ReferendumManager<
-                <Runtime as frame_system::Trait>::Origin,
-                <Runtime as frame_system::Trait>::AccountId,
-                <Runtime as common::membership::Trait>::MemberId,
-                <Runtime as frame_system::Trait>::Hash,
+                <Runtime as frame_system::Config>::Origin,
+                <Runtime as frame_system::Config>::AccountId,
+                <Runtime as common::membership::Config>::MemberId,
+                <Runtime as frame_system::Config>::Hash,
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(OriginType::Root),
                 extra_winning_target_count,
@@ -629,10 +629,10 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         let extra_winning_target_count = winning_target_count - 1;
 
         <Module<Runtime> as ReferendumManager<
-            <Runtime as frame_system::Trait>::Origin,
-            <Runtime as frame_system::Trait>::AccountId,
-            <Runtime as common::membership::Trait>::MemberId,
-            <Runtime as frame_system::Trait>::Hash,
+            <Runtime as frame_system::Config>::Origin,
+            <Runtime as frame_system::Config>::AccountId,
+            <Runtime as common::membership::Config>::MemberId,
+            <Runtime as frame_system::Config>::Hash,
         >>::force_start(extra_winning_target_count, cycle_id);
     }
 
@@ -694,11 +694,11 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     pub fn check_revealing_finished(
         expected_winners: Vec<
             OptionResult<
-                <Runtime as common::membership::Trait>::MemberId,
-                <Runtime as Trait>::VotePower,
+                <Runtime as common::membership::Config>::MemberId,
+                <Runtime as Config>::VotePower,
             >,
         >,
-        expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
+        expected_referendum_result: BTreeMap<u64, <Runtime as Config>::VotePower>,
     ) {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -718,9 +718,9 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 
     pub fn vote(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
-        account_id: <Runtime as frame_system::Trait>::AccountId,
-        commitment: <Runtime as frame_system::Trait>::Hash,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
+        commitment: <Runtime as frame_system::Config>::Hash,
         stake: BalanceOf<Runtime>,
         cycle_id: u64,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
@@ -760,8 +760,8 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 
     pub fn reveal_vote(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
-        account_id: <Runtime as frame_system::Trait>::AccountId,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
         salt: Vec<u8>,
         vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
@@ -795,8 +795,8 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 
     pub fn release_stake(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
-        account_id: <Runtime as frame_system::Trait>::AccountId,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {
         // check method returns expected result

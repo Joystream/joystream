@@ -26,7 +26,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -42,9 +42,9 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     assert!(
         events.len() > 0,
         "If you are checking for last event there must be at least 1 event"
@@ -53,9 +53,9 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(
         events.len() > 0,
@@ -68,7 +68,7 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     }));
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(
+fn member_funded_account<T: Config + membership::Config>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -124,7 +124,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
     (account_id, member_id)
 }
 
-fn create_proposal<T: Trait + membership::Trait>(
+fn create_proposal<T: Config + membership::Config>(
     id: u32,
     proposal_number: u32,
     constitutionality: u32,
@@ -140,7 +140,7 @@ fn create_proposal<T: Trait + membership::Trait>(
         slashing_quorum_percentage: 0,
         slashing_threshold_percentage: 1,
         required_stake: Some(
-            T::Balance::max_value() - <T as membership::Trait>::CandidateStake::get(),
+            T::Balance::max_value() - <T as membership::Config>::CandidateStake::get(),
         ),
         constitutionality,
     };
@@ -189,14 +189,14 @@ fn create_proposal<T: Trait + membership::Trait>(
     );
 
     assert_eq!(
-        <T as Trait>::StakingHandler::current_stake(&account_id),
-        T::Balance::max_value() - <T as membership::Trait>::CandidateStake::get(),
+        <T as Config>::StakingHandler::current_stake(&account_id),
+        T::Balance::max_value() - <T as membership::Config>::CandidateStake::get(),
     );
 
     (account_id, member_id, proposal_id)
 }
 
-fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance>>(
+fn run_to_block<T: Config + council::Config + referendum::Config<ReferendumInstance>>(
     n: T::BlockNumber,
 ) {
     while System::<T>::block_number() < n {
@@ -218,14 +218,14 @@ fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance
 }
 
 fn elect_council<
-    T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
+    T: Config + membership::Config + council::Config + referendum::Config<ReferendumInstance>,
 >(
     start_id: u32,
 ) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
-    let council_size = <T as council::Trait>::CouncilSize::get();
-    let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
+    let council_size = <T as council::Config>::CouncilSize::get();
+    let number_of_extra_candidates = <T as council::Config>::MinNumberOfExtraCandidates::get();
 
-    let councilor_stake = <T as council::Trait>::MinCandidateStake::get();
+    let councilor_stake = <T as council::Config>::MinCandidateStake::get();
 
     let mut voters = Vec::new();
     let mut candidates = Vec::new();
@@ -254,9 +254,9 @@ fn elect_council<
     }
 
     let current_block = System::<T>::block_number();
-    run_to_block::<T>(current_block + <T as council::Trait>::AnnouncingPeriodDuration::get());
+    run_to_block::<T>(current_block + <T as council::Config>::AnnouncingPeriodDuration::get());
 
-    let voter_stake = <T as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+    let voter_stake = <T as referendum::Config<ReferendumInstance>>::MinimumStake::get();
     let mut council = Vec::new();
     for i in start_id as usize..start_id as usize + council_size as usize {
         council.push(candidates[i].clone());
@@ -276,7 +276,7 @@ fn elect_council<
 
     let current_block = System::<T>::block_number();
     run_to_block::<T>(
-        current_block + <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+        current_block + <T as referendum::Config<ReferendumInstance>>::VoteStageDuration::get(),
     );
 
     for i in start_id as usize..start_id as usize + council_size as usize {
@@ -290,7 +290,7 @@ fn elect_council<
 
     let current_block = System::<T>::block_number();
     run_to_block::<T>(
-        current_block + <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+        current_block + <T as referendum::Config<ReferendumInstance>>::RevealStageDuration::get(),
     );
 
     let council_members = Council::<T>::council_members();
@@ -311,7 +311,7 @@ fn elect_council<
 }
 
 fn create_multiple_finalized_proposals<
-    T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
+    T: Config + membership::Config + council::Config + referendum::Config<ReferendumInstance>,
 >(
     number_of_proposals: u32,
     constitutionality: u32,
@@ -353,7 +353,7 @@ const MAX_BYTES: u32 = 16384;
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
     where_clause {
-        where T: membership::Trait, T: council::Trait, T: referendum::Trait<ReferendumInstance>
+        where T: membership::Config, T: council::Config, T: referendum::Config<ReferendumInstance>
     }
 
     _ { }
@@ -406,7 +406,7 @@ benchmarks! {
 
         for lock_number in 1 .. i {
             let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
-            <T as Trait>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
+            <T as Config>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
         }
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
@@ -446,7 +446,7 @@ benchmarks! {
 
         assert_eq!(
             Balances::<T>::usable_balance(account_id),
-            T::Balance::max_value() - <T as membership::Trait>::CandidateStake::get(),
+            T::Balance::max_value() - <T as membership::Config>::CandidateStake::get(),
             "Vetoed proposals shouldn't be slashed"
         );
 
@@ -474,7 +474,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                <T as Config>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
@@ -552,7 +552,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                <T as Config>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've unlocked all stake"
             );
@@ -588,7 +588,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_ne!(
-                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                <T as Config>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Should've still stake locked"
             );
@@ -650,7 +650,7 @@ benchmarks! {
 
         for proposer_account_id in proposers {
             assert_eq!(
-                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                <T as Config>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );
@@ -671,7 +671,7 @@ benchmarks! {
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
-                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                <T as Config>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );
@@ -746,7 +746,7 @@ benchmarks! {
 
         for proposer_account_id in proposers {
             assert_eq!(
-                <T as Trait>::StakingHandler::current_stake(&proposer_account_id),
+                <T as Config>::StakingHandler::current_stake(&proposer_account_id),
                 Zero::zero(),
                 "Shouldn't have any stake locked"
             );

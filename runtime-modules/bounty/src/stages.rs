@@ -1,17 +1,17 @@
 //! This module contains the BountyStageCalculator - a bounty stage calculation helper.
 //! It allows to get a bounty stage based on the current bounty state and the current system block.
 
-use crate::{Bounty, BountyMilestone, BountyStage, FundingType, Trait};
+use crate::{Bounty, BountyMilestone, BountyStage, FundingType, Config};
 
 // Bounty stage helper.
-pub(crate) struct BountyStageCalculator<'a, T: Trait> {
+pub(crate) struct BountyStageCalculator<'a, T: Config> {
     // current block number
     pub now: T::BlockNumber,
     // bounty object
     pub bounty: &'a Bounty<T>,
 }
 
-impl<'a, T: Trait> BountyStageCalculator<'a, T> {
+impl<'a, T: Config> BountyStageCalculator<'a, T> {
     // Calculates the current bounty stage.
     pub(crate) fn get_bounty_stage(&self) -> BountyStage {
         self.is_funding_stage()

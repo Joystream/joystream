@@ -13,9 +13,9 @@ use Module as Blog;
 const MAX_BYTES: u32 = 16384;
 const SEED: u32 = 0;
 
-fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -24,9 +24,9 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_in_events<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -38,7 +38,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
 
-fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: Instance>(
+fn member_funded_account<T: Config<I> + membership::Config + balances::Config, I: Instance>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -47,7 +47,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: I
 
     let _ = Balances::<T>::make_free_balance_be(
         &account_id,
-        <T as balances::Trait>::Balance::max_value(),
+        <T as balances::Config>::Balance::max_value(),
     );
 
     let params = membership::BuyMembershipParameters {
@@ -78,7 +78,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: I
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -94,7 +94,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn generate_post<T: Trait<I>, I: Instance>(seq_num: u64) -> PostId {
+fn generate_post<T: Config<I>, I: Instance>(seq_num: u64) -> PostId {
     assert_eq!(Blog::<T, I>::post_count(), seq_num);
 
     Blog::<T, I>::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
@@ -111,7 +111,7 @@ fn generate_post<T: Trait<I>, I: Instance>(seq_num: u64) -> PostId {
     post_id
 }
 
-fn generate_reply<T: Trait<I>, I: Instance>(
+fn generate_reply<T: Config<I>, I: Instance>(
     creator_id: T::AccountId,
     participant_id: ParticipantId<T>,
     post_id: PostId,
@@ -141,7 +141,7 @@ fn generate_reply<T: Trait<I>, I: Instance>(
 }
 
 benchmarks_instance! {
-    where_clause { where T: balances::Trait, T: membership::Trait }
+    where_clause { where T: balances::Config, T: membership::Config }
 
     _ {}
 

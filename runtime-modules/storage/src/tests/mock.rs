@@ -57,7 +57,7 @@ pub const TEST_MOCK_LIAISON_STORAGE_PROVIDER_ID: u32 = 1;
 pub const TEST_MOCK_EXISTING_CID: u64 = 42;
 
 pub struct AnyDataObjectTypeIsActive {}
-impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
+impl<T: data_object_type_registry::Config> IsActiveDataObjectType<T> for AnyDataObjectTypeIsActive {
     fn is_active_data_object_type(_which: &T::DataObjectTypeId) -> bool {
         true
     }
@@ -65,12 +65,12 @@ impl<T: data_object_type_registry::Trait> IsActiveDataObjectType<T> for AnyDataO
 
 pub struct MockContent {}
 impl ContentIdExists<Test> for MockContent {
-    fn has_content(which: &<Test as data_directory::Trait>::ContentId) -> bool {
+    fn has_content(which: &<Test as data_directory::Config>::ContentId) -> bool {
         *which == TEST_MOCK_EXISTING_CID
     }
 
     fn get_data_object(
-        which: &<Test as data_directory::Trait>::ContentId,
+        which: &<Test as data_directory::Config>::ContentId,
     ) -> Result<data_directory::DataObject<Test>, &'static str> {
         match *which {
             TEST_MOCK_EXISTING_CID => Ok(data_directory::DataObjectInternal {
@@ -103,7 +103,7 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -131,7 +131,7 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -142,7 +142,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 10;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = MetaEvent;
@@ -165,7 +165,7 @@ parameter_types! {
 }
 
 pub struct WorkingGroupWeightInfo;
-impl working_group::Trait<StorageWorkingGroupInstance> for Test {
+impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type Event = MetaEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
@@ -321,13 +321,13 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl data_object_type_registry::Trait for Test {
+impl data_object_type_registry::Config for Test {
     type Event = MetaEvent;
     type DataObjectTypeId = u64;
     type WorkingGroup = StorageWorkingGroup;
 }
 
-impl data_directory::Trait for Test {
+impl data_directory::Config for Test {
     type Event = MetaEvent;
     type ContentId = u64;
     type StorageProviderHelper = ();
@@ -342,18 +342,18 @@ impl crate::data_directory::StorageProviderHelper<Test> for () {
     }
 }
 
-impl data_object_storage_registry::Trait for Test {
+impl data_object_storage_registry::Config for Test {
     type Event = MetaEvent;
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = MockContent;
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::Config for Test {
     type MemberId = u64;
     type ActorId = u32;
 }
 
-impl membership::Trait for Test {
+impl membership::Config for Test {
     type Event = MetaEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
@@ -378,33 +378,33 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _origin: <Test as frame_system::Config>::Origin,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
         unimplemented!();
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!()
     }
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],

@@ -2,7 +2,7 @@
 
 use super::{
     AnnouncementPeriodNr, Budget, BudgetIncrement, CouncilMemberOf, CouncilMembers,
-    CouncilStageAnnouncing, Error, Module, Trait,
+    CouncilStageAnnouncing, Error, Module, Config,
 };
 use crate::mock::*;
 use common::council::CouncilBudgetManager;
@@ -15,8 +15,8 @@ use staking_handler::StakingHandler;
 type Mocks = InstanceMocks<Runtime>;
 type MockUtils = InstanceMockUtils<Runtime>;
 
-type CandidacyLock = <Runtime as Trait>::CandidacyLock;
-type CouncilorLock = <Runtime as Trait>::CouncilorLock;
+type CandidacyLock = <Runtime as Config>::CandidacyLock;
+type CouncilorLock = <Runtime as Config>::CouncilorLock;
 
 /////////////////// Election-related ///////////////////////////////////////////
 // Test one referendum cycle with succesfull council election
@@ -105,7 +105,7 @@ fn council_can_vote_for_yourself() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -295,7 +295,7 @@ fn council_announcement_reset_on_not_enough_winners() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count
@@ -362,7 +362,7 @@ fn council_two_consecutive_rounds() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -551,7 +551,7 @@ fn council_candidate_stake_can_be_unlocked() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         let not_elected_candidate_index = 2;
 
@@ -661,7 +661,7 @@ fn council_candidate_stake_automaticly_converted() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -752,7 +752,7 @@ fn council_member_stake_is_locked() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -838,7 +838,7 @@ fn council_member_stake_automaticly_unlocked() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
         let not_reelected_candidate_index = 0;
 
         let params = Mocks::run_full_council_cycle(0, &[], 0);
@@ -915,7 +915,7 @@ fn council_candidacy_set_note() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -1114,7 +1114,7 @@ fn council_budget_refill_can_be_planned() {
         // check budget was increased
         Mocks::check_budget_refill(
             BudgetIncrement::<Runtime>::get(),
-            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+            next_refill + <Runtime as Config>::BudgetRefillPeriod::get(),
         );
     })
 }
@@ -1127,7 +1127,7 @@ fn council_budget_increment_can_be_upddated() {
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Root;
         let budget_increment = 1000;
-        let next_refill = <Runtime as Trait>::BudgetRefillPeriod::get();
+        let next_refill = <Runtime as Config>::BudgetRefillPeriod::get();
 
         Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
 
@@ -1147,7 +1147,7 @@ fn council_budget_increment_can_be_upddated() {
         // check budget was increased with the expected increment
         Mocks::check_budget_refill(
             budget_increment,
-            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+            next_refill + <Runtime as Config>::BudgetRefillPeriod::get(),
         );
     })
 }
@@ -1160,7 +1160,7 @@ fn council_budget_increment_can_be_updated() {
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Root;
         let budget_increment = 1000;
-        let next_refill = <Runtime as Trait>::BudgetRefillPeriod::get();
+        let next_refill = <Runtime as Config>::BudgetRefillPeriod::get();
 
         Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
 
@@ -1180,7 +1180,7 @@ fn council_budget_increment_can_be_updated() {
         // check budget was increased with the expected increment
         Mocks::check_budget_refill(
             budget_increment,
-            next_refill + <Runtime as Trait>::BudgetRefillPeriod::get(),
+            next_refill + <Runtime as Config>::BudgetRefillPeriod::get(),
         );
     })
 }
@@ -1206,7 +1206,7 @@ fn council_rewards_are_paid() {
         // no time to pay out the the reward
         let last_payment_block = council_settings.cycle_duration
             - (council_settings.idle_stage_duration
-                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+                % <Runtime as Config>::ElectedMemberRewardPeriod::get());
         let tmp_council_members: Vec<CouncilMemberOf<Runtime>> = params
             .expected_final_council_members
             .iter()
@@ -1245,7 +1245,7 @@ fn councilor_reward_can_be_set() {
         // calculate council member last reward block
         let last_payment_block = council_settings.cycle_duration
             - (council_settings.idle_stage_duration
-                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+                % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
         let start_rewarding_block = council_settings.reveal_stage_duration
             + council_settings.announcing_stage_duration
@@ -1276,7 +1276,7 @@ fn council_missed_rewards_are_paid_later() {
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
         let origin = OriginType::Root;
-        let reward_period = <Runtime as Trait>::ElectedMemberRewardPeriod::get();
+        let reward_period = <Runtime as Config>::ElectedMemberRewardPeriod::get();
 
         let insufficient_balance = 0;
         let sufficient_balance = 10000000;
@@ -1288,11 +1288,11 @@ fn council_missed_rewards_are_paid_later() {
         Mocks::run_full_council_cycle(0, &[], 0);
 
         // forward to block after first reward payment
-        MockUtils::increase_block_number(<Runtime as Trait>::ElectedMemberRewardPeriod::get());
+        MockUtils::increase_block_number(<Runtime as Config>::ElectedMemberRewardPeriod::get());
 
         let last_payment_block = council_settings.cycle_duration
             - (council_settings.idle_stage_duration
-                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+                % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
         // check unpaid rewards were discarded
         for council_member in CouncilMembers::<Runtime>::get() {
@@ -1308,7 +1308,7 @@ fn council_missed_rewards_are_paid_later() {
         Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
 
         // forward to block after second reward payment
-        MockUtils::increase_block_number(<Runtime as Trait>::ElectedMemberRewardPeriod::get());
+        MockUtils::increase_block_number(<Runtime as Config>::ElectedMemberRewardPeriod::get());
 
         // check unpaid rewards were discarded
         for council_member in CouncilMembers::<Runtime>::get() {
@@ -1343,7 +1343,7 @@ fn council_discard_remaining_rewards_on_depose() {
         // no time to pay out the the reward
         let last_payment_block = council_settings.cycle_duration
             - (council_settings.idle_stage_duration
-                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+                % <Runtime as Config>::ElectedMemberRewardPeriod::get());
         let tmp_council_members: Vec<CouncilMemberOf<Runtime>> = params
             .expected_final_council_members
             .iter()
@@ -1678,7 +1678,7 @@ fn council_many_cycle_rewards() {
             let last_payment_block = i * council_settings.cycle_duration
                 + council_settings.cycle_duration
                 - (council_settings.idle_stage_duration
-                    % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+                    % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
             // Update the expected final council from `run_full_council_cycle` to use the current
             // `last_payment_block`
@@ -1697,7 +1697,7 @@ fn council_many_cycle_rewards() {
         let num_blocks_elected = num_iterations * council_settings.cycle_duration
             - (council_settings.cycle_duration - council_settings.idle_stage_duration) // Unpaid blocks from first cycle
             - (council_settings.idle_stage_duration // Unpaid blocks from last cycle
-                % <Runtime as Trait>::ElectedMemberRewardPeriod::get());
+                % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
         assert_eq!(
             balances::Module::<Runtime>::total_balance(&council_members[0].staking_account_id),
