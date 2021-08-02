@@ -2,7 +2,7 @@
 
 const debug = require('debug')('joystream:runtime:assets')
 const { decodeAddress } = require('@polkadot/keyring')
-const { StorageObjectOwner, DataObject } = require('@joystream/types/storage')
+const _ = require('lodash')
 
 function parseContentId(contentId) {
   try {
@@ -175,17 +175,26 @@ class AssetsApi {
   }
 
   /*
-   * Returns array of all ipfs hashes in storage where liaison judgement was Accepted
+   * Returns array of all ipfs hashes in storage where liaison judgement was Accepted.
    */
   getAcceptedIpfsHashes() {
     if (!this._cachedEntries) {
       return []
     }
+
+    if (this._cachedIpfsHashes) {
+      return this._cachedIpfsHashes
+    }
+
     const hashes = new Map()
     this._cachedEntries
       .filter(([, dataObject]) => dataObject.liaison_judgement.type === 'Accepted')
       .forEach(([, dataObject]) => hashes.set(dataObject.ipfs_content_id.toString()))
-    return Array.from(hashes.keys())
+
+    // Order is unimportant, and when used as list of items to fetch, randomization
+    // improves distribution of content across multiple storage providers
+    this._cachedIpfsHashes = _.shuffle(Array.from(hashes.keys()))
+    return this._cachedIpfsHashes
   }
 
   /*
@@ -193,6 +202,7 @@ class AssetsApi {
    */
   async fetchDataObjects() {
     this._cachedEntries = await this.base.api.query.dataDirectory.dataByContentId.entries()
+    this._cachedIpfsHashes = null
     this._idMappings = new Map()
     this._cachedEntries.forEach(([{ args: [contentId] }, dataObject]) =>
       this._idMappings.set(contentId.encode(), dataObject.ipfs_content_id.toString())

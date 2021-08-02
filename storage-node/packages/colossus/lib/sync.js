@@ -19,8 +19,6 @@
 'use strict'
 
 const debug = require('debug')('joystream:sync')
-const _ = require('lodash')
-const { ContentId } = require('@joystream/types/storage')
 const { nextTick } = require('@joystream/storage-utils/sleep')
 
 // Time to wait between sync runs. The lower the better chance to consume all
@@ -34,18 +32,10 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
   const contentIds = api.assets.getAcceptedIpfsHashes()
 
   // Select ids which may need to be synced
-  const idsNotSynced = contentIds
-    .filter((id) => !contentCompletedSync.has(id))
-    .filter((id) => !contentBeingSynced.has(id))
-
-  // We are limiting how many content ids can be synced concurrently, so to ensure
-  // better distribution of content across storage nodes during a potentially long
-  // sync process we don't want all nodes to replicate items in the same order, so
-  // we simply shuffle.
-  const idsToSync = _.shuffle(idsNotSynced)
+  const idsToSync = contentIds.filter((id) => !contentCompletedSync.has(id)).filter((id) => !contentBeingSynced.has(id))
 
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && idsToSync.length) {
-    const id = idsToSync.shift()
+    const id = idsToSync.pop()
 
     try {
       contentBeingSynced.set(id)
