@@ -488,30 +488,28 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                 working_group,
             );
 
-        let apply_result =
-            WorkingGroupInstance::<T, I>::apply_on_opening(
-                RawOrigin::Signed(account_id.into()).into(),
-                working_group::ApplyOnOpeningParameters::<T> {
-                    member_id: member_id.into(),
-                    opening_id,
-                    role_account_id: account_id.into(),
-                    reward_account_id: account_id.into(),
-                    description: Vec::new(),
-                    stake_parameters:
-                        StakeParameters {
-                            stake:
-                                T::Balance::from(
-                                    <Runtime as working_group::Config<
-                                        MembershipWorkingGroupInstance,
-                                    >>::MinimumApplicationStake::get(
-                                    )
-                                    .try_into()
-                                    .unwrap(),
-                                ),
-                            staking_account_id: account_id.into(),
-                        },
-                },
-            );
+        let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
+            RawOrigin::Signed(account_id.into()).into(),
+            working_group::ApplyOnOpeningParameters::<T> {
+                member_id: member_id.into(),
+                opening_id,
+                role_account_id: account_id.into(),
+                reward_account_id: account_id.into(),
+                description: Vec::new(),
+                stake_parameters:
+                    StakeParameters {
+                        stake:
+                            T::Balance::from(
+                                <Runtime as working_group::Config<
+                                    MembershipWorkingGroupInstance,
+                                >>::MinimumApplicationStake::get()
+                                .try_into()
+                                .unwrap(),
+                            ),
+                        staking_account_id: account_id.into(),
+                    },
+            },
+        );
 
         assert_eq!(apply_result, Ok(()));
 

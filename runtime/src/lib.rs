@@ -26,16 +26,14 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::traits::{
-    Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
-};
+use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
     DispatchClass, Weight,
 };
 use frame_support::{construct_runtime, parameter_types};
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use frame_system::limits::{BlockLength, BlockWeights};
+use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -43,7 +41,7 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{BlakeTwo256, OpaqueKeys, AccountIdLookup};
+use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, OpaqueKeys};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
@@ -229,11 +227,8 @@ impl pallet_babe::Config for Runtime {
         pallet_babe::AuthorityId,
     )>>::IdentificationTuple;
 
-    type HandleEquivocation = pallet_babe::EquivocationHandler<
-        Self::KeyOwnerIdentification,
-        Offences,
-        ReportLongevity,
-    >;
+    type HandleEquivocation =
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
     type WeightInfo = ();
 }
@@ -251,8 +246,11 @@ impl pallet_grandpa::Config for Runtime {
 
     type KeyOwnerProofSystem = Historical;
 
-    type HandleEquivocation =
-        pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
+    type HandleEquivocation = pallet_grandpa::EquivocationHandler<
+        Self::KeyOwnerIdentification,
+        Offences,
+        ReportLongevity,
+    >;
     type WeightInfo = ();
 }
 

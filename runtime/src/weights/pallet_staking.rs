@@ -163,5 +163,7 @@ impl pallet_staking::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(w as Weight)))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
-    fn kick(_: u32) -> u64 { todo!() }
+    fn kick(_: u32) -> u64 {
+        todo!()
+    }
 }
