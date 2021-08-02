@@ -183,8 +183,8 @@ class StorageWriteStream extends Transform {
       .then(async (result) => {
         const hash = result[0].hash
         debug('Stream committed as', hash)
+        await this.storage.pin(hash)
         this.emit('committed', hash)
-        await this.storage.ipfs.pin.add(hash)
         this.cleanup()
       })
       .catch((err) => {
@@ -429,6 +429,24 @@ class Storage {
       syncing: this.pinning[ipfsHash] === true,
       synced: this.pinned[ipfsHash] === true,
     }
+  }
+
+  /*
+   * Scan storage repo and determine sync state of all pins
+   */
+  async scanRepo() {
+    let syncedPins = 0
+    for await (const { cid } of this.ipfs.pin.ls({ type: 'recursive' })) {
+      try {
+        const hash = `${cid}`
+        await this.ipfsStat(hash, 200)
+        this.pinned[hash] = true
+        syncedPins++
+      } catch (_err) {
+        // timeout
+      }
+    }
+    debug('repo scan found', syncedPins, 'fully synced pinned objects')
   }
 }
 

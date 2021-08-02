@@ -143,15 +143,9 @@ function getStorage(runtimeApi, { ipfsHost }) {
     resolve_content_id: async (contentId) => {
       // Resolve accepted content from cache
       const hash = runtimeApi.assets.resolveContentIdToIpfsHash(contentId)
-      if (hash) return hash
-
-      // Resolve via API
-      const obj = await runtimeApi.assets.getDataObject(contentId)
-      if (!obj) {
-        return
+      if (hash) {
+        return hash
       }
-      // if obj.liaison_judgement !== Accepted .. throw ?
-      return obj.ipfs_content_id.toString()
     },
     ipfsHost,
   }
@@ -275,6 +269,10 @@ const commands = {
       port = cli.flags.port
     }
 
+    const store = getStorage(api, cli.flags)
+
+    await store.scanRepo()
+
     // Get initlal data objects into cache
     while (true) {
       try {
@@ -296,9 +294,6 @@ const commands = {
         debug('Failed updating data objects from chain', err)
       }
     }, 120000)
-
-    // TODO: check valid url, and valid port number
-    const store = getStorage(api, cli.flags)
 
     const ipfsHost = cli.flags.ipfsHost
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
