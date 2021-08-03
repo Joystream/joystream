@@ -55,7 +55,7 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
 
     if (!storage.syncStatus(hash).synced) {
       // We a void serving content we do not have locally to prevent poor performance
-      res.status(404).send({ message: 'Asset Not Available Locally' })
+      return res.status(404).send({ message: 'Asset Not Available Locally' })
     }
 
     // Pass on the ipfs hash to the ipfs proxy middleware
