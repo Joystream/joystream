@@ -34,7 +34,7 @@ export class QueryNodeApi {
 
   public constructor(endpoint: string) {
     this.apolloClient = new ApolloClient({
-      link: new HttpLink({ uri: endpoint, fetch }),
+      link: new HttpLink({ uri: endpoint, fetch: fetch as any }),
       cache: new InMemoryCache(),
       defaultOptions: {
         query: { fetchPolicy: 'no-cache', errorPolicy: 'all' },
@@ -115,12 +115,13 @@ export class QueryNodeApi {
   }
 
   public getDataObjectDetails(
-    bagIds: string[]
+    bagIds: string[],
+    limit: number
   ): Promise<Array<DataObjectDetailsFragment>> {
     const input: StorageBagWhereInput = { id_in: bagIds }
     return this.multipleEntitiesQuery<
       GetDataObjectDetailsQuery,
       GetDataObjectDetailsQueryVariables
-    >(GetDataObjectDetails, { bagIds: input }, 'storageDataObjects')
+    >(GetDataObjectDetails, { limit, bagIds: input }, 'storageDataObjects')
   }
 }

@@ -29,6 +29,7 @@ export async function getRuntimeModel(
 ): Promise<Model> {
   const api = new QueryNodeApi(queryNodeUrl)
   // TODO: graphql response entries limit
+  const limit = 1000
   // TODO: get accepted data objects only
 
   let allBuckets = await api.getAllStorageBucketDetails()
@@ -39,7 +40,7 @@ export async function getRuntimeModel(
   let assignedBags = await api.getStorageBagsDetails(bucketIds)
 
   let bagIds = assignedBags.map((bag) => bag.id)
-  let assignedDataObjects = await api.getDataObjectDetails(bagIds)
+  let assignedDataObjects = await api.getDataObjectDetails(bagIds, limit)
 
   const model: Model = {
     storageBuckets: allBuckets.map((bucket) => ({

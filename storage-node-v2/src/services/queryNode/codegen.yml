@@ -5,7 +5,7 @@ overwrite: true
 schema: '../../temp_runtime/joystream/query-node/generated/graphql-server/generated/schema.graphql'
 
 documents:
-  - 'src/services/query-node/queries/*.graphql'
+  - 'src/services/queryNode/queries/*.graphql'
 
 config:
   scalars:
@@ -14,14 +14,14 @@ config:
   skipTypename: true # skip __typename field in typings unless it's part of the query
 
 generates:
-  src/services/query-node/generated/schema.ts:
+  src/services/queryNode/generated/schema.ts:
     hooks:
       afterOneFileWrite:
         - prettier --write
         - eslint --fix
     plugins:
       - typescript
-  src/services/query-node/generated/queries.ts:
+  src/services/queryNode/generated/queries.ts:
     preset: import-types
     presetConfig:
       typesPath: ./schema

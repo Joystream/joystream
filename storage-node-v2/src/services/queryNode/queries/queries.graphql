@@ -43,8 +43,8 @@ fragment DataObjectDetails on StorageDataObject {
   }
 }
 
-query getDataObjectDetails($bagIds: StorageBagWhereInput) {
-  storageDataObjects(where: { storageBag: $bagIds }) {
+query getDataObjectDetails($bagIds: StorageBagWhereInput, $limit: Int) {
+  storageDataObjects(limit: $limit, where: { storageBag: $bagIds }) {
     ...DataObjectDetails
   }
 }
