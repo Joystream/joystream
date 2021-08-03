@@ -444,7 +444,6 @@ class Storage {
       try {
         // debug(hash)
         const stat = await this.ipfsStat(hash, 200)
-        console.log(stat)
         if (stat.local) {
           this.pinned[hash] = true
           syncedPins++
