@@ -35,6 +35,7 @@ const fileType = require('file-type')
 const ipfsClient = require('ipfs-http-client')
 const temp = require('temp').track()
 const _ = require('lodash')
+const { nextTick, sleep } = require('../util/sleep')
 
 // Default request timeout; imposed on top of the IPFS client, because the
 // client doesn't seem to care.
@@ -403,7 +404,7 @@ class Storage {
    */
   async pin(ipfsHash, callback) {
     if (!this.pinning[ipfsHash] && !this.pinned[ipfsHash]) {
-      // debug(`Pinning hash: ${ipfsHash} content-id: ${contentId}`)
+      // debug(`Pinning hash: ${ipfsHash}`)
       this.pinning[ipfsHash] = true
 
       // Callback passed to add() will be called on error or when the entire file
@@ -436,25 +437,23 @@ class Storage {
    */
   async scanRepo() {
     debug('scanning repo')
-    let syncedPins = 0
     const pinset = await this.ipfs.pin.ls({ type: 'recursive' })
-
+    let checks = 0
     while (pinset.length) {
+      if (checks % 50 === 0) {
+        debug('scanned', checks, 'items')
+        await sleep(50)
+      }
+      checks++
       const { hash } = pinset.pop()
       try {
-        // debug(hash)
-        const stat = await this.ipfsStat(hash, 200)
-        if (stat.local) {
-          this.pinned[hash] = true
-          syncedPins++
-        }
-      } catch (_err) {
-        // timeout
-        // debug(err)
+        this.pin(hash)
+      } catch (err) {
+        debug(err)
       }
+      await nextTick()
     }
-
-    debug('repo scan found', syncedPins, 'fully synced pinned objects')
+    debug('scanned', checks, 'objects')
   }
 }
 
