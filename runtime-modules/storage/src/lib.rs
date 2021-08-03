@@ -76,6 +76,8 @@
 //!  Cancels pending invite for a distribution bucket.
 //! - [remove_distribution_bucket_operator](./struct.Module.html#method.remove_distribution_bucket_operator) -
 //!  Removes a distribution bucket operator.
+//! - [set_distribution_bucket_family_metadata](./struct.Module.html#method.set_distribution_bucket_family_metadata) -
+//! Sets distribution bucket family metadata.
 //!
 //! #### Distribution provider extrinsics
 //! - [accept_distribution_bucket_invitation](./struct.Module.html#method.accept_distribution_bucket_invitation) -
@@ -1239,6 +1241,15 @@ decl_event! {
             DistributionBucketId,
             WorkerId
         ),
+
+        /// Emits on setting the metadata by a distribution bucket family.
+        /// Params
+        /// - distribution bucket family ID
+        /// - metadata
+        DistributionBucketFamilyMetadataSet(
+            DistributionBucketFamilyId,
+            Vec<u8>
+        ),
     }
 }
 
@@ -2370,6 +2381,30 @@ decl_module! {
                 )
             );
         }
+
+        /// Set distribution bucket family metadata.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_distribution_bucket_family_metadata(
+            origin,
+            family_id: T::DistributionBucketFamilyId,
+            metadata: Vec<u8>,
+        ) {
+            T::ensure_distribution_working_group_leader_origin(origin)?;
+
+            Self::ensure_distribution_bucket_family_exists(&family_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(
+                RawEvent::DistributionBucketFamilyMetadataSet(
+                    family_id,
+                    metadata
+                )
+            );
+        }
+
 
         // ===== Distribution Operator actions =====
 

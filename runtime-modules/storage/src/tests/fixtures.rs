@@ -1902,3 +1902,41 @@ impl RemoveDistributionBucketOperatorFixture {
         }
     }
 }
+
+pub struct SetDistributionBucketFamilyMetadataFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    metadata: Vec<u8>,
+}
+
+impl SetDistributionBucketFamilyMetadataFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            family_id: Default::default(),
+            metadata: Default::default(),
+        }
+    }
+
+    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
+        Self { metadata, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::set_distribution_bucket_family_metadata(
+            self.origin.clone().into(),
+            self.family_id,
+            self.metadata.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
