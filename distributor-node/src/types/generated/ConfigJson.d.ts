@@ -19,6 +19,7 @@ export interface ConfigJson {
     file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
     console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
   }
+  storageLimit: string
   port: number
   keys: [string, ...string[]]
   buckets: [number, ...number[]]

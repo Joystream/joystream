@@ -3,6 +3,12 @@ import { ReadonlyConfig, StorageNodeDownloadResponse } from '../../types'
 import { LoggingService } from '../logging'
 import fs from 'fs'
 
+// LRU-SP cache parameters
+// Since size is in KB, these parameters should be enough for grouping objects of size up to 2^24 KB = 16 GB
+// TODO: Intoduce MAX_CACHED_ITEM_SIZE and skip caching for large objects entirely? (ie. 10 GB objects)
+export const CACHE_GROUP_LOG_BASE = 2
+export const CACHE_GROUPS_COUNT = 24
+
 export interface PendingDownloadData {
   objectSize: number
   promise: Promise<StorageNodeDownloadResponse>
@@ -10,6 +16,12 @@ export interface PendingDownloadData {
 
 export interface StorageNodeEndpointData {
   responseTimes: number[]
+}
+
+export interface CacheItemData {
+  sizeKB: number
+  popularity: number
+  lastAccessTime: number
 }
 
 export class StateCacheService {
@@ -25,7 +37,8 @@ export class StateCacheService {
   }
 
   private storedState = {
-    lruContentHashes: new Set<string>(),
+    groupNumberByContentHash: new Map<string, number>(),
+    lruCacheGroups: Array.from({ length: CACHE_GROUPS_COUNT }).map(() => new Map<string, CacheItemData>()),
     mimeTypeByContentHash: new Map<string, string>(),
   }
 
@@ -52,11 +65,66 @@ export class StateCacheService {
     return this.memoryState.contentHashByObjectId.get(objectId)
   }
 
-  public useContent(contentHash: string): void {
-    if (this.storedState.lruContentHashes.has(contentHash)) {
-      this.storedState.lruContentHashes.delete(contentHash)
+  private calcCacheGroup({ sizeKB, popularity }: CacheItemData) {
+    return Math.min(
+      Math.max(Math.ceil(Math.log(sizeKB / popularity) / Math.log(CACHE_GROUP_LOG_BASE)), 0),
+      CACHE_GROUPS_COUNT - 1
+    )
+  }
+
+  public newContent(contentHash: string, sizeInBytes: number): void {
+    const cacheItemData: CacheItemData = {
+      popularity: 1,
+      lastAccessTime: Date.now(),
+      sizeKB: Math.ceil(sizeInBytes / 1024),
     }
-    this.storedState.lruContentHashes.add(contentHash)
+    const groupNumber = this.calcCacheGroup(cacheItemData)
+    this.storedState.groupNumberByContentHash.set(contentHash, groupNumber)
+    this.storedState.lruCacheGroups[groupNumber].set(contentHash, cacheItemData)
+  }
+
+  public useContent(contentHash: string): void {
+    const groupNumber = this.storedState.groupNumberByContentHash.get(contentHash)
+    if (groupNumber === undefined) {
+      this.logger.warn('groupNumberByContentHash missing when trying to update LRU of content', { contentHash })
+      return
+    }
+    const group = this.storedState.lruCacheGroups[groupNumber]
+    const cacheItemData = group.get(contentHash)
+    if (!cacheItemData) {
+      this.logger.warn('Cache inconsistency: item missing in group retrieved from by groupNumberByContentHash map!', {
+        contentHash,
+        groupNumber,
+      })
+      this.storedState.groupNumberByContentHash.delete(contentHash)
+      return
+    }
+    cacheItemData.lastAccessTime = Date.now()
+    ++cacheItemData.popularity
+    // Move object to the top of the current group / new group
+    const targetGroupNumber = this.calcCacheGroup(cacheItemData)
+    const targetGroup = this.storedState.lruCacheGroups[targetGroupNumber]
+    group.delete(contentHash)
+    targetGroup.set(contentHash, cacheItemData)
+    if (targetGroupNumber !== groupNumber) {
+      this.storedState.groupNumberByContentHash.set(contentHash, targetGroupNumber)
+    }
+  }
+
+  public getCacheEvictCandidateHash(): string | null {
+    let highestCost = 0
+    let bestCandidate: string | null = null
+    for (const group of this.storedState.lruCacheGroups) {
+      const lastItemInGroup = Array.from(group.entries())[0]
+      const [contentHash, objectData] = lastItemInGroup
+      const elapsedSinceLastAccessed = Math.ceil((Date.now() - objectData.lastAccessTime) / 60_000)
+      const itemCost = (elapsedSinceLastAccessed * objectData.sizeKB) / objectData.popularity
+      if (itemCost >= highestCost) {
+        highestCost = itemCost
+        bestCandidate = contentHash
+      }
+    }
+    return bestCandidate
   }
 
   public newPendingDownload(
@@ -82,7 +150,12 @@ export class StateCacheService {
 
   public dropByHash(contentHash: string): void {
     this.storedState.mimeTypeByContentHash.delete(contentHash)
-    this.storedState.lruContentHashes.delete(contentHash)
+    this.memoryState.pendingDownloadsByContentHash.delete(contentHash)
+    const cacheGroupNumber = this.storedState.groupNumberByContentHash.get(contentHash)
+    if (cacheGroupNumber) {
+      this.storedState.groupNumberByContentHash.delete(contentHash)
+      this.storedState.lruCacheGroups[cacheGroupNumber].delete(contentHash)
+    }
   }
 
   public setStorageNodeEndpointResponseTime(endpoint: string, time: number): void {
@@ -95,10 +168,11 @@ export class StateCacheService {
   }
 
   private serializeData() {
-    const { lruContentHashes, mimeTypeByContentHash } = this.storedState
+    const { groupNumberByContentHash, lruCacheGroups, mimeTypeByContentHash } = this.storedState
     return JSON.stringify({
-      lruContentHashes: Array.from(lruContentHashes),
+      lruCacheGroups: lruCacheGroups.map((g) => Array.from(g.entries())),
       mimeTypeByContentHash: Array.from(mimeTypeByContentHash.entries()),
+      groupNumberByContentHash: Array.from(groupNumberByContentHash.entries()),
     })
   }
 
@@ -128,7 +202,10 @@ export class StateCacheService {
     if (fs.existsSync(this.cacheFilePath)) {
       this.logger.info('Loading cache from file', { file: this.cacheFilePath })
       const fileContent = JSON.parse(fs.readFileSync(this.cacheFilePath).toString())
-      this.storedState.lruContentHashes = new Set<string>(fileContent.lruContentHashes || [])
+      this.storedState.lruCacheGroups = (fileContent.lruCacheGroups || []).map(
+        (g: any) => new Map<string, CacheItemData>(g)
+      )
+      this.storedState.groupNumberByContentHash = new Map<string, number>(fileContent.groupNumberByContentHash || [])
       this.storedState.mimeTypeByContentHash = new Map<string, string>(fileContent.mimeTypeByContentHash || [])
     } else {
       this.logger.warn(`Cache file (${this.cacheFilePath}) is empty. Starting from scratch`)
