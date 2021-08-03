@@ -43,9 +43,19 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
   // Creat the IPFS HTTP Gateway proxy middleware
   const proxy = ipfsProxy.createProxy(ipfsHttpGatewayUrl)
 
+  const recentlyUploaded = new Map()
+
   // Make sure id is valid and was 'Accepted', only then proxy if content is local
   const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
     const content_id = req.params.id
+
+    // Serve known recently uploaded asset
+    if (recentlyUploaded.has(content_id)) {
+      // Pass on the ipfs hash to the ipfs proxy middleware
+      req.params.ipfs_content_id = recentlyUploaded.get(content_id)
+      // Serve asset
+      return proxy(req, res, next)
+    }
 
     const hash = runtime.assets.resolveContentIdToIpfsHash(content_id)
 
@@ -194,6 +204,9 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
         stream.on('committed', async (hash) => {
           // they cannot be different unless we did something stupid!
           assert(hash === dataObject.ipfs_content_id.toString())
+
+          // Remember uploaded asset incase we need to serve it immediately (before data objects refreshed from chain)
+          recentlyUploaded.set(id, hash)
 
           // Send ok response early, no need for client to wait for relationships to be created.
           debug('Sending OK response.')
