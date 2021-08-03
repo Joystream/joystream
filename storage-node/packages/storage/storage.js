@@ -435,17 +435,26 @@ class Storage {
    * Scan storage repo and determine sync state of all pins
    */
   async scanRepo() {
+    debug('scanning repo')
     let syncedPins = 0
-    for await (const { cid } of this.ipfs.pin.ls({ type: 'recursive' })) {
+    const pinset = await this.ipfs.pin.ls({ type: 'recursive' })
+
+    while (pinset.length) {
+      const { hash } = pinset.pop()
       try {
-        const hash = `${cid}`
-        await this.ipfsStat(hash, 200)
-        this.pinned[hash] = true
-        syncedPins++
+        // debug(hash)
+        const stat = await this.ipfsStat(hash, 200)
+        console.log(stat)
+        if (stat.local) {
+          this.pinned[hash] = true
+          syncedPins++
+        }
       } catch (_err) {
         // timeout
+        // debug(err)
       }
     }
+
     debug('repo scan found', syncedPins, 'fully synced pinned objects')
   }
 }
