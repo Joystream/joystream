@@ -8,12 +8,12 @@ mod tests;
 mod errors;
 mod permissions;
 mod types;
-mod vnft_auction;
+mod nft;
 
 pub use errors::*;
 pub use permissions::*;
 pub use types::*;
-pub use vnft_auction::*;
+pub use nft::*;
 
 use core::hash::Hash;
 
