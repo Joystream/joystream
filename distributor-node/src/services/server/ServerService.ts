@@ -51,6 +51,7 @@ export class ServerService {
     app.use(
       expressWinston.logger({
         winstonInstance: this.logger,
+        level: 'http',
       })
     )
 

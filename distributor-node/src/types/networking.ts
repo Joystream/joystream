@@ -1,3 +1,4 @@
 import { AxiosResponse } from 'axios'
+import { Readable } from 'stream'
 
-export type StorageNodeDownloadResponse = AxiosResponse<NodeJS.ReadableStream>
+export type StorageNodeDownloadResponse = AxiosResponse<Readable>

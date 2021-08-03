@@ -4,9 +4,9 @@ import { StateCacheService } from '../cache/StateCacheService'
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
 import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileContinousReadStream'
-import readChunk from 'read-chunk'
 import FileType from 'file-type'
 import _ from 'lodash'
+import { Readable } from 'stream'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
@@ -15,6 +15,12 @@ export class ContentService {
   private dataDir: string
   private logger: Logger
   private stateCache: StateCacheService
+
+  private contentSizeSum = 0 // TODO: Assign on startup
+
+  private get freeSpace(): number {
+    return this.config.storageLimit - this.contentSizeSum
+  }
 
   public constructor(config: ReadonlyConfig, logging: LoggingService, stateCache: StateCacheService) {
     this.config = config
@@ -67,7 +73,7 @@ export class ContentService {
   }
 
   public createWriteStream(contentHash: string): fs.WriteStream {
-    return fs.createWriteStream(this.path(contentHash))
+    return fs.createWriteStream(this.path(contentHash), { autoClose: true, emitClose: true })
   }
 
   public createContinousReadStream(
@@ -78,20 +84,78 @@ export class ContentService {
   }
 
   public async guessMimeType(contentHash: string): Promise<string> {
-    const chunk = await readChunk(this.path(contentHash), 0, 4100)
-    const guessResult = await FileType.fromBuffer(chunk)
+    const guessResult = await FileType.fromFile(this.path(contentHash))
     return guessResult?.mime || DEFAULT_CONTENT_TYPE
   }
 
-  public async handleNewContent(contentHash: string, dataStream: NodeJS.ReadableStream): Promise<void> {
-    const fileStream = this.createWriteStream(contentHash)
-    fileStream.on('ready', () => {
-      dataStream.pipe(fileStream)
-    })
-    fileStream.on('finish', async () => {
-      const mimeType = await this.guessMimeType(contentHash)
-      this.stateCache.setContentMimeType(contentHash, mimeType)
-      this.stateCache.dropPendingDownload(contentHash)
+  private dropCacheItemsUntilFreeSpaceReached(expectedFreeSpace: number): void {
+    let evictCandidateHash: string | null
+    while ((evictCandidateHash = this.stateCache.getCacheEvictCandidateHash())) {
+      this.drop(evictCandidateHash)
+      if (this.freeSpace === expectedFreeSpace) {
+        return
+      }
+    }
+  }
+
+  public handleNewContent(contentHash: string, expectedSize: number, dataStream: Readable): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (this.freeSpace < expectedSize) {
+        this.dropCacheItemsUntilFreeSpaceReached(expectedSize)
+      }
+
+      const fileStream = this.createWriteStream(contentHash)
+
+      let bytesRecieved = 0
+
+      // TODO: Use NodeJS pipeline for easier error handling (https://nodejs.org/es/docs/guides/backpressuring-in-streams/#the-problem-with-data-handling)
+
+      fileStream.on('ready', () => {
+        dataStream.pipe(fileStream)
+        // Attach handler after pipe, otherwise some data will be lost!
+        dataStream.on('data', (chunk) => {
+          bytesRecieved += chunk.length
+          if (bytesRecieved > expectedSize) {
+            dataStream.destroy(new Error('Unexpected content size: Too much data recieved from source!'))
+          }
+        })
+        // Note: The promise is resolved on "ready" event, since that's what's awaited in the current flow
+        resolve(true)
+      })
+
+      dataStream.on('error', (e) => {
+        fileStream.destroy(e)
+      })
+
+      fileStream.on('error', (err) => {
+        reject(err)
+        this.logger.error(`Content data stream error`, {
+          err,
+          contentHash,
+          expectedSize,
+          bytesRecieved,
+        })
+        this.drop(contentHash)
+      })
+
+      fileStream.on('close', async () => {
+        const { bytesWritten } = fileStream
+        if (bytesWritten === bytesRecieved && bytesWritten === expectedSize) {
+          this.logger.info('New content accepted', { contentHash, bytesRecieved, written: bytesWritten })
+          this.stateCache.dropPendingDownload(contentHash)
+          const mimeType = await this.guessMimeType(contentHash)
+          this.stateCache.newContent(contentHash, expectedSize)
+          this.stateCache.setContentMimeType(contentHash, mimeType)
+        } else {
+          this.logger.error('Content rejected: Bytes written/recieved/expected mismatch!', {
+            contentHash,
+            expectedSize,
+            bytesWritten,
+            bytesRecieved,
+          })
+          this.drop(contentHash)
+        }
+      })
     })
   }
 }
