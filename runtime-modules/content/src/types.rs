@@ -216,8 +216,6 @@ pub struct VideoRecord<
     SeriesId,
     AccountId,
     Moment: BaseArithmetic + Copy,
-    CuratorGroupId: Default + Copy,
-    CuratorId: Default + Copy,
     MemberId: Default + Copy,
     Balance,
 > {
@@ -228,7 +226,7 @@ pub struct VideoRecord<
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// Whether nft for this video was issued.
-    pub nft_status: NFTStatus<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
+    pub nft_status: NFTStatus<AccountId, Moment, MemberId, Balance>,
 }
 
 impl<
@@ -236,21 +234,9 @@ impl<
         SeriesId: Clone,
         AccountId: PartialEq + Default + Clone,
         Moment: BaseArithmetic + Copy,
-        CuratorGroupId: Default + Copy,
-        CuratorId: Default + Copy,
         MemberId: Default + Copy + PartialEq,
         Balance: Clone,
-    >
-    VideoRecord<
-        ChannelId,
-        SeriesId,
-        AccountId,
-        Moment,
-        CuratorGroupId,
-        CuratorId,
-        MemberId,
-        Balance,
-    >
+    > VideoRecord<ChannelId, SeriesId, AccountId, Moment, MemberId, Balance>
 {
     /// Ensure vnft for given video was not issued
     pub fn ensure_vnft_not_issued<T: Trait>(&self) -> DispatchResult {
@@ -301,10 +287,7 @@ impl<
     }
 
     /// Get nft auction record
-    pub fn get_nft_auction(
-        &self,
-    ) -> Option<AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
-    {
+    pub fn get_nft_auction(&self) -> Option<AuctionRecord<AccountId, Moment, Balance>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -317,10 +300,7 @@ impl<
     }
 
     /// Get nft auction record by reference
-    pub fn get_nft_auction_ref(
-        &self,
-    ) -> Option<&AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
-    {
+    pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<AccountId, Moment, Balance>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -335,8 +315,7 @@ impl<
     /// Get nft auction record by mutable reference
     pub fn get_nft_auction_ref_mut(
         &mut self,
-    ) -> Option<&mut AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>>
-    {
+    ) -> Option<&mut AuctionRecord<AccountId, Moment, Balance>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref mut auction),
             ..
@@ -364,13 +343,14 @@ impl<
     /// Sets nft transactional status to provided `Auction`
     pub fn set_auction_transactional_status(
         mut self,
-        auction: AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
+        auction: AuctionRecord<AccountId, Moment, Balance>,
+        auctioneer_account_id: AccountId,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Auction(auction);
         } else {
             self.nft_status = NFTStatus::Owned(OwnedNFT {
-                owner: AccountId::default(),
+                owner: auctioneer_account_id,
                 transactional_status: TransactionalStatus::Auction(auction),
                 creator_royalty: None,
             });
@@ -451,8 +431,6 @@ pub type Video<T> = VideoRecord<
     <T as Trait>::SeriesId,
     <T as frame_system::Trait>::AccountId,
     <T as pallet_timestamp::Trait>::Moment,
-    <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as ContentActorAuthenticator>::CuratorId,
     <T as MembershipTypes>::MemberId,
     BalanceOf<T>,
 >;

@@ -973,8 +973,8 @@ decl_module! {
             //
 
             // Create new auction
-            let auction = AuctionRecord::new(auctioneer, auctioneer_account_id, auction_params.clone());
-            let video = video.set_auction_transactional_status(auction);
+            let auction = AuctionRecord::new(auction_params.clone());
+            let video = video.set_auction_transactional_status(auction, auctioneer_account_id);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -995,11 +995,15 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Authorize content actor
-            Self::authorize_content_actor(origin, &auctioneer)?;
+            Self::authorize_content_actor(origin.clone(), &auctioneer)?;
 
             // Ensure auction for given video id exists
             video.ensure_nft_auction_started::<T>()?;
 
+            let auctioneer_account_id = ensure_signed(origin)?;
+
+            // Ensure given content actor is auctioneer
+            video.ensure_vnft_ownership::<T>(&auctioneer_account_id)?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
@@ -1010,8 +1014,7 @@ decl_module! {
                     return Ok(())
                 }
 
-                // Ensure given conntent actor is auctioneer
-                auction.ensure_is_auctioneer::<T>(&auctioneer)?;
+
 
                 // Ensure auction is not active
                 auction.ensure_is_not_active::<T>()?;
@@ -1438,8 +1441,6 @@ decl_event!(
         NFTStatus = NFTStatus<
             <T as frame_system::Trait>::AccountId,
             <T as pallet_timestamp::Trait>::Moment,
-            <T as ContentActorAuthenticator>::CuratorGroupId,
-            <T as ContentActorAuthenticator>::CuratorId,
             <T as MembershipTypes>::MemberId,
             BalanceOf<T>
         >,
