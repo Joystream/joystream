@@ -51,7 +51,7 @@ impl<
     > OwnedNFT<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>
 {
     /// Create new vNFT
-    pub fn new(owner: AccountId, creator_royalty: Option<(AccountId, Royalty)>) -> Self {
+    pub fn new(owner: AccountId, creator_royalty: Option<Royalty>) -> Self {
         Self {
             owner,
             transactional_status: TransactionalStatus::Idle,

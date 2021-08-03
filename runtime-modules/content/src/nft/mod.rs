@@ -68,6 +68,7 @@ impl<T: Trait> Module<T> {
         match auction_params.auction_mode {
             AuctionMode::WithIssuance(Some(royalty), _) => {
                 video.ensure_vnft_not_issued::<T>()?;
+                Self::ensure_reward_account_is_set(video.in_channel)?;
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
             AuctionMode::WithoutIsuance => {
@@ -80,6 +81,14 @@ impl<T: Trait> Module<T> {
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
         Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
 
+        Ok(())
+    }
+
+    /// Ensure channel reward_account account is set
+    pub(crate) fn ensure_reward_account_is_set(channel_id: T::ChannelId) -> DispatchResult {
+        Self::channel_by_id(channel_id)
+            .reward_account
+            .ok_or(Error::<T>::RewardAccountIsNotSet)?;
         Ok(())
     }
 
@@ -163,7 +172,7 @@ impl<T: Trait> Module<T> {
         {
             let last_bid = auction.last_bid;
 
-            if let Some((creator_account_id, creator_royalty)) = creator_royalty {
+            if let Some(creator_royalty) = creator_royalty {
                 let royalty = *creator_royalty * last_bid;
 
                 // Slash last bidder bid
@@ -183,8 +192,13 @@ impl<T: Trait> Module<T> {
                     );
                 }
 
-                // Deposit royalty into creator account
-                T::Currency::deposit_creating(&creator_account_id, royalty);
+                // Should always be Some(_) at this stage, because of previously made check.
+                if let Some(creator_account_id) =
+                    Self::channel_by_id(video.in_channel).reward_account
+                {
+                    // Deposit royalty into creator account
+                    T::Currency::deposit_creating(&creator_account_id, royalty);
+                }
             } else {
                 // Slash last bidder bid and deposit it into auctioneer account
                 T::Currency::slash_reserved(&auction.last_bidder, last_bid);
@@ -223,7 +237,7 @@ impl<T: Trait> Module<T> {
                     );
 
                     let creator_royalty = if let Some(royalty) = royalty {
-                        Some((auction.auctioneer_account_id.clone(), royalty.to_owned()))
+                        Some(royalty.to_owned())
                     } else {
                         None
                     };

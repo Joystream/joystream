@@ -6,14 +6,14 @@
 mod tests;
 
 mod errors;
+mod nft;
 mod permissions;
 mod types;
-mod nft;
 
 pub use errors::*;
+pub use nft::*;
 pub use permissions::*;
 pub use types::*;
-pub use nft::*;
 
 use core::hash::Hash;
 
@@ -1177,8 +1177,6 @@ decl_module! {
             //
 
             // Issue vNFT
-
-            let royalty = royalty.map(|royalty| (content_actor_account_id.clone(), royalty));
 
             let mut video = video;
             Self::issue_vnft(&mut video, video_id, content_actor_account_id, royalty);

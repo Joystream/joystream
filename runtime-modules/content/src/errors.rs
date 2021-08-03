@@ -138,5 +138,8 @@ decl_error! {
 
         // No incoming transfers for given vnft origin
         NoIncomingTransfers,
+
+        // Creator royalty requires reward account to be set.
+        RewardAccountIsNotSet
     }
 }
