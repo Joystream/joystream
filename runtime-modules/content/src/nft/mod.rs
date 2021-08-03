@@ -77,7 +77,7 @@ impl<T: Trait> Module<T> {
             _ => (),
         }
 
-        Self::ensure_round_time_bounds_satisfied(auction_params.round_time)?;
+        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
         Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
 
@@ -119,13 +119,15 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure royalty bounds satisfied
-    pub(crate) fn ensure_round_time_bounds_satisfied(round_time: T::Moment) -> DispatchResult {
+    pub(crate) fn ensure_auction_duration_bounds_satisfied(
+        auction_duration: T::Moment,
+    ) -> DispatchResult {
         ensure!(
-            round_time <= Self::max_round_time(),
+            auction_duration <= Self::max_auction_duration(),
             Error::<T>::RoundTimeUpperBoundExceeded
         );
         ensure!(
-            round_time >= Self::min_round_time(),
+            auction_duration >= Self::min_auction_duration(),
             Error::<T>::RoundTimeLowerBoundExceeded
         );
         Ok(())
@@ -170,51 +172,52 @@ impl<T: Trait> Module<T> {
             ..
         }) = &video.nft_status
         {
-            let last_bid = auction.last_bid;
+            if let Some(last_bid) = &auction.last_bid {
+                let last_bid_amount = last_bid.amount;
+                if let Some(creator_royalty) = creator_royalty {
+                    let royalty = *creator_royalty * last_bid_amount;
 
-            if let Some(creator_royalty) = creator_royalty {
-                let royalty = *creator_royalty * last_bid;
+                    // Slash last bidder bid
+                    T::Currency::slash_reserved(&last_bid.bidder, last_bid_amount);
 
-                // Slash last bidder bid
-                T::Currency::slash_reserved(&auction.last_bidder, last_bid);
+                    // Deposit bid, exluding royalty amount and auction fee into auctioneer account
 
-                // Deposit bid, exluding royalty amount and auction fee into auctioneer account
+                    if last_bid_amount > royalty + auction_fee {
+                        T::Currency::deposit_creating(
+                            &auction.auctioneer_account_id,
+                            last_bid_amount - royalty - auction_fee,
+                        );
+                    } else {
+                        T::Currency::deposit_creating(
+                            &auction.auctioneer_account_id,
+                            last_bid_amount - auction_fee,
+                        );
+                    }
 
-                if last_bid > royalty + auction_fee {
-                    T::Currency::deposit_creating(
-                        &auction.auctioneer_account_id,
-                        last_bid - royalty - auction_fee,
-                    );
+                    // Should always be Some(_) at this stage, because of previously made check.
+                    if let Some(creator_account_id) =
+                        Self::channel_by_id(video.in_channel).reward_account
+                    {
+                        // Deposit royalty into creator account
+                        T::Currency::deposit_creating(&creator_account_id, royalty);
+                    }
                 } else {
+                    // Slash last bidder bid and deposit it into auctioneer account
+                    T::Currency::slash_reserved(&last_bid.bidder, last_bid_amount);
+
+                    // Deposit bid, exluding auction fee into auctioneer account
                     T::Currency::deposit_creating(
                         &auction.auctioneer_account_id,
-                        last_bid - auction_fee,
+                        last_bid_amount - auction_fee,
                     );
                 }
 
-                // Should always be Some(_) at this stage, because of previously made check.
-                if let Some(creator_account_id) =
-                    Self::channel_by_id(video.in_channel).reward_account
-                {
-                    // Deposit royalty into creator account
-                    T::Currency::deposit_creating(&creator_account_id, royalty);
-                }
-            } else {
-                // Slash last bidder bid and deposit it into auctioneer account
-                T::Currency::slash_reserved(&auction.last_bidder, last_bid);
-
-                // Deposit bid, exluding auction fee into auctioneer account
-                T::Currency::deposit_creating(
-                    &auction.auctioneer_account_id,
-                    last_bid - auction_fee,
-                );
+                video.nft_status = NFTStatus::Owned(OwnedNFT {
+                    owner: last_bid.bidder.clone(),
+                    transactional_status: TransactionalStatus::Idle,
+                    creator_royalty: creator_royalty.clone(),
+                });
             }
-
-            video.nft_status = NFTStatus::Owned(OwnedNFT {
-                owner: auction.last_bidder.clone(),
-                transactional_status: TransactionalStatus::Idle,
-                creator_royalty: creator_royalty.clone(),
-            });
         }
     }
 
@@ -223,35 +226,37 @@ impl<T: Trait> Module<T> {
         let auction = video.get_nft_auction();
 
         if let Some(auction) = auction {
-            let last_bid = auction.last_bid;
-            let auction_fee = Self::auction_fee_percentage() * last_bid;
+            if let Some(last_bid) = auction.last_bid {
+                let bid = last_bid.amount;
+                let auction_fee = Self::auction_fee_percentage() * bid;
 
-            match &auction.auction_mode {
-                AuctionMode::WithIssuance(royalty, _) => {
-                    // Slash last bidder bid
-                    T::Currency::slash_reserved(&auction.last_bidder, last_bid);
-                    // Deposit last bidder bid minus auction fee into auctioneer account
-                    T::Currency::deposit_creating(
-                        &auction.auctioneer_account_id,
-                        last_bid - auction_fee,
-                    );
+                match &auction.auction_mode {
+                    AuctionMode::WithIssuance(royalty, _) => {
+                        // Slash last bidder bid
+                        T::Currency::slash_reserved(&last_bid.bidder, bid);
+                        // Deposit last bidder bid minus auction fee into auctioneer account
+                        T::Currency::deposit_creating(
+                            &auction.auctioneer_account_id,
+                            bid - auction_fee,
+                        );
 
-                    let creator_royalty = if let Some(royalty) = royalty {
-                        Some(royalty.to_owned())
-                    } else {
-                        None
-                    };
+                        let creator_royalty = if let Some(royalty) = royalty {
+                            Some(royalty.to_owned())
+                        } else {
+                            None
+                        };
 
-                    // Issue vnft
-                    Self::issue_vnft(
-                        &mut video,
-                        video_id,
-                        auction.last_bidder.clone(),
-                        creator_royalty,
-                    );
-                }
-                AuctionMode::WithoutIsuance => {
-                    Self::complete_vnft_auction_transfer(&mut video, auction_fee);
+                        // Issue vnft
+                        Self::issue_vnft(
+                            &mut video,
+                            video_id,
+                            last_bid.bidder.clone(),
+                            creator_royalty,
+                        );
+                    }
+                    AuctionMode::WithoutIsuance => {
+                        Self::complete_vnft_auction_transfer(&mut video, auction_fee);
+                    }
                 }
             }
         }

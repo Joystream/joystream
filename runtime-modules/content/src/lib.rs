@@ -154,10 +154,10 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
         /// Min auction round time
-        pub MinRoundTime get(fn min_round_time) config(): T::Moment;
+        pub MinRoundTime get(fn min_auction_duration) config(): T::Moment;
 
         /// Max auction round time
-        pub MaxRoundTime get(fn max_round_time) config(): T::Moment;
+        pub MaxRoundTime get(fn max_auction_duration) config(): T::Moment;
 
         /// Min auction staring price
         pub MinStartingPrice get(fn min_starting_price) config(): BalanceOf<T>;
@@ -962,7 +962,7 @@ decl_module! {
             // Authorize auctioneer
             let auctioneer_account_id = Self::authorize_auctioneer(origin, &auctioneer, &auction_params, &video)?;
 
-            // Validate round_time & starting_price
+            // Validate auction_duration & starting_price
             Self::validate_auction_params(&auction_params, &video)?;
 
             // Ensure nft auction is not started
@@ -1006,7 +1006,7 @@ decl_module! {
                 // Return if auction round time expired
                 let now = pallet_timestamp::Module::<T>::now();
 
-                if auction.is_nft_auction_round_time_expired(now) {
+                if auction.is_nft_auction_auction_duration_expired(now) {
                     return Ok(())
                 }
 
@@ -1055,7 +1055,7 @@ decl_module! {
             if let Some(auction) = video.get_nft_auction_ref() {
                 // Return if auction round time expired
                 let now = pallet_timestamp::Module::<T>::now();
-                if auction.is_nft_auction_round_time_expired(now) {
+                if auction.is_nft_auction_auction_duration_expired(now) {
                     return Ok(())
                 }
 
@@ -1070,41 +1070,45 @@ decl_module! {
             let mut video = video;
 
             if let Some(auction) = video.get_nft_auction_ref_mut() {
+                let last_bid = auction.last_bid.clone();
 
-                let last_bid_time = pallet_timestamp::Module::<T>::now();
+                if let Some(last_bid) = last_bid {
 
-                // Unreserve previous bidder balance
-                T::Currency::unreserve(&auction.last_bidder, auction.last_bid);
+                    let last_bid_time = pallet_timestamp::Module::<T>::now();
 
-                // TODO switch to StakingHandler representation after merging with olympia
+                    // Unreserve previous bidder balance
+                    T::Currency::unreserve(&last_bid.bidder, last_bid.amount);
 
-                // Make auction bid & update auction data
-                match auction.buy_now_price {
-                    // Instantly complete auction if bid is greater or equal then buy now price
-                    Some(buy_now_price) if bid >= buy_now_price => {
-                        // Reseve balance for current bid
-                        // Can not fail, needed check made
-                        T::Currency::reserve(&participant_account_id, buy_now_price)?;
-                        auction.make_bid::<T>(participant_account_id, buy_now_price, last_bid_time);
+                    // TODO switch to StakingHandler representation after merging with olympia
 
-                        let video = Self::complete_auction(video, video_id);
-                        VideoById::<T>::insert(video_id, video);
+                    // Make auction bid & update auction data
+                    match auction.buy_now_price {
+                        // Instantly complete auction if bid is greater or equal then buy now price
+                        Some(buy_now_price) if bid >= buy_now_price => {
+                            // Reseve balance for current bid
+                            // Can not fail, needed check made
+                            T::Currency::reserve(&participant_account_id, buy_now_price)?;
+                            auction.make_bid(participant_account_id, buy_now_price, last_bid_time);
 
-                        // Trigger event
-                        Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, buy_now_price));
-                    }
-                    _ => {
-                        // Reseve balance for current bid
-                        // Can not fail, needed check made
-                        T::Currency::reserve(&participant_account_id, bid)?;
-                        auction.make_bid::<T>(participant_account_id, bid, last_bid_time);
+                            let video = Self::complete_auction(video, video_id);
+                            VideoById::<T>::insert(video_id, video);
 
-                        VideoById::<T>::insert(video_id, video);
+                            // Trigger event
+                            Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, Some(last_bid)));
+                        }
+                        _ => {
+                            // Reseve balance for current bid
+                            // Can not fail, needed check made
+                            T::Currency::reserve(&participant_account_id, bid)?;
+                            auction.make_bid(participant_account_id, bid, last_bid_time);
 
-                        // Trigger event
-                        Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
-                    }
-                };
+                            VideoById::<T>::insert(video_id, video);
+
+                            // Trigger event
+                            Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
+                        }
+                    };
+                }
             }
         }
 
@@ -1134,12 +1138,12 @@ decl_module! {
                 // Complete auction if round time expired
                 let now = pallet_timestamp::Module::<T>::now();
 
-                if auction.is_nft_auction_round_time_expired(now) {
-                    let last_bid = auction.last_bid;
+                if auction.is_nft_auction_auction_duration_expired(now) {
+                    let last_bid = auction.last_bid.clone();
                     let video = Self::complete_auction(video, video_id);
 
                     // Update the video
-                    VideoById::<T>::insert(video_id, video);
+                    VideoById::<T>::insert(video_id, video.clone());
 
                     // Trigger event
                     Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, last_bid));
@@ -1439,6 +1443,7 @@ decl_event!(
             <T as MembershipTypes>::MemberId,
             BalanceOf<T>
         >,
+        Bid = Option<Bid<<T as frame_system::Trait>::AccountId, <T as pallet_timestamp::Trait>::Moment, BalanceOf<T>>>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1564,7 +1569,7 @@ decl_event!(
         NftIssued(VideoId, NFTStatus),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionCancelled(ContentActor, VideoId),
-        AuctionCompleted(MemberId, VideoId, Balance),
+        AuctionCompleted(MemberId, VideoId, Bid),
         TransferStarted(VideoId, MemberId, MemberId),
         TransferCancelled(VideoId, MemberId),
         TransferAccepted(VideoId, MemberId),

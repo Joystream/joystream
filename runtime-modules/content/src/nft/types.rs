@@ -145,6 +145,25 @@ impl Default for AuctionMode {
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct Bid<AccountId, Moment: BaseArithmetic + Copy, Balance> {
+    pub bidder: AccountId,
+    pub amount: Balance,
+    pub time: Moment,
+}
+
+impl<AccountId, Moment: BaseArithmetic + Copy, Balance> Bid<AccountId, Moment, Balance> {
+    fn new(bidder: AccountId, amount: Balance, time: Moment) -> Self {
+        Self {
+            bidder,
+            amount,
+            time,
+        }
+    }
+}
+
+/// Information on the auction being created.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AuctionRecord<
     AccountId,
     Moment: BaseArithmetic + Copy,
@@ -158,11 +177,9 @@ pub struct AuctionRecord<
     pub auction_mode: AuctionMode,
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
-    pub round_time: Moment,
+    pub auction_duration: Moment,
     pub minimal_bid_step: Balance,
-    pub last_bid_time: Moment,
-    pub last_bid: Balance,
-    pub last_bidder: AccountId,
+    pub last_bid: Option<Bid<AccountId, Moment, Balance>>,
 }
 
 impl<
@@ -182,7 +199,7 @@ impl<
     ) -> Self {
         let AuctionParams {
             auction_mode,
-            round_time,
+            auction_duration,
             starting_price,
             buy_now_price,
             minimal_bid_step,
@@ -194,11 +211,9 @@ impl<
             auction_mode,
             starting_price,
             buy_now_price,
-            round_time,
+            auction_duration,
             minimal_bid_step,
-            last_bid_time: Moment::default(),
-            last_bid: Balance::default(),
-            last_bidder: AccountId::default(),
+            last_bid: None,
         }
     }
 
@@ -208,28 +223,34 @@ impl<
         match &self.buy_now_price {
             Some(buy_now_price) if new_bid >= *buy_now_price => (),
             // Ensure new bid is greater then last bid + minimal bid step
-            _ => ensure!(
-                self.last_bid
-                    .checked_add(&self.minimal_bid_step)
-                    .ok_or(Error::<T>::OverflowOrUnderflowHappened)?
-                    < new_bid,
-                Error::<T>::InvalidBid
-            ),
+            _ => {
+                if let Some(last_bid) = &self.last_bid {
+                    ensure!(
+                        last_bid
+                            .amount
+                            .checked_add(&self.minimal_bid_step)
+                            .ok_or(Error::<T>::OverflowOrUnderflowHappened)?
+                            < new_bid,
+                        Error::<T>::InvalidBid
+                    );
+                } else {
+                    ensure!(self.minimal_bid_step < new_bid, Error::<T>::InvalidBid);
+                }
+            }
         }
 
         Ok(())
     }
 
     /// Make auction bid
-    pub fn make_bid<T: Trait>(&mut self, who: AccountId, bid: Balance, last_bid_time: Moment) {
-        self.last_bidder = who;
-        self.last_bid = bid;
-        self.last_bid_time = last_bid_time;
+    pub fn make_bid(&mut self, who: AccountId, bid: Balance, last_bid_time: Moment) {
+        let bid = Bid::new(who, bid, last_bid_time);
+        self.last_bid = Some(bid);
     }
 
-    // We assume that default AccountId can not make any bids
+    // Check whether auction have any bids
     fn is_active(&self) -> bool {
-        self.last_bidder.eq(&AccountId::default())
+        self.last_bid.is_some()
     }
 
     /// Ensure auction is not active
@@ -251,8 +272,11 @@ impl<
     }
 
     /// Check whether auction round time expired
-    pub fn is_nft_auction_round_time_expired(&self, now: Moment) -> bool {
-        (now - self.last_bid_time) >= self.round_time
+    pub fn is_nft_auction_auction_duration_expired(&self, now: Moment) -> bool {
+        match &self.last_bid {
+            Some(last_bid) => (now - last_bid.time) >= self.auction_duration,
+            _ => false,
+        }
     }
 }
 
@@ -272,7 +296,7 @@ pub type Auction<T> = AuctionRecord<
 pub struct AuctionParams<VideoId, Moment, Balance> {
     pub video_id: VideoId,
     pub auction_mode: AuctionMode,
-    pub round_time: Moment,
+    pub auction_duration: Moment,
     pub starting_price: Balance,
     pub minimal_bid_step: Balance,
     pub buy_now_price: Option<Balance>,
