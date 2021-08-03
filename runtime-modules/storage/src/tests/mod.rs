@@ -4810,7 +4810,7 @@ fn accept_distribution_bucket_operator_invite_fails_with_invalid_distribution_bu
 }
 
 #[test]
-fn set_distribution_operator_metadata_invite_succeeded() {
+fn set_distribution_operator_metadata_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5048,7 +5048,7 @@ fn remove_distribution_bucket_operator_fails_with_non_accepted_distribution_prov
 }
 
 #[test]
-fn set_distribution_bucket_family_metadata_invite_succeeded() {
+fn set_distribution_bucket_family_metadata_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
