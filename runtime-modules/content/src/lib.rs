@@ -1682,14 +1682,29 @@ decl_module! {
 
             // Update post parameters
             let mut post = post;
+            let mut thread = thread;
 
             // Maybe update text hash
             if let Some(new_text) = &params.text {
                 let new_text_hash = T::compute_hash(&new_text);
                 post.text_hash = new_text_hash;
 
-               // update price
+                // update bloat bond for post
+                let old_bond = post.bloat_bond;
+                let new_bond = Self::compute_bloat_bond(new_text.len(), T::PostCleanupCost::get());
+                post.bloat_bond = new_bond;
 
+                // update bloat bond for thread
+                let thread_size_bond = thread.bloat_bond
+                    .saturating_sub(old_bond)
+                    .saturating_add(new_bond);
+                let thread_cleanup_bond = T::ThreadCleanupCost::get() + T::PostCleanupCost::get() + T::CleanupMargin::get();
+                    thread.bloat_bond = min(
+                        max(thread_size_bond, thread_cleanup_bond),
+                        <T as balances::Trait>::Balance::from(
+                    <T::MapLimits as SubredditLimits>::BloatBondCap::get(),
+                        ),
+                    );
             }
 
             // Maybe update post mutability
@@ -1886,6 +1901,10 @@ decl_module! {
         let mut thread = thread;
         thread.archived = true;
         <ThreadById<T>>::insert(thread_id, thread);
+        Self::deposit_event(
+                RawEvent::ThreadArchived(thread_id, actor, channel_id)
+            );
+
         Ok(())
         }
     }
@@ -2402,5 +2421,6 @@ decl_event!(
         PostModerated(PostId, ContentActor, ThreadId, ChannelId),
         PostReacted(PostId, MemberId, ThreadId, ReactionId, ChannelId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
+        ThreadArchived(ThreadId, ContentActor, ChannelId),
     }
 );
