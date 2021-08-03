@@ -675,10 +675,10 @@ decl_storage! {
         hasher(blake2_128_concat) T::PostId => Post<T>;
 
         /// Moderator set for each Subreddit
-        pub ModeratorSetForSubreddit get(fn category_by_moderator) config(): double_map
+        pub ModeratorSetForSubreddit get(fn moderator_set_for_subreddit): double_map
             hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) T::MemberId => ();
         /// Number of subreddit moderators
-        pub NumberOfSubredditModerators get(fn number_of_subreddit_moderator) config(): u64;
+        pub NumberOfSubredditModerators get(fn number_of_subreddit_moderators) config(): u64;
 
     }
 }
