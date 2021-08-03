@@ -43,6 +43,7 @@ export type DataObjectDetailsFragment = {
 
 export type GetDataObjectDetailsQueryVariables = Types.Exact<{
   bagIds?: Types.Maybe<Types.StorageBagWhereInput>
+  limit?: Types.Maybe<Types.Scalars['Int']>
 }>
 
 export type GetDataObjectDetailsQuery = {
@@ -104,8 +105,8 @@ export const GetStorageBagDetails = gql`
   ${StorageBagDetails}
 `
 export const GetDataObjectDetails = gql`
-  query getDataObjectDetails($bagIds: StorageBagWhereInput) {
-    storageDataObjects(where: { storageBag: $bagIds }) {
+  query getDataObjectDetails($bagIds: StorageBagWhereInput, $limit: Int) {
+    storageDataObjects(limit: $limit, where: { storageBag: $bagIds }) {
       ...DataObjectDetails
     }
   }
