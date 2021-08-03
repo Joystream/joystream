@@ -142,7 +142,7 @@ impl<T: Trait> Module<T> {
         video: &mut Video<T>,
         video_id: T::VideoId,
         owner: T::AccountId,
-        creator_royalty: Option<(T::AccountId, Royalty)>,
+        creator_royalty: Option<Royalty>,
     ) {
         video.nft_status = NFTStatus::Owned(OwnedNFT {
             owner,

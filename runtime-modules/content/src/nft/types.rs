@@ -22,7 +22,7 @@ pub enum TransactionalStatus<
     Balance,
 > {
     Idle,
-    PendingTransferTo(MemberId),
+    InitiatedTransferToMember(MemberId),
     Auction(AuctionRecord<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>),
 }
 
@@ -80,7 +80,7 @@ pub struct OwnedNFT<
     pub owner: AccountId,
     pub transactional_status:
         TransactionalStatus<AccountId, Moment, CuratorGroupId, CuratorId, MemberId, Balance>,
-    pub creator_royalty: Option<(AccountId, Royalty)>,
+    pub creator_royalty: Option<Royalty>,
 }
 
 impl<

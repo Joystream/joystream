@@ -1210,7 +1210,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Set nft transactional status to PendingTransferTo
+            // Set nft transactional status to InitiatedTransferToMember
             video.set_pending_transfer_transactional_status(to);
 
             // Trigger event
@@ -1266,7 +1266,7 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure nft transactional status is set to PendingTransferTo
+            // Ensure nft transactional status is set to InitiatedTransferToMember
             video.ensure_pending_transfer_exists::<T>()?;
 
             // Ensure new pending transfer available to proceed

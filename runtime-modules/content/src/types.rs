@@ -381,7 +381,7 @@ impl<
     /// Completes vnft transfer
     pub fn complete_vnft_transfer(mut self, new_owner: AccountId) -> Self {
         if let NFTStatus::Owned(OwnedNFT {
-            transactional_status: TransactionalStatus::PendingTransferTo(..),
+            transactional_status: TransactionalStatus::InitiatedTransferToMember(..),
             ref mut owner,
             ..
         }) = self.nft_status
@@ -399,10 +399,10 @@ impl<
         self
     }
 
-    /// Set nft transactional status to `PendingTransferTo`
+    /// Set nft transactional status to `InitiatedTransferToMember`
     pub fn set_pending_transfer_transactional_status(mut self, to: MemberId) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status = TransactionalStatus::PendingTransferTo(to);
+            owned_nft.transactional_status = TransactionalStatus::InitiatedTransferToMember(to);
         }
         self
     }
@@ -412,7 +412,7 @@ impl<
         matches!(
             self.nft_status,
             NFTStatus::Owned(OwnedNFT {
-                transactional_status: TransactionalStatus::PendingTransferTo(..),
+                transactional_status: TransactionalStatus::InitiatedTransferToMember(..),
                 ..
             })
         )
@@ -435,7 +435,7 @@ impl<
         let is_available = matches!(
             self.nft_status,
             NFTStatus::Owned(OwnedNFT {
-                transactional_status: TransactionalStatus::PendingTransferTo(to),
+                transactional_status: TransactionalStatus::InitiatedTransferToMember(to),
                 ..
             }) if participant == to
         );
