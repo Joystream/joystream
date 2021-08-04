@@ -36,6 +36,9 @@ pub const UNKNOWN_ORIGIN: u64 = 7777;
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
 
+// initial money endowed to an account
+pub const INITIAL_ENDOW: u64 = 100;
+
 /// Runtime Id's
 
 pub const FIRST_CURATOR_ID: CuratorId = 1;

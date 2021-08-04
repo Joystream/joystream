@@ -5,6 +5,147 @@ use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
+fn create_channel_mock(
+    origin: Origin,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    params: ChannelCreationParameters<
+        ContentParameters<Test>,
+        <Test as frame_system::Trait>::AccountId,
+    >,
+    result: DispatchResult,
+) {
+    let channel_id = Content::next_channel_id();
+
+    assert_eq!(
+        Content::create_channel(origin.clone(), actor.clone(), params.clone()),
+        result
+    );
+
+    if result.is_ok() {
+        assert!(ChannelById::<Test>::contains_key(channel_id));
+        let channel = Content::channel_by_id(channel_id);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelCreated(actor, channel_id, channel, params,))
+        );
+    }
+}
+
+fn create_thread_mock(
+    origin: Origin,
+    member_id: MemberId,
+    params: ThreadCreationParameters<ChannelId>,
+    result: DispatchResult,
+) -> <Test as Trait>::ThreadId {
+    let thread_id = Content::next_thread_id();
+
+    assert_eq!(
+        Content::create_thread(origin.clone(), member_id.clone(), params.clone()),
+        result
+    );
+
+    if result.is_ok() {
+        assert!(ChannelById::<Test>::contains_key(thread_id));
+        let channel = Content::channel_by_id(thread_id);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ThreadCreated(thread_id, member_id, params))
+        );
+        assert_eq!(Content::next_thread_id(), thread_id + 1);
+    }
+    thread_id
+}
+
+fn delete_thread_mock(
+    origin: Origin,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    thread_id: <Test as Trait>::ThreadId,
+    result: DispatchResult,
+) -> <Test as Trait>::ThreadId {
+    assert_eq!(
+        Content::delete_thread(origin.clone(), actor.clone(), thread_id.clone()),
+        result
+    );
+
+    if result.is_ok() {
+        assert!(ChannelById::<Test>::contains_key(thread_id));
+        let channel = Content::channel_by_id(thread_id);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ThreadDeleted(thread_id, actor))
+        );
+    }
+    thread_id
+}
+
+fn create_post_mock(
+    origin: Origin,
+    member_id: MemberId,
+    params: PostCreationParameters<<Test as Trait>::ThreadId>,
+    result: DispatchResult,
+) -> <Test as Trait>::PostId {
+    let post_id = Content::next_post_id();
+    let thread = Content::thread_by_id(params.thread_id.clone());
+    assert_eq!(
+        Content::create_post(origin.clone(), member_id.clone(), params.clone(),),
+        result
+    );
+
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostAdded(
+                post_id,
+                FIRST_MEMBER_ID,
+                params.clone(),
+            ))
+        );
+
+        // 2. post counter for thread increased by 1
+        assert_eq!(
+            Content::thread_by_id(params.thread_id).number_of_posts - thread.number_of_posts,
+            1,
+        );
+    }
+    post_id
+}
+
+fn delete_post_mock(
+    origin: Origin,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    thread_id: <Test as Trait>::ThreadId,
+    post_id: <Test as Trait>::PostId,
+    result: DispatchResult,
+) {
+    let mut balance_before = 0;
+    if let ContentActor::Member(member) = actor {
+        let balance_before = balances::Module::<Test>::free_balance(member);
+    }
+
+    let bond = Content::post_by_id(thread_id.clone(), post_id.clone()).bloat_bond;
+
+    assert_ok!(Content::delete_post(
+        origin.clone(),
+        actor.clone(),
+        thread_id.clone(),
+        post_id.clone(),
+    ));
+
+    if result.is_ok() {
+        // 1. Deposit event
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostDeleted(post_id, actor, thread_id))
+        );
+
+        // 2. Post Author is refunded
+        if let ContentActor::Member(member) = actor {
+            let balance_after = balances::Module::<Test>::free_balance(member);
+            assert_eq!(balance_after - balance_before, bond);
+        }
+    }
+}
+
 struct TestScenario {
     channel: Option<(<Test as StorageOwnership>::ChannelId, Channel<Test>)>,
     thread: Option<(<Test as Trait>::ThreadId, Thread<Test>)>,
@@ -23,13 +164,16 @@ fn get_thread(s: &TestScenario) -> Thread<Test> {
 fn get_post_id(s: &TestScenario) -> <Test as Trait>::PostId {
     s.post.clone().unwrap().0
 }
+fn get_post(s: &TestScenario) -> Post<Test> {
+    s.post.clone().unwrap().1
+}
 
 fn helper_setup_basic_scenario() -> TestScenario {
     let channel_id = Content::next_channel_id();
 
     assert_ok!(Content::create_channel(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        ContentActor::Member(FIRST_MEMBER_ID),
+        Origin::signed(SECOND_MEMBER_ORIGIN),
+        ContentActor::Member(SECOND_MEMBER_ID),
         ChannelCreationParameters {
             assets: vec![],
             meta: vec![],
@@ -97,10 +241,12 @@ fn verify_create_thread_effects() {
             channel_id: channel_id,
         };
 
+        // replenish the free balance of member 1
+        let _ = balances::Module::<Test>::deposit_creating(&FIRST_MEMBER_ORIGIN, INITIAL_ENDOW);
         assert_ok!(Content::create_thread(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             FIRST_MEMBER_ID,
-            params,
+            params.clone(),
         ));
 
         let thread = Content::thread_by_id(thread_id);
@@ -108,12 +254,7 @@ fn verify_create_thread_effects() {
         // 1. Appropriate event is deposited
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ThreadCreated(
-                thread_id,
-                thread.author_id,
-                thread.title_hash,
-                channel_id,
-            ))
+            MetaEvent::content(RawEvent::ThreadCreated(thread_id, thread.author_id, params,))
         );
     })
 }
@@ -129,6 +270,12 @@ fn helper_setup_scenario_with_thread() -> TestScenario {
         post_mutable: true,
         channel_id: channel_id,
     };
+
+    // assign initial balances to member
+    let _ = balances::Module::<Test>::deposit_creating(
+        &FIRST_MEMBER_ORIGIN,
+        <Test as balances::Trait>::Balance::from(INITIAL_ENDOW),
+    );
 
     assert_ok!(Content::create_thread(
         Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -146,7 +293,6 @@ fn helper_setup_scenario_with_thread() -> TestScenario {
 #[test]
 fn cannot_delete_invalid_thread() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_thread();
         assert_err!(
             Content::delete_thread(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -171,7 +317,7 @@ fn non_author_or_invalid_member_cannot_delete_thread() {
                 ContentActor::Member(SECOND_MEMBER_ID),
                 thread_id,
             ),
-            Error::<Test>::AccountDoesNotMatchThreadAuthor,
+            Error::<Test>::ActorNotAuthorized,
         );
 
         // invalid account signer cannot be authorized
@@ -207,7 +353,6 @@ fn verify_delete_thread_effects() {
             MetaEvent::content(RawEvent::ThreadDeleted(
                 thread_id,
                 ContentActor::Member(FIRST_MEMBER_ID),
-                channel_id,
             ))
         );
     })
@@ -297,13 +442,7 @@ fn verify_create_post_effects() {
         // 1. event deposited
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::PostAdded(
-                post_id,
-                FIRST_MEMBER_ID,
-                thread_id,
-                Test::compute_hash(&params.text.encode()),
-                thread.channel_id,
-            ))
+            MetaEvent::content(RawEvent::PostAdded(post_id, FIRST_MEMBER_ID, params))
         );
 
         // 2. post counter for thread increased by 1
@@ -385,7 +524,7 @@ fn cannot_edit_invalid_post() {
                 post_id,
                 params.clone(),
             ),
-            Error::<Test>::PostDoesNotExist,
+            Error::<Test>::ThreadDoesNotExist,
         );
     })
 }
@@ -441,18 +580,18 @@ fn non_author_or_invalid_member_cannot_delete_post() {
                 thread_id,
                 post_id,
             ),
-            Error::<Test>::AccountDoesNotMatchPostAuthor,
+            Error::<Test>::ActorNotAuthorized,
         );
 
-        // invalid member
+        // invalid member: (maybe change this error type?)
         assert_err!(
             Content::delete_post(
                 Origin::signed(UNKNOWN_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
+                ContentActor::Member(NOT_FORUM_MEMBER_ID),
                 thread_id,
                 post_id,
             ),
-            Error::<Test>::MemberAuthFailed,
+            Error::<Test>::ActorNotAuthorized,
         );
     })
 }
@@ -465,16 +604,6 @@ fn cannot_delete_invalid_post() {
         let post_id = get_post_id(&scenario);
 
         // invalid combination of thread post category
-        assert_err!(
-            Content::delete_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                thread_id,
-                post_id,
-            ),
-            Error::<Test>::ThreadDoesNotExist,
-        );
-
         assert_err!(
             Content::delete_post(
                 Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -498,7 +627,7 @@ fn cannot_delete_invalid_post() {
 }
 
 #[test]
-fn verify_delete_effects() {
+fn verify_delete_post_effects_with_author() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -506,7 +635,9 @@ fn verify_delete_effects() {
         let thread_id = get_thread_id(&scenario);
         let post_id = get_post_id(&scenario);
         let channel_id = get_channel_id(&scenario);
+        let post = get_post(&scenario);
 
+        let balance_before = balances::Module::<Test>::free_balance(FIRST_MEMBER_ORIGIN);
         assert_ok!(Content::delete_post(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
@@ -521,9 +652,12 @@ fn verify_delete_effects() {
                 post_id,
                 ContentActor::Member(FIRST_MEMBER_ID),
                 thread_id,
-                channel_id,
             ))
         );
+
+        // 2. Post Author refunded
+        let balance_after = balances::Module::<Test>::free_balance(FIRST_MEMBER_ORIGIN);
+        assert_eq!(balance_after - balance_before, post.bloat_bond);
     })
 }
 
@@ -558,41 +692,6 @@ fn invalid_forum_user_cannot_react_post() {
                 get_channel_id(&scenario),
             ),
             Error::<Test>::MemberAuthFailed,
-        );
-    })
-}
-
-#[test]
-fn cannot_react_to_invalid_post() {
-    with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
-
-        // invalid combination of thread post
-        assert_err!(
-            Content::react_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                FIRST_MEMBER_ID,
-                thread_id,
-                INVALID_POST,
-                <Test as Trait>::ReactionId::from(1u64),
-                get_channel_id(&scenario),
-            ),
-            Error::<Test>::PostDoesNotExist,
-        );
-
-        // invalid combination of thread post
-        assert_err!(
-            Content::react_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                FIRST_MEMBER_ID,
-                INVALID_THREAD,
-                post_id,
-                <Test as Trait>::ReactionId::from(1u64),
-                get_channel_id(&scenario),
-            ),
-            Error::<Test>::PostDoesNotExist,
         );
     })
 }

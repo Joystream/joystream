@@ -1467,11 +1467,8 @@ decl_module! {
 
             // ensure valid channel && thread can be added to subreddit
             let channel = Self::ensure_channel_exists(&params.channel_id)?;
-            Self::ensure_subreddit_is_mutable(&channel)?;
+         Self::ensure_subreddit_is_mutable(&channel)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
@@ -1481,13 +1478,10 @@ decl_module! {
                 params.post_text.len().saturating_add(params.title.len()),
                 T::PostCleanupCost::get() + T::ThreadCleanupCost::get()
             );
-
             let first_post_init_bloat_bond = Self::compute_bloat_bond(
                 params.post_text.len(),
                 T::PostCleanupCost::get()
             );
-
-
 
             Self::transfer_to_state_cleanup_treasury_account(
                 thread_init_bloat_bond,
@@ -1496,7 +1490,13 @@ decl_module! {
             )?;
 
             let title_hash = T::compute_hash(&params.title.encode());
-            let text_hash = T::compute_hash(&params.post_text.encode());
+         let text_hash = T::compute_hash(&params.post_text.encode());
+
+
+            //
+            // == MUTATION SAFE ==
+            //
+
 
             // Build a new thread
             let new_thread = Thread_ {
@@ -1531,8 +1531,7 @@ decl_module! {
                 RawEvent::ThreadCreated(
                     new_thread_id,
                     member_id,
-                    title_hash,
-                    params.channel_id,
+                    params,
                 )
             );
 
@@ -1576,7 +1575,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ThreadDeleted(
                 thread_id,
                 actor,
-                channel_id,
               ));
 
             Ok(())
@@ -1632,9 +1630,7 @@ decl_module! {
             RawEvent::PostAdded(
                 post_id,
                 member_id,
-                thread_id,
-                text_hash,
-                thread.channel_id,
+                params,
             ));
 
         Ok(())
@@ -1732,21 +1728,27 @@ decl_module! {
 
         let account_id = ensure_signed(origin)?;
 
+        let _thread = Self::ensure_thread_exists(&thread_id)?;
+
         let post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
         // obtain channel
         let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
         // if actor is channel owner bond is burned
-    if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
-       Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
+        if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
+           Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
            let _ = balances::Module::<T>::burn(post.bloat_bond);
-       }
+           }
 
-    // if actor is author bond is returned
-    if Self::actor_is_post_author(&account_id, &actor, &post, &channel_id) {
-        let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
-    }
+       println!("HA");
+
+       // if actor is author bond is returned
+       if Self::actor_is_post_author(&account_id, &actor, &post) {
+           let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
+       } else {
+           return Err(Error::<T>::ActorNotAuthorized.into());
+       }
 
         //
         // == MUTATION SAFE ==
@@ -1758,7 +1760,6 @@ decl_module! {
             post_id,
             actor,
             thread_id,
-            channel_id,
         ));
 
         Ok(())
@@ -2086,12 +2087,11 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         post: &Post<T>,
-        channel_id: &T::ChannelId,
     ) -> bool {
         match actor {
             ContentActor::Member(member_id) => {
-                <ModeratorSetForSubreddit<T>>::contains_key(channel_id, member_id)
-                    && post.author_id == *member_id
+                println!("HAHA");
+                post.author_id == *member_id
                     && ensure_member_auth_success::<T>(member_id, account_id).is_ok()
             }
             _ => false,
@@ -2288,12 +2288,13 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
-        Hash = <T as frame_system::Trait>::Hash,
         ThreadId = <T as Trait>::ThreadId,
         PostId = <T as Trait>::PostId,
         ReactionId = <T as Trait>::ReactionId,
         PostUpdateParameters = PostUpdateParameters,
         MemberId = <T as MembershipTypes>::MemberId,
+        ThreadCreationParameters = ThreadCreationParameters<<T as StorageOwnership>::ChannelId>,
+        PostCreationParameters = PostCreationParameters<<T as Trait>::ThreadId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2413,11 +2414,11 @@ decl_event!(
             PersonUpdateParameters<ContentParameters>,
         ),
         PersonDeleted(ContentActor, PersonId),
-        ThreadCreated(ThreadId, MemberId, Hash, ChannelId),
-        ThreadDeleted(ThreadId, ContentActor, ChannelId),
-        PostAdded(PostId, MemberId, ThreadId, Hash, ChannelId),
+        ThreadCreated(ThreadId, MemberId, ThreadCreationParameters),
+        ThreadDeleted(ThreadId, ContentActor),
+        PostAdded(PostId, MemberId, PostCreationParameters),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
-        PostDeleted(PostId, ContentActor, ThreadId, ChannelId),
+        PostDeleted(PostId, ContentActor, ThreadId),
         PostModerated(PostId, ContentActor, ThreadId, ChannelId),
         PostReacted(PostId, MemberId, ThreadId, ReactionId, ChannelId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
