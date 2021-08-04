@@ -4,125 +4,272 @@ const { RuntimeApi } = require('@joystream/storage-runtime-api')
 const { encodeAddress } = require('@polkadot/keyring')
 const axios = require('axios')
 const stripEndingSlash = require('@joystream/storage-utils/stripEndingSlash')
+const cliProgress = require('cli-progress')
+const meow = require('meow')
+const _ = require('lodash')
+const fs = require('fs')
+
+const debug = console.error.bind(console)
 
 function makeAssetUrl(contentId, source) {
   source = stripEndingSlash(source)
-  return `${source}/asset/v0/${encodeAddress(contentId)}`
+  return `${source}/asset/v0/${contentId}`
 }
 
 // HTTP HEAD with axios all known content ids on given endpoint
-async function countContentAvailability(providerId, endpoint, contentIds) {
+async function countContentAvailability(providerId, endpoint, contentIds, multibar) {
   let found = 0
-  let errored = 0
+  // Array of content ids which failed to be fetched
+  const failed = []
+  let failures = 0
   let requestsSent = 0
+  let notFound = 0
+  let internalError = 0
+
+  const progressBar = multibar.create(
+    {
+      clearOnComplete: true,
+    },
+    cliProgress.Presets.shades_classic
+  )
+  progressBar.start(contentIds.length, 0)
+
   // Avoid opening too many connections, do it in chunks.. otherwise we get
   // "Client network socket disconnected before secure TLS connection was established" errors
   while (contentIds.length) {
-    const chunk = contentIds.splice(0, 100)
-    requestsSent += chunk.length
-    const results = await Promise.allSettled(chunk.map((id) => axios.head(makeAssetUrl(id, endpoint))))
+    const ids = contentIds.splice(0, 100)
+    requestsSent += ids.length
+    progressBar.update(requestsSent, { providerId, failures })
+    const results = await Promise.allSettled(ids.map((id) => axios.head(makeAssetUrl(id, endpoint))))
 
-    results.forEach((result, _ix) => {
+    results.forEach((result, i) => {
       if (result.status === 'rejected') {
-        errored++
+        try {
+          const statusCode = result.reason.response.status
+          if (statusCode >= 400 && statusCode < 500) {
+            notFound++
+          }
+          if (statusCode >= 500 && statusCode < 600) {
+            internalError++
+          }
+        } catch (_err) {
+          // couldn't get failure status code
+        }
+        failed.push(ids[i])
+        failures++
       } else {
         found++
       }
     })
-
-    // show some progress
-    console.error(`provider: ${providerId}:`, `total checks: ${requestsSent}`, `ok: ${found}`, `errors: ${errored}`)
   }
 
-  return { found, errored }
+  progressBar.stop()
+  return { found, failed, failures, notFound, internalError }
 }
 
-async function testProviderHasAssets(providerId, endpoint, contentIds) {
+async function testProviderHasAssets(providerId, endpoint, contentIds, multibar) {
   const total = contentIds.length
   const startedAt = Date.now()
-  const { found, errored } = await countContentAvailability(providerId, endpoint, contentIds)
+  const { found, failed, failures, notFound, internalError } = await countContentAvailability(
+    providerId,
+    endpoint,
+    contentIds,
+    multibar
+  )
   const completedAt = Date.now()
-  console.log(`
-    ---------------------------------------
-    Final Result for provider ${providerId}
-    url: ${endpoint}
-    fetched: ${found}/${total}
-    failed: ${errored}
-    check took: ${(completedAt - startedAt) / 1000}s
-    ------------------------------------------
-  `)
+  return {
+    summary: {
+      providerId,
+      publicUrl: endpoint,
+      checked: total,
+      found,
+      successRate: (found / total) * 100,
+      failures,
+      notFound,
+      internalError,
+      duration: (completedAt - startedAt) / 1000,
+    },
+    failed,
+  }
 }
 
-async function main() {
+async function fetchProviders() {
+  debug('Connecting to chain')
   const runtime = await RuntimeApi.create()
   const { api } = runtime
 
-  // get all providers
+  debug('Fetching providers')
   const { ids: storageProviders } = await runtime.workers.getAllProviders()
-  console.log(`Found ${storageProviders.length} staked providers`)
+  debug(`Found ${storageProviders.length} staked providers`)
 
   // Resolve Endpoints of providers
-  console.log('\nResolving live provider API Endpoints...')
-  const endpoints = await Promise.all(
+  debug('Resolving Provider API Endpoints')
+  const providers = await Promise.all(
     storageProviders.map(async (providerId) => {
       try {
         const endpoint = (await runtime.workers.getWorkerStorageValue(providerId)).toString()
+        if (!endpoint) {
+          debug(`${providerId}:`, 'Empty public Url')
+        }
         return { providerId, endpoint }
       } catch (err) {
-        console.log('resolve failed for id', providerId, err.message)
+        debug('Resolve failed for id', providerId, err.message)
         return { providerId, endpoint: null }
       }
     })
   )
 
-  console.log('\nChecking API Endpoints are online')
-  await Promise.all(
-    endpoints.map(async (provider) => {
+  // We no longer need a connection to the chain
+  await api.disconnect()
+
+  return providers
+}
+
+async function testEndpoints(providers) {
+  debug('Testing Provider API Endpoints')
+  return Promise.all(
+    providers.map(async (provider) => {
       if (!provider.endpoint) {
-        console.log(provider.providerId, 'No url set, skipping')
         return
       }
       const swaggerUrl = `${stripEndingSlash(provider.endpoint)}/swagger.json`
       try {
         const { data } = await axios.get(swaggerUrl)
-        console.log(
-          `${provider.providerId}:`,
-          `${provider.endpoint}`,
-          '- OK -',
-          `storage node version ${data.info.version}`
-        )
+        debug(`${provider.providerId}:`, `${provider.endpoint}`, '- OK -', `API version ${data.info.version}`)
       } catch (err) {
-        console.log(`${provider.providerId}`, `${provider.endpoint} - ${err.message}`)
+        debug(`${provider.providerId}:`, `${provider.endpoint}`, '- FAILED -', `${err.message}`)
       }
     })
   )
+}
 
-  // Load data objects
+async function fetchContentIds() {
+  debug('Connecting to chain')
+  const runtime = await RuntimeApi.create()
+  const { api } = runtime
+
+  debug('Fetching Data Directory objects')
   await runtime.assets.fetchDataObjects()
+  debug('Fetched')
 
   const allContentIds = await runtime.assets.getKnownContentIds()
+  debug(allContentIds.length, 'created')
+
   const acceptedContentIds = runtime.assets.getAcceptedContentIds()
+  debug(acceptedContentIds.length, 'accepted')
+
   const ipfsHashes = runtime.assets.getAcceptedIpfsHashes()
+  debug(ipfsHashes.length, 'unique accepted hashes')
 
-  console.log('\nData Directory objects:')
-  console.log(allContentIds.length, 'created')
-  console.log(acceptedContentIds.length, 'accepted')
-  console.log(ipfsHashes.length, 'unique accepted hashes')
+  await api.disconnect()
 
-  // We no longer need a connection to the chain
-  api.disconnect()
+  return acceptedContentIds
+}
 
-  console.log(`
-    Checking available assets on providers (this can take some time)
-    This is done by sending HEAD requests for all 'Accepted' assets.
-  `)
+async function main() {
+  const cli = meow(`
+  Helios - Storage Node diagnostics
 
-  endpoints.forEach(async ({ providerId, endpoint }) => {
-    if (!endpoint) {
-      return
-    }
-    return testProviderHasAssets(providerId, endpoint, acceptedContentIds.slice())
-  })
+  Usage:
+    $ helios [arguments]
+
+  Arguments (optional)
+    --endpoint URL            Test only one specific colossus API endpoint (does not have to be an active worker).
+                              When not specified all online storage providers will be tested.
+    --limit-assets  N         Limit tests to N assets.
+    --detailed                Includes list of failed assets in output report.
+    --assets                  Path to a JSON file containing array of ContentIds to test.
+                              When not specified all 'Accepted' content will be tested.
+    --dump-assets             Dumps list of assets (content ids) which will be tested.
+`)
+
+  let providers = []
+
+  if (cli.flags.endpoint) {
+    providers.push({
+      endpoint: cli.flags.endpoint,
+      providerId: null,
+    })
+  } else {
+    providers = await fetchProviders()
+  }
+
+  await testEndpoints(providers)
+
+  let contentIds = []
+
+  // Load data objects from chain or from a file
+  if (cli.flags.assets) {
+    const file = cli.flags.assets
+    contentIds = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+  } else {
+    contentIds = await fetchContentIds()
+  }
+
+  // limit number of assets to test ?
+  const limit = cli.flags.limitAssets
+  let contentToTest
+  if (limit) {
+    contentToTest = contentIds.slice(0, limit)
+  } else {
+    contentToTest = contentIds
+  }
+
+  contentToTest = contentToTest.map((id) => encodeAddress(id))
+
+  if (cli.flags.dumpAssets) {
+    debug('Testing Assets:')
+    debug(JSON.stringify(contentToTest, null, '  '))
+  }
+
+  const multibar = new cliProgress.MultiBar(
+    {
+      clearOnComplete: true,
+      hideCursor: true,
+      autopadding: true,
+      forceRedraw: true,
+      fps: 5,
+      format: '- {bar} | {percentage}% | ETA: {eta}s | {value}/{total} | Failures: {failures} | Id: {providerId}',
+    },
+    cliProgress.Presets.shades_grey
+  )
+
+  let reports = []
+
+  if (cli.flags.endpoint) {
+    const endpoint = cli.flags.endpoint
+    debug('Checking available assets on', endpoint)
+    reports = [await testProviderHasAssets(null, endpoint, contentToTest, multibar)]
+  } else {
+    debug('Checking available assets on live providers')
+    reports = (
+      await Promise.all(
+        providers.map(async ({ providerId, endpoint }) => {
+          if (!endpoint) {
+            return null
+          }
+          return testProviderHasAssets(providerId, endpoint, contentToTest.slice(), multibar)
+        })
+      )
+    ).filter((report) => report !== null)
+  }
+
+  multibar.stop()
+
+  const finalReport = {}
+
+  if (cli.flags.detailed) {
+    finalReport.providers = reports
+  } else {
+    finalReport.providers = reports.map((report) => report.summary)
+  }
+
+  // Assets that appear to be missing on all providers
+  if (cli.flags.detailed) {
+    finalReport.commonFailed = _.intersection(...reports.map((report) => report.failed))
+  }
+
+  console.log(JSON.stringify(finalReport, null, '  '))
 }
 
 main()

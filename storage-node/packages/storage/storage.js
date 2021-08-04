@@ -441,7 +441,7 @@ class Storage {
     let checks = 0
     while (pinset.length) {
       if (checks % 50 === 0) {
-        debug('scanned', checks, 'items')
+        debug('scanned', checks, 'objects')
         await sleep(50)
       }
       checks++

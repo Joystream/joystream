@@ -151,8 +151,19 @@ class AssetsApi {
    * Returns array of all the content ids in storage
    */
   async getKnownContentIds() {
-    const keys = await this.base.api.query.dataDirectory.dataByContentId.keys()
-    return keys.map(({ args: [contentId] }) => contentId)
+    if (!this._cachedEntries) {
+      return []
+    }
+
+    // const keys = await this.base.api.query.dataDirectory.dataByContentId.keys()
+    // return keys.map(({ args: [contentId] }) => contentId)
+    return this._cachedEntries.map(
+      ([
+        {
+          args: [contentId],
+        },
+      ]) => contentId
+    )
   }
 
   /*
