@@ -1791,7 +1791,7 @@ decl_module! {
             //
 
             Self::deposit_event(
-                RawEvent::PostReacted(post_id, member_id, thread_id, react, channel_id)
+                RawEvent::PostReacted(post_id, member_id, thread_id, react)
             );
 
             Ok(())
@@ -2420,7 +2420,7 @@ decl_event!(
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, ContentActor, ThreadId),
         PostModerated(PostId, ContentActor, ThreadId, ChannelId),
-        PostReacted(PostId, MemberId, ThreadId, ReactionId, ChannelId),
+        PostReacted(PostId, MemberId, ThreadId, ReactionId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
         ThreadArchived(ThreadId, ContentActor, ChannelId),
     }

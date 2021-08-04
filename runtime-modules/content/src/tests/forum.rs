@@ -3,8 +3,15 @@
 //use super::curators;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::assert_err;
 
+fn func(account_id: <Test as frame_system::Trait>::AccountId) {
+    run_to_block(1);
+    let _ = balances::Module::<Test>::deposit_creating(
+        &account_id,
+        <Test as balances::Trait>::Balance::from(INITIAL_ENDOW),
+    );
+}
 fn create_channel_mock(
     origin: Origin,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -13,7 +20,7 @@ fn create_channel_mock(
         <Test as frame_system::Trait>::AccountId,
     >,
     result: DispatchResult,
-) {
+) -> <Test as StorageOwnership>::ChannelId {
     let channel_id = Content::next_channel_id();
 
     assert_eq!(
@@ -29,6 +36,7 @@ fn create_channel_mock(
             MetaEvent::content(RawEvent::ChannelCreated(actor, channel_id, channel, params,))
         );
     }
+    channel_id
 }
 
 fn create_thread_mock(
@@ -46,7 +54,6 @@ fn create_thread_mock(
 
     if result.is_ok() {
         assert!(ChannelById::<Test>::contains_key(thread_id));
-        let channel = Content::channel_by_id(thread_id);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ThreadCreated(thread_id, member_id, params))
@@ -69,7 +76,6 @@ fn delete_thread_mock(
 
     if result.is_ok() {
         assert!(ChannelById::<Test>::contains_key(thread_id));
-        let channel = Content::channel_by_id(thread_id);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ThreadDeleted(thread_id, actor))
@@ -119,17 +125,20 @@ fn delete_post_mock(
 ) {
     let mut balance_before = 0;
     if let ContentActor::Member(member) = actor {
-        let balance_before = balances::Module::<Test>::free_balance(member);
+        balance_before = balances::Module::<Test>::free_balance(member);
     }
 
     let bond = Content::post_by_id(thread_id.clone(), post_id.clone()).bloat_bond;
 
-    assert_ok!(Content::delete_post(
-        origin.clone(),
-        actor.clone(),
-        thread_id.clone(),
-        post_id.clone(),
-    ));
+    assert_eq!(
+        Content::delete_post(
+            origin.clone(),
+            actor.clone(),
+            thread_id.clone(),
+            post_id.clone(),
+        ),
+        result
+    );
 
     if result.is_ok() {
         // 1. Deposit event
@@ -146,63 +155,94 @@ fn delete_post_mock(
     }
 }
 
-struct TestScenario {
-    channel: Option<(<Test as StorageOwnership>::ChannelId, Channel<Test>)>,
-    thread: Option<(<Test as Trait>::ThreadId, Thread<Test>)>,
-    post: Option<(<Test as Trait>::PostId, Post<Test>)>,
+fn edit_post_mock(
+    origin: Origin,
+    member_id: MemberId,
+    thread_id: <Test as Trait>::ThreadId,
+    post_id: <Test as Trait>::PostId,
+    params: PostUpdateParameters,
+    result: DispatchResult,
+) {
+    assert_eq!(
+        Content::edit_post(
+            origin.clone(),
+            member_id.clone(),
+            thread_id.clone(),
+            post_id.clone(),
+            params.clone(),
+        ),
+        result
+    );
+
+    if result.is_ok() {
+        // 1. Deposit event
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostUpdated(post_id, member_id, thread_id, params,))
+        );
+    }
 }
 
-fn get_channel_id(s: &TestScenario) -> <Test as StorageOwnership>::ChannelId {
-    s.channel.clone().unwrap().0
-}
-fn get_thread_id(s: &TestScenario) -> <Test as Trait>::ThreadId {
-    s.thread.clone().unwrap().0
-}
-fn get_thread(s: &TestScenario) -> Thread<Test> {
-    s.thread.clone().unwrap().1
-}
-fn get_post_id(s: &TestScenario) -> <Test as Trait>::PostId {
-    s.post.clone().unwrap().0
-}
-fn get_post(s: &TestScenario) -> Post<Test> {
-    s.post.clone().unwrap().1
-}
+fn react_post_mock(
+    origin: Origin,
+    member_id: MemberId,
+    reaction_id: <Test as Trait>::ReactionId,
+    thread_id: <Test as Trait>::ThreadId,
+    post_id: <Test as Trait>::PostId,
+    channel_id: <Test as StorageOwnership>::ChannelId,
+    result: DispatchResult,
+) {
+    assert_eq!(
+        Content::react_post(
+            origin.clone(),
+            member_id.clone(),
+            thread_id.clone(),
+            post_id.clone(),
+            reaction_id.clone(),
+            channel_id.clone(),
+        ),
+        result
+    );
 
-fn helper_setup_basic_scenario() -> TestScenario {
-    let channel_id = Content::next_channel_id();
-
-    assert_ok!(Content::create_channel(
-        Origin::signed(SECOND_MEMBER_ORIGIN),
-        ContentActor::Member(SECOND_MEMBER_ID),
-        ChannelCreationParameters {
-            assets: vec![],
-            meta: vec![],
-            reward_account: None,
-            subreddit_mutable: true,
-        }
-    ));
-
-    TestScenario {
-        channel: Some((channel_id, Content::channel_by_id(channel_id))),
-        thread: None,
-        post: None,
+    if result.is_ok() {
+        // 1. event is deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostReacted(
+                post_id,
+                member_id,
+                thread_id,
+                reaction_id,
+            ))
+        );
     }
 }
 
 #[test]
 fn invalid_member_cannot_create_thread() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_basic_scenario();
-        let channel_id = get_channel_id(&scenario);
-        let params = ThreadCreationParameters {
-            title: vec![1, 1],
-            post_text: vec![2, 2],
-            post_mutable: true,
-            channel_id: channel_id,
-        };
-        assert_err!(
-            Content::create_thread(Origin::signed(FIRST_MEMBER_ID), NOT_FORUM_MEMBER_ID, params),
-            Error::<Test>::MemberAuthFailed,
+        func(UNKNOWN_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let _ = create_thread_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            NOT_FORUM_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
     })
 }
@@ -210,96 +250,43 @@ fn invalid_member_cannot_create_thread() {
 #[test]
 fn cannot_create_thread_with_invalid_channel_id() {
     with_default_mock_builder(|| {
-        let _scenario = helper_setup_basic_scenario();
-        let channel_id = INVALID_CHANNEL;
-        let params = ThreadCreationParameters {
-            title: vec![1, 1],
-            post_text: vec![2, 2],
-            post_mutable: true,
-            channel_id: channel_id,
-        };
+        func(FIRST_MEMBER_ORIGIN);
 
-        assert_err!(
-            Content::create_thread(Origin::signed(FIRST_MEMBER_ORIGIN), FIRST_MEMBER_ID, params),
-            Error::<Test>::ChannelDoesNotExist,
-        );
-    })
-}
-
-#[test]
-fn verify_create_thread_effects() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        let scenario_pre = helper_setup_basic_scenario();
-        let thread_id = Content::next_thread_id();
-
-        let channel_id = get_channel_id(&scenario_pre);
-        let params = ThreadCreationParameters {
-            title: vec![1, 1],
-            post_text: vec![2, 2],
-            post_mutable: true,
-            channel_id: channel_id,
-        };
-
-        // replenish the free balance of member 1
-        let _ = balances::Module::<Test>::deposit_creating(&FIRST_MEMBER_ORIGIN, INITIAL_ENDOW);
-        assert_ok!(Content::create_thread(
+        let _ = create_thread_mock(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             FIRST_MEMBER_ID,
-            params.clone(),
-        ));
-
-        let thread = Content::thread_by_id(thread_id);
-
-        // 1. Appropriate event is deposited
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ThreadCreated(thread_id, thread.author_id, params,))
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: INVALID_CHANNEL,
+            },
+            Err(Error::<Test>::ChannelDoesNotExist.into()),
         );
     })
-}
-
-fn helper_setup_scenario_with_thread() -> TestScenario {
-    let scenario = helper_setup_basic_scenario();
-    let thread_id = Content::next_thread_id();
-    let channel_id = get_channel_id(&scenario);
-
-    let params = ThreadCreationParameters {
-        title: vec![1, 1],
-        post_text: vec![2, 2],
-        post_mutable: true,
-        channel_id: channel_id,
-    };
-
-    // assign initial balances to member
-    let _ = balances::Module::<Test>::deposit_creating(
-        &FIRST_MEMBER_ORIGIN,
-        <Test as balances::Trait>::Balance::from(INITIAL_ENDOW),
-    );
-
-    assert_ok!(Content::create_thread(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        FIRST_MEMBER_ID,
-        params,
-    ));
-
-    TestScenario {
-        channel: Some((channel_id, Content::channel_by_id(channel_id))),
-        thread: Some((thread_id, Content::thread_by_id(thread_id))),
-        post: None,
-    }
 }
 
 #[test]
 fn cannot_delete_invalid_thread() {
     with_default_mock_builder(|| {
-        assert_err!(
-            Content::delete_thread(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                INVALID_THREAD,
-            ),
-            Error::<Test>::ThreadDoesNotExist,
+        func(FIRST_MEMBER_ORIGIN);
+        let _ = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+
+        let _ = delete_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            INVALID_THREAD,
+            Err(Error::<Test>::ThreadDoesNotExist.into()),
         );
     })
 }
@@ -307,53 +294,34 @@ fn cannot_delete_invalid_thread() {
 #[test]
 fn non_author_or_invalid_member_cannot_delete_thread() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_thread();
-        let thread_id = get_thread_id(&scenario);
-
-        // non author member cannot delete post
-        assert_err!(
-            Content::delete_thread(
-                Origin::signed(SECOND_MEMBER_ORIGIN),
-                ContentActor::Member(SECOND_MEMBER_ID),
-                thread_id,
-            ),
-            Error::<Test>::ActorNotAuthorized,
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
         );
-
-        // invalid account signer cannot be authorized
-        assert_err!(
-            Content::delete_thread(
-                Origin::signed(UNKNOWN_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                thread_id,
-            ),
-            Error::<Test>::MemberAuthFailed,
-        );
-    })
-}
-
-#[test]
-fn verify_delete_thread_effects() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        let scenario = helper_setup_scenario_with_thread();
-        let thread_id = get_thread_id(&scenario);
-        let channel_id = get_channel_id(&scenario);
-
-        assert_ok!(Content::delete_thread(
+        let thread_id = create_thread_mock(
             Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
+        );
+        let _ = delete_thread_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            ContentActor::Member(NOT_FORUM_MEMBER_ID),
             thread_id,
-        ));
-
-        // 1. event is deposited
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ThreadDeleted(
-                thread_id,
-                ContentActor::Member(FIRST_MEMBER_ID),
-            ))
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
     })
 }
@@ -378,77 +346,40 @@ fn cannot_create_post_in_invalid_thread() {
 #[test]
 fn non_authorized_or_invalid_member_cannot_create_post() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_thread();
-        let thread_id = get_thread_id(&scenario);
-        let params = PostCreationParameters {
-            text: vec![1, 2],
-            mutable: true,
-            thread_id: thread_id,
-        };
+        func(FIRST_MEMBER_ORIGIN);
 
-        // non member cannot create post
-        assert_err!(
-            Content::create_post(Origin::signed(UNKNOWN_ORIGIN), NOT_FORUM_MEMBER_ID, params),
-            Error::<Test>::MemberAuthFailed,
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
         );
-    })
-}
-
-fn helper_setup_scenario_with_post() -> TestScenario {
-    let scenario = helper_setup_scenario_with_thread();
-    let thread_id = get_thread_id(&scenario);
-    let channel_id = get_channel_id(&scenario);
-    let params = PostCreationParameters {
-        text: vec![1, 2],
-        mutable: true,
-        thread_id: thread_id,
-    };
-
-    let post_id = Content::next_post_id();
-
-    assert_ok!(Content::create_post(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        FIRST_MEMBER_ID,
-        params,
-    ));
-    TestScenario {
-        channel: Some((channel_id, Content::channel_by_id(channel_id))),
-        thread: Some((thread_id, Content::thread_by_id(thread_id))),
-        post: Some((post_id, Content::post_by_id(thread_id, post_id))),
-    }
-}
-
-#[test]
-fn verify_create_post_effects() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        let scenario = helper_setup_scenario_with_thread();
-        let thread_id = get_thread_id(&scenario);
-
-        let thread = get_thread(&scenario);
-        let post_id = Content::next_post_id();
-        let params = PostCreationParameters {
-            text: vec![1, 2],
-            mutable: true,
-            thread_id: thread_id,
-        };
-
-        assert_ok!(Content::create_post(
+        let thread_id = create_thread_mock(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             FIRST_MEMBER_ID,
-            params.clone(),
-        ));
-
-        // 1. event deposited
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::PostAdded(post_id, FIRST_MEMBER_ID, params))
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
         );
 
-        // 2. post counter for thread increased by 1
-        assert_eq!(
-            Content::thread_by_id(thread_id).number_of_posts - thread.number_of_posts,
-            1,
+        let _ = create_post_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            NOT_FORUM_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
     })
 }
@@ -456,37 +387,63 @@ fn verify_create_post_effects() {
 #[test]
 fn non_author_or_invalid_member_cannot_edit_post() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
+        func(FIRST_MEMBER_ORIGIN);
 
-        let params = PostUpdateParameters {
-            text: None,
-            mutable: None,
-        };
-
-        // valid member but not original post author
-        assert_err!(
-            Content::edit_post(
-                Origin::signed(SECOND_MEMBER_ORIGIN),
-                SECOND_MEMBER_ID,
-                thread_id,
-                post_id,
-                params.clone(),
-            ),
-            Error::<Test>::AccountDoesNotMatchPostAuthor,
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
         );
 
-        // invalid member
-        assert_err!(
-            Content::edit_post(
-                Origin::signed(UNKNOWN_ORIGIN),
-                FIRST_MEMBER_ID,
-                thread_id,
-                post_id,
-                params,
-            ),
-            Error::<Test>::MemberAuthFailed,
+        let post_id = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
+        );
+
+        let _ = edit_post_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            NOT_FORUM_MEMBER_ID,
+            thread_id,
+            post_id,
+            PostUpdateParameters {
+                text: None,
+                mutable: None,
+            },
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+        let _ = edit_post_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ID,
+            thread_id,
+            post_id,
+            PostUpdateParameters {
+                text: None,
+                mutable: None,
+            },
+            Err(Error::<Test>::AccountDoesNotMatchPostAuthor.into()),
         );
     })
 }
@@ -494,73 +451,64 @@ fn non_author_or_invalid_member_cannot_edit_post() {
 #[test]
 fn cannot_edit_invalid_post() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
+        func(FIRST_MEMBER_ORIGIN);
 
-        let params = PostUpdateParameters {
-            text: None,
-            mutable: None,
-        };
-
-        // invalid combination of thread post
-        assert_err!(
-            Content::edit_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                FIRST_MEMBER_ID,
-                thread_id,
-                INVALID_POST,
-                params.clone(),
-            ),
-            Error::<Test>::PostDoesNotExist,
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
         );
 
-        // invalid combination of thread post
-        assert_err!(
-            Content::edit_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                FIRST_MEMBER_ID,
-                INVALID_THREAD,
-                post_id,
-                params.clone(),
-            ),
-            Error::<Test>::ThreadDoesNotExist,
+        let post_id = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
         );
-    })
-}
 
-#[test]
-fn verify_edit_post_effects() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        let scenario = helper_setup_scenario_with_post();
-
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
-
-        let params = PostUpdateParameters {
-            text: None,
-            mutable: None,
-        };
-
-        assert_ok!(Content::edit_post(
+        let _ = edit_post_mock(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             FIRST_MEMBER_ID,
             thread_id,
-            post_id,
-            params.clone(),
-        ));
+            INVALID_POST,
+            PostUpdateParameters {
+                text: None,
+                mutable: None,
+            },
+            Err(Error::<Test>::PostDoesNotExist.into()),
+        );
 
-        // 1. Deposit event
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::PostUpdated(
-                post_id,
-                FIRST_MEMBER_ID,
-                thread_id,
-                params,
-            ))
+        let _ = edit_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            INVALID_THREAD,
+            post_id,
+            PostUpdateParameters {
+                text: None,
+                mutable: None,
+            },
+            Err(Error::<Test>::ThreadDoesNotExist.into()),
         );
     })
 }
@@ -568,30 +516,47 @@ fn verify_edit_post_effects() {
 #[test]
 fn non_author_or_invalid_member_cannot_delete_post() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
-
-        // valid member but not original post author
-        assert_err!(
-            Content::delete_post(
-                Origin::signed(SECOND_MEMBER_ORIGIN),
-                ContentActor::Member(SECOND_MEMBER_ID),
-                thread_id,
-                post_id,
-            ),
-            Error::<Test>::ActorNotAuthorized,
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
         );
 
-        // invalid member: (maybe change this error type?)
-        assert_err!(
-            Content::delete_post(
-                Origin::signed(UNKNOWN_ORIGIN),
-                ContentActor::Member(NOT_FORUM_MEMBER_ID),
-                thread_id,
-                post_id,
-            ),
-            Error::<Test>::ActorNotAuthorized,
+        let post_id = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
+        );
+
+        let _ = delete_post_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            ContentActor::Member(NOT_FORUM_MEMBER_ID),
+            thread_id,
+            post_id,
+            Err(Error::<Test>::ActorNotAuthorized.into()),
         );
     })
 }
@@ -599,99 +564,104 @@ fn non_author_or_invalid_member_cannot_delete_post() {
 #[test]
 fn cannot_delete_invalid_post() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
-
-        // invalid combination of thread post category
-        assert_err!(
-            Content::delete_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                INVALID_THREAD,
-                post_id,
-            ),
-            Error::<Test>::ThreadDoesNotExist,
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
         );
 
-        assert_err!(
-            Content::delete_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                ContentActor::Member(FIRST_MEMBER_ID),
-                thread_id,
-                INVALID_POST,
-            ),
-            Error::<Test>::PostDoesNotExist,
+        let post_id = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
         );
-    })
-}
 
-#[test]
-fn verify_delete_post_effects_with_author() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
-        let channel_id = get_channel_id(&scenario);
-        let post = get_post(&scenario);
-
-        let balance_before = balances::Module::<Test>::free_balance(FIRST_MEMBER_ORIGIN);
-        assert_ok!(Content::delete_post(
+        let _ = delete_post_mock(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             thread_id,
-            post_id,
-        ));
-
-        // 1. Deposit event
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::PostDeleted(
-                post_id,
-                ContentActor::Member(FIRST_MEMBER_ID),
-                thread_id,
-            ))
+            INVALID_POST,
+            Err(Error::<Test>::PostDoesNotExist.into()),
         );
-
-        // 2. Post Author refunded
-        let balance_after = balances::Module::<Test>::free_balance(FIRST_MEMBER_ORIGIN);
-        assert_eq!(balance_after - balance_before, post.bloat_bond);
+        let _ = delete_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            INVALID_THREAD,
+            post_id,
+            Err(Error::<Test>::ThreadDoesNotExist.into()),
+        );
     })
 }
 
 #[test]
 fn invalid_forum_user_cannot_react_post() {
     with_default_mock_builder(|| {
-        let scenario = helper_setup_scenario_with_post();
-        let post_id = get_post_id(&scenario);
-        let thread_id = get_thread_id(&scenario);
-
-        // using invalid account
-        assert_err!(
-            Content::react_post(
-                Origin::signed(UNKNOWN_ORIGIN),
-                FIRST_MEMBER_ID,
-                thread_id,
-                post_id,
-                <Test as Trait>::ReactionId::from(1u64),
-                get_channel_id(&scenario),
-            ),
-            Error::<Test>::MemberAuthFailed,
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
         );
 
-        // using invalid member_id
-        assert_err!(
-            Content::react_post(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
-                NOT_FORUM_MEMBER_ID,
-                thread_id,
-                post_id,
-                <Test as Trait>::ReactionId::from(1u64),
-                get_channel_id(&scenario),
-            ),
-            Error::<Test>::MemberAuthFailed,
+        let post_id = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
+        );
+
+        let _ = react_post_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            NOT_FORUM_MEMBER_ID,
+            <Test as Trait>::ReactionId::from(1u64),
+            thread_id,
+            post_id,
+            channel_id,
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
     })
 }
@@ -699,32 +669,49 @@ fn invalid_forum_user_cannot_react_post() {
 #[test]
 fn verify_react_post_effects() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        let scenario = helper_setup_scenario_with_post();
-        let thread_id = get_thread_id(&scenario);
-        let post_id = get_post_id(&scenario);
-        let reaction_id = <Test as Trait>::ReactionId::from(1u64);
-
-        assert_ok!(Content::react_post(
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
+        );
+
+        let _ = react_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            <Test as Trait>::ReactionId::from(1u64),
             thread_id,
             post_id,
-            reaction_id,
-            get_channel_id(&scenario),
-        ));
-
-        // 1. event is deposited
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::PostReacted(
-                post_id,
-                FIRST_MEMBER_ID,
-                thread_id,
-                reaction_id,
-                get_channel_id(&scenario),
-            ))
+            channel_id,
+            Ok(()),
         );
     })
 }
