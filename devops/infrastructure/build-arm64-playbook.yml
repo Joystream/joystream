@@ -24,12 +24,13 @@
           community.docker.docker_image:
             build:
               path: ./joystream
-              dockerfile: joystream-node.Dockerfile
+              dockerfile: '{{ dockerfile }}'
+              platform: '{{ platform }}'
             name: '{{ repository }}'
-            tag: '{{ tag_name }}-arm64'
+            tag: '{{ tag_name }}'
             push: yes
             source: build
-          async: 3600
+          async: 7200
           poll: 0
           register: build_result
 
@@ -38,7 +39,7 @@
             jid: '{{ build_result.ansible_job_id }}'
           register: job_result
           until: job_result.finished
-          retries: 36
+          retries: 72
           delay: 100
 
       always:

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag_shasum: ${{ steps.compute_shasum.outputs.shasum }}
-      image_exists: ${{ steps.compute_shasum.outputs.image_exists }}
+      image_exists: ${{ steps.compute_image_exists.outputs.image_exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -20,6 +20,12 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14.x'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -34,9 +40,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Check if we have pre-built image on Dockerhub
+        id: compute_image_exists
         # Will output 0 if image exists and 1 if does not exists
         run: |
-          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }} > /dev/null ; echo $?)
+          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-amd64 > /dev/null ; echo $?)
           echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
       - name: Build and push
@@ -47,13 +54,26 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-amd64
-        if: ${{ steps.compute_shasum.outputs.image_exists == 1 }}
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
-  push-arm64:
-    name: Build joystream/node Docker image for arm64
+  push-arm:
+    name: Build joystream/node Docker image for arm
     runs-on: ubuntu-latest
     env:
       STACK_NAME: joystream-ga-docker-${{ github.run_number }}
+    outputs:
+      image_exists_arm64: ${{ steps.compute_image_exists.outputs.image_exists_arm64 }}
+      image_exists_arm: ${{ steps.compute_image_exists.outputs.image_exists_arm }}
+    strategy:
+      matrix:
+        platform: ['linux/arm64', 'linux/arm/v7']
+        include:
+          - platform: 'linux/arm64'
+            platform_tag: 'arm64'
+            file: 'joystream-node.Dockerfile'
+          - platform: 'linux/arm/v7'
+            platform_tag: 'arm'
+            file: 'joystream-node-arm.Dockerfile'
     steps:
       - name: Extract branch name
         shell: bash
@@ -83,9 +103,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Check if we have pre-built image on Dockerhub
+        id: compute_image_exists
         # Will output 0 if image exists and 1 if does not exists
         run: |
-          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }} > /dev/null ; echo $?)
+          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-${{ matrix.platform_tag }} > /dev/null ; echo $?)
+          echo "::set-output name=image_exists_${{ matrix.platform_tag }}::${IMAGE_EXISTS}"
           echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
       - name: Configure AWS credentials
@@ -94,7 +116,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-        if: ${{ steps.compute_shasum.outputs.image_exists == 1 }}
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
@@ -104,7 +126,7 @@ jobs:
           template: devops/infrastructure/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=t4g.xlarge'
-        if: ${{ steps.compute_shasum.outputs.image_exists == 1 }}
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
@@ -121,14 +143,15 @@ jobs:
                           branch_name=${{ steps.extract_branch.outputs.branch }} \
                           docker_username=${{ secrets.DOCKERHUB_USERNAME }} \
                           docker_password=${{ secrets.DOCKERHUB_PASSWORD }} \
-                          tag_name=${{ steps.compute_shasum.outputs.shasum }} repository=${{ env.REPOSITORY }} \
-                          stack_name=${{ env.STACK_NAME }}"
-        if: ${{ steps.compute_shasum.outputs.image_exists == 1 }}
+                          tag_name=${{ steps.compute_shasum.outputs.shasum }}-${{ matrix.platform_tag }} \
+                          repository=${{ env.REPOSITORY }} dockerfile=${{ matrix.file }} \
+                          stack_name=${{ env.STACK_NAME }} platform=${{ matrix.platform }}"
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
   push-manifest:
     name: Create manifest using both the arch images
-    if: ${{ needs.push-amd64.outputs.image_exists == 1 }}
-    needs: [push-amd64, push-arm64]
+    needs: [push-amd64, push-arm]
+    if: needs.push-amd64.outputs.image_exists == 1 || needs.push-arm.outputs.image_exists_arm == 1 || needs.push-arm.outputs.image_exists_arm64 == 1
     runs-on: ubuntu-latest
     env:
       TAG_SHASUM: ${{ needs.push-amd64.outputs.tag_shasum }}
@@ -142,9 +165,13 @@ jobs:
       - name: Create manifest for multi-arch images
         run: |
           # get artifacts from previous steps
-          docker pull ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}-amd64
-          docker pull ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}-arm64
-          docker manifest create ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }} ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}-amd64 ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}-arm64
-          docker manifest annotate ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }} ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}-amd64 --arch amd64
-          docker manifest annotate ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }} ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}-arm64 --arch arm64
-          docker manifest push ${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
+          IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
+          echo $IMAGE
+          docker pull $IMAGE-amd64
+          docker pull $IMAGE-arm64
+          docker pull $IMAGE-arm
+          docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          docker manifest annotate $IMAGE $IMAGE-amd64 --arch amd64
+          docker manifest annotate $IMAGE $IMAGE-arm64 --arch arm64
+          docker manifest annotate $IMAGE $IMAGE-arm --arch arm
+          docker manifest push $IMAGE
