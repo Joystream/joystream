@@ -90,7 +90,7 @@ fragment ForumPostFields on ForumPost {
   }
 }
 
-fragment ForumThreadWithPostsFields on ForumThread {
+fragment ForumThreadWithInitialPost on ForumThread {
   id
   createdAt
   updatedAt
@@ -101,7 +101,7 @@ fragment ForumThreadWithPostsFields on ForumThread {
     id
   }
   title
-  posts {
+  initialPost {
     ...ForumPostFields
   }
   poll {
@@ -158,9 +158,9 @@ query getCategoriesByIds($ids: [ID!]) {
   }
 }
 
-query getThreadsWithPostsByIds($ids: [ID!]) {
+query getThreadsWithInitialPostsByIds($ids: [ID!]) {
   forumThreads(where: { id_in: $ids }) {
-    ...ForumThreadWithPostsFields
+    ...ForumThreadWithInitialPost
   }
 }
 

@@ -187,10 +187,10 @@ import {
   GetThreadDeletedEventsByEventIdsQuery,
   GetThreadDeletedEventsByEventIdsQueryVariables,
   GetThreadDeletedEventsByEventIds,
-  ForumThreadWithPostsFieldsFragment,
-  GetThreadsWithPostsByIdsQuery,
-  GetThreadsWithPostsByIdsQueryVariables,
-  GetThreadsWithPostsByIds,
+  ForumThreadWithInitialPostFragment,
+  GetThreadsWithInitialPostsByIds,
+  GetThreadsWithInitialPostsByIdsQuery,
+  GetThreadsWithInitialPostsByIdsQueryVariables,
   GetMembershipBoughtEventsByEventIdsQuery,
   GetMembershipBoughtEventsByEventIdsQueryVariables,
   GetMembershipBoughtEventsByEventIds,
@@ -844,12 +844,11 @@ export class QueryNodeApi {
     >(GetThreadMetadataUpdatedEventsByEventIds, { eventIds }, 'threadMetadataUpdatedEvents')
   }
 
-  public async getThreadsWithPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithPostsFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetThreadsWithPostsByIdsQuery, GetThreadsWithPostsByIdsQueryVariables>(
-      GetThreadsWithPostsByIds,
-      { ids: ids.map((id) => id.toString()) },
-      'forumThreads'
-    )
+  public async getThreadsWithInitialPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetThreadsWithInitialPostsByIdsQuery,
+      GetThreadsWithInitialPostsByIdsQueryVariables
+    >(GetThreadsWithInitialPostsByIds, { ids: ids.map((id) => id.toString()) }, 'forumThreads')
   }
 
   public async getVoteOnPollEvents(events: EventDetails[]): Promise<VoteOnPollEventFieldsFragment[]> {

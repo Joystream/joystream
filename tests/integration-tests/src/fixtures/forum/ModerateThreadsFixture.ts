@@ -5,7 +5,7 @@ import { WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { ForumThreadWithPostsFieldsFragment, ThreadModeratedEventFieldsFragment } from '../../graphql/generated/queries'
+import { ForumThreadWithInitialPostFragment, ThreadModeratedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
@@ -48,7 +48,7 @@ export class ModerateThreadsFixture extends WithForumWorkersFixture {
   }
 
   protected assertQueriedThreadsAreValid(
-    qThreads: ForumThreadWithPostsFieldsFragment[],
+    qThreads: ForumThreadWithInitialPostFragment[],
     qEvents: ThreadModeratedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
@@ -78,7 +78,7 @@ export class ModerateThreadsFixture extends WithForumWorkersFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithPostsByIds(this.moderations.map((m) => m.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.moderations.map((m) => m.threadId))
     this.assertQueriedThreadsAreValid(qThreads, qEvents)
   }
 }

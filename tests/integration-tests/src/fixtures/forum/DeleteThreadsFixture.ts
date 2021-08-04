@@ -4,7 +4,7 @@ import { EventDetails, MemberContext } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { ForumThreadWithPostsFieldsFragment, ThreadDeletedEventFieldsFragment } from '../../graphql/generated/queries'
+import { ForumThreadWithInitialPostFragment, ThreadDeletedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { CategoryId } from '@joystream/types/forum'
@@ -60,7 +60,7 @@ export class DeleteThreadsFixture extends StandardizedFixture {
   }
 
   protected assertQueriedThreadsAreValid(
-    qThreads: ForumThreadWithPostsFieldsFragment[],
+    qThreads: ForumThreadWithInitialPostFragment[],
     qEvents: ThreadDeletedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
@@ -89,7 +89,7 @@ export class DeleteThreadsFixture extends StandardizedFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithPostsByIds(this.removals.map((r) => r.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.removals.map((r) => r.threadId))
     this.assertQueriedThreadsAreValid(qThreads, qEvents)
   }
 }

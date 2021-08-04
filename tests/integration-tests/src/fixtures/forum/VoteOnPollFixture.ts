@@ -3,7 +3,7 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { ForumThreadWithPostsFieldsFragment, VoteOnPollEventFieldsFragment } from '../../graphql/generated/queries'
+import { ForumThreadWithInitialPostFragment, VoteOnPollEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { CategoryId } from '@joystream/types/forum'
@@ -49,7 +49,7 @@ export class VoteOnPollFixture extends StandardizedFixture {
     assert.equal(qEvent.votingMember.id, this.votes[i].asMember.toString())
   }
 
-  protected assertQueriedThreadsAreValid(qThreads: ForumThreadWithPostsFieldsFragment[]): void {
+  protected assertQueriedThreadsAreValid(qThreads: ForumThreadWithInitialPostFragment[]): void {
     this.votes.forEach(({ asMember, threadId, index }) => {
       const qThread = qThreads.find((t) => t.id === threadId.toString())
       Utils.assert(qThread, 'Query node: Thread not found')
@@ -69,7 +69,7 @@ export class VoteOnPollFixture extends StandardizedFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithPostsByIds(this.votes.map((v) => v.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.votes.map((v) => v.threadId))
     this.assertQueriedThreadsAreValid(qThreads)
   }
 }

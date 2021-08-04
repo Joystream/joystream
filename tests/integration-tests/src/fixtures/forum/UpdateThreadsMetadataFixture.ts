@@ -5,7 +5,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import {
-  ForumThreadWithPostsFieldsFragment,
+  ForumThreadWithInitialPostFragment,
   ThreadMetadataUpdatedEventFieldsFragment,
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
@@ -81,7 +81,7 @@ export class UpdateThreadsMetadataFixture extends StandardizedFixture {
   }
 
   protected assertQueriedThreadsAreValid(
-    qThreads: ForumThreadWithPostsFieldsFragment[],
+    qThreads: ForumThreadWithInitialPostFragment[],
     qEvents: ThreadMetadataUpdatedEventFieldsFragment[]
   ): void {
     // Check metadataUpdates array
@@ -129,7 +129,7 @@ export class UpdateThreadsMetadataFixture extends StandardizedFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithPostsByIds(this.updates.map((u) => u.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.updates.map((u) => u.threadId))
     this.assertQueriedThreadsAreValid(qThreads, qEvents)
   }
 }

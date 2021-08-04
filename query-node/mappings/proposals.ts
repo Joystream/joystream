@@ -332,6 +332,7 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     exactExecutionBlock: generalProposalParameters.exact_execution_block.unwrapOr(undefined)?.toNumber(),
     stakingAccount: generalProposalParameters.staking_account_id.toString(),
     status: new ProposalStatusDeciding(),
+    isFinalized: false,
     statusSetAtBlock: event.blockNumber,
     statusSetAtTime: eventTime,
   })
@@ -436,6 +437,7 @@ export async function proposalsEngine_ProposalDecisionMade({
       | ProposalStatusSlashed
       | ProposalStatusVetoed).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     proposal.status = decisionStatus
+    proposal.isFinalized = true
     proposal.statusSetAtBlock = event.blockNumber
     proposal.statusSetAtTime = eventTime
     proposal.updatedAt = eventTime
@@ -468,6 +470,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
 
   newStatus.proposalExecutedEventId = proposalExecutedEvent.id
   proposal.status = newStatus
+  proposal.isFinalized = true
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = eventTime
   proposal.updatedAt = eventTime
@@ -516,6 +519,7 @@ export async function proposalsEngine_ProposalCancelled({ store, event }: EventC
   await store.save<ProposalCancelledEvent>(proposalCancelledEvent)
 
   proposal.status = new ProposalStatusCancelled()
+  proposal.isFinalized = true
   proposal.status.cancelledInEventId = proposalCancelledEvent.id
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = eventTime

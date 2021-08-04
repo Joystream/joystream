@@ -83,6 +83,9 @@ type ForumThread @entity {
   "All posts in the thread"
   posts: [ForumPost!] @derivedFrom(field: "thread")
 
+  "The intial post created along with the thread"
+  initialPost: ForumPost
+
   "Number of non-deleted posts in the thread"
   visiblePostsCount: Int!
 

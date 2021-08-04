@@ -37,6 +37,7 @@ export class ExpireProposalsFixture extends BaseQueryNodeFixture {
       )
       Utils.assert(qProposal.status.proposalDecisionMadeEvent, 'Missing proposalDecisionMadeEvent relation')
       assert.equal(qProposal.status.proposalDecisionMadeEvent.decisionStatus.__typename, 'ProposalStatusExpired')
+      assert.equal(qProposal.isFinalized, true)
     })
   }
 

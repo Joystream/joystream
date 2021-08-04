@@ -3386,6 +3386,7 @@ export type ForumPost = BaseGraphQlObject & {
   deletedInEvent?: Maybe<PostDeletedEvent>
   deletedInEventId?: Maybe<Scalars['String']>
   forumpostrepliesTo?: Maybe<Array<ForumPost>>
+  forumthreadinitialPost?: Maybe<Array<ForumThread>>
   postaddedeventpost?: Maybe<Array<PostAddedEvent>>
   postmoderatedeventpost?: Maybe<Array<PostModeratedEvent>>
   postreactedeventpost?: Maybe<Array<PostReactedEvent>>
@@ -3590,6 +3591,9 @@ export type ForumPostWhereInput = {
   forumpostrepliesTo_none?: Maybe<ForumPostWhereInput>
   forumpostrepliesTo_some?: Maybe<ForumPostWhereInput>
   forumpostrepliesTo_every?: Maybe<ForumPostWhereInput>
+  forumthreadinitialPost_none?: Maybe<ForumThreadWhereInput>
+  forumthreadinitialPost_some?: Maybe<ForumThreadWhereInput>
+  forumthreadinitialPost_every?: Maybe<ForumThreadWhereInput>
   postaddedeventpost_none?: Maybe<PostAddedEventWhereInput>
   postaddedeventpost_some?: Maybe<PostAddedEventWhereInput>
   postaddedeventpost_every?: Maybe<PostAddedEventWhereInput>
@@ -3623,6 +3627,8 @@ export type ForumThread = BaseGraphQlObject & {
   /** Thread title */
   title: Scalars['String']
   posts: Array<ForumPost>
+  initialPost?: Maybe<ForumPost>
+  initialPostId?: Maybe<Scalars['String']>
   /** Number of non-deleted posts in the thread */
   visiblePostsCount: Scalars['Int']
   poll?: Maybe<ForumPoll>
@@ -3649,6 +3655,7 @@ export type ForumThreadCreateInput = {
   author: Scalars['ID']
   category: Scalars['ID']
   title: Scalars['String']
+  initialPost?: Maybe<Scalars['ID']>
   visiblePostsCount: Scalars['Float']
   isSticky: Scalars['Boolean']
   status: Scalars['JSONObject']
@@ -3672,6 +3679,8 @@ export enum ForumThreadOrderByInput {
   CategoryDesc = 'category_DESC',
   TitleAsc = 'title_ASC',
   TitleDesc = 'title_DESC',
+  InitialPostAsc = 'initialPost_ASC',
+  InitialPostDesc = 'initialPost_DESC',
   VisiblePostsCountAsc = 'visiblePostsCount_ASC',
   VisiblePostsCountDesc = 'visiblePostsCount_DESC',
   IsStickyAsc = 'isSticky_ASC',
@@ -3688,7 +3697,7 @@ export type ForumThreadTag = BaseGraphQlObject & {
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
   threads: Array<ForumThread>
-  /** Number of non-deleted threads currently assigned to the tag */
+  /** Number of non-removed threads currently assigned to the tag */
   visibleThreadsCount: Scalars['Int']
 }
 
@@ -3768,6 +3777,7 @@ export type ForumThreadUpdateInput = {
   author?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
+  initialPost?: Maybe<Scalars['ID']>
   visiblePostsCount?: Maybe<Scalars['Float']>
   isSticky?: Maybe<Scalars['Boolean']>
   status?: Maybe<Scalars['JSONObject']>
@@ -3807,6 +3817,8 @@ export type ForumThreadWhereInput = {
   title_startsWith?: Maybe<Scalars['String']>
   title_endsWith?: Maybe<Scalars['String']>
   title_in?: Maybe<Array<Scalars['String']>>
+  initialPost_eq?: Maybe<Scalars['ID']>
+  initialPost_in?: Maybe<Array<Scalars['ID']>>
   visiblePostsCount_eq?: Maybe<Scalars['Int']>
   visiblePostsCount_gt?: Maybe<Scalars['Int']>
   visiblePostsCount_gte?: Maybe<Scalars['Int']>
@@ -3821,6 +3833,7 @@ export type ForumThreadWhereInput = {
   posts_none?: Maybe<ForumPostWhereInput>
   posts_some?: Maybe<ForumPostWhereInput>
   posts_every?: Maybe<ForumPostWhereInput>
+  initialPost?: Maybe<ForumPostWhereInput>
   poll?: Maybe<ForumPollWhereInput>
   createdInEvent?: Maybe<ThreadCreatedEventWhereInput>
   metadataUpdates_none?: Maybe<ThreadMetadataUpdatedEventWhereInput>
@@ -8280,6 +8293,8 @@ export type Proposal = BaseGraphQlObject & {
   votes: Array<ProposalVotedEvent>
   /** Current proposal status */
   status: ProposalStatus
+  /** If true then the proposal status is final and will not change form this point */
+  isFinalized?: Maybe<Scalars['Boolean']>
   /** Number of the block the current status was set at */
   statusSetAtBlock: Scalars['Int']
   /** Time the current status was set at (based on block timestamp) */
@@ -8554,6 +8569,7 @@ export type ProposalCreateInput = {
   exactExecutionBlock?: Maybe<Scalars['Float']>
   councilApprovals: Scalars['Float']
   status: Scalars['JSONObject']
+  isFinalized?: Maybe<Scalars['Boolean']>
   statusSetAtBlock: Scalars['Float']
   statusSetAtTime: Scalars['DateTime']
 }
@@ -9972,6 +9988,8 @@ export enum ProposalOrderByInput {
   ExactExecutionBlockDesc = 'exactExecutionBlock_DESC',
   CouncilApprovalsAsc = 'councilApprovals_ASC',
   CouncilApprovalsDesc = 'councilApprovals_DESC',
+  IsFinalizedAsc = 'isFinalized_ASC',
+  IsFinalizedDesc = 'isFinalized_DESC',
   StatusSetAtBlockAsc = 'statusSetAtBlock_ASC',
   StatusSetAtBlockDesc = 'statusSetAtBlock_DESC',
   StatusSetAtTimeAsc = 'statusSetAtTime_ASC',
@@ -10251,6 +10269,7 @@ export type ProposalUpdateInput = {
   exactExecutionBlock?: Maybe<Scalars['Float']>
   councilApprovals?: Maybe<Scalars['Float']>
   status?: Maybe<Scalars['JSONObject']>
+  isFinalized?: Maybe<Scalars['Boolean']>
   statusSetAtBlock?: Maybe<Scalars['Float']>
   statusSetAtTime?: Maybe<Scalars['DateTime']>
 }
@@ -10487,6 +10506,8 @@ export type ProposalWhereInput = {
   councilApprovals_lte?: Maybe<Scalars['Int']>
   councilApprovals_in?: Maybe<Array<Scalars['Int']>>
   status_json?: Maybe<Scalars['JSONObject']>
+  isFinalized_eq?: Maybe<Scalars['Boolean']>
+  isFinalized_in?: Maybe<Array<Scalars['Boolean']>>
   statusSetAtBlock_eq?: Maybe<Scalars['Int']>
   statusSetAtBlock_gt?: Maybe<Scalars['Int']>
   statusSetAtBlock_gte?: Maybe<Scalars['Int']>
@@ -15522,7 +15543,7 @@ export type ThreadMetadataUpdatedEvent = BaseGraphQlObject & {
   thread: ForumThread
   threadId: Scalars['String']
   /** New title of the thread */
-  newTitle: Scalars['String']
+  newTitle?: Maybe<Scalars['String']>
 }
 
 export type ThreadMetadataUpdatedEventConnection = {
@@ -15537,7 +15558,7 @@ export type ThreadMetadataUpdatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   thread: Scalars['ID']
-  newTitle: Scalars['String']
+  newTitle?: Maybe<Scalars['String']>
 }
 
 export type ThreadMetadataUpdatedEventEdge = {

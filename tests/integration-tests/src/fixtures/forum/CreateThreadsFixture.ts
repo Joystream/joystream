@@ -4,7 +4,7 @@ import { MetadataInput, ThreadCreatedEventDetails } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { ForumThreadWithPostsFieldsFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
+import { ForumThreadWithInitialPostFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { CategoryId, PollInput } from '@joystream/types/forum'
@@ -95,7 +95,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
   }
 
   protected assertQueriedThreadsAreValid(
-    qThreads: ForumThreadWithPostsFieldsFragment[],
+    qThreads: ForumThreadWithInitialPostFragment[],
     qEvents: ThreadCreatedEventFieldsFragment[]
   ): void {
     this.events.map((e, i) => {
@@ -111,8 +111,8 @@ export class CreateThreadsFixture extends StandardizedFixture {
       assert.equal(qThread.status.__typename, 'ThreadStatusActive')
       assert.equal(qThread.isSticky, false)
       assert.equal(qThread.createdInEvent.id, qEvent.id)
-      const initialPost = qThread.posts.find((p) => p.origin.__typename === 'PostOriginThreadInitial')
-      Utils.assert(initialPost, "Query node: Thread's initial post not found!")
+      const { initialPost } = qThread
+      Utils.assert(initialPost, "Query node: Thread's initial post is empty!")
       assert.equal(initialPost.id, e.postId.toString())
       assert.equal(initialPost.text, threadParams.text)
       Utils.assert(initialPost.origin.__typename === 'PostOriginThreadInitial')
@@ -154,7 +154,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithPostsByIds(this.events.map((e) => e.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.events.map((e) => e.threadId))
     this.assertQueriedThreadsAreValid(qThreads, qEvents)
   }
 }

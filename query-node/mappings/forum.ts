@@ -347,6 +347,9 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
     origin: postOrigin,
   })
   await store.save<ForumPost>(initialPost)
+
+  thread.initialPost = initialPost
+  await store.save<ForumThread>(thread)
 }
 
 export async function forum_ThreadModerated(ctx: EventContext & StoreContext): Promise<void> {

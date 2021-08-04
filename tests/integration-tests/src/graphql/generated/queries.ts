@@ -37,7 +37,7 @@ export type ForumPostFieldsFragment = {
   reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
 }
 
-export type ForumThreadWithPostsFieldsFragment = {
+export type ForumThreadWithInitialPostFragment = {
   id: string
   createdAt: any
   updatedAt?: Types.Maybe<any>
@@ -45,7 +45,7 @@ export type ForumThreadWithPostsFieldsFragment = {
   isSticky: boolean
   author: { id: string }
   category: { id: string }
-  posts: Array<ForumPostFieldsFragment>
+  initialPost?: Types.Maybe<ForumPostFieldsFragment>
   poll?: Types.Maybe<{
     description: string
     endTime: any
@@ -68,11 +68,11 @@ export type GetCategoriesByIdsQueryVariables = Types.Exact<{
 
 export type GetCategoriesByIdsQuery = { forumCategories: Array<ForumCategoryFieldsFragment> }
 
-export type GetThreadsWithPostsByIdsQueryVariables = Types.Exact<{
+export type GetThreadsWithInitialPostsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadsWithPostsByIdsQuery = { forumThreads: Array<ForumThreadWithPostsFieldsFragment> }
+export type GetThreadsWithInitialPostsByIdsQuery = { forumThreads: Array<ForumThreadWithInitialPostFragment> }
 
 export type GetPostsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -162,7 +162,7 @@ export type ThreadMetadataUpdatedEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
-  newTitle: string
+  newTitle?: Types.Maybe<string>
   thread: { id: string }
 }
 
@@ -988,6 +988,7 @@ export type ProposalFieldsFragment = {
   councilApprovals: number
   statusSetAtBlock: number
   statusSetAtTime: any
+  isFinalized?: Types.Maybe<boolean>
   details:
     | ProposalDetailsFields_SignalProposalDetails_Fragment
     | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
@@ -1816,8 +1817,8 @@ export const ForumPostFields = gql`
     }
   }
 `
-export const ForumThreadWithPostsFields = gql`
-  fragment ForumThreadWithPostsFields on ForumThread {
+export const ForumThreadWithInitialPost = gql`
+  fragment ForumThreadWithInitialPost on ForumThread {
     id
     createdAt
     updatedAt
@@ -1828,7 +1829,7 @@ export const ForumThreadWithPostsFields = gql`
       id
     }
     title
-    posts {
+    initialPost {
       ...ForumPostFields
     }
     poll {
@@ -2654,6 +2655,7 @@ export const ProposalFields = gql`
     }
     statusSetAtBlock
     statusSetAtTime
+    isFinalized
     createdInEvent {
       id
       inBlock
@@ -3318,13 +3320,13 @@ export const GetCategoriesByIds = gql`
   }
   ${ForumCategoryFields}
 `
-export const GetThreadsWithPostsByIds = gql`
-  query getThreadsWithPostsByIds($ids: [ID!]) {
+export const GetThreadsWithInitialPostsByIds = gql`
+  query getThreadsWithInitialPostsByIds($ids: [ID!]) {
     forumThreads(where: { id_in: $ids }) {
-      ...ForumThreadWithPostsFields
+      ...ForumThreadWithInitialPost
     }
   }
-  ${ForumThreadWithPostsFields}
+  ${ForumThreadWithInitialPost}
 `
 export const GetPostsByIds = gql`
   query getPostsByIds($ids: [ID!]) {
