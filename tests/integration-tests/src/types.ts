@@ -109,12 +109,13 @@ export interface ProposalCreatedEventDetails extends EventDetails {
 }
 
 export type ProposalsEngineEventName =
-  | 'ProposalCreated'
   | 'ProposalStatusUpdated'
   | 'ProposalDecisionMade'
   | 'ProposalExecuted'
   | 'Voted'
   | 'ProposalCancelled'
+
+export type ProposalsCodexEventName = 'ProposalCreated'
 
 export type ProposalType = keyof typeof ProposalDetails.typeDefinitions
 export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<

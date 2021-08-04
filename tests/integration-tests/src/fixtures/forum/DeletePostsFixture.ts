@@ -7,10 +7,10 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumPostFieldsFragment, PostDeletedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
-import { CategoryId, PostsToDeleteMap } from '@joystream/types/forum'
+import { MemberId, PostId } from '@joystream/types/common'
+import { ExtendedPostId, PostsToDeleteMap } from '@joystream/types/forum'
 import _ from 'lodash'
-import { registry } from '../../../../../types'
+import { registry } from '@joystream/types'
 
 const DEFAULT_RATIONALE = 'State cleanup'
 
@@ -43,8 +43,11 @@ export class DeletePostsFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.removals.map((r) => {
       const postsToDeleteEntries = r.posts.map(
-        ({ categoryId, threadId, postId, hide }) =>
-          [[categoryId, threadId, postId], hide === undefined || hide] as [[CategoryId, ThreadId, PostId], boolean]
+        ({ hide, categoryId, threadId, postId }) =>
+          [
+            this.api.createType('ExtendedPostId', { post_id: postId, thread_id: threadId, category_id: categoryId }),
+            hide === undefined || hide,
+          ] as [ExtendedPostId, boolean]
       )
       const postsToDeleteMap = new PostsToDeleteMap(registry, new Map(postsToDeleteEntries))
       return this.api.tx.forum.deletePosts(r.asMember, postsToDeleteMap, r.rationale || DEFAULT_RATIONALE)

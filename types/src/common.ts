@@ -1,74 +1,13 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, BTreeSet, UInt, BTreeMap } from '@polkadot/types'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed } from '@polkadot/types'
 import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
-import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
+import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
 import { GenericAccountId } from '@polkadot/types/generic/AccountId'
-import { AbstractArray } from '@polkadot/types/codec/AbstractArray'
-import { AbstractInt } from '@polkadot/types/codec/AbstractInt'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
-
-// See: https://github.com/polkadot-js/api/issues/3636
-
-// Adds sorting during BTreeSet toU8a encoding (required by the runtime)
-// Currently only supports values that extend UInt
-// FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
-export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
-  toArray(): V[]
-}
-
-export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
-  return class extends BTreeSet.with(valType) {
-    public forEach(callbackFn: (value: V, value2: V, set: Set<V>) => void, thisArg?: any): void {
-      const sorted = this.toArray()
-      return new Set(sorted).forEach(callbackFn, thisArg)
-    }
-
-    public toArray() {
-      return Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
-    }
-  }
-}
-
-export interface ExtendedBTreeMap<K extends Codec, V extends Codec> extends BTreeMap<K, V> {
-  toMap(): Map<K, V>
-}
-
-export function JoyBTreeMap<K extends Codec, V extends Codec>(
-  keyType: Constructor<K>,
-  valType: Constructor<V>
-): Constructor<ExtendedBTreeMap<K, V>> {
-  return class extends BTreeMap.with(keyType, valType) {
-    public forEach(callbackFn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
-      const sorted = this.toMap()
-      return new Map(sorted).forEach(callbackFn, thisArg)
-    }
-
-    private sortFn([keyA]: [K, V], [keyB]: [K, V]) {
-      if (keyA instanceof AbstractArray) {
-        let sortRes = 0
-        for (const i in keyA) {
-          sortRes = this.sortFn(keyA[i], (keyB as typeof keyA)[i])
-          if (sortRes !== 0) {
-            return sortRes
-          }
-        }
-        return sortRes
-      } else if (keyA instanceof AbstractInt) {
-        return keyA.eq(keyB) ? 0 : keyA.lt(keyB as typeof keyA) ? -1 : 1
-      } else {
-        throw new Error(`JoyBTreeMap: Unsupported key type: ${keyA.toRawType()}`)
-      }
-    }
-
-    public toMap() {
-      return new Map<K, V>(Array.from(this.entries()).sort(this.sortFn.bind(this)))
-    }
-  }
-}
 
 export class ActorId extends u64 {}
 export class MemberId extends u64 {}

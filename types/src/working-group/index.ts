@@ -1,7 +1,7 @@
-import { Bytes, BTreeMap, Option, Text } from '@polkadot/types'
+import { Bytes, BTreeMap, Option, Text, BTreeSet } from '@polkadot/types'
 import { Null, u32, u64, u128 } from '@polkadot/types/primitive'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { ActorId, MemberId, JoyEnum, JoyStructDecorated, JoyBTreeSet, AccountId } from '../common'
+import { ActorId, MemberId, JoyEnum, JoyStructDecorated, AccountId } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class ApplicationId extends u64 {}
@@ -9,7 +9,7 @@ export class OpeningId extends u64 {}
 export class WorkerId extends ActorId {}
 export class StorageProviderId extends WorkerId {}
 
-export class ApplicationIdSet extends JoyBTreeSet(ApplicationId) {}
+export class ApplicationIdSet extends BTreeSet.with(ApplicationId) {}
 export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) {}
 
 export type IApplication = {
@@ -157,6 +157,7 @@ export type IOpening = {
   description_hash: Bytes
   stake_policy: StakePolicy
   reward_per_block: Option<Balance>
+  creation_stake: Balance
 }
 
 export class Opening
@@ -166,6 +167,7 @@ export class Opening
     description_hash: Bytes,
     stake_policy: StakePolicy,
     reward_per_block: Option.with(u128),
+    creation_stake: u128,
   })
   implements IOpening {}
 

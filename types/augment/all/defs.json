@@ -112,17 +112,19 @@
         "sticky_thread_ids": "Vec<ThreadId>"
     },
     "Thread": {
-        "title_hash": "Hash",
+        "metadata_hash": "Hash",
         "category_id": "CategoryId",
         "author_id": "ForumUserId",
-        "archived": "bool",
         "poll": "Option<Poll>",
-        "num_direct_posts": "u32"
+        "cleanup_pay_off": "u128",
+        "number_of_posts": "u64"
     },
     "Post": {
         "thread_id": "ThreadId",
         "text_hash": "Hash",
-        "author_id": "ForumUserId"
+        "author_id": "ForumUserId",
+        "cleanup_pay_off": "u128",
+        "last_edited": "u32"
     },
     "PollAlternative": {
         "alternative_text_hash": "Hash",
@@ -145,12 +147,17 @@
         "poll_alternatives": "Vec<Bytes>"
     },
     "ThreadOf": {
-        "title_hash": "Hash",
+        "metadata_hash": "Hash",
         "category_id": "CategoryId",
         "author_id": "ForumUserId",
-        "archived": "bool",
         "poll": "Option<Poll>",
-        "num_direct_posts": "u32"
+        "cleanup_pay_off": "u128",
+        "number_of_posts": "u64"
+    },
+    "ExtendedPostId": {
+        "category_id": "CategoryId",
+        "thread_id": "ThreadId",
+        "post_id": "PostId"
     },
     "ApplicationId": "u64",
     "Application": {
@@ -188,7 +195,8 @@
         "created": "u32",
         "description_hash": "Bytes",
         "stake_policy": "StakePolicy",
-        "reward_per_block": "Option<u128>"
+        "reward_per_block": "Option<u128>",
+        "creation_stake": "u128"
     },
     "OpeningId": "u64",
     "StakePolicy": {
@@ -687,5 +695,6 @@
         }
     },
     "MaxNumber": "u32",
-    "IsCensored": "bool"
+    "IsCensored": "bool",
+    "AccountInfo": "AccountInfoWithRefCount"
 }

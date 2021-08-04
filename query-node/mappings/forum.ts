@@ -668,12 +668,6 @@ export async function forum_PostTextUpdated({ event, store }: EventContext & Sto
 }
 
 export async function forum_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
-  // FIXME: Custom posts BTreeMap fix (because of invalid BTreeMap json encoding/decoding)
-  // See: https://github.com/polkadot-js/api/pull/3789
-  event.params[2].value = new Map(
-    Object.entries(event.params[2].value).map(([key, val]) => [JSON.parse(key), val])
-  ) as any
-
   const [rationaleBytes, userId, postsData] = new Forum.PostDeletedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
 
@@ -686,7 +680,7 @@ export async function forum_PostDeleted({ event, store }: EventContext & StoreCo
   await store.save<PostDeletedEvent>(postDeletedEvent)
 
   await Promise.all(
-    Array.from(postsData.entries()).map(async ([[, , postId], hideFlag]) => {
+    Array.from(postsData.entries()).map(async ([{ post_id: postId }, hideFlag]) => {
       const post = await getPost(store, postId.toString(), ['thread'])
       const newStatus = hideFlag.valueOf() ? new PostStatusRemoved() : new PostStatusLocked()
       newStatus.postDeletedEventId = postDeletedEvent.id

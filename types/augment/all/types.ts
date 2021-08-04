@@ -4,6 +4,10 @@
 import type { BTreeMap, BTreeSet, Bytes, Enum, Option, Struct, Text, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
+import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
+
+/** @name AccountInfo */
+export interface AccountInfo extends AccountInfoWithRefCount {}
 
 /** @name ActorId */
 export interface ActorId extends u64 {}
@@ -357,6 +361,13 @@ export interface ExecutionStatus extends Enum {
   readonly asExecutionFailed: ExecutionFailed;
 }
 
+/** @name ExtendedPostId */
+export interface ExtendedPostId extends Struct {
+  readonly category_id: CategoryId;
+  readonly thread_id: ThreadId;
+  readonly post_id: PostId;
+}
+
 /** @name FillOpeningParameters */
 export interface FillOpeningParameters extends Struct {
   readonly opening_id: OpeningId;
@@ -478,6 +489,7 @@ export interface Opening extends Struct {
   readonly description_hash: Bytes;
   readonly stake_policy: StakePolicy;
   readonly reward_per_block: Option<u128>;
+  readonly creation_stake: u128;
 }
 
 /** @name OpeningId */
@@ -594,6 +606,8 @@ export interface Post extends Struct {
   readonly thread_id: ThreadId;
   readonly text_hash: Hash;
   readonly author_id: ForumUserId;
+  readonly cleanup_pay_off: u128;
+  readonly last_edited: u32;
 }
 
 /** @name PostId */
@@ -885,12 +899,12 @@ export interface TerminateRoleParameters extends Struct {
 
 /** @name Thread */
 export interface Thread extends Struct {
-  readonly title_hash: Hash;
+  readonly metadata_hash: Hash;
   readonly category_id: CategoryId;
   readonly author_id: ForumUserId;
-  readonly archived: bool;
   readonly poll: Option<Poll>;
-  readonly num_direct_posts: u32;
+  readonly cleanup_pay_off: u128;
+  readonly number_of_posts: u64;
 }
 
 /** @name ThreadId */
@@ -905,12 +919,12 @@ export interface ThreadMode extends Enum {
 
 /** @name ThreadOf */
 export interface ThreadOf extends Struct {
-  readonly title_hash: Hash;
+  readonly metadata_hash: Hash;
   readonly category_id: CategoryId;
   readonly author_id: ForumUserId;
-  readonly archived: bool;
   readonly poll: Option<Poll>;
-  readonly num_direct_posts: u32;
+  readonly cleanup_pay_off: u128;
+  readonly number_of_posts: u64;
 }
 
 /** @name Title */

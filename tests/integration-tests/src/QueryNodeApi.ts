@@ -1,4 +1,4 @@
-import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client'
+import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
 import { MemberId, PostId, ThreadId } from '@joystream/types/common'
 import { extendDebug, Debugger } from './Debugger'
 import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'

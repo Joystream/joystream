@@ -2,8 +2,7 @@
 /* eslint-disable */
 
 import type { BTreeMap, BTreeSet, Bytes, Option, Text, Vec, bool, u32, u64, u8 } from '@polkadot/types';
-import type { ITuple } from '@polkadot/types/types';
-import type { ActorId, ApplicationId, ApplicationIdToWorkerIdMap, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ExecutionStatus, ForumUserId, GeneralProposalParameters, InviteMembershipParameters, IsCensored, MemberId, MemoText, ModeratorId, NewAsset, OpeningId, OpeningType, OptionResult, OracleJudgment, ParticipantId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PollInput, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetailsOf, ProposalId, ProposalStatus, ReplyId, RewardPaymentType, Series, SeriesId, SeriesParameters, StakePolicy, StorageObjectOwner, StorageProviderId, ThreadId, ThreadMode, Title, UpdatedBody, UpdatedTitle, UploadingStatus, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VoucherLimit, WorkerId, WorkingGroup } from './all';
+import type { ActorId, ApplicationId, ApplicationIdToWorkerIdMap, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ExecutionStatus, ExtendedPostId, ForumUserId, GeneralProposalParameters, InviteMembershipParameters, IsCensored, MemberId, MemoText, ModeratorId, NewAsset, OpeningId, OpeningType, OptionResult, OracleJudgment, ParticipantId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PollInput, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetailsOf, ProposalId, ProposalStatus, ReplyId, RewardPaymentType, Series, SeriesId, SeriesParameters, StakePolicy, StorageObjectOwner, StorageProviderId, ThreadId, ThreadMode, Title, UpdatedBody, UpdatedTitle, UploadingStatus, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VoucherLimit, WorkerId, WorkingGroup } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -622,7 +621,7 @@ declare module '@polkadot/api/types/events' {
       /**
        * Post with givne id was deleted.
        **/
-      PostDeleted: AugmentedEvent<ApiType, [Bytes, ForumUserId, BTreeMap<ITuple<[CategoryId, ThreadId, PostId]>, bool>]>;
+      PostDeleted: AugmentedEvent<ApiType, [Bytes, ForumUserId, BTreeMap<ExtendedPostId, bool>]>;
       /**
        * Post with givne id was moderated.
        **/
