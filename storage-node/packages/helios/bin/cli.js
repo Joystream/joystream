@@ -130,14 +130,28 @@ async function testEndpoints(providers) {
   return Promise.all(
     providers.map(async (provider) => {
       if (!provider.endpoint) {
-        return
+        return {
+          ...provider,
+          status: 'no url set',
+          version: '',
+        }
       }
       const swaggerUrl = `${stripEndingSlash(provider.endpoint)}/swagger.json`
       try {
         const { data } = await axios.get(swaggerUrl)
         debug(`${provider.providerId}:`, `${provider.endpoint}`, '- OK -', `API version ${data.info.version}`)
+        return {
+          ...provider,
+          status: 'OK',
+          version: data.info.node_version,
+        }
       } catch (err) {
         debug(`${provider.providerId}:`, `${provider.endpoint}`, '- FAILED -', `${err.message}`)
+        return {
+          ...provider,
+          status: err.message,
+          version: '',
+        }
       }
     })
   )
@@ -176,12 +190,15 @@ async function main() {
   Arguments (optional)
     --endpoint URL            Test only one specific colossus API endpoint (does not have to be an active worker).
                               When not specified all online storage providers will be tested.
-    --limit-assets  N         Limit tests to N assets.
-    --detailed                Includes list of failed assets in output report.
+    --skip-asset-tests        If set, providers will not be checked for asset availability.
+    --limit-assets  N         Limit checks to N assets.
     --assets                  Path to a JSON file containing array of ContentIds to test.
                               When not specified all 'Accepted' content will be tested.
     --dump-assets             Dumps list of assets (content ids) which will be tested.
+    --detailed                Includes list of failed assets in output report.
 `)
+
+  const finalReport = {}
 
   let providers = []
 
@@ -194,22 +211,26 @@ async function main() {
     providers = await fetchProviders()
   }
 
-  await testEndpoints(providers)
+  finalReport.providers = await testEndpoints(providers)
 
-  let contentIds = []
+  let contentIds
 
-  // Load data objects from chain or from a file
-  if (cli.flags.assets) {
-    const file = cli.flags.assets
-    contentIds = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+  if (cli.flags.skipAssetTests) {
+    contentIds = []
   } else {
-    contentIds = await fetchContentIds()
+    if (cli.flags.assets) {
+      // Load data objects from chain or from a file
+      const file = cli.flags.assets
+      contentIds = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+    } else {
+      contentIds = await fetchContentIds()
+    }
   }
 
   // limit number of assets to test ?
   const limit = cli.flags.limitAssets
   let contentToTest
-  if (limit) {
+  if (limit && contentToTest.length) {
     contentToTest = contentIds.slice(0, limit)
   } else {
     contentToTest = contentIds
@@ -234,15 +255,15 @@ async function main() {
     cliProgress.Presets.shades_grey
   )
 
-  let reports = []
+  let stats = []
 
   if (cli.flags.endpoint) {
     const endpoint = cli.flags.endpoint
     debug('Checking available assets on', endpoint)
-    reports = [await testProviderHasAssets(null, endpoint, contentToTest, multibar)]
+    stats = [await testProviderHasAssets(null, endpoint, contentToTest, multibar)]
   } else {
     debug('Checking available assets on live providers')
-    reports = (
+    stats = (
       await Promise.all(
         providers.map(async ({ providerId, endpoint }) => {
           if (!endpoint) {
@@ -256,17 +277,15 @@ async function main() {
 
   multibar.stop()
 
-  const finalReport = {}
-
   if (cli.flags.detailed) {
-    finalReport.providers = reports
+    finalReport.stats = stats
   } else {
-    finalReport.providers = reports.map((report) => report.summary)
+    finalReport.stats = stats.map((report) => report.summary)
   }
 
   // Assets that appear to be missing on all providers
   if (cli.flags.detailed) {
-    finalReport.commonFailed = _.intersection(...reports.map((report) => report.failed))
+    finalReport.commonFailed = _.intersection(...stats.map((report) => report.failed))
   }
 
   console.log(JSON.stringify(finalReport, null, '  '))
