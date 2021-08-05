@@ -76,6 +76,8 @@ fn delete_thread_mock(
     thread_id: <Test as Trait>::ThreadId,
     result: DispatchResult,
 ) -> <Test as Trait>::ThreadId {
+    let balance_before = balances::Module::<Test>::free_balance(sender);
+
     assert_eq!(
         Content::delete_thread(Origin::signed(sender), actor.clone(), thread_id.clone()),
         result
@@ -87,6 +89,24 @@ fn delete_thread_mock(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ThreadDeleted(thread_id, actor))
         );
+
+        let thread = Content::thread_by_id(thread_id);
+        let mut iter = PostById::<Test>::iter_prefix_values(thread_id);
+        let mut thread_cleanup_cost = thread.bloat_bond;
+
+        if let Some(post) = iter.next() {
+            thread_cleanup_cost = thread.bloat_bond.saturating_add(post.bloat_bond);
+        }
+
+        // verify that thread author balance is increased
+        if let ContentActor::Member(member) = actor {
+            if member == thread.author_id {
+                assert_eq!(
+                    balances::Module::<Test>::free_balance(sender) - balance_before,
+                    thread_cleanup_cost
+                );
+            }
+        }
     }
     thread_id
 }
@@ -1079,6 +1099,53 @@ fn verify_update_moderators_effects() {
             FIRST_MEMBER_ID,
             FIRST_MEMBER_ORIGIN,
             ModSetOperation::RemoveModerator,
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn verify_delete_thread_effects() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            SECOND_MEMBER_ORIGIN,
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
+        );
+
+        let _ = create_post_mock(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
+        );
+
+        let _ = delete_thread_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            thread_id,
             Ok(()),
         );
     })
