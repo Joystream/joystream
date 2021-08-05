@@ -11,14 +11,8 @@ fragment StorageBucketDetails on StorageBucket {
   }
 }
 
-query getStorageBucketDetails($id: ID!) {
-  storageBucketByUniqueInput(where: { id: $id }) {
-    ...StorageBucketDetails
-  }
-}
-
-query getAllStorageBucketDetails {
-  storageBuckets {
+query getStorageBucketDetails($offset: Int, $limit: Int) {
+  storageBuckets(offset: $offset, limit: $limit) {
     ...StorageBucketDetails
   }
 }
@@ -30,8 +24,16 @@ fragment StorageBagDetails on StorageBag {
   }
 }
 
-query getStorageBagDetails($bucketIds: StorageBucketWhereInput) {
-  storageBags(where: { storedBy_some: $bucketIds }) {
+query getStorageBagDetails(
+  $bucketIds: StorageBucketWhereInput
+  $offset: Int
+  $limit: Int
+) {
+  storageBags(
+    offset: $offset
+    limit: $limit
+    where: { storedBy_some: $bucketIds }
+  ) {
     ...StorageBagDetails
   }
 }
@@ -43,8 +45,16 @@ fragment DataObjectDetails on StorageDataObject {
   }
 }
 
-query getDataObjectDetails($bagIds: StorageBagWhereInput, $limit: Int) {
-  storageDataObjects(limit: $limit, where: { storageBag: $bagIds }) {
+query getDataObjectDetails(
+  $bagIds: StorageBagWhereInput
+  $offset: Int
+  $limit: Int
+) {
+  storageDataObjects(
+    offset: $offset
+    limit: $limit
+    where: { storageBag: $bagIds, isAccepted_eq: true }
+  ) {
     ...DataObjectDetails
   }
 }
