@@ -339,7 +339,7 @@ impl Default for ExtBuilder {
             next_curator_group_id: 1,
             next_post_id: 1,
             next_thread_id: 1,
-            number_of_subreddit_moderators: 5,
+            number_of_subreddit_moderators: 0,
         }
     }
 }

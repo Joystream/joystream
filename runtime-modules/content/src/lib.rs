@@ -1850,27 +1850,24 @@ decl_module! {
                 Error::<T>::ModeratorsLimitExceeded
             );
 
-            let new_moderators_num = moderators_num.saturating_add(1);
-
             //
             // == MUTATION SAFE ==
             //
 
             <ModeratorSetForSubreddit<T>>::insert(channel_id, member_id, ());
-            <NumberOfSubredditModerators>::put(new_moderators_num);
+            <NumberOfSubredditModerators>::mutate(|x| *x = x.saturating_add(1));
 
         },
 
             ModSetOperation::RemoveModerator => {
                 Self::ensure_moderator_is_valid(&channel_id, &member_id)?;
-                let new_moderators_num = moderators_num.saturating_sub(1);
 
                 //
                 // == MUTATION SAFE ==
                 //
 
                 <ModeratorSetForSubreddit<T>>::remove(channel_id, member_id);
-                <NumberOfSubredditModerators>::put(new_moderators_num);
+                <NumberOfSubredditModerators>::mutate(|x| *x = x.saturating_sub(1));
             }
         };
 

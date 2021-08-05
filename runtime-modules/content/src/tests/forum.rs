@@ -278,6 +278,7 @@ fn update_moderator_set_mock(
     op: ModSetOperation,
     result: DispatchResult,
 ) {
+    let previous_num_of_moderators = Content::number_of_subreddit_moderators();
     assert_eq!(
         Content::update_moderator_set(
             Origin::signed(sender),
@@ -287,31 +288,28 @@ fn update_moderator_set_mock(
             member_account_id.clone(),
             op.clone(),
         ),
-        result.clone()
+        result,
     );
 
     if result.is_ok() {
-        let previous_num_of_moderators = Content::number_of_subreddit_moderators();
         match op {
             ModSetOperation::AddModerator => {
                 assert_eq!(
                     Content::number_of_subreddit_moderators() - previous_num_of_moderators,
                     1
                 );
-                assert_ne!(
-                    ModeratorSetForSubreddit::<Test>::get(channel_id, member_id),
-                    ()
-                );
+                assert!(ModeratorSetForSubreddit::<Test>::contains_key(
+                    channel_id, member_id
+                ));
             }
             _ => {
                 assert_eq!(
                     previous_num_of_moderators - Content::number_of_subreddit_moderators(),
                     1
                 );
-                assert_eq!(
-                    ModeratorSetForSubreddit::<Test>::get(channel_id, member_id),
-                    ()
-                );
+                assert!(!ModeratorSetForSubreddit::<Test>::contains_key(
+                    channel_id, member_id
+                ));
             }
         }
     }
@@ -1044,6 +1042,44 @@ fn non_owner_cannot_add_or_remove_moderators() {
             FIRST_MEMBER_ORIGIN,
             ModSetOperation::AddModerator,
             Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
+    })
+}
+
+#[test]
+fn verify_update_moderators_effects() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+
+        let channel_id = create_channel_mock(
+            SECOND_MEMBER_ORIGIN,
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        update_moderator_set_mock(
+            SECOND_MEMBER_ORIGIN,
+            ContentActor::Member(SECOND_MEMBER_ID),
+            channel_id,
+            FIRST_MEMBER_ID,
+            FIRST_MEMBER_ORIGIN,
+            ModSetOperation::AddModerator,
+            Ok(()),
+        );
+
+        update_moderator_set_mock(
+            SECOND_MEMBER_ORIGIN,
+            ContentActor::Member(SECOND_MEMBER_ID),
+            channel_id,
+            FIRST_MEMBER_ID,
+            FIRST_MEMBER_ORIGIN,
+            ModSetOperation::RemoveModerator,
+            Ok(()),
         );
     })
 }
