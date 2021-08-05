@@ -107,11 +107,14 @@ fn delete_thread_mock(
                 );
             }
         }
+<<<<<<< HEAD
         // Thread thread_id is removed
         assert!(!ThreadById::<Test>::contains_key(thread_id));
 
         // all post are deleted for Thread thread_id
         assert_eq!(PostById::<Test>::iter_prefix_values(thread_id).next(), None);
+=======
+>>>>>>> bb7fdf589110d9a4d414ffdb899711e5b16d2d0b
     }
     thread_id
 }
