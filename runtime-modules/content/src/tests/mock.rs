@@ -31,6 +31,7 @@ pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
+pub const THIRD_MEMBER_ORIGIN: u64 = 6;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
 
 // Members range from MemberId 1 to 10
@@ -49,6 +50,7 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+pub const THIRD_MEMBER_ID: MemberId = 3;
 pub const NOT_FORUM_MEMBER_ID: MemberId = 114;
 
 /// Invalid IDs

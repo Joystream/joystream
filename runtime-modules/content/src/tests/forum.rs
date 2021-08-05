@@ -736,6 +736,14 @@ fn non_author_or_invalid_member_cannot_delete_post() {
             post_id,
             Err(Error::<Test>::ActorNotAuthorized.into()),
         );
+
+        let _ = delete_post_mock(
+            THIRD_MEMBER_ORIGIN,
+            ContentActor::Member(THIRD_MEMBER_ID),
+            thread_id,
+            post_id,
+            Err(Error::<Test>::ActorNotAuthorized.into()),
+        );
     })
 }
 
@@ -794,6 +802,53 @@ fn cannot_delete_invalid_post() {
     })
 }
 
+#[test]
+fn verify_delete_post_effects() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            SECOND_MEMBER_ORIGIN,
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
+        );
+
+        let post_id = create_post_mock(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Ok(()),
+        );
+
+        let _ = delete_post_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            thread_id,
+            post_id,
+            Ok(()),
+        );
+    })
+}
 #[test]
 fn invalid_forum_user_cannot_react_post_or_thread() {
     with_default_mock_builder(|| {
@@ -854,7 +909,7 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
 }
 
 #[test]
-fn verify_react_post_effects() {
+fn verify_react_post_and_thread_effects() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
@@ -897,6 +952,15 @@ fn verify_react_post_effects() {
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
             post_id,
+            channel_id,
+            Ok(()),
+        );
+
+        let _ = react_thread_mock(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_MEMBER_ID,
+            <Test as Trait>::ReactionId::from(1u64),
+            thread_id,
             channel_id,
             Ok(()),
         );
