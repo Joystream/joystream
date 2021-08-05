@@ -13,7 +13,7 @@ fn func(account_id: <Test as frame_system::Trait>::AccountId) {
     );
 }
 fn create_channel_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     params: ChannelCreationParameters<
         ContentParameters<Test>,
@@ -24,7 +24,7 @@ fn create_channel_mock(
     let channel_id = Content::next_channel_id();
 
     assert_eq!(
-        Content::create_channel(origin.clone(), actor.clone(), params.clone()),
+        Content::create_channel(Origin::signed(sender), actor.clone(), params.clone()),
         result
     );
 
@@ -40,15 +40,17 @@ fn create_channel_mock(
 }
 
 fn create_thread_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     member_id: MemberId,
     params: ThreadCreationParameters<ChannelId>,
     result: DispatchResult,
 ) -> <Test as Trait>::ThreadId {
     let thread_id = Content::next_thread_id();
 
+    let balance_before = balances::Module::<Test>::free_balance(sender);
+
     assert_eq!(
-        Content::create_thread(origin.clone(), member_id.clone(), params.clone()),
+        Content::create_thread(Origin::signed(sender), member_id.clone(), params.clone()),
         result
     );
 
@@ -59,18 +61,23 @@ fn create_thread_mock(
             MetaEvent::content(RawEvent::ThreadCreated(thread_id, member_id, params))
         );
         assert_eq!(Content::next_thread_id(), thread_id + 1);
+        let thread = ThreadById::<Test>::get(thread_id);
+        assert_eq!(
+            balance_before - balances::Module::<Test>::free_balance(sender),
+            thread.bloat_bond,
+        );
     }
     thread_id
 }
 
 fn delete_thread_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     thread_id: <Test as Trait>::ThreadId,
     result: DispatchResult,
 ) -> <Test as Trait>::ThreadId {
     assert_eq!(
-        Content::delete_thread(origin.clone(), actor.clone(), thread_id.clone()),
+        Content::delete_thread(Origin::signed(sender), actor.clone(), thread_id.clone()),
         result
     );
 
@@ -85,15 +92,18 @@ fn delete_thread_mock(
 }
 
 fn create_post_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     member_id: MemberId,
     params: PostCreationParameters<<Test as Trait>::ThreadId>,
     result: DispatchResult,
 ) -> <Test as Trait>::PostId {
     let post_id = Content::next_post_id();
     let thread = Content::thread_by_id(params.thread_id.clone());
+
+    let balance_before = balances::Module::<Test>::free_balance(sender);
+
     assert_eq!(
-        Content::create_post(origin.clone(), member_id.clone(), params.clone(),),
+        Content::create_post(Origin::signed(sender), member_id.clone(), params.clone()),
         result
     );
 
@@ -112,27 +122,33 @@ fn create_post_mock(
             Content::thread_by_id(params.thread_id).number_of_posts - thread.number_of_posts,
             1,
         );
+
+        // 3. balance is adjusted
+        assert_eq!(
+            balance_before - balances::Module::<Test>::free_balance(sender),
+            Content::post_by_id(params.thread_id, post_id).bloat_bond
+        );
     }
     post_id
 }
 
 fn delete_post_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     thread_id: <Test as Trait>::ThreadId,
     post_id: <Test as Trait>::PostId,
     result: DispatchResult,
 ) {
     let mut balance_before = 0;
-    if let ContentActor::Member(member) = actor {
-        balance_before = balances::Module::<Test>::free_balance(member);
+    if let ContentActor::Member(_) = actor {
+        balance_before = balances::Module::<Test>::free_balance(sender);
     }
 
     let bond = Content::post_by_id(thread_id.clone(), post_id.clone()).bloat_bond;
 
     assert_eq!(
         Content::delete_post(
-            origin.clone(),
+            Origin::signed(sender),
             actor.clone(),
             thread_id.clone(),
             post_id.clone(),
@@ -148,15 +164,17 @@ fn delete_post_mock(
         );
 
         // 2. Post Author is refunded
-        if let ContentActor::Member(member) = actor {
-            let balance_after = balances::Module::<Test>::free_balance(member);
-            assert_eq!(balance_after - balance_before, bond);
+        if let ContentActor::Member(_) = actor {
+            assert_eq!(
+                balances::Module::<Test>::free_balance(sender) - balance_before,
+                bond
+            );
         }
     }
 }
 
 fn edit_post_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     member_id: MemberId,
     thread_id: <Test as Trait>::ThreadId,
     post_id: <Test as Trait>::PostId,
@@ -165,7 +183,7 @@ fn edit_post_mock(
 ) {
     assert_eq!(
         Content::edit_post(
-            origin.clone(),
+            Origin::signed(sender),
             member_id.clone(),
             thread_id.clone(),
             post_id.clone(),
@@ -184,7 +202,7 @@ fn edit_post_mock(
 }
 
 fn react_post_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     member_id: MemberId,
     reaction_id: <Test as Trait>::ReactionId,
     thread_id: <Test as Trait>::ThreadId,
@@ -194,7 +212,7 @@ fn react_post_mock(
 ) {
     assert_eq!(
         Content::react_post(
-            origin.clone(),
+            Origin::signed(sender),
             member_id.clone(),
             thread_id.clone(),
             post_id.clone(),
@@ -219,7 +237,7 @@ fn react_post_mock(
 }
 
 fn react_thread_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     member_id: MemberId,
     reaction_id: <Test as Trait>::ReactionId,
     thread_id: <Test as Trait>::ThreadId,
@@ -228,7 +246,7 @@ fn react_thread_mock(
 ) {
     assert_eq!(
         Content::react_thread(
-            origin.clone(),
+            Origin::signed(sender),
             member_id.clone(),
             thread_id.clone(),
             reaction_id.clone(),
@@ -251,28 +269,8 @@ fn react_thread_mock(
     }
 }
 
-fn archive_thread_mock(
-    origin: Origin,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    thread_id: <Test as Trait>::ThreadId,
-    result: DispatchResult,
-) {
-    assert_eq!(
-        Content::archive_thread(origin.clone(), actor.clone(), thread_id.clone()),
-        result
-    );
-    if result.is_ok() {
-        // assert thread is archived
-        assert!(Content::thread_by_id(thread_id).archived);
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ThreadArchived(thread_id, actor))
-        );
-    }
-}
-
 fn update_moderator_set_mock(
-    origin: Origin,
+    sender: <Test as frame_system::Trait>::AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: <Test as StorageOwnership>::ChannelId,
     member_id: MemberId,
@@ -282,7 +280,7 @@ fn update_moderator_set_mock(
 ) {
     assert_eq!(
         Content::update_moderator_set(
-            origin.clone(),
+            Origin::signed(sender),
             actor.clone(),
             channel_id.clone(),
             member_id.clone(),
@@ -324,7 +322,7 @@ fn invalid_member_cannot_create_thread() {
     with_default_mock_builder(|| {
         func(UNKNOWN_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -335,7 +333,7 @@ fn invalid_member_cannot_create_thread() {
             Ok(()),
         );
         let _ = create_thread_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             NOT_FORUM_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -354,7 +352,7 @@ fn cannot_create_thread_with_invalid_channel_id() {
         func(FIRST_MEMBER_ORIGIN);
 
         let _ = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -368,11 +366,42 @@ fn cannot_create_thread_with_invalid_channel_id() {
 }
 
 #[test]
+fn cannot_create_thread_on_immutable_subreddit() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+
+        let channel_id = create_channel_mock(
+            SECOND_MEMBER_ORIGIN,
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: false,
+            },
+            Ok(()),
+        );
+
+        let _ = create_thread_mock(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Err(Error::<Test>::SubredditCannotBeModified.into()),
+        );
+    })
+}
+
+#[test]
 fn cannot_delete_invalid_thread() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let _ = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -384,7 +413,7 @@ fn cannot_delete_invalid_thread() {
         );
 
         let _ = delete_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             INVALID_THREAD,
             Err(Error::<Test>::ThreadDoesNotExist.into()),
@@ -397,7 +426,7 @@ fn non_author_or_invalid_member_cannot_delete_thread() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -408,7 +437,7 @@ fn non_author_or_invalid_member_cannot_delete_thread() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -419,7 +448,7 @@ fn non_author_or_invalid_member_cannot_delete_thread() {
             Ok(()),
         );
         let _ = delete_thread_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             ContentActor::Member(NOT_FORUM_MEMBER_ID),
             thread_id,
             Err(Error::<Test>::MemberAuthFailed.into()),
@@ -432,7 +461,7 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -443,7 +472,7 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -455,7 +484,7 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
         );
 
         let _ = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -479,7 +508,7 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
         ));
 
         let _ = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -497,7 +526,7 @@ fn non_authorized_or_invalid_member_cannot_create_post() {
         func(FIRST_MEMBER_ORIGIN);
 
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -508,7 +537,7 @@ fn non_authorized_or_invalid_member_cannot_create_post() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -520,7 +549,7 @@ fn non_authorized_or_invalid_member_cannot_create_post() {
         );
 
         let _ = create_post_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             NOT_FORUM_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -538,7 +567,7 @@ fn non_author_or_invalid_member_cannot_edit_post() {
         func(FIRST_MEMBER_ORIGIN);
 
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -549,7 +578,7 @@ fn non_author_or_invalid_member_cannot_edit_post() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -561,7 +590,7 @@ fn non_author_or_invalid_member_cannot_edit_post() {
         );
 
         let post_id = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -572,7 +601,7 @@ fn non_author_or_invalid_member_cannot_edit_post() {
         );
 
         let _ = edit_post_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             NOT_FORUM_MEMBER_ID,
             thread_id,
             post_id,
@@ -582,8 +611,9 @@ fn non_author_or_invalid_member_cannot_edit_post() {
             },
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
+
         let _ = edit_post_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             SECOND_MEMBER_ID,
             thread_id,
             post_id,
@@ -602,7 +632,7 @@ fn cannot_edit_invalid_post() {
         func(FIRST_MEMBER_ORIGIN);
 
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -613,7 +643,7 @@ fn cannot_edit_invalid_post() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -625,7 +655,7 @@ fn cannot_edit_invalid_post() {
         );
 
         let post_id = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -636,7 +666,7 @@ fn cannot_edit_invalid_post() {
         );
 
         let _ = edit_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             thread_id,
             INVALID_POST,
@@ -648,7 +678,7 @@ fn cannot_edit_invalid_post() {
         );
 
         let _ = edit_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             INVALID_THREAD,
             post_id,
@@ -666,7 +696,7 @@ fn non_author_or_invalid_member_cannot_delete_post() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -677,7 +707,7 @@ fn non_author_or_invalid_member_cannot_delete_post() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -689,7 +719,7 @@ fn non_author_or_invalid_member_cannot_delete_post() {
         );
 
         let post_id = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -700,7 +730,7 @@ fn non_author_or_invalid_member_cannot_delete_post() {
         );
 
         let _ = delete_post_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             ContentActor::Member(NOT_FORUM_MEMBER_ID),
             thread_id,
             post_id,
@@ -714,7 +744,7 @@ fn cannot_delete_invalid_post() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -725,7 +755,7 @@ fn cannot_delete_invalid_post() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -737,7 +767,7 @@ fn cannot_delete_invalid_post() {
         );
 
         let post_id = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -748,14 +778,14 @@ fn cannot_delete_invalid_post() {
         );
 
         let _ = delete_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             thread_id,
             INVALID_POST,
             Err(Error::<Test>::PostDoesNotExist.into()),
         );
         let _ = delete_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             INVALID_THREAD,
             post_id,
@@ -769,7 +799,7 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -780,7 +810,7 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -792,7 +822,7 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
         );
 
         let post_id = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -803,7 +833,7 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
         );
 
         let _ = react_post_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             NOT_FORUM_MEMBER_ID,
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
@@ -813,7 +843,7 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
         );
 
         let _ = react_thread_mock(
-            Origin::signed(UNKNOWN_ORIGIN),
+            UNKNOWN_ORIGIN,
             NOT_FORUM_MEMBER_ID,
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
@@ -828,7 +858,7 @@ fn verify_react_post_effects() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -839,7 +869,7 @@ fn verify_react_post_effects() {
             Ok(()),
         );
         let thread_id = create_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             ThreadCreationParameters {
                 title: b"title".to_vec(),
@@ -851,7 +881,7 @@ fn verify_react_post_effects() {
         );
 
         let post_id = create_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             PostCreationParameters {
                 text: vec![1, 2],
@@ -862,7 +892,7 @@ fn verify_react_post_effects() {
         );
 
         let _ = react_post_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
@@ -874,24 +904,11 @@ fn verify_react_post_effects() {
 }
 
 #[test]
-fn cannot_archive_invalid_thread() {
-    with_default_mock_builder(|| {
-        func(FIRST_MEMBER_ORIGIN);
-        let _ = archive_thread_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
-            INVALID_THREAD,
-            Err(Error::<Test>::ThreadDoesNotExist.into()),
-        );
-    })
-}
-
-#[test]
 fn cannot_add_or_remove_invalid_moderator() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -903,7 +920,7 @@ fn cannot_add_or_remove_invalid_moderator() {
         );
 
         let _ = update_moderator_set_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             channel_id,
             NOT_FORUM_MEMBER_ID,
@@ -912,7 +929,7 @@ fn cannot_add_or_remove_invalid_moderator() {
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
         let _ = update_moderator_set_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             channel_id,
             NOT_FORUM_MEMBER_ID,
@@ -928,7 +945,7 @@ fn cannot_add_or_remove_moderators_from_invalid_subreddits() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let _ = update_moderator_set_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             INVALID_CHANNEL,
             FIRST_MEMBER_ID,
@@ -945,7 +962,7 @@ fn non_owner_cannot_add_or_remove_moderators() {
         func(FIRST_MEMBER_ORIGIN);
 
         let channel_id = create_channel_mock(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
                 assets: vec![],
@@ -956,7 +973,7 @@ fn non_owner_cannot_add_or_remove_moderators() {
             Ok(()),
         );
         let _ = update_moderator_set_mock(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
             FIRST_MEMBER_ID,
