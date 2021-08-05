@@ -519,9 +519,6 @@ pub struct Reply_<BlockNumber, ReplyId, PostId: Default, ParticipantId, Balance,
 
     /// Last time reply was edited
     last_edited: BlockNumber,
-
-    /// actual text (hash) of the reply
-    text: Hash,
 }
 
 /// alias for Post
@@ -1405,7 +1402,6 @@ decl_module! {
             participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reply_id: Option<T::ReplyId>,
-            text: <T as frame_system::Trait>::Hash,
         ) {
             // ensure that origin is signed by a Member
             ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
@@ -1445,7 +1441,6 @@ decl_module! {
                 parent_id: parent_id,
                 cleanup_pay_off: BalanceOf::<T>::zero(),
                 last_edited: frame_system::Module::<T>::block_number(),
-                text: text,
             };
 
             // insert the reply into storage
@@ -1490,7 +1485,6 @@ decl_module! {
           participant_id: ParticipantId<T>,
           post_id: T::PostId,
           reply_id: T::ReplyId,
-          new_text: <T as frame_system::Trait>::Hash
         ) {
 
             // Ensure reply with given id exists
@@ -1503,9 +1497,6 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-
-            let mut reply = reply;
-            reply.text = new_text;
 
             // insert the reply into storage
             ReplyById::<T>::insert(post_id, reply_id, reply);
