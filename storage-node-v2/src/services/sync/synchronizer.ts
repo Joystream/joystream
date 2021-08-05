@@ -1,4 +1,5 @@
 import { getRuntimeModel } from '../../services/sync/dataObjectsModel'
+import logger from '../../services/logger'
 import _ from 'lodash'
 import fs from 'fs'
 import path from 'path'
@@ -13,24 +14,25 @@ const fsPromises = fs.promises
 export async function performSync(): Promise<void> {
   const queryNodeUrl = 'http://localhost:8081/graphql'
   const workerId = 1
-  const processNumber = 3
+  const processNumber = 30
   const uploadDirectory = '/Users/shamix/uploads'
   const operatorUrl = 'http://localhost:3333/'
 
+  logger.info('Started syncing...')
   const [model, files] = await Promise.all([
     getRuntimeModel(queryNodeUrl, workerId),
     getLocalFileNames(uploadDirectory),
   ])
-  console.log(model)
-  console.log(files)
+  // console.log(model)
+  // console.log(files)
 
   const requiredCids = model.dataObjects.map((obj) => obj.cid)
 
   const added = _.difference(requiredCids, files)
   const deleted = _.difference(files, requiredCids)
 
-  console.log(`Added: ${added}`)
-  console.log(`Deleted: ${deleted}`)
+  logger.debug(`Sync - added objects: ${added.length}`)
+  logger.debug(`Sync - deleted objects: ${deleted.length}`)
 
   const deletedTasks = deleted.map(
     (fileName) => new DeleteLocalFileTask(uploadDirectory, fileName)
@@ -39,6 +41,7 @@ export async function performSync(): Promise<void> {
     (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory)
   )
 
+  logger.debug(`Sync - started processing...`)
   const workingStack = new WorkingStack()
   const processSpawner = new TaskProcessorSpawner(workingStack, processNumber)
 
@@ -46,9 +49,7 @@ export async function performSync(): Promise<void> {
   workingStack.add(addedTasks)
 
   await processSpawner.process()
-  // const tasks: SyncTask[] = [...deletedTasks, ...addedTasks]
-
-  // await Promise.all(tasks.map((task) => task.execute()))
+  logger.info('Sync ended.')
 }
 
 async function getLocalFileNames(directory: string): Promise<string[]> {
@@ -70,7 +71,7 @@ class DeleteLocalFileTask implements SyncTask {
   }
 
   description(): string {
-    return `Deleting local file: ${this.filename} ....`
+    return `Sync - deleting local file: ${this.filename} ....`
   }
 
   async execute(): Promise<void> {
@@ -89,7 +90,7 @@ class DownloadFileTask implements SyncTask {
   }
 
   description(): string {
-    return `Downloading file: ${this.url} as ${this.filepath} ....`
+    return `Sync - downloading file: ${this.url} as ${this.filepath} ....`
   }
 
   async execute(): Promise<void> {
@@ -175,11 +176,10 @@ class TaskProcessor {
 
   async process(): Promise<void> {
     while (true) {
-      console.log('Processing....')
       const task = await this.taskSource.get()
 
       if (task !== null) {
-        console.log(task.description())
+        logger.debug(task.description())
         await task.execute()
       } else {
         if (this.exitOnCompletion) {

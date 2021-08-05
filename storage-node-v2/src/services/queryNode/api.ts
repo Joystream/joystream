@@ -10,9 +10,6 @@ import {
   GetStorageBucketDetails,
   GetStorageBucketDetailsQuery,
   GetStorageBucketDetailsQueryVariables,
-  GetAllStorageBucketDetails,
-  GetAllStorageBucketDetailsQuery,
-  GetAllStorageBucketDetailsQueryVariables,
   StorageBucketDetailsFragment,
   GetStorageBagDetailsQuery,
   GetStorageBagDetails,
@@ -51,10 +48,16 @@ export class QueryNodeApi {
     variables: VariablesT,
     resultKey: keyof QueryT
   ): Promise<Required<QueryT>[keyof QueryT] | null> {
-    return (
-      (await this.apolloClient.query<QueryT, VariablesT>({ query, variables }))
-        .data[resultKey] || null
-    )
+    const result = await this.apolloClient.query<QueryT, VariablesT>({
+      query,
+      variables,
+    })
+
+    if (result?.data === null) {
+      return null
+    }
+
+    return result.data[resultKey]
   }
 
   // Get entities by "non-unique" input and return first result
@@ -66,10 +69,15 @@ export class QueryNodeApi {
     variables: VariablesT,
     resultKey: keyof QueryT
   ): Promise<QueryT[keyof QueryT][number] | null> {
-    return (
-      (await this.apolloClient.query<QueryT, VariablesT>({ query, variables }))
-        .data[resultKey][0] || null
-    )
+    const result = await this.apolloClient.query<QueryT, VariablesT>({
+      query,
+      variables,
+    })
+
+    if (result?.data === null) {
+      return null
+    }
+    return result.data[resultKey][0]
   }
 
   // Query-node: get multiple entities
@@ -80,48 +88,71 @@ export class QueryNodeApi {
     query: DocumentNode,
     variables: VariablesT,
     resultKey: keyof QueryT
-  ): Promise<QueryT[keyof QueryT]> {
-    return (
-      await this.apolloClient.query<QueryT, VariablesT>({ query, variables })
-    ).data[resultKey]
+  ): Promise<QueryT[keyof QueryT] | null> {
+    const result = await this.apolloClient.query<QueryT, VariablesT>({
+      query,
+      variables,
+    })
+
+    if (result?.data === null) {
+      return null
+    }
+    return result.data[resultKey]
   }
 
-  public getStorageBucketDetails(
-    objectId: string
-  ): Promise<StorageBucketDetailsFragment | null> {
-    return this.uniqueEntityQuery<
+  public async getStorageBucketDetails(
+    offset: number,
+    limit: number
+  ): Promise<Array<StorageBucketDetailsFragment>> {
+    const result = await this.multipleEntitiesQuery<
       GetStorageBucketDetailsQuery,
       GetStorageBucketDetailsQueryVariables
-    >(GetStorageBucketDetails, { id: objectId }, 'storageBucketByUniqueInput')
+    >(GetStorageBucketDetails, { offset, limit }, 'storageBuckets')
+
+    if (result === null) {
+      return []
+    }
+
+    return result
   }
 
-  public getAllStorageBucketDetails(): Promise<
-    Array<StorageBucketDetailsFragment>
-  > {
-    return this.multipleEntitiesQuery<
-      GetAllStorageBucketDetailsQuery,
-      GetAllStorageBucketDetailsQueryVariables
-    >(GetAllStorageBucketDetails, {}, 'storageBuckets')
-  }
-
-  public getStorageBagsDetails(
-    bucketIds: string[]
+  public async getStorageBagsDetails(
+    bucketIds: string[],
+    offset: number,
+    limit: number
   ): Promise<Array<StorageBagDetailsFragment>> {
     const input: StorageBucketWhereInput = { id_in: bucketIds }
-    return this.multipleEntitiesQuery<
+    const result = await this.multipleEntitiesQuery<
       GetStorageBagDetailsQuery,
       GetStorageBagDetailsQueryVariables
-    >(GetStorageBagDetails, { bucketIds: input }, 'storageBags')
+    >(GetStorageBagDetails, { offset, limit, bucketIds: input }, 'storageBags')
+
+    if (result === null) {
+      return []
+    }
+
+    return result
   }
 
-  public getDataObjectDetails(
+  public async getDataObjectDetails(
     bagIds: string[],
+    offset: number,
     limit: number
   ): Promise<Array<DataObjectDetailsFragment>> {
     const input: StorageBagWhereInput = { id_in: bagIds }
-    return this.multipleEntitiesQuery<
+    const result = await this.multipleEntitiesQuery<
       GetDataObjectDetailsQuery,
       GetDataObjectDetailsQueryVariables
-    >(GetDataObjectDetails, { limit, bagIds: input }, 'storageDataObjects')
+    >(
+      GetDataObjectDetails,
+      { offset, limit, bagIds: input },
+      'storageDataObjects'
+    )
+
+    if (result === null) {
+      return []
+    }
+
+    return result
   }
 }
