@@ -25,9 +25,14 @@ const { nextTick } = require('@joystream/storage-utils/sleep')
 // available sync sessions allowed.
 const INTERVAL_BETWEEN_SYNC_RUNS_MS = 500
 
-async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags }) {
+async function syncRun({ api, storage, flags }) {
   // The number of concurrent items to attemp to fetch.
   const MAX_CONCURRENT_SYNC_ITEMS = Math.max(1, flags.maxSync)
+
+  // ids of content currently being synced
+  const contentBeingSynced = storage.pinning
+  // ids of content that completed sync
+  const contentCompletedSync = storage.pinned
 
   const contentIds = api.assets.getAcceptedIpfsHashes()
 
@@ -38,11 +43,9 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
     const id = idsToSync.pop()
 
     try {
-      storage.pin(id, (err, status) => {
+      storage.pin(id, (err) => {
         if (!err) {
-          if (status.synced) {
-            debug('synced:', id, 'total synced:', contentCompletedSync.size, 'remaining:', idsToSync.length)
-          }
+          debug('synced:', id, '| total synced:', contentCompletedSync.size, '| remaining:', idsToSync.length)
         }
       })
     } catch (err) {
@@ -56,14 +59,12 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
   }
 }
 
-async function syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync }) {
+async function syncRunner({ api, flags, storage }) {
   const retry = () => {
     setTimeout(syncRunner, INTERVAL_BETWEEN_SYNC_RUNS_MS, {
       api,
       flags,
       storage,
-      contentBeingSynced,
-      contentCompletedSync,
     })
   }
 
@@ -74,8 +75,6 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
       await syncRun({
         api,
         storage,
-        contentBeingSynced,
-        contentCompletedSync,
         flags,
       })
     }
@@ -88,16 +87,11 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
 }
 
 function startSyncing(api, flags, storage) {
-  // ids of content currently being synced
-  const contentBeingSynced = storage.pinning
-  // ids of content that completed sync
-  const contentCompletedSync = storage.pinned
-
-  syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync })
+  syncRunner({ api, flags, storage })
 
   setInterval(() => {
-    debug(`objects syncing: ${contentBeingSynced.size}`)
-    debug(`objects local: ${contentCompletedSync.size}`)
+    debug(`objects syncing: ${storage.pinning.size}`)
+    debug(`objects local: ${storage.pinned.size}`)
   }, 60000)
 }
 

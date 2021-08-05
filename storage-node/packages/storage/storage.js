@@ -451,7 +451,6 @@ class Storage {
       } catch (err) {
         debug(err)
       }
-      // await nextTick()
     }
     await sleep(2000)
     debug('scanned', checks, 'objects')
