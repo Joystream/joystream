@@ -251,8 +251,8 @@ class Storage {
 
     this.ipfs = ipfsClient(this.options.ipfsHost || 'localhost', '5001', { protocol: 'http' })
 
-    this.pinned = {}
-    this.pinning = {}
+    this.pinned = new Map()
+    this.pinning = new Map()
 
     this.ipfs.id((err, identity) => {
       if (err) {
@@ -402,21 +402,21 @@ class Storage {
   /*
    * Pin the given IPFS CID
    */
-  async pin(ipfsHash, callback) {
-    if (!this.pinning[ipfsHash] && !this.pinned[ipfsHash]) {
+  pin(ipfsHash, callback) {
+    if (!this.pinning.has(ipfsHash) && !this.pinned.has(ipfsHash)) {
       // debug(`Pinning hash: ${ipfsHash}`)
-      this.pinning[ipfsHash] = true
+      this.pinning.set(ipfsHash)
 
       // Callback passed to add() will be called on error or when the entire file
       // is retrieved. So on success we consider the content synced.
       this.ipfs.pin.add(ipfsHash, { quiet: true, pin: true }, (err) => {
-        delete this.pinning[ipfsHash]
+        this.pinning.delete(ipfsHash)
         if (err) {
           debug(`Error Pinning: ${ipfsHash}`)
           callback && callback(err)
         } else {
           // debug(`Pinned ${ipfsHash}`)
-          this.pinned[ipfsHash] = true
+          this.pinned.set(ipfsHash)
           callback && callback(null, this.syncStatus(ipfsHash))
         }
       })
@@ -427,8 +427,8 @@ class Storage {
 
   syncStatus(ipfsHash) {
     return {
-      syncing: this.pinning[ipfsHash] === true,
-      synced: this.pinned[ipfsHash] === true,
+      syncing: this.pinning.has(ipfsHash),
+      synced: this.pinned.has(ipfsHash),
     }
   }
 
@@ -451,9 +451,12 @@ class Storage {
       } catch (err) {
         debug(err)
       }
-      await nextTick()
+      // await nextTick()
     }
+    await sleep(2000)
     debug('scanned', checks, 'objects')
+    debug('objects syncing:', this.pinning.size)
+    debug('objects local:', this.pinned.size)
   }
 }
 

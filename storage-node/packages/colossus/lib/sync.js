@@ -38,23 +38,19 @@ async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync,
     const id = idsToSync.pop()
 
     try {
-      contentBeingSynced.set(id)
-      await storage.pin(id, (err, status) => {
-        if (err) {
-          contentBeingSynced.delete(id)
-          debug(`Error Syncing ${err}`)
-        } else if (status.synced) {
-          contentBeingSynced.delete(id)
-          contentCompletedSync.set(id)
+      storage.pin(id, (err, status) => {
+        if (!err) {
+          if (status.synced) {
+            debug('synced:', id, 'total synced:', contentCompletedSync.size, 'remaining:', idsToSync.length)
+          }
         }
       })
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
-      contentBeingSynced.delete(id)
     }
 
-    // Allow callbacks to call to storage.synchronize() to be invoked during this sync run
+    // Allow callbacks in call to storage.pin() to be invoked during this sync run
     // This will happen if content is found to be local and will speed overall sync process.
     await nextTick()
   }
@@ -93,9 +89,9 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
 
 function startSyncing(api, flags, storage) {
   // ids of content currently being synced
-  const contentBeingSynced = new Map()
+  const contentBeingSynced = storage.pinning
   // ids of content that completed sync
-  const contentCompletedSync = new Map()
+  const contentCompletedSync = storage.pinned
 
   syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync })
 
