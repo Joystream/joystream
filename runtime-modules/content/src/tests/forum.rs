@@ -3,7 +3,7 @@
 //use super::curators;
 use super::mock::*;
 use crate::*;
-use frame_support::assert_err;
+use frame_support::assert_ok;
 
 fn func(account_id: <Test as frame_system::Trait>::AccountId) {
     run_to_block(1);
@@ -218,6 +218,107 @@ fn react_post_mock(
     }
 }
 
+fn react_thread_mock(
+    origin: Origin,
+    member_id: MemberId,
+    reaction_id: <Test as Trait>::ReactionId,
+    thread_id: <Test as Trait>::ThreadId,
+    channel_id: <Test as StorageOwnership>::ChannelId,
+    result: DispatchResult,
+) {
+    assert_eq!(
+        Content::react_thread(
+            origin.clone(),
+            member_id.clone(),
+            thread_id.clone(),
+            reaction_id.clone(),
+            channel_id.clone(),
+        ),
+        result
+    );
+
+    if result.is_ok() {
+        // 1. event is deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ThreadReacted(
+                thread_id,
+                member_id,
+                channel_id,
+                reaction_id,
+            ))
+        );
+    }
+}
+
+fn archive_thread_mock(
+    origin: Origin,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    thread_id: <Test as Trait>::ThreadId,
+    result: DispatchResult,
+) {
+    assert_eq!(
+        Content::archive_thread(origin.clone(), actor.clone(), thread_id.clone()),
+        result
+    );
+    if result.is_ok() {
+        // assert thread is archived
+        assert!(Content::thread_by_id(thread_id).archived);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ThreadArchived(thread_id, actor))
+        );
+    }
+}
+
+fn update_moderator_set_mock(
+    origin: Origin,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: <Test as StorageOwnership>::ChannelId,
+    member_id: MemberId,
+    member_account_id: <Test as frame_system::Trait>::AccountId,
+    op: ModSetOperation,
+    result: DispatchResult,
+) {
+    assert_eq!(
+        Content::update_moderator_set(
+            origin.clone(),
+            actor.clone(),
+            channel_id.clone(),
+            member_id.clone(),
+            member_account_id.clone(),
+            op.clone(),
+        ),
+        result.clone()
+    );
+
+    if result.is_ok() {
+        let previous_num_of_moderators = Content::number_of_subreddit_moderators();
+        match op {
+            ModSetOperation::AddModerator => {
+                assert_eq!(
+                    Content::number_of_subreddit_moderators() - previous_num_of_moderators,
+                    1
+                );
+                assert_ne!(
+                    ModeratorSetForSubreddit::<Test>::get(channel_id, member_id),
+                    ()
+                );
+            }
+            _ => {
+                assert_eq!(
+                    previous_num_of_moderators - Content::number_of_subreddit_moderators(),
+                    1
+                );
+                assert_eq!(
+                    ModeratorSetForSubreddit::<Test>::get(channel_id, member_id),
+                    ()
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn invalid_member_cannot_create_thread() {
     with_default_mock_builder(|| {
@@ -327,18 +428,65 @@ fn non_author_or_invalid_member_cannot_delete_thread() {
 }
 
 #[test]
-fn cannot_create_post_in_invalid_thread() {
+fn cannot_create_post_in_invalid_or_immutable_thread() {
     with_default_mock_builder(|| {
-        let params = PostCreationParameters {
-            text: vec![1, 2],
-            mutable: true,
-            thread_id: INVALID_THREAD,
-        };
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            ThreadCreationParameters {
+                title: b"title".to_vec(),
+                post_text: b"text".to_vec(),
+                post_mutable: true,
+                channel_id: channel_id,
+            },
+            Ok(()),
+        );
 
-        // invalid thread id
-        assert_err!(
-            Content::create_post(Origin::signed(FIRST_MEMBER_ORIGIN), FIRST_MEMBER_ID, params,),
-            Error::<Test>::ThreadDoesNotExist,
+        let _ = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: INVALID_THREAD,
+            },
+            Err(Error::<Test>::ThreadDoesNotExist.into()),
+        );
+
+        // make the subreddit immutable
+        assert_ok!(Content::update_channel(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            channel_id,
+            ChannelUpdateParameters {
+                assets: None,
+                new_meta: None,
+                reward_account: None,
+                subreddit_mutable: Some(false),
+            },
+        ));
+
+        let _ = create_post_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            FIRST_MEMBER_ID,
+            PostCreationParameters {
+                text: vec![1, 2],
+                mutable: true,
+                thread_id: thread_id,
+            },
+            Err(Error::<Test>::SubredditCannotBeModified.into()),
         );
     })
 }
@@ -617,7 +765,7 @@ fn cannot_delete_invalid_post() {
 }
 
 #[test]
-fn invalid_forum_user_cannot_react_post() {
+fn invalid_forum_user_cannot_react_post_or_thread() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
@@ -660,6 +808,15 @@ fn invalid_forum_user_cannot_react_post() {
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
             post_id,
+            channel_id,
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+
+        let _ = react_thread_mock(
+            Origin::signed(UNKNOWN_ORIGIN),
+            NOT_FORUM_MEMBER_ID,
+            <Test as Trait>::ReactionId::from(1u64),
+            thread_id,
             channel_id,
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
@@ -712,6 +869,100 @@ fn verify_react_post_effects() {
             post_id,
             channel_id,
             Ok(()),
+        );
+    })
+}
+
+#[test]
+fn cannot_archive_invalid_thread() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+        let _ = archive_thread_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            INVALID_THREAD,
+            Err(Error::<Test>::ThreadDoesNotExist.into()),
+        );
+    })
+}
+
+#[test]
+fn cannot_add_or_remove_invalid_moderator() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+
+        let _ = update_moderator_set_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            channel_id,
+            NOT_FORUM_MEMBER_ID,
+            UNKNOWN_ORIGIN,
+            ModSetOperation::AddModerator,
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+        let _ = update_moderator_set_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            channel_id,
+            NOT_FORUM_MEMBER_ID,
+            UNKNOWN_ORIGIN,
+            ModSetOperation::AddModerator,
+            Err(Error::<Test>::MemberAuthFailed.into()),
+        );
+    })
+}
+
+#[test]
+fn cannot_add_or_remove_moderators_from_invalid_subreddits() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+        let _ = update_moderator_set_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            INVALID_CHANNEL,
+            FIRST_MEMBER_ID,
+            FIRST_MEMBER_ORIGIN,
+            ModSetOperation::AddModerator,
+            Err(Error::<Test>::ChannelDoesNotExist.into()),
+        );
+    })
+}
+
+#[test]
+fn non_owner_cannot_add_or_remove_moderators() {
+    with_default_mock_builder(|| {
+        func(FIRST_MEMBER_ORIGIN);
+
+        let channel_id = create_channel_mock(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            ChannelCreationParameters {
+                assets: vec![],
+                meta: vec![],
+                reward_account: None,
+                subreddit_mutable: true,
+            },
+            Ok(()),
+        );
+        let _ = update_moderator_set_mock(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            FIRST_MEMBER_ID,
+            FIRST_MEMBER_ORIGIN,
+            ModSetOperation::AddModerator,
+            Err(Error::<Test>::ActorNotAuthorized.into()),
         );
     })
 }

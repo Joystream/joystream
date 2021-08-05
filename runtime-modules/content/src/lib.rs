@@ -1741,8 +1741,6 @@ decl_module! {
            let _ = balances::Module::<T>::burn(post.bloat_bond);
            }
 
-       println!("HA");
-
        // if actor is author bond is returned
        if Self::actor_is_post_author(&account_id, &actor, &post) {
            let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
@@ -1780,7 +1778,7 @@ decl_module! {
 
             // Issue https://github.com/Joystream/joystream/issues/2545 requires that
             // reaction business logic must be off-chain
-            // let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
+            let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
             // subreddit is mutable
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -1809,7 +1807,8 @@ decl_module! {
             // Check that account is forum member
             Self::ensure_is_forum_user(&account_id, &member_id)?;
 
-            let _thread = Self::ensure_thread_exists(&thread_id)?;
+            // reaction business logic must be off chain
+            //let _thread = Self::ensure_thread_exists(&thread_id)?;
 
             // subreddit is mutable
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -1829,18 +1828,23 @@ decl_module! {
     #[weight = 10_000_000]
     fn update_moderator_set(
         origin,
+        actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: T::ChannelId,
         member_id: T::MemberId,
+        member_account_id: <T as frame_system::Trait>::AccountId,
         op: ModSetOperation,
     ) -> DispatchResult {
 
-        let _account_id = ensure_signed(origin)?;
+        let account_id = ensure_signed(origin)?;
 
         // check that channel exists
-        let channel = Self::ensure_channel_exists(&channel_id)?;
-        let _channel_owner = channel.owner;
+        let _channel = Self::ensure_channel_exists(&channel_id)?;
 
-        // authenticate channel owner
+        // ensure channel owner is the signer
+        ensure!(Self::actor_is_channel_owner(&account_id, &actor, &channel_id), Error::<T>::ActorNotAuthorized);
+
+        // ensure member is valid
+        Self::ensure_is_forum_user(&member_account_id, &member_id)?;
 
         let moderators_num = <NumberOfSubredditModerators>::get();
 
@@ -1883,12 +1887,12 @@ decl_module! {
     #[weight = 10_000_000]
     fn archive_thread(
         origin,
-        channel_id: T::ChannelId,
         actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         thread_id: T::ThreadId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         let thread = Self::ensure_thread_exists(&thread_id)?;
+        let channel_id = thread.channel_id;
         ensure!(
             Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id)
                 || Self::actor_is_channel_owner(&account_id, &actor, &channel_id),
@@ -1903,7 +1907,7 @@ decl_module! {
         thread.archived = true;
         <ThreadById<T>>::insert(thread_id, thread);
         Self::deposit_event(
-                RawEvent::ThreadArchived(thread_id, actor, channel_id)
+                RawEvent::ThreadArchived(thread_id, actor)
             );
 
         Ok(())
@@ -2090,7 +2094,6 @@ impl<T: Trait> Module<T> {
     ) -> bool {
         match actor {
             ContentActor::Member(member_id) => {
-                println!("HAHA");
                 post.author_id == *member_id
                     && ensure_member_auth_success::<T>(member_id, account_id).is_ok()
             }
@@ -2419,9 +2422,8 @@ decl_event!(
         PostAdded(PostId, MemberId, PostCreationParameters),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, ContentActor, ThreadId),
-        PostModerated(PostId, ContentActor, ThreadId, ChannelId),
         PostReacted(PostId, MemberId, ThreadId, ReactionId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
-        ThreadArchived(ThreadId, ContentActor, ChannelId),
+        ThreadArchived(ThreadId, ContentActor),
     }
 );
