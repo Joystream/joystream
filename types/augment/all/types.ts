@@ -162,7 +162,7 @@ export interface Backers extends Vec<Backer> {}
 export interface Bag extends Struct {
   readonly objects: BTreeMap<DataObjectId, StorageDataObject>;
   readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: Vec<u64>;
+  readonly distributed_by: Vec<DistributionBucketId>;
   readonly deletion_prize: Option<u128>;
 }
 
@@ -476,6 +476,26 @@ export interface DiscussionThread extends Struct {
   readonly author_id: MemberId;
 }
 
+/** @name DistributionBucket */
+export interface DistributionBucket extends Struct {
+  readonly accepting_new_bags: bool;
+  readonly distributing: bool;
+  readonly pending_invitations: Vec<WorkerId>;
+  readonly operators: Vec<WorkerId>;
+  readonly assigned_bags: u64;
+}
+
+/** @name DistributionBucketFamily */
+export interface DistributionBucketFamily extends Struct {
+  readonly distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>;
+}
+
+/** @name DistributionBucketFamilyId */
+export interface DistributionBucketFamilyId extends u64 {}
+
+/** @name DistributionBucketId */
+export interface DistributionBucketId extends u64 {}
+
 /** @name Dynamic */
 export interface Dynamic extends Enum {
   readonly isMember: boolean;
@@ -495,8 +515,8 @@ export interface DynamicBagDeletionPrize extends Struct {
   readonly prize: u128;
 }
 
-/** @name DynamicBagDeletionPrizeObject */
-export interface DynamicBagDeletionPrizeObject extends Struct {
+/** @name DynamicBagDeletionPrizeRecord */
+export interface DynamicBagDeletionPrizeRecord extends Struct {
   readonly account_id: GenericAccountId;
   readonly prize: u128;
 }

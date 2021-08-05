@@ -1,8 +1,8 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { BTreeSet, Bytes, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
-import type { Actor, ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, ChannelId, ClassId, ContentId, CuratorApplicationId, CuratorApplicationIdToCuratorIdMap, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DynamicBagDeletionPrizeObject, DynamicBagId, DynamicBagType, EntityController, EntityCreationVoucher, EntityId, FailedAt, LeadId, MemberId, MintBalanceOf, MintId, Nonce, OpeningId, PostId, PropertyId, ProposalId, ProposalStatus, RationaleText, SchemaId, SideEffect, SideEffects, Status, StorageBucketId, ThreadId, UploadParameters, VecMaxLength, VoteKind, Voucher, WorkerId } from './all';
+import type { BTreeMap, BTreeSet, Bytes, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
+import type { Actor, ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, ChannelId, ClassId, ContentId, CuratorApplicationId, CuratorApplicationIdToCuratorIdMap, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntityController, EntityCreationVoucher, EntityId, FailedAt, LeadId, MemberId, MintBalanceOf, MintId, Nonce, OpeningId, PostId, PropertyId, ProposalId, ProposalStatus, RationaleText, SchemaId, SideEffect, SideEffects, Status, StorageBucketId, ThreadId, UploadParameters, VecMaxLength, VoteKind, Voucher, WorkerId } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -243,6 +243,129 @@ declare module '@polkadot/api/types/events' {
       VotingEnded: AugmentedEvent<ApiType, []>;
       VotingStarted: AugmentedEvent<ApiType, []>;
     };
+    distributionWorkingGroup: {
+      /**
+       * Emits on accepting application for the worker opening.
+       * Params:
+       * - Opening id
+       **/
+      AcceptedApplications: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on terminating the application for the worker/lead opening.
+       * Params:
+       * - Worker application id
+       **/
+      ApplicationTerminated: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on withdrawing the application for the worker/lead opening.
+       * Params:
+       * - Worker application id
+       **/
+      ApplicationWithdrawn: AugmentedEvent<ApiType, [ApplicationId]>;
+      /**
+       * Emits on adding the application for the worker opening.
+       * Params:
+       * - Opening id
+       * - Application id
+       **/
+      AppliedOnOpening: AugmentedEvent<ApiType, [OpeningId, ApplicationId]>;
+      /**
+       * Emits on beginning the application review for the worker/lead opening.
+       * Params:
+       * - Opening id
+       **/
+      BeganApplicationReview: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on setting the leader.
+       * Params:
+       * - Worker id.
+       **/
+      LeaderSet: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on un-setting the leader.
+       * Params:
+       **/
+      LeaderUnset: AugmentedEvent<ApiType, []>;
+      /**
+       * Emits on changing working group mint capacity.
+       * Params:
+       * - mint id.
+       * - new mint balance.
+       **/
+      MintCapacityChanged: AugmentedEvent<ApiType, [MintId, MintBalanceOf]>;
+      /**
+       * Emits on adding new worker opening.
+       * Params:
+       * - Opening id
+       **/
+      OpeningAdded: AugmentedEvent<ApiType, [OpeningId]>;
+      /**
+       * Emits on filling the worker opening.
+       * Params:
+       * - Worker opening id
+       * - Worker application id to the worker id dictionary
+       **/
+      OpeningFilled: AugmentedEvent<ApiType, [OpeningId, ApplicationIdToWorkerIdMap]>;
+      /**
+       * Emits on decreasing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeDecreased: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on increasing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeIncreased: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on slashing the worker/lead stake.
+       * Params:
+       * - worker/lead id.
+       **/
+      StakeSlashed: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on terminating the leader.
+       * Params:
+       * - leader worker id.
+       * - termination rationale text
+       **/
+      TerminatedLeader: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on terminating the worker.
+       * Params:
+       * - worker id.
+       * - termination rationale text
+       **/
+      TerminatedWorker: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on exiting the worker.
+       * Params:
+       * - worker id.
+       * - exit rationale text
+       **/
+      WorkerExited: AugmentedEvent<ApiType, [WorkerId, RationaleText]>;
+      /**
+       * Emits on updating the reward account of the worker.
+       * Params:
+       * - Member id of the worker.
+       * - Reward account id of the worker.
+       **/
+      WorkerRewardAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+      /**
+       * Emits on updating the reward amount of the worker.
+       * Params:
+       * - Id of the worker.
+       **/
+      WorkerRewardAmountUpdated: AugmentedEvent<ApiType, [WorkerId]>;
+      /**
+       * Emits on updating the role account of the worker.
+       * Params:
+       * - Id of the worker.
+       * - Role account id of the worker.
+       **/
+      WorkerRoleAccountUpdated: AugmentedEvent<ApiType, [WorkerId, AccountId]>;
+    };
     forum: {
       /**
        * A category was introduced
@@ -458,12 +581,117 @@ declare module '@polkadot/api/types/events' {
        **/
       DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<DataObjectId>, UploadParameters]>;
       /**
+       * Emits on creating distribution bucket.
+       * Params
+       * - distribution bucket family ID
+       * - accepting new bags
+       * - distribution bucket ID
+       **/
+      DistributionBucketCreated: AugmentedEvent<ApiType, [DistributionBucketFamilyId, bool, DistributionBucketId]>;
+      /**
+       * Emits on deleting distribution bucket.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       **/
+      DistributionBucketDeleted: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId]>;
+      /**
+       * Emits on creating distribution bucket family.
+       * Params
+       * - distribution family bucket ID
+       **/
+      DistributionBucketFamilyCreated: AugmentedEvent<ApiType, [DistributionBucketFamilyId]>;
+      /**
+       * Emits on deleting distribution bucket family.
+       * Params
+       * - distribution family bucket ID
+       **/
+      DistributionBucketFamilyDeleted: AugmentedEvent<ApiType, [DistributionBucketFamilyId]>;
+      /**
+       * Emits on setting the metadata by a distribution bucket family.
+       * Params
+       * - distribution bucket family ID
+       * - metadata
+       **/
+      DistributionBucketFamilyMetadataSet: AugmentedEvent<ApiType, [DistributionBucketFamilyId, Bytes]>;
+      /**
+       * Emits on accepting a distribution bucket invitation for the operator.
+       * Params
+       * - worker ID
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       **/
+      DistributionBucketInvitationAccepted: AugmentedEvent<ApiType, [WorkerId, DistributionBucketFamilyId, DistributionBucketId]>;
+      /**
+       * Emits on canceling a distribution bucket invitation for the operator.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - operator worker ID
+       **/
+      DistributionBucketInvitationCancelled: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Emits on setting the metadata by a distribution bucket operator.
+       * Params
+       * - worker ID
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - metadata
+       **/
+      DistributionBucketMetadataSet: AugmentedEvent<ApiType, [WorkerId, DistributionBucketFamilyId, DistributionBucketId, Bytes]>;
+      /**
+       * Emits on storage bucket mode update (distributing flag).
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - distributing
+       **/
+      DistributionBucketModeUpdated: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
+      /**
+       * Emits on creating a distribution bucket invitation for the operator.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - worker ID
+       **/
+      DistributionBucketOperatorInvited: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Emits on the distribution bucket operator removal.
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - distribution bucket operator ID
+       **/
+      DistributionBucketOperatorRemoved: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, WorkerId]>;
+      /**
+       * Emits on changing the "Distribution buckets per bag" number limit.
+       * Params
+       * - new limit
+       **/
+      DistributionBucketsPerBagLimitUpdated: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * Emits on storage bucket status update (accepting new bags).
+       * Params
+       * - distribution bucket family ID
+       * - distribution bucket ID
+       * - new status (accepting new bags)
+       **/
+      DistributionBucketStatusUpdated: AugmentedEvent<ApiType, [DistributionBucketFamilyId, DistributionBucketId, bool]>;
+      /**
+       * Emits on updating distribution buckets for bag.
+       * Params
+       * - bag ID
+       * - storage buckets to add ID collection
+       * - storage buckets to remove ID collection
+       **/
+      DistributionBucketsUpdatedForBag: AugmentedEvent<ApiType, [BagId, DistributionBucketFamilyId, BTreeSet<DistributionBucketId>, BTreeSet<DistributionBucketId>]>;
+      /**
        * Emits on creating a dynamic bag.
        * Params
        * - dynamic bag ID
        * - optional DynamicBagDeletionPrize instance
        **/
-      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeObject>]>;
+      DynamicBagCreated: AugmentedEvent<ApiType, [DynamicBagId, Option<DynamicBagDeletionPrizeRecord>]>;
       /**
        * Emits on deleting a dynamic bag.
        * Params
@@ -471,6 +699,13 @@ declare module '@polkadot/api/types/events' {
        * - dynamic bag ID
        **/
       DynamicBagDeleted: AugmentedEvent<ApiType, [AccountId, DynamicBagId]>;
+      /**
+       * Emits on dynamic bag creation policy update (distribution bucket families).
+       * Params
+       * - dynamic bag type
+       * - families and bucket numbers
+       **/
+      FamiliesInDynamicBagCreationPolicyUpdated: AugmentedEvent<ApiType, [DynamicBagType, BTreeMap<DistributionBucketFamilyId, u32>]>;
       /**
        * Emits on updating the number of storage buckets in dynamic bag creation policy.
        * Params

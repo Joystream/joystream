@@ -1003,14 +1003,14 @@
         "account_id": "GenericAccountId",
         "prize": "u128"
     },
-    "DynamicBagDeletionPrizeObject": {
+    "DynamicBagDeletionPrizeRecord": {
         "account_id": "GenericAccountId",
         "prize": "u128"
     },
     "Bag": {
         "objects": "BTreeMap<DataObjectId,StorageDataObject>",
         "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<u64>",
+        "distributed_by": "Vec<DistributionBucketId>",
         "deletion_prize": "Option<u128>"
     },
     "StorageBucket": {
@@ -1075,5 +1075,17 @@
         "accepted": "bool",
         "deletion_prize": "u128",
         "size": "u64"
+    },
+    "DistributionBucketId": "u64",
+    "DistributionBucketFamilyId": "u64",
+    "DistributionBucket": {
+        "accepting_new_bags": "bool",
+        "distributing": "bool",
+        "pending_invitations": "Vec<WorkerId>",
+        "operators": "Vec<WorkerId>",
+        "assigned_bags": "u64"
+    },
+    "DistributionBucketFamily": {
+        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
     }
 }
