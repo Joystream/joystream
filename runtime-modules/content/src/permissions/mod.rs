@@ -295,6 +295,16 @@ pub fn ensure_member_authorized_to_edit_reply<T: Trait>(
 }
 
 // Enure actor can edit post
+pub fn ensure_member_authorized_to_add_text_post<T: Trait>(
+    origin: T::Origin,
+    member_id: &T::MemberId,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+    ensure_member_auth_success::<T>(member_id, &sender)?;
+    Ok(())
+}
+
+// Enure actor can edit post
 pub fn ensure_actor_authorized_to_edit_post<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

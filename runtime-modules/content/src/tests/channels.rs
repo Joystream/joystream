@@ -16,6 +16,7 @@ fn lead_cannot_create_channel() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -38,6 +39,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -55,6 +57,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -69,6 +72,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -84,6 +88,7 @@ fn curator_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                allow_comments: true,
             }
         ));
 
@@ -99,11 +104,13 @@ fn curator_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    allow_comments: true,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ))
         );
@@ -117,6 +124,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                allow_comments: None,
             }
         ));
 
@@ -129,6 +137,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                allow_comments: None,
             }
         ));
     })
@@ -149,6 +158,7 @@ fn member_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ),
             Error::<Test>::MemberAuthFailed
@@ -164,6 +174,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                allow_comments: true,
             }
         ));
 
@@ -179,11 +190,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    allow_comments: true,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ))
         );
@@ -198,6 +211,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                allow_comments: true,
             }
         ));
 
@@ -213,11 +227,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    allow_comments: true,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    allow_comments: true,
                 }
             ))
         );
@@ -231,6 +247,7 @@ fn member_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                allow_comments: None,
             }
         ));
 
@@ -246,11 +263,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    allow_comments: true,
                 },
                 ChannelUpdateParameters {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    allow_comments: None,
                 }
             ))
         );
@@ -265,6 +284,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    allow_comments: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -286,6 +306,7 @@ fn channel_censoring() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                allow_comments: true,
             }
         ));
 
@@ -362,6 +383,7 @@ fn channel_censoring() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                allow_comments: true,
             }
         ));
 

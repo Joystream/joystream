@@ -4,7 +4,7 @@ use super::curators;
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
-use sp_runtime::traits::Hash;
+//use sp_runtime::traits::Hash;
 
 pub const UNKNOWN_MEMBER_ID: u64 = 7777;
 pub const UNKNOWN_CURATOR_GROUP_ID: u64 = 7777;
@@ -32,6 +32,7 @@ fn setup_testing_scenario() -> (
             assets: vec![],
             meta: vec![],
             reward_account: None,
+            allow_comments: true,
         },
     ));
     let curator_channel_id = Content::next_channel_id();
@@ -48,6 +49,7 @@ fn setup_testing_scenario() -> (
             assets: vec![],
             meta: vec![],
             reward_account: None,
+            allow_comments: true,
         },
     ));
     println!("curator channel done");
@@ -356,7 +358,6 @@ fn nonexistent_member_cannot_reply() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
                 post_id,
                 None,
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -374,7 +375,6 @@ fn cannot_reply_to_nonexistent_post_or_reply() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
                 <tests::mock::Test as Trait>::PostId::from(UNKNOWN_POST_ID),
                 None,
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -387,7 +387,6 @@ fn cannot_reply_to_nonexistent_post_or_reply() {
                 Some(<tests::mock::Test as Trait>::ReplyId::from(
                     UNKNOWN_REPLY_ID
                 )),
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
             ),
             Error::<Test>::ReplyDoesNotExist,
         );
@@ -407,7 +406,6 @@ fn setup_testing_scenario_with_replies() -> (
         <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
         post_id,
         None,
-        <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
     ));
 
     let reply_id = Content::post_by_id(post_id).replies_count;
@@ -417,7 +415,6 @@ fn setup_testing_scenario_with_replies() -> (
         <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
         post_id,
         Some(reply_id),
-        <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
     ));
     (reply_id, post_id)
 }
@@ -457,7 +454,6 @@ fn cannot_edit_nonexistent_reply() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
                 post_id,
                 <tests::mock::Test as Trait>::ReplyId::from(UNKNOWN_REPLY_ID),
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
             ),
             Error::<Test>::ReplyDoesNotExist,
         );
@@ -469,7 +465,6 @@ fn cannot_edit_nonexistent_reply() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
                 <tests::mock::Test as Trait>::PostId::from(UNKNOWN_POST_ID),
                 reply_id,
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
             ),
             Error::<Test>::ReplyDoesNotExist,
         );
@@ -490,7 +485,6 @@ fn non_authorized_member_cannot_edit_reply() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(SECOND_MEMBER_ID),
                 post_id,
                 reply_id,
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -502,7 +496,6 @@ fn non_authorized_member_cannot_edit_reply() {
                 <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
                 post_id,
                 reply_id,
-                <tests::mock::Test as frame_system::Trait>::Hashing::hash(&reply_id.encode()),
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -582,14 +575,7 @@ fn verify_edit_reply_effects() {
             <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
             post_id,
             reply_id,
-            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
         ));
-
-        // replies count increased
-        assert_eq!(
-            Content::reply_by_id(post_id, reply_id).text,
-            <tests::mock::Test as frame_system::Trait>::Hashing::hash(&post_id.encode()),
-        );
 
         // event deposited
         assert_eq!(

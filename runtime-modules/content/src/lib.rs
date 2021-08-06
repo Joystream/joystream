@@ -23,7 +23,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{CheckedAdd, CheckedSub, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{CheckedAdd, MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -84,6 +84,7 @@ pub trait Trait:
     + StorageOwnership
     + MembershipTypes
     + GovernanceCurrency
+    + balances::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -121,10 +122,7 @@ pub trait Trait:
     /// Type of PostId
     type PostId: NumericIdentifier;
 
-    /// Type of ReplyId
-    type ReplyId: NumericIdentifier;
-
-    /// Type of ReplyId
+    /// Type of PostId
     type PostReactionId: NumericIdentifier;
 }
 
@@ -214,6 +212,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
+    /// Video comments are allowed
+    allow_comments: bool,
 }
 
 // Channel alias type for simplification.
@@ -264,6 +264,8 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId> {
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
+    /// Are comments allowed?
+    allow_comments: bool,
 }
 
 /// Information about channel being updated.
@@ -276,6 +278,8 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
+    /// if set, comments are allowed
+    allow_comments: Option<bool>,
 }
 
 /// A category that videos can belong to.
@@ -470,76 +474,46 @@ pub struct Person<MemberId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Post_<MemberId, CuratorGroupId, DAOId, Balance, BlockNumber, ReplyId, VideoId> {
+pub struct Post_<MemberId, CuratorGroupId, CuratorId, Balance, PostId, ContentType> {
     /// Author of post.
-    pub author: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    pub author: ContentActor<CuratorGroupId, CuratorId, MemberId>,
 
     /// Cleanup pay off
-    pub cleanup_pay_off: Balance,
-
-    /// When it was created or last edited
-    pub last_edited: BlockNumber,
+    pub bloat_bond: Balance,
 
     /// Overall replies counter
-    pub replies_count: ReplyId,
+    pub replies_count: PostId,
 
     /// video associated to the post (instead of the body hash as in the blog module)
-    pub video: VideoId,
+    pub content: ContentType,
+
+    /// parent comment if any
+    pub parent: Option<PostId>,
 }
 
-// Needed for nested comments
-/// A Post associated to a video
+/// A sum type for post content
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ParentId<ReplyId, PostId: Default> {
-    Reply(ReplyId),
-    Post(PostId),
+pub enum ContentType<VideoId> {
+    Video(VideoId),
+    Text(Vec<u8>),
 }
 
 /// Default parent representation
-impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
+impl<VideoId> Default for ContentType<VideoId> {
     fn default() -> Self {
-        ParentId::Post(PostId::default())
+        ContentType::Text(b"".to_vec())
     }
-}
-
-/// Reply
-/// A Post associated to a video
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Reply_<BlockNumber, ReplyId, PostId: Default, ParticipantId, Balance, Hash> {
-    /// Associated with reply owner
-    owner: ParticipantId,
-
-    /// Reply`s parent id
-    parent_id: ParentId<ReplyId, PostId>,
-
-    /// Pay off by deleting post
-    cleanup_pay_off: Balance,
-
-    /// Last time reply was edited
-    last_edited: BlockNumber,
 }
 
 /// alias for Post
 pub type Post<T> = Post_<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
-    BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as Trait>::ReplyId,
-    <T as Trait>::VideoId,
->;
-
-/// alias for Reply
-pub type Reply<T> = Reply_<
-    <T as frame_system::Trait>::BlockNumber,
-    <T as Trait>::ReplyId,
+    <T as MembershipTypes>::CuratorId,
+    <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
-    ParticipantId<T>,
-    BalanceOf<T>,
-    <T as frame_system::Trait>::Hash,
+    ContentType<<T as Trait>::VideoId>,
 >;
 
 decl_storage! {
@@ -583,12 +557,8 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
         pub PostById get(fn post_by_id) : map hasher(blake2_128_concat) T::PostId => Post<T>;
-        pub ReplyById get (fn reply_by_id): double_map hasher(blake2_128_concat) T::PostId, hasher(blake2_128_concat) T::ReplyId => Reply<T>;
 
         pub NextPostId get(fn next_post_id): T::PostId;
-
-        pub NextReplyId get(fn next_reply_id): T::ReplyId;
-
     }
 }
 
@@ -768,6 +738,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                allow_comments: params.allow_comments,
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -819,6 +790,12 @@ decl_module! {
             if let Some(reward_account) = &params.reward_account {
                 channel.reward_account = reward_account.clone();
             }
+
+            // Maybe turn on/off comments to videos
+            if let Some(allow_comments) = &params.allow_comments {
+                channel.allow_comments = allow_comments.clone();
+            }
+
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -1357,31 +1334,32 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_post(
             origin,
-            video_id: T::VideoId,
+            content: ContentType<T::VideoId>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
 
-            let video = Self::ensure_video_exists(&video_id)?;
-            let channel_id = video.in_channel;
-            let channel_owner = Self::channel_by_id(channel_id).owner;
-
-        // permissions: only channel owner is allowed to create posts
-            ensure_actor_authorized_to_create_post::<T>(
-                origin,
-                &actor,
-                // The channel owner will be..
-                &channel_owner,
-            )?;
+            // permissions:
+            if let ContentType::Video(video_id) = content {
+            // only channel owner allowed to add a video post
+                let video = Self::ensure_video_exists(&video_id)?;
+                let channel_owner = Self::channel_by_id(video.in_channel).owner;
+                ensure_can_update_channel::<T>(origin, &actor, &channel_owner)?;
+            } else {
+            // only valid member can add text post
+            match actor {
+                ContentActor::Member(member_id) => ensure_actor_authorized_to_add_text_post::<T>(origin, &member_id)?,
+                _ => Err(Error::<T>::ActorNotAuthorized.into())
+                }
+            }
 
             let post_id = <NextPostId<T>>::get();
             let next_post_id = post_id.checked_add(&T::PostId::one()).ok_or("PostId overflow")?;
-
             let post: Post<T> = Post_ {
-                author: channel_owner,
-                cleanup_pay_off: BalanceOf::<T>::zero(),
-                replies_count: T::ReplyId::zero(),
-                last_edited: frame_system::Module::<T>::block_number(),
-                video: video_id,
+                author: actor,
+                bloat_bond: <T as balances::Trait>::Balance::zero(),
+                replies_count: T::PostId::zero(),
+                parent:None,
+                content: content,
             };
 
             //
@@ -1392,117 +1370,42 @@ decl_module! {
             <NextPostId<T>>::put(next_post_id);
 
             // deposit event
-            Self::deposit_event(RawEvent::PostCreated(actor, video_id, post_id));
+            Self::deposit_event(RawEvent::PostCreated(actor, content, post_id));
 
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_reply(
-            origin,
-            participant_id: ParticipantId<T>,
-            post_id: T::PostId,
-            reply_id: Option<T::ReplyId>,
-        ) {
-            // ensure that origin is signed by a Member
-            ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
-
-        // Ensure post with given id exists
-            let post = Self::ensure_post_exists(post_id)?;
-
-
-        // If this is a reply to an existing one, ensure that parent reply is existed
-            if let Some(reply_id) = reply_id {
-                // Check parent existed at some point in time(whether it is in storage or not)
-                ensure!(reply_id <= post.replies_count, Error::<T>::ReplyDoesNotExist);
-            }
-
-            let new_replies_count = post
-                .replies_count
-                .checked_add(&T::ReplyId::one())
-                .ok_or("Replies count overflow")?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let mut post = post;
-            post.replies_count = new_replies_count;
-            PostById::<T>::insert(post_id, post);
-
-            // parent id for the new reply
-            let parent_id = if let Some(reply_id) = reply_id {
-                ParentId::Reply(reply_id)
-            } else {
-                ParentId::Post(post_id)
-            };
-
-            let reply = Reply_ {
-                owner: participant_id,
-                parent_id: parent_id,
-                cleanup_pay_off: BalanceOf::<T>::zero(),
-                last_edited: frame_system::Module::<T>::block_number(),
-            };
-
-            // insert the reply into storage
-            ReplyById::<T>::insert(post_id, new_replies_count, reply);
-
-            // deposit event
-            Self::deposit_event(RawEvent::ReplyCreated(participant_id, post_id, new_replies_count));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn edit_post(
             origin,
             post_id: T::PostId,
-            new_video_id: T::VideoId,
+            new_content: ContentType<T::VideoId>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
 
-        // ensure channel exists
+            // ensure channel exists
             let post = Self::ensure_post_exists(post_id)?;
             let post_author = post.author.clone();
 
-        // ensure actor is valid
-            ensure_actor_authorized_to_edit_post::<T>(origin, &actor, &post_author)?;
+            // ensure actor is valid
+            ensure_actor_authorized_to_edit_post::<T>(origin.clone(), &actor, &post_author)?;
+
+            if let ContentType::Video(video_id) = post.content {
+                let video = <VideoById<T>>::get(video_id);
+                let channel_owner = <ChannelById<T>>::get(video.in_channel).owner;
+                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
+            }
 
             let mut post = post;
-            post.video = new_video_id;
+            post.content = new_content.clone();
 
-        //
-        // == MUTATION_SAFE ==
-        //
+            //
+            // == MUTATION_SAFE ==
+            //
 
-            PostById::<T>::insert(post_id, post);
+            <PostById::<T>>::insert(post_id, post);
 
             // deposit event
-            Self::deposit_event(RawEvent::PostModified(actor, new_video_id, post_id));
-
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn edit_reply(
-          origin,
-          participant_id: ParticipantId<T>,
-          post_id: T::PostId,
-          reply_id: T::ReplyId,
-        ) {
-
-            // Ensure reply with given id exists
-            let reply = Self::ensure_reply_exists(post_id, reply_id)?;
-
-            // ensure that origin is signed by owner and owner is the original author of the reply
-        let reply_owner = &reply.owner.clone();
-            ensure_member_authorized_to_edit_reply::<T>(origin, &participant_id, reply_owner)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // insert the reply into storage
-            ReplyById::<T>::insert(post_id, reply_id, reply);
-
-        // reply updated
-            Self::deposit_event(RawEvent::ReplyModified(participant_id, post_id, reply_id));
+            Self::deposit_event(RawEvent::PostModified(actor, new_content, post_id));
 
         }
 
@@ -1519,9 +1422,9 @@ decl_module! {
             // ensure actor is valid
             ensure_actor_authorized_to_edit_post::<T>(origin, &actor, &post_author)?;
 
-        //
-        // == MUTATION_SAFE ==
-        //
+            //
+            // == MUTATION_SAFE ==
+            //
 
             PostById::<T>::remove(post_id);
 
@@ -1530,56 +1433,14 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_reply(
-            origin,
-            participant_id: ParticipantId<T>,
-            post_id: T::PostId,
-            reply_id: T::ReplyId,
-        ) {
-            // ensure that origin is signed by owner and owner is the original author of the reply
-            // Ensure reply with given id exists
-            let reply = Self::ensure_reply_exists(post_id, reply_id)?;
-            let reply_owner = &reply.owner.clone();
-
-            ensure_member_authorized_to_edit_reply::<T>(origin, &participant_id, reply_owner)?;
-
-            // decrease replies count for post
-            let post = Self::ensure_post_exists(post_id)?;
-
-            let new_replies_count = post
-                .replies_count
-                .checked_sub(&T::ReplyId::one())
-                .ok_or("Reply count underflow")?;
-
-        // the reply_id field is nonetheless kept for all the Replies that are subreplies of this
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let mut post = post;
-            post.replies_count = new_replies_count;
-
-            // delete reply from storage
-            ReplyById::<T>::remove(post_id, reply_id);
-
-            // update post
-            PostById::<T>::insert(post_id, post);
-
-        // deposit event
-        Self::deposit_event(RawEvent::ReplyDeleted(participant_id, post_id, reply_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         fn react_to_post(
-            origin,
+            _origin,
             participant_id: ParticipantId<T>,
             post_id: T::PostId,
             reaction_id: T::PostReactionId,
         ) {
             // ensure origin is signed by a member
             let _post = Self::ensure_post_exists(post_id)?;
-            ensure_member_authorized_to_create_reply::<T>(origin, &participant_id)?;
             Self::deposit_event(RawEvent::ReactionToPost(participant_id, post_id, reaction_id));
         }
     }
@@ -1689,14 +1550,6 @@ impl<T: Trait> Module<T> {
         Ok(PostById::<T>::get(post_id))
     }
 
-    fn ensure_reply_exists(post_id: T::PostId, reply_id: T::ReplyId) -> Result<Reply<T>, Error<T>> {
-        ensure!(
-            ReplyById::<T>::contains_key(post_id, reply_id),
-            Error::<T>::ReplyDoesNotExist
-        );
-        Ok(ReplyById::<T>::get(post_id, reply_id))
-    }
-
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
@@ -1743,9 +1596,9 @@ decl_event!(
         ContentId = ContentId<T>,
         IsCensored = bool,
         PostId = <T as Trait>::PostId,
-        ReplyId = <T as Trait>::ReplyId,
         ParticipantId = ParticipantId<T>,
         ReactionId = <T as Trait>::PostReactionId,
+        ContentType = ContentType<<T as Trait>::VideoId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1868,11 +1721,9 @@ decl_event!(
 
         // Posts & Replies
         PostCreated(ContentActor, VideoId, PostId),
-        ReplyCreated(ParticipantId, PostId, ReplyId),
-        PostModified(ContentActor, VideoId, PostId),
-        ReplyModified(ParticipantId, PostId, ReplyId),
+        ReplyCreated(ParticipantId, PostId, PostId),
+        PostModified(ContentActor, ContentType, PostId),
         PostDeleted(ContentActor, PostId),
-        ReplyDeleted(ParticipantId, PostId, ReplyId),
         ReactionToPost(ParticipantId, PostId, ReactionId),
     }
 );
