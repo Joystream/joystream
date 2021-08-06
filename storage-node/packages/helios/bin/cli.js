@@ -230,7 +230,7 @@ async function main() {
   // limit number of assets to test ?
   const limit = cli.flags.limitAssets
   let contentToTest
-  if (limit && contentToTest.length) {
+  if (limit) {
     contentToTest = contentIds.slice(0, limit)
   } else {
     contentToTest = contentIds
