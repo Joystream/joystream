@@ -91,19 +91,13 @@ fn delete_thread_mock(
         );
 
         let thread = Content::thread_by_id(thread_id);
-        let mut iter = PostById::<Test>::iter_prefix_values(thread_id);
-        let mut thread_cleanup_cost = thread.bloat_bond;
-
-        if let Some(post) = iter.next() {
-            thread_cleanup_cost = thread.bloat_bond.saturating_add(post.bloat_bond);
-        }
 
         // verify that thread author balance is increased
         if let ContentActor::Member(member) = actor {
             if member == thread.author_id {
                 assert_eq!(
                     balances::Module::<Test>::free_balance(sender) - balance_before,
-                    thread_cleanup_cost
+                    thread.bloat_bond,
                 );
             }
         }

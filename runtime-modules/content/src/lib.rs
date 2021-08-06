@@ -1556,20 +1556,15 @@ decl_module! {
             )?;
 
            // iterate over values that share the first key
-            let mut iter = <PostById<T>>::iter_prefix_values(thread_id);
-            let mut thread_cleanup_cost = thread.bloat_bond;
-
-           if let Some(post) = iter.next() {
-               thread_cleanup_cost = thread.bloat_bond.saturating_add(post.bloat_bond);
-           }
+            let iter = <PostById<T>>::iter_prefix_values(thread_id);
 
            // Pay off to author or burn tokens
            if let ContentActor::Member(member) = actor {
                if member == thread.author_id {
-                   let _ = Self::pay_off(thread_id, thread_cleanup_cost, &account_id);
+                   let _ = Self::pay_off(thread_id, thread.bloat_bond, &account_id);
                }
            } else {
-                   let _ = balances::Module::<T>::burn(thread_cleanup_cost);
+                   let _ = balances::Module::<T>::burn(thread.bloat_bond);
            }
 
            //
