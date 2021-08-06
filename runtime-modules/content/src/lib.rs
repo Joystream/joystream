@@ -474,7 +474,14 @@ pub struct Person<MemberId> {
 /// A Post associated to a video
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Post_<MemberId, CuratorGroupId, CuratorId, Balance, PostId, ContentType> {
+pub struct Post_<
+    MemberId: Default + Clone + Copy,
+    CuratorGroupId: Default + Clone + Copy,
+    CuratorId: Default + Clone + Copy,
+    Balance,
+    PostId,
+    ContentType,
+> {
     /// Author of post.
     pub author: ContentActor<CuratorGroupId, CuratorId, MemberId>,
 
@@ -510,7 +517,7 @@ impl<VideoId> Default for ContentType<VideoId> {
 pub type Post<T> = Post_<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as MembershipTypes>::CuratorId,
+    <T as ContentActorAuthenticator>::CuratorId,
     <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
     ContentType<<T as Trait>::VideoId>,
@@ -1343,12 +1350,13 @@ decl_module! {
             // only channel owner allowed to add a video post
                 let video = Self::ensure_video_exists(&video_id)?;
                 let channel_owner = Self::channel_by_id(video.in_channel).owner;
-                ensure_can_update_channel::<T>(origin, &actor, &channel_owner)?;
+                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
             } else {
-            // only valid member can add text post
-            match actor {
-                ContentActor::Member(member_id) => ensure_actor_authorized_to_add_text_post::<T>(origin, &member_id)?,
-                _ => Err(Error::<T>::ActorNotAuthorized.into())
+                // only valid member can add text post
+                if let ContentActor::Member(member_id) = actor {
+                    ensure_member_authorized_to_add_text_post::<T>(origin, &member_id)?;
+                } else {
+                    return Err(Error::<T>::ActorNotAuthorized.into());
                 }
             }
 
@@ -1359,7 +1367,7 @@ decl_module! {
                 bloat_bond: <T as balances::Trait>::Balance::zero(),
                 replies_count: T::PostId::zero(),
                 parent:None,
-                content: content,
+                content: content.clone(),
             };
 
             //
@@ -1384,7 +1392,7 @@ decl_module! {
 
             // ensure channel exists
             let post = Self::ensure_post_exists(post_id)?;
-            let post_author = post.author.clone();
+            let post_author = Self::actor_to_channel_owner(&post.author)?;
 
             // ensure actor is valid
             ensure_actor_authorized_to_edit_post::<T>(origin.clone(), &actor, &post_author)?;
@@ -1417,7 +1425,7 @@ decl_module! {
         ) {
             // ensure post exists
             let post = Self::ensure_post_exists(post_id)?;
-            let post_author = post.author.clone();
+            let post_author = Self::actor_to_channel_owner(&post.author)?;
 
             // ensure actor is valid
             ensure_actor_authorized_to_edit_post::<T>(origin, &actor, &post_author)?;
@@ -1720,8 +1728,7 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
 
         // Posts & Replies
-        PostCreated(ContentActor, VideoId, PostId),
-        ReplyCreated(ParticipantId, PostId, PostId),
+        PostCreated(ContentActor, ContentType, PostId),
         PostModified(ContentActor, ContentType, PostId),
         PostDeleted(ContentActor, PostId),
         ReactionToPost(ParticipantId, PostId, ReactionId),
