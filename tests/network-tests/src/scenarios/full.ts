@@ -25,8 +25,6 @@ scenario(async ({ job }) => {
     validatorCountProposal,
     wgMintCapacityProposal.storage,
     wgMintCapacityProposal.content,
-    manageLeaderRole.storage,
-    manageLeaderRole.content,
   ]).requires(councilJob)
 
   const manageLeadsJob = job('lead-roles', [manageLeaderRole.storage, manageLeaderRole.content]).requires(councilJob)
