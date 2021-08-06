@@ -185,12 +185,16 @@ export default class ProposalsTransport extends BaseTransport {
       proposals
     };
   }
+  
+  async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
+    const votesEntries = await this.api.query.proposalsEngine.voteExistsByProposalByVoter.entries(proposalId);
+    const voteEntry = votesEntries.find((voteEntry) => {
+      const memberId = voteEntry[0].args[1] as MemberId;
 
-  async voteByProposalAndMember (proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
-    const vote = (await this.proposalsEngine.voteExistsByProposalByVoter(proposalId, voterId)) as VoteKind;
-    const hasVoted = (await this.api.query.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
+      return memberId.eq(voterId);
+    });
 
-    return hasVoted ? vote : null;
+    return voteEntry ? voteEntry[1] as VoteKind : null;
   }
 
   async votes (proposalId: ProposalId): Promise<ProposalVotes> {
