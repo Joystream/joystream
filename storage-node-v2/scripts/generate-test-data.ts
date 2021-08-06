@@ -10,19 +10,20 @@ async function doJob(): Promise<void> {
   const uploadDirectory = '/Users/shamix/uploads2'
   const fileSize = 100
 
-  const objectNumber = 100000
+  const objectNumber = 10
   const bagNumber = 10
-  const bucketNumber = 150
+  const bucketNumber = 10
 
 
-  const updateDb = false
+  const updateDb = true
   const generateFiles = true
 
   if (updateDb) {
     const config : ClientConfig = {
       user: 'postgres',
       password: 'postgres',
-      database: 'query_node_processor'
+      database: 'query_node_processor',
+      host: 'localhost'
     }
     const client = new Client(config)
     await client.connect()
@@ -45,8 +46,7 @@ async function doJob(): Promise<void> {
   }
   
   if (generateFiles) {
-    const fileTasks = createFiles(uploadDirectory, fileSize, objectNumber)
-    await Promise.all(fileTasks)
+    await createFiles(uploadDirectory, fileSize, objectNumber)
   }
 }
 
@@ -70,9 +70,9 @@ function createDataObjects(client: Client, objectNumber: number): Promise<QueryR
   return tasks
 }
 
-function createFiles(uploadDirectory: string, fileSize: number, objectNumber: number): Promise<void>[] {
+async function createFiles(uploadDirectory: string, fileSize: number, objectNumber: number): Promise<void> {
   const data = new Uint8Array(fileSize)
-  const tasks: any[] = []
+  let tasks: any[] = []
   for(let i: number = 1; i <= objectNumber; i++){
     const name = i.toString()
 
@@ -84,9 +84,16 @@ function createFiles(uploadDirectory: string, fileSize: number, objectNumber: nu
     )
 
     tasks.push(fileTask)
+
+    if (i % 100 === 0){
+      await Promise.all(tasks)
+      tasks.length = 0
+    }
   }
 
-  return tasks
+  if (tasks.length > 0) {
+    await Promise.all(tasks)
+  }
 }
 
 async function createBags(client: Client, bagNumber: number): Promise<void> {
