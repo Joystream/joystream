@@ -73,7 +73,7 @@ jobs:
             file: 'joystream-node.Dockerfile'
           - platform: 'linux/arm/v7'
             platform_tag: 'arm'
-            file: 'joystream-node-arm.Dockerfile'
+            file: 'joystream-node-armv7.Dockerfile'
     steps:
       - name: Extract branch name
         shell: bash
@@ -122,7 +122,7 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         id: deploy_stack
         with:
-          name: ${{ env.STACK_NAME }}
+          name: '${{ env.STACK_NAME }}-${{ matrix.platform_tag }}'
           template: devops/infrastructure/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=t4g.xlarge'
