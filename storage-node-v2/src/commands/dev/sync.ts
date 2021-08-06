@@ -2,7 +2,8 @@ import { Command, flags } from '@oclif/command'
 import { performSync } from '../../services/sync/synchronizer'
 
 export default class DevSync extends Command {
-  static description = 'Synchronizes data - it fixes the differences between local data folder and worker ID obligations from the runtime.'
+  static description =
+    'Synchronizes data - it fixes the differences between local data folder and worker ID obligations from the runtime.'
 
   static flags = {
     help: flags.help({ char: 'h' }),
@@ -41,7 +42,7 @@ export default class DevSync extends Command {
     const uploadDirectory = '/Users/shamix/uploads'
     const dataSourceOperatorHost =
       flags.dataSourceOperatorHost ?? 'localhost:3333'
-    const operatorUrl = `http://${dataSourceOperatorHost}/graphql`
+    const operatorUrl = `http://${dataSourceOperatorHost}/`
 
     try {
       await performSync(
