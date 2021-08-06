@@ -33,6 +33,7 @@ export default {
 
 async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
   const debug = extendDebug(`flow:managerLeaderRole:${group}`)
+  api.enableDebugTxLogs()
   debug('Started')
   await lock(Resource.Proposals)
 
