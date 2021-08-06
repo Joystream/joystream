@@ -154,6 +154,7 @@ impl<T: Trait> Module<T> {
         video_id: T::VideoId,
         owner: T::AccountId,
         creator_royalty: Option<Royalty>,
+        metadata: Metadata,
     ) {
         video.nft_status = NFTStatus::Owned(OwnedNFT {
             owner,
@@ -161,7 +162,11 @@ impl<T: Trait> Module<T> {
             creator_royalty,
         });
 
-        Self::deposit_event(RawEvent::NftIssued(video_id, video.nft_status.clone()));
+        Self::deposit_event(RawEvent::NftIssued(
+            video_id,
+            video.nft_status.clone(),
+            metadata,
+        ));
     }
 
     /// Complete vnft transfer
@@ -229,7 +234,7 @@ impl<T: Trait> Module<T> {
                 let auction_fee = Self::auction_fee_percentage() * bid;
 
                 match &auction.auction_mode {
-                    AuctionMode::WithIssuance(royalty, _) => {
+                    AuctionMode::WithIssuance(royalty, metadata) => {
                         // Slash last bidder bid
                         T::Currency::slash_reserved(&last_bid.bidder, bid);
                         // Deposit last bidder bid minus auction fee into auctioneer account
@@ -247,6 +252,7 @@ impl<T: Trait> Module<T> {
                             video_id,
                             last_bid.bidder.clone(),
                             creator_royalty,
+                            metadata,
                         );
                     }
                     AuctionMode::WithoutIsuance => {

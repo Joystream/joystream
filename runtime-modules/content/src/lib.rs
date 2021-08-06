@@ -1161,6 +1161,7 @@ decl_module! {
             auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             video_id: T::VideoId,
             royalty: Option<Royalty>,
+            metadata: Metadata,
         ) {
 
             // Authorize content actor
@@ -1186,7 +1187,7 @@ decl_module! {
             // Issue vNFT
 
             let mut video = video;
-            Self::issue_vnft(&mut video, video_id, content_actor_account_id, royalty);
+            Self::issue_vnft(&mut video, video_id, content_actor_account_id, royalty, metadata);
         }
 
         /// Start vNFT transfer
@@ -1567,7 +1568,7 @@ decl_event!(
 
         // vNFT auction
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(VideoId, NFTStatus),
+        NftIssued(VideoId, NFTStatus, Metadata),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionCancelled(ContentActor, VideoId),
         AuctionCompleted(MemberId, VideoId, Bid),
