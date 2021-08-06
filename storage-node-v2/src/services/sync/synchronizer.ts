@@ -11,20 +11,18 @@ import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
 const fsPromises = fs.promises
 
-export async function performSync(): Promise<void> {
-  const queryNodeUrl = 'http://localhost:8081/graphql'
-  const workerId = 1
-  const processNumber = 30
-  const uploadDirectory = '/Users/shamix/uploads'
-  const operatorUrl = 'http://localhost:3333/'
-
+export async function performSync(
+  workerId: number,
+  processNumber: number,
+  queryNodeUrl: string,
+  uploadDirectory: string,
+  operatorUrl: string
+): Promise<void> {
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
     getRuntimeModel(queryNodeUrl, workerId),
     getLocalFileNames(uploadDirectory),
   ])
-  // console.log(model)
-  // console.log(files)
 
   const requiredCids = model.dataObjects.map((obj) => obj.cid)
 
@@ -98,11 +96,17 @@ class DownloadFileTask implements SyncTask {
 
     const response = await fetch(this.url)
 
-    if (!response.ok)
-      throw new Error(`Unexpected response ${response.statusText}`)
-
-    // TODO: check for errors, both for response and filesystem
-    await streamPipeline(response.body, fs.createWriteStream(this.filepath))
+    if (response.ok) {
+      try {
+        await streamPipeline(response.body, fs.createWriteStream(this.filepath))
+      } catch (err) {
+        logger.error(`Fetching data error for ${this.url}: ${err}`)
+      }
+    } else {
+      logger.error(
+        `Unexpected response for ${this.url}: ${response.statusText}`
+      )
+    }
   }
 }
 

@@ -48,7 +48,7 @@ export async function getRuntimeModel(
   const model: Model = {
     storageBuckets: allBuckets.map((bucket) => ({
       id: bucket.id,
-      url: u8aToString(hexToU8a(bucket.operatorMetadata)), //TODO: catch error locally
+      url: extractOperatorUrl(bucket.operatorMetadata),
       workerId: bucket.operatorStatus?.workerId,
     })),
     bags: assignedBags.map((bag) => ({
@@ -105,7 +105,9 @@ async function getAllObjectsWithPaging<T>(
 
   let resultPart = []
   do {
-    logger.debug(`Sync - getting ${objectName}: offset = ${offset}, limit = ${limit}`)
+    logger.debug(
+      `Sync - getting ${objectName}: offset = ${offset}, limit = ${limit}`
+    )
     resultPart = await query(offset, limit)
     offset += limit
     result.push(...resultPart)
@@ -114,4 +116,15 @@ async function getAllObjectsWithPaging<T>(
   } while (resultPart.length > 0)
 
   return result
+}
+
+function extractOperatorUrl(encodedString: string): string{
+  try {
+    return u8aToString(hexToU8a(encodedString))
+  }
+  catch (err) {
+    logger.error(`Sync - ${err}`)
+  }
+
+  return ''
 }
