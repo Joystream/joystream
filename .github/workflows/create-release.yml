@@ -1,4 +1,4 @@
-name: Create release
+name: Create release with node binaries
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ env:
   REPOSITORY: ahhda/joystream
 
 jobs:
-  build:
+  create-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,19 +27,43 @@ jobs:
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - id: extract_binaries
-        name: Copy binaries from docker files
+        name: Copy binaries & wasm file from docker images
         run: |
-          docker cp $(docker create --rm ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-amd64):/joystream/node ./node-amd64
-          docker cp $(docker create --rm ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-arm64):/joystream/node ./node-arm64
-          docker cp $(docker create --rm ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-arm):/joystream/node ./node-arm
+          IMAGE=${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}
+
+          docker run -d --entrypoint tail --name temp-container-joystream-node $IMAGE-amd64 -f /dev/null
+
+          RESULT=$(docker exec temp-container-joystream-node b2sum -l 256 runtime.compact.wasm | awk '{print $1}')
+          echo "::set-output name=blob_hash::${RESULT}"
+
+          docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm ./joystream_runtime_${{ github.event.inputs.tag }}.wasm
+          docker cp temp-container-joystream-node:/joystream/node ./joystream-node
+          tar -czvf joystream-node-${{ github.event.inputs.tag }}-amd64.tar.gz joystream-node
+
+          docker rm --force temp-container-joystream-node
+
+          docker cp $(docker create --rm $IMAGE-arm64):/joystream/node ./joystream-node
+          tar -czvf joystream-node-${{ github.event.inputs.tag }}-arm64.tar.gz joystream-node
+
+          docker cp $(docker create --rm $IMAGE-arm):/joystream/node ./joystream-node
+          tar -czvf joystream-node-${{ github.event.inputs.tag }}-armv7.tar.gz joystream-node
 
       - name: Release
         uses: softprops/action-gh-release@v1
         # if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            node-amd64
-            node-arm64
-            node-arm
+            *.tar.gz
+            *.wasm
           tag_name: ${{ github.event.inputs.tag }}
           name: ${{ github.event.inputs.name }}
+          draft: true
+          body: 'Verify wasm hash:
+            ```
+            $ b2sum -l 256 joystream_runtime_${{ github.event.inputs.tag }}.wasm
+            ```
+
+            ```
+            ${{ steps.extract_binaries.outputs.blob_hash }}
+            ```
+            '
