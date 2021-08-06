@@ -1475,10 +1475,14 @@ decl_module! {
                 params.post_text.len().saturating_add(params.title.len()),
                 T::PostCleanupCost::get() + T::ThreadCleanupCost::get()
             );
-            let first_post_init_bloat_bond = Self::compute_bloat_bond(
-                params.post_text.len(),
-                T::PostCleanupCost::get()
-            );
+
+            // first post bond is taken into account into the thread bond.
+            // makes no sense to delete the first post of a reddit discussion and not delete
+            // the whole discussion. So the only way to delete the first post is to delete the
+            // thread. In any case only the thread author gets the bond if he is the actor of
+            // the deletion
+
+            let first_post_init_bloat_bond = <T as balances::Trait>::Balance::zero();
 
             Self::transfer_to_state_cleanup_treasury_account(
                 thread_init_bloat_bond,
