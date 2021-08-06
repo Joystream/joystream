@@ -185,8 +185,8 @@ export default class ProposalsTransport extends BaseTransport {
       proposals
     };
   }
-  
-  async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
+
+  async voteByProposalAndMember (proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
     const votesEntries = await this.api.query.proposalsEngine.voteExistsByProposalByVoter.entries(proposalId);
     const voteEntry = votesEntries.find((voteEntry) => {
       const memberId = voteEntry[0].args[1] as MemberId;
