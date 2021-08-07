@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { Table, Button, Label, Icon } from 'semantic-ui-react';
 import BN from 'bn.js';
 
-import { ThreadId } from '@joystream/types/common';
+import { PostId, ThreadId } from '@joystream/types/common';
 import { Category, Thread, Post } from '@joystream/types/forum';
 import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam, ReplyIdxQueryParam, ReplyEditIdQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
@@ -22,6 +22,7 @@ import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountP
 import { formatDate } from '@polkadot/joy-utils/functions/date';
 import { NewReply, EditReply } from './EditReply';
 import { useApi } from '@polkadot/react-hooks';
+import { ApiPromise } from '@polkadot/api/promise';
 
 type ThreadTitleProps = {
   thread: Thread;
@@ -124,6 +125,67 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
   nextPostId?: ThreadId;
 };
 
+const POSTS_THREAD_MAP_CACHE_KEY = 'postsThreadMap';
+
+async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
+  const newId = (id: number | BN) => api.createType('PostId', id);
+  const apiCalls: Promise<Post>[] = [];
+  let id = newId(1);
+
+  let mapPostToThread = getPostsIdsInThreadCache();
+  const nextTreadId = await api.query.forum.nextThreadId() as ThreadId;
+
+  if (mapPostToThread.size >= Number(nextTreadId.toString())) { // invalid cache
+    mapPostToThread = new Map<number, number[]>();
+  }
+
+  if (mapPostToThread.size > 0) {
+    let lastPostIdInCache = 0;
+
+    for (const postIds of mapPostToThread.values()) {
+      const maxPostIdInThread = postIds.reduce((a, b) => a > b ? a : b);
+
+      if (maxPostIdInThread > lastPostIdInCache) {
+        lastPostIdInCache = maxPostIdInThread;
+      }
+    }
+
+    id = newId(lastPostIdInCache);
+  }
+
+  while (nextPostId.gt(id)) {
+    apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
+    id = newId(id.add(newId(1)));
+  }
+
+  const allPosts = await Promise.all<Post>(apiCalls);
+
+  for (const post of allPosts) {
+    let posts = mapPostToThread.get(Number(post.thread_id.toString())) as number[];
+    const postId = Number(post.id.toString());
+
+    if (!posts) {
+      posts = [postId];
+    } else if (!posts.includes(postId)) {
+      posts.push(postId);
+    }
+
+    mapPostToThread.set(Number(post.thread_id.toString()), posts);
+  }
+
+  localStorage.setItem(POSTS_THREAD_MAP_CACHE_KEY, JSON.stringify([...mapPostToThread]));
+}
+
+function getPostsIdsInThreadCache (): Map<number, number[]> {
+  const serializedMap = localStorage.getItem(POSTS_THREAD_MAP_CACHE_KEY);
+
+  if (!serializedMap) {
+    return new Map<number, number[]>();
+  }
+
+  return new Map<number, number[]>(JSON.parse(serializedMap));
+}
+
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
@@ -154,20 +216,18 @@ function InnerViewThread (props: ViewThreadProps) {
     const loadPosts = async () => {
       if (!nextPostId || totalPostsInThread === 0 || thread.isEmpty) return;
 
-      const newId = (id: number | BN) => api.createType('PostId', id);
-      const apiCalls: Promise<Post>[] = [];
-      let id = newId(1);
+      await refreshPostsInThreadCache(nextPostId, api);
+      const mapPostToThread = getPostsIdsInThreadCache();
 
-      while (nextPostId.gt(id)) {
-        apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
-        id = newId(id.add(newId(1)));
+      const postIdsInThread = mapPostToThread.get(Number(thread.id.toString())) as number[];
+      const postsInThisThreadCalls: Promise<Post>[] = [];
+
+      for (const postId of postIdsInThread) {
+        postsInThisThreadCalls.push(api.query.forum.postById(postId) as Promise<Post>);
       }
 
-      const allPosts = await Promise.all<Post>(apiCalls);
-      const postsInThisThread = allPosts.filter((item) =>
-        !item.isEmpty &&
-        item.thread_id.eq(thread.id)
-      );
+      const postsInThisThread = await Promise.all(postsInThisThreadCalls);
+
       const sortedPosts = orderBy(
         postsInThisThread,
         [(x) => x.nr_in_thread.toNumber()],
