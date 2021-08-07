@@ -33,7 +33,6 @@ export default {
 
 async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups, lock: ResourceLocker) {
   const debug = extendDebug(`flow:managerLeaderRole:${group}`)
-  api.enableDebugTxLogs()
   debug('Started')
   await lock(Resource.Proposals)
 
@@ -83,6 +82,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   )
 
   await new FixtureRunner(voteForCreateOpeningProposalFixture).run()
+  assert(voteForCreateOpeningProposalFixture.proposalExecuted)
 
   const openingId = api.findOpeningAddedEvent(voteForCreateOpeningProposalFixture.events, group) as OpeningId
   assert(openingId)
@@ -113,6 +113,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   )
 
   await new FixtureRunner(voteForBeginReviewProposal).run()
+  assert(voteForBeginReviewProposal.proposalExecuted)
 
   const fillLeaderOpeningProposalFixture = new FillLeaderOpeningProposalFixture(
     api,
@@ -133,6 +134,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
   )
   // Approve fill leader opening
   await new FixtureRunner(voteForFillLeaderProposalFixture).run()
+  assert(voteForFillLeaderProposalFixture.proposalExecuted)
 
   const hiredLead = await api.getGroupLead(group)
   assert(hiredLead)
@@ -148,6 +150,7 @@ async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, group: Working
 
   // Approve new leader reward
   await new FixtureRunner(voteForeLeaderRewardFixture).run()
+  assert(voteForeLeaderRewardFixture.proposalExecuted)
 
   const leadId = (await api.getLeadWorkerId(group)) as WorkerId
   assert(leadId)
