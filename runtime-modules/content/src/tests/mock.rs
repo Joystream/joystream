@@ -241,9 +241,6 @@ impl Trait for Test {
     /// PostId Type
     type PostId = u64;
 
-    /// ReplyId Type
-    type ReplyId = u64;
-
     /// Post Reaction Type
     type PostReactionId = u64;
 }

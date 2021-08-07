@@ -212,8 +212,6 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
-    /// Video comments are allowed
-    allow_comments: bool,
 }
 
 // Channel alias type for simplification.
@@ -264,8 +262,6 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId> {
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
-    /// Are comments allowed?
-    allow_comments: bool,
 }
 
 /// Information about channel being updated.
@@ -278,8 +274,6 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
-    /// if set, comments are allowed
-    allow_comments: Option<bool>,
 }
 
 /// A category that videos can belong to.
@@ -314,6 +308,8 @@ pub struct VideoCreationParameters<ContentParameters> {
     assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata for the video.
     meta: Vec<u8>,
+    /// Comments enabled or not
+    enable_comments: bool,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -323,6 +319,8 @@ pub struct VideoUpdateParameters<ContentParameters> {
     assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
+    /// If set enable/disable comments to video
+    enable_comments: Option<bool>,
 }
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
@@ -335,6 +333,8 @@ pub struct Video<ChannelId, SeriesId> {
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
+    /// enable or not comments
+    pub enable_comments: bool,
 }
 
 /// Information about the plyalist being created.
@@ -745,7 +745,6 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                allow_comments: params.allow_comments,
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -797,12 +796,6 @@ decl_module! {
             if let Some(reward_account) = &params.reward_account {
                 channel.reward_account = reward_account.clone();
             }
-
-            // Maybe turn on/off comments to videos
-            if let Some(allow_comments) = &params.allow_comments {
-                channel.allow_comments = allow_comments.clone();
-            }
-
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -1013,6 +1006,8 @@ decl_module! {
                 in_series: None,
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
+                /// comments enabled or not
+                enable_comments: params.enable_comments,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1343,14 +1338,23 @@ decl_module! {
             origin,
             content: ContentType<T::VideoId>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
         ) {
 
-            // permissions:
+            // ensure channel is valid
+            let channel = Self::ensure_channel_exists(&channel_id)?;
             if let ContentType::Video(video_id) = content {
+
             // only channel owner allowed to add a video post
-                let video = Self::ensure_video_exists(&video_id)?;
-                let channel_owner = Self::channel_by_id(video.in_channel).owner;
-                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
+        let video = Self::ensure_video_exists(&video_id)?;
+        println!("Video:\t{:?}", video);
+            ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
+
+            // no mismatch between video.channel_id and channel_id
+            ensure!(video.in_channel == channel_id, Error::<T>::VideoAndPostChannelMismatch);
+
+            ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel.owner)?;
+
             } else {
                 // only valid member can add text post
                 if let ContentActor::Member(member_id) = actor {
@@ -1379,7 +1383,6 @@ decl_module! {
 
             // deposit event
             Self::deposit_event(RawEvent::PostCreated(actor, content, post_id));
-
         }
 
         #[weight = 10_000_000] // TODO: adjust weight

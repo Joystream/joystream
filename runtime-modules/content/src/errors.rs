@@ -68,6 +68,13 @@ decl_error! {
         PostDoesNotExist,
 
         /// Partecipant is not a member
-        ReplyDoesNotExist
+        ReplyDoesNotExist,
+
+        /// mismatch between channel id and video channel id in a post
+        VideoAndPostChannelMismatch,
+
+        /// comments disabled
+        CommentsDisabled,
+
     }
 }
