@@ -63,36 +63,28 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
       if (!nextPostId) return;
 
       const newId = (id: number | BN) => api.createType('PostId', id);
-      const apiCalls: Promise<Post>[] = [];
-      let id = newId(1);
-
-      while (nextPostId.gt(id)) {
-        apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
-        id = newId(id.add(newId(1)));
-      }
-
-      const allPosts = await Promise.all(apiCalls);
-      const sortedPosts = orderBy(
-        allPosts,
-        [(x) => x.id.toNumber()],
-        ['desc']
-      );
+      let id = newId(nextPostId.toNumber() - 1);
 
       const threadsIdsLookup = {} as Record<number, boolean>;
-      const postsWithUniqueThreads = sortedPosts.reduce((acc, post) => {
+      const recentUniquePosts = new Array<Post>();
+
+      while (id.gt(newId(0))) {
+        const post = await api.query.forum.postById(id) as Post;
+
         const threadId = post.thread_id.toNumber();
 
-        if (threadsIdsLookup[threadId]) return acc;
+        id = newId(id.toNumber() - 1);
+
+        if (threadsIdsLookup[threadId]) continue;
 
         threadsIdsLookup[threadId] = true;
 
-        return [
-          ...acc,
-          post
-        ];
-      }, [] as Post[]);
+        recentUniquePosts.push(post);
 
-      const recentUniquePosts = postsWithUniqueThreads.slice(0, RecentActivityPostsCount);
+        if (recentUniquePosts.length === RecentActivityPostsCount) {
+          break;
+        }
+      }
 
       setRecentPosts(recentUniquePosts);
       setLoaded(true);
