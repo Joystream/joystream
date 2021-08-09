@@ -24,10 +24,10 @@ const cliFormat = winston.format.combine(
 )
 
 export class LoggingService {
-  private loggerOptions: LoggerOptions
+  private rootLogger: Logger
 
   private constructor(options: LoggerOptions) {
-    this.loggerOptions = options
+    this.rootLogger = winston.createLogger(options)
   }
 
   public static withAppConfig(config: ReadonlyConfig): LoggingService {
@@ -62,9 +62,10 @@ export class LoggingService {
   }
 
   public createLogger(label: string, ...meta: unknown[]): Logger {
-    return winston.createLogger({
-      ...this.loggerOptions,
-      defaultMeta: { label, ...meta },
-    })
+    return this.rootLogger.child({ label, ...meta })
+  }
+
+  public end(): void {
+    this.rootLogger.end()
   }
 }

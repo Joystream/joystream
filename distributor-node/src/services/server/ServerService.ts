@@ -11,6 +11,7 @@ import { StateCacheService } from '../cache/StateCacheService'
 import { NetworkingService } from '../networking'
 import { Logger } from 'winston'
 import { ContentService } from '../content/ContentService'
+import { Server } from 'http'
 
 const OPENAPI_SPEC_PATH = path.join(__dirname, '../../api-spec/openapi.yml')
 
@@ -18,6 +19,7 @@ export class ServerService {
   private config: ReadonlyConfig
   private logger: Logger
   private expressApp: express.Application
+  private httpServer: Server | undefined
 
   private routeWrapper<T>(
     handler: (req: express.Request<T>, res: express.Response, next: express.NextFunction) => Promise<void>
@@ -72,6 +74,7 @@ export class ServerService {
     app.use(
       expressWinston.errorLogger({
         winstonInstance: this.logger,
+        level: 'error',
       })
     )
 
@@ -99,8 +102,13 @@ export class ServerService {
 
   public start(): void {
     const { port } = this.config
-    this.expressApp.listen(port, () => {
+    this.httpServer = this.expressApp.listen(port, () => {
       this.logger.info(`Express server started listening on port ${port}`)
     })
+  }
+
+  public stop(): void {
+    this.httpServer?.close()
+    this.logger.info(`Express server stopped`)
   }
 }

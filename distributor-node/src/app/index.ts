@@ -51,26 +51,51 @@ export class App {
     this.checkConfigDirectories()
     this.stateCache.load()
     const dataObjects = await this.networking.fetchSupportedDataObjects()
-    // TODO: Try to actually save as much content as possible by downloading missing data
-    await this.content.startupSync(dataObjects)
+    await this.content.startupInit(dataObjects)
     this.server.start()
     nodeCleanup(this.exitHandler.bind(this))
   }
 
   private async exitGracefully(): Promise<void> {
-    this.logger.info('Graceful exit initialized')
     // Async exit handler - ideally should not take more than 10 sec
     // We can try to wait until some pending downloads are finished here etc.
-    await this.stateCache.save()
-    this.logger.info('Graceful exit succesful')
+    this.logger.info('Graceful exit initialized')
+
+    // Stop accepting any new requests and save cache
+    this.server.stop()
+    this.stateCache.clearInterval()
+    this.stateCache.saveSync()
+
+    // Try to process remaining downloads
+    const MAX_RETRY_ATTEMPTS = 3
+    let retryCounter = 0
+    while (retryCounter < MAX_RETRY_ATTEMPTS && this.stateCache.getPendingDownloadsCount()) {
+      const pendingDownloadsCount = this.stateCache.getPendingDownloadsCount()
+      this.logger.info(`${pendingDownloadsCount} pending downloads in progress... Retrying exit in 5 sec...`, {
+        retryCounter,
+        pendingDownloadsCount,
+      })
+      await new Promise((resolve) => setTimeout(resolve, 5000))
+      this.stateCache.saveSync()
+      ++retryCounter
+    }
+
+    if (this.stateCache.getPendingDownloadsCount()) {
+      this.logger.warn('Limit reached: Could not finish all pending downloads.', {
+        pendingDownloadsCount: this.stateCache.getPendingDownloadsCount(),
+      })
+    }
+
+    this.logger.info('Graceful exit finished')
   }
 
   private exitCritically(): void {
     this.logger.info('Critical exit initialized')
     // Handling exits due to an error - only some critical, synchronous work can be done here
+    this.server.stop()
+    this.stateCache.clearInterval()
     this.stateCache.saveSync()
-    this.logger.close()
-    this.logger.info('Critical exit succesful')
+    this.logger.info('Critical exit finished')
   }
 
   private exitHandler(exitCode: number | null, signal: string | null): boolean | undefined {
@@ -78,14 +103,15 @@ export class App {
     this.stateCache.clearInterval()
     if (signal) {
       // Async exit can be executed
+      // TODO: this.logging.end() currently doesn't seem to be enough to make sure all logs are flushed to a file
       this.exitGracefully()
         .then(() => {
-          this.logger.close()
+          this.logging.end()
           process.kill(process.pid, signal)
         })
         .catch((err) => {
           this.logger.error('Graceful exit error', { err })
-          this.logger.close()
+          this.logging.end()
           process.kill(process.pid, signal)
         })
       nodeCleanup.uninstall()
@@ -93,6 +119,7 @@ export class App {
     } else {
       // Only synchronous work can be done here
       this.exitCritically()
+      this.logging.end()
     }
   }
 }

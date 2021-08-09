@@ -147,7 +147,11 @@ export class PublicApiController {
     const contentHash = this.stateCache.getObjectContentHash(objectId)
     const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
 
-    this.logger.verbose('Data object state', { contentHash, pendingDownload })
+    this.logger.verbose('Data object requested', {
+      objectId,
+      contentHash,
+      status: pendingDownload && pendingDownload.status,
+    })
 
     if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
       this.logger.info('Requested file found in filesystem', { path: this.content.path(contentHash) })
@@ -170,7 +174,7 @@ export class PublicApiController {
         //   const errorRes: ErrorResponse = {
         //     message: 'Data object not served by this node',
         //   }
-        //   res.status(400).json(errorRes)
+        //   res.status(421).json(errorRes)
         //   // TODO: Redirect to other node that supports it?
       } else {
         const { data: objectData } = objectInfo
@@ -179,7 +183,7 @@ export class PublicApiController {
         }
         const { contentHash, size } = objectData
 
-        const downloadResponse = await this.networking.downloadDataObject(objectData)
+        const downloadResponse = await this.networking.downloadDataObject({ objectData })
 
         if (downloadResponse) {
           // Note: Await will only wait unil the file is created, so we may serve the response from it
