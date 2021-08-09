@@ -69,6 +69,7 @@ fn member_can_create_videos() {
                     b"https://somewhere-else.com/".to_vec()
                 ])]),
                 new_meta: Some(b"newmetablob".to_vec()),
+                enable_comments: None,
             }
         ));
 
@@ -82,6 +83,7 @@ fn member_can_create_videos() {
                         b"https://somewhere-else.com/".to_vec()
                     ])]),
                     new_meta: Some(b"newmetablob".to_vec()),
+                    enable_comments: None,
                 }
             ))
         );
@@ -110,6 +112,7 @@ fn member_can_create_videos() {
                 VideoUpdateParameters {
                     assets: None,
                     new_meta: None,
+                    enable_comments: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized

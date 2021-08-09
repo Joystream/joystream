@@ -113,9 +113,12 @@ fn cannot_create_post_with_nonexistent_video() {
         assert_err!(
             Content::create_post(
                 Origin::signed(member_account),
-                ContentType::Video(UNKNOWN_VIDEO_ID),
                 ContentActor::Member(member_id),
-                scenario.member_channel_id,
+                PostCreationParameters {
+                    content: ContentType::Video(UNKNOWN_VIDEO_ID),
+                    channel_id: scenario.member_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::VideoDoesNotExist,
         );
@@ -143,9 +146,12 @@ fn cannot_create_post_with_mismatching_channel_and_video() {
         assert_err!(
             Content::create_post(
                 Origin::signed(member_account),
-                ContentType::Video(UNKNOWN_VIDEO_ID),
                 ContentActor::Member(member_id),
-                scenario.member_channel_id,
+                PostCreationParameters {
+                    content: ContentType::Video(UNKNOWN_VIDEO_ID),
+                    channel_id: scenario.member_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::VideoDoesNotExist,
         );
@@ -173,9 +179,12 @@ fn cannot_create_post_on_a_channel_with_disabled_comment_section() {
         assert_err!(
             Content::create_post(
                 Origin::signed(member_id),
-                ContentType::Video(scenario.member_video_id.clone()),
                 ContentActor::Member(member_id),
-                scenario.member_channel_id.clone(),
+                PostCreationParameters {
+                    content: ContentType::Video(scenario.member_video_id.clone()),
+                    channel_id: scenario.member_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::CommentsDisabled,
         );
@@ -203,9 +212,12 @@ fn non_authorized_actor_cannot_create_post() {
         assert_err!(
             Content::create_post(
                 Origin::signed(SECOND_MEMBER_ORIGIN),
-                ContentType::Video(scenario.member_video_id.clone()),
                 ContentActor::Member(SECOND_MEMBER_ID),
-                scenario.member_channel_id.clone(),
+                PostCreationParameters {
+                    content: ContentType::Video(scenario.member_video_id.clone()),
+                    channel_id: scenario.member_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::ActorNotAuthorized,
         );
@@ -213,9 +225,12 @@ fn non_authorized_actor_cannot_create_post() {
         assert_err!(
             Content::create_post(
                 Origin::signed(SECOND_CURATOR_ORIGIN),
-                ContentType::Video(scenario.curator_video_id.clone()),
                 ContentActor::Curator(SECOND_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
-                scenario.curator_channel_id.clone(),
+                PostCreationParameters {
+                    content: ContentType::Video(scenario.curator_video_id.clone()),
+                    channel_id: scenario.curator_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::CuratorGroupIsNotActive,
         );
@@ -224,9 +239,12 @@ fn non_authorized_actor_cannot_create_post() {
         assert_err!(
             Content::create_post(
                 Origin::signed(UNKNOWN_ORIGIN),
-                ContentType::Video(scenario.member_video_id),
                 ContentActor::Member(UNKNOWN_MEMBER_ID),
-                scenario.member_channel_id,
+                PostCreationParameters {
+                    content: ContentType::Video(scenario.member_video_id),
+                    channel_id: scenario.member_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -234,9 +252,12 @@ fn non_authorized_actor_cannot_create_post() {
         assert_err!(
             Content::create_post(
                 Origin::signed(UNKNOWN_ORIGIN),
-                ContentType::Video(scenario.curator_video_id),
                 ContentActor::Curator(UNKNOWN_CURATOR_GROUP_ID, UNKNOWN_CURATOR_ID),
-                scenario.curator_channel_id,
+                PostCreationParameters {
+                    content: ContentType::Video(scenario.curator_video_id),
+                    channel_id: scenario.curator_channel_id,
+                    parent_id: None,
+                }
             ),
             Error::<Test>::CuratorAuthFailed,
         );

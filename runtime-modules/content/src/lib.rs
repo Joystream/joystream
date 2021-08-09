@@ -51,8 +51,6 @@ pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as StorageOwnership>::DAOId,
 >;
 
-pub type ParticipantId<T> = common::MemberId<T>;
-
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
 
@@ -123,7 +121,7 @@ pub trait Trait:
     type PostId: NumericIdentifier;
 
     /// Type of PostId
-    type PostReactionId: NumericIdentifier;
+    type ReactionId: NumericIdentifier;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -511,6 +509,19 @@ impl<VideoId> Default for ContentType<VideoId> {
     fn default() -> Self {
         ContentType::Text(b"".to_vec())
     }
+}
+/// Information on the post being created
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PostCreationParameters<ChannelId, PostId, VideoId> {
+    /// channel which the video belongs to
+    channel_id: ChannelId,
+
+    /// parent post if set
+    parent_id: Option<PostId>,
+
+    /// content
+    content: ContentType<VideoId>,
 }
 
 /// alias for Post
@@ -1336,25 +1347,20 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_post(
             origin,
-            content: ContentType<T::VideoId>,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
+            params: PostCreationParameters<T::ChannelId, T::PostId, T::VideoId>,
         ) {
 
             // ensure channel is valid
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            if let ContentType::Video(video_id) = content {
+            let channel = Self::ensure_channel_exists(&params.channel_id)?;
+            if let ContentType::Video(video_id) = params.content {
+                // only channel owner allowed to add a video post
+                let video = Self::ensure_video_exists(&video_id)?;
+                ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
 
-            // only channel owner allowed to add a video post
-        let video = Self::ensure_video_exists(&video_id)?;
-        println!("Video:\t{:?}", video);
-            ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
-
-            // no mismatch between video.channel_id and channel_id
-            ensure!(video.in_channel == channel_id, Error::<T>::VideoAndPostChannelMismatch);
-
-            ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel.owner)?;
-
+                // no mismatch between video.channel_id and channel_id
+                ensure!(video.in_channel == params.channel_id, Error::<T>::VideoAndPostChannelMismatch);
+                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel.owner)?;
             } else {
                 // only valid member can add text post
                 if let ContentActor::Member(member_id) = actor {
@@ -1371,7 +1377,7 @@ decl_module! {
                 bloat_bond: <T as balances::Trait>::Balance::zero(),
                 replies_count: T::PostId::zero(),
                 parent:None,
-                content: content.clone(),
+                content: params.content.clone(),
             };
 
             //
@@ -1382,7 +1388,7 @@ decl_module! {
             <NextPostId<T>>::put(next_post_id);
 
             // deposit event
-            Self::deposit_event(RawEvent::PostCreated(actor, content, post_id));
+            Self::deposit_event(RawEvent::PostCreated(actor, params, post_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1445,14 +1451,24 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         fn react_to_post(
-            _origin,
-            participant_id: ParticipantId<T>,
+            origin,
+            member_id: T::MemberId,
             post_id: T::PostId,
-            reaction_id: T::PostReactionId,
+            reaction_id: T::ReactionId,
         ) {
-            // ensure origin is signed by a member
-            let _post = Self::ensure_post_exists(post_id)?;
-            Self::deposit_event(RawEvent::ReactionToPost(participant_id, post_id, reaction_id));
+            ensure_member_authorized_to_react::<T>(origin, &member_id)?;
+            Self::deposit_event(RawEvent::ReactionToPost(member_id, post_id, reaction_id));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn react_to_video(
+            origin,
+            member_id: T::MemberId,
+            video_id: T::VideoId,
+            reaction_id: T::ReactionId,
+        ) {
+            ensure_member_authorized_to_react::<T>(origin, &member_id)?;
+            Self::deposit_event(RawEvent::ReactionToVideo(member_id, video_id, reaction_id));
         }
     }
 }
@@ -1607,8 +1623,13 @@ decl_event!(
         ContentId = ContentId<T>,
         IsCensored = bool,
         PostId = <T as Trait>::PostId,
-        ParticipantId = ParticipantId<T>,
-        ReactionId = <T as Trait>::PostReactionId,
+        MemberId = <T as MembershipTypes>::MemberId,
+        ReactionId = <T as Trait>::ReactionId,
+        PostCreationParameters = PostCreationParameters<
+            <T as StorageOwnership>::ChannelId,
+            <T as Trait>::PostId,
+            <T as Trait>::VideoId,
+        >,
         ContentType = ContentType<<T as Trait>::VideoId>,
     {
         // Curators
@@ -1731,9 +1752,10 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
 
         // Posts & Replies
-        PostCreated(ContentActor, ContentType, PostId),
+        PostCreated(ContentActor, PostCreationParameters, PostId),
         PostModified(ContentActor, ContentType, PostId),
         PostDeleted(ContentActor, PostId),
-        ReactionToPost(ParticipantId, PostId, ReactionId),
+        ReactionToPost(MemberId, PostId, ReactionId),
+        ReactionToVideo(MemberId, VideoId, ReactionId),
     }
 );

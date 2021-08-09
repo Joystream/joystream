@@ -242,7 +242,7 @@ impl Trait for Test {
     type PostId = u64;
 
     /// Post Reaction Type
-    type PostReactionId = u64;
+    type ReactionId = u64;
 }
 
 pub type System = frame_system::Module<Test>;
