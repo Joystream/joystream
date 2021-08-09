@@ -109,10 +109,6 @@ typegen:
     - data_directory.ContentRejected
     - data_directory.ContentUploadingStatusUpdated
   calls:
-    # Memberships
-    - members.updateProfile
-    - members.updateAccounts
-    - forum.createThread
     # Content directory
     - content.create_curator_group
     - content.set_curator_group_status
