@@ -20,4 +20,5 @@ ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020
     runtime-modules \
     utils/chain-spec-builder \
     joystream-node.Dockerfile \
+    node \
     joystream-node-armv7.Dockerfile | shasum | cut -d " " -f 1
