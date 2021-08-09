@@ -1,7 +1,7 @@
 {
   "name": "@joystream/types",
   "version": "0.17.0",
-  "description": "Types for Joystream Substrate Runtime - Antioch release",
+  "description": "Types for Joystream Substrate Runtime - Giza release",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
