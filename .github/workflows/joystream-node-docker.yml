@@ -173,3 +173,13 @@ jobs:
           docker manifest annotate $IMAGE $IMAGE-arm64 --arch arm64
           docker manifest annotate $IMAGE $IMAGE-arm --arch arm
           docker manifest push $IMAGE
+
+      - name: Create manifest with latest tag for master
+        if: github.ref == 'refs/heads/master'
+        run: |
+          IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
+          docker manifest create latest $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          docker manifest annotate latest $IMAGE-amd64 --arch amd64
+          docker manifest annotate latest $IMAGE-arm64 --arch arm64
+          docker manifest annotate latest $IMAGE-arm --arch arm
+          docker manifest push latest
