@@ -45,7 +45,16 @@ async function syncRun({ api, storage, flags }) {
     try {
       storage.pin(id, (err) => {
         if (!err) {
-          debug('synced:', id, '| total synced:', contentCompletedSync.size, '| remaining:', idsToSync.length)
+          debug(
+            'synced:',
+            id,
+            '| synced:',
+            contentCompletedSync.size,
+            '| syncing:',
+            contentBeingSynced.size,
+            '| queued:',
+            idsToSync.length
+          )
         }
       })
     } catch (err) {
