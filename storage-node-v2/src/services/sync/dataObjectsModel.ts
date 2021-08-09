@@ -7,7 +7,7 @@ import {
   DataObjectDetailsFragment,
 } from '../queryNode/generated/queries'
 
-type Model = {
+export type Model = {
   storageBuckets: StorageBucket[]
   bags: Bag[]
   dataObjects: DataObject[]
@@ -118,11 +118,10 @@ async function getAllObjectsWithPaging<T>(
   return result
 }
 
-function extractOperatorUrl(encodedString: string): string{
+function extractOperatorUrl(encodedString: string): string {
   try {
     return u8aToString(hexToU8a(encodedString))
-  }
-  catch (err) {
+  } catch (err) {
     logger.error(`Sync - ${err}`)
   }
 

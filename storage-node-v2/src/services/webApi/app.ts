@@ -9,6 +9,7 @@ import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
 import { httpLogger, errorLogger } from '../../services/logger'
+import { getLocalDataObjects } from '../../services/sync/synchronizer'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -34,6 +35,12 @@ export async function createApp(
   app.use(cors())
   app.use(express.json())
   app.use(httpLogger())
+
+  // TODO: put it in the API spec
+  app.get('/sync', async (request, response) => {
+    const cids = await getLocalDataObjects(uploadsDir)
+    response.json(cids)
+  })
 
   app.use(
     // Set parameters for each request.
