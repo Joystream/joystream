@@ -9,8 +9,11 @@ import fs from 'fs'
 export const CACHE_GROUP_LOG_BASE = 2
 export const CACHE_GROUPS_COUNT = 24
 
+type PendingDownloadStatus = 'Waiting' | 'LookingForSource' | 'Downloading'
+
 export interface PendingDownloadData {
   objectSize: number
+  status: PendingDownloadStatus
   promise: Promise<StorageNodeDownloadResponse>
 }
 
@@ -34,10 +37,10 @@ export class StateCacheService {
     pendingDownloadsByContentHash: new Map<string, PendingDownloadData>(),
     contentHashByObjectId: new Map<string, string>(),
     storageNodeEndpointDataByEndpoint: new Map<string, StorageNodeEndpointData>(),
+    groupNumberByContentHash: new Map<string, number>(),
   }
 
   private storedState = {
-    groupNumberByContentHash: new Map<string, number>(),
     lruCacheGroups: Array.from({ length: CACHE_GROUPS_COUNT }).map(() => new Map<string, CacheItemData>()),
     mimeTypeByContentHash: new Map<string, string>(),
   }
@@ -72,6 +75,14 @@ export class StateCacheService {
     )
   }
 
+  public getCachedContentHashes(): string[] {
+    let hashes: string[] = []
+    for (const [, group] of this.storedState.lruCacheGroups.entries()) {
+      hashes = hashes.concat(Array.from(group.keys()))
+    }
+    return hashes
+  }
+
   public newContent(contentHash: string, sizeInBytes: number): void {
     const cacheItemData: CacheItemData = {
       popularity: 1,
@@ -79,12 +90,19 @@ export class StateCacheService {
       sizeKB: Math.ceil(sizeInBytes / 1024),
     }
     const groupNumber = this.calcCacheGroup(cacheItemData)
-    this.storedState.groupNumberByContentHash.set(contentHash, groupNumber)
+    this.memoryState.groupNumberByContentHash.set(contentHash, groupNumber)
     this.storedState.lruCacheGroups[groupNumber].set(contentHash, cacheItemData)
   }
 
+  public peekContent(contentHash: string): CacheItemData | undefined {
+    const groupNumber = this.memoryState.groupNumberByContentHash.get(contentHash)
+    if (groupNumber !== undefined) {
+      return this.storedState.lruCacheGroups[groupNumber].get(contentHash)
+    }
+  }
+
   public useContent(contentHash: string): void {
-    const groupNumber = this.storedState.groupNumberByContentHash.get(contentHash)
+    const groupNumber = this.memoryState.groupNumberByContentHash.get(contentHash)
     if (groupNumber === undefined) {
       this.logger.warn('groupNumberByContentHash missing when trying to update LRU of content', { contentHash })
       return
@@ -96,7 +114,7 @@ export class StateCacheService {
         contentHash,
         groupNumber,
       })
-      this.storedState.groupNumberByContentHash.delete(contentHash)
+      this.memoryState.groupNumberByContentHash.delete(contentHash)
       return
     }
     cacheItemData.lastAccessTime = Date.now()
@@ -107,7 +125,7 @@ export class StateCacheService {
     group.delete(contentHash)
     targetGroup.set(contentHash, cacheItemData)
     if (targetGroupNumber !== groupNumber) {
-      this.storedState.groupNumberByContentHash.set(contentHash, targetGroupNumber)
+      this.memoryState.groupNumberByContentHash.set(contentHash, targetGroupNumber)
     }
   }
 
@@ -116,12 +134,14 @@ export class StateCacheService {
     let bestCandidate: string | null = null
     for (const group of this.storedState.lruCacheGroups) {
       const lastItemInGroup = Array.from(group.entries())[0]
-      const [contentHash, objectData] = lastItemInGroup
-      const elapsedSinceLastAccessed = Math.ceil((Date.now() - objectData.lastAccessTime) / 60_000)
-      const itemCost = (elapsedSinceLastAccessed * objectData.sizeKB) / objectData.popularity
-      if (itemCost >= highestCost) {
-        highestCost = itemCost
-        bestCandidate = contentHash
+      if (lastItemInGroup) {
+        const [contentHash, objectData] = lastItemInGroup
+        const elapsedSinceLastAccessed = Math.ceil((Date.now() - objectData.lastAccessTime) / 60_000)
+        const itemCost = (elapsedSinceLastAccessed * objectData.sizeKB) / objectData.popularity
+        if (itemCost >= highestCost) {
+          highestCost = itemCost
+          bestCandidate = contentHash
+        }
       }
     }
     return bestCandidate
@@ -133,11 +153,16 @@ export class StateCacheService {
     promise: Promise<StorageNodeDownloadResponse>
   ): PendingDownloadData {
     const pendingDownload: PendingDownloadData = {
+      status: 'Waiting',
       objectSize,
       promise,
     }
     this.memoryState.pendingDownloadsByContentHash.set(contentHash, pendingDownload)
     return pendingDownload
+  }
+
+  public getPendingDownloadsCount(): number {
+    return this.memoryState.pendingDownloadsByContentHash.size
   }
 
   public getPendingDownload(contentHash: string): PendingDownloadData | undefined {
@@ -149,11 +174,13 @@ export class StateCacheService {
   }
 
   public dropByHash(contentHash: string): void {
+    this.logger.debug('Dropping all state by content hash', contentHash)
     this.storedState.mimeTypeByContentHash.delete(contentHash)
     this.memoryState.pendingDownloadsByContentHash.delete(contentHash)
-    const cacheGroupNumber = this.storedState.groupNumberByContentHash.get(contentHash)
+    const cacheGroupNumber = this.memoryState.groupNumberByContentHash.get(contentHash)
+    this.logger.debug('Cache group by hash established', { contentHash, cacheGroupNumber })
     if (cacheGroupNumber) {
-      this.storedState.groupNumberByContentHash.delete(contentHash)
+      this.memoryState.groupNumberByContentHash.delete(contentHash)
       this.storedState.lruCacheGroups[cacheGroupNumber].delete(contentHash)
     }
   }
@@ -168,12 +195,15 @@ export class StateCacheService {
   }
 
   private serializeData() {
-    const { groupNumberByContentHash, lruCacheGroups, mimeTypeByContentHash } = this.storedState
-    return JSON.stringify({
-      lruCacheGroups: lruCacheGroups.map((g) => Array.from(g.entries())),
-      mimeTypeByContentHash: Array.from(mimeTypeByContentHash.entries()),
-      groupNumberByContentHash: Array.from(groupNumberByContentHash.entries()),
-    })
+    const { lruCacheGroups, mimeTypeByContentHash } = this.storedState
+    return JSON.stringify(
+      {
+        lruCacheGroups: lruCacheGroups.map((g) => Array.from(g.entries())),
+        mimeTypeByContentHash: Array.from(mimeTypeByContentHash.entries()),
+      },
+      null,
+      2 // TODO: Only for debugging
+    )
   }
 
   public async save(): Promise<boolean> {
@@ -198,15 +228,30 @@ export class StateCacheService {
     fs.writeFileSync(this.cacheFilePath, serialized)
   }
 
+  private loadGroupNumberByContentHashMap() {
+    for (const [groupNumber, group] of this.storedState.lruCacheGroups.entries()) {
+      for (const contentHash of group.keys()) {
+        this.memoryState.groupNumberByContentHash.set(contentHash, groupNumber)
+      }
+    }
+  }
+
   public load(): void {
     if (fs.existsSync(this.cacheFilePath)) {
       this.logger.info('Loading cache from file', { file: this.cacheFilePath })
-      const fileContent = JSON.parse(fs.readFileSync(this.cacheFilePath).toString())
-      this.storedState.lruCacheGroups = (fileContent.lruCacheGroups || []).map(
-        (g: any) => new Map<string, CacheItemData>(g)
-      )
-      this.storedState.groupNumberByContentHash = new Map<string, number>(fileContent.groupNumberByContentHash || [])
-      this.storedState.mimeTypeByContentHash = new Map<string, string>(fileContent.mimeTypeByContentHash || [])
+      try {
+        const fileContent = JSON.parse(fs.readFileSync(this.cacheFilePath).toString())
+        ;((fileContent.lruCacheGroups || []) as Array<Array<[string, CacheItemData]>>).forEach((group, groupIndex) => {
+          this.storedState.lruCacheGroups[groupIndex] = new Map<string, CacheItemData>(group)
+        })
+        this.storedState.mimeTypeByContentHash = new Map<string, string>(fileContent.mimeTypeByContentHash || [])
+        this.loadGroupNumberByContentHashMap()
+      } catch (err) {
+        this.logger.error('Error while trying to load data from cache file! Will start from scratch', {
+          file: this.cacheFilePath,
+          err,
+        })
+      }
     } else {
       this.logger.warn(`Cache file (${this.cacheFilePath}) is empty. Starting from scratch`)
     }

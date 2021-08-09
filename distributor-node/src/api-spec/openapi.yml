@@ -31,7 +31,8 @@ paths:
           in: path
           description: Data Object ID
           schema:
-            type: string
+            type: integer
+            minimum: 0
       responses:
         200:
           description: Full available object data sent
@@ -63,8 +64,8 @@ paths:
               schema:
                 type: string
                 format: binary
-        400:
-          description: Invalid request. Data object not supported.
+        421:
+          description: Misdirected request. Data object not supported.
           content:
             application/json:
               schema:

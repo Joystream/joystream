@@ -3,7 +3,7 @@ import { QueryNodeApi } from './query-node/api'
 import { Logger } from 'winston'
 import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
-import { StateCacheService } from '../cache/StateCacheService'
+import { PendingDownloadData, StateCacheService } from '../cache/StateCacheService'
 import { DataObjectDetailsFragment } from './query-node/generated/queries'
 import axios from 'axios'
 import {
@@ -12,6 +12,7 @@ import {
   DataObjectData,
   DataObjectInfo,
   StorageNodeDownloadResponse,
+  DownloadData,
 } from '../../types'
 import queue from 'queue'
 import _ from 'lodash'
@@ -34,6 +35,7 @@ export class NetworkingService {
 
   private storageNodeEndpointsCheckInterval: NodeJS.Timeout
   private testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true })
+  private downloadQueue = queue({ concurrency: MAX_CONCURRENT_DOWNLOADS, autostart: true })
 
   constructor(config: ReadonlyConfig, stateCache: StateCacheService, logging: LoggingService) {
     this.config = config
@@ -127,27 +129,46 @@ export class NetworkingService {
     })
   }
 
-  public downloadDataObject(objectData: DataObjectData): Promise<StorageNodeDownloadResponse> | null {
-    const { contentHash, accessPoints, size } = objectData
+  private downloadJob(
+    pendingDownload: PendingDownloadData,
+    downloadData: DownloadData,
+    onSuccess: (response: StorageNodeDownloadResponse) => void,
+    onError: (error: Error) => void
+  ): Promise<StorageNodeDownloadResponse> {
+    const {
+      objectData: { contentHash, accessPoints },
+      startAt,
+    } = downloadData
 
-    if (this.stateCache.getPendingDownload(contentHash)) {
-      // Already downloading
-      return null
-    }
+    pendingDownload.status = 'LookingForSource'
 
-    const downloadPromise = new Promise<StorageNodeDownloadResponse>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
+      const fail = (message: string) => {
+        this.stateCache.dropPendingDownload(contentHash)
+        onError(new Error(message))
+        reject(new Error(message))
+      }
+      const success = (response: StorageNodeDownloadResponse) => {
+        this.logger.info('Download source found', { contentHash, source: response.config.url })
+        pendingDownload.status = 'Downloading'
+        onSuccess(response)
+        resolve(response)
+      }
+
       const storageEndpoints = this.sortEndpointsByMeanResponseTime(
         accessPoints?.storageNodes.map((n) => n.endpoint) || []
       )
 
       this.logger.info('Downloading new data object', { contentHash, storageEndpoints })
       if (!storageEndpoints.length) {
-        reject(new Error('No storage endpoints available to download the data object from'))
-        return
+        return fail('No storage endpoints available to download the data object from')
       }
 
-      const availabilityQueue = queue({ concurrency: MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD, autostart: true })
-      const downloadQueue = queue({ concurrency: 1, autostart: true })
+      const availabilityQueue = queue({
+        concurrency: MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD,
+        autostart: true,
+      })
+      const objectDownloadQueue = queue({ concurrency: 1, autostart: true })
 
       storageEndpoints.forEach(async (endpoint) => {
         availabilityQueue.push(async () => {
@@ -162,11 +183,12 @@ export class NetworkingService {
 
       availabilityQueue.on('success', (endpoint) => {
         availabilityQueue.stop()
-        const job = () => {
+        const job = async () => {
           const api = new StorageNodeApi(endpoint, this.logging)
-          return api.downloadObject(contentHash)
+          const response = await api.downloadObject(contentHash, startAt)
+          return response
         }
-        downloadQueue.push(job)
+        objectDownloadQueue.push(job)
       })
 
       availabilityQueue.on('error', () => {
@@ -176,32 +198,51 @@ export class NetworkingService {
         */
       })
 
-      downloadQueue.on('error', (err) => {
+      objectDownloadQueue.on('error', (err) => {
         this.logger.error('Download attempt from storage node failed after availability was confirmed:', { err })
       })
 
-      downloadQueue.on('end', () => {
+      objectDownloadQueue.on('end', () => {
         if (availabilityQueue.length) {
           availabilityQueue.start()
         } else {
-          reject(new Error('Failed to download the object from any availablable storage provider'))
+          fail('Failed to download the object from any availablable storage provider')
         }
       })
 
       availabilityQueue.on('end', () => {
-        if (!downloadQueue.length) {
-          reject(new Error('Failed to download the object from any availablable storage provider'))
+        if (!objectDownloadQueue.length) {
+          fail('Failed to download the object from any availablable storage provider')
         }
       })
 
-      downloadQueue.on('success', (response: StorageNodeDownloadResponse) => {
+      objectDownloadQueue.on('success', (response: StorageNodeDownloadResponse) => {
         availabilityQueue.removeAllListeners().end()
-        downloadQueue.removeAllListeners().end()
-        resolve(response)
+        objectDownloadQueue.removeAllListeners().end()
+        success(response)
       })
     })
+  }
 
-    this.stateCache.newPendingDownload(contentHash, size, downloadPromise)
+  public downloadDataObject(downloadData: DownloadData): Promise<StorageNodeDownloadResponse> | null {
+    const {
+      objectData: { contentHash, size },
+    } = downloadData
+
+    if (this.stateCache.getPendingDownload(contentHash)) {
+      // Already downloading
+      return null
+    }
+
+    let resolveDownload: (response: StorageNodeDownloadResponse) => void, rejectDownload: (err: Error) => void
+    const downloadPromise = new Promise<StorageNodeDownloadResponse>((resolve, reject) => {
+      resolveDownload = resolve
+      rejectDownload = reject
+    })
+
+    // Queue the download
+    const pendingDownload = this.stateCache.newPendingDownload(contentHash, size, downloadPromise)
+    this.downloadQueue.push(() => this.downloadJob(pendingDownload, downloadData, resolveDownload, rejectDownload))
 
     return downloadPromise
   }

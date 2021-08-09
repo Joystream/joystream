@@ -46,10 +46,13 @@ export class StorageNodeApi {
     }
   }
 
-  public async downloadObject(contentHash: string): Promise<StorageNodeDownloadResponse> {
-    this.logger.info('Sending download request', { contentHash })
+  public async downloadObject(contentHash: string, startAt?: number): Promise<StorageNodeDownloadResponse> {
+    this.logger.info('Sending download request', { contentHash, startAt })
     const options: AxiosRequestConfig = {
       responseType: 'stream',
+    }
+    if (startAt) {
+      options.headers.Range = `bytes=${startAt}-`
     }
     return this.publicApi.publicApiFiles(contentHash, options)
   }
