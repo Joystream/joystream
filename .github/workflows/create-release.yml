@@ -11,11 +11,45 @@ on:
         required: true
 
 env:
-  REPOSITORY: ahhda/joystream
+  REPOSITORY: joystream/node
 
 jobs:
+  build-mac-binary:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
+        run: |
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+
+      - id: Stup
+        name: Run Setup
+        run: |
+          ./setup.sh
+
+      - id: Build
+        name: Build binaries
+        run: |
+          yarn cargo-build
+          ls -al ./target/release
+
+      - name: Tar the binary
+        run: tar -czvf joystream-node-macos.tar.gz ./target/release/joystream-node
+
+      - name: Temporarily save node binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
+          path: joystream-node-macos.tar.gz
+          retention-days: 1
+
   create-release:
     runs-on: ubuntu-latest
+    needs: [build-mac-binary]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -38,15 +72,23 @@ jobs:
 
           docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm ./joystream_runtime_${{ github.event.inputs.tag }}.wasm
           docker cp temp-container-joystream-node:/joystream/node ./joystream-node
-          tar -czvf joystream-node-${{ github.event.inputs.tag }}-amd64.tar.gz joystream-node
+          tar -czvf joystream-node-${{ github.event.inputs.tag }}-amd64-linux-gnu.tar.gz joystream-node
 
           docker rm --force temp-container-joystream-node
 
           docker cp $(docker create --rm $IMAGE-arm64):/joystream/node ./joystream-node
-          tar -czvf joystream-node-${{ github.event.inputs.tag }}-arm64.tar.gz joystream-node
+          tar -czvf joystream-node-${{ github.event.inputs.tag }}-arm64-linux-gnu.tar.gz joystream-node
 
           docker cp $(docker create --rm $IMAGE-arm):/joystream/node ./joystream-node
-          tar -czvf joystream-node-${{ github.event.inputs.tag }}-armv7.tar.gz joystream-node
+          tar -czvf joystream-node-${{ github.event.inputs.tag }}-armv7-linux-gnu.tar.gz joystream-node
+
+          rm -f joystream-node
+
+      - name: Retrieve saved MacOS binary
+        uses: actions/download-artifact@v2
+        with:
+          name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
+          path: joystream-node-${{ github.event.inputs.tag }}-macos.tar.gz
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -62,6 +104,8 @@ jobs:
             ```
             $ b2sum -l 256 joystream_runtime_${{ github.event.inputs.tag }}.wasm
             ```
+
+            This should be the output
 
             ```
             ${{ steps.extract_binaries.outputs.blob_hash }}
