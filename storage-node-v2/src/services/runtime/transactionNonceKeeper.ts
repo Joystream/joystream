@@ -16,10 +16,7 @@ const lock = new AwaitLock()
  * @returns promise with transaction nonce for a given account.
  *
  */
-export async function getNonce(
-  api: ApiPromise,
-  account: KeyringPair
-): Promise<Index> {
+export async function getNonce(api: ApiPromise, account: KeyringPair): Promise<Index> {
   await lock.acquireAsync()
   try {
     if (nonce === null) {

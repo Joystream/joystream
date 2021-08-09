@@ -433,8 +433,8 @@ pub type DistributionBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
 /// Local module account handler.
 pub type StorageTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
 
-/// IPFS hash type alias.
-pub type ContentId = Vec<u8>;
+/// IPFS hash type alias (content ID).
+pub type Cid = Vec<u8>;
 
 // Alias for the Substrate balances pallet.
 type Balances<T> = balances::Module<T>;
@@ -912,7 +912,7 @@ decl_storage! {
             T::StorageBucketId => StorageBucket<WorkerId<T>>;
 
         /// Blacklisted data object hashes.
-        pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) ContentId => ();
+        pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) Cid => ();
 
         /// Blacklist collection counter.
         pub CurrentBlacklistSize get (fn current_blacklist_size): u64;
@@ -1085,7 +1085,7 @@ decl_event! {
         /// Params
         /// - hashes to remove from the blacklist
         /// - hashes to add to the blacklist
-        UpdateBlacklist(BTreeSet<ContentId>, BTreeSet<ContentId>),
+        UpdateBlacklist(BTreeSet<Cid>, BTreeSet<Cid>),
 
         /// Emits on deleting a dynamic bag.
         /// Params
@@ -1602,8 +1602,8 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_blacklist(
             origin,
-            remove_hashes: BTreeSet<ContentId>,
-            add_hashes: BTreeSet<ContentId>
+            remove_hashes: BTreeSet<Cid>,
+            add_hashes: BTreeSet<Cid>
         ){
             T::ensure_storage_working_group_leader_origin(origin)?;
 
@@ -3032,20 +3032,20 @@ impl<T: Trait> Module<T> {
 
     // Returns only existing hashes in the blacklist from the original collection.
     #[allow(clippy::redundant_closure)] // doesn't work with Substrate storage functions.
-    fn get_existing_hashes(hashes: &BTreeSet<ContentId>) -> BTreeSet<ContentId> {
+    fn get_existing_hashes(hashes: &BTreeSet<Cid>) -> BTreeSet<Cid> {
         Self::get_hashes_by_predicate(hashes, |cid| Blacklist::contains_key(cid))
     }
 
     // Returns only nonexisting hashes in the blacklist from the original collection.
-    fn get_nonexisting_hashes(hashes: &BTreeSet<ContentId>) -> BTreeSet<ContentId> {
+    fn get_nonexisting_hashes(hashes: &BTreeSet<Cid>) -> BTreeSet<Cid> {
         Self::get_hashes_by_predicate(hashes, |cid| !Blacklist::contains_key(cid))
     }
 
     // Returns hashes from the original collection selected by predicate.
-    fn get_hashes_by_predicate<P: FnMut(&&ContentId) -> bool>(
-        hashes: &BTreeSet<ContentId>,
+    fn get_hashes_by_predicate<P: FnMut(&&Cid) -> bool>(
+        hashes: &BTreeSet<Cid>,
         predicate: P,
-    ) -> BTreeSet<ContentId> {
+    ) -> BTreeSet<Cid> {
         hashes
             .iter()
             .filter(predicate)

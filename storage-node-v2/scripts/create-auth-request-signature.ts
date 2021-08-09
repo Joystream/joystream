@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
-import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { getAlicePair } from '../src/services/runtime/accounts'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { UploadTokenRequestBody, signTokenBody, UploadTokenRequest } from '../src/services/helpers/auth'
 import { exit } from 'process'
 

@@ -12,8 +12,7 @@ import logger from '../../services/logger'
  * Shell command: "leader:set-bucket-limits"
  */
 export default class LeaderSetBucketLimits extends ApiCommandBase {
-  static description =
-    'Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.'
+  static description = 'Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.'
 
   static flags = {
     bucketId: flags.integer({
@@ -43,18 +42,12 @@ export default class LeaderSetBucketLimits extends ApiCommandBase {
     }
 
     const account = this.getAccount(flags)
-    const bucket = flags.bucketId ?? 0
-    const objectsLimit = flags.objects ?? 0
-    const sizeLimit = flags.size ?? 0
+    const bucket = flags.bucketId
+    const objectsLimit = flags.objects
+    const sizeLimit = flags.size
 
     const api = await this.getApi()
-    const success = await setStorageBucketVoucherLimits(
-      api,
-      account,
-      bucket,
-      sizeLimit,
-      objectsLimit
-    )
+    const success = await setStorageBucketVoucherLimits(api, account, bucket, sizeLimit, objectsLimit)
 
     this.exitAfterRuntimeCall(success)
   }

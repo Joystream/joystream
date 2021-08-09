@@ -36,11 +36,7 @@ export default class LeaderRemoveOperator extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    const success = await removeStorageBucketOperator(
-      api,
-      account,
-      storageBucketId
-    )
+    const success = await removeStorageBucketOperator(api, account, storageBucketId)
 
     this.exitAfterRuntimeCall(success)
   }

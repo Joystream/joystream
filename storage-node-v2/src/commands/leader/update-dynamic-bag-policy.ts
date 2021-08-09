@@ -14,8 +14,7 @@ import { parseDynamicBagType } from '../../services/helpers/bagTypes'
  * Shell command: "leader:update-dynamic-bag-policy"
  */
 export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
-  static description =
-    'Update number of storage buckets used in the dynamic bag creation policy.'
+  static description = 'Update number of storage buckets used in the dynamic bag creation policy.'
 
   static flags = {
     number: flags.integer({
@@ -23,13 +22,11 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
       required: true,
       description: 'New storage buckets number',
     }),
-    member: flags.boolean({
-      char: 'e',
-      description: 'Member dynamic bag type (default)',
-    }),
-    channel: flags.boolean({
-      char: 'c',
-      description: 'Channel dynamic bag type',
+    bagType: flags.enum({
+      char: 't',
+      description: 'Dynamic bag type (Channel, Member).',
+      options: ['Channel', 'Member'],
+      required: true,
     }),
     ...ApiCommandBase.flags,
   }
@@ -37,28 +34,25 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateDynamicBagPolicy)
 
-    logger.info('Update "Storage buckets per bag" number limit....')
+    logger.info('Update dynamic bag creation policy....')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
 
     const account = this.getAccount(flags)
-    const newNumber = flags.number ?? 0
+    const newNumber = flags.number
 
-    let dynamicBagTypeString: 'Member' | 'Channel' = 'Member' // Default
-    if (flags.channel) {
-      dynamicBagTypeString = 'Channel'
-    }
+    // Verified by enum argument parser.
+    const dynamicBagTypeString = flags.bagType as 'Member' | 'Channel'
 
     const api = await this.getApi()
     const dynamicBagType = parseDynamicBagType(api, dynamicBagTypeString)
-    const success =
-      await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
-        api,
-        account,
-        dynamicBagType,
-        newNumber
-      )
+    const success = await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
+      api,
+      account,
+      dynamicBagType,
+      newNumber
+    )
 
     this.exitAfterRuntimeCall(success)
   }

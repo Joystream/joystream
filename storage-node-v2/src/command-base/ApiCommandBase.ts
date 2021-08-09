@@ -1,9 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import { createApi } from '../services/runtime/api'
-import {
-  getAccountFromJsonFile,
-  getAlicePair,
-} from '../services/runtime/accounts'
+import { getAccountFromJsonFile, getAlicePair } from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../services/logger'
@@ -22,13 +19,11 @@ export default abstract class ApiCommandBase extends Command {
     dev: flags.boolean({ char: 'm', description: 'Use development mode' }),
     apiUrl: flags.string({
       char: 'u',
-      description:
-        'Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944',
+      description: 'Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944',
     }),
     keyfile: flags.string({
       char: 'k',
-      description:
-        'Key file for the account. Mandatory in non-dev environment.',
+      description: 'Key file for the account. Mandatory in non-dev environment.',
     }),
     password: flags.string({
       char: 'p',
@@ -87,10 +82,9 @@ export default abstract class ApiCommandBase extends Command {
     const chainType = await api.rpc.system.chainType()
 
     if (!chainType.isDevelopment && !chainType.isLocal) {
-      throw new CLIError(
-        'This command should only be run on a Development chain.',
-        { exit: ExitCodes.DevelopmentModeOnly }
-      )
+      throw new CLIError('This command should only be run on a Development chain.', {
+        exit: ExitCodes.DevelopmentModeOnly,
+      })
     }
 
     logger.info('Development mode is ON.')
@@ -105,11 +99,7 @@ export default abstract class ApiCommandBase extends Command {
    * @param password - password for the key file (optional).
    * @returns KeyringPair instance.
    */
-  getAccount(flags: {
-    dev?: boolean
-    keyfile?: string
-    password?: string
-  }): KeyringPair {
+  getAccount(flags: { dev?: boolean; keyfile?: string; password?: string }): KeyringPair {
     const keyfile = flags.keyfile ?? ''
     const password = flags.password
 

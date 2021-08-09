@@ -28,15 +28,21 @@ export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
       char: 'd',
       description: 'Disables accepting new bags.',
     }),
+    set: flags.enum({
+      char: 's',
+      description: `Sets 'accepting new bags' parameter for the bucket (on/off).`,
+      options: ['on', 'off'],
+      required: true,
+    }),
     ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateStorageBucketStatus)
 
-    const bucket = flags.bucketId ?? 0
-    const disable = flags.disable
-    const newStatus = !disable
+    const bucket = flags.bucketId
+    // Accept new bags?
+    const newStatus = flags.set === 'on'
 
     logger.info('Updating the storage bucket status...')
     if (flags.dev) {
@@ -46,12 +52,7 @@ export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    const success = await updateStorageBucketStatus(
-      api,
-      account,
-      bucket,
-      newStatus
-    )
+    const success = await updateStorageBucketStatus(api, account, bucket, newStatus)
 
     this.exitAfterRuntimeCall(success)
   }

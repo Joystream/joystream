@@ -1,25 +1,13 @@
-import {
-  Null,
-  u128,
-  u64,
-  Text,
-  Vec,
-  bool,
-  GenericAccountId as AccountId,
-  BTreeSet,
-  BTreeMap,
-  Option,
-} from '@polkadot/types'
+import { Null, u64, Bytes, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap, Option } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup } from './common'
+import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
 import { MemberId } from './members'
 import { WorkerId } from './working-group'
 
-export class BalanceOf extends u128 {}
 export class DataObjectId extends u64 {}
 export class StorageBucketId extends u64 {}
 
-export type StorageBucketsPerBagValueConstraintType = {
+export type IStorageBucketsPerBagValueConstraint = {
   min: u64
   max_min_diff: u64
 }
@@ -29,9 +17,9 @@ export class StorageBucketsPerBagValueConstraint
     min: u64,
     max_min_diff: u64,
   })
-  implements StorageBucketsPerBagValueConstraintType {}
+  implements IStorageBucketsPerBagValueConstraint {}
 
-export type StorageDataObjectType = {
+export type IStorageDataObject = {
   accepted: bool
   deletion_prize: BalanceOf
   size: u64
@@ -44,7 +32,7 @@ export class StorageDataObject
     deletion_prize: BalanceOf,
     size: u64,
   })
-  implements StorageDataObjectType {}
+  implements IStorageDataObject {}
 
 export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
 export class DistributionBucketId extends u64 {}
@@ -52,7 +40,7 @@ export class DistributionBucketFamilyId extends u64 {}
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
 export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
 
-export type DynamicBagDeletionPrizeTypeDef = {
+export type IDynamicBagDeletionPrize = {
   account_id: AccountId
   prize: BalanceOf
 }
@@ -62,11 +50,11 @@ export class DynamicBagDeletionPrize
     account_id: AccountId,
     prize: BalanceOf,
   })
-  implements DynamicBagDeletionPrizeTypeDef {}
+  implements IDynamicBagDeletionPrize {}
 
 export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
 
-export type BagTypeDef = {
+export type IBag = {
   objects: BTreeMap<DataObjectId, StorageDataObject>
   stored_by: StorageBucketIdSet
   distributed_by: DistributionBucketSet
@@ -80,9 +68,9 @@ export class Bag
     distributed_by: DistributionBucketSet,
     deletion_prize: Option.with(BalanceOf),
   })
-  implements BagTypeDef {}
+  implements IBag {}
 
-export type DynamicBagCreationPolicyType = {
+export type IDynamicBagCreationPolicy = {
   numberOfStorageBuckets: u64
 }
 
@@ -90,7 +78,7 @@ export class DynamicBagCreationPolicy
   extends JoyStructDecorated({
     numberOfStorageBuckets: u64,
   })
-  implements DynamicBagCreationPolicyType {}
+  implements IDynamicBagCreationPolicy {}
 
 export const DynamicBagTypeDef = {
   Member: Null,
@@ -103,32 +91,29 @@ export const StaticBagIdDef = {
   Council: Null,
   WorkingGroup: WorkingGroup,
 } as const
-export type StaticBagIdKey = keyof typeof StaticBagIdDef
 export class StaticBagId extends JoyEnum(StaticBagIdDef) {}
-
 export class Static extends StaticBagId {}
 
+// This type should be imported from content-directory/common types once the Olympia release is merged.
 export class ChannelId extends u64 {}
+
 export const DynamicBagIdDef = {
   Member: MemberId,
   Channel: ChannelId,
 } as const
-export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
 export class DynamicBagId extends JoyEnum(DynamicBagIdDef) {}
-
 export class Dynamic extends DynamicBagId {}
 
 export const BagIdDef = {
   Static,
   Dynamic,
 } as const
-export type BagIdKey = keyof typeof BagIdDef
 export class BagId extends JoyEnum(BagIdDef) {}
 
 // Alias
 export class BagIdType extends BagId {}
 
-export type VoucherType = {
+export type IVoucher = {
   sizeLimit: u64
   objectsLimit: u64
   sizeUsed: u64
@@ -142,21 +127,20 @@ export class Voucher
     sizeUsed: u64,
     objectsUsed: u64,
   })
-  implements VoucherType {}
+  implements IVoucher {}
 
 export const StorageBucketOperatorStatusDef = {
   Missing: Null,
   InvitedStorageWorker: WorkerId,
   StorageWorker: WorkerId,
 } as const
-export type StorageBucketOperatorStatusKey = keyof typeof StorageBucketOperatorStatusDef
 export class StorageBucketOperatorStatus extends JoyEnum(StorageBucketOperatorStatusDef) {}
 
-export type StorageBucketType = {
+export type IStorageBucket = {
   operator_status: StorageBucketOperatorStatus
   accepting_new_bags: bool
   voucher: Voucher
-  metadata: Text
+  metadata: Bytes
 }
 
 export class StorageBucket
@@ -164,24 +148,24 @@ export class StorageBucket
     operator_status: StorageBucketOperatorStatus,
     accepting_new_bags: bool,
     voucher: Voucher,
-    metadata: Text,
+    metadata: Bytes,
   })
-  implements StorageBucketType {}
+  implements IStorageBucket {}
 
-export type DataObjectCreationParametersType = {
+export type IDataObjectCreationParameters = {
   size: u64
-  ipfsContentId: Text
+  ipfsContentId: Bytes
 }
 
 export class DataObjectCreationParameters
   extends JoyStructDecorated({
     size: u64,
-    ipfsContentId: Text,
+    ipfsContentId: Bytes,
   })
-  implements DataObjectCreationParametersType {}
+  implements IDataObjectCreationParameters {}
 
-export type UploadParametersType = {
-  authenticationKey: Text
+export type IUploadParameters = {
+  authenticationKey: Bytes
   bagId: BagId
   objectCreationList: Vec<DataObjectCreationParameters>
   deletionPrizeSourceAccountId: AccountId
@@ -190,18 +174,18 @@ export type UploadParametersType = {
 
 export class UploadParameters
   extends JoyStructDecorated({
-    authenticationKey: Text,
+    authenticationKey: Bytes,
     bagId: BagId,
     objectCreationList: Vec.with(DataObjectCreationParameters),
     deletionPrizeSourceAccountId: AccountId,
     expectedDataSizeFee: BalanceOf,
   })
-  implements UploadParametersType {}
+  implements IUploadParameters {}
 
-export class Cid extends Text {}
+export class Cid extends Bytes {}
 export class ContentIdSet extends BTreeSet.with(Cid) {}
 
-export type DistributionBucketType = {
+export type IDistributionBucket = {
   accepting_new_bags: bool
   distributing: bool
   pending_invitations: BTreeSet<WorkerId>
@@ -217,9 +201,9 @@ export class DistributionBucket
     operators: BTreeSet.with(WorkerId),
     assigned_bags: u64,
   })
-  implements DistributionBucketType {}
+  implements IDistributionBucket {}
 
-export type DistributionBucketFamilyType = {
+export type IDistributionBucketFamily = {
   distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>
 }
 
@@ -227,7 +211,7 @@ export class DistributionBucketFamily
   extends JoyStructDecorated({
     distribution_buckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
   })
-  implements DistributionBucketFamilyType {}
+  implements IDistributionBucketFamily {}
 
 export const storageTypes: RegistryTypes = {
   StorageBucketId,

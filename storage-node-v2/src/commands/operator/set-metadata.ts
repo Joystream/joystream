@@ -36,8 +36,8 @@ export default class OperatorSetMetadata extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorSetMetadata)
 
-    const operator = flags.operatorId ?? 0
-    const bucket = flags.bucketId ?? 0
+    const operator = flags.operatorId
+    const bucket = flags.bucketId
     const metadata = flags.metadata ?? ''
 
     logger.info('Setting the storage operator metadata...')
@@ -48,13 +48,7 @@ export default class OperatorSetMetadata extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    const success = await setStorageOperatorMetadata(
-      api,
-      account,
-      operator,
-      bucket,
-      metadata
-    )
+    const success = await setStorageOperatorMetadata(api, account, operator, bucket, metadata)
 
     this.exitAfterRuntimeCall(success)
   }

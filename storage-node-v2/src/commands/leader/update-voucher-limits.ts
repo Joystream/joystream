@@ -38,16 +38,11 @@ export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
     }
 
     const account = this.getAccount(flags)
-    const objectsLimit = flags.objects ?? 0
-    const sizeLimit = flags.size ?? 0
+    const objectsLimit = flags.objects
+    const sizeLimit = flags.size
 
     const api = await this.getApi()
-    const success = await updateStorageBucketsVoucherMaxLimits(
-      api,
-      account,
-      sizeLimit,
-      objectsLimit
-    )
+    const success = await updateStorageBucketsVoucherMaxLimits(api, account, sizeLimit, objectsLimit)
 
     this.exitAfterRuntimeCall(success)
   }

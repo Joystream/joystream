@@ -32,8 +32,8 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorAcceptInvitation)
 
-    const worker = flags.workerId ?? 0
-    const bucket = flags.bucketId ?? 0
+    const worker = flags.workerId
+    const bucket = flags.bucketId
 
     logger.info('Accepting pending storage bucket invitation...')
     if (flags.dev) {
@@ -43,12 +43,7 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    const success = await acceptStorageBucketInvitation(
-      api,
-      account,
-      worker,
-      bucket
-    )
+    const success = await acceptStorageBucketInvitation(api, account, worker, bucket)
 
     this.exitAfterRuntimeCall(success)
   }

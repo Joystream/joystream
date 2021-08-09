@@ -32,13 +32,14 @@ USAGE
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
+* [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
-* [`storage-node leader:set-uploading-block`](#storage-node-leaderset-uploading-block)
+* [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
 * [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
@@ -48,7 +49,7 @@ USAGE
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
-* [`storage-node server`](#storage-node-server-file)
+* [`storage-node server`](#storage-node-server)
 
 ## `storage-node dev:init`
 
@@ -143,6 +144,23 @@ OPTIONS
 ```
 
 _See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/verify-bag-id.ts)_
+
+## `storage-node help [COMMAND]`
+
+display help for storage-node
+
+```
+USAGE
+  $ storage-node help [COMMAND]
+
+ARGUMENTS
+  COMMAND  command to show help for
+
+OPTIONS
+  --all  see all commands in CLI
+```
+
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.0.1/src/commands/help.ts)_
 
 ## `storage-node leader:cancel-invite`
 
@@ -264,25 +282,24 @@ OPTIONS
 
 _See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-bucket-limits.ts)_
 
-## `storage-node leader:set-uploading-block`
+## `storage-node leader:set-global-uploading-status`
 
 Set global uploading block. Requires storage working group leader permissions.
 
 ```
 USAGE
-  $ storage-node leader:set-uploading-block
+  $ storage-node leader:set-global-uploading-status
 
 OPTIONS
-  -d, --disable            Disables global uploading block.
-  -e, --enable             Enables global uploading block (default).
   -h, --help               show CLI help
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
   -m, --dev                Use development mode
   -p, --password=password  Key file password (optional).
+  -s, --set=(on|off)       (required) Sets global uploading block (on/off).
   -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
-_See code: [src/commands/leader/set-uploading-block.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-uploading-block.ts)_
+_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-global-uploading-status.ts)_
 
 ## `storage-node leader:update-bag`
 
@@ -293,8 +310,8 @@ USAGE
   $ storage-node leader:update-bag
 
 OPTIONS
-  -b, --bucket=bucket
-      (required) Storage bucket ID
+  -a, --add=add
+      [default: ] ID of a bucket to add to bag
 
   -h, --help
       show CLI help
@@ -322,8 +339,8 @@ OPTIONS
   -p, --password=password
       Key file password (optional).
 
-  -r, --remove
-      Remove a bucket from the bag
+  -r, --remove=remove
+      [default: ] ID of a bucket to remove from bag
 
   -u, --apiUrl=apiUrl
       Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
@@ -359,12 +376,12 @@ USAGE
   $ storage-node leader:update-blacklist
 
 OPTIONS
-  -c, --cid=cid            (required) Content ID
+  -a, --add=add            [default: ] Content ID to add
   -h, --help               show CLI help
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
   -m, --dev                Use development mode
   -p, --password=password  Key file password (optional).
-  -r, --remove             Remove a content ID from the blaclist
+  -r, --remove=remove      [default: ] Content ID to remove
   -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
@@ -386,6 +403,7 @@ OPTIONS
   -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
   -m, --dev                Use development mode
   -p, --password=password  Key file password (optional).
+  -s, --set=(on|off)       (required) Sets 'accepting new bags' parameter for the bucket (on/off).
   -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
@@ -419,14 +437,13 @@ USAGE
   $ storage-node leader:update-dynamic-bag-policy
 
 OPTIONS
-  -c, --channel            Channel dynamic bag type
-  -e, --member             Member dynamic bag type (default)
-  -h, --help               show CLI help
-  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                Use development mode
-  -n, --number=number      (required) New storage buckets number
-  -p, --password=password  Key file password (optional).
-  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
+  -h, --help                      show CLI help
+  -k, --keyfile=keyfile           Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                       Use development mode
+  -n, --number=number             (required) New storage buckets number
+  -p, --password=password         Key file password (optional).
+  -t, --bagType=(Channel|Member)  (required) Dynamic bag type (Channel, Member).
+  -u, --apiUrl=apiUrl             Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
 ```
 
 _See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-dynamic-bag-policy.ts)_
@@ -512,4 +529,5 @@ OPTIONS
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/server.ts)_
+
 <!-- commandsstop -->

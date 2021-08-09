@@ -1,10 +1,4 @@
-import {
-  BagId,
-  DynamicBagType,
-  DynamicBagTypeKey,
-  Static,
-  Dynamic,
-} from '@joystream/types/storage'
+import { BagId, DynamicBagType, DynamicBagTypeKey, Static, Dynamic } from '@joystream/types/storage'
 import { WorkingGroup } from '@joystream/types/common'
 import { ApiPromise } from '@polkadot/api'
 import ExitCodes from '../../command-base/ExitCodes'
@@ -20,10 +14,7 @@ import { CLIError } from '@oclif/errors'
  * @param bagType - dynamic bag type string
  * @returns The DynamicBagType instance.
  */
-export function parseDynamicBagType(
-  api: ApiPromise,
-  bagType: DynamicBagTypeKey
-): DynamicBagType {
+export function parseDynamicBagType(api: ApiPromise, bagType: DynamicBagTypeKey): DynamicBagType {
   return api.createType('DynamicBagType', bagType)
 }
 
@@ -107,10 +98,7 @@ class BagIdParser {
 
         for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
-            const workingGroup: WorkingGroup = this.api.createType(
-              'WorkingGroup',
-              group
-            )
+            const workingGroup: WorkingGroup = this.api.createType('WorkingGroup', group)
             const staticBagId: Static = this.api.createType('Static', {
               'WorkingGroup': workingGroup,
             })
@@ -148,10 +136,7 @@ class BagIdParser {
             const dynamic = {} as Record<DynamicBagTypeKey, number>
             dynamic[dynamicBagType as DynamicBagTypeKey] = parsedId
 
-            const dynamicBagId: Dynamic = this.api.createType(
-              'Dynamic',
-              dynamic
-            )
+            const dynamicBagId: Dynamic = this.api.createType('Dynamic', dynamic)
             const constructedBagId: BagId = this.api.createType('BagId', {
               'Dynamic': dynamicBagId,
             })

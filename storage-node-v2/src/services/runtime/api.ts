@@ -1,14 +1,11 @@
-import { ApiPromise, WsProvider } from '@polkadot/api'
+import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
 import type { Index } from '@polkadot/types/interfaces/runtime'
-import { CodecArg, ISubmittableResult } from '@polkadot/types/types'
+import { ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
-import {
-  DispatchError,
-  DispatchResult,
-} from '@polkadot/types/interfaces/system'
+import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
+import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
 import { getNonce } from './transactionNonceKeeper'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
@@ -71,12 +68,9 @@ function sendExtrinsic(
                 }
               }
               reject(
-                new ExtrinsicFailedError(
-                  `Extrinsic execution error: ${errorMsg}`,
-                  {
-                    exit: ExitCodes.ApiError,
-                  }
-                )
+                new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`, {
+                  exit: ExitCodes.ApiError,
+                })
               )
             } else if (event.method === 'ExtrinsicSuccess') {
               const sudid = result.findRecord('sudo', 'Sudid')
@@ -86,17 +80,11 @@ function sendExtrinsic(
                 if (dispatchResult.isOk) {
                   resolve(result)
                 } else {
-                  const errorMsg = formatDispatchError(
-                    api,
-                    dispatchResult.asErr
-                  )
+                  const errorMsg = formatDispatchError(api, dispatchResult.asErr)
                   reject(
-                    new ExtrinsicFailedError(
-                      `Sudo extrinsic execution error! ${errorMsg}`,
-                      {
-                        exit: ExitCodes.ApiError,
-                      }
-                    )
+                    new ExtrinsicFailedError(`Sudo extrinsic execution error! ${errorMsg}`, {
+                      exit: ExitCodes.ApiError,
+                    })
                   )
                 }
               } else {
@@ -115,14 +103,9 @@ function sendExtrinsic(
       .then((unsubFunc) => (unsubscribe = unsubFunc))
       .catch((e) =>
         reject(
-          new ExtrinsicFailedError(
-            `Cannot send the extrinsic: ${
-              e.message ? e.message : JSON.stringify(e)
-            }`,
-            {
-              exit: ExitCodes.ApiError,
-            }
-          )
+          new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : JSON.stringify(e)}`, {
+            exit: ExitCodes.ApiError,
+          })
         )
       )
   })
@@ -151,30 +134,43 @@ function formatDispatchError(api: ApiPromise, error: DispatchError): string {
  *
  * @param api - API promise
  * @param account - KeyPair instance
- * @param module - runtime module name
- * @param method - runtime extrinsic name
- * @param params - extrinsic parameter
+ * @param tx - prepared extrinsic with arguments
  * @param sudoCall - defines whether the transaction call should be wrapped in
- * the sudo call.
- * @returns void promise.
+ * the sudo call (false by default).
+ * @param eventParser - defines event parsing function (null by default) for
+ * getting any information from the successful extrinsic events.
+ * @returns void or event parsing result promise.
  */
-export async function sendAndFollowNamedTx(
+export async function sendAndFollowNamedTx<T>(
   api: ApiPromise,
   account: KeyringPair,
-  module: string,
-  method: string,
-  params: CodecArg[],
-  sudoCall = false
-): Promise<void> {
-  logger.debug(`Sending ${module}.${method} extrinsic...`)
-  let tx = api.tx[module][method](...params)
+  tx: SubmittableExtrinsic<'promise'>,
+  sudoCall = false,
+  eventParser: ((result: ISubmittableResult) => T) | null = null
+): Promise<T | void> {
+  const description = tx.toHuman() as {
+    method: {
+      method: string
+      section: string
+    }
+  }
+
+  logger.debug(`Sending ${description?.method?.section}.${description?.method?.method} extrinsic...`)
+
   if (sudoCall) {
     tx = api.tx.sudo.sudo(tx)
   }
   const nonce = await getNonce(api, account)
 
-  await sendExtrinsic(api, account, tx, nonce)
+  const result = await sendExtrinsic(api, account, tx, nonce)
+
+  let eventResult: T | void
+  if (eventParser) {
+    eventResult = eventParser(result)
+  }
   logger.debug(`Extrinsic successful!`)
+
+  return eventResult
 }
 
 /**
@@ -183,17 +179,34 @@ export async function sendAndFollowNamedTx(
  *
  * @param api - API promise
  * @param account - KeyPair instance
- * @param module - runtime module name
- * @param method - runtime extrinsic name
- * @param params - extrinsic parameter
+ * @param tx - prepared extrinsic with arguments
  * @returns void promise.
  */
 export async function sendAndFollowSudoNamedTx(
   api: ApiPromise,
   account: KeyringPair,
-  module: string,
-  method: string,
-  params: CodecArg[]
+  tx: SubmittableExtrinsic<'promise'>
 ): Promise<void> {
-  return sendAndFollowNamedTx(api, account, module, method, params, true)
+  return sendAndFollowNamedTx(api, account, tx, true)
+}
+
+/**
+ * Helper function for parsing the successful extrinsic result for event.
+ *
+ * @param result - extrinsic result
+ * @param section - pallet name
+ * @param eventName - event name
+ * @returns void promise.
+ */
+export function getEvent<
+  S extends keyof ApiPromise['events'] & string,
+  M extends keyof ApiPromise['events'][S] & string,
+  EventType = ApiPromise['events'][S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+>(result: SubmittableResult, section: S, eventName: M): EventType {
+  const event = result.findRecord(section, eventName)?.event as EventType | undefined
+
+  if (!event) {
+    throw new Error(`Cannot find expected ${section}.${eventName} event in result: ${result.toHuman()}`)
+  }
+  return event as EventType
 }

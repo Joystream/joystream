@@ -5,8 +5,8 @@ info:
   contact:
     email: info@joystream.org
   license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    name: GPL-3.0-only
+    url: https://opensource.org/licenses/GPL-3.0
   version: 0.1.0
 externalDocs:
   description: Storage node API
@@ -36,6 +36,18 @@ paths:
         200:
           description: Ok
           content:
+            video/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            image/*:
+              schema:
+                type: string
+                format: binary
             application/octet-stream:
               schema:
                 type: string
@@ -52,6 +64,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unknown server error
     head:
       operationId: publicApi.getFileHeaders
       description: Returns a media file headers.
@@ -71,6 +85,8 @@ paths:
           description: File not found
         410:
           description: Header request problem
+        500:
+          description: Unknown server error
   /files:
     post:
       security:

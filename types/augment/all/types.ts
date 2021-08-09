@@ -255,7 +255,7 @@ export interface ChildPositionInParentCategory extends Struct {
 }
 
 /** @name Cid */
-export interface Cid extends Text {}
+export interface Cid extends Bytes {}
 
 /** @name Class */
 export interface Class extends Struct {
@@ -420,7 +420,7 @@ export interface DataObject extends Struct {
 
 /** @name DataObjectCreationParameters */
 export interface DataObjectCreationParameters extends Struct {
-  readonly ipfsContentId: Text;
+  readonly ipfsContentId: Bytes;
 }
 
 /** @name DataObjectId */
@@ -1313,7 +1313,7 @@ export interface StorageBucket extends Struct {
   readonly operator_status: StorageBucketOperatorStatus;
   readonly accepting_new_bags: bool;
   readonly voucher: Voucher;
-  readonly metadata: Text;
+  readonly metadata: Bytes;
 }
 
 /** @name StorageBucketId */
@@ -1326,9 +1326,9 @@ export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
 export interface StorageBucketOperatorStatus extends Enum {
   readonly isMissing: boolean;
   readonly isInvitedStorageWorker: boolean;
-  readonly asInvitedStorageWorker: u64;
+  readonly asInvitedStorageWorker: WorkerId;
   readonly isStorageWorker: boolean;
-  readonly asStorageWorker: u64;
+  readonly asStorageWorker: WorkerId;
 }
 
 /** @name StorageBucketsPerBagValueConstraint */
@@ -1441,7 +1441,7 @@ export interface UpdatePropertyValuesOperation extends Struct {
 
 /** @name UploadParameters */
 export interface UploadParameters extends Struct {
-  readonly authenticationKey: Text;
+  readonly authenticationKey: Bytes;
   readonly bagId: BagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
   readonly deletionPrizeSourceAccountId: GenericAccountId;

@@ -34,16 +34,15 @@ export default class DevUpload extends ApiCommandBase {
 
     await this.ensureDevelopmentChain()
 
-    const objectSize = flags.size ?? 0
+    const objectSize = flags.size
     const objectCid = flags.cid
 
     logger.info('Uploading data objects...')
 
     const api = await this.getApi()
 
-    // Must be number.
-    const dataFee =
-      (await api.query.storage.dataObjectPerMegabyteFee()) as unknown as BN
+    // Must be a number.
+    const dataFee = (await api.query.storage.dataObjectPerMegabyteFee()) as BN
 
     logger.info(`Current data fee: ${dataFee}`)
 

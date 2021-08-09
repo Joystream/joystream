@@ -3,7 +3,7 @@
 
 import type { Bytes, Option, Vec, bool, u32, u64 } from '@polkadot/types';
 import type { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
-import type { Application, ApplicationId, ApplicationOf, Bag, BagId, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassOf, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectId, DiscussionPost, DiscussionThread, DistributionBucketFamily, DistributionBucketFamilyId, DistributionBucketId, DynamicBagCreationPolicy, DynamicBagType, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Stake, StakeId, StorageBucket, StorageBucketId, Thread, ThreadCounter, ThreadId, TransferableStake, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import type { Application, ApplicationId, ApplicationOf, Bag, BagId, Category, CategoryId, Channel, ChannelId, Cid, Class, ClassId, ClassOf, ClassPermissionsType, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectId, DiscussionPost, DiscussionThread, DistributionBucketFamily, DistributionBucketFamilyId, DistributionBucketId, DynamicBagCreationPolicy, DynamicBagType, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Stake, StakeId, StorageBucket, StorageBucketId, Thread, ThreadCounter, ThreadId, TransferableStake, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
 import type { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import type { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import type { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -1019,7 +1019,7 @@ declare module '@polkadot/api/types/storage' {
       /**
        * Blacklisted data object hashes.
        **/
-      blacklist: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<ITuple<[]>>, [ContentId]>;
+      blacklist: AugmentedQuery<ApiType, (arg: Cid | string | Uint8Array) => Observable<ITuple<[]>>, [Cid]>;
       /**
        * Blacklist collection counter.
        **/

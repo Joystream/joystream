@@ -1017,7 +1017,7 @@
         "operator_status": "StorageBucketOperatorStatus",
         "accepting_new_bags": "bool",
         "voucher": "Voucher",
-        "metadata": "Text"
+        "metadata": "Bytes"
     },
     "StaticBagId": {
         "_enum": {
@@ -1045,7 +1045,7 @@
     },
     "DataObjectCreationParameters": {
         "size": "u64",
-        "ipfsContentId": "Text"
+        "ipfsContentId": "Bytes"
     },
     "BagIdType": {
         "_enum": {
@@ -1054,7 +1054,7 @@
         }
     },
     "UploadParameters": {
-        "authenticationKey": "Text",
+        "authenticationKey": "Bytes",
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
         "deletionPrizeSourceAccountId": "GenericAccountId",
@@ -1063,12 +1063,12 @@
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
     "ContentIdSet": "BTreeSet<Cid>",
-    "Cid": "Text",
+    "Cid": "Bytes",
     "StorageBucketOperatorStatus": {
         "_enum": {
             "Missing": "Null",
-            "InvitedStorageWorker": "u64",
-            "StorageWorker": "u64"
+            "InvitedStorageWorker": "WorkerId",
+            "StorageWorker": "WorkerId"
         }
     },
     "StorageDataObject": {

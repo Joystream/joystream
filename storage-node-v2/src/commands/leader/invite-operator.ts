@@ -42,12 +42,7 @@ export default class LeaderInviteOperator extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    const success = await inviteStorageBucketOperator(
-      api,
-      account,
-      storageBucketId,
-      operatorId
-    )
+    const success = await inviteStorageBucketOperator(api, account, storageBucketId, operatorId)
 
     this.exitAfterRuntimeCall(success)
   }

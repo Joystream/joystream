@@ -11,9 +11,7 @@ import ExitCodes from '../../command-base/ExitCodes'
  * @param jsonBackupFilePath - JSON-file path
  * @returns KeyPair instance.
  */
-export function getAccountFromJsonFile(
-  jsonBackupFilePath: string
-): KeyringPair {
+export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair {
   if (!fs.existsSync(jsonBackupFilePath)) {
     throw new CLIError('Input file does not exist!', {
       exit: ExitCodes.FileError,
@@ -29,10 +27,7 @@ export function getAccountFromJsonFile(
     const accountJson = fs.readFileSync(jsonBackupFilePath)
     accountJsonObj = JSON.parse(accountJson.toString())
   } catch (e) {
-    throw new CLIError(
-      'Provided backup file is not valid or cannot be accessed',
-      { exit: ExitCodes.FileError }
-    )
+    throw new CLIError('Provided backup file is not valid or cannot be accessed', { exit: ExitCodes.FileError })
   }
   if (typeof accountJsonObj !== 'object' || accountJsonObj === null) {
     throw new CLIError('Provided backup file is not valid', {

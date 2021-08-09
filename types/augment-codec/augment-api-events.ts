@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { BTreeMap, BTreeSet, Bytes, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
-import type { Actor, ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, ChannelId, ClassId, ContentId, CuratorApplicationId, CuratorApplicationIdToCuratorIdMap, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntityController, EntityCreationVoucher, EntityId, FailedAt, LeadId, MemberId, MintBalanceOf, MintId, Nonce, OpeningId, PostId, PropertyId, ProposalId, ProposalStatus, RationaleText, SchemaId, SideEffect, SideEffects, Status, StorageBucketId, ThreadId, UploadParameters, VecMaxLength, VoteKind, Voucher, WorkerId } from './all';
+import type { Actor, ApplicationId, ApplicationIdToWorkerIdMap, BagId, CategoryId, ChannelId, Cid, ClassId, CuratorApplicationId, CuratorApplicationIdToCuratorIdMap, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, EntityController, EntityCreationVoucher, EntityId, FailedAt, LeadId, MemberId, MintBalanceOf, MintId, Nonce, OpeningId, PostId, PropertyId, ProposalId, ProposalStatus, RationaleText, SchemaId, SideEffect, SideEffects, Status, StorageBucketId, ThreadId, UploadParameters, VecMaxLength, VoteKind, Voucher, WorkerId } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -814,7 +814,7 @@ declare module '@polkadot/api/types/events' {
        * - hashes to remove from the blacklist
        * - hashes to add to the blacklist
        **/
-      UpdateBlacklist: AugmentedEvent<ApiType, [BTreeSet<ContentId>, BTreeSet<ContentId>]>;
+      UpdateBlacklist: AugmentedEvent<ApiType, [BTreeSet<Cid>, BTreeSet<Cid>]>;
       /**
        * Emits on changing the size-based pricing of new objects uploaded.
        * Params

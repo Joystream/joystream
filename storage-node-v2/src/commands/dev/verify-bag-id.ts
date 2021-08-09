@@ -12,8 +12,7 @@ import logger from '../../services/logger'
  * Shell command: "dev:verify-bag-id"
  */
 export default class DevVerifyBagId extends ApiCommandBase {
-  static description =
-    'The command verifies bag id supported by the storage node. Requires chain connection.'
+  static description = 'The command verifies bag id supported by the storage node. Requires chain connection.'
 
   static flags = {
     bagId: flags.string({

@@ -96,10 +96,7 @@ export function parseUploadToken(tokenString: string): UploadToken {
  * @param address - public key(account ID)
  * @returns The UploadToken instance.
  */
-export function verifyTokenSignature(
-  token: UploadToken | UploadTokenRequest,
-  address: string
-): boolean {
+export function verifyTokenSignature(token: UploadToken | UploadTokenRequest, address: string): boolean {
   const message = JSON.stringify(token.data)
   const { isValid } = signatureVerify(message, token.signature, address)
 
@@ -113,10 +110,7 @@ export function verifyTokenSignature(
  * @param account - KeyringPair instance
  * @returns object signature.
  */
-export function signTokenBody(
-  tokenBody: UploadTokenBody | UploadTokenRequestBody,
-  account: KeyringPair
-): string {
+export function signTokenBody(tokenBody: UploadTokenBody | UploadTokenRequestBody, account: KeyringPair): string {
   const message = JSON.stringify(tokenBody)
   const signature = u8aToHex(account.sign(message))
 
@@ -130,10 +124,7 @@ export function signTokenBody(
  * @param account - KeyringPair instance
  * @returns object signature.
  */
-export function createUploadToken(
-  tokenBody: UploadTokenBody,
-  account: KeyringPair
-): string {
+export function createUploadToken(tokenBody: UploadTokenBody, account: KeyringPair): string {
   const signature = signTokenBody(tokenBody, account)
 
   const token = {

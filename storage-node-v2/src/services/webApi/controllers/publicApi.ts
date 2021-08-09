@@ -7,16 +7,12 @@ import {
   verifyTokenSignature,
 } from '../../helpers/auth'
 import { hashFile } from '../../../services/helpers/hashing'
-import {
-  createNonce,
-  getTokenExpirationTime,
-} from '../../../services/helpers/tokenNonceKeeper'
+import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
 import { parseBagId } from '../../helpers/bagTypes'
 import logger from '../../../services/logger'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { Membership } from '@joystream/types/members'
 import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
@@ -26,10 +22,7 @@ const fsPromises = fs.promises
 /**
  * A public endpoint: serves files by CID.
  */
-export async function getFile(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getFile(req: express.Request, res: express.Response): Promise<void> {
   try {
     const cid = getCid(req)
     const uploadsDir = getUploadsDir(res)
@@ -60,10 +53,7 @@ export async function getFile(
 /**
  * A public endpoint: sends file headers by CID.
  */
-export async function getFileHeaders(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getFileHeaders(req: express.Request, res: express.Response): Promise<void> {
   try {
     const cid = getCid(req)
     const uploadsDir = getUploadsDir(res)
@@ -88,10 +78,7 @@ export async function getFileHeaders(
 /**
  * A public endpoint: receives file.
  */
-export async function uploadFile(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function uploadFile(req: express.Request, res: express.Response): Promise<void> {
   const uploadRequest: RequestData = req.body
 
   // saved filename to delete on verification or extrinsic errors
@@ -114,14 +101,9 @@ export async function uploadFile(
 
     const api = getApi(res)
     const bagId = parseBagId(api, uploadRequest.bagId)
-    await acceptPendingDataObjects(
-      api,
-      bagId,
-      getAccount(res),
-      getWorkerId(res),
-      uploadRequest.storageBucketId,
-      [uploadRequest.dataObjectId]
-    )
+    await acceptPendingDataObjects(api, bagId, getAccount(res), getWorkerId(res), uploadRequest.storageBucketId, [
+      uploadRequest.dataObjectId,
+    ])
     res.status(201).json({
       id: hash,
     })
@@ -138,10 +120,7 @@ export async function uploadFile(
 /**
  * A public endpoint: creates auth token for file uploads.
  */
-export async function authTokenForUploading(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function authTokenForUploading(req: express.Request, res: express.Response): Promise<void> {
   try {
     const account = getAccount(res)
     const tokenRequest = getTokenRequest(req)
@@ -287,23 +266,15 @@ function getTokenRequest(req: express.Request): UploadTokenRequest {
  * @param tokenRequest - UploadTokenRequest instance
  * @returns void promise.
  */
-async function validateTokenRequest(
-  api: ApiPromise,
-  tokenRequest: UploadTokenRequest
-): Promise<void> {
+async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRequest): Promise<void> {
   const result = verifyTokenSignature(tokenRequest, tokenRequest.data.accountId)
 
   if (!result) {
     throw new Error('Invalid upload token request signature.')
   }
 
-  const membership = (await api.query.members.membershipById(
-    tokenRequest.data.memberId
-  )) as Membership
-
-  if (
-    membership.controller_account.toString() !== tokenRequest.data.accountId
-  ) {
+  const membership = await api.query.members.membershipById(tokenRequest.data.memberId)
+  if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
     throw new Error(`Provided controller account and member id don't match.`)
   }
 }
@@ -329,17 +300,12 @@ function verifyFileSize(fileSize: number) {
  * @param error - external error
  * @returns void promise.
  */
-async function cleanupFileOnError(
-  cleanupFileName: string,
-  error: string
-): Promise<void> {
+async function cleanupFileOnError(cleanupFileName: string, error: string): Promise<void> {
   if (cleanupFileName) {
     try {
       await fsPromises.unlink(cleanupFileName)
     } catch (err) {
-      logger.error(
-        `Cannot delete the file (${cleanupFileName}) on error: ${error}. IO error: ${err}`
-      )
+      logger.error(`Cannot delete the file (${cleanupFileName}) on error: ${error}. IO error: ${err}`)
     }
   }
 }
@@ -356,9 +322,7 @@ async function verifyFileMimeType(filePath: string): Promise<void> {
   const allowedMimeTypes = ['image/', 'video/', 'audio/']
 
   const fileInfo = await getFileInfo(filePath)
-  const correctMimeType = allowedMimeTypes.some((allowedType) =>
-    fileInfo.mimeType.startsWith(allowedType)
-  )
+  const correctMimeType = allowedMimeTypes.some((allowedType) => fileInfo.mimeType.startsWith(allowedType))
 
   if (!correctMimeType) {
     throw new Error(`Incorrect mime type detected: ${fileInfo.mimeType}`)
@@ -373,11 +337,7 @@ async function verifyFileMimeType(filePath: string): Promise<void> {
  * @param errorType - defines request type
  * @returns void promise.
  */
-function sendResponseWithError(
-  res: express.Response,
-  err: Error,
-  errorType: string
-): void {
+function sendResponseWithError(res: express.Response, err: Error, errorType: string): void {
   const errorString = err.toString()
   // Special case - file not found.
   if (isNofileError(err)) {

@@ -4,35 +4,44 @@
 # Must be run on the clean development chain.
 # It tests all leader and operator commands.
 
+
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+CLI=../bin/run
+
 # Set Alice as leader
-yarn storage-node dev:init # leader workerId = 0
+${CLI}  dev:init # leader workerId = 0
 
 # Update limits and constants
-yarn storage-node leader:update-bag-limit -l 7 --dev
-yarn storage-node leader:update-voucher-limits -o 100 -s 10000000 --dev
-yarn storage-node leader:update-data-fee -f 10000 --dev
-yarn storage-node leader:update-dynamic-bag-policy -n 10 -m
+${CLI} leader:update-bag-limit -l 7 --dev
+${CLI} leader:update-voucher-limits -o 100 -s 10000000 --dev
+${CLI} leader:update-data-fee -f 10000 --dev
+${CLI} leader:update-dynamic-bag-policy -n 10 -t Member --dev
 
 # Create and configure a bucket.
-yarn storage-node leader:create-bucket -i=0 --dev # bucketId = 0
-yarn storage-node operator:accept-invitation -w=0 -i=0 --dev
-yarn storage-node leader:set-bucket-limits -i=0 -o=100 -s=10000000 --dev
-yarn storage-node leader:update-bucket-status -i=0 --enable --dev
-yarn storage-node leader:update-bag -b=0 -i static:council --dev 
-yarn storage-node operator:set-metadata -w=0 -i=0 -m=http://google.com --dev
+BUCKET_ID=`${CLI} leader:create-bucket -i=0 --dev` # bucketId = 0
+${CLI} operator:accept-invitation -w=0 -i=${BUCKET_ID} --dev
+${CLI} leader:set-bucket-limits -i=${BUCKET_ID} -o=100 -s=10000000 --dev
+${CLI} leader:update-bucket-status -i=${BUCKET_ID} --set on --dev
+${CLI} leader:update-bag -a=${BUCKET_ID} -i static:council --dev 
+${CLI} operator:set-metadata -w=0 -i=${BUCKET_ID} -m=http://google.com --dev
 
 # Create and delete a bucket
-yarn storage-node leader:create-bucket -a -n=100 -s=10000000  --dev # bucketId = 1
-yarn storage-node leader:delete-bucket -i=1  --dev 
+BUCKET_ID=`${CLI} leader:create-bucket -a -n=100 -s=10000000  --dev` # bucketId = 1
+${CLI} leader:delete-bucket -i=${BUCKET_ID}  --dev 
 
 # Create a bucket, invite operator, cancel invite, accept invitation and remove operator.
-yarn storage-node leader:create-bucket -a -n=100 -s=10000000  --dev # bucketId = 2
-yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
-yarn storage-node leader:cancel-invite -i=2   --dev 
-yarn storage-node leader:invite-operator -i=2 -w=0  --dev 
-yarn storage-node operator:accept-invitation -w=0 -i=2 --dev
-yarn storage-node leader:remove-operator -i=2   --dev 
+BUCKET_ID=`${CLI} leader:create-bucket -a -n=100 -s=10000000  --dev` # bucketId = 2
+${CLI} leader:invite-operator -i=${BUCKET_ID} -w=0  --dev 
+${CLI} leader:cancel-invite -i=${BUCKET_ID} --dev 
+${CLI} leader:invite-operator -i=${BUCKET_ID} -w=0  --dev 
+${CLI} operator:accept-invitation -i=${BUCKET_ID} -w=0 --dev
+${CLI} leader:remove-operator -i=${BUCKET_ID}   --dev 
 
 # Toggle uploading block.
-yarn storage-node leader:set-uploading-block --enable --dev 
-yarn storage-node leader:set-uploading-block --disable --dev 
+${CLI} leader:set-global-uploading-status --set on --dev 
+${CLI} leader:set-global-uploading-status --set off --dev 
+
+# Blacklist.
+${CLI} leader:update-blacklist -a BLACKLISTED_CID -r SOME_CID --dev

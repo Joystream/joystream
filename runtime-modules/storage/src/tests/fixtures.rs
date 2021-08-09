@@ -14,7 +14,7 @@ use crate::tests::mocks::{
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
 };
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
+    BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, UploadParameters,
 };
@@ -720,8 +720,8 @@ impl UpdateStorageBucketStatusFixture {
 
 pub struct UpdateBlacklistFixture {
     origin: RawOrigin<u64>,
-    remove_hashes: BTreeSet<ContentId>,
-    add_hashes: BTreeSet<ContentId>,
+    remove_hashes: BTreeSet<Cid>,
+    add_hashes: BTreeSet<Cid>,
 }
 
 impl UpdateBlacklistFixture {
@@ -737,11 +737,11 @@ impl UpdateBlacklistFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_add_hashes(self, add_hashes: BTreeSet<ContentId>) -> Self {
+    pub fn with_add_hashes(self, add_hashes: BTreeSet<Cid>) -> Self {
         Self { add_hashes, ..self }
     }
 
-    pub fn with_remove_hashes(self, remove_hashes: BTreeSet<ContentId>) -> Self {
+    pub fn with_remove_hashes(self, remove_hashes: BTreeSet<Cid>) -> Self {
         Self {
             remove_hashes,
             ..self
