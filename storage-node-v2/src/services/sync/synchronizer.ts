@@ -1,4 +1,4 @@
-import { getRuntimeModel } from '../../services/sync/dataObjectsModel'
+import { getRuntimeModel, Model } from '../../services/sync/dataObjectsModel'
 import logger from '../../services/logger'
 import _ from 'lodash'
 import fs from 'fs'
@@ -10,6 +10,15 @@ import urljoin from 'url-join'
 import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
 const fsPromises = fs.promises
+
+//TODO: use caching
+export async function getLocalDataObjects(
+  uploadDirectory: string
+): Promise<string[]> {
+  const localCids = await getLocalFileNames(uploadDirectory)
+
+  return localCids
+}
 
 export async function performSync(
   workerId: number,
@@ -23,6 +32,7 @@ export async function performSync(
     getRuntimeModel(queryNodeUrl, workerId),
     getLocalFileNames(uploadDirectory),
   ])
+  console.log(model)
 
   const requiredCids = model.dataObjects.map((obj) => obj.cid)
 
@@ -35,16 +45,14 @@ export async function performSync(
   const deletedTasks = deleted.map(
     (fileName) => new DeleteLocalFileTask(uploadDirectory, fileName)
   )
-  const addedTasks = added.map(
-    (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory)
-  )
+  const addedTasks = await getDownloadTasks(model, operatorUrl, added, uploadDirectory)
 
   logger.debug(`Sync - started processing...`)
   const workingStack = new WorkingStack()
   const processSpawner = new TaskProcessorSpawner(workingStack, processNumber)
 
-  workingStack.add(deletedTasks)
   workingStack.add(addedTasks)
+  workingStack.add(deletedTasks)
 
   await processSpawner.process()
   logger.info('Sync ended.')
@@ -194,4 +202,22 @@ class TaskProcessor {
       }
     }
   }
+}
+
+
+async function getDownloadTasks(
+  model: Model,
+  operatorUrl: string,
+  addedCids: string[],
+  uploadDirectory: string
+): Promise<DownloadFileTask[]> {
+  //model.dataObjects.
+
+  model.bags
+
+  const addedTasks = addedCids.map(
+    (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory)
+  )
+
+  return addedTasks
 }
