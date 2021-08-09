@@ -84,10 +84,9 @@ export default abstract class ApiCommandBase extends Command {
   async ensureDevelopmentChain(): Promise<void> {
     const api = await this.getApi()
 
-    const developmentChainName = 'Development'
-    const runningChainName = await api.rpc.system.chain()
+    const chainType = await api.rpc.system.chainType()
 
-    if (runningChainName.toString() !== developmentChainName) {
+    if (!chainType.isDevelopment && !chainType.isLocal) {
       throw new CLIError(
         'This command should only be run on a Development chain.',
         { exit: ExitCodes.DevelopmentModeOnly }
