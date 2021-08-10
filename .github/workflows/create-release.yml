@@ -26,19 +26,17 @@ jobs:
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
-      - id: Stup
-        name: Run Setup
+      - name: Run Setup
         run: |
           ./setup.sh
 
-      - id: Build
-        name: Build binaries
+      - name: Build binaries
         run: |
           yarn cargo-build
-          ls -al ./target/release
 
       - name: Tar the binary
-        run: tar -czvf joystream-node-macos.tar.gz ./target/release/joystream-node
+        run: |
+          tar czvf joystream-node-macos.tar.gz -C ./target/release joystream-node
 
       - name: Temporarily save node binary
         uses: actions/upload-artifact@v2
@@ -82,17 +80,17 @@ jobs:
           docker cp $(docker create --rm $IMAGE-arm):/joystream/node ./joystream-node
           tar -czvf joystream-node-${{ github.event.inputs.tag }}-armv7-linux-gnu.tar.gz joystream-node
 
-          rm -f joystream-node
-
       - name: Retrieve saved MacOS binary
         uses: actions/download-artifact@v2
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
-          path: joystream-node-${{ github.event.inputs.tag }}-macos.tar.gz
+
+      - name: Rename MacOS tar
+        run: |
+          mv joystream-node-macos.tar.gz joystream-node-${{ github.event.inputs.tag }}-macos.tar.gz
 
       - name: Release
         uses: softprops/action-gh-release@v1
-        # if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             *.tar.gz
