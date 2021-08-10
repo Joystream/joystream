@@ -76,5 +76,11 @@ decl_error! {
         /// comments disabled
         CommentsDisabled,
 
+        /// moderators limit reached
+        ModeratorsLimitReached,
+
+        /// moderator does not exist
+        ModeratorDoesNotExist,
+
     }
 }

@@ -53,6 +53,9 @@ pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
 
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
+
+    /// verify that member_id is valid
+    fn is_valid_member_id(member_id: &Self::MemberId) -> bool;
 }
 
 pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
@@ -182,6 +185,54 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     }
 }
 
+// Enure actor can update channels and videos in the channel
+pub fn ensure_actor_is_channel_owner<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+) -> DispatchResult {
+    // Only owner of a channel can update and delete channel assets.
+    // Lead can update and delete curator group owned channel assets.
+    match actor {
+        ContentActor::Lead => {
+                Err(Error::<T>::ActorNotAuthorized.into())
+            }
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            let sender = ensure_signed(origin)?;
+
+            // Authorize curator, performing all checks to ensure curator can act
+            CuratorGroup::<T>::perform_curator_in_group_auth(
+                curator_id,
+                curator_group_id,
+                &sender,
+            )?;
+
+            // Ensure curator group is the channel owner.
+            ensure!(
+                *owner == ChannelOwner::CuratorGroup(*curator_group_id),
+                Error::<T>::ActorNotAuthorized
+            );
+
+            Ok(())
+        }
+        ContentActor::Member(member_id) => {
+            let sender = ensure_signed(origin)?;
+
+            ensure_member_auth_success::<T>(member_id, &sender)?;
+
+            // Ensure the member is the channel owner.
+            ensure!(
+                *owner == ChannelOwner::Member(*member_id),
+                Error::<T>::ActorNotAuthorized
+            );
+
+            Ok(())
+        }
+        // TODO:
+        // ContentActor::Dao(_daoId) => ...,
+    }
+}
+
 // Enure actor can update or delete channels and videos
 pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     origin: T::Origin,
@@ -272,23 +323,12 @@ pub fn ensure_actor_authorized_to_create_post<T: Trait>(
     ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
 }
 
-// Enure actor can edit post
-pub fn ensure_member_authorized_to_add_text_post<T: Trait>(
-    origin: T::Origin,
-    member_id: &T::MemberId,
-) -> DispatchResult {
-    let sender = ensure_signed(origin)?;
-    ensure_member_auth_success::<T>(member_id, &sender)?;
-    Ok(())
-}
-
-// Enure actor can react
-pub fn ensure_member_authorized_to_react<T: Trait>(
-    origin: T::Origin,
-    member_id: &T::MemberId,
-) -> DispatchResult {
-    let sender = ensure_signed(origin)?;
-    ensure_member_auth_success::<T>(member_id, &sender)?;
+// Ensure member is valid
+pub fn ensure_valid_member<T: Trait>(member_id: &T::MemberId) -> DispatchResult {
+    ensure!(
+        T::is_valid_member_id(member_id),
+        Error::<T>::MemberAuthFailed
+    );
     Ok(())
 }
 
