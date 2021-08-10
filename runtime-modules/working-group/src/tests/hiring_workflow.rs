@@ -7,7 +7,7 @@ use crate::tests::fixtures::{
 };
 use crate::tests::mock::{Test, TestWorkingGroup};
 use crate::types::StakeParameters;
-use crate::{OpeningType, StakePolicy, Config};
+use crate::{Config, OpeningType, StakePolicy};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {

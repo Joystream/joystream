@@ -88,7 +88,7 @@ fn add_opening(
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::CreateWorkingGroupLeadOpening(CreateOpeningParameters {
@@ -147,7 +147,7 @@ fn fill_opening(
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::FillWorkingGroupLeadOpening(proposals_codex::FillOpeningParameters {
@@ -186,7 +186,7 @@ fn decrease_stake(
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::DecreaseWorkingGroupLeadStake(
@@ -222,7 +222,7 @@ fn slash_stake(
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::SlashWorkingGroupLead(leader_worker_id, stake_amount, working_group),
@@ -257,7 +257,7 @@ fn set_reward(
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::SetWorkingGroupLeadReward(
@@ -300,7 +300,7 @@ fn set_mint_capacity<
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::UpdateWorkingGroupBudget(mint_capacity, working_group, balance_kind),
@@ -335,7 +335,7 @@ fn terminate_role(
             exact_execution_block: None,
         };
 
-        ProposalCodex::create_proposal(
+        ProposalsCodex::create_proposal(
             RawOrigin::Signed(account_id.into()).into(),
             general_proposal_parameters,
             ProposalDetails::TerminateWorkingGroupLead(proposals_codex::TerminateRoleParameters {
@@ -496,18 +496,13 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                 role_account_id: account_id.into(),
                 reward_account_id: account_id.into(),
                 description: Vec::new(),
-                stake_parameters:
-                    StakeParameters {
-                        stake:
-                            T::Balance::from(
-                                <Runtime as working_group::Config<
-                                    MembershipWorkingGroupInstance,
-                                >>::MinimumApplicationStake::get()
-                                .try_into()
-                                .unwrap(),
-                            ),
-                        staking_account_id: account_id.into(),
-                    },
+                stake_parameters: StakeParameters {
+                    stake: T::Balance::from(<Runtime as working_group::Config<
+                        MembershipWorkingGroupInstance,
+                    >>::MinimumApplicationStake::get()
+                        as u64),
+                    staking_account_id: account_id.into(),
+                },
             },
         );
 

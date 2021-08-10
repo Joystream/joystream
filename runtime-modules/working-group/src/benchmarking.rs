@@ -257,8 +257,6 @@ benchmarks_instance! {
         where T: membership::Config
     }
 
-    _ { }
-
     on_initialize_leaving {
         let i in 2 .. T::MaxWorkerNumberLimit::get();
 
@@ -390,7 +388,7 @@ benchmarks_instance! {
         let reward_per_worker = BalanceOf::<T>::from(T::RewardPeriod::get());
 
         let reward_for_workers =
-            BalanceOf::<T>::from(i) * reward_per_worker * BalanceOf::<T>::from(2);
+            BalanceOf::<T>::from(i) * reward_per_worker * BalanceOf::<T>::from(2u32);
 
         assert_eq!(
             WorkingGroup::<T, _>::budget(),

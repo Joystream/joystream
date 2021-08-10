@@ -17,7 +17,7 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    DefaultInstance, Error, OpeningType, RawEvent, RewardPaymentType, StakePolicy, Config, Worker,
+    Config, DefaultInstance, Error, OpeningType, RawEvent, RewardPaymentType, StakePolicy, Worker,
 };
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
@@ -645,7 +645,8 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let reward_block_count = leaving_block - reward_period;
         assert_eq!(
             Balances::usable_balance(&account_id),
-            reward_block_count * reward_per_block + <Test as Config>::MinimumApplicationStake::get()
+            reward_block_count * reward_per_block
+                + <Test as Config>::MinimumApplicationStake::get()
         );
     });
 }

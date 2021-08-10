@@ -52,7 +52,7 @@ fn run_to_block<T: Config + council::Config + referendum::Config<ReferendumInsta
         Council::<T>::on_finalize(current_block_number);
         Referendum::<T, ReferendumInstance>::on_finalize(current_block_number);
 
-        current_block_number += 1.into();
+        current_block_number += 1u32.into();
         System::<T>::set_block_number(current_block_number);
 
         System::<T>::on_initialize(current_block_number);
@@ -218,7 +218,6 @@ benchmarks! {
         where T: balances::Config, T: membership::Config, T: council::Config,
               T: referendum::Config<ReferendumInstance>
     }
-    _ { }
 
     add_post {
         let i in 1 .. T::MaxWhiteListSize::get();

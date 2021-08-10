@@ -1,15 +1,16 @@
 #![cfg(test)]
 
+use crate as blog;
 use crate::*;
+use frame_support::parameter_types;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_io::TestExternalities;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    DispatchResult,
 };
 
 pub(crate) const FIRST_OWNER_ORIGIN: u128 = 0;
@@ -18,12 +19,21 @@ pub(crate) const SECOND_OWNER_ORIGIN: u128 = 2;
 pub(crate) const SECOND_OWNER_PARTICIPANT_ID: u64 = 2;
 pub(crate) const BAD_MEMBER_ID: u64 = 100000;
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
-#[derive(Clone, Default, PartialEq, Eq, Debug)]
-pub struct Runtime;
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        TestBlogModule: blog::{Module, Call, Storage, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+    }
+);
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
@@ -32,7 +42,7 @@ parameter_types! {
 impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -41,16 +51,14 @@ impl balances::Config for Runtime {
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-// First, implement the system pallet's configuration trait for `Runtime`
 impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -58,30 +66,16 @@ impl frame_system::Config for Runtime {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        crate DefaultInstance <T>,
-        frame_system<T>,
-        balances<T>,
-        membership<T>,
-    }
+    type SS58Prefix = ();
 }
 
 parameter_types! {
@@ -95,7 +89,7 @@ parameter_types! {
 }
 
 impl membership::Config for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = ();
@@ -228,7 +222,7 @@ parameter_types! {
 }
 
 impl Config for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
 
     type PostsMaxNumber = PostsMaxNumber;
     type ParticipantEnsureOrigin = MockEnsureParticipant;
@@ -323,15 +317,11 @@ impl ExtBuilder {
     }
 }
 
-// Assign back to type variables so we can make dispatched calls of these modules later.
-pub type System = frame_system::Module<Runtime>;
-pub type TestBlogModule = Module<Runtime>;
-
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
 
-type RawTestEvent = RawEvent<
+type RawEvent = blog::RawEvent<
     ParticipantId<Runtime>,
     PostId,
     <Runtime as Config>::ReplyId,
@@ -342,8 +332,8 @@ type RawTestEvent = RawEvent<
     DefaultInstance,
 >;
 
-pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
-    TestEvent::crate_DefaultInstance(raw_event)
+pub fn get_test_event(raw_event: RawEvent) -> Event {
+    Event::blog(raw_event)
 }
 
 // Posts

@@ -32,7 +32,7 @@ use crate::CouncilManager;
 pub type Balances = pallet_balances::Module<Runtime>;
 pub type System = frame_system::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
-pub type ProposalCodex = proposals_codex::Module<Runtime>;
+pub type ProposalsCodex = proposals_codex::Module<Runtime>;
 pub type Council = council::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
@@ -553,7 +553,7 @@ fn text_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::Signal(b"signal".to_vec()),
@@ -587,7 +587,7 @@ fn funding_request_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
@@ -625,7 +625,7 @@ fn create_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]),
@@ -663,7 +663,7 @@ fn edit_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::EditBlogPost(post_id, Some(vec![1u8]), None),
@@ -699,7 +699,7 @@ fn lock_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::LockBlogPost(post_id),
@@ -738,7 +738,7 @@ fn unlock_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::UnlockBlogPost(post_id),
@@ -773,7 +773,7 @@ fn veto_proposal_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::AmendConstitution(vec![0u8]),
@@ -797,7 +797,7 @@ fn veto_proposal_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::VetoProposal(proposal_id),
@@ -845,7 +845,7 @@ fn set_validator_count_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone().into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetMaxValidatorCount(new_validator_count),
@@ -875,7 +875,7 @@ fn amend_constitution_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::AmendConstitution(b"Constitution text".to_vec()),
@@ -903,7 +903,7 @@ fn set_membership_price_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetMembershipPrice(membership_price),
@@ -933,7 +933,7 @@ fn set_initial_invitation_balance_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance),
@@ -966,7 +966,7 @@ fn set_initial_invitation_count_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetInitialInvitationCount(new_default_invite_count),
@@ -1002,7 +1002,7 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetMembershipLeadInvitationQuota(new_invite_count),
@@ -1036,7 +1036,7 @@ fn set_referral_cut_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetReferralCut(referral_cut),
@@ -1068,7 +1068,7 @@ fn set_budget_increment_proposal_succeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetCouncilBudgetIncrement(budget_increment),
@@ -1103,7 +1103,7 @@ fn set_councilor_reward_proposal_succeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.into()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetCouncilorReward(councilor_reward),

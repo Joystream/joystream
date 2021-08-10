@@ -1,9 +1,8 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::{
-    BuyMembershipParameters, InviteMembershipParameters, MemberIdByHandleHash, Membership,
+    BuyMembershipParameters, Config, InviteMembershipParameters, MemberIdByHandleHash, Membership,
     MembershipById, MembershipObject, StakingAccountIdMemberStatus, StakingAccountMemberBinding,
-    Config,
 };
 use balances::Module as Balances;
 use core::convert::TryInto;
@@ -86,7 +85,6 @@ fn handle_from_id<T: Config>(id: u32) -> Vec<u8> {
 benchmarks! {
     where_clause { where T: balances::Config, T: Config, T: MembershipWorkingGroupHelper<<T as
         frame_system::Config>::AccountId, <T as common::membership::Config>::MemberId, <T as common::membership::Config>::ActorId> }
-    _{  }
 
     buy_membership_without_referrer{
 
@@ -499,7 +497,7 @@ benchmarks! {
     }
 
     set_membership_price {
-        let membership_price: BalanceOf<T> = 1000.into();
+        let membership_price: BalanceOf<T> = 1000u32.into();
 
     }: _(RawOrigin::Root, membership_price)
     verify {
@@ -594,7 +592,7 @@ benchmarks! {
     }
 
     set_initial_invitation_balance {
-        let invitation_balance: BalanceOf<T> = 1000.into();
+        let invitation_balance: BalanceOf<T> = 1000u32.into();
 
     }: _(RawOrigin::Root, invitation_balance)
     verify {

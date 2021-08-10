@@ -71,7 +71,9 @@ pub struct ServiceProviderRecord<BlockNumber> {
 }
 
 /// The _Service discovery_ main _Trait_.
-pub trait Config: frame_system::Config + working_group::Config<StorageWorkingGroupInstance> {
+pub trait Config:
+    frame_system::Config + working_group::Config<StorageWorkingGroupInstance>
+{
     /// _Service discovery_ event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }

@@ -143,8 +143,6 @@ fn generate_reply<T: Config<I>, I: Instance>(
 benchmarks_instance! {
     where_clause { where T: balances::Config, T: membership::Config }
 
-    _ {}
-
     create_post {
         let t in 0 .. MAX_BYTES;
         let b in 0 .. MAX_BYTES;

@@ -39,7 +39,7 @@ impl SetLeadFixture {
 
 fn get_last_data_object_type_id() -> u64 {
     let dot_id = match System::events().last().unwrap().event {
-        MetaEvent::data_object_type_registry(
+        Event::data_object_type_registry(
             data_object_type_registry::RawEvent::DataObjectTypeRegistered(dot_id, _),
         ) => dot_id,
         _ => 0xdeadbeefu64, // unlikely value
@@ -245,7 +245,7 @@ fn update_existing() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::data_object_type_registry(
+                event: Event::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id, updated3)
                 ),
                 topics: vec![],
@@ -298,7 +298,7 @@ fn activate_existing() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::data_object_type_registry(
+                event: Event::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeRegistered(
                         expected_data_object_type_id,
                         data
@@ -323,7 +323,7 @@ fn activate_existing() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::data_object_type_registry(
+                event: Event::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeActivationChanged(
                         expected_data_object_type_id
                     )

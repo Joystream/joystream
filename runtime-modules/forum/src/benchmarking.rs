@@ -122,7 +122,10 @@ fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
 }
 
 fn insert_a_leader<
-    T: Config + membership::Config + working_group::Config<ForumWorkingGroupInstance> + balances::Config,
+    T: Config
+        + membership::Config
+        + working_group::Config<ForumWorkingGroupInstance>
+        + balances::Config,
 >(
     id: u64,
 ) -> T::AccountId
@@ -156,7 +159,10 @@ where
 }
 
 fn insert_a_worker<
-    T: Config + membership::Config + working_group::Config<ForumWorkingGroupInstance> + balances::Config,
+    T: Config
+        + membership::Config
+        + working_group::Config<ForumWorkingGroupInstance>
+        + balances::Config,
 >(
     leader_account_id: T::AccountId,
     id: u64,
@@ -410,8 +416,6 @@ benchmarks! {
         T: working_group::Config<ForumWorkingGroupInstance> ,
         T::AccountId: CreateAccountId
     }
-
-    _{  }
 
     create_category{
         let lead_id = 0;
@@ -937,7 +941,7 @@ benchmarks! {
 
         let text = vec![0u8].repeat(k as usize);
 
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
 
         let poll = if z == 1 {
             None
@@ -1053,7 +1057,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1266,7 +1270,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(generate_poll::<T>(expiration_diff, j));
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1323,7 +1327,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1379,7 +1383,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1497,7 +1501,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1538,7 +1542,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1592,7 +1596,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1639,7 +1643,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1695,7 +1699,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1772,7 +1776,7 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
@@ -1815,7 +1819,7 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let expiration_diff = 10.into();
+        let expiration_diff = 10u32.into();
         let poll = Some(
             generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );

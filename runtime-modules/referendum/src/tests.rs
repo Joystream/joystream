@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{Error, OptionResult, Config};
+use super::{Config, Error, OptionResult};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime, DefaultInstance>;

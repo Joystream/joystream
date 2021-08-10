@@ -1,4 +1,4 @@
-use crate::{Error, InputPropertyValue, InputValue, PropertyId, SchemaId, Config, VecInputValue};
+use crate::{Config, Error, InputPropertyValue, InputValue, PropertyId, SchemaId, VecInputValue};
 use codec::{Decode, Encode};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;

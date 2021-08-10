@@ -8,7 +8,7 @@ use frame_support::assert_ok;
 const FIRST_ID: u64 = 0;
 const SECOND_ID: u64 = 1;
 
-fn assert_event_success(tested_event: TestEvent, number_of_events_after_call: usize) {
+fn assert_event_success(tested_event: mock::Event, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
 
@@ -320,7 +320,7 @@ fn post_editing_success() {
 
         ensure_posts_equality(post_after_editing, false);
 
-        let post_edited_event = TestEvent::crate_DefaultInstance(RawEvent::PostEdited(
+        let post_edited_event = mock::Event::blog(RawEvent::PostEdited(
             FIRST_ID,
             Some(generate_post().0),
             Some(generate_post().1),
@@ -1074,7 +1074,7 @@ fn reply_delete_success() {
             false,
         ));
 
-        assert_event_success(reply_created_event, number_of_events_before_call + 2)
+        assert_event_success(reply_created_event, number_of_events_before_call + 3)
     })
 }
 

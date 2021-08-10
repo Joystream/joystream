@@ -26,12 +26,12 @@ mod benchmarking;
 
 use common::{working_group::WorkingGroup, BalanceKind};
 use council::Module as Council;
+use frame_support::dispatch::DispatchResultWithPostInfo;
 use frame_support::traits::Currency;
 use frame_support::traits::Get;
 use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_event, decl_module, ensure, print};
 use frame_system::{ensure_root, ensure_signed};
-use frame_support::dispatch::DispatchResultWithPostInfo;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;

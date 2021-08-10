@@ -1,56 +1,52 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Config, Weight, WeightInfo};
+pub use crate::{Config, Weight, WeightInfo};
 
-pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-use sp_std::cell::RefCell;
-use staking_handler::LockComparator;
-
+use crate as membership;
 use crate::tests::fixtures::ALICE_MEMBER_ID;
+use frame_support::parameter_types;
+pub use frame_support::traits::{Currency, LockIdentifier};
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchError, DispatchResult, Perbill,
+    DispatchError, DispatchResult,
 };
+use sp_std::cell::RefCell;
+use staking_handler::LockComparator;
 
 pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-mod membership_mod {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        membership_mod<T>,
-        frame_system<T>,
-        balances<T>,
-        working_group Instance4 <T>,
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Config, Storage, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
     }
-}
+);
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
 
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -58,21 +54,16 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 impl pallet_timestamp::Config for Test {
@@ -93,7 +84,7 @@ parameter_types! {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -116,7 +107,7 @@ parameter_types! {
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = Membership;
@@ -303,7 +294,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
 }
 
 impl Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = ();
@@ -398,7 +389,7 @@ impl
 
 pub struct TestExternalitiesBuilder<T: Config> {
     system_config: Option<frame_system::GenesisConfig>,
-    membership_config: Option<GenesisConfig<T>>,
+    membership_config: Option<membership::GenesisConfig<T>>,
 }
 
 impl<T: Config> Default for TestExternalitiesBuilder<T> {
@@ -411,7 +402,10 @@ impl<T: Config> Default for TestExternalitiesBuilder<T> {
 }
 
 impl<T: Config> TestExternalitiesBuilder<T> {
-    pub fn set_membership_config(mut self, membership_config: GenesisConfig<T>) -> Self {
+    pub fn set_membership_config(
+        mut self,
+        membership_config: membership::GenesisConfig<T>,
+    ) -> Self {
         self.membership_config = Some(membership_config);
         self
     }
@@ -426,7 +420,7 @@ impl<T: Config> TestExternalitiesBuilder<T> {
 
         // Add membership
         self.membership_config
-            .unwrap_or(GenesisConfig::default())
+            .unwrap_or(membership::GenesisConfig::default())
             .assimilate_storage(&mut t)
             .unwrap();
 
@@ -458,7 +452,3 @@ pub fn build_test_externalities_with_initial_members(
         .with_lead()
         .build()
 }
-
-pub type Balances = balances::Module<Test>;
-pub type Membership = crate::Module<Test>;
-pub type System = frame_system::Module<Test>;

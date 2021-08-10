@@ -338,7 +338,6 @@ benchmarks_instance! {
         <T as common::membership::Config>::MemberId>,
         T: membership::Config
     }
-    _ { }
 
     on_initialize_revealing {
         let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;

@@ -1,4 +1,4 @@
-use node_runtime::council::{CouncilStageUpdate, Config as CouncilTrait};
+use node_runtime::council::{Config as CouncilTrait, CouncilStageUpdate};
 use node_runtime::referendum::ReferendumStage;
 use node_runtime::{CouncilConfig, ReferendumConfig, Runtime};
 

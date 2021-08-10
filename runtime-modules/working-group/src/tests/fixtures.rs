@@ -7,11 +7,11 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Balances, LockId, System, Test, TestEvent, TestWorkingGroup};
+use super::mock::{Balances, Event, LockId, System, Test, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
-    Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, RawEvent,
-    StakePolicy, Config, Worker,
+    Application, ApplyOnOpeningParameters, Config, DefaultInstance, Opening, OpeningType, RawEvent,
+    StakePolicy, Worker,
 };
 
 pub struct EventFixture;
@@ -30,12 +30,12 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+        let converted_event = Event::working_group(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -59,12 +59,12 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+        let converted_event = Event::working_group(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    fn contains_global_event(expected_event: TestEvent) {
+    fn contains_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

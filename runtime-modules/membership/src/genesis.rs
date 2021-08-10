@@ -2,7 +2,7 @@
 
 #![cfg(feature = "std")]
 
-use crate::{GenesisConfig, Config};
+use crate::{Config, GenesisConfig};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]

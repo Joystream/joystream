@@ -1,14 +1,13 @@
 #![cfg(test)]
 
+use frame_support::parameter_types;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use staking_handler::LockComparator;
 
@@ -22,31 +21,6 @@ use frame_support::dispatch::DispatchError;
 use membership;
 
 pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-mod working_group_mod {
-    pub use super::StorageWorkingGroupInstance;
-    pub use working_group::Event;
-}
-
-mod members {
-    pub use membership::Event;
-}
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-impl_outer_event! {
-    pub enum MetaEvent for Test {
-        data_object_type_registry<T>,
-        data_directory<T>,
-        data_object_storage_registry<T>,
-        balances<T>,
-        members<T>,
-        working_group_mod StorageWorkingGroupInstance <T>,
-        frame_system<T>,
-    }
-}
 
 pub const TEST_FIRST_DATA_OBJECT_TYPE_ID: u64 = 1000;
 pub const TEST_FIRST_CONTENT_ID: u64 = 2000;
@@ -90,23 +64,39 @@ impl ContentIdExists<Test> for MockContent {
     }
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const MaxObjectsPerInjection: u32 = 5;
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Module, Call, Storage, Config<T>, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
+        TestDataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        TestDataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        TestDataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+    }
+);
+
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -114,21 +104,16 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = MetaEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 impl pallet_timestamp::Config for Test {
@@ -145,7 +130,7 @@ parameter_types! {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = MetaEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -166,7 +151,7 @@ parameter_types! {
 
 pub struct WorkingGroupWeightInfo;
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -322,13 +307,13 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
 }
 
 impl data_object_type_registry::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type DataObjectTypeId = u64;
     type WorkingGroup = StorageWorkingGroup;
 }
 
 impl data_directory::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type ContentId = u64;
     type StorageProviderHelper = ();
     type IsActiveDataObjectType = AnyDataObjectTypeIsActive;
@@ -343,7 +328,7 @@ impl crate::data_directory::StorageProviderHelper<Test> for () {
 }
 
 impl data_object_storage_registry::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = MockContent;
 }
@@ -354,7 +339,7 @@ impl common::membership::Config for Test {
 }
 
 impl membership::Config for Test {
-    type Event = MetaEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -415,18 +400,18 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
 
 pub struct ExtBuilder {
     first_data_object_type_id: u64,
-    first_content_id: u64,
+    _first_content_id: u64,
     first_relationship_id: u64,
-    first_metadata_id: u64,
+    _first_metadata_id: u64,
 }
 
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
             first_data_object_type_id: 1,
-            first_content_id: 2,
+            _first_content_id: 2,
             first_relationship_id: 3,
-            first_metadata_id: 4,
+            _first_metadata_id: 4,
         }
     }
 }
@@ -436,16 +421,16 @@ impl ExtBuilder {
         self.first_data_object_type_id = first_data_object_type_id;
         self
     }
-    pub fn first_content_id(mut self, first_content_id: u64) -> Self {
-        self.first_content_id = first_content_id;
+    pub fn _first_content_id(mut self, _first_content_id: u64) -> Self {
+        self._first_content_id = _first_content_id;
         self
     }
     pub fn first_relationship_id(mut self, first_relationship_id: u64) -> Self {
         self.first_relationship_id = first_relationship_id;
         self
     }
-    pub fn first_metadata_id(mut self, first_metadata_id: u64) -> Self {
-        self.first_metadata_id = first_metadata_id;
+    pub fn _first_metadata_id(mut self, _first_metadata_id: u64) -> Self {
+        self._first_metadata_id = _first_metadata_id;
         self
     }
     pub fn build(self) -> sp_io::TestExternalities {
@@ -485,18 +470,12 @@ impl ExtBuilder {
 
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
-pub type StorageWorkingGroup = working_group::Module<Test, StorageWorkingGroupInstance>;
-pub type System = frame_system::Module<Test>;
-pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
-pub type TestDataDirectory = data_directory::Module<Test>;
-pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
-
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
     ExtBuilder::default()
         .first_data_object_type_id(TEST_FIRST_DATA_OBJECT_TYPE_ID)
-        .first_content_id(TEST_FIRST_CONTENT_ID)
+        ._first_content_id(TEST_FIRST_CONTENT_ID)
         .first_relationship_id(TEST_FIRST_RELATIONSHIP_ID)
-        .first_metadata_id(TEST_FIRST_METADATA_ID)
+        ._first_metadata_id(TEST_FIRST_METADATA_ID)
         .build()
         .execute_with(|| f())
 }

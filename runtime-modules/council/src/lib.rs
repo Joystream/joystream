@@ -43,12 +43,11 @@
 
 // used dependencies
 use codec::{Decode, Encode};
+use core::marker::PhantomData;
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
-
-use core::marker::PhantomData;
-use frame_support::dispatch::DispatchResult;
 use frame_system::ensure_root;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};

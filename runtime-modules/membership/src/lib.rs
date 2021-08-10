@@ -746,7 +746,7 @@ decl_module! {
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
                 default_invitation_balance,
-                WithdrawReasons::TRANSACTION_PAYMENT
+                WithdrawReasons::FEE,
             );
 
             // Fire the event.

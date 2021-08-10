@@ -34,4 +34,5 @@ std = [
 	'frame-system/std',
 	'sp-runtime/std',
 	'working-group/std',
+	'membership/std'
 ]

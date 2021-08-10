@@ -40,7 +40,7 @@ fn execute_runtime_upgrade_proposal_fails() {
                 RawOrigin::Signed(0).into(),
                 vec![0]
             ),
-            Err(DispatchError::BadOrigin)
+            Err(DispatchError::BadOrigin.into())
         );
     });
 }

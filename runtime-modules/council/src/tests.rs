@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use super::{
-    AnnouncementPeriodNr, Budget, BudgetIncrement, CouncilMemberOf, CouncilMembers,
-    CouncilStageAnnouncing, Error, Module, Config,
+    AnnouncementPeriodNr, Budget, BudgetIncrement, Config, CouncilMemberOf, CouncilMembers,
+    CouncilStageAnnouncing, Error, Module,
 };
 use crate::mock::*;
 use common::council::CouncilBudgetManager;

@@ -50,4 +50,7 @@ std = [
 	'balances/std',
     'common/std',
     'staking-handler/std',
+	'council/std',
+	'referendum/std',
+	'membership/std',
 ]

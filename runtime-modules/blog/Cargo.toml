@@ -5,6 +5,7 @@ authors = ['Joystream contributors']
 edition = '2018'
 
 [dependencies]
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
@@ -29,6 +30,7 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking', 'membership']
 std = [
+	'serde',
 	'codec/std',
 	'sp-std/std',
 	'frame-support/std',
@@ -36,5 +38,6 @@ std = [
 	'frame-system/std',
     'common/std',
     'sp-arithmetic/std',
-    'balances/std'
+    'balances/std',
+	'membership/std',
 ]

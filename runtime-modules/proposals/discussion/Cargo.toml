@@ -45,5 +45,8 @@ std = [
 	'frame-system/std',
     'common/std',
     'balances/std',
-    'sp-runtime/std'
+    'sp-runtime/std',
+    'referendum/std',
+    'council/std',
+    'membership/std'
 ]

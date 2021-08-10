@@ -1,4 +1,4 @@
-use crate::{Instance, Module, Config};
+use crate::{Config, Instance, Module};
 use frame_support::decl_error;
 
 decl_error! {

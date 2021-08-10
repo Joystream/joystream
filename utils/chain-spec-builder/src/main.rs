@@ -292,7 +292,10 @@ fn generate_chain_spec(
     chain_spec.as_json(false).map_err(|err| err)
 }
 
-async fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> Result<(), String> {
+async fn generate_authority_keys_and_store(
+    seeds: &[String],
+    keystore_path: &Path,
+) -> Result<(), String> {
     for (n, seed) in seeds.iter().enumerate() {
         let keystore = Keystore::open(keystore_path.join(format!("auth-{}", n)), None)
             .map_err(|err| err.to_string())?;
@@ -317,7 +320,8 @@ async fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Pat
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
-        ).await?;
+        )
+        .await?;
     }
 
     Ok(())

@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::{Call, ConstitutionInfo, Event, Module, Config};
+use crate::{Call, Config, ConstitutionInfo, Event, Module};
 use frame_benchmarking::benchmarks;
 use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
@@ -20,7 +20,6 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
 const MAX_BYTES: u32 = 50000;
 
 benchmarks! {
-    _{ }
 
     amend_constitution{
         let i in 1 .. MAX_BYTES;

@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceOf, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Config, Votes,
-    WeightInfo,
+    BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
+    ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
+    Votes, WeightInfo,
 };
 
 pub use crate::DefaultInstance;
@@ -12,9 +12,7 @@ pub use crate::DefaultInstance;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
-};
+use frame_support::{parameter_types, StorageMap, StorageValue};
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use sp_core::H256;
@@ -22,7 +20,6 @@ use sp_runtime::traits::One;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -31,7 +28,7 @@ use std::marker::PhantomData;
 
 use staking_handler::LockComparator;
 
-use crate::GenesisConfig;
+use crate as referendum;
 
 pub const USER_ADMIN: u64 = 1;
 pub const USER_REGULAR: u64 = 2;
@@ -40,13 +37,6 @@ pub const USER_REGULAR_2: u64 = 4;
 pub const USER_REGULAR_3: u64 = 5;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
-
-/////////////////// Runtime and Instances //////////////////////////////////////
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Runtime;
-
-// module instances
 
 parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
@@ -75,7 +65,7 @@ impl LockComparator<u64> for Runtime {
 }
 
 impl Config for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -240,7 +230,7 @@ parameter_types! {
 }
 
 impl membership::Config for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -309,7 +299,7 @@ parameter_types! {
 
 impl balances::Config for Runtime {
     type Balance = u64;
-    type Event = TestEvent;
+    type Event = Event;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = frame_system::Module<Self>;
@@ -333,44 +323,34 @@ impl Runtime {
 
 /////////////////// Module implementation //////////////////////////////////////
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
-mod event_mod {
-    pub use super::DefaultInstance;
-    pub use crate::Event;
-}
-
-mod tmp {
-    pub use balances::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        event_mod DefaultInstance <T>,
-        frame_system<T>,
-        tmp<T>,
-        membership_mod<T>,
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+        Referendum: referendum::{Module, Call, Storage, Event<T>},
     }
-}
+);
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
 
 impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -378,21 +358,16 @@ impl frame_system::Config for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -408,15 +383,15 @@ pub enum OriginType<AccountId> {
 
 /////////////////// Utility mocks //////////////////////////////////////////////s
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime, DefaultInstance> {
-    GenesisConfig::<Runtime, DefaultInstance> {
+pub fn default_genesis_config() -> referendum::GenesisConfig<Runtime, DefaultInstance> {
+    referendum::GenesisConfig::<Runtime, DefaultInstance> {
         stage: ReferendumStage::default(),
         votes: vec![],
     }
 }
 
 pub fn build_test_externalities(
-    config: GenesisConfig<Runtime, DefaultInstance>,
+    config: referendum::GenesisConfig<Runtime, DefaultInstance>,
 ) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
@@ -664,7 +639,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::from(RawEvent::ReferendumStarted(winning_target_count))
+            Event::from(RawEvent::ReferendumStarted(winning_target_count))
         );
     }
 
@@ -687,7 +662,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::RevealingStageStarted())
+            Event::referendum(RawEvent::RevealingStageStarted())
         );
     }
 
@@ -711,7 +686,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::ReferendumFinished(expected_winners,))
+            Event::referendum(RawEvent::ReferendumFinished(expected_winners,))
         );
 
         INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));
@@ -755,7 +730,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::VoteCast(account_id, commitment, stake))
+            Event::referendum(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
@@ -786,11 +761,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::VoteRevealed(
-                account_id,
-                vote_option_index,
-                salt
-            ))
+            Event::referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
         );
     }
 
@@ -817,7 +788,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::StakeReleased(account_id))
+            Event::referendum(RawEvent::StakeReleased(account_id))
         );
     }
 }

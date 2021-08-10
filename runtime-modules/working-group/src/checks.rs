@@ -1,5 +1,5 @@
 use crate::{
-    ApplicationId, BalanceOf, Instance, Opening, OpeningId, OpeningType, StakePolicy, Config,
+    ApplicationId, BalanceOf, Config, Instance, Opening, OpeningId, OpeningType, StakePolicy,
     Worker, WorkerId,
 };
 

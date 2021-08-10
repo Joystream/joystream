@@ -1,41 +1,21 @@
+use frame_support::parameter_types;
 use frame_support::traits::LockIdentifier;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use staking_handler::LockComparator;
 
-use crate::{DefaultInstance, Module, Config};
+use crate as working_group;
+use crate::{Config, Module};
 use frame_support::dispatch::DispatchError;
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod working_group {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        balances<T>,
-        crate DefaultInstance <T>,
-        frame_system<T>,
-        membership<T>,
-    }
-}
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
@@ -46,14 +26,29 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+        TestWorkingGroup: working_group::{Module, Call, Storage, Event<T>},
+    }
+);
 
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -61,21 +56,16 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 impl pallet_timestamp::Config for Test {
@@ -88,7 +78,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -160,7 +150,7 @@ impl membership::WeightInfo for Weights {
 }
 
 impl membership::Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
     type WeightInfo = Weights;
@@ -178,9 +168,6 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
     }
 }
 
-pub type Balances = balances::Module<Test>;
-pub type System = frame_system::Module<Test>;
-
 parameter_types! {
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
@@ -191,7 +178,7 @@ parameter_types! {
 }
 
 impl Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = ();
@@ -298,8 +285,6 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
         unimplemented!()
     }
 }
-
-pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;

@@ -29,7 +29,9 @@ pub(crate) struct ApplicationInfo<T: crate::Config<I>, I: crate::Instance> {
 }
 
 // WorkerId - Worker - helper struct.
-pub(crate) struct WorkerInfo<T: common::membership::Config + frame_system::Config + balances::Config> {
+pub(crate) struct WorkerInfo<
+    T: common::membership::Config + frame_system::Config + balances::Config,
+> {
     pub worker_id: WorkerId<T>,
     pub worker: Worker<T>,
 }

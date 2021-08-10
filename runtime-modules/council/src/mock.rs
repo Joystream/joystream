@@ -1,20 +1,19 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
+use crate as council;
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates, Config,
     CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
-    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, GenesisConfig, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Config, WeightInfo,
+    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module, NextBudgetRefill,
+    RawEvent, ReferendumConnection, Stage, WeightInfo,
 };
 
 use balances;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{
-    ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
-};
+use frame_support::{ensure, parameter_types, StorageMap, StorageValue};
 use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
@@ -26,7 +25,6 @@ use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Zero},
-    Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
 use std::boxed::Box;
@@ -45,11 +43,6 @@ pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
 // multiplies topup value so that candidate/voter can candidate/vote multiple times
 pub const TOPUP_MULTIPLIER: u64 = 10;
-
-/////////////////// Runtime and Instances //////////////////////////////////////
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Runtime;
 
 thread_local! {
     // new council elected recieved by `new_council_elected hook`
@@ -75,7 +68,7 @@ impl common::membership::Config for Runtime {
 }
 
 impl Config for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
@@ -177,66 +170,50 @@ impl WeightInfo for () {
 
 /////////////////// Module implementation //////////////////////////////////////
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
-mod event_mod {
-    pub use crate::Event;
-}
-
-mod referendum_mod {
-    pub use referendum::Event;
-    pub use referendum::Instance0;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        event_mod<T>,
-        frame_system<T>,
-        referendum_mod Instance0 <T>,
-        balances_mod<T>,
-        membership_mod<T>,
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Config, Storage, Event<T>},
+        Council: council::{Module, Call, Storage, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance0>::{Module, Call, Storage, Event<T>, Config<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
     }
-}
+);
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
 impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 /////////////////// Election module ////////////////////////////////////////////
@@ -267,12 +244,8 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
-mod balances_mod {
-    pub use balances::Event;
-}
-
 impl referendum::Config<ReferendumInstance> for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -431,16 +404,16 @@ impl membership::WeightInfo for Weights {
 
 impl balances::Config for Runtime {
     type Balance = u64;
-    type Event = TestEvent;
+    type Event = Event;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = frame_system::Module<Self>;
+    type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = MaxLocks;
 }
 
 impl membership::Config for Runtime {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -648,8 +621,8 @@ macro_rules! escape_checkpoint {
 
 /////////////////// Utility mocks //////////////////////////////////////////////
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
+    council::GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],
@@ -662,7 +635,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities(
+    config: council::GenesisConfig<Runtime>,
+) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -802,8 +777,8 @@ where
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 
-    T::Hash:
-        From<<Runtime as frame_system::Config>::Hash> + Into<<Runtime as frame_system::Config>::Hash>,
+    T::Hash: From<<Runtime as frame_system::Config>::Hash>
+        + Into<<Runtime as frame_system::Config>::Hash>,
     T::Origin: From<<Runtime as frame_system::Config>::Origin>
         + Into<<Runtime as frame_system::Config>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
@@ -957,7 +932,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyNoteSet(
+            Event::council(RawEvent::CandidacyNoteSet(
                 membership_id.into(),
                 note.into()
             )),
@@ -1012,7 +987,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::NewCandidate(
+            Event::council(RawEvent::NewCandidate(
                 member_id.into(),
                 staking_account_id.into(),
                 reward_account_id.into(),
@@ -1041,7 +1016,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyWithdraw(member_id.into(),)),
+            Event::council(RawEvent::CandidacyWithdraw(member_id.into(),)),
         );
     }
 
@@ -1068,7 +1043,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyStakeRelease(member_id.into(),)),
+            Event::council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
         );
     }
 
@@ -1145,7 +1120,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::BudgetBalanceSet(amount.into())),
+            Event::council(RawEvent::BudgetBalanceSet(amount.into())),
         );
     }
 
@@ -1173,7 +1148,7 @@ where
             assert!(frame_system::Module::<Runtime>::events()
                 .iter()
                 .any(|ev| ev.event
-                    == TestEvent::event_mod(RawEvent::RequestFunded(
+                    == Event::council(RawEvent::RequestFunded(
                         funding_request.account.clone().into(),
                         funding_request.amount.into(),
                     ))));
@@ -1219,7 +1194,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+            Event::council(RawEvent::BudgetRefillPlanned(next_refill.into())),
         );
     }
 
@@ -1249,7 +1224,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+            Event::council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
         );
     }
 
@@ -1279,7 +1254,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
+            Event::council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 
@@ -1478,5 +1453,3 @@ where
         params
     }
 }
-
-pub type Council = crate::Module<Runtime>;

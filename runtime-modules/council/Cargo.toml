@@ -43,6 +43,6 @@ std = [
     'staking-handler/std',
     'common/std',
     'balances/std',
+    'membership/std',
     'staking-handler/std',
 ]
-

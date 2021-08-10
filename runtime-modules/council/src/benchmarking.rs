@@ -297,7 +297,6 @@ benchmarks! {
     where_clause {
         where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Config
     }
-    _ { }
 
     set_budget_increment {
     }: _(RawOrigin::Root, One::one())
@@ -318,7 +317,7 @@ benchmarks! {
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
         assert_eq!(Council::<T>::budget(), Balance::<T>::max_value());
         let mut funding_requests = Vec::new();
-        let amount: Balance<T> = 100.into();
+        let amount: Balance<T> = 100u32.into();
 
         for id in 0 .. i {
             let account = T::AccountId::create_account_id(id);
@@ -448,7 +447,7 @@ benchmarks! {
 
         let reward_per_councillor: Balance<T> =
             reward_period
-            .saturated_into()
+            .saturated_into::<u32>()
             .saturating_mul(reward_per_block.saturated_into())
             .saturated_into();
 
@@ -492,7 +491,7 @@ benchmarks! {
                     member_id,
                     account_id,
                     reward_per_councillor,
-                    Balance::<T>::from(0),
+                    Balance::<T>::from(0u32),
                 ).into()
             )
         });

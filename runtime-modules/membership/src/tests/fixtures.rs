@@ -21,12 +21,12 @@ pub fn run_to_block(n: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
-        let converted_event = TestEvent::membership_mod(expected_raw_event);
+        let converted_event = Event::membership(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

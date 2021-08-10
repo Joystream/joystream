@@ -15,7 +15,7 @@ impl EventFixture {
             .iter()
             .map(|ev| EventRecord {
                 phase: Phase::Initialization,
-                event: TestEvent::discussion(ev.clone()),
+                event: mock::Event::proposals_discussion(ev.clone()),
                 topics: vec![],
             })
             .collect::<Vec<EventRecord<_, _>>>();
@@ -23,7 +23,7 @@ impl EventFixture {
         let actual_events: Vec<_> = System::events()
             .into_iter()
             .filter(|e| match e.event {
-                TestEvent::discussion(..) => true,
+                mock::Event::proposals_discussion(..) => true,
                 _ => false,
             })
             .collect();

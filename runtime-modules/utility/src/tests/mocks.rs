@@ -1,18 +1,18 @@
 #![cfg(test)]
 
+use crate as utility;
 pub(crate) use crate::Module as Utilities;
 use crate::*;
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use frame_support::dispatch::DispatchError;
+use frame_support::parameter_types;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
 use sp_core::H256;
 use sp_runtime::DispatchResult;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
 
@@ -26,30 +26,6 @@ pub(crate) fn assert_last_event(generic_event: <Test as Config>::Event) {
 
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
-}
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod utilities {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        utilities<T>,
-        frame_system<T>,
-        balances<T>,
-        council<T>,
-        membership<T>,
-        referendum Instance0 <T>,
-        working_group Instance0 <T>,
-        working_group Instance1 <T>,
-        working_group Instance2 <T>,
-        working_group Instance3 <T>,
-        working_group Instance4 <T>,
-    }
 }
 
 pub struct ReferendumWeightInfo;
@@ -80,9 +56,6 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
-
 parameter_types! {
     pub const ExistentialDeposit: u32 = 10;
 }
@@ -90,7 +63,7 @@ parameter_types! {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -99,9 +72,6 @@ impl balances::Config for Test {
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
 macro_rules! call_wg {
@@ -134,10 +104,35 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Module, Call, Storage, Config<T>, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+        Utility: utility::{Module, Call, Event<T>},
+        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance0>::{Module, Call, Storage, Event<T>, Config<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
+        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
+    }
+);
+
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -145,25 +140,20 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 impl Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
 
     type WeightInfo = ();
 
@@ -229,7 +219,7 @@ parameter_types! {
 }
 
 impl membership::Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -347,7 +337,7 @@ parameter_types! {
 
 pub struct WorkingGroupWeightInfo;
 impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -429,7 +419,7 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -442,7 +432,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<ForumWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -455,7 +445,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
@@ -536,7 +526,7 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -626,15 +616,15 @@ impl BurnTokensFixture {
     }
 
     pub fn execute_and_assert(&self, result: DispatchResult) {
-        let initial_balance: u64 = Balances::<Test>::total_issuance();
+        let initial_balance: u64 = Balances::total_issuance();
 
-        let _ = Balances::<Test>::deposit_creating(&self.account_id, self.account_initial_balance);
+        let _ = Balances::deposit_creating(&self.account_id, self.account_initial_balance);
         assert_eq!(
-            Balances::<Test>::total_issuance(),
+            Balances::total_issuance(),
             initial_balance + self.account_initial_balance
         );
         assert_eq!(
-            Balances::<Test>::usable_balance(&self.account_id),
+            Balances::usable_balance(&self.account_id),
             self.account_initial_balance
         );
         assert_eq!(
@@ -646,21 +636,21 @@ impl BurnTokensFixture {
         );
         if result.is_ok() {
             assert_eq!(
-                Balances::<Test>::usable_balance(&self.account_id),
+                Balances::usable_balance(&self.account_id),
                 self.account_initial_balance - self.burn_balance
             );
             assert_eq!(
-                Balances::<Test>::total_issuance(),
+                Balances::total_issuance(),
                 initial_balance + self.account_initial_balance - self.burn_balance
             );
             assert_last_event(RawEvent::TokensBurned(self.account_id, self.burn_balance).into());
         } else {
             assert_eq!(
-                Balances::<Test>::usable_balance(&self.account_id),
+                Balances::usable_balance(&self.account_id),
                 self.account_initial_balance
             );
             assert_eq!(
-                Balances::<Test>::total_issuance(),
+                Balances::total_issuance(),
                 initial_balance + self.account_initial_balance
             );
         }
@@ -668,7 +658,7 @@ impl BurnTokensFixture {
 }
 
 impl council::Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 
@@ -755,5 +745,3 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 
     result
 }
-
-pub type System = frame_system::Module<Test>;

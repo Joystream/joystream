@@ -179,15 +179,10 @@ benchmarks! {
         T: working_group::Config<working_group::Instance1>
     }
 
-    _ {
-        let t in 1 .. T::TitleMaxLength::get() => ();
-        let d in 1 .. T::DescriptionMaxLength::get() => ();
-    }
-
     create_proposal_signal {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -209,8 +204,8 @@ benchmarks! {
 
     create_proposal_runtime_upgrade {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -232,8 +227,8 @@ benchmarks! {
 
     create_proposal_funding_request {
         let i in 1 .. MAX_FUNDING_REQUEST_ACCOUNTS.try_into().unwrap();
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -269,8 +264,8 @@ benchmarks! {
     }
 
     create_proposal_set_max_validator_count {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -291,8 +286,8 @@ benchmarks! {
     }
 
     create_proposal_veto_proposal {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -314,8 +309,8 @@ benchmarks! {
 
     create_proposal_create_working_group_lead_opening {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -347,8 +342,8 @@ benchmarks! {
     }
 
     create_proposal_fill_working_group_lead_opening {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -373,8 +368,8 @@ benchmarks! {
     }
 
     create_proposal_update_working_group_budget {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -399,8 +394,8 @@ benchmarks! {
     }
 
     create_proposal_decrease_working_group_lead_stake {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -425,8 +420,8 @@ benchmarks! {
     }
 
     create_proposal_slash_working_group_lead {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -451,8 +446,8 @@ benchmarks! {
     }
 
     create_proposal_set_working_group_lead_reward {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -477,8 +472,8 @@ benchmarks! {
     }
 
     create_proposal_terminate_working_group_lead {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -506,8 +501,8 @@ benchmarks! {
 
     create_proposal_amend_constitution {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -529,8 +524,8 @@ benchmarks! {
     }
 
     create_proposal_cancel_working_group_lead_opening {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -553,8 +548,8 @@ benchmarks! {
     }
 
     create_proposal_set_membership_price {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
@@ -575,8 +570,8 @@ benchmarks! {
     }
 
     create_proposal_set_council_budget_increment {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -597,8 +592,8 @@ benchmarks! {
     }
 
     create_proposal_set_councilor_reward {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -619,8 +614,8 @@ benchmarks! {
     }
 
     create_proposal_set_initial_invitation_balance {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -641,8 +636,8 @@ benchmarks! {
     }
 
     create_proposal_set_initial_invitation_count {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -663,8 +658,8 @@ benchmarks! {
     }
 
     create_proposal_set_membership_lead_invitation_quota {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -685,8 +680,8 @@ benchmarks! {
     }
 
     create_proposal_set_referral_cut {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -707,8 +702,8 @@ benchmarks! {
     }
 
     create_proposal_create_blog_post {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
         let h in 1 .. MAX_BYTES;
         let b in 1 .. MAX_BYTES;
 
@@ -734,8 +729,8 @@ benchmarks! {
     }
 
     create_proposal_edit_blog_post {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
         let h in 1 .. MAX_BYTES;
         let b in 1 .. MAX_BYTES;
 
@@ -762,8 +757,8 @@ benchmarks! {
     }
 
     create_proposal_lock_blog_post {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -784,8 +779,8 @@ benchmarks! {
     }
 
     create_proposal_unlock_blog_post {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);

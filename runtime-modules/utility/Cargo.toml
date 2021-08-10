@@ -43,4 +43,5 @@ std = [
     'council/std',
     'balances/std',
     'sp-arithmetic/std',
+    'working-group/std'
 ]

@@ -1,60 +1,23 @@
 #![cfg(test)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::parameter_types;
 use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    ModuleId, Perbill,
+    ModuleId,
 };
 
-use crate::{Module, Config};
+use crate as bounty;
+use crate::Config;
 use staking_handler::{LockComparator, StakingManager};
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod bounty {
-    pub use crate::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-mod council_mod {
-    pub use council::Event;
-}
-
-mod referendum_mod {
-    pub use referendum::Event;
-    pub use referendum::Instance1;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        bounty<T>,
-        frame_system<T>,
-        balances<T>,
-        membership_mod<T>,
-        council_mod<T>,
-        referendum_mod Instance1 <T>,
-    }
-}
-
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const ClosedContractSizeLimit: u32 = 3;
@@ -63,10 +26,30 @@ parameter_types! {
     pub const MinWorkEntrantStake: u64 = 10;
 }
 
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Config, Storage, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Bounty: bounty::{Module, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>},
+        Council: council::{Module, Call, Storage, Event<T>},
+    }
+);
+
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -74,25 +57,20 @@ impl frame_system::Config for Test {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 impl Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
     type Membership = ();
@@ -300,7 +278,7 @@ impl pallet_timestamp::Config for Test {
 }
 
 impl membership::Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = ();
@@ -368,7 +346,7 @@ parameter_types! {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -392,7 +370,7 @@ parameter_types! {
 pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type Referendum = referendum::Module<Test, ReferendumInstance>;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -463,7 +441,7 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
     type ManagerOrigin =
@@ -553,7 +531,3 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 
     t.into()
 }
-
-pub type System = frame_system::Module<Test>;
-pub type Bounty = Module<Test>;
-pub type Balances = balances::Module<Test>;

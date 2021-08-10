@@ -36,4 +36,5 @@ std = [
 	'pallet-timestamp/std',
 	'working-group/std',
 	'common/std',
+	'membership/std'
 ]

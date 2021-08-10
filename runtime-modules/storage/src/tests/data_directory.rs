@@ -66,7 +66,7 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
         assert!(res.is_ok());
 
         let (content_id, _) = match &System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
+            Event::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
                 _,
@@ -132,7 +132,7 @@ fn accept_content_as_liaison() {
 
         // An appropriate event should have been fired.
         let (content_id, creator) = match &System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
+            Event::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
                 _,
@@ -186,7 +186,7 @@ fn reject_content_as_liaison() {
 
         // An appropriate event should have been fired.
         let (content_id, creator) = match System::events().last().unwrap().event {
-            MetaEvent::data_directory(data_directory::RawEvent::ContentAdded(
+            Event::data_directory(data_directory::RawEvent::ContentAdded(
                 content_id,
                 creator,
                 _,

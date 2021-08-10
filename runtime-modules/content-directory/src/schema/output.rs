@@ -80,9 +80,8 @@ impl<
     /// Compute hash from unique property value and its respective property_id
     pub fn compute_unique_hash<T: Config>(&self, property_id: PropertyId) -> T::Hash {
         match self {
-            StoredPropertyValue::Single(output_value) => {
-                (property_id, output_value).using_encoded(<T as frame_system::Config>::Hashing::hash)
-            }
+            StoredPropertyValue::Single(output_value) => (property_id, output_value)
+                .using_encoded(<T as frame_system::Config>::Hashing::hash),
             StoredPropertyValue::Vector(vector_output_value) => {
                 vector_output_value.compute_unique_hash::<T>(property_id)
             }

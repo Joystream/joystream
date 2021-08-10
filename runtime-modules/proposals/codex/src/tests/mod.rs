@@ -166,28 +166,28 @@ fn create_signal_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -211,7 +211,7 @@ fn create_signal_proposal_codex_call_fails_without_text() {
         };
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::Signal(Vec::new()),
@@ -255,28 +255,28 @@ fn create_runtime_upgrade_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -300,7 +300,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_empty_wasm() {
         };
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::RuntimeUpgrade(Vec::new()),
@@ -354,28 +354,28 @@ fn create_funding_request_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -405,7 +405,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             }]);
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 funding_request_proposal_zero_balance,
@@ -422,7 +422,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             }]);
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 funding_request_proposal_exceeded_balance,
@@ -444,7 +444,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts(
         };
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::FundingRequest(
@@ -467,7 +467,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts(
         }
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::FundingRequest(
@@ -499,7 +499,7 @@ fn create_funding_request_proposal_call_fails_repeated_account() {
         ];
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::FundingRequest(funding_request_proposal_details),
@@ -544,28 +544,28 @@ fn create_set_max_validator_count_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -613,28 +613,28 @@ fn create_veto_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -660,7 +660,7 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
         };
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::SetMaxValidatorCount(3),
@@ -669,7 +669,7 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
         );
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT + 1),
@@ -733,28 +733,28 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -820,28 +820,28 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -899,28 +899,28 @@ fn run_create_update_working_group_budget_proposal_common_checks_succeed(
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -981,28 +981,28 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     decrease_lead_stake_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     decrease_lead_stake_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1061,28 +1061,28 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     slash_lead_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     slash_lead_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1169,7 +1169,8 @@ fn setup_council(start_id: u64) {
 
     let current_block = System::block_number();
     run_to_block(
-        current_block + <Test as referendum::Config<ReferendumInstance>>::RevealStageDuration::get(),
+        current_block
+            + <Test as referendum::Config<ReferendumInstance>>::RevealStageDuration::get(),
     );
 
     let council_members = council::Module::<Test>::council_members();
@@ -1205,7 +1206,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
         setup_council(2);
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters,
                 ProposalDetails::DecreaseWorkingGroupLeadStake(10, 0, working_group,)
@@ -1260,7 +1261,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     set_lead_reward_details.clone(),
@@ -1268,21 +1269,21 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             },
 
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     set_lead_reward_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1346,28 +1347,28 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1415,34 +1416,35 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
                 )
             },
-            proposal_parameters: <Test as crate::Config>::AmendConstitutionProposalParameters::get(),
+            proposal_parameters: <Test as crate::Config>::AmendConstitutionProposalParameters::get(
+            ),
         };
         proposal_fixture.check_all();
     });
@@ -1483,28 +1485,28 @@ fn create_set_council_budget_increment_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1561,28 +1563,28 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1631,28 +1633,28 @@ fn create_set_councilor_reward_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1700,28 +1702,28 @@ fn create_set_initial_invitation_balance_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1769,28 +1771,28 @@ fn create_set_initial_invitation_count_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1838,28 +1840,28 @@ fn create_set_membership_lead_invitation_quota_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
@@ -1907,28 +1909,28 @@ fn create_set_referral_cut_common_checks_succeed() {
             proposal_details: proposal_details.clone(),
             general_proposal_parameters: general_proposal_parameters.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),

@@ -39,6 +39,7 @@ runtime-benchmarks = [
 	"council/runtime-benchmarks",
 	"membership/runtime-benchmarks"
 ]
+
 std = [
 	'serde',
 	'codec/std',
@@ -49,5 +50,8 @@ std = [
 	'balances/std',
 	'sp-runtime/std',
 	'common/std',
+	'membership/std',
+	'referendum/std',
+	'council/std',
 	'staking-handler/std',
 ]

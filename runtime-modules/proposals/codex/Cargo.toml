@@ -56,4 +56,7 @@ std = [
     'proposals-engine/std',
     'proposals-discussion/std',
     'constitution/std',
+    'referendum/std',
+    'council/std',
+    'membership/std'
 ]

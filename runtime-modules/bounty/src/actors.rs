@@ -3,7 +3,7 @@
 //! BountyActorManager contains methods to validate actor origin, transfer funds to/from the bounty
 //! account, etc.
 
-use crate::{BalanceOf, BountyActor, Error, Module, Config};
+use crate::{BalanceOf, BountyActor, Config, Error, Module};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;

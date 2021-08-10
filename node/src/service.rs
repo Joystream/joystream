@@ -63,9 +63,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsList, Serv
     }
 
     let (client, backend, keystore_container, task_manager) =
-        sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
-            &config,
-        )?;
+        sc_service::new_full_parts::<Block, RuntimeApi, Executor>(&config)?;
     let client = Arc::new(client);
 
     let select_chain = sc_consensus::LongestChain::new(backend.clone());
@@ -223,20 +221,21 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         })
     };
 
-    let (_rpc_handlers, telemetry_connection_notifier) = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        network: network.clone(),
-        client: client.clone(),
-        keystore: keystore_container.sync_keystore(),
-        task_manager: &mut task_manager,
-        transaction_pool: transaction_pool.clone(),
-        rpc_extensions_builder,
-        on_demand: None,
-        remote_blockchain: None,
-        backend,
-        system_rpc_tx,
-        network_status_sinks,
-        config,
-    })?;
+    let (_rpc_handlers, telemetry_connection_notifier) =
+        sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+            network: network.clone(),
+            client: client.clone(),
+            keystore: keystore_container.sync_keystore(),
+            task_manager: &mut task_manager,
+            transaction_pool: transaction_pool.clone(),
+            rpc_extensions_builder,
+            on_demand: None,
+            remote_blockchain: None,
+            backend,
+            system_rpc_tx,
+            network_status_sinks,
+            config,
+        })?;
 
     if let sc_service::config::Role::Authority { .. } = &role {
         let proposer = sc_basic_authorship::ProposerFactory::new(
@@ -345,11 +344,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 /// Builds a new service for a light client.
 pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError> {
-
     let (client, backend, keystore_container, mut task_manager, on_demand) =
-        sc_service::new_light_parts::<Block, RuntimeApi, Executor>(
-            &config,
-        )?;
+        sc_service::new_light_parts::<Block, RuntimeApi, Executor>(&config)?;
 
     config
         .network
@@ -380,8 +376,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 
     let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
-    let import_queue = 
-    sc_consensus_babe::import_queue(
+    let import_queue = sc_consensus_babe::import_queue(
         babe_link,
         block_import,
         Some(Box::new(justification_import)),
@@ -393,7 +388,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
         sp_consensus::NeverCanAuthor,
     )?;
 
-	let (network, network_status_sinks, system_rpc_tx, network_starter) =
+    let (network, network_status_sinks, system_rpc_tx, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             client: client.clone(),

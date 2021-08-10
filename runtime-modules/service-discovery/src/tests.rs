@@ -37,7 +37,7 @@ fn set_ipns_id() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::discovery(RawEvent::AccountInfoUpdated(
+                event: Event::discovery(RawEvent::AccountInfoUpdated(
                     storage_provider_id,
                     identity.clone()
                 )),
@@ -93,7 +93,7 @@ fn unset_ipns_id() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::discovery(RawEvent::AccountInfoRemoved(storage_provider_id)),
+                event: Event::discovery(RawEvent::AccountInfoRemoved(storage_provider_id)),
                 topics: vec![]
             }
         );
