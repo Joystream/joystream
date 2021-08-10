@@ -83,6 +83,10 @@ export class StateCacheService {
     return hashes
   }
 
+  public getCachedContentLength(): number {
+    return Array.from(this.storedState.lruCacheGroups.values()).reduce((a, b) => a + b.size, 0)
+  }
+
   public newContent(contentHash: string, sizeInBytes: number): void {
     const cacheItemData: CacheItemData = {
       popularity: 1,

@@ -18,7 +18,11 @@ export class ContentService {
 
   private contentSizeSum = 0
 
-  private get freeSpace(): number {
+  public get usedSpace(): number {
+    return this.contentSizeSum
+  }
+
+  public get freeSpace(): number {
     return this.config.storageLimit - this.contentSizeSum
   }
 

@@ -43,7 +43,7 @@ export class ServerService {
     this.logger = logging.createLogger('ExpressServer')
     this.config = config
 
-    const publicController = new PublicApiController(logging, networking, stateCache, content)
+    const publicController = new PublicApiController(config, logging, networking, stateCache, content)
 
     const app = express()
     app.use(cors())
@@ -68,7 +68,10 @@ export class ServerService {
     )
 
     // Routes
-    app.use('/api/v1/asset/:objectId', this.routeWrapper(publicController.asset.bind(publicController)))
+    app.head('/api/v1/asset/:objectId', this.routeWrapper(publicController.assetHead.bind(publicController)))
+    app.get('/api/v1/asset/:objectId', this.routeWrapper(publicController.asset.bind(publicController)))
+    app.get('/api/v1/status', this.routeWrapper(publicController.status.bind(publicController)))
+    app.get('/api/v1/buckets', this.routeWrapper(publicController.buckets.bind(publicController)))
 
     // Error logger
     app.use(
