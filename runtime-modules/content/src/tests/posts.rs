@@ -115,42 +115,23 @@ fn cannot_create_post_with_nonexistent_video() {
                 Origin::signed(member_account),
                 ContentActor::Member(member_id),
                 PostCreationParameters {
-                    content: ContentType::Video(UNKNOWN_VIDEO_ID),
-                    channel_id: scenario.member_channel_id,
+                    video_reference: UNKNOWN_VIDEO_ID,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::VideoPost,
                 }
             ),
             Error::<Test>::VideoDoesNotExist,
         );
-    })
-}
-
-// create post test
-#[test]
-fn cannot_create_post_with_mismatching_channel_and_video() {
-    with_default_mock_builder(|| {
-        let member_account = FIRST_MEMBER_ORIGIN;
-        let member_id = FIRST_MEMBER_ID;
-        let curator_id = FIRST_CURATOR_ID;
-        let curator_account = FIRST_CURATOR_ORIGIN;
-        let allow_comments = true;
-
-        let scenario = setup_testing_scenario(
-            member_account,
-            member_id,
-            curator_account,
-            curator_id,
-            allow_comments,
-        );
-
         assert_err!(
             Content::create_post(
                 Origin::signed(member_account),
                 ContentActor::Member(member_id),
                 PostCreationParameters {
-                    content: ContentType::Video(UNKNOWN_VIDEO_ID),
-                    channel_id: scenario.member_channel_id,
+                    video_reference: UNKNOWN_VIDEO_ID,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::Comment,
                 }
             ),
             Error::<Test>::VideoDoesNotExist,
@@ -181,9 +162,10 @@ fn cannot_create_post_on_a_channel_with_disabled_comment_section() {
                 Origin::signed(member_id),
                 ContentActor::Member(member_id),
                 PostCreationParameters {
-                    content: ContentType::Video(scenario.member_video_id.clone()),
-                    channel_id: scenario.member_channel_id,
+                    video_reference: scenario.member_video_id,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::Comment,
                 }
             ),
             Error::<Test>::CommentsDisabled,
@@ -214,9 +196,10 @@ fn non_authorized_actor_cannot_create_post() {
                 Origin::signed(SECOND_MEMBER_ORIGIN),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 PostCreationParameters {
-                    content: ContentType::Video(scenario.member_video_id.clone()),
-                    channel_id: scenario.member_channel_id,
+                    video_reference: scenario.member_video_id,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::VideoPost,
                 }
             ),
             Error::<Test>::ActorNotAuthorized,
@@ -227,9 +210,10 @@ fn non_authorized_actor_cannot_create_post() {
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(SECOND_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
                 PostCreationParameters {
-                    content: ContentType::Video(scenario.curator_video_id.clone()),
-                    channel_id: scenario.curator_channel_id,
+                    video_reference: scenario.curator_video_id,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::VideoPost,
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive,
@@ -241,9 +225,10 @@ fn non_authorized_actor_cannot_create_post() {
                 Origin::signed(UNKNOWN_ORIGIN),
                 ContentActor::Member(UNKNOWN_MEMBER_ID),
                 PostCreationParameters {
-                    content: ContentType::Video(scenario.member_video_id),
-                    channel_id: scenario.member_channel_id,
+                    video_reference: scenario.member_video_id,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::VideoPost,
                 }
             ),
             Error::<Test>::MemberAuthFailed,
@@ -254,9 +239,10 @@ fn non_authorized_actor_cannot_create_post() {
                 Origin::signed(UNKNOWN_ORIGIN),
                 ContentActor::Curator(UNKNOWN_CURATOR_GROUP_ID, UNKNOWN_CURATOR_ID),
                 PostCreationParameters {
-                    content: ContentType::Video(scenario.curator_video_id),
-                    channel_id: scenario.curator_channel_id,
+                    video_reference: scenario.curator_video_id,
                     parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::VideoPost,
                 }
             ),
             Error::<Test>::CuratorAuthFailed,
@@ -795,6 +781,34 @@ fn non_authorized_actor_cannot_create_post() {
 //         );
 //     })
 // }
+
+#[test]
+fn invalid_user_cannot_react() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let allow_comments = false; // disable comments
+
+        let scenario = setup_testing_scenario(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            allow_comments,
+        );
+        assert_err!(
+            Content::react_to_video(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                <tests::mock::Test as MembershipTypes>::MemberId::from(UNKNOWN_MEMBER_ID),
+                scenario.member_video_id,
+                <Test as Trait>::ReactionId::from(1u64),
+            ),
+            Error::<Test>::MemberAuthFailed
+        );
+    })
+}
 
 // #[test]
 // fn verify_react_to_post_effects() {

@@ -23,7 +23,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{CheckedAdd, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -478,7 +478,7 @@ pub struct Post_<
     CuratorId: Default + Clone + Copy,
     Balance,
     PostId,
-    ContentType,
+    VideoId,
 > {
     /// Author of post.
     pub author: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -490,38 +490,47 @@ pub struct Post_<
     pub replies_count: PostId,
 
     /// video associated to the post (instead of the body hash as in the blog module)
-    pub content: ContentType,
+    pub post_type: PostType,
 
     /// parent comment if any
-    pub parent: Option<PostId>,
+    pub parent_id: Option<PostId>,
+
+    /// text
+    pub text: Vec<u8>,
+
+    /// video reference
+    pub video_reference: VideoId,
 }
 
 /// A sum type for post content
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ContentType<VideoId> {
-    Video(VideoId),
-    Text(Vec<u8>),
+pub enum PostType {
+    VideoPost,
+    Comment,
 }
 
-/// Default parent representation
-impl<VideoId> Default for ContentType<VideoId> {
+impl Default for PostType {
     fn default() -> Self {
-        ContentType::Text(b"".to_vec())
+        PostType::Comment
     }
 }
+
 /// Information on the post being created
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostCreationParameters<ChannelId, PostId, VideoId> {
-    /// channel which the video belongs to
-    channel_id: ChannelId,
-
+pub struct PostCreationParameters<PostId, VideoId> {
     /// parent post if set
     parent_id: Option<PostId>,
 
     /// content
-    content: ContentType<VideoId>,
+    post_type: PostType,
+
+    /// comment text or description
+    text: Vec<u8>,
+
+    /// video reference
+    video_reference: VideoId,
 }
 
 /// alias for Post
@@ -531,7 +540,7 @@ pub type Post<T> = Post_<
     <T as ContentActorAuthenticator>::CuratorId,
     <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
-    ContentType<<T as Trait>::VideoId>,
+    <T as Trait>::VideoId,
 >;
 
 decl_storage! {
@@ -574,7 +583,8 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub PostById get(fn post_by_id) : map hasher(blake2_128_concat) T::PostId => Post<T>;
+        pub PostById get(fn post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
+            hasher(blake2_128_concat) T::PostId => Post<T>;
 
         pub NextPostId get(fn next_post_id): T::PostId;
     }
@@ -1113,6 +1123,9 @@ decl_module! {
             // Remove video
             VideoById::<T>::remove(video_id);
 
+            // Remove all comments related
+            <PostById<T>>::remove_prefix(video_id);
+
             // Update corresponding channel
             // Remove recently deleted video from the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
@@ -1348,81 +1361,82 @@ decl_module! {
         pub fn create_post(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: PostCreationParameters<T::ChannelId, T::PostId, T::VideoId>,
-        ) {
+            params: PostCreationParameters<T::PostId, T::VideoId>,
+        ) -> DispatchResult{
 
             // ensure channel is valid
-            let channel = Self::ensure_channel_exists(&params.channel_id)?;
-            if let ContentType::Video(video_id) = params.content {
-                // only channel owner allowed to add a video post
-                let video = Self::ensure_video_exists(&video_id)?;
-                ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
+            let video = Self::ensure_video_exists(&params.video_reference)?;
+            let owner = <ChannelById<T>>::get(video.in_channel).owner;
 
-                // no mismatch between video.channel_id and channel_id
-                ensure!(video.in_channel == params.channel_id, Error::<T>::VideoAndPostChannelMismatch);
-                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel.owner)?;
-            } else {
-                // only valid member can add text post
+            if let PostType::Comment = params.post_type {
+              // ensure can add comments
+                    ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
                 if let ContentActor::Member(member_id) = actor {
                     ensure_member_authorized_to_add_text_post::<T>(origin, &member_id)?;
                 } else {
                     return Err(Error::<T>::ActorNotAuthorized.into());
                 }
+                  // ensure that is valid user
+            } else {
+                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &owner)?
             }
 
             let post_id = <NextPostId<T>>::get();
-            let next_post_id = post_id.checked_add(&T::PostId::one()).ok_or("PostId overflow")?;
+
             let post: Post<T> = Post_ {
                 author: actor,
                 bloat_bond: <T as balances::Trait>::Balance::zero(),
                 replies_count: T::PostId::zero(),
-                parent:None,
-                content: params.content.clone(),
+                parent_id:params.parent_id.clone(),
+                video_reference: params.video_reference.clone(),
+                text: params.text.clone(),
+                post_type: params.post_type.clone(),
             };
 
             //
             // == MUTATION SAFE ==
             //
 
-            PostById::<T>::insert(post_id, post);
-            <NextPostId<T>>::put(next_post_id);
+            <NextPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
+            <PostById::<T>>::insert(&params.video_reference, &post_id, post);
 
             // deposit event
             Self::deposit_event(RawEvent::PostCreated(actor, params, post_id));
+
+            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn edit_post(
-            origin,
-            post_id: T::PostId,
-            new_content: ContentType<T::VideoId>,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _origin,
+            _post_id: T::PostId,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
 
             // ensure channel exists
-            let post = Self::ensure_post_exists(post_id)?;
-            let post_author = Self::actor_to_channel_owner(&post.author)?;
+            // let post = Self::ensure_post_exists(post_id)?;
+            // let post_author = Self::actor_to_channel_owner(&post.author)?;
 
-            // ensure actor is valid
-            ensure_actor_authorized_to_edit_post::<T>(origin.clone(), &actor, &post_author)?;
+            // // ensure actor is valid
+            // ensure_actor_authorized_to_edit_post::<T>(origin.clone(), &actor, &post_author)?;
 
-            if let ContentType::Video(video_id) = post.content {
-                let video = <VideoById<T>>::get(video_id);
-                let channel_owner = <ChannelById<T>>::get(video.in_channel).owner;
-                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
-            }
+            // if let ContentType::Video(video_id) = post.content {
+            //     let video = <VideoById<T>>::get(video_id);
+            //     let channel_owner = <ChannelById<T>>::get(video.in_channel).owner;
+            //     ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
+            // }
 
-            let mut post = post;
-            post.content = new_content.clone();
+            // let mut post = post;
+            // post.content = new_content.clone();
 
-            //
-            // == MUTATION_SAFE ==
-            //
+            // //
+            // // == MUTATION_SAFE ==
+            // //
 
-            <PostById::<T>>::insert(post_id, post);
+            // <PostById::<T>>::insert(post_id, post);
 
-            // deposit event
-            Self::deposit_event(RawEvent::PostModified(actor, new_content, post_id));
+            // // deposit event
+            // Self::deposit_event(RawEvent::PostModified(actor, new_content, post_id));
 
         }
 
@@ -1430,10 +1444,11 @@ decl_module! {
         pub fn delete_post(
             origin,
             post_id: T::PostId,
+        video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
             // ensure post exists
-            let post = Self::ensure_post_exists(post_id)?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
             let post_author = Self::actor_to_channel_owner(&post.author)?;
 
             // ensure actor is valid
@@ -1443,7 +1458,7 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            PostById::<T>::remove(post_id);
+            PostById::<T>::remove(video_id,post_id);
 
             // deposit event
             Self::deposit_event(RawEvent::PostDeleted(actor, post_id));
@@ -1569,12 +1584,12 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_post_exists(post_id: T::PostId) -> Result<Post<T>, Error<T>> {
+    fn ensure_post_exists(video_id: T::VideoId, post_id: T::PostId) -> Result<Post<T>, Error<T>> {
         ensure!(
-            PostById::<T>::contains_key(post_id),
+            PostById::<T>::contains_key(video_id, post_id),
             Error::<T>::PostDoesNotExist
         );
-        Ok(PostById::<T>::get(post_id))
+        Ok(PostById::<T>::get(video_id, post_id))
     }
 
     fn not_implemented() -> DispatchResult {
@@ -1625,12 +1640,8 @@ decl_event!(
         PostId = <T as Trait>::PostId,
         MemberId = <T as MembershipTypes>::MemberId,
         ReactionId = <T as Trait>::ReactionId,
-        PostCreationParameters = PostCreationParameters<
-            <T as StorageOwnership>::ChannelId,
-            <T as Trait>::PostId,
-            <T as Trait>::VideoId,
-        >,
-        ContentType = ContentType<<T as Trait>::VideoId>,
+        PostCreationParameters =
+            PostCreationParameters<<T as Trait>::PostId, <T as Trait>::VideoId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1753,7 +1764,7 @@ decl_event!(
 
         // Posts & Replies
         PostCreated(ContentActor, PostCreationParameters, PostId),
-        PostModified(ContentActor, ContentType, PostId),
+        //        PostModified(ContentActor, ContentType, PostId),
         PostDeleted(ContentActor, PostId),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
