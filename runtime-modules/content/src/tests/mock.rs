@@ -46,6 +46,7 @@ pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+pub const THIRD_MEMBER_ID: MemberId = 3;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -158,7 +159,11 @@ impl ContentActorAuthenticator for Test {
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
-        *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
+        Self::is_valid_member_id(member_id) && unknown_member_account_id != *account_id
+    }
+
+    fn is_valid_member_id(member_id: &Self::MemberId) -> bool {
+        *member_id < MEMBERS_COUNT
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
@@ -202,6 +207,7 @@ impl StorageSystem<Test> for MockStorageSystem {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const MaxModerators: u64 = 5;
 }
 
 impl Trait for Test {
@@ -243,6 +249,9 @@ impl Trait for Test {
 
     /// Post Reaction Type
     type ReactionId = u64;
+
+    /// moderators limit
+    type MaxModerators = MaxModerators;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -258,6 +267,7 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    moderators_count: u64,
 }
 
 impl Default for ExtBuilder {
@@ -272,6 +282,7 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            moderators_count: 0,
         }
     }
 }
@@ -292,6 +303,7 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            moderators_count: self.moderators_count,
         }
         .assimilate_storage(&mut t)
         .unwrap();

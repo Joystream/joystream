@@ -122,6 +122,9 @@ pub trait Trait:
 
     /// Type of PostId
     type ReactionId: NumericIdentifier;
+
+    /// Max Number of moderators
+    type MaxModerators: Get<u64>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -502,7 +505,7 @@ pub struct Post_<
     pub video_reference: VideoId,
 }
 
-/// A sum type for post content
+/// A boolean for selecting the post type
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PostType {
@@ -513,6 +516,20 @@ pub enum PostType {
 impl Default for PostType {
     fn default() -> Self {
         PostType::Comment
+    }
+}
+
+/// A boolean for selecting the operation type on the moderator set
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum ModSetOperation {
+    AddModerator,
+    RemoveModerator,
+}
+
+impl Default for ModSetOperation {
+    fn default() -> Self {
+        ModSetOperation::AddModerator
     }
 }
 
@@ -587,6 +604,12 @@ decl_storage! {
             hasher(blake2_128_concat) T::PostId => Post<T>;
 
         pub NextPostId get(fn next_post_id): T::PostId;
+
+        pub ModeratorSet get(fn moderator_set): double_map hasher(blake2_128_concat) T::ChannelId,
+        hasher(blake2_128_concat) T::MemberId => ();
+
+        pub ModeratorsCount get (fn moderators_count) config(): u64;
+
     }
 }
 
@@ -1362,7 +1385,9 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             params: PostCreationParameters<T::PostId, T::VideoId>,
-        ) -> DispatchResult{
+        ) -> DispatchResult {
+
+            let sender = ensure_signed(origin.clone())?;
 
             // ensure channel is valid
             let video = Self::ensure_video_exists(&params.video_reference)?;
@@ -1372,7 +1397,7 @@ decl_module! {
               // ensure can add comments
                     ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
                 if let ContentActor::Member(member_id) = actor {
-                    ensure_member_authorized_to_add_text_post::<T>(origin, &member_id)?;
+                    ensure_member_auth_success::<T>(&member_id, &sender)?;
                 } else {
                     return Err(Error::<T>::ActorNotAuthorized.into());
                 }
@@ -1398,7 +1423,17 @@ decl_module! {
             //
 
             <NextPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
-            <PostById::<T>>::insert(&params.video_reference, &post_id, post);
+            <PostById<T>>::insert(&params.video_reference, &post_id, post);
+
+            // increment replies count in the parent post
+            if let PostType::Comment = params.post_type {
+                if let Some(parent_id) = params.parent_id {
+                    <PostById<T>>::mutate(
+                    params.video_reference,
+                    parent_id,
+                    |x| x.replies_count = x.replies_count.saturating_add(One::one()))
+                }
+            }
 
             // deposit event
             Self::deposit_event(RawEvent::PostCreated(actor, params, post_id));
@@ -1471,7 +1506,9 @@ decl_module! {
             post_id: T::PostId,
             reaction_id: T::ReactionId,
         ) {
-            ensure_member_authorized_to_react::<T>(origin, &member_id)?;
+        let sender = ensure_signed(origin)?;
+        ensure_member_auth_success::<T>(&member_id, &sender)?;
+
             Self::deposit_event(RawEvent::ReactionToPost(member_id, post_id, reaction_id));
         }
 
@@ -1482,8 +1519,43 @@ decl_module! {
             video_id: T::VideoId,
             reaction_id: T::ReactionId,
         ) {
-            ensure_member_authorized_to_react::<T>(origin, &member_id)?;
+        let sender = ensure_signed(origin)?;
+        ensure_member_auth_success::<T>(&member_id, &sender)?;
             Self::deposit_event(RawEvent::ReactionToVideo(member_id, video_id, reaction_id));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn update_moderator_set(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            member_id: T::MemberId,
+            channel_id: T::ChannelId,
+            operation: ModSetOperation,
+        ) {
+            // ensure (origin, actor) is channel owner
+            let owner = Self::ensure_channel_exists(&channel_id)?.owner;
+        ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?;
+
+            // ensure member_id is a valid user
+        ensure_valid_member::<T>(&member_id)?;
+
+        match operation {
+            ModSetOperation::AddModerator => {
+                // ensure moderator limit is not reached
+                ensure!(<ModeratorsCount>::get() < T::MaxModerators::get(),
+                    Error::<T>::ModeratorsLimitReached);
+                <ModeratorSet<T>>::insert(&channel_id, &member_id, ());
+                <ModeratorsCount>::mutate(|x| *x = x.saturating_add(One::one()));
+            },
+            ModSetOperation::RemoveModerator => {
+                ensure!(<ModeratorSet<T>>::contains_key(&channel_id, &member_id),
+                    Error::<T>::ModeratorDoesNotExist);
+                <ModeratorSet<T>>::remove(&channel_id, &member_id);
+                <ModeratorsCount>::mutate(|x| *x = x.saturating_sub(One::one()));
+
+            }
+        };
+            Self::deposit_event(RawEvent::ModeratorSetUpdated(channel_id, member_id, operation));
         }
     }
 }
@@ -1768,5 +1840,6 @@ decl_event!(
         PostDeleted(ContentActor, PostId),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
+        ModeratorSetUpdated(ChannelId, MemberId, ModSetOperation),
     }
 );
