@@ -151,6 +151,17 @@ async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
     }
 
     id = newId(lastPostIdInCache);
+    const lastPost = await api.query.forum.postById(lastPostIdInCache) as Post;
+
+    if (lastPost) {
+      const postsInThread = mapPostToThread.get(Number(lastPost.thread_id.toString()));
+
+      if (!postsInThread || !postsInThread.includes(lastPostIdInCache)) { // cache doesn't match the data in chain
+        mapPostToThread = new Map<number, number[]>();
+      }
+    } else {
+      mapPostToThread = new Map<number, number[]>();
+    }
   }
 
   while (nextPostId.gt(id)) {
@@ -158,9 +169,9 @@ async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
     id = newId(id.add(newId(1)));
   }
 
-  const allPosts = await Promise.all<Post>(apiCalls);
+  const newPosts = await Promise.all<Post>(apiCalls);
 
-  for (const post of allPosts) {
+  for (const post of newPosts) {
     let posts = mapPostToThread.get(Number(post.thread_id.toString())) as number[];
     const postId = Number(post.id.toString());
 
