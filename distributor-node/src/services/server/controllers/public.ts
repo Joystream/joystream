@@ -3,25 +3,30 @@ import { Logger } from 'winston'
 import send from 'send'
 import { StateCacheService } from '../../../services/cache/StateCacheService'
 import { NetworkingService } from '../../../services/networking'
-import { ErrorResponse, RouteParams } from '../../../types/api'
+import { AssetRouteParams, BucketsResponse, ErrorResponse, StatusResponse } from '../../../types/api'
 import { LoggingService } from '../../logging'
 import { ContentService, DEFAULT_CONTENT_TYPE } from '../../content/ContentService'
 import proxy from 'express-http-proxy'
+import { ReadonlyConfig } from '../../../types'
 
-const CACHE_MAX_AGE = 31536000
+const CACHED_MAX_AGE = 31536000
+const PENDING_MAX_AGE = 180
 
 export class PublicApiController {
+  private config: ReadonlyConfig
   private logger: Logger
   private networking: NetworkingService
   private stateCache: StateCacheService
   private content: ContentService
 
   public constructor(
+    config: ReadonlyConfig,
     logging: LoggingService,
     networking: NetworkingService,
     stateCache: StateCacheService,
     content: ContentService
   ) {
+    this.config = config
     this.logger = logging.createLogger('PublicApiController')
     this.networking = networking
     this.stateCache = stateCache
@@ -29,7 +34,7 @@ export class PublicApiController {
   }
 
   private serveAssetFromFilesystem(
-    req: express.Request,
+    req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
     contentHash: string
@@ -41,14 +46,14 @@ export class PublicApiController {
 
     const path = this.content.path(contentHash)
     const stream = send(req, path, {
-      maxAge: CACHE_MAX_AGE,
+      maxAge: CACHED_MAX_AGE,
       lastModified: false,
     })
     const mimeType = this.stateCache.getContentMimeType(contentHash)
 
     stream.on('headers', (res) => {
       res.setHeader('x-cache', 'hit')
-      res.setHeader('x-data-source', 'cache')
+      res.setHeader('x-data-source', 'local')
       res.setHeader('content-disposition', 'inline')
       res.setHeader('content-type', mimeType || DEFAULT_CONTENT_TYPE)
     })
@@ -69,7 +74,7 @@ export class PublicApiController {
   }
 
   private async servePendingDownloadAsset(
-    req: express.Request,
+    req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
     contentHash: string
@@ -87,7 +92,7 @@ export class PublicApiController {
     res.setHeader('content-type', contentType)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
     // since the data coming from the source may not be valid
-    res.setHeader('cache-control', `max-age=180, must-revalidate`)
+    res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
 
     // Handle request using pending download file if this makes sense in current context:
     if (this.content.exists(contentHash)) {
@@ -108,7 +113,7 @@ export class PublicApiController {
   }
 
   private async servePendingDownloadAssetFromFile(
-    req: express.Request,
+    req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction,
     contentHash: string,
@@ -126,7 +131,7 @@ export class PublicApiController {
     })
     res.status(isRange ? 206 : 200)
     res.setHeader('accept-ranges', 'bytes')
-    res.setHeader('x-data-source', 'partial-cache')
+    res.setHeader('x-data-source', 'local')
     res.setHeader('content-disposition', 'inline')
     if (isRange) {
       res.setHeader('content-range', `bytes 0-${rangeEnd}/${objectSize}`)
@@ -134,15 +139,53 @@ export class PublicApiController {
     stream.pipe(res)
   }
 
+  public async assetHead(req: express.Request<AssetRouteParams>, res: express.Response): Promise<void> {
+    const objectId = req.params.objectId
+    const contentHash = this.stateCache.getObjectContentHash(objectId)
+    const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
+
+    if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
+      res.status(200)
+      res.setHeader('accept-ranges', 'bytes')
+      res.setHeader('x-cache', 'hit')
+      res.setHeader('content-disposition', 'inline')
+      res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
+      res.setHeader('content-type', this.stateCache.getContentMimeType(contentHash) || DEFAULT_CONTENT_TYPE)
+      res.setHeader('content-length', this.content.fileSize(contentHash))
+    } else if (contentHash && pendingDownload) {
+      res.status(200)
+      res.setHeader('accept-ranges', 'bytes')
+      res.setHeader('x-cache', 'pending')
+      res.setHeader('content-disposition', 'inline')
+      res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+      res.setHeader('content-length', pendingDownload.objectSize)
+    } else {
+      const objectInfo = await this.networking.dataObjectInfo(objectId)
+      if (!objectInfo.exists) {
+        res.status(404)
+      } else if (!objectInfo.isSupported) {
+        res.status(421)
+      } else {
+        res.status(200)
+        res.setHeader('accept-ranges', 'bytes')
+        res.setHeader('x-cache', 'miss')
+        res.setHeader('content-disposition', 'inline')
+        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+        res.setHeader('content-length', objectInfo.data?.size || 0)
+      }
+    }
+
+    res.send()
+  }
+
   public async asset(
-    req: express.Request<RouteParams<'public.asset'>>,
+    req: express.Request<AssetRouteParams>,
     res: express.Response,
     next: express.NextFunction
   ): Promise<void> {
     req.on('close', () => {
       res.end()
     })
-    // TODO: objectId validation
     const objectId = req.params.objectId
     const contentHash = this.stateCache.getObjectContentHash(objectId)
     const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
@@ -155,7 +198,6 @@ export class PublicApiController {
 
     if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
       this.logger.info('Requested file found in filesystem', { path: this.content.path(contentHash) })
-      this.stateCache.useContent(contentHash)
       return this.serveAssetFromFilesystem(req, res, next, contentHash)
     } else if (contentHash && pendingDownload) {
       this.logger.info('Requested file is in pending download state', { path: this.content.path(contentHash) })
@@ -188,12 +230,27 @@ export class PublicApiController {
         if (downloadResponse) {
           // Note: Await will only wait unil the file is created, so we may serve the response from it
           await this.content.handleNewContent(contentHash, size, downloadResponse.data)
-          res.setHeader('x-cache', 'fetch-triggered')
+          res.setHeader('x-cache', 'miss')
         } else {
           res.setHeader('x-cache', 'pending')
         }
         return this.servePendingDownloadAsset(req, res, next, contentHash)
       }
     }
+  }
+
+  public async status(req: express.Request, res: express.Response<StatusResponse>): Promise<void> {
+    const data: StatusResponse = {
+      objectsInCache: this.stateCache.getCachedContentLength(),
+      storageLimit: this.config.storageLimit,
+      storageUsed: this.content.usedSpace,
+      uptime: Math.floor(process.uptime()),
+      downloadsInProgress: this.stateCache.getPendingDownloadsCount(),
+    }
+    res.status(200).json(data)
+  }
+
+  public async buckets(req: express.Request, res: express.Response<BucketsResponse>): Promise<void> {
+    res.status(200).json([...this.config.buckets])
   }
 }
