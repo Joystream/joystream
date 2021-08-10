@@ -382,7 +382,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
         Some(Box::new(justification_import)),
         client.clone(),
         select_chain,
-        inherent_data_providers.clone(),
+        inherent_data_providers,
         &task_manager.spawn_handle(),
         config.prometheus_registry(),
         sp_consensus::NeverCanAuthor,
