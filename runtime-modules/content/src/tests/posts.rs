@@ -440,6 +440,39 @@ fn cannot_add_too_many_moderators() {
     })
 }
 
+#[test]
+fn verify_delete_post_effects() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let allow_comments = true;
+
+        let scenario = setup_testing_scenario(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            allow_comments,
+        );
+
+        let parent_id = Content::next_post_id();
+
+        // create post
+        assert_ok!(Content::create_post(
+            Origin::signed(member_id),
+            ContentActor::Member(member_id),
+            PostCreationParameters {
+                video_reference: scenario.member_video_id.clone(),
+                parent_id: None,
+                text: b"abc".to_vec(),
+                post_type: PostType::Post,
+            }
+        ));
+    })
+}
+
 // // Edit post tests
 // fn setup_testing_scenario_with_post() -> (
 //     <tests::mock::Test as Trait>::PostId,

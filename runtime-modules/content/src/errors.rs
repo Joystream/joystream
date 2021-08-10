@@ -82,5 +82,7 @@ decl_error! {
         /// moderator does not exist
         ModeratorDoesNotExist,
 
+        /// cannot comment to non existing video post
+        CannotCommentToNonExistingVideoPost,
     }
 }

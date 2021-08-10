@@ -1393,17 +1393,34 @@ decl_module! {
             let video = Self::ensure_video_exists(&params.video_reference)?;
             let owner = <ChannelById<T>>::get(video.in_channel).owner;
 
+            // if it is a comment:
             if let PostType::Comment = params.post_type {
-              // ensure can add comments
-                    ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
+                // ensure comments are enabled
+                ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
+
+                // ensure parent video post exists
+                match params.parent_id {
+                    Some(parent_id) => {
+                        let _ = Self::ensure_post_exists(
+                        params.video_reference,
+                        parent_id,
+                        )?;
+                    }
+                    _ => {
+                        return Err(Error::<T>::CannotCommentToNonExistingVideoPost.into());
+                    }
+                }
                 if let ContentActor::Member(member_id) = actor {
+                    // authenticate member
                     ensure_member_auth_success::<T>(&member_id, &sender)?;
                 } else {
                     return Err(Error::<T>::ActorNotAuthorized.into());
                 }
-                  // ensure that is valid user
+
+            // if it is a post video
             } else {
-                ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &owner)?
+                // ensure channel owner
+                ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?
             }
 
             let post_id = <NextPostId<T>>::get();
@@ -1479,21 +1496,31 @@ decl_module! {
         pub fn delete_post(
             origin,
             post_id: T::PostId,
-        video_id: T::VideoId,
+            video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
             // ensure post exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
-            let post_author = Self::actor_to_channel_owner(&post.author)?;
 
             // ensure actor is valid
-            ensure_actor_authorized_to_edit_post::<T>(origin, &actor, &post_author)?;
+            let channel_id = <VideoById<T>>::get(&video_id).in_channel;
+            Self::ensure_can_delete_post(origin, &actor, &channel_id)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
+            // remove post
             PostById::<T>::remove(video_id,post_id);
+
+            // decrement parent's replies count
+            if let Some(parent_id) = post.parent_id {
+                <PostById<T>>::mutate(
+                    &video_id,
+                    &parent_id,
+                    |x| x.replies_count = x.replies_count.saturating_sub(One::one())
+                );
+            }
 
             // deposit event
             Self::deposit_event(RawEvent::PostDeleted(actor, post_id));
@@ -1666,6 +1693,19 @@ impl<T: Trait> Module<T> {
 
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
+    }
+
+    fn ensure_can_delete_post(
+        origin: T::Origin,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        channel_id: &T::ChannelId,
+    ) -> DispatchResult {
+        if let ContentActor::Member(member_id) = actor {
+            if <ModeratorSet<T>>::contains_key(channel_id, member_id) {
+                return Ok(());
+            }
+        }
+        ensure_actor_is_channel_owner::<T>(origin, actor, &<ChannelById<T>>::get(channel_id).owner)
     }
 }
 
