@@ -256,7 +256,7 @@ export class NetworkingService {
       bucket.distributedBags.forEach((bag) => {
         bag.objects.forEach((object) => {
           const { ipfsHash, id, size } = object
-          objectsData.push({ contentHash: ipfsHash, objectId: id, size })
+          objectsData.push({ contentHash: ipfsHash, objectId: id, size: parseInt(size) })
         })
       })
     })
