@@ -14,5 +14,3 @@ docker run \
     --volume ${HOME}/.cargo/registry:/home/cross/.cargo/registry \
     joystream/rust-raspberry \
     build --release -p joystream-node
-
-ls -l target/arm-unknown-linux-gnueabihf/joystream-node
