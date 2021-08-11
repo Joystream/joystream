@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { orderBy } from 'lodash';
 import BN from 'bn.js';
 
 import { Section } from '@polkadot/joy-utils/react/components';
