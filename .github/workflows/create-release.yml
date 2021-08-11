@@ -45,9 +45,42 @@ jobs:
           path: joystream-node-macos.tar.gz
           retention-days: 1
 
+  build-rpi-binary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
+        run: |
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+
+      - name: Run Setup
+        run: |
+          ./setup.sh
+
+      - name: Build binaries
+        run: |
+          export WORKSPACE_ROOT=`cargo metadata --offline --no-deps --format-version 1 | jq .workspace_root -r`
+          sudo chmod a+w $WORKSPACE_ROOT
+          ./scripts/raspberry-cross-build.sh
+
+      - name: Tar the binary
+        run: |
+          tar czvf joystream-node-rpi.tar.gz -C ./target/arm-unknown-linux-gnueabihf/release joystream-node
+
+      - name: Temporarily save node binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: joystream-node-rpi-${{ steps.compute_shasum.outputs.shasum }}
+          path: joystream-node-rpi.tar.gz
+          retention-days: 1
+
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-mac-binary]
+    needs: [build-mac-binary, build-rpi-binary]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -85,9 +118,15 @@ jobs:
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
 
-      - name: Rename MacOS tar
+      - name: Retrieve saved RPi binary
+        uses: actions/download-artifact@v2
+        with:
+          name: joystream-node-rpi-${{ steps.compute_shasum.outputs.shasum }}
+
+      - name: Rename MacOS and RPi tar
         run: |
           mv joystream-node-macos.tar.gz joystream-node-${{ github.event.inputs.tag }}-macos.tar.gz
+          mv joystream-node-rpi.tar.gz joystream-node-${{ github.event.inputs.tag }}-rpi.tar.gz
 
       - name: Release
         uses: softprops/action-gh-release@v1
