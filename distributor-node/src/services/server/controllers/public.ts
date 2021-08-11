@@ -107,7 +107,7 @@ export class PublicApiController {
     }
 
     // Range doesn't start from the beginning of the content or the file was not found - froward request to source storage node
-    this.logger.info(`Forwarding request to ${source.href}`, { source: source.href })
+    this.logger.verbose(`Forwarding request to ${source.href}`, { source: source.href })
     res.setHeader('x-data-source', 'external')
     return proxy(source.origin, { proxyReqPathResolver: () => source.pathname })(req, res, next)
   }
@@ -121,7 +121,7 @@ export class PublicApiController {
     rangeEnd?: number
   ) {
     const isRange = rangeEnd !== undefined
-    this.logger.info(`Serving pending download asset from file`, { contentHash, isRange, objectSize, rangeEnd })
+    this.logger.verbose(`Serving pending download asset from file`, { contentHash, isRange, objectSize, rangeEnd })
     const stream = this.content.createContinousReadStream(contentHash, {
       end: isRange ? rangeEnd || 0 : objectSize - 1,
     })
@@ -197,14 +197,14 @@ export class PublicApiController {
     })
 
     if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
-      this.logger.info('Requested file found in filesystem', { path: this.content.path(contentHash) })
+      this.logger.verbose('Requested file found in filesystem', { path: this.content.path(contentHash) })
       return this.serveAssetFromFilesystem(req, res, next, contentHash)
     } else if (contentHash && pendingDownload) {
-      this.logger.info('Requested file is in pending download state', { path: this.content.path(contentHash) })
+      this.logger.verbose('Requested file is in pending download state', { path: this.content.path(contentHash) })
       res.setHeader('x-cache', 'pending')
       return this.servePendingDownloadAsset(req, res, next, contentHash)
     } else {
-      this.logger.info('Requested file not found in filesystem')
+      this.logger.verbose('Requested file not found in filesystem')
       const objectInfo = await this.networking.dataObjectInfo(objectId)
       if (!objectInfo.exists) {
         const errorRes: ErrorResponse = {

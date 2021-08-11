@@ -27,7 +27,8 @@
     "tslib": "^1",
     "yaml": "^1.10.2",
     "queue": "^6.0.2",
-    "express-http-proxy": "^1.6.2"
+    "express-http-proxy": "^1.6.2",
+    "winston-elasticsearch": "^0.15.8"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",

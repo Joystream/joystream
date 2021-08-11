@@ -24,6 +24,7 @@ const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10 // 10 pending downloa
 
 const STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS = 60000
 const STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT = 5000
+const GLOBAL_AXIOS_TIMEOUT = 10000
 
 export class NetworkingService {
   private config: ReadonlyConfig
@@ -38,6 +39,7 @@ export class NetworkingService {
   private downloadQueue = queue({ concurrency: MAX_CONCURRENT_DOWNLOADS, autostart: true })
 
   constructor(config: ReadonlyConfig, stateCache: StateCacheService, logging: LoggingService) {
+    axios.defaults.timeout = GLOBAL_AXIOS_TIMEOUT
     this.config = config
     this.logging = logging
     this.stateCache = stateCache
@@ -68,10 +70,11 @@ export class NetworkingService {
         this.validateNodeEndpoint(b.endpoint)
         return true
       } catch (err) {
-        this.logger.warn('Invalid storage endpoint detected!', {
+        this.logger.warn(`Invalid storage node endpoint: ${b.endpoint} for bucket ${b.bucketId}`, {
           bucketId: b.bucketId,
           endpoint: b.endpoint,
           err,
+          '@pauseFor': 900,
         })
         return false
       }
@@ -123,8 +126,8 @@ export class NetworkingService {
       const dataA = this.stateCache.getStorageNodeEndpointData(a)
       const dataB = this.stateCache.getStorageNodeEndpointData(b)
       return (
-        _.mean(dataA?.responseTimes || [STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT]) -
-        _.mean(dataB?.responseTimes || [STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT])
+        _.mean(dataA?.last10ResponseTimes || [STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT]) -
+        _.mean(dataB?.last10ResponseTimes || [STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT])
       )
     })
   }
@@ -149,7 +152,7 @@ export class NetworkingService {
         reject(new Error(message))
       }
       const success = (response: StorageNodeDownloadResponse) => {
-        this.logger.info('Download source found', { contentHash, source: response.config.url })
+        this.logger.verbose('Download source found', { contentHash, source: response.config.url })
         pendingDownload.status = 'Downloading'
         onSuccess(response)
         resolve(response)
@@ -274,7 +277,11 @@ export class NetworkingService {
     )
     this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })
 
-    endpoints.forEach(({ endpoint }) => this.testLatencyQueue.push(() => this.checkResponseTime(endpoint)))
+    endpoints.forEach(({ endpoint }) =>
+      this.testLatencyQueue.push(async () => {
+        await this.checkResponseTime(endpoint)
+      })
+    )
   }
 
   async checkResponseTime(endpoint: string): Promise<void> {
@@ -283,6 +290,7 @@ export class NetworkingService {
     try {
       // TODO: Use a status endpoint once available?
       await axios.get(endpoint, { timeout: STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT })
+      throw new Error('Unexpected status 200')
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 404) {
         // This is the expected outcome currently
@@ -290,7 +298,7 @@ export class NetworkingService {
         this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
         this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)
       } else {
-        this.logger.warn('Storage node giving unexpected reponse on root endpoint!', { err })
+        this.logger.warn(`${endpoint} check request unexpected response`, { endpoint, err, '@pauseFor': 900 })
       }
     }
   }

@@ -18,7 +18,7 @@ export interface PendingDownloadData {
 }
 
 export interface StorageNodeEndpointData {
-  responseTimes: number[]
+  last10ResponseTimes: number[]
 }
 
 export interface CacheItemData {
@@ -190,8 +190,11 @@ export class StateCacheService {
   }
 
   public setStorageNodeEndpointResponseTime(endpoint: string, time: number): void {
-    const data = this.memoryState.storageNodeEndpointDataByEndpoint.get(endpoint) || { responseTimes: [] }
-    data.responseTimes.push(time)
+    const data = this.memoryState.storageNodeEndpointDataByEndpoint.get(endpoint) || { last10ResponseTimes: [] }
+    if (data.last10ResponseTimes.length === 10) {
+      data.last10ResponseTimes.shift()
+    }
+    data.last10ResponseTimes.push(time)
   }
 
   public getStorageNodeEndpointData(endpoint: string): StorageNodeEndpointData | undefined {
@@ -220,7 +223,7 @@ export class StateCacheService {
           this.logger.error('Cache file save error', { err })
           resolve(false)
         } else {
-          this.logger.info('Cache file updated')
+          this.logger.verbose('Cache file updated')
           resolve(true)
         }
       })
