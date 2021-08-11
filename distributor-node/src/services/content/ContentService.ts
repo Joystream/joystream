@@ -36,12 +36,18 @@ export class ContentService {
   public async startupInit(supportedObjects: DataObjectData[]): Promise<void> {
     const dataObjectsByHash = _.groupBy(supportedObjects, (o) => o.contentHash)
     const dataDirFiles = fs.readdirSync(this.dataDir)
+    const filesCountOnStartup = dataDirFiles.length
+    const cachedContentHashes = this.stateCache.getCachedContentHashes()
+    const cacheItemsOnStartup = cachedContentHashes.length
 
-    let filesCountOnStartup = 0
+    this.logger.info('ContentService initializing...', {
+      supportedObjects: supportedObjects.length,
+      filesCountOnStartup,
+      cacheItemsOnStartup,
+    })
     let filesDropped = 0
     for (const contentHash of dataDirFiles) {
-      ++filesCountOnStartup
-      this.logger.verbose('Checking content file', { contentHash })
+      this.logger.debug('Checking content file', { contentHash })
       // Add fileSize to contentSizeSum for each file. If the file ends up dropped - contentSizeSum will be reduced by this.drop().
       const fileSize = this.fileSize(contentHash)
       this.contentSizeSum += fileSize
@@ -74,8 +80,6 @@ export class ContentService {
       })
     }
 
-    const cachedContentHashes = this.stateCache.getCachedContentHashes()
-    const cacheItemsOnStartup = cachedContentHashes.length
     let cacheItemsDropped = 0
     for (const contentHash of cachedContentHashes) {
       if (!this.exists(contentHash)) {
@@ -86,9 +90,7 @@ export class ContentService {
     }
 
     this.logger.info('ContentService initialized', {
-      filesCountOnStartup,
       filesDropped,
-      cacheItemsOnStartup,
       cacheItemsDropped,
       contentSizeSum: this.contentSizeSum,
     })
@@ -99,9 +101,9 @@ export class ContentService {
       const size = this.fileSize(contentHash)
       fs.unlinkSync(this.path(contentHash))
       this.contentSizeSum -= size
-      this.logger.verbose('Dropping content', { contentHash, reason, size, contentSizeSum: this.contentSizeSum })
+      this.logger.debug('Dropping content', { contentHash, reason, size, contentSizeSum: this.contentSizeSum })
     } else {
-      this.logger.verbose('Trying to drop content that no loger exists', { contentHash, reason })
+      this.logger.warn('Trying to drop content that no loger exists', { contentHash, reason })
     }
     this.stateCache.dropByHash(contentHash)
   }
@@ -138,17 +140,18 @@ export class ContentService {
     return guessResult?.mime || DEFAULT_CONTENT_TYPE
   }
 
-  private async dropCacheItemsUntilFreeSpaceReached(expectedFreeSpace: number): Promise<void> {
-    this.logger.verbose(`Cache eviction free space target: ${expectedFreeSpace}`)
-    while (this.freeSpace < expectedFreeSpace) {
+  private async dropCacheItemsUntilFreeSpaceReached(targetFreeSpace: number): Promise<void> {
+    this.logger.verbose('Cache eviction initialized.', { targetFreeSpace })
+    while (this.freeSpace < targetFreeSpace) {
       const evictCandidateHash = this.stateCache.getCacheEvictCandidateHash()
       if (evictCandidateHash) {
         this.drop(evictCandidateHash, 'Cache eviction')
       } else {
-        this.logger.verbose('Nothing to drop from cache, waiting...', { freeSpace: this.freeSpace, expectedFreeSpace })
+        this.logger.verbose('Nothing to drop from cache, waiting...', { freeSpace: this.freeSpace, targetFreeSpace })
         await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
+    this.logger.verbose('Cache eviction finalized.', { freeSpace: this.freeSpace })
   }
 
   public handleNewContent(contentHash: string, expectedSize: number, dataStream: Readable): Promise<void> {

@@ -6,9 +6,11 @@
  */
 
 export interface ConfigJson {
+  id: string
   endpoints: {
     queryNode: string
     substrateNode: string
+    elasticSearch: string
   }
   directories: {
     data: string
@@ -18,6 +20,7 @@ export interface ConfigJson {
   log?: {
     file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
     console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+    elastic?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
   }
   storageLimit: string
   port: number

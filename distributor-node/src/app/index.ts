@@ -87,6 +87,7 @@ export class App {
     }
 
     this.logger.info('Graceful exit finished')
+    await this.logging.end()
   }
 
   private exitCritically(): void {
@@ -103,23 +104,21 @@ export class App {
     this.stateCache.clearInterval()
     if (signal) {
       // Async exit can be executed
-      // TODO: this.logging.end() currently doesn't seem to be enough to make sure all logs are flushed to a file
       this.exitGracefully()
         .then(() => {
-          this.logging.end()
           process.kill(process.pid, signal)
         })
         .catch((err) => {
           this.logger.error('Graceful exit error', { err })
-          this.logging.end()
-          process.kill(process.pid, signal)
+          this.logging.end().finally(() => {
+            process.kill(process.pid, signal)
+          })
         })
       nodeCleanup.uninstall()
       return false
     } else {
       // Only synchronous work can be done here
       this.exitCritically()
-      this.logging.end()
     }
   }
 }

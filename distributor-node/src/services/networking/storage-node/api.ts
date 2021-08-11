@@ -5,20 +5,14 @@ import { LoggingService } from '../../logging'
 import { Logger } from 'winston'
 import { StorageNodeDownloadResponse } from '../../../types'
 
-const AXIOS_TIMEOUT = 10000
-
 export class StorageNodeApi {
   private logger: Logger
   private publicApi: PublicApi
   private endpoint: string
 
   public constructor(endpoint: string, logging: LoggingService) {
-    const axiosConfig: AxiosRequestConfig = {
-      timeout: AXIOS_TIMEOUT,
-    }
     const config = new Configuration({
       basePath: endpoint,
-      baseOptions: axiosConfig,
     })
     this.publicApi = new PublicApi(config)
     this.endpoint = new URL(endpoint).toString()
@@ -31,14 +25,14 @@ export class StorageNodeApi {
         Range: 'bytes=0-0',
       },
     }
-    this.logger.info('Checking object availibility', { contentHash })
+    this.logger.debug('Checking object availibility', { contentHash })
     try {
       await this.publicApi.publicApiFiles(contentHash, options)
-      this.logger.info('Data object available', { contentHash })
+      this.logger.debug('Data object available', { contentHash })
       return true
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        this.logger.info('Data object not available', { err })
+        this.logger.debug('Data object not available', { err })
         return false
       }
       this.logger.error('Unexpected error while requesting data object', { err })
@@ -47,7 +41,7 @@ export class StorageNodeApi {
   }
 
   public async downloadObject(contentHash: string, startAt?: number): Promise<StorageNodeDownloadResponse> {
-    this.logger.info('Sending download request', { contentHash, startAt })
+    this.logger.verbose('Sending download request', { contentHash, startAt })
     const options: AxiosRequestConfig = {
       responseType: 'stream',
     }
