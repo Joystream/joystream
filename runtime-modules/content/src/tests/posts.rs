@@ -11,11 +11,14 @@ pub const UNKNOWN_MEMBER_ID: u64 = 7777;
 pub const UNKNOWN_CURATOR_ID: u64 = 7777;
 pub const UNKNOWN_CURATOR_GROUP_ID: u64 = 7777;
 
+#[derive(Debug, Clone, Copy)]
 struct TestingScenario {
     member_channel_id: ChannelId,
     curator_channel_id: ChannelId,
     member_video_id: <Test as Trait>::VideoId,
     curator_video_id: <Test as Trait>::VideoId,
+    video_post_id: Option<<Test as Trait>::PostId>,
+    comment_post_id: Option<<Test as Trait>::PostId>,
 }
 
 fn setup_testing_scenario(
@@ -89,6 +92,8 @@ fn setup_testing_scenario(
         curator_channel_id,
         member_video_id,
         curator_video_id,
+        video_post_id: None,
+        comment_post_id: None,
     }
 }
 
@@ -101,14 +106,6 @@ fn cannot_create_post_with_nonexistent_video() {
         let curator_id = FIRST_CURATOR_ID;
         let curator_account = FIRST_CURATOR_ORIGIN;
         let allow_comments = true;
-
-        let scenario = setup_testing_scenario(
-            member_account,
-            member_id,
-            curator_account,
-            curator_id,
-            allow_comments,
-        );
 
         assert_err!(
             Content::create_post(
@@ -169,6 +166,39 @@ fn cannot_create_post_on_a_channel_with_disabled_comment_section() {
                 }
             ),
             Error::<Test>::CommentsDisabled,
+        );
+    })
+}
+
+#[test]
+fn cannot_comment_non_existing_video_post() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let allow_comments = true;
+
+        let scenario = setup_testing_scenario(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            allow_comments,
+        );
+
+        assert_err!(
+            Content::create_post(
+                Origin::signed(member_id),
+                ContentActor::Member(member_id),
+                PostCreationParameters {
+                    video_reference: scenario.member_video_id,
+                    parent_id: None,
+                    text: b"abc".to_vec(),
+                    post_type: PostType::Comment,
+                }
+            ),
+            Error::<Test>::CannotCommentToNonExistingVideoPost,
         );
     })
 }
@@ -271,13 +301,13 @@ fn verify_create_post_effects() {
 
         // create post
         assert_ok!(Content::create_post(
-            Origin::signed(member_id),
+            Origin::signed(member_account),
             ContentActor::Member(member_id),
             PostCreationParameters {
                 video_reference: scenario.member_video_id.clone(),
                 parent_id: None,
                 text: b"abc".to_vec(),
-                post_type: PostType::Comment,
+                post_type: PostType::VideoPost,
             }
         ));
 
@@ -294,7 +324,7 @@ fn verify_create_post_effects() {
 
         assert_eq!(child_id - parent_id, 1);
         assert_ok!(Content::create_post(
-            Origin::signed(member_id),
+            Origin::signed(member_account),
             ContentActor::Member(member_id),
             PostCreationParameters {
                 video_reference: scenario.member_video_id,
@@ -314,6 +344,40 @@ fn verify_create_post_effects() {
 
         assert_eq!(replies_count_post - replies_count_pre, 1);
     })
+}
+
+fn setup_testing_scenario_with_video_post(
+    member_account: <Test as frame_system::Trait>::AccountId,
+    member_id: MemberId,
+    curator_account: <Test as frame_system::Trait>::AccountId,
+    curator_id: CuratorId,
+    allow_comments: bool,
+) -> TestingScenario {
+    let mut scenario = setup_testing_scenario(
+        member_account,
+        member_id,
+        curator_account,
+        curator_id,
+        allow_comments,
+    );
+
+    let parent_id = Content::next_post_id();
+
+    // create post
+    assert_ok!(Content::create_post(
+        Origin::signed(member_account),
+        ContentActor::Member(member_id),
+        PostCreationParameters {
+            video_reference: scenario.member_video_id.clone(),
+            parent_id: None,
+            text: b"abc".to_vec(),
+            post_type: PostType::VideoPost,
+        }
+    ));
+
+    scenario.video_post_id = Some(parent_id);
+    println!("scenario:\t{:?}", scenario);
+    scenario
 }
 
 #[test]
@@ -461,15 +525,84 @@ fn verify_delete_post_effects() {
 
         // create post
         assert_ok!(Content::create_post(
-            Origin::signed(member_id),
+            Origin::signed(member_account),
             ContentActor::Member(member_id),
             PostCreationParameters {
                 video_reference: scenario.member_video_id.clone(),
                 parent_id: None,
                 text: b"abc".to_vec(),
-                post_type: PostType::Post,
+                post_type: PostType::VideoPost,
             }
         ));
+
+        let child_id = Content::next_post_id();
+
+        assert_ok!(Content::create_post(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            PostCreationParameters {
+                video_reference: scenario.member_video_id,
+                parent_id: Some(parent_id),
+                text: b"abc".to_vec(),
+                post_type: PostType::Comment,
+            }
+        ));
+
+        let replies_count_pre =
+            PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
+
+        assert_ok!(Content::delete_post(
+            Origin::signed(member_id),
+            scenario.member_video_id,
+            child_id,
+            ContentActor::Member(member_id),
+        ));
+
+        let replies_count_post =
+            PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
+
+        assert_eq!(replies_count_pre - replies_count_post, 1);
+    })
+}
+
+#[test]
+fn testing_privileges_for_deletion() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let allow_comments = true;
+
+        let scenario = setup_testing_scenario_with_video_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            allow_comments,
+        );
+
+        if let Some(parent_id) = scenario.video_post_id {
+            assert_err!(
+                Content::delete_post(
+                    Origin::signed(THIRD_MEMBER_ORIGIN),
+                    parent_id,
+                    scenario.member_video_id,
+                    ContentActor::Member(THIRD_MEMBER_ID),
+                ),
+                Error::<Test>::ActorNotAuthorized,
+            );
+
+            assert_err!(
+                Content::delete_post(
+                    Origin::signed(UNKNOWN_ORIGIN),
+                    parent_id,
+                    scenario.member_video_id,
+                    ContentActor::Member(UNKNOWN_MEMBER_ID),
+                ),
+                Error::<Test>::MemberAuthFailed,
+            );
+        }
     })
 }
 

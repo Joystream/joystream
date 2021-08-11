@@ -11,19 +11,24 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::hash::Hash;
+use core::{convert::TryFrom, hash::Hash, mem::size_of};
 
 use codec::Codec;
 use codec::{Decode, Encode};
 
 use frame_support::{
-    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
+    decl_event, decl_module, decl_storage,
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+    traits::Get,
+    Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -125,6 +130,12 @@ pub trait Trait:
 
     /// Max Number of moderators
     type MaxModerators: Get<u64>;
+
+    /// Module for post threasury account
+    type ModuleId: Get<ModuleId>;
+
+    /// Price per byte
+    type PricePerByte: Get<usize>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -530,6 +541,20 @@ pub enum ModSetOperation {
 impl Default for ModSetOperation {
     fn default() -> Self {
         ModSetOperation::AddModerator
+    }
+}
+
+/// A boolean in order to differenciate between post author and moderator / owner
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum CleanupActor {
+    ModeratorOrOwner,
+    PostAuthor,
+}
+
+impl Default for CleanupActor {
+    fn default() -> Self {
+        CleanupActor::ModeratorOrOwner
     }
 }
 
@@ -1435,6 +1460,22 @@ decl_module! {
                 post_type: params.post_type.clone(),
             };
 
+            // compute initial bloat bond
+            let initial_bloat_bond = u32::try_from(
+                    size_of::<Post<T>>()
+                    .saturating_add(params.text.len())
+                    .saturating_mul(T::PricePerByte::get()))
+                .map_err(
+                    |_| DispatchError::Other("initial bloat bond conversion error")
+            )?;
+
+            // transfer bloat bond to post treasury account
+            Self::transfer_to_post_treasury_account(
+                post_id,
+                <T as balances::Trait>::Balance::from(initial_bloat_bond),
+                sender
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1499,12 +1540,26 @@ decl_module! {
             video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
+
             // ensure post exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
 
-            // ensure actor is valid
+            // ensure post can be deleted by actor
             let channel_id = <VideoById<T>>::get(&video_id).in_channel;
-            Self::ensure_can_delete_post(origin, &actor, &channel_id)?;
+            let cleanup_actor = Self::ensure_can_delete_post(
+                origin,
+                &actor,
+                &channel_id,
+                &post.author
+            )?;
+
+            match cleanup_actor {
+                CleanupActor::ModeratorOrOwner => {
+                    let _ = Self::burn(post.bloat_bond)?;
+                },
+                CleanupActor::PostAuthor => {Self::pay_off(post_id, post.bloat_bond, sender)?;}
+            }
 
             //
             // == MUTATION_SAFE ==
@@ -1699,13 +1754,48 @@ impl<T: Trait> Module<T> {
         origin: T::Origin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: &T::ChannelId,
-    ) -> DispatchResult {
+        author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    ) -> Result<CleanupActor, DispatchError> {
+        if author == actor {
+            return Ok(CleanupActor::PostAuthor);
+        }
+
         if let ContentActor::Member(member_id) = actor {
             if <ModeratorSet<T>>::contains_key(channel_id, member_id) {
-                return Ok(());
+                return Ok(CleanupActor::ModeratorOrOwner);
             }
         }
-        ensure_actor_is_channel_owner::<T>(origin, actor, &<ChannelById<T>>::get(channel_id).owner)
+
+        match ensure_actor_is_channel_owner::<T>(
+            origin,
+            actor,
+            &<ChannelById<T>>::get(channel_id).owner,
+        ) {
+            Ok(()) => Ok(CleanupActor::ModeratorOrOwner),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    fn burn(_amount: <T as balances::Trait>::Balance) -> DispatchResult {
+        Self::not_implemented()?;
+        Ok(())
+    }
+    fn pay_off(
+        _post_id: T::PostId,
+        _amount: <T as balances::Trait>::Balance,
+        _account_id: T::AccountId,
+    ) -> DispatchResult {
+        Self::not_implemented()?;
+        Ok(())
+    }
+
+    fn transfer_to_post_treasury_account(
+        _post_id: T::PostId,
+        _amount: <T as balances::Trait>::Balance,
+        _account_id: T::AccountId,
+    ) -> DispatchResult {
+        Self::not_implemented()?;
+        Ok(())
     }
 }
 
