@@ -209,6 +209,8 @@ parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const MaxModerators: u64 = 5;
+    pub const CleanupMargin: u32 = 3;
+    pub const PricePerByte: usize = 2;
 }
 
 impl Trait for Test {
@@ -253,6 +255,12 @@ impl Trait for Test {
 
     /// moderators limit
     type MaxModerators = MaxModerators;
+
+    /// price per byte
+    type PricePerByte = PricePerByte;
+
+    /// cleanup margin
+    type CleanupMargin = CleanupMargin;
 }
 
 pub type System = frame_system::Module<Test>;

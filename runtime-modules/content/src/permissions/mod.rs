@@ -185,6 +185,49 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     }
 }
 
+pub fn ensure_actor_can_edit_text_post<T: Trait>(
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    origin: <T as frame_system::Trait>::Origin,
+    author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    match actor {
+            ContentActor::Curator(curator_group_id, curator_id) => {
+            let sender = ensure_signed(origin)?;
+
+            // Authorize curator, performing all checks to ensure curator can act
+            CuratorGroup::<T>::perform_curator_in_group_auth(
+                curator_id,
+                curator_group_id,
+                &sender,
+            )?;
+
+            // Ensure curator group is the channel owner.
+            ensure!(
+                *author == *actor,
+                Error::<T>::ActorNotAuthorized
+            );
+
+            Ok(())
+        }
+        ContentActor::Member(member_id) => {
+            let sender = ensure_signed(origin)?;
+
+            ensure_member_auth_success::<T>(member_id, &sender)?;
+
+            // Ensure the member is the channel owner.
+            ensure!(
+                *author == *actor,
+                Error::<T>::ActorNotAuthorized
+            );
+
+            Ok(())
+        }
+	_ => Err(Error::<T>::ActorNotAuthorized.into())
+        // TODO:
+        // ContentActor::Dao(_daoId) => ...,
+    }
+}
+
 // Enure actor can update channels and videos in the channel
 pub fn ensure_actor_is_channel_owner<T: Trait>(
     origin: T::Origin,

@@ -7,6 +7,7 @@ use frame_support::{assert_err, assert_ok};
 //use sp_runtime::traits::Hash;
 
 pub const UNKNOWN_VIDEO_ID: u64 = 7777;
+pub const UNKNOWN_POST_ID: u64 = 7777;
 pub const UNKNOWN_MEMBER_ID: u64 = 7777;
 pub const UNKNOWN_CURATOR_ID: u64 = 7777;
 pub const UNKNOWN_CURATOR_GROUP_ID: u64 = 7777;
@@ -376,7 +377,40 @@ fn setup_testing_scenario_with_video_post(
     ));
 
     scenario.video_post_id = Some(parent_id);
-    println!("scenario:\t{:?}", scenario);
+    scenario
+}
+
+fn setup_testing_scenario_with_comment_post(
+    member_account: <Test as frame_system::Trait>::AccountId,
+    member_id: MemberId,
+    curator_account: <Test as frame_system::Trait>::AccountId,
+    curator_id: CuratorId,
+    comment_author_account: <Test as frame_system::Trait>::AccountId,
+    comment_author_id: MemberId,
+) -> TestingScenario {
+    let mut scenario = setup_testing_scenario_with_video_post(
+        member_account,
+        member_id,
+        curator_account,
+        curator_id,
+        true,
+    );
+
+    let post_id = Content::next_post_id();
+
+    // create post
+    assert_ok!(Content::create_post(
+        Origin::signed(comment_author_account),
+        ContentActor::Member(comment_author_id),
+        PostCreationParameters {
+            video_reference: scenario.member_video_id.clone(),
+            parent_id: scenario.video_post_id,
+            text: b"abc".to_vec(),
+            post_type: PostType::Comment,
+        }
+    ));
+
+    scenario.comment_post_id = Some(post_id);
     scenario
 }
 
@@ -603,6 +637,100 @@ fn testing_privileges_for_deletion() {
                 Error::<Test>::MemberAuthFailed,
             );
         }
+    })
+}
+
+#[test]
+fn cannot_edit_invalid_post() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
+
+        let _scenario = setup_testing_scenario_with_comment_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+        );
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(comment_author_account),
+                UNKNOWN_VIDEO_ID,
+                UNKNOWN_POST_ID,
+                ContentActor::Member(comment_author_id),
+                b"efg".to_vec(),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn non_authorized_actor_cannot_edit() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
+
+        let scenario = setup_testing_scenario_with_comment_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+        );
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(UNKNOWN_ORIGIN),
+                scenario.member_video_id,
+                scenario.video_post_id.unwrap(),
+                ContentActor::Member(UNKNOWN_MEMBER_ID),
+                b"efg".to_vec(),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn verify_edit_post_effects() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
+
+        let scenario = setup_testing_scenario_with_comment_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+        );
+
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(UNKNOWN_ORIGIN),
+                scenario.member_video_id,
+                scenario.video_post_id.unwrap(),
+                ContentActor::Member(UNKNOWN_MEMBER_ID),
+                b"efg".to_vec(),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
     })
 }
 

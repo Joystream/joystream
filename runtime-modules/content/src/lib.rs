@@ -11,7 +11,12 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::{convert::TryFrom, hash::Hash, mem::size_of};
+use core::{
+    cmp::max,
+    convert::{TryFrom, TryInto},
+    hash::Hash,
+    mem::size_of,
+};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -28,7 +33,6 @@ use frame_system::ensure_signed;
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
-use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -131,11 +135,11 @@ pub trait Trait:
     /// Max Number of moderators
     type MaxModerators: Get<u64>;
 
-    /// Module for post threasury account
-    type ModuleId: Get<ModuleId>;
-
     /// Price per byte
     type PricePerByte: Get<usize>;
+
+    /// Margin
+    type CleanupMargin: Get<u32>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -1373,7 +1377,13 @@ decl_module! {
             // Update the video
             VideoById::<T>::insert(video_id, video);
 
-            Self::deposit_event(RawEvent::VideoCensorshipStatusUpdated(actor, video_id, is_censored, rationale));
+            Self::deposit_event(
+            RawEvent::VideoCensorshipStatusUpdated(
+            actor,
+            video_id,
+            is_censored,
+            rationale
+        ));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1448,7 +1458,30 @@ decl_module! {
                 ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?
             }
 
+            // compute initial bloat bond
+            let storage_price = u32::try_from(
+                    size_of::<Post<T>>()
+                    .saturating_add(params.text.len())
+                    .saturating_mul(T::PricePerByte::get()))
+                .map_err(
+                    |_| DispatchError::Other("initial bloat bond conversion error")
+            )?;
+
+            // get next post id
             let post_id = <NextPostId<T>>::get();
+
+            // TODO: this cost should be a function of the WeightInfo trait
+            let cleanup_cost = 0;
+
+            // initial bloat bond
+            let initial_bloat_bond = max(storage_price, cleanup_cost.saturating_add(T::CleanupMargin::get()));
+
+            // transfer bloat bond to post treasury account
+            Self::transfer_to_post_treasury_account(
+                post_id,
+                <T as balances::Trait>::Balance::from(initial_bloat_bond),
+                sender
+            )?;
 
             let post: Post<T> = Post_ {
                 author: actor,
@@ -1459,22 +1492,6 @@ decl_module! {
                 text: params.text.clone(),
                 post_type: params.post_type.clone(),
             };
-
-            // compute initial bloat bond
-            let initial_bloat_bond = u32::try_from(
-                    size_of::<Post<T>>()
-                    .saturating_add(params.text.len())
-                    .saturating_mul(T::PricePerByte::get()))
-                .map_err(
-                    |_| DispatchError::Other("initial bloat bond conversion error")
-            )?;
-
-            // transfer bloat bond to post treasury account
-            Self::transfer_to_post_treasury_account(
-                post_id,
-                <T as balances::Trait>::Balance::from(initial_bloat_bond),
-                sender
-            )?;
 
             //
             // == MUTATION SAFE ==
@@ -1500,36 +1517,71 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn edit_post(
-            _origin,
-            _post_id: T::PostId,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        pub fn edit_post_text(
+            origin,
+            video_id: T::VideoId,
+            post_id: T::PostId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            new_text: Vec<u8>,
         ) {
-
+            let sender = ensure_signed(origin.clone())?;
             // ensure channel exists
-            // let post = Self::ensure_post_exists(post_id)?;
-            // let post_author = Self::actor_to_channel_owner(&post.author)?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
-            // // ensure actor is valid
-            // ensure_actor_authorized_to_edit_post::<T>(origin.clone(), &actor, &post_author)?;
+            // ensure actor is post author
+            ensure_actor_can_edit_text_post::<T>(&actor, origin, &post.author)?;
 
-            // if let ContentType::Video(video_id) = post.content {
-            //     let video = <VideoById<T>>::get(video_id);
-            //     let channel_owner = <ChannelById<T>>::get(video.in_channel).owner;
-            //     ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
-            // }
+            let mut post = post;
+            post.text = new_text.clone(); // O(text.len())
 
-            // let mut post = post;
-            // post.content = new_content.clone();
+            // compute new bloat bond
+            let storage_price = u32::try_from(
+                size_of::<Post<T>>()
+                    .saturating_add(new_text.len())
+                    .saturating_mul(T::PricePerByte::get()))
+                .map_err(
+                    |_| DispatchError::Other("initial bloat bond conversion error")
+                )?;
 
-            // //
-            // // == MUTATION_SAFE ==
-            // //
+            let cleanup_cost = 0;
 
-            // <PostById::<T>>::insert(post_id, post);
+            let new_bloat_bond = max(
+                storage_price,
+                cleanup_cost.saturating_add(T::CleanupMargin::get()
+            ));
 
-            // // deposit event
-            // Self::deposit_event(RawEvent::PostModified(actor, new_content, post_id));
+            let old_bloat_bond: u32 =
+                post.bloat_bond.try_into()
+                .map_err(
+                    |_| DispatchError::Other("initial bloat bond conversion error")
+                )?;
+
+            let bloat_bond_diff: i64 = (old_bloat_bond - new_bloat_bond).into();
+
+            match bloat_bond_diff.signum() {
+                1 => Self::transfer_to_post_treasury_account(
+                    post_id,
+                    <T as balances::Trait>::Balance::from(
+                        bloat_bond_diff.unsigned_abs() as u32
+                    ),
+                    sender,
+                    )?,
+                _ => Self::pay_off(
+                        post_id,
+                        <T as balances::Trait>::Balance::from(bloat_bond_diff.unsigned_abs() as u32),
+                        sender,
+                     )?
+            }
+
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            <PostById::<T>>::insert(video_id, post_id, post);
+
+            // deposit event
+            Self::deposit_event(RawEvent::PostTextUpdated(actor, new_text, post_id, video_id));
 
         }
 
@@ -1601,8 +1653,8 @@ decl_module! {
             video_id: T::VideoId,
             reaction_id: T::ReactionId,
         ) {
-        let sender = ensure_signed(origin)?;
-        ensure_member_auth_success::<T>(&member_id, &sender)?;
+            let sender = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&member_id, &sender)?;
             Self::deposit_event(RawEvent::ReactionToVideo(member_id, video_id, reaction_id));
         }
 
@@ -1777,7 +1829,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn burn(_amount: <T as balances::Trait>::Balance) -> DispatchResult {
-        Self::not_implemented()?;
+        //        Self::not_implemented()?;
         Ok(())
     }
     fn pay_off(
@@ -1785,7 +1837,7 @@ impl<T: Trait> Module<T> {
         _amount: <T as balances::Trait>::Balance,
         _account_id: T::AccountId,
     ) -> DispatchResult {
-        Self::not_implemented()?;
+        //        Self::not_implemented()?;
         Ok(())
     }
 
@@ -1794,7 +1846,7 @@ impl<T: Trait> Module<T> {
         _amount: <T as balances::Trait>::Balance,
         _account_id: T::AccountId,
     ) -> DispatchResult {
-        Self::not_implemented()?;
+        //        Self::not_implemented()?;
         Ok(())
     }
 }
@@ -1966,7 +2018,7 @@ decl_event!(
 
         // Posts & Replies
         PostCreated(ContentActor, PostCreationParameters, PostId),
-        //        PostModified(ContentActor, ContentType, PostId),
+        PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
         PostDeleted(ContentActor, PostId),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
