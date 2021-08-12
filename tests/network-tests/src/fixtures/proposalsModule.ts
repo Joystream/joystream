@@ -753,3 +753,12 @@ export class VoteForProposalFixture extends BaseFixture {
     this._events = proposalOutcome[1]
   }
 }
+
+export class VoteForProposalAndExpectExecutionFixture extends VoteForProposalFixture {
+  public async execute(): Promise<void> {
+    await super.execute()
+    if (!this.proposalExecuted) {
+      this.error(new Error('Proposal Expected to be executed'))
+    }
+  }
+}
