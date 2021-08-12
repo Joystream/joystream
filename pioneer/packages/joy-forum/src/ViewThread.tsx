@@ -127,7 +127,7 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
 
 const POSTS_THREAD_MAP_CACHE_KEY = 'postsThreadMap';
 
-async function refreshPostsInThreadCache(nextPostId: PostId, api: ApiPromise) {
+async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
   const newId = (id: number | BN) => api.createType('PostId', id);
   const apiCalls: Promise<Post>[] = [];
   let idToFetch = newId(1);
@@ -135,7 +135,7 @@ async function refreshPostsInThreadCache(nextPostId: PostId, api: ApiPromise) {
   let postsToThread = getPostsIdsInThreadCache();
   const nextThreadId = await api.query.forum.nextThreadId() as ThreadId;
 
-  if (postsToThread.size >= Number(nextThreadId.toString())) { // invalid cache
+  if (postsToThread.size >= nextThreadId.toNumber()) { // invalid cache
     postsToThread = new Map<number, number[]>();
   }
 
