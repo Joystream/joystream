@@ -78,7 +78,7 @@ export class VideoMediaMetadataConnectionWhereArgs extends ConnectionPageInputOp
   where?: VideoMediaMetadataWhereInput;
 
   @Field(() => VideoMediaMetadataOrderByEnum, { nullable: true })
-  orderBy?: VideoMediaMetadataOrderByEnum;
+  orderBy?: [VideoMediaMetadataOrderByEnum];
 }
 
 @Resolver(VideoMediaMetadata)

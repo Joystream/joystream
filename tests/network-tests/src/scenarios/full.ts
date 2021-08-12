@@ -18,7 +18,7 @@ scenario(async ({ job }) => {
 
   const councilJob = job('council setup', councilSetup)
 
-  job('proposals', [
+  const proposalsJob = job('proposals', [
     electionParametersProposal,
     spendingProposal,
     textProposal,
@@ -29,9 +29,7 @@ scenario(async ({ job }) => {
     manageLeaderRole.content,
   ]).requires(councilJob)
 
-  const manageLeadsJob = job('lead-roles', [manageLeaderRole.storage, manageLeaderRole.content]).requires(councilJob)
-
-  const leadSetupJob = job('setup leads', [leaderSetup.storage, leaderSetup.content]).after(manageLeadsJob)
+  const leadSetupJob = job('setup leads', [leaderSetup.storage, leaderSetup.content]).after(proposalsJob)
 
   // Test bug only on one instance of working group is sufficient
   job('at least value bug', atLeastValueBug).requires(leadSetupJob)

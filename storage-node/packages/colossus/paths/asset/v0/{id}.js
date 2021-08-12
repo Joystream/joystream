@@ -38,19 +38,63 @@ function errorHandler(response, err, code) {
 const PROCESS_UPLOAD_TX_COSTS = 3
 
 module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
+  debug('created path handler')
+
   // Creat the IPFS HTTP Gateway proxy middleware
   const proxy = ipfsProxy.createProxy(ipfsHttpGatewayUrl)
 
-  const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
-    // make sure id exists and was Accepted only then proxy
-    const dataObject = await runtime.assets.getDataObject(req.params.id)
+  // Cache of known content mappings and local availability info
+  const ipfsContentIdMap = new Map()
 
-    if (dataObject && dataObject.liaison_judgement.type === 'Accepted') {
-      req.params.ipfs_content_id = dataObject.ipfs_content_id.toString()
-      proxy(req, res, next)
-    } else {
-      res.status(404).send({ message: 'Content not found' })
+  // Make sure id is valid and was 'Accepted', only then proxy if content is local
+  const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
+    const content_id = req.params.id
+
+    if (!ipfsContentIdMap.has(content_id)) {
+      const hash = runtime.assets.resolveContentIdToIpfsHash(req.params.id)
+
+      if (!hash) {
+        return res.status(404).send({ message: 'Unknown content' })
+      }
+
+      ipfsContentIdMap.set(content_id, {
+        local: false,
+        ipfs_content_id: hash,
+      })
     }
+
+    const { ipfs_content_id, local } = ipfsContentIdMap.get(content_id)
+
+    // Pass on the ipfs hash to the middleware
+    req.params.ipfs_content_id = ipfs_content_id
+
+    // Serve it if we know we have it, or it was recently synced successfully
+    if (local || storage.syncStatus(ipfs_content_id).synced) {
+      return proxy(req, res, next)
+    }
+
+    // Not yet processed by sync run, check if we have it locally
+    try {
+      const stat = await storage.ipfsStat(ipfs_content_id, 4000)
+
+      if (stat.local) {
+        ipfsContentIdMap.set(content_id, {
+          local: true,
+          ipfs_content_id,
+        })
+
+        // We know we have the full content locally, serve it
+        return proxy(req, res, next)
+      }
+    } catch (_err) {
+      // timeout trying to stat which most likely means we do not have it
+      // debug('Failed to stat', ipfs_content_id)
+    }
+
+    // Valid content but no certainty that the node has it locally yet.
+    // We a void serving it to prevent poor performance (ipfs node will have to retrieve it on demand
+    // which might be slow and wasteful if content is not cached locally)
+    res.status(404).send({ message: 'Content not available locally' })
   }
 
   const doc = {
@@ -183,6 +227,11 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           // they cannot be different unless we did something stupid!
           assert(hash === dataObject.ipfs_content_id.toString())
 
+          ipfsContentIdMap.set(id, {
+            ipfs_content_id: hash,
+            local: true,
+          })
+
           // Send ok response early, no need for client to wait for relationships to be created.
           debug('Sending OK response.')
           res.status(200).send({ message: 'Asset uploaded.' })
@@ -192,17 +241,6 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
             // Only if judegment is Pending
             if (dataObject.liaison_judgement.type === 'Pending') {
               await runtime.assets.acceptContent(roleAddress, providerId, id)
-            }
-
-            // Is there any real value in updating this state? Nobody uses it!
-            const { relationshipId } = await runtime.assets.getStorageRelationshipAndId(providerId, id)
-            if (!relationshipId) {
-              debug('creating storage relationship for newly uploaded content')
-              // Create storage relationship and flip it to ready.
-              const dosrId = await runtime.assets.createStorageRelationship(roleAddress, providerId, id)
-
-              debug('toggling storage relationship for newly uploaded content')
-              await runtime.assets.toggleStorageRelationshipReady(roleAddress, providerId, dosrId, true)
             }
           } catch (err) {
             debug(`${err.message}`)

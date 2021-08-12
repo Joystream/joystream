@@ -18,9 +18,6 @@ const debug = require('debug')('joystream:colossus')
 // Project root
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
-// Number of milliseconds to wait between synchronization runs.
-const SYNC_PERIOD_MS = 120000 // 2min
-
 // Parse CLI
 const FLAG_DEFINITIONS = {
   port: {
@@ -75,6 +72,10 @@ const FLAG_DEFINITIONS = {
     type: 'boolean',
     default: false,
   },
+  maxSync: {
+    type: 'number',
+    default: 200,
+  },
 }
 
 const cli = meow(
@@ -98,6 +99,7 @@ const cli = meow(
     --ipfs-host   hostname  ipfs host to use, default to 'localhost'. Default port 5001 is always used
     --anonymous             Runs server in anonymous mode. Replicates content without need to register
                             on-chain, and can serve content. Cannot be used to upload content.
+    --maxSync               The max number of items to sync concurrently. Defaults to 30.
   `,
   { flags: FLAG_DEFINITIONS }
 )
@@ -139,6 +141,10 @@ function getStorage(runtimeApi, { ipfsHost }) {
 
   const options = {
     resolve_content_id: async (contentId) => {
+      // Resolve accepted content from cache
+      const hash = runtimeApi.assets.resolveContentIdToIpfsHash(contentId)
+      if (hash) return hash
+
       // Resolve via API
       const obj = await runtimeApi.assets.getDataObject(contentId)
       if (!obj) {
@@ -269,6 +275,28 @@ const commands = {
       port = cli.flags.port
     }
 
+    // Get initlal data objects into cache
+    while (true) {
+      try {
+        debug('Fetching data objects')
+        await api.assets.fetchDataObjects()
+        break
+      } catch (err) {
+        debug('Failed fetching data objects', err)
+        await sleep(5000)
+      }
+    }
+
+    // Regularly update data objects
+    setInterval(async () => {
+      try {
+        debug('Fetching data objects')
+        await api.assets.fetchDataObjects()
+      } catch (err) {
+        debug('Failed updating data objects from chain', err)
+      }
+    }, 60000)
+
     // TODO: check valid url, and valid port number
     const store = getStorage(api, cli.flags)
 
@@ -276,7 +304,7 @@ const commands = {
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
 
     const { startSyncing } = require('../lib/sync')
-    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS, anonymous: cli.flags.anonymous }, store)
+    startSyncing(api, { anonymous: cli.flags.anonymous, maxSync: cli.flags.maxSync }, store)
 
     if (!cli.flags.anonymous) {
       announcePublicUrl(api, publicUrl)

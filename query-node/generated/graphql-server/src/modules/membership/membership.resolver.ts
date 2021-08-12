@@ -77,7 +77,7 @@ export class MembershipConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: MembershipWhereInput;
 
   @Field(() => MembershipOrderByEnum, { nullable: true })
-  orderBy?: MembershipOrderByEnum;
+  orderBy?: [MembershipOrderByEnum];
 }
 
 @Resolver(Membership)

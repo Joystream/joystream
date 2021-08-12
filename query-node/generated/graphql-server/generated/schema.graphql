@@ -136,8 +136,16 @@ input CuratorGroupWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  curatorIds_containsAll: [Int!]
+  curatorIds_containsNone: [Int!]
+  curatorIds_containsAny: [Int!]
   isActive_eq: Boolean
   isActive_in: [Boolean!]
+  channels_none: ChannelWhereInput
+  channels_some: ChannelWhereInput
+  channels_every: ChannelWhereInput
+  AND: [CuratorGroupWhereInput!]
+  OR: [CuratorGroupWhereInput!]
 }
 
 input CuratorGroupWhereUniqueInput {
@@ -194,6 +202,7 @@ input DataObjectCreateInput {
   createdInBlock: Float!
   typeId: Float!
   size: Float!
+  liaison: ID
   liaisonId: ID
   liaisonJudgement: LiaisonJudgement!
   ipfsContentId: String!
@@ -218,6 +227,8 @@ enum DataObjectOrderByInput {
   typeId_DESC
   size_ASC
   size_DESC
+  liaison_ASC
+  liaison_DESC
   liaisonId_ASC
   liaisonId_DESC
   liaisonJudgement_ASC
@@ -274,6 +285,8 @@ input DataObjectOwnerCouncilWhereInput {
   dummy_lt: Int
   dummy_lte: Int
   dummy_in: [Int!]
+  AND: [DataObjectOwnerCouncilWhereInput!]
+  OR: [DataObjectOwnerCouncilWhereInput!]
 }
 
 input DataObjectOwnerCouncilWhereUniqueInput {
@@ -324,6 +337,8 @@ input DataObjectOwnerDaoWhereInput {
   dao_lt: Int
   dao_lte: Int
   dao_in: [Int!]
+  AND: [DataObjectOwnerDaoWhereInput!]
+  OR: [DataObjectOwnerDaoWhereInput!]
 }
 
 input DataObjectOwnerDaoWhereUniqueInput {
@@ -385,6 +400,8 @@ input DataObjectOwnerChannelWhereInput {
   dummy_lt: Int
   dummy_lte: Int
   dummy_in: [Int!]
+  AND: [DataObjectOwnerChannelWhereInput!]
+  OR: [DataObjectOwnerChannelWhereInput!]
 }
 
 input DataObjectOwnerChannelWhereUniqueInput {
@@ -446,6 +463,8 @@ input DataObjectOwnerMemberWhereInput {
   dummy_lt: Int
   dummy_lte: Int
   dummy_in: [Int!]
+  AND: [DataObjectOwnerMemberWhereInput!]
+  OR: [DataObjectOwnerMemberWhereInput!]
 }
 
 input DataObjectOwnerMemberWhereUniqueInput {
@@ -496,6 +515,8 @@ input DataObjectOwnerWorkingGroupWhereInput {
   workingGroup_lt: Int
   workingGroup_lte: Int
   workingGroup_in: [Int!]
+  AND: [DataObjectOwnerWorkingGroupWhereInput!]
+  OR: [DataObjectOwnerWorkingGroupWhereInput!]
 }
 
 input DataObjectOwnerWorkingGroupWhereUniqueInput {
@@ -507,6 +528,7 @@ input DataObjectUpdateInput {
   createdInBlock: Float
   typeId: Float
   size: Float
+  liaison: ID
   liaisonId: ID
   liaisonJudgement: LiaisonJudgement
   ipfsContentId: String
@@ -571,6 +593,21 @@ input DataObjectWhereInput {
   joystreamContentId_startsWith: String
   joystreamContentId_endsWith: String
   joystreamContentId_in: [String!]
+  liaison: WorkerWhereInput
+  channelcoverPhotoDataObject_none: ChannelWhereInput
+  channelcoverPhotoDataObject_some: ChannelWhereInput
+  channelcoverPhotoDataObject_every: ChannelWhereInput
+  channelavatarPhotoDataObject_none: ChannelWhereInput
+  channelavatarPhotoDataObject_some: ChannelWhereInput
+  channelavatarPhotoDataObject_every: ChannelWhereInput
+  videothumbnailPhotoDataObject_none: VideoMediaMetadataWhereInput
+  videothumbnailPhotoDataObject_some: VideoMediaMetadataWhereInput
+  videothumbnailPhotoDataObject_every: VideoMediaMetadataWhereInput
+  videomediaDataObject_none: VideoMediaMetadataWhereInput
+  videomediaDataObject_some: VideoMediaMetadataWhereInput
+  videomediaDataObject_every: VideoMediaMetadataWhereInput
+  AND: [DataObjectWhereInput!]
+  OR: [DataObjectWhereInput!]
 }
 
 input DataObjectWhereUniqueInput {
@@ -583,82 +620,6 @@ The javascript `Date` as string. Type represents date and time as the ISO Date s
 scalar DateTime
 
 interface DeleteResponse {
-  id: ID!
-}
-
-type FeaturedVideo implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: String!
-  updatedAt: DateTime
-  updatedById: String
-  deletedAt: DateTime
-  deletedById: String
-  version: Int!
-  video: Video!
-  videoId: String!
-}
-
-type FeaturedVideoConnection {
-  totalCount: Int!
-  edges: [FeaturedVideoEdge!]!
-  pageInfo: PageInfo!
-}
-
-input FeaturedVideoCreateInput {
-  videoId: ID!
-}
-
-type FeaturedVideoEdge {
-  node: FeaturedVideo!
-  cursor: String!
-}
-
-enum FeaturedVideoOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  videoId_ASC
-  videoId_DESC
-}
-
-input FeaturedVideoUpdateInput {
-  videoId: ID
-}
-
-input FeaturedVideoWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  videoId_eq: ID
-  videoId_in: [ID!]
-}
-
-input FeaturedVideoWhereUniqueInput {
   id: ID!
 }
 
@@ -810,6 +771,11 @@ input ChannelCategoryWhereInput {
   createdInBlock_lt: Int
   createdInBlock_lte: Int
   createdInBlock_in: [Int!]
+  channels_none: ChannelWhereInput
+  channels_some: ChannelWhereInput
+  channels_every: ChannelWhereInput
+  AND: [ChannelCategoryWhereInput!]
+  OR: [ChannelCategoryWhereInput!]
 }
 
 input ChannelCategoryWhereUniqueInput {
@@ -823,20 +789,26 @@ type ChannelConnection {
 }
 
 input ChannelCreateInput {
+  ownerMember: ID
   ownerMemberId: ID
+  ownerCuratorGroup: ID
   ownerCuratorGroupId: ID
+  category: ID
   categoryId: ID
   rewardAccount: String
   title: String
   description: String
+  coverPhotoDataObject: ID
   coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]!
   coverPhotoAvailability: AssetAvailability!
+  avatarPhotoDataObject: ID
   avatarPhotoDataObjectId: ID
   avatarPhotoUrls: [String!]!
   avatarPhotoAvailability: AssetAvailability!
   isPublic: Boolean
   isCensored: Boolean!
+  language: ID
   languageId: ID
   createdInBlock: Float!
 }
@@ -853,10 +825,16 @@ enum ChannelOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  ownerMember_ASC
+  ownerMember_DESC
   ownerMemberId_ASC
   ownerMemberId_DESC
+  ownerCuratorGroup_ASC
+  ownerCuratorGroup_DESC
   ownerCuratorGroupId_ASC
   ownerCuratorGroupId_DESC
+  category_ASC
+  category_DESC
   categoryId_ASC
   categoryId_DESC
   rewardAccount_ASC
@@ -865,10 +843,14 @@ enum ChannelOrderByInput {
   title_DESC
   description_ASC
   description_DESC
+  coverPhotoDataObject_ASC
+  coverPhotoDataObject_DESC
   coverPhotoDataObjectId_ASC
   coverPhotoDataObjectId_DESC
   coverPhotoAvailability_ASC
   coverPhotoAvailability_DESC
+  avatarPhotoDataObject_ASC
+  avatarPhotoDataObject_DESC
   avatarPhotoDataObjectId_ASC
   avatarPhotoDataObjectId_DESC
   avatarPhotoAvailability_ASC
@@ -877,6 +859,8 @@ enum ChannelOrderByInput {
   isPublic_DESC
   isCensored_ASC
   isCensored_DESC
+  language_ASC
+  language_DESC
   languageId_ASC
   languageId_DESC
   createdInBlock_ASC
@@ -884,20 +868,26 @@ enum ChannelOrderByInput {
 }
 
 input ChannelUpdateInput {
+  ownerMember: ID
   ownerMemberId: ID
+  ownerCuratorGroup: ID
   ownerCuratorGroupId: ID
+  category: ID
   categoryId: ID
   rewardAccount: String
   title: String
   description: String
+  coverPhotoDataObject: ID
   coverPhotoDataObjectId: ID
   coverPhotoUrls: [String!]
   coverPhotoAvailability: AssetAvailability
+  avatarPhotoDataObject: ID
   avatarPhotoDataObjectId: ID
   avatarPhotoUrls: [String!]
   avatarPhotoAvailability: AssetAvailability
   isPublic: Boolean
   isCensored: Boolean
+  language: ID
   languageId: ID
   createdInBlock: Float
 }
@@ -950,10 +940,16 @@ input ChannelWhereInput {
   description_in: [String!]
   coverPhotoDataObjectId_eq: ID
   coverPhotoDataObjectId_in: [ID!]
+  coverPhotoUrls_containsAll: [String!]
+  coverPhotoUrls_containsNone: [String!]
+  coverPhotoUrls_containsAny: [String!]
   coverPhotoAvailability_eq: AssetAvailability
   coverPhotoAvailability_in: [AssetAvailability!]
   avatarPhotoDataObjectId_eq: ID
   avatarPhotoDataObjectId_in: [ID!]
+  avatarPhotoUrls_containsAll: [String!]
+  avatarPhotoUrls_containsNone: [String!]
+  avatarPhotoUrls_containsAny: [String!]
   avatarPhotoAvailability_eq: AssetAvailability
   avatarPhotoAvailability_in: [AssetAvailability!]
   isPublic_eq: Boolean
@@ -968,6 +964,17 @@ input ChannelWhereInput {
   createdInBlock_lt: Int
   createdInBlock_lte: Int
   createdInBlock_in: [Int!]
+  ownerMember: MembershipWhereInput
+  ownerCuratorGroup: CuratorGroupWhereInput
+  category: ChannelCategoryWhereInput
+  coverPhotoDataObject: DataObjectWhereInput
+  avatarPhotoDataObject: DataObjectWhereInput
+  language: LanguageWhereInput
+  videos_none: VideoWhereInput
+  videos_some: VideoWhereInput
+  videos_every: VideoWhereInput
+  AND: [ChannelWhereInput!]
+  OR: [ChannelWhereInput!]
 }
 
 input ChannelWhereUniqueInput {
@@ -1066,6 +1073,14 @@ input LanguageWhereInput {
   createdInBlock_lt: Int
   createdInBlock_lte: Int
   createdInBlock_in: [Int!]
+  channellanguage_none: ChannelWhereInput
+  channellanguage_some: ChannelWhereInput
+  channellanguage_every: ChannelWhereInput
+  videolanguage_none: VideoWhereInput
+  videolanguage_some: VideoWhereInput
+  videolanguage_every: VideoWhereInput
+  AND: [LanguageWhereInput!]
+  OR: [LanguageWhereInput!]
 }
 
 input LanguageWhereUniqueInput {
@@ -1177,6 +1192,11 @@ input LicenseWhereInput {
   customText_startsWith: String
   customText_endsWith: String
   customText_in: [String!]
+  videolanguage_none: VideoWhereInput
+  videolanguage_some: VideoWhereInput
+  videolanguage_every: VideoWhereInput
+  AND: [LicenseWhereInput!]
+  OR: [LicenseWhereInput!]
 }
 
 input LicenseWhereUniqueInput {
@@ -1357,11 +1377,99 @@ input MembershipWhereInput {
   subscription_lt: Int
   subscription_lte: Int
   subscription_in: [Int!]
+  channels_none: ChannelWhereInput
+  channels_some: ChannelWhereInput
+  channels_every: ChannelWhereInput
+  AND: [MembershipWhereInput!]
+  OR: [MembershipWhereInput!]
 }
 
 input MembershipWhereUniqueInput {
   id: ID
   handle: String
+}
+
+type NextEntityId implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: String!
+  updatedAt: DateTime
+  updatedById: String
+  deletedAt: DateTime
+  deletedById: String
+  version: Int!
+
+  """Next deterministic id for entities without custom id"""
+  nextId: Float!
+}
+
+type NextEntityIdConnection {
+  totalCount: Int!
+  edges: [NextEntityIdEdge!]!
+  pageInfo: PageInfo!
+}
+
+input NextEntityIdCreateInput {
+  nextId: Float!
+}
+
+type NextEntityIdEdge {
+  node: NextEntityId!
+  cursor: String!
+}
+
+enum NextEntityIdOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  nextId_ASC
+  nextId_DESC
+}
+
+input NextEntityIdUpdateInput {
+  nextId: Float
+}
+
+input NextEntityIdWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  nextId_eq: Float
+  nextId_gt: Float
+  nextId_gte: Float
+  nextId_lt: Float
+  nextId_lte: Float
+  nextId_in: [Float!]
+  AND: [NextEntityIdWhereInput!]
+  OR: [NextEntityIdWhereInput!]
+}
+
+input NextEntityIdWhereUniqueInput {
+  id: ID!
 }
 
 type PageInfo {
@@ -1379,49 +1487,49 @@ type ProcessorState {
 }
 
 type Query {
-  curatorGroups(offset: Int, limit: Int = 50, where: CuratorGroupWhereInput, orderBy: CuratorGroupOrderByInput): [CuratorGroup!]!
+  curatorGroups(offset: Int, limit: Int = 50, where: CuratorGroupWhereInput, orderBy: [CuratorGroupOrderByInput!]): [CuratorGroup!]!
   curatorGroupByUniqueInput(where: CuratorGroupWhereUniqueInput!): CuratorGroup
-  curatorGroupsConnection(first: Int, after: String, last: Int, before: String, where: CuratorGroupWhereInput, orderBy: CuratorGroupOrderByInput): CuratorGroupConnection!
-  dataObjects(offset: Int, limit: Int = 50, where: DataObjectWhereInput, orderBy: DataObjectOrderByInput): [DataObject!]!
+  curatorGroupsConnection(first: Int, after: String, last: Int, before: String, where: CuratorGroupWhereInput, orderBy: [CuratorGroupOrderByInput!]): CuratorGroupConnection!
+  dataObjects(offset: Int, limit: Int = 50, where: DataObjectWhereInput, orderBy: [DataObjectOrderByInput!]): [DataObject!]!
   dataObjectByUniqueInput(where: DataObjectWhereUniqueInput!): DataObject
-  dataObjectsConnection(first: Int, after: String, last: Int, before: String, where: DataObjectWhereInput, orderBy: DataObjectOrderByInput): DataObjectConnection!
-  featuredVideos(offset: Int, limit: Int = 50, where: FeaturedVideoWhereInput, orderBy: FeaturedVideoOrderByInput): [FeaturedVideo!]!
-  featuredVideoByUniqueInput(where: FeaturedVideoWhereUniqueInput!): FeaturedVideo
-  featuredVideosConnection(first: Int, after: String, last: Int, before: String, where: FeaturedVideoWhereInput, orderBy: FeaturedVideoOrderByInput): FeaturedVideoConnection!
-  channelCategories(offset: Int, limit: Int = 50, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): [ChannelCategory!]!
+  dataObjectsConnection(first: Int, after: String, last: Int, before: String, where: DataObjectWhereInput, orderBy: [DataObjectOrderByInput!]): DataObjectConnection!
+  channelCategories(offset: Int, limit: Int = 50, where: ChannelCategoryWhereInput, orderBy: [ChannelCategoryOrderByInput!]): [ChannelCategory!]!
   channelCategoryByUniqueInput(where: ChannelCategoryWhereUniqueInput!): ChannelCategory
-  channelCategoriesConnection(first: Int, after: String, last: Int, before: String, where: ChannelCategoryWhereInput, orderBy: ChannelCategoryOrderByInput): ChannelCategoryConnection!
-  channels(offset: Int, limit: Int = 50, where: ChannelWhereInput, orderBy: ChannelOrderByInput): [Channel!]!
+  channelCategoriesConnection(first: Int, after: String, last: Int, before: String, where: ChannelCategoryWhereInput, orderBy: [ChannelCategoryOrderByInput!]): ChannelCategoryConnection!
+  channels(offset: Int, limit: Int = 50, where: ChannelWhereInput, orderBy: [ChannelOrderByInput!]): [Channel!]!
   channelByUniqueInput(where: ChannelWhereUniqueInput!): Channel
-  channelsConnection(first: Int, after: String, last: Int, before: String, where: ChannelWhereInput, orderBy: ChannelOrderByInput): ChannelConnection!
-  languages(offset: Int, limit: Int = 50, where: LanguageWhereInput, orderBy: LanguageOrderByInput): [Language!]!
+  channelsConnection(first: Int, after: String, last: Int, before: String, where: ChannelWhereInput, orderBy: [ChannelOrderByInput!]): ChannelConnection!
+  languages(offset: Int, limit: Int = 50, where: LanguageWhereInput, orderBy: [LanguageOrderByInput!]): [Language!]!
   languageByUniqueInput(where: LanguageWhereUniqueInput!): Language
-  languagesConnection(first: Int, after: String, last: Int, before: String, where: LanguageWhereInput, orderBy: LanguageOrderByInput): LanguageConnection!
-  licenses(offset: Int, limit: Int = 50, where: LicenseWhereInput, orderBy: LicenseOrderByInput): [License!]!
+  languagesConnection(first: Int, after: String, last: Int, before: String, where: LanguageWhereInput, orderBy: [LanguageOrderByInput!]): LanguageConnection!
+  licenses(offset: Int, limit: Int = 50, where: LicenseWhereInput, orderBy: [LicenseOrderByInput!]): [License!]!
   licenseByUniqueInput(where: LicenseWhereUniqueInput!): License
-  licensesConnection(first: Int, after: String, last: Int, before: String, where: LicenseWhereInput, orderBy: LicenseOrderByInput): LicenseConnection!
-  memberships(offset: Int, limit: Int = 50, where: MembershipWhereInput, orderBy: MembershipOrderByInput): [Membership!]!
+  licensesConnection(first: Int, after: String, last: Int, before: String, where: LicenseWhereInput, orderBy: [LicenseOrderByInput!]): LicenseConnection!
+  memberships(offset: Int, limit: Int = 50, where: MembershipWhereInput, orderBy: [MembershipOrderByInput!]): [Membership!]!
   membershipByUniqueInput(where: MembershipWhereUniqueInput!): Membership
-  membershipsConnection(first: Int, after: String, last: Int, before: String, where: MembershipWhereInput, orderBy: MembershipOrderByInput): MembershipConnection!
+  membershipsConnection(first: Int, after: String, last: Int, before: String, where: MembershipWhereInput, orderBy: [MembershipOrderByInput!]): MembershipConnection!
+  nextEntityIds(offset: Int, limit: Int = 50, where: NextEntityIdWhereInput, orderBy: [NextEntityIdOrderByInput!]): [NextEntityId!]!
+  nextEntityIdByUniqueInput(where: NextEntityIdWhereUniqueInput!): NextEntityId
+  nextEntityIdsConnection(first: Int, after: String, last: Int, before: String, where: NextEntityIdWhereInput, orderBy: [NextEntityIdOrderByInput!]): NextEntityIdConnection!
   channelCategoriesByName(whereChannelCategory: ChannelCategoryWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [ChannelCategoriesByNameFTSOutput!]!
   membersByHandle(whereMembership: MembershipWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [MembersByHandleFTSOutput!]!
   search(whereVideo: VideoWhereInput, whereChannel: ChannelWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [SearchFTSOutput!]!
   videoCategoriesByName(whereVideoCategory: VideoCategoryWhereInput, skip: Int = 0, limit: Int = 5, text: String!): [VideoCategoriesByNameFTSOutput!]!
-  videoCategories(offset: Int, limit: Int = 50, where: VideoCategoryWhereInput, orderBy: VideoCategoryOrderByInput): [VideoCategory!]!
+  videoCategories(offset: Int, limit: Int = 50, where: VideoCategoryWhereInput, orderBy: [VideoCategoryOrderByInput!]): [VideoCategory!]!
   videoCategoryByUniqueInput(where: VideoCategoryWhereUniqueInput!): VideoCategory
-  videoCategoriesConnection(first: Int, after: String, last: Int, before: String, where: VideoCategoryWhereInput, orderBy: VideoCategoryOrderByInput): VideoCategoryConnection!
-  videoMediaEncodings(offset: Int, limit: Int = 50, where: VideoMediaEncodingWhereInput, orderBy: VideoMediaEncodingOrderByInput): [VideoMediaEncoding!]!
+  videoCategoriesConnection(first: Int, after: String, last: Int, before: String, where: VideoCategoryWhereInput, orderBy: [VideoCategoryOrderByInput!]): VideoCategoryConnection!
+  videoMediaEncodings(offset: Int, limit: Int = 50, where: VideoMediaEncodingWhereInput, orderBy: [VideoMediaEncodingOrderByInput!]): [VideoMediaEncoding!]!
   videoMediaEncodingByUniqueInput(where: VideoMediaEncodingWhereUniqueInput!): VideoMediaEncoding
-  videoMediaEncodingsConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaEncodingWhereInput, orderBy: VideoMediaEncodingOrderByInput): VideoMediaEncodingConnection!
-  videoMediaMetadata(offset: Int, limit: Int = 50, where: VideoMediaMetadataWhereInput, orderBy: VideoMediaMetadataOrderByInput): [VideoMediaMetadata!]!
+  videoMediaEncodingsConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaEncodingWhereInput, orderBy: [VideoMediaEncodingOrderByInput!]): VideoMediaEncodingConnection!
+  videoMediaMetadata(offset: Int, limit: Int = 50, where: VideoMediaMetadataWhereInput, orderBy: [VideoMediaMetadataOrderByInput!]): [VideoMediaMetadata!]!
   videoMediaMetadataByUniqueInput(where: VideoMediaMetadataWhereUniqueInput!): VideoMediaMetadata
-  videoMediaMetadataConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaMetadataWhereInput, orderBy: VideoMediaMetadataOrderByInput): VideoMediaMetadataConnection!
-  videos(offset: Int, limit: Int = 50, where: VideoWhereInput, orderBy: VideoOrderByInput): [Video!]!
+  videoMediaMetadataConnection(first: Int, after: String, last: Int, before: String, where: VideoMediaMetadataWhereInput, orderBy: [VideoMediaMetadataOrderByInput!]): VideoMediaMetadataConnection!
+  videos(offset: Int, limit: Int = 50, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): [Video!]!
   videoByUniqueInput(where: VideoWhereUniqueInput!): Video
-  videosConnection(first: Int, after: String, last: Int, before: String, where: VideoWhereInput, orderBy: VideoOrderByInput): VideoConnection!
-  workers(offset: Int, limit: Int = 50, where: WorkerWhereInput, orderBy: WorkerOrderByInput): [Worker!]!
+  videosConnection(first: Int, after: String, last: Int, before: String, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): VideoConnection!
+  workers(offset: Int, limit: Int = 50, where: WorkerWhereInput, orderBy: [WorkerOrderByInput!]): [Worker!]!
   workerByUniqueInput(where: WorkerWhereUniqueInput!): Worker
-  workersConnection(first: Int, after: String, last: Int, before: String, where: WorkerWhereInput, orderBy: WorkerOrderByInput): WorkerConnection!
+  workersConnection(first: Int, after: String, last: Int, before: String, where: WorkerWhereInput, orderBy: [WorkerOrderByInput!]): WorkerConnection!
 }
 
 type SearchFTSOutput {
@@ -1506,7 +1614,6 @@ type Video implements BaseGraphQLObject {
 
   """Is video featured or not"""
   isFeatured: Boolean!
-  featured: FeaturedVideo
 }
 
 type VideoCategoriesByNameFTSOutput {
@@ -1604,6 +1711,11 @@ input VideoCategoryWhereInput {
   createdInBlock_lt: Int
   createdInBlock_lte: Int
   createdInBlock_in: [Int!]
+  videos_none: VideoWhereInput
+  videos_some: VideoWhereInput
+  videos_every: VideoWhereInput
+  AND: [VideoCategoryWhereInput!]
+  OR: [VideoCategoryWhereInput!]
 }
 
 input VideoCategoryWhereUniqueInput {
@@ -1617,24 +1729,31 @@ type VideoConnection {
 }
 
 input VideoCreateInput {
+  channel: ID
   channelId: ID
+  category: ID
   categoryId: ID
   title: String
   description: String
   duration: Float
+  thumbnailPhotoDataObject: ID
   thumbnailPhotoDataObjectId: ID
   thumbnailPhotoUrls: [String!]!
   thumbnailPhotoAvailability: AssetAvailability!
+  language: ID
   languageId: ID
   hasMarketing: Boolean
   publishedBeforeJoystream: DateTime
   isPublic: Boolean
   isCensored: Boolean!
   isExplicit: Boolean
+  license: ID
   licenseId: ID
+  mediaDataObject: ID
   mediaDataObjectId: ID
   mediaUrls: [String!]!
   mediaAvailability: AssetAvailability!
+  mediaMetadata: ID
   mediaMetadataId: ID
   createdInBlock: Float!
   isFeatured: Boolean!
@@ -1744,6 +1863,11 @@ input VideoMediaEncodingWhereInput {
   mimeMediaType_startsWith: String
   mimeMediaType_endsWith: String
   mimeMediaType_in: [String!]
+  videomediametadataencoding_none: VideoMediaMetadataWhereInput
+  videomediametadataencoding_some: VideoMediaMetadataWhereInput
+  videomediametadataencoding_every: VideoMediaMetadataWhereInput
+  AND: [VideoMediaEncodingWhereInput!]
+  OR: [VideoMediaEncodingWhereInput!]
 }
 
 input VideoMediaEncodingWhereUniqueInput {
@@ -1781,6 +1905,7 @@ type VideoMediaMetadataConnection {
 }
 
 input VideoMediaMetadataCreateInput {
+  encoding: ID
   encodingId: ID
   pixelWidth: Float
   pixelHeight: Float
@@ -1800,6 +1925,8 @@ enum VideoMediaMetadataOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  encoding_ASC
+  encoding_DESC
   encodingId_ASC
   encodingId_DESC
   pixelWidth_ASC
@@ -1813,6 +1940,7 @@ enum VideoMediaMetadataOrderByInput {
 }
 
 input VideoMediaMetadataUpdateInput {
+  encoding: ID
   encodingId: ID
   pixelWidth: Float
   pixelHeight: Float
@@ -1871,6 +1999,10 @@ input VideoMediaMetadataWhereInput {
   createdInBlock_lt: Int
   createdInBlock_lte: Int
   createdInBlock_in: [Int!]
+  encoding: VideoMediaEncodingWhereInput
+  video: VideoWhereInput
+  AND: [VideoMediaMetadataWhereInput!]
+  OR: [VideoMediaMetadataWhereInput!]
 }
 
 input VideoMediaMetadataWhereUniqueInput {
@@ -1884,8 +2016,12 @@ enum VideoOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  channel_ASC
+  channel_DESC
   channelId_ASC
   channelId_DESC
+  category_ASC
+  category_DESC
   categoryId_ASC
   categoryId_DESC
   title_ASC
@@ -1894,10 +2030,14 @@ enum VideoOrderByInput {
   description_DESC
   duration_ASC
   duration_DESC
+  thumbnailPhotoDataObject_ASC
+  thumbnailPhotoDataObject_DESC
   thumbnailPhotoDataObjectId_ASC
   thumbnailPhotoDataObjectId_DESC
   thumbnailPhotoAvailability_ASC
   thumbnailPhotoAvailability_DESC
+  language_ASC
+  language_DESC
   languageId_ASC
   languageId_DESC
   hasMarketing_ASC
@@ -1910,12 +2050,18 @@ enum VideoOrderByInput {
   isCensored_DESC
   isExplicit_ASC
   isExplicit_DESC
+  license_ASC
+  license_DESC
   licenseId_ASC
   licenseId_DESC
+  mediaDataObject_ASC
+  mediaDataObject_DESC
   mediaDataObjectId_ASC
   mediaDataObjectId_DESC
   mediaAvailability_ASC
   mediaAvailability_DESC
+  mediaMetadata_ASC
+  mediaMetadata_DESC
   mediaMetadataId_ASC
   mediaMetadataId_DESC
   createdInBlock_ASC
@@ -1925,24 +2071,31 @@ enum VideoOrderByInput {
 }
 
 input VideoUpdateInput {
+  channel: ID
   channelId: ID
+  category: ID
   categoryId: ID
   title: String
   description: String
   duration: Float
+  thumbnailPhotoDataObject: ID
   thumbnailPhotoDataObjectId: ID
   thumbnailPhotoUrls: [String!]
   thumbnailPhotoAvailability: AssetAvailability
+  language: ID
   languageId: ID
   hasMarketing: Boolean
   publishedBeforeJoystream: DateTime
   isPublic: Boolean
   isCensored: Boolean
   isExplicit: Boolean
+  license: ID
   licenseId: ID
+  mediaDataObject: ID
   mediaDataObjectId: ID
   mediaUrls: [String!]
   mediaAvailability: AssetAvailability
+  mediaMetadata: ID
   mediaMetadataId: ID
   createdInBlock: Float
   isFeatured: Boolean
@@ -1995,6 +2148,9 @@ input VideoWhereInput {
   duration_in: [Int!]
   thumbnailPhotoDataObjectId_eq: ID
   thumbnailPhotoDataObjectId_in: [ID!]
+  thumbnailPhotoUrls_containsAll: [String!]
+  thumbnailPhotoUrls_containsNone: [String!]
+  thumbnailPhotoUrls_containsAny: [String!]
   thumbnailPhotoAvailability_eq: AssetAvailability
   thumbnailPhotoAvailability_in: [AssetAvailability!]
   languageId_eq: ID
@@ -2016,6 +2172,9 @@ input VideoWhereInput {
   licenseId_in: [ID!]
   mediaDataObjectId_eq: ID
   mediaDataObjectId_in: [ID!]
+  mediaUrls_containsAll: [String!]
+  mediaUrls_containsNone: [String!]
+  mediaUrls_containsAny: [String!]
   mediaAvailability_eq: AssetAvailability
   mediaAvailability_in: [AssetAvailability!]
   mediaMetadataId_eq: ID
@@ -2028,6 +2187,15 @@ input VideoWhereInput {
   createdInBlock_in: [Int!]
   isFeatured_eq: Boolean
   isFeatured_in: [Boolean!]
+  channel: ChannelWhereInput
+  category: VideoCategoryWhereInput
+  thumbnailPhotoDataObject: DataObjectWhereInput
+  language: LanguageWhereInput
+  license: LicenseWhereInput
+  mediaDataObject: DataObjectWhereInput
+  mediaMetadata: VideoMediaMetadataWhereInput
+  AND: [VideoWhereInput!]
+  OR: [VideoWhereInput!]
 }
 
 input VideoWhereUniqueInput {
@@ -2144,6 +2312,11 @@ input WorkerWhereInput {
   metadata_startsWith: String
   metadata_endsWith: String
   metadata_in: [String!]
+  dataObjects_none: DataObjectWhereInput
+  dataObjects_some: DataObjectWhereInput
+  dataObjects_every: DataObjectWhereInput
+  AND: [WorkerWhereInput!]
+  OR: [WorkerWhereInput!]
 }
 
 input WorkerWhereUniqueInput {

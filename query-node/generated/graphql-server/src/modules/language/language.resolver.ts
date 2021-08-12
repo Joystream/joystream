@@ -78,7 +78,7 @@ export class LanguageConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: LanguageWhereInput;
 
   @Field(() => LanguageOrderByEnum, { nullable: true })
-  orderBy?: LanguageOrderByEnum;
+  orderBy?: [LanguageOrderByEnum];
 }
 
 @Resolver(Language)

@@ -22,16 +22,33 @@ export { AssetAvailability };
 
 @Model({ api: {} })
 export class Channel extends BaseModel {
-  @ManyToOne(() => Membership, (param: Membership) => param.channels, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => Membership, (param: Membership) => param.channels, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'Membership',
+    propertyName: 'ownerMember',
+  })
   ownerMember?: Membership;
 
-  @ManyToOne(() => CuratorGroup, (param: CuratorGroup) => param.channels, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"]})
+  @ManyToOne(() => CuratorGroup, (param: CuratorGroup) => param.channels, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'CuratorGroup',
+    propertyName: 'ownerCuratorGroup',
+  })
   ownerCuratorGroup?: CuratorGroup;
 
   @ManyToOne(() => ChannelCategory, (param: ChannelCategory) => param.channels, {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'ChannelCategory',
+    propertyName: 'category',
   })
   category?: ChannelCategory;
 
@@ -57,6 +74,9 @@ export class Channel extends BaseModel {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'DataObject',
+    propertyName: 'coverPhotoDataObject',
   })
   coverPhotoDataObject?: DataObject;
 
@@ -75,6 +95,9 @@ export class Channel extends BaseModel {
     skipGraphQLField: true,
     nullable: true,
     cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'DataObject',
+    propertyName: 'avatarPhotoDataObject',
   })
   avatarPhotoDataObject?: DataObject;
 
@@ -100,10 +123,22 @@ export class Channel extends BaseModel {
   })
   isCensored!: boolean;
 
-  @ManyToOne(() => Language, (param: Language) => param.channellanguage, { skipGraphQLField: true, nullable: true, cascade: ["insert", "update"] })
+  @ManyToOne(() => Language, (param: Language) => param.channellanguage, {
+    skipGraphQLField: true,
+    nullable: true,
+    cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'Language',
+    propertyName: 'language',
+  })
   language?: Language;
 
-  @OneToMany(() => Video, (param: Video) => param.channel, { cascade: ["insert", "update"] })
+  @OneToMany(() => Video, (param: Video) => param.channel, {
+    cascade: ["insert", "update"],
+    modelName: 'Channel',
+    relModelName: 'Video',
+    propertyName: 'videos',
+  })
   videos?: Video[];
 
   @IntField({})

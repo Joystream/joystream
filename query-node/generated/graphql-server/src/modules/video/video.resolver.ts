@@ -82,7 +82,7 @@ export class VideoConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: VideoWhereInput;
 
   @Field(() => VideoOrderByEnum, { nullable: true })
-  orderBy?: VideoOrderByEnum;
+  orderBy?: [VideoOrderByEnum];
 }
 
 @Resolver(Video)

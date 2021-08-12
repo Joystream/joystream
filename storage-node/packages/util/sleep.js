@@ -4,6 +4,13 @@ function sleep(ms) {
   })
 }
 
+function nextTick() {
+  return new Promise((resolve) => {
+    process.nextTick(resolve)
+  })
+}
+
 module.exports = {
   sleep,
+  nextTick,
 }
