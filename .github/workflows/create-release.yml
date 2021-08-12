@@ -99,19 +99,21 @@ jobs:
           docker run -d --entrypoint tail --name temp-container-joystream-node $IMAGE-amd64 -f /dev/null
 
           RESULT=$(docker exec temp-container-joystream-node b2sum -l 256 runtime.compact.wasm | awk '{print $1}')
+          VERSION_AND_COMMIT=$(docker exec temp-container-joystream-node /joystream/node --version | awk '{print $2}' | cut -d- -f -2)
           echo "::set-output name=blob_hash::${RESULT}"
+          echo "::set-output name=version_and_commit::${VERSION_AND_COMMIT}"
 
           docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm ./joystream_runtime_${{ github.event.inputs.tag }}.wasm
           docker cp temp-container-joystream-node:/joystream/node ./joystream-node
-          tar -czvf joystream-node-${{ github.event.inputs.tag }}-amd64-linux-gnu.tar.gz joystream-node
+          tar -czvf joystream-node-$VERSION_AND_COMMIT-x86_64-linux-gnu.tar.gz joystream-node
 
           docker rm --force temp-container-joystream-node
 
           docker cp $(docker create --rm $IMAGE-arm64):/joystream/node ./joystream-node
-          tar -czvf joystream-node-${{ github.event.inputs.tag }}-arm64-linux-gnu.tar.gz joystream-node
+          tar -czvf joystream-node-$VERSION_AND_COMMIT-arm64-linux-gnu.tar.gz joystream-node
 
           docker cp $(docker create --rm $IMAGE-arm):/joystream/node ./joystream-node
-          tar -czvf joystream-node-${{ github.event.inputs.tag }}-armv7-linux-gnu.tar.gz joystream-node
+          tar -czvf joystream-node-$VERSION_AND_COMMIT-armv7-linux-gnu.tar.gz joystream-node
 
       - name: Retrieve saved MacOS binary
         uses: actions/download-artifact@v2
@@ -125,8 +127,8 @@ jobs:
 
       - name: Rename MacOS and RPi tar
         run: |
-          mv joystream-node-macos.tar.gz joystream-node-${{ github.event.inputs.tag }}-macos.tar.gz
-          mv joystream-node-rpi.tar.gz joystream-node-${{ github.event.inputs.tag }}-rpi.tar.gz
+          mv joystream-node-macos.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-x86_64-macos.tar.gz
+          mv joystream-node-rpi.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-rpi.tar.gz
 
       - name: Release
         uses: softprops/action-gh-release@v1
