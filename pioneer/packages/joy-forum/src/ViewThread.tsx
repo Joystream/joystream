@@ -127,53 +127,47 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
 
 const POSTS_THREAD_MAP_CACHE_KEY = 'postsThreadMap';
 
-async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
+async function refreshPostsInThreadCache(nextPostId: PostId, api: ApiPromise) {
   const newId = (id: number | BN) => api.createType('PostId', id);
   const apiCalls: Promise<Post>[] = [];
-  let id = newId(1);
+  let idToFetch = newId(1);
 
-  let mapPostToThread = getPostsIdsInThreadCache();
-  const nextTreadId = await api.query.forum.nextThreadId() as ThreadId;
+  let postsToThread = getPostsIdsInThreadCache();
+  const nextThreadId = await api.query.forum.nextThreadId() as ThreadId;
 
-  if (mapPostToThread.size >= Number(nextTreadId.toString())) { // invalid cache
-    mapPostToThread = new Map<number, number[]>();
+  if (postsToThread.size >= Number(nextThreadId.toString())) { // invalid cache
+    postsToThread = new Map<number, number[]>();
   }
 
-  if (mapPostToThread.size > 0) {
-    let lastPostIdInCache = 0;
+  if (postsToThread.size > 0) {
+    const lastPostIdInCache = Math.max(...Array.from(postsToThread.values()).flat());
 
-    for (const postIds of mapPostToThread.values()) {
-      const maxPostIdInThread = postIds.reduce((a, b) => a > b ? a : b);
-
-      if (maxPostIdInThread > lastPostIdInCache) {
-        lastPostIdInCache = maxPostIdInThread;
-      }
-    }
-
-    id = newId(lastPostIdInCache);
+    idToFetch = newId(lastPostIdInCache + 1);
     const lastPost = await api.query.forum.postById(lastPostIdInCache) as Post;
 
     if (lastPost) {
-      const postsInThread = mapPostToThread.get(Number(lastPost.thread_id.toString()));
+      const postsInThread = postsToThread.get(lastPost.thread_id.toNumber());
 
       if (!postsInThread || !postsInThread.includes(lastPostIdInCache)) { // cache doesn't match the data in chain
-        mapPostToThread = new Map<number, number[]>();
+        postsToThread = new Map<number, number[]>();
       }
     } else {
-      mapPostToThread = new Map<number, number[]>();
+      postsToThread = new Map<number, number[]>();
     }
   }
 
-  while (nextPostId.gt(id)) {
-    apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
-    id = newId(id.add(newId(1)));
+  const lastPostId = nextPostId.sub(new BN(1));
+
+  while (lastPostId.gte(idToFetch)) {
+    apiCalls.push(api.query.forum.postById(idToFetch) as Promise<Post>);
+    idToFetch = newId(idToFetch.add(newId(1)));
   }
 
   const newPosts = await Promise.all<Post>(apiCalls);
 
   for (const post of newPosts) {
-    let posts = mapPostToThread.get(Number(post.thread_id.toString())) as number[];
-    const postId = Number(post.id.toString());
+    let posts = postsToThread.get(post.thread_id.toNumber()) as number[];
+    const postId = post.id.toNumber();
 
     if (!posts) {
       posts = [postId];
@@ -181,10 +175,10 @@ async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
       posts.push(postId);
     }
 
-    mapPostToThread.set(Number(post.thread_id.toString()), posts);
+    postsToThread.set(post.thread_id.toNumber(), posts);
   }
 
-  localStorage.setItem(POSTS_THREAD_MAP_CACHE_KEY, JSON.stringify([...mapPostToThread]));
+  localStorage.setItem(POSTS_THREAD_MAP_CACHE_KEY, JSON.stringify([...postsToThread]));
 }
 
 function getPostsIdsInThreadCache (): Map<number, number[]> {
@@ -229,15 +223,9 @@ function InnerViewThread (props: ViewThreadProps) {
 
       await refreshPostsInThreadCache(nextPostId, api);
       const mapPostToThread = getPostsIdsInThreadCache();
-
-      const postIdsInThread = mapPostToThread.get(Number(thread.id.toString())) as number[];
-      const postsInThisThreadCalls: Promise<Post>[] = [];
-
-      for (const postId of postIdsInThread) {
-        postsInThisThreadCalls.push(api.query.forum.postById(postId) as Promise<Post>);
-      }
-
-      const postsInThisThread = await Promise.all(postsInThisThreadCalls);
+      const postIdsInThread = mapPostToThread.get(thread.id.toNumber()) as number[];
+      const postsInThisThread = await Promise.all(postIdsInThread
+        ? postIdsInThread.map((postId: number) => api.query.forum.postById(postId)) : []) as Post[];
 
       const sortedPosts = orderBy(
         postsInThisThread,
