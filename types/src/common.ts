@@ -104,6 +104,7 @@ export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u
 }
 
 export const WorkingGroupDef = {
+  Forum: Null,
   Storage: Null,
   Content: Null,
 } as const

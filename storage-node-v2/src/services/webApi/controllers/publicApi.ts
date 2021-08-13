@@ -24,7 +24,24 @@ const fsPromises = fs.promises
 /**
  * Dedicated error for the web api requests.
  */
-export class WebApiError extends CLIError {}
+export class WebApiError extends CLIError {
+  httpStatusCode: number
+
+  constructor(err: string, httpStatusCode: number) {
+    super(err)
+
+    this.httpStatusCode = httpStatusCode
+  }
+}
+
+/**
+ * Dedicated server error for the web api requests.
+ */
+export class ServerError extends WebApiError {
+  constructor(err: string) {
+    super(err, 500)
+  }
+}
 
 /**
  * A public endpoint: serves files by CID.
@@ -160,7 +177,7 @@ function getFileObject(req: express.Request): Express.Multer.File {
     return files[0]
   }
 
-  throw new WebApiError('No file uploaded')
+  throw new WebApiError('No file uploaded', 400)
 }
 
 /**
@@ -168,14 +185,14 @@ function getFileObject(req: express.Request): Express.Multer.File {
  *
  * @remarks
  * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getWorkerId(res: express.Response): number {
   if (res.locals.workerId || res.locals.workerId === 0) {
     return res.locals.workerId
   }
 
-  throw new WebApiError('No Joystream worker ID loaded.')
+  throw new ServerError('No Joystream worker ID loaded.')
 }
 
 /**
@@ -190,7 +207,7 @@ function getUploadsDir(res: express.Response): string {
     return res.locals.uploadsDir
   }
 
-  throw new WebApiError('No upload directory path loaded.')
+  throw new ServerError('No upload directory path loaded.')
 }
 
 /**
@@ -205,7 +222,7 @@ function getAccount(res: express.Response): KeyringPair {
     return res.locals.storageProviderAccount
   }
 
-  throw new WebApiError('No Joystream account loaded.')
+  throw new ServerError('No Joystream account loaded.')
 }
 
 /**
@@ -220,7 +237,7 @@ function getApi(res: express.Response): ApiPromise {
     return res.locals.api
   }
 
-  throw new WebApiError('No Joystream API loaded.')
+  throw new WebApiError('No Joystream API loaded.', 500)
 }
 
 /**
@@ -236,7 +253,7 @@ function getCid(req: express.Request): string {
     return cid
   }
 
-  throw new WebApiError('No CID provided.')
+  throw new WebApiError('No CID provided.', 400)
 }
 
 /**
@@ -252,7 +269,7 @@ function getTokenRequest(req: express.Request): UploadTokenRequest {
     return tokenRequest
   }
 
-  throw new WebApiError('No token request provided.')
+  throw new WebApiError('No token request provided.', 401)
 }
 
 /**
@@ -267,12 +284,12 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
   const result = verifyTokenSignature(tokenRequest, tokenRequest.data.accountId)
 
   if (!result) {
-    throw new WebApiError('Invalid upload token request signature.')
+    throw new WebApiError('Invalid upload token request signature.', 401)
   }
 
   const membership = await api.query.members.membershipById(tokenRequest.data.memberId)
   if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
-    throw new WebApiError(`Provided controller account and member id don't match.`)
+    throw new WebApiError(`Provided controller account and member id don't match.`, 401)
   }
 }
 
@@ -286,7 +303,7 @@ function verifyFileSize(fileSize: number) {
   const MAX_FILE_SIZE = 1000000 // TODO: Get this const from the runtime
 
   if (fileSize > MAX_FILE_SIZE) {
-    throw new WebApiError('Max file size exceeded.')
+    throw new WebApiError('Max file size exceeded.', 400)
   }
 }
 
@@ -322,7 +339,7 @@ async function verifyFileMimeType(filePath: string): Promise<void> {
   const correctMimeType = allowedMimeTypes.some((allowedType) => fileInfo.mimeType.startsWith(allowedType))
 
   if (!correctMimeType) {
-    throw new WebApiError(`Incorrect mime type detected: ${fileInfo.mimeType}`)
+    throw new WebApiError(`Incorrect mime type detected: ${fileInfo.mimeType}`, 400)
   }
 }
 
@@ -369,7 +386,7 @@ function getHttpStatusCodeByError(err: Error): number {
   }
 
   if (err instanceof WebApiError) {
-    return 400
+    return err.httpStatusCode
   }
 
   if (err instanceof CLIError) {

@@ -137,14 +137,14 @@ paths:
                 properties:
                   id:
                     type: string
-        401:
-          description: Unauthorized
-        410:
-          description: Upload request problem
+        400:
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
 
   /authToken:
     post:
@@ -170,12 +170,6 @@ paths:
                     type: string
         400:
           description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        410:
-          description: AuthToken request problem
           content:
             application/json:
               schema:
