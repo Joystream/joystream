@@ -36,12 +36,6 @@ export async function createApp(
   app.use(express.json())
   app.use(httpLogger())
 
-  // TODO: put it in the API spec
-  app.get('/sync', async (request, response) => {
-    const cids = await getLocalDataObjects(uploadsDir)
-    response.json(cids)
-  })
-
   app.use(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {

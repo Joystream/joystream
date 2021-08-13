@@ -213,7 +213,19 @@ async function getDownloadTasks(
 ): Promise<DownloadFileTask[]> {
   //model.dataObjects.
 
-  model.bags
+  model.bags[0].buckets[0]
+
+  const buckets = new Set()
+
+  for (const bag of bags) {
+    buckets.
+} 
+
+  const urls = new Map()
+  
+  for 
+
+
 
   const addedTasks = addedCids.map(
     (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory)

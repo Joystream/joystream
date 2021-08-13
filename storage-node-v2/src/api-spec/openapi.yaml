@@ -181,6 +181,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /sync:
+    get:
+      operationId: publicApi.getAllLocalDataObjects
+      description: Returns all local data objects.
+      tags:
+        - public
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
 components:
   securitySchemes:
     UploadAuth:
