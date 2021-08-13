@@ -21,18 +21,18 @@ use core::{
 use codec::Codec;
 use codec::{Decode, Encode};
 
+use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
-    ensure,
-    traits::Get,
-    Parameter,
+    ensure, Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::traits::{AccountIdConversion, MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -140,6 +140,9 @@ pub trait Trait:
 
     /// Margin
     type CleanupMargin: Get<u32>;
+
+    /// Post module Id
+    type VideoCommentsModuleId: Get<ModuleId>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -1474,7 +1477,10 @@ decl_module! {
             let cleanup_cost = 0;
 
             // initial bloat bond
-            let initial_bloat_bond = max(storage_price, cleanup_cost.saturating_add(T::CleanupMargin::get()));
+            let initial_bloat_bond = max(
+                storage_price,
+                cleanup_cost.saturating_add(T::CleanupMargin::get()
+            ));
 
             // transfer bloat bond to post treasury account
             Self::transfer_to_post_treasury_account(
@@ -1485,7 +1491,7 @@ decl_module! {
 
             let post: Post<T> = Post_ {
                 author: actor,
-                bloat_bond: <T as balances::Trait>::Balance::zero(),
+                bloat_bond: <T as balances::Trait>::Balance::from(initial_bloat_bond),
                 replies_count: T::PostId::zero(),
                 parent_id:params.parent_id.clone(),
                 video_reference: params.video_reference.clone(),
@@ -1545,7 +1551,7 @@ decl_module! {
 
             let cleanup_cost = 0;
 
-            let new_bloat_bond = max(
+            let new_bloat_bond: u32 = max(
                 storage_price,
                 cleanup_cost.saturating_add(T::CleanupMargin::get()
             ));
@@ -1556,21 +1562,25 @@ decl_module! {
                     |_| DispatchError::Other("initial bloat bond conversion error")
                 )?;
 
-            let bloat_bond_diff: i64 = (old_bloat_bond - new_bloat_bond).into();
+            println!("Old bond:\t{:?}\nNew bond:\t{:?}", old_bloat_bond, new_bloat_bond);
 
-            match bloat_bond_diff.signum() {
-                1 => Self::transfer_to_post_treasury_account(
-                    post_id,
-                    <T as balances::Trait>::Balance::from(
-                        bloat_bond_diff.unsigned_abs() as u32
-                    ),
-                    sender,
-                    )?,
-                _ => Self::pay_off(
+            match old_bloat_bond > new_bloat_bond {
+                true => {
+                    let diff = old_bloat_bond - new_bloat_bond;
+                    Self::transfer_to_post_treasury_account(
                         post_id,
-                        <T as balances::Trait>::Balance::from(bloat_bond_diff.unsigned_abs() as u32),
+                        <T as balances::Trait>::Balance::from(diff),
+                       sender,
+                    )?;
+                },
+                _ => {
+                    let diff = new_bloat_bond - old_bloat_bond;
+                    Self::pay_off(
+                        post_id,
+                        <T as balances::Trait>::Balance::from(diff),
                         sender,
-                     )?
+                    )?;
+                }
             }
 
 
@@ -1608,7 +1618,7 @@ decl_module! {
 
             match cleanup_actor {
                 CleanupActor::ModeratorOrOwner => {
-                    let _ = Self::burn(post.bloat_bond)?;
+                    let _ = balances::Module::<T>::burn(post.bloat_bond);
                 },
                 CleanupActor::PostAuthor => {Self::pay_off(post_id, post.bloat_bond, sender)?;}
             }
@@ -1828,26 +1838,34 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn burn(_amount: <T as balances::Trait>::Balance) -> DispatchResult {
-        //        Self::not_implemented()?;
-        Ok(())
-    }
     fn pay_off(
-        _post_id: T::PostId,
-        _amount: <T as balances::Trait>::Balance,
-        _account_id: T::AccountId,
+        post_id: T::PostId,
+        amount: <T as balances::Trait>::Balance,
+        account_id: T::AccountId,
     ) -> DispatchResult {
-        //        Self::not_implemented()?;
-        Ok(())
+        let state_cleanup_treasury_account =
+            T::VideoCommentsModuleId::get().into_sub_account(post_id);
+        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+            &state_cleanup_treasury_account,
+            &account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
     }
 
     fn transfer_to_post_treasury_account(
-        _post_id: T::PostId,
-        _amount: <T as balances::Trait>::Balance,
-        _account_id: T::AccountId,
+        post_id: T::PostId,
+        amount: <T as balances::Trait>::Balance,
+        account_id: T::AccountId,
     ) -> DispatchResult {
-        //        Self::not_implemented()?;
-        Ok(())
+        let state_cleanup_treasury_account =
+            T::VideoCommentsModuleId::get().into_sub_account(post_id);
+        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+            &account_id,
+            &state_cleanup_treasury_account,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
     }
 }
 

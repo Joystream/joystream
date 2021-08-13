@@ -3,7 +3,7 @@
 use super::curators;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, traits::Currency};
 //use sp_runtime::traits::Hash;
 
 pub const UNKNOWN_VIDEO_ID: u64 = 7777;
@@ -284,6 +284,7 @@ fn non_authorized_actor_cannot_create_post() {
 #[test]
 fn verify_create_post_effects() {
     with_default_mock_builder(|| {
+        run_to_block(1);
         let member_account = FIRST_MEMBER_ORIGIN;
         let member_id = FIRST_MEMBER_ID;
         let curator_id = FIRST_CURATOR_ID;
@@ -300,6 +301,13 @@ fn verify_create_post_effects() {
 
         let parent_id = Content::next_post_id();
 
+        let _ = balances::Module::<Test>::deposit_creating(
+            &member_account,
+            <Test as balances::Trait>::Balance::from(400u64),
+        );
+
+        let mut balance_pre = balances::Module::<Test>::free_balance(member_account);
+
         // create post
         assert_ok!(Content::create_post(
             Origin::signed(member_account),
@@ -312,6 +320,20 @@ fn verify_create_post_effects() {
             }
         ));
 
+        let mut balance_post = balances::Module::<Test>::free_balance(member_account);
+
+        // post correctly inserted into the double_map
+        assert!(PostById::<Test>::contains_key(
+            scenario.member_video_id,
+            parent_id
+        ));
+
+        // verify deposit into post account
+        assert_eq!(
+            PostById::<Test>::get(scenario.member_video_id, parent_id).bloat_bond,
+            balance_pre - balance_post
+        );
+
         // post correctly inserted into the double_map
         assert!(PostById::<Test>::contains_key(
             scenario.member_video_id,
@@ -320,6 +342,7 @@ fn verify_create_post_effects() {
 
         let replies_count_pre =
             PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
+        balance_pre = balances::Module::<Test>::free_balance(member_account);
 
         let child_id = Content::next_post_id();
 
@@ -334,16 +357,21 @@ fn verify_create_post_effects() {
                 post_type: PostType::Comment,
             }
         ));
+
         // post correctly inserted into the double_map
         assert!(PostById::<Test>::contains_key(
             scenario.member_video_id,
             child_id
         ));
 
-        let replies_count_post =
-            PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
+        balance_post = balances::Module::<Test>::free_balance(member_account);
+        let post = PostById::<Test>::get(scenario.member_video_id, parent_id);
+        let replies_count_post = post.replies_count;
 
         assert_eq!(replies_count_post - replies_count_pre, 1);
+
+        // verify deposit into post account
+        assert_eq!(post.bloat_bond, balance_pre - balance_post);
     })
 }
 
@@ -364,6 +392,15 @@ fn setup_testing_scenario_with_video_post(
 
     let parent_id = Content::next_post_id();
 
+    let _ = balances::Module::<Test>::deposit_creating(
+        &member_account,
+        <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
+    );
+
+    println!(
+        "member account balance:\t{:?}",
+        balances::Module::<Test>::free_balance(member_account)
+    );
     // create post
     assert_ok!(Content::create_post(
         Origin::signed(member_account),
@@ -397,6 +434,11 @@ fn setup_testing_scenario_with_comment_post(
     );
 
     let post_id = Content::next_post_id();
+
+    let _ = balances::Module::<Test>::deposit_creating(
+        &comment_author_account,
+        <Test as balances::Trait>::Balance::from(INITIAL_BALANCE),
+    );
 
     // create post
     assert_ok!(Content::create_post(
@@ -693,7 +735,7 @@ fn non_authorized_actor_cannot_edit() {
             Content::edit_post_text(
                 Origin::signed(UNKNOWN_ORIGIN),
                 scenario.member_video_id,
-                scenario.video_post_id.unwrap(),
+                scenario.comment_post_id.unwrap(),
                 ContentActor::Member(UNKNOWN_MEMBER_ID),
                 b"efg".to_vec(),
             ),
@@ -705,6 +747,9 @@ fn non_authorized_actor_cannot_edit() {
 #[test]
 fn verify_edit_post_effects() {
     with_default_mock_builder(|| {
+        // in order to deposit event
+        run_to_block(1);
+
         let member_account = FIRST_MEMBER_ORIGIN;
         let member_id = FIRST_MEMBER_ID;
         let curator_id = FIRST_CURATOR_ID;
@@ -721,15 +766,33 @@ fn verify_edit_post_effects() {
             comment_author_id,
         );
 
-        assert_err!(
-            Content::edit_post_text(
-                Origin::signed(UNKNOWN_ORIGIN),
+        let balance_pre: u64 =
+            balances::Module::<Test>::free_balance(comment_author_account).into();
+
+        assert_ok!(Content::edit_post_text(
+            Origin::signed(comment_author_account),
+            scenario.member_video_id,
+            scenario.comment_post_id.unwrap(),
+            ContentActor::Member(comment_author_id),
+            b"efghilm".to_vec(),
+        ));
+
+        let balance_post: u64 =
+            balances::Module::<Test>::free_balance(comment_author_account).into();
+
+        let expected_balance: u64 =
+            4u64 * <Test as Trait>::PricePerByte::get().try_into().unwrap_or(0);
+
+        // accounting verification
+        assert_eq!(balance_post - balance_pre, expected_balance);
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostTextUpdated(
+                ContentActor::Member(comment_author_id),
+                b"efghilm".to_vec(),
+                scenario.comment_post_id.unwrap(),
                 scenario.member_video_id,
-                scenario.video_post_id.unwrap(),
-                ContentActor::Member(UNKNOWN_MEMBER_ID),
-                b"efg".to_vec(),
-            ),
-            Error::<Test>::MemberAuthFailed,
+            ))
         );
     })
 }

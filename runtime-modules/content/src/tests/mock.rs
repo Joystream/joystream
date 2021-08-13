@@ -34,6 +34,7 @@ pub const SECOND_MEMBER_ORIGIN: u64 = 5;
 pub const THIRD_MEMBER_ORIGIN: u64 = 6;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
 
+pub const INITIAL_BALANCE: u64 = 1000;
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
 
@@ -211,6 +212,7 @@ parameter_types! {
     pub const MaxModerators: u64 = 5;
     pub const CleanupMargin: u32 = 3;
     pub const PricePerByte: usize = 2;
+    pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
 }
 
 impl Trait for Test {
@@ -261,6 +263,9 @@ impl Trait for Test {
 
     /// cleanup margin
     type CleanupMargin = CleanupMargin;
+
+    /// module id
+    type VideoCommentsModuleId = VideoCommentsModuleId;
 }
 
 pub type System = frame_system::Module<Test>;
