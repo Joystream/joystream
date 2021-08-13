@@ -170,7 +170,7 @@ async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
   newPosts.forEach((newPost) => {
     const previousNewPostIds = newPostsToThread.get(newPost.thread_id.toNumber()) ?? [];
 
-    newPostsToThread.set(newPost.thread_id.toNumber(), [...previousNewPostIds, newPost.id.toNumber()])
+    newPostsToThread.set(newPost.thread_id.toNumber(), [...previousNewPostIds, newPost.id.toNumber()]);
   });
 
   if (postsToThread.size > 0) {
