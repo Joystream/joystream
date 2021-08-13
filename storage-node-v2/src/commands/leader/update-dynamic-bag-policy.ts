@@ -3,6 +3,7 @@ import { updateNumberOfStorageBucketsInDynamicBagCreationPolicy } from '../../se
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 import { parseDynamicBagType } from '../../services/helpers/bagTypes'
+import { DynamicBagTypeKey } from '@joystream/types/storage'
 
 /**
  * CLI command:
@@ -22,7 +23,7 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
       required: true,
       description: 'New storage buckets number',
     }),
-    bagType: flags.enum({
+    bagType: flags.enum<DynamicBagTypeKey>({
       char: 't',
       description: 'Dynamic bag type (Channel, Member).',
       options: ['Channel', 'Member'],
@@ -42,11 +43,8 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
     const account = this.getAccount(flags)
     const newNumber = flags.number
 
-    // Verified by enum argument parser.
-    const dynamicBagTypeString = flags.bagType as 'Member' | 'Channel'
-
     const api = await this.getApi()
-    const dynamicBagType = parseDynamicBagType(api, dynamicBagTypeString)
+    const dynamicBagType = parseDynamicBagType(api, flags.bagType)
     const success = await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
       api,
       account,

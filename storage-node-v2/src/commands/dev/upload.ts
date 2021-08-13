@@ -1,5 +1,4 @@
 import { flags } from '@oclif/command'
-import BN from 'bn.js'
 import { uploadDataObjects } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
@@ -41,8 +40,7 @@ export default class DevUpload extends ApiCommandBase {
 
     const api = await this.getApi()
 
-    // Must be a number.
-    const dataFee = (await api.query.storage.dataObjectPerMegabyteFee()) as BN
+    const dataFee = await api.query.storage.dataObjectPerMegabyteFee()
 
     logger.info(`Current data fee: ${dataFee}`)
 

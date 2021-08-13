@@ -52,14 +52,20 @@ paths:
               schema:
                 type: string
                 format: binary
-        404:
-          description: File not found
+        400:
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        410:
-          description: File request problem
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: File not found
           content:
             application/json:
               schema:
@@ -81,10 +87,10 @@ paths:
       responses:
         200:
           description: Ok
+        400:
+          description: Bad request
         404:
           description: File not found
-        410:
-          description: Header request problem
         500:
           description: Unknown server error
   /files:

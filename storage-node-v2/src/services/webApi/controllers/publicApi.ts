@@ -1,4 +1,5 @@
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
+import { ExtrinsicFailedError } from '../../runtime/api'
 import {
   RequestData,
   UploadTokenRequest,
@@ -17,7 +18,13 @@ import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
 import send from 'send'
+import { CLIError } from '@oclif/errors'
 const fsPromises = fs.promises
+
+/**
+ * Dedicated error for the web api requests.
+ */
+export class WebApiError extends CLIError {}
 
 /**
  * A public endpoint: serves files by CID.
@@ -67,11 +74,7 @@ export async function getFileHeaders(req: express.Request, res: express.Response
 
     res.status(200).send()
   } catch (err) {
-    if (isNofileError(err)) {
-      res.status(404).send()
-    } else {
-      res.status(410).send()
-    }
+    res.status(getHttpStatusCodeByError(err)).send()
   }
 }
 
@@ -110,10 +113,7 @@ export async function uploadFile(req: express.Request, res: express.Response): P
   } catch (err) {
     await cleanupFileOnError(cleanupFileName, err.toString())
 
-    res.status(410).json({
-      type: 'upload',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'upload')
   }
 }
 
@@ -139,10 +139,7 @@ export async function authTokenForUploading(req: express.Request, res: express.R
       token: signedToken,
     })
   } catch (err) {
-    res.status(410).json({
-      type: 'authtoken',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'authtoken')
   }
 }
 
@@ -163,7 +160,7 @@ function getFileObject(req: express.Request): Express.Multer.File {
     return files[0]
   }
 
-  throw new Error('No file uploaded')
+  throw new WebApiError('No file uploaded')
 }
 
 /**
@@ -178,7 +175,7 @@ function getWorkerId(res: express.Response): number {
     return res.locals.workerId
   }
 
-  throw new Error('No Joystream worker ID loaded.')
+  throw new WebApiError('No Joystream worker ID loaded.')
 }
 
 /**
@@ -193,7 +190,7 @@ function getUploadsDir(res: express.Response): string {
     return res.locals.uploadsDir
   }
 
-  throw new Error('No upload directory path loaded.')
+  throw new WebApiError('No upload directory path loaded.')
 }
 
 /**
@@ -208,7 +205,7 @@ function getAccount(res: express.Response): KeyringPair {
     return res.locals.storageProviderAccount
   }
 
-  throw new Error('No Joystream account loaded.')
+  throw new WebApiError('No Joystream account loaded.')
 }
 
 /**
@@ -223,7 +220,7 @@ function getApi(res: express.Response): ApiPromise {
     return res.locals.api
   }
 
-  throw new Error('No Joystream API loaded.')
+  throw new WebApiError('No Joystream API loaded.')
 }
 
 /**
@@ -239,7 +236,7 @@ function getCid(req: express.Request): string {
     return cid
   }
 
-  throw new Error('No CID provided.')
+  throw new WebApiError('No CID provided.')
 }
 
 /**
@@ -255,7 +252,7 @@ function getTokenRequest(req: express.Request): UploadTokenRequest {
     return tokenRequest
   }
 
-  throw new Error('No token request provided.')
+  throw new WebApiError('No token request provided.')
 }
 
 /**
@@ -270,12 +267,12 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
   const result = verifyTokenSignature(tokenRequest, tokenRequest.data.accountId)
 
   if (!result) {
-    throw new Error('Invalid upload token request signature.')
+    throw new WebApiError('Invalid upload token request signature.')
   }
 
   const membership = await api.query.members.membershipById(tokenRequest.data.memberId)
   if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
-    throw new Error(`Provided controller account and member id don't match.`)
+    throw new WebApiError(`Provided controller account and member id don't match.`)
   }
 }
 
@@ -289,7 +286,7 @@ function verifyFileSize(fileSize: number) {
   const MAX_FILE_SIZE = 1000000 // TODO: Get this const from the runtime
 
   if (fileSize > MAX_FILE_SIZE) {
-    throw new Error('Max file size exceeded.')
+    throw new WebApiError('Max file size exceeded.')
   }
 }
 
@@ -325,7 +322,7 @@ async function verifyFileMimeType(filePath: string): Promise<void> {
   const correctMimeType = allowedMimeTypes.some((allowedType) => fileInfo.mimeType.startsWith(allowedType))
 
   if (!correctMimeType) {
-    throw new Error(`Incorrect mime type detected: ${fileInfo.mimeType}`)
+    throw new WebApiError(`Incorrect mime type detected: ${fileInfo.mimeType}`)
   }
 }
 
@@ -338,19 +335,11 @@ async function verifyFileMimeType(filePath: string): Promise<void> {
  * @returns void promise.
  */
 function sendResponseWithError(res: express.Response, err: Error, errorType: string): void {
-  const errorString = err.toString()
-  // Special case - file not found.
-  if (isNofileError(err)) {
-    res.status(404).json({
-      type: errorType,
-      message: `File not found.`,
-    })
-    return
-  }
+  const message = isNofileError(err) ? `File not found.` : err.toString()
 
-  res.status(410).json({
+  res.status(getHttpStatusCodeByError(err)).json({
     type: errorType,
-    message: errorString,
+    message,
   })
 }
 
@@ -362,4 +351,30 @@ function sendResponseWithError(res: express.Response, err: Error, errorType: str
  */
 function isNofileError(err: Error): boolean {
   return err.toString().includes('ENOENT')
+}
+
+/**
+ * Get the status code by error.
+ *
+ * @param err - error
+ * @returns HTTP status code
+ */
+function getHttpStatusCodeByError(err: Error): number {
+  if (isNofileError(err)) {
+    return 404
+  }
+
+  if (err instanceof ExtrinsicFailedError) {
+    return 400
+  }
+
+  if (err instanceof WebApiError) {
+    return 400
+  }
+
+  if (err instanceof CLIError) {
+    return 400
+  }
+
+  return 500
 }

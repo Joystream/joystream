@@ -148,14 +148,7 @@ export async function sendAndFollowNamedTx<T>(
   sudoCall = false,
   eventParser: ((result: ISubmittableResult) => T) | null = null
 ): Promise<T | void> {
-  const description = tx.toHuman() as {
-    method: {
-      method: string
-      section: string
-    }
-  }
-
-  logger.debug(`Sending ${description?.method?.section}.${description?.method?.method} extrinsic...`)
+  logger.debug(`Sending ${tx.method.section}.${tx.method.method} extrinsic...`)
 
   if (sudoCall) {
     tx = api.tx.sudo.sudo(tx)
@@ -180,14 +173,17 @@ export async function sendAndFollowNamedTx<T>(
  * @param api - API promise
  * @param account - KeyPair instance
  * @param tx - prepared extrinsic with arguments
+ * @param eventParser - defines event parsing function (null by default) for
+ * getting any information from the successful extrinsic events.
  * @returns void promise.
  */
-export async function sendAndFollowSudoNamedTx(
+export async function sendAndFollowSudoNamedTx<T>(
   api: ApiPromise,
   account: KeyringPair,
-  tx: SubmittableExtrinsic<'promise'>
-): Promise<void> {
-  return sendAndFollowNamedTx(api, account, tx, true)
+  tx: SubmittableExtrinsic<'promise'>,
+  eventParser: ((result: ISubmittableResult) => T) | null = null
+): Promise<T | void> {
+  return sendAndFollowNamedTx(api, account, tx, true, eventParser)
 }
 
 /**

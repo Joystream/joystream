@@ -1,7 +1,5 @@
-import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx } from './api'
+import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx, getEvent } from './api'
 import { getAlicePair } from './accounts'
-import { Option, Vec } from '@polkadot/types'
-import { WorkerId, OpeningId, ApplicationId } from '@joystream/types/working-group'
 import { MemberId } from '@joystream/types/members'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../../services/logger'
@@ -21,28 +19,25 @@ export async function hireStorageWorkingGroupLead(api: ApiPromise): Promise<void
   const LeadKeyPair = getAlicePair()
 
   // Create membership if not already created
-  const members = (await api.query.members.memberIdsByControllerAccountId(LeadKeyPair.address)) as Vec<MemberId>
+  const members = await api.query.members.memberIdsByControllerAccountId(LeadKeyPair.address)
 
-  let memberId: MemberId | undefined = members.toArray()[0] as MemberId
+  let memberId: MemberId | undefined = members.toArray()[0]
 
   if (memberId === undefined) {
     logger.info('Preparing member account creation extrinsic...')
-    memberId = (await api.query.members.nextMemberId()) as MemberId
+    memberId = await api.query.members.nextMemberId()
     const tx = api.tx.members.buyMembership(0, 'alice', null, null)
     await sendAndFollowNamedTx(api, LeadKeyPair, tx)
   }
 
   // Create a new lead opening.
-  const currentLead = (await api.query.storageWorkingGroup.currentLead()) as Option<WorkerId>
+  const currentLead = await api.query.storageWorkingGroup.currentLead()
   if (currentLead.isSome) {
     logger.info('Storage lead already exists, skipping...')
     return
   }
 
   logger.info(`Making member id: ${memberId} the content lead.`)
-
-  const newOpeningId = (await api.query.storageWorkingGroup.nextOpeningId()) as OpeningId
-  const newApplicationId = (await api.query.storageWorkingGroup.nextApplicationId()) as ApplicationId
 
   // Create curator lead opening
   logger.info('Preparing Create Storage Lead Opening extrinsic...')
@@ -52,7 +47,16 @@ export async function hireStorageWorkingGroupLead(api: ApiPromise): Promise<void
     'storage opening', // human_readable_text
     'Leader' // opening_type
   )
-  await sendAndFollowSudoNamedTx(api, SudoKeyPair, tx)
+  const newOpeningId = await sendAndFollowSudoNamedTx(api, SudoKeyPair, tx, (result) => {
+    const event = getEvent(result, 'storageWorkingGroup', 'OpeningAdded')
+    const bucketId = event?.data[0]
+
+    return bucketId.toNumber()
+  })
+
+  if (typeof newOpeningId !== 'number') {
+    throw Error('Cannot create opening.')
+  }
 
   // Apply to lead opening
   logger.info('Preparing Apply to Storage Lead Opening extrinsic...')
@@ -64,7 +68,12 @@ export async function hireStorageWorkingGroupLead(api: ApiPromise): Promise<void
     null, // opt appl. stake
     'bootstrap opening' // human_readable_text
   )
-  await sendAndFollowNamedTx(api, LeadKeyPair, tx)
+  const newApplicationId = await sendAndFollowNamedTx(api, LeadKeyPair, tx, false, (result) => {
+    const event = getEvent(result, 'storageWorkingGroup', 'AppliedOnOpening')
+    const bucketId = event?.data[1]
+
+    return bucketId.toNumber()
+  })
 
   // Begin review period
   logger.info('Preparing Begin Applicant Review extrinsic...')

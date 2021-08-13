@@ -4,7 +4,6 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { BagId, DynamicBagType } from '@joystream/types/storage'
 import logger from '../../services/logger'
-import BN from 'bn.js'
 
 /**
  * Creates storage bucket.
@@ -36,7 +35,7 @@ export async function createStorageBucket(
     const tx = api.tx.storage.createStorageBucket(invitedWorkerValue, allowedNewBags, sizeLimit, objectsLimit)
     bucketId = await sendAndFollowNamedTx(api, account, tx, false, (result) => {
       const event = getEvent(result, 'storage', 'StorageBucketCreated')
-      const bucketId = event?.data[0] as BN
+      const bucketId = event?.data[0]
 
       return bucketId.toNumber()
     })
