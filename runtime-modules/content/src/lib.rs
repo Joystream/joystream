@@ -11,12 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::{
-    cmp::max,
-    convert::{TryFrom, TryInto},
-    hash::Hash,
-    mem::size_of,
-};
+use core::{cmp::max, convert::TryFrom, mem::size_of};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -143,6 +138,9 @@ pub trait Trait:
 
     /// Post module Id
     type VideoCommentsModuleId: Get<ModuleId>;
+
+    /// Refund cap during cleanup
+    type BloatBondCap: Get<u32>;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -516,9 +514,6 @@ pub struct Post_<
     /// parent comment if any
     pub parent_id: Option<PostId>,
 
-    /// text
-    pub text: Vec<u8>,
-
     /// video reference
     pub video_reference: VideoId,
 }
@@ -574,9 +569,6 @@ pub struct PostCreationParameters<PostId, VideoId> {
 
     /// content
     post_type: PostType,
-
-    /// comment text or description
-    text: Vec<u8>,
 
     /// video reference
     video_reference: VideoId,
@@ -1464,7 +1456,6 @@ decl_module! {
             // compute initial bloat bond
             let storage_price = u32::try_from(
                     size_of::<Post<T>>()
-                    .saturating_add(params.text.len())
                     .saturating_mul(T::PricePerByte::get()))
                 .map_err(
                     |_| DispatchError::Other("initial bloat bond conversion error")
@@ -1495,7 +1486,6 @@ decl_module! {
                 replies_count: T::PostId::zero(),
                 parent_id:params.parent_id.clone(),
                 video_reference: params.video_reference.clone(),
-                text: params.text.clone(),
                 post_type: params.post_type.clone(),
             };
 
@@ -1530,65 +1520,12 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             new_text: Vec<u8>,
         ) {
-            let sender = ensure_signed(origin.clone())?;
+            ensure_signed(origin.clone())?;
             // ensure channel exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
 
             // ensure actor is post author
             ensure_actor_can_edit_text_post::<T>(&actor, origin, &post.author)?;
-
-            let mut post = post;
-            post.text = new_text.clone(); // O(text.len())
-
-            // compute new bloat bond
-            let storage_price = u32::try_from(
-                size_of::<Post<T>>()
-                    .saturating_add(new_text.len())
-                    .saturating_mul(T::PricePerByte::get()))
-                .map_err(
-                    |_| DispatchError::Other("initial bloat bond conversion error")
-                )?;
-
-            let cleanup_cost = 0;
-
-            let new_bloat_bond: u32 = max(
-                storage_price,
-                cleanup_cost.saturating_add(T::CleanupMargin::get()
-            ));
-
-            let old_bloat_bond: u32 =
-                post.bloat_bond.try_into()
-                .map_err(
-                    |_| DispatchError::Other("initial bloat bond conversion error")
-                )?;
-
-            println!("Old bond:\t{:?}\nNew bond:\t{:?}", old_bloat_bond, new_bloat_bond);
-
-            match old_bloat_bond > new_bloat_bond {
-                true => {
-                    let diff = old_bloat_bond - new_bloat_bond;
-                    Self::transfer_to_post_treasury_account(
-                        post_id,
-                        <T as balances::Trait>::Balance::from(diff),
-                       sender,
-                    )?;
-                },
-                _ => {
-                    let diff = new_bloat_bond - old_bloat_bond;
-                    Self::pay_off(
-                        post_id,
-                        <T as balances::Trait>::Balance::from(diff),
-                        sender,
-                    )?;
-                }
-            }
-
-
-            //
-            // == MUTATION_SAFE ==
-            //
-
-            <PostById::<T>>::insert(video_id, post_id, post);
 
             // deposit event
             Self::deposit_event(RawEvent::PostTextUpdated(actor, new_text, post_id, video_id));
@@ -1616,31 +1553,39 @@ decl_module! {
                 &post.author
             )?;
 
-            match cleanup_actor {
-                CleanupActor::ModeratorOrOwner => {
-                    let _ = balances::Module::<T>::burn(post.bloat_bond);
-                },
-                CleanupActor::PostAuthor => {Self::pay_off(post_id, post.bloat_bond, sender)?;}
-            }
+            Self::cleanup(sender, cleanup_actor, post.bloat_bond, post_id)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            // remove post
-            PostById::<T>::remove(video_id,post_id);
+            // two possible cases:
+            match post.post_type {
+                // post is a comment
+                PostType::Comment => {
+                    PostById::<T>::remove(video_id, post_id);
+                    // decrement parent's replies count
+                    if let Some(parent_id) = post.parent_id {
+                        <PostById<T>>::mutate(
+                            &video_id,
+                            &parent_id,
+                            |x| x.replies_count = x.replies_count.saturating_sub(One::one())
+                        );
+                    }
+                }
 
-            // decrement parent's replies count
-            if let Some(parent_id) = post.parent_id {
-                <PostById<T>>::mutate(
-                    &video_id,
-                    &parent_id,
-                    |x| x.replies_count = x.replies_count.saturating_sub(One::one())
-                );
+                // post is a video post
+                PostType::VideoPost => PostById::<T>::remove_prefix(video_id),
             }
 
             // deposit event
-            Self::deposit_event(RawEvent::PostDeleted(actor, post_id));
+            Self::deposit_event(
+                RawEvent::PostDeleted(
+                actor,
+                video_id,
+                post_id,
+                T::hash(&post.replies_count.encode()),
+            ));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1650,8 +1595,8 @@ decl_module! {
             post_id: T::PostId,
             reaction_id: T::ReactionId,
         ) {
-        let sender = ensure_signed(origin)?;
-        ensure_member_auth_success::<T>(&member_id, &sender)?;
+            let sender = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&member_id, &sender)?;
 
             Self::deposit_event(RawEvent::ReactionToPost(member_id, post_id, reaction_id));
         }
@@ -1867,6 +1812,33 @@ impl<T: Trait> Module<T> {
             ExistenceRequirement::AllowDeath,
         )
     }
+
+    fn cleanup(
+        sender: <T as frame_system::Trait>::AccountId,
+        cleanup_actor: CleanupActor,
+        bloat_bond: <T as balances::Trait>::Balance,
+        post_id: T::PostId,
+    ) -> DispatchResult {
+        match cleanup_actor {
+            CleanupActor::ModeratorOrOwner => {
+                let _ = balances::Module::<T>::burn(bloat_bond);
+            }
+            CleanupActor::PostAuthor => {
+                let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
+                match bloat_bond > cap {
+                    true => {
+                        // if cap is exceeded, refund cap and burn the difference
+                        let diff = bloat_bond.saturating_sub(cap);
+                        Self::pay_off(post_id, cap, sender)?;
+                        let _ = balances::Module::<T>::burn(diff);
+                    }
+                    // else refund bloat bond
+                    _ => Self::pay_off(post_id, bloat_bond, sender)?,
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 // Some initial config for the module on runtime upgrade
@@ -1914,6 +1886,7 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         PostCreationParameters =
             PostCreationParameters<<T as Trait>::PostId, <T as Trait>::VideoId>,
+        Hash = <T as frame_system::Trait>::Hash,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2037,7 +2010,7 @@ decl_event!(
         // Posts & Replies
         PostCreated(ContentActor, PostCreationParameters, PostId),
         PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
-        PostDeleted(ContentActor, PostId),
+        PostDeleted(ContentActor, VideoId, PostId, Hash),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, MemberId, ModSetOperation),

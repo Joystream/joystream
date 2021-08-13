@@ -213,6 +213,7 @@ parameter_types! {
     pub const CleanupMargin: u32 = 3;
     pub const PricePerByte: usize = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+    pub const BloatBondCap: u32 = 1000;
 }
 
 impl Trait for Test {
@@ -266,6 +267,9 @@ impl Trait for Test {
 
     /// module id
     type VideoCommentsModuleId = VideoCommentsModuleId;
+
+    /// bloat bond cap
+    type BloatBondCap = BloatBondCap;
 }
 
 pub type System = frame_system::Module<Test>;

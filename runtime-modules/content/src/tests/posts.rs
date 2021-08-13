@@ -587,42 +587,34 @@ fn verify_delete_post_effects() {
         let member_id = FIRST_MEMBER_ID;
         let curator_id = FIRST_CURATOR_ID;
         let curator_account = FIRST_CURATOR_ORIGIN;
-        let allow_comments = true;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
 
-        let scenario = setup_testing_scenario(
+        let scenario = setup_testing_scenario_with_comment_post(
             member_account,
             member_id,
             curator_account,
             curator_id,
-            allow_comments,
+            comment_author_account,
+            comment_author_id,
         );
 
-        let parent_id = Content::next_post_id();
+        // let parent_id = Content::next_post_id();
 
-        // create post
-        assert_ok!(Content::create_post(
-            Origin::signed(member_account),
-            ContentActor::Member(member_id),
-            PostCreationParameters {
-                video_reference: scenario.member_video_id.clone(),
-                parent_id: None,
-                text: b"abc".to_vec(),
-                post_type: PostType::VideoPost,
-            }
-        ));
+        // // create post
+        // assert_ok!(Content::create_post(
+        //     Origin::signed(member_account),
+        //     ContentActor::Member(member_id),
+        //     PostCreationParameters {
+        //         video_reference: scenario.member_video_id.clone(),
+        //         parent_id: None,
+        //         text: b"abc".to_vec(),
+        //         post_type: PostType::VideoPost,
+        //     }
+        // ));
 
-        let child_id = Content::next_post_id();
-
-        assert_ok!(Content::create_post(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            ContentActor::Member(SECOND_MEMBER_ID),
-            PostCreationParameters {
-                video_reference: scenario.member_video_id,
-                parent_id: Some(parent_id),
-                text: b"abc".to_vec(),
-                post_type: PostType::Comment,
-            }
-        ));
+        let parent_id = scenario.video_post_id.unwrap_or(0);
+        let child_id = scenario.comment_post_id.unwrap_or(0);
 
         let replies_count_pre =
             PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
@@ -766,9 +758,6 @@ fn verify_edit_post_effects() {
             comment_author_id,
         );
 
-        let balance_pre: u64 =
-            balances::Module::<Test>::free_balance(comment_author_account).into();
-
         assert_ok!(Content::edit_post_text(
             Origin::signed(comment_author_account),
             scenario.member_video_id,
@@ -777,14 +766,6 @@ fn verify_edit_post_effects() {
             b"efghilm".to_vec(),
         ));
 
-        let balance_post: u64 =
-            balances::Module::<Test>::free_balance(comment_author_account).into();
-
-        let expected_balance: u64 =
-            4u64 * <Test as Trait>::PricePerByte::get().try_into().unwrap_or(0);
-
-        // accounting verification
-        assert_eq!(balance_post - balance_pre, expected_balance);
         assert_eq!(
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::PostTextUpdated(
