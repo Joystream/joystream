@@ -552,35 +552,6 @@
         "identity": "IPNSIdentity",
         "expires_at": "u32"
     },
-    "ContentId": "[u8;32]",
-    "LiaisonJudgement": {
-        "_enum": [
-            "Pending",
-            "Accepted",
-            "Rejected"
-        ]
-    },
-    "DataObject": {
-        "owner": "MemberId",
-        "added_at": "BlockAndTime",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "liaison": "StorageProviderId",
-        "liaison_judgement": "LiaisonJudgement",
-        "ipfs_content_id": "Text"
-    },
-    "DataObjectStorageRelationshipId": "u64",
-    "DataObjectStorageRelationship": {
-        "content_id": "ContentId",
-        "storage_provider": "StorageProviderId",
-        "ready": "bool"
-    },
-    "DataObjectTypeId": "u64",
-    "DataObjectType": {
-        "description": "Text",
-        "active": "bool"
-    },
-    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -1008,7 +979,7 @@
         "prize": "u128"
     },
     "Bag": {
-        "objects": "BTreeMap<DataObjectId,StorageDataObject>",
+        "objects": "BTreeMap<DataObjectId,DataObject>",
         "stored_by": "StorageBucketIdSet",
         "distributed_by": "Vec<DistributionBucketId>",
         "deletion_prize": "Option<u128>"
@@ -1071,7 +1042,7 @@
             "StorageWorker": "WorkerId"
         }
     },
-    "StorageDataObject": {
+    "DataObject": {
         "accepted": "bool",
         "deletion_prize": "u128",
         "size": "u64"

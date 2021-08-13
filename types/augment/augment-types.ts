@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { BitVec, Bool, Bytes, Compact, Data, DoNotConstruct, I128, I16, I256, I32, I64, I8, Json, Null, Option, Raw, StorageKey, Text, Type, U128, U16, U256, U32, U64, U8, USize, Vec, bool, i128, i16, i256, i32, i64, i8, u128, u16, u256, u32, u64, u8, usize } from '@polkadot/types';
-import type { AcceptingApplications, ActivateOpeningAt, ActiveOpeningStage, ActiveOpeningStageVariant, ActiveStake, Actor, ActorId, AddOpeningParameters, AddSchemaSupportToEntityOperation, AdjustCapacityBy, AdjustOnInterval, Application, ApplicationDeactivationCause, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationOf, ApplicationRationingPolicy, ApplicationStage, Approved, Backer, Backers, Bag, BagId, BagIdType, BalanceOfMint, BlockAndTime, Category, CategoryId, Channel, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ChildPositionInParentCategory, Cid, Class, ClassId, ClassOf, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentId, ContentIdSet, CreateEntityOperation, Credential, CredentialSet, CurationActor, Curator, CuratorApplication, CuratorApplicationId, CuratorApplicationIdSet, CuratorApplicationIdToCuratorIdMap, CuratorExitInitiationOrigin, CuratorExitSummary, CuratorGroup, CuratorGroupId, CuratorId, CuratorInduction, CuratorOpening, CuratorOpeningId, CuratorRoleStage, CuratorRoleStakeProfile, DataObject, DataObjectCreationParameters, DataObjectId, DataObjectIdSet, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DataObjectsMap, Deactivated, DiscussionPost, DiscussionThread, DistributionBucket, DistributionBucketFamily, DistributionBucketFamilyId, DistributionBucketId, Dynamic, DynamicBagCreationPolicy, DynamicBagDeletionPrize, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, ElectionParameters, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, EntryMethod, ExecutionFailed, ExitedLeadRole, FailedAt, FillOpeningParameters, Finalized, HashedTextMaxLength, HiringApplicationId, IPNSIdentity, InactiveApplicationStage, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, Lead, LeadId, LeadRoleState, LiaisonJudgement, MemberId, Membership, MemoText, Mint, MintBalanceOf, MintId, ModerationAction, NextAdjustment, Nonce, Opening, OpeningDeactivationCause, OpeningId, OpeningOf, OpeningPolicyCommitment, OpeningStage, OpeningType, Operation, OperationType, OptionalText, PaidMembershipTerms, PaidTermId, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, Post, PostId, PostTextChange, Principal, PrincipalId, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecisionStatus, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, RationaleText, Recipient, RecipientId, ReferenceConstraint, ReferenceCounterSideEffects, Reply, ReplyId, ReviewPeriod, RewardPolicy, RewardRelationship, RewardRelationshipId, RoleParameters, RoleStakeProfile, SameController, Schema, SchemaId, SealedVote, Seat, Seats, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, Slash, SlashableTerms, SlashingTerms, Stake, StakeId, Staked, StakedStatus, StakingAmountLimitMode, StakingPolicy, StakingStatus, Static, StaticBagId, Status, StorageBucket, StorageBucketId, StorageBucketIdSet, StorageBucketOperatorStatus, StorageBucketsPerBagValueConstraint, StorageDataObject, StorageProviderId, StoredPropertyValue, StoredValue, SubscriptionId, TerminateRoleParameters, TextMaxLength, Thread, ThreadCounter, ThreadId, TransferableStake, Unstaking, UnstakingApplicationStage, UpdatePropertyValuesOperation, UploadParameters, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, VoteKind, VotingResults, Voucher, WaitingToBeingOpeningStageVariant, WorkerId, WorkerOf, WorkingGroup, WorkingGroupOpeningPolicyCommitment, WorkingGroupUnstaker } from './all';
+import type { AcceptingApplications, ActivateOpeningAt, ActiveOpeningStage, ActiveOpeningStageVariant, ActiveStake, Actor, ActorId, AddOpeningParameters, AddSchemaSupportToEntityOperation, AdjustCapacityBy, AdjustOnInterval, Application, ApplicationDeactivationCause, ApplicationId, ApplicationIdSet, ApplicationIdToWorkerIdMap, ApplicationOf, ApplicationRationingPolicy, ApplicationStage, Approved, Backer, Backers, Bag, BagId, BagIdType, BalanceOfMint, BlockAndTime, Category, CategoryId, Channel, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, ChildPositionInParentCategory, Cid, Class, ClassId, ClassOf, ClassPermissions, ClassPermissionsType, ClassPropertyValue, ContentIdSet, CreateEntityOperation, Credential, CredentialSet, CurationActor, Curator, CuratorApplication, CuratorApplicationId, CuratorApplicationIdSet, CuratorApplicationIdToCuratorIdMap, CuratorExitInitiationOrigin, CuratorExitSummary, CuratorGroup, CuratorGroupId, CuratorId, CuratorInduction, CuratorOpening, CuratorOpeningId, CuratorRoleStage, CuratorRoleStakeProfile, DataObject, DataObjectCreationParameters, DataObjectId, DataObjectIdSet, Deactivated, DiscussionPost, DiscussionThread, DistributionBucket, DistributionBucketFamily, DistributionBucketFamilyId, DistributionBucketId, Dynamic, DynamicBagCreationPolicy, DynamicBagDeletionPrize, DynamicBagDeletionPrizeRecord, DynamicBagId, DynamicBagType, ElectionParameters, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, EntityPermissions, EntityReferenceCounterSideEffect, EntryMethod, ExecutionFailed, ExitedLeadRole, FailedAt, FillOpeningParameters, Finalized, HashedTextMaxLength, HiringApplicationId, IPNSIdentity, InactiveApplicationStage, InboundReferenceCounter, InputEntityValuesMap, InputPropertyValue, InputValidationLengthConstraint, InputValue, Lead, LeadId, LeadRoleState, MemberId, Membership, MemoText, Mint, MintBalanceOf, MintId, ModerationAction, NextAdjustment, Nonce, Opening, OpeningDeactivationCause, OpeningId, OpeningOf, OpeningPolicyCommitment, OpeningStage, OpeningType, Operation, OperationType, OptionalText, PaidMembershipTerms, PaidTermId, ParameterizedEntity, ParametrizedClassPropertyValue, ParametrizedPropertyValue, Post, PostId, PostTextChange, Principal, PrincipalId, Property, PropertyId, PropertyLockingPolicy, PropertyType, PropertyTypeSingle, PropertyTypeVector, ProposalDecisionStatus, ProposalDetails, ProposalDetailsOf, ProposalId, ProposalOf, ProposalParameters, ProposalStatus, RationaleText, Recipient, RecipientId, ReferenceConstraint, ReferenceCounterSideEffects, Reply, ReplyId, ReviewPeriod, RewardPolicy, RewardRelationship, RewardRelationshipId, RoleParameters, RoleStakeProfile, SameController, Schema, SchemaId, SealedVote, Seat, Seats, ServiceProviderRecord, SetLeadParams, SideEffect, SideEffects, Slash, SlashableTerms, SlashingTerms, Stake, StakeId, Staked, StakedStatus, StakingAmountLimitMode, StakingPolicy, StakingStatus, Static, StaticBagId, Status, StorageBucket, StorageBucketId, StorageBucketIdSet, StorageBucketOperatorStatus, StorageBucketsPerBagValueConstraint, StorageProviderId, StoredPropertyValue, StoredValue, SubscriptionId, TerminateRoleParameters, TextMaxLength, Thread, ThreadCounter, ThreadId, TransferableStake, Unstaking, UnstakingApplicationStage, UpdatePropertyValuesOperation, UploadParameters, Url, VecInputValue, VecMaxLength, VecStoredPropertyValue, VecStoredValue, VoteKind, VotingResults, Voucher, WaitingToBeingOpeningStageVariant, WorkerId, WorkerOf, WorkingGroup, WorkingGroupOpeningPolicyCommitment, WorkingGroupUnstaker } from './all';
 import type { AssetApproval, AssetApprovalKey, AssetBalance, AssetDestroyWitness, AssetDetails, AssetMetadata, TAssetBalance, TAssetDepositBalance } from '@polkadot/types/interfaces/assets';
 import type { BlockAttestations, IncludedBlocks, MoreAttestations } from '@polkadot/types/interfaces/attestations';
 import type { RawAuraPreDigest } from '@polkadot/types/interfaces/aura';
@@ -87,8 +87,6 @@ declare module '@polkadot/types/types/registry' {
     'Compact<CuratorId>': Compact<CuratorId>;
     'Compact<CuratorOpeningId>': Compact<CuratorOpeningId>;
     'Compact<DataObjectId>': Compact<DataObjectId>;
-    'Compact<DataObjectStorageRelationshipId>': Compact<DataObjectStorageRelationshipId>;
-    'Compact<DataObjectTypeId>': Compact<DataObjectTypeId>;
     'Compact<DistributionBucketFamilyId>': Compact<DistributionBucketFamilyId>;
     'Compact<DistributionBucketId>': Compact<DistributionBucketId>;
     'Compact<EntityId>': Compact<EntityId>;
@@ -343,7 +341,6 @@ declare module '@polkadot/types/types/registry' {
     'Option<Consensus>': Option<Consensus>;
     'Option<ConsensusEngineId>': Option<ConsensusEngineId>;
     'Option<ConsumedWeight>': Option<ConsumedWeight>;
-    'Option<ContentId>': Option<ContentId>;
     'Option<ContentIdSet>': Option<ContentIdSet>;
     'Option<ContractCallRequest>': Option<ContractCallRequest>;
     'Option<ContractConstructorSpec>': Option<ContractConstructorSpec>;
@@ -409,11 +406,6 @@ declare module '@polkadot/types/types/registry' {
     'Option<DataObjectCreationParameters>': Option<DataObjectCreationParameters>;
     'Option<DataObjectId>': Option<DataObjectId>;
     'Option<DataObjectIdSet>': Option<DataObjectIdSet>;
-    'Option<DataObjectsMap>': Option<DataObjectsMap>;
-    'Option<DataObjectStorageRelationship>': Option<DataObjectStorageRelationship>;
-    'Option<DataObjectStorageRelationshipId>': Option<DataObjectStorageRelationshipId>;
-    'Option<DataObjectType>': Option<DataObjectType>;
-    'Option<DataObjectTypeId>': Option<DataObjectTypeId>;
     'Option<Deactivated>': Option<Deactivated>;
     'Option<DeferredOffenceOf>': Option<DeferredOffenceOf>;
     'Option<DefunctVoter>': Option<DefunctVoter>;
@@ -669,7 +661,6 @@ declare module '@polkadot/types/types/registry' {
     'Option<LeadRoleState>': Option<LeadRoleState>;
     'Option<LeasePeriod>': Option<LeasePeriod>;
     'Option<LeasePeriodOf>': Option<LeasePeriodOf>;
-    'Option<LiaisonJudgement>': Option<LiaisonJudgement>;
     'Option<Limits>': Option<Limits>;
     'Option<LimitsTo264>': Option<LimitsTo264>;
     'Option<LocalValidationData>': Option<LocalValidationData>;
@@ -1013,7 +1004,6 @@ declare module '@polkadot/types/types/registry' {
     'Option<StorageBucketsPerBagValueConstraint>': Option<StorageBucketsPerBagValueConstraint>;
     'Option<StorageChangeSet>': Option<StorageChangeSet>;
     'Option<StorageData>': Option<StorageData>;
-    'Option<StorageDataObject>': Option<StorageDataObject>;
     'Option<StorageEntryMetadataLatest>': Option<StorageEntryMetadataLatest>;
     'Option<StorageEntryMetadataV10>': Option<StorageEntryMetadataV10>;
     'Option<StorageEntryMetadataV11>': Option<StorageEntryMetadataV11>;
@@ -1323,7 +1313,6 @@ declare module '@polkadot/types/types/registry' {
     'Vec<Consensus>': Vec<Consensus>;
     'Vec<ConsensusEngineId>': Vec<ConsensusEngineId>;
     'Vec<ConsumedWeight>': Vec<ConsumedWeight>;
-    'Vec<ContentId>': Vec<ContentId>;
     'Vec<ContentIdSet>': Vec<ContentIdSet>;
     'Vec<ContractCallRequest>': Vec<ContractCallRequest>;
     'Vec<ContractConstructorSpec>': Vec<ContractConstructorSpec>;
@@ -1389,11 +1378,6 @@ declare module '@polkadot/types/types/registry' {
     'Vec<DataObjectCreationParameters>': Vec<DataObjectCreationParameters>;
     'Vec<DataObjectId>': Vec<DataObjectId>;
     'Vec<DataObjectIdSet>': Vec<DataObjectIdSet>;
-    'Vec<DataObjectsMap>': Vec<DataObjectsMap>;
-    'Vec<DataObjectStorageRelationship>': Vec<DataObjectStorageRelationship>;
-    'Vec<DataObjectStorageRelationshipId>': Vec<DataObjectStorageRelationshipId>;
-    'Vec<DataObjectType>': Vec<DataObjectType>;
-    'Vec<DataObjectTypeId>': Vec<DataObjectTypeId>;
     'Vec<Deactivated>': Vec<Deactivated>;
     'Vec<DeferredOffenceOf>': Vec<DeferredOffenceOf>;
     'Vec<DefunctVoter>': Vec<DefunctVoter>;
@@ -1649,7 +1633,6 @@ declare module '@polkadot/types/types/registry' {
     'Vec<LeadRoleState>': Vec<LeadRoleState>;
     'Vec<LeasePeriod>': Vec<LeasePeriod>;
     'Vec<LeasePeriodOf>': Vec<LeasePeriodOf>;
-    'Vec<LiaisonJudgement>': Vec<LiaisonJudgement>;
     'Vec<Limits>': Vec<Limits>;
     'Vec<LimitsTo264>': Vec<LimitsTo264>;
     'Vec<LocalValidationData>': Vec<LocalValidationData>;
@@ -1993,7 +1976,6 @@ declare module '@polkadot/types/types/registry' {
     'Vec<StorageBucketsPerBagValueConstraint>': Vec<StorageBucketsPerBagValueConstraint>;
     'Vec<StorageChangeSet>': Vec<StorageChangeSet>;
     'Vec<StorageData>': Vec<StorageData>;
-    'Vec<StorageDataObject>': Vec<StorageDataObject>;
     'Vec<StorageEntryMetadataLatest>': Vec<StorageEntryMetadataLatest>;
     'Vec<StorageEntryMetadataV10>': Vec<StorageEntryMetadataV10>;
     'Vec<StorageEntryMetadataV11>': Vec<StorageEntryMetadataV11>;
@@ -2303,7 +2285,6 @@ declare module '@polkadot/types/types/registry' {
     Consensus: Consensus;
     ConsensusEngineId: ConsensusEngineId;
     ConsumedWeight: ConsumedWeight;
-    ContentId: ContentId;
     ContentIdSet: ContentIdSet;
     ContractCallRequest: ContractCallRequest;
     ContractConstructorSpec: ContractConstructorSpec;
@@ -2369,11 +2350,6 @@ declare module '@polkadot/types/types/registry' {
     DataObjectCreationParameters: DataObjectCreationParameters;
     DataObjectId: DataObjectId;
     DataObjectIdSet: DataObjectIdSet;
-    DataObjectsMap: DataObjectsMap;
-    DataObjectStorageRelationship: DataObjectStorageRelationship;
-    DataObjectStorageRelationshipId: DataObjectStorageRelationshipId;
-    DataObjectType: DataObjectType;
-    DataObjectTypeId: DataObjectTypeId;
     Deactivated: Deactivated;
     DeferredOffenceOf: DeferredOffenceOf;
     DefunctVoter: DefunctVoter;
@@ -2629,7 +2605,6 @@ declare module '@polkadot/types/types/registry' {
     LeadRoleState: LeadRoleState;
     LeasePeriod: LeasePeriod;
     LeasePeriodOf: LeasePeriodOf;
-    LiaisonJudgement: LiaisonJudgement;
     Limits: Limits;
     LimitsTo264: LimitsTo264;
     LocalValidationData: LocalValidationData;
@@ -2973,7 +2948,6 @@ declare module '@polkadot/types/types/registry' {
     StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint;
     StorageChangeSet: StorageChangeSet;
     StorageData: StorageData;
-    StorageDataObject: StorageDataObject;
     StorageEntryMetadataLatest: StorageEntryMetadataLatest;
     StorageEntryMetadataV10: StorageEntryMetadataV10;
     StorageEntryMetadataV11: StorageEntryMetadataV11;

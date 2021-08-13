@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, U8aFixed, Vec, bool, i16, i32, i64, u128, u16, u32, u64 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, Vec, bool, i16, i32, i64, u128, u16, u32, u64 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
@@ -160,7 +160,7 @@ export interface Backers extends Vec<Backer> {}
 
 /** @name Bag */
 export interface Bag extends Struct {
-  readonly objects: BTreeMap<DataObjectId, StorageDataObject>;
+  readonly objects: BTreeMap<DataObjectId, DataObject>;
   readonly stored_by: StorageBucketIdSet;
   readonly distributed_by: Vec<DistributionBucketId>;
   readonly deletion_prize: Option<u128>;
@@ -298,9 +298,6 @@ export interface ClassPermissionsType extends Null {}
 /** @name ClassPropertyValue */
 export interface ClassPropertyValue extends Null {}
 
-/** @name ContentId */
-export interface ContentId extends U8aFixed {}
-
 /** @name ContentIdSet */
 export interface ContentIdSet extends BTreeSet<Cid> {}
 
@@ -410,12 +407,8 @@ export interface CuratorRoleStakeProfile extends Struct {
 
 /** @name DataObject */
 export interface DataObject extends Struct {
-  readonly owner: MemberId;
-  readonly added_at: BlockAndTime;
-  readonly type_id: DataObjectTypeId;
-  readonly liaison: StorageProviderId;
-  readonly liaison_judgement: LiaisonJudgement;
-  readonly ipfs_content_id: Text;
+  readonly accepted: bool;
+  readonly deletion_prize: u128;
 }
 
 /** @name DataObjectCreationParameters */
@@ -428,28 +421,6 @@ export interface DataObjectId extends u64 {}
 
 /** @name DataObjectIdSet */
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
-
-/** @name DataObjectsMap */
-export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
-
-/** @name DataObjectStorageRelationship */
-export interface DataObjectStorageRelationship extends Struct {
-  readonly content_id: ContentId;
-  readonly storage_provider: StorageProviderId;
-  readonly ready: bool;
-}
-
-/** @name DataObjectStorageRelationshipId */
-export interface DataObjectStorageRelationshipId extends u64 {}
-
-/** @name DataObjectType */
-export interface DataObjectType extends Struct {
-  readonly description: Text;
-  readonly active: bool;
-}
-
-/** @name DataObjectTypeId */
-export interface DataObjectTypeId extends u64 {}
 
 /** @name Deactivated */
 export interface Deactivated extends Struct {
@@ -727,13 +698,6 @@ export interface LeadRoleState extends Enum {
   readonly isActive: boolean;
   readonly isExited: boolean;
   readonly asExited: ExitedLeadRole;
-}
-
-/** @name LiaisonJudgement */
-export interface LiaisonJudgement extends Enum {
-  readonly isPending: boolean;
-  readonly isAccepted: boolean;
-  readonly isRejected: boolean;
 }
 
 /** @name LookupSource */
@@ -1335,12 +1299,6 @@ export interface StorageBucketOperatorStatus extends Enum {
 export interface StorageBucketsPerBagValueConstraint extends Struct {
   readonly min: u64;
   readonly max_min_diff: u64;
-}
-
-/** @name StorageDataObject */
-export interface StorageDataObject extends Struct {
-  readonly accepted: bool;
-  readonly deletion_prize: u128;
 }
 
 /** @name StorageProviderId */
