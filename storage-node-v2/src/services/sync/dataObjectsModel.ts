@@ -15,7 +15,7 @@ export type Model = {
 
 type StorageBucket = {
   id: string
-  url: string
+  operatorUrl: string
   workerId: number
 }
 
@@ -48,7 +48,7 @@ export async function getRuntimeModel(
   const model: Model = {
     storageBuckets: allBuckets.map((bucket) => ({
       id: bucket.id,
-      url: extractOperatorUrl(bucket.operatorMetadata),
+      operatorUrl: extractOperatorUrl(bucket.operatorMetadata),
       workerId: bucket.operatorStatus?.workerId,
     })),
     bags: assignedBags.map((bag) => ({

@@ -13,7 +13,7 @@ export default class DevSync extends Command {
       description: 'Storage node operator worker ID.',
     }),
     processNumber: flags.integer({
-      char: 'w',
+      char: 'p',
       required: false,
       description: 'Sync workers number (max async operations in progress).',
     }),
@@ -27,6 +27,11 @@ export default class DevSync extends Command {
       required: false,
       description:
         'Storage node host and port (e.g.: some.com:8081) to get data from.',
+    }),    
+    uploads: flags.string({
+      char: 'd',
+      required: true,
+      description: 'Data uploading directory (absolute path).',
     }),
   }
 
@@ -37,19 +42,17 @@ export default class DevSync extends Command {
 
     const queryNodeHost = flags.queryNodeHost ?? 'localhost:8081'
     const queryNodeUrl = `http://${queryNodeHost}/graphql`
-    const workerId = flags.workerId
     const processNumber = flags.processNumber ?? 30
-    const uploadDirectory = '/Users/shamix/uploads'
     const dataSourceOperatorHost =
       flags.dataSourceOperatorHost ?? 'localhost:3333'
     const operatorUrl = `http://${dataSourceOperatorHost}/`
 
     try {
       await performSync(
-        workerId,
+        flags.workerId,
         processNumber,
         queryNodeUrl,
-        uploadDirectory,
+        flags.uploads,
         operatorUrl
       )
     } catch (err) {

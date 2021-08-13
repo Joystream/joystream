@@ -8,7 +8,11 @@ import {
   verifyTokenSignature,
 } from '../../helpers/auth'
 import { hashFile } from '../../../services/helpers/hashing'
-import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
+import {
+  createNonce,
+  getTokenExpirationTime,
+} from '../../../services/helpers/tokenNonceKeeper'
+import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
 import { parseBagId } from '../../helpers/bagTypes'
 import { BagId } from '@joystream/types/storage'
@@ -428,4 +432,26 @@ function getHttpStatusCodeByError(err: Error): number {
   }
 
   return 500
+}
+
+/**
+ * A public endpoint: return all local data objects.
+ */
+ export async function getAllLocalDataObjects(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  try {
+    const uploadsDir = getUploadsDir(res)
+
+    const cids = await getLocalDataObjects(uploadsDir)
+
+    res.status(200).json(cids)
+  } catch (err) {
+
+    res.status(500).json({
+      type: 'local_data_objects',
+      message: err.toString(),
+    })
+  }
 }
