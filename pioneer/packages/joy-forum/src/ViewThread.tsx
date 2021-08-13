@@ -165,17 +165,22 @@ async function refreshPostsInThreadCache (nextPostId: PostId, api: ApiPromise) {
 
   const newPosts = await Promise.all<Post>(apiCalls);
 
-  for (const post of newPosts) {
-    let posts = postsToThread.get(post.thread_id.toNumber()) as number[];
-    const postId = post.id.toNumber();
+  const newPostsToThread = new Map<number, number[]>();
 
-    if (!posts) {
-      posts = [postId];
-    } else if (!posts.includes(postId)) {
-      posts.push(postId);
-    }
+  newPosts.forEach((newPost) => {
+    const previousNewPostIds = newPostsToThread.get(newPost.thread_id.toNumber()) ?? [];
 
-    postsToThread.set(post.thread_id.toNumber(), posts);
+    newPostsToThread.set(newPost.thread_id.toNumber(), [...previousNewPostIds, newPost.id.toNumber()])
+  });
+
+  if (postsToThread.size > 0) {
+    newPostsToThread.forEach((postIds, threadId) => {
+      const existingPostIds = postsToThread.get(threadId) ?? [];
+
+      postsToThread.set(threadId, [...existingPostIds, ...postIds]);
+    });
+  } else {
+    postsToThread = newPostsToThread;
   }
 
   localStorage.setItem(POSTS_THREAD_MAP_CACHE_KEY, JSON.stringify([...postsToThread]));
