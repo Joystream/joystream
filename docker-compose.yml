@@ -64,7 +64,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${INDEXER_DB_NAME}
 
-  graphql-server: &graphql-server
+  graphql-server:
     image: joystream/apps
     restart: unless-stopped
     build:
@@ -83,9 +83,18 @@ services:
     command: ["workspace", "query-node-root", "query-node:start:prod"]
 
   graphql-server-mnt:
-    <<: *graphql-server
     image: node:14
-    build: .
+    restart: unless-stopped
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+    ports:
+      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
+    depends_on:
+      - db
     volumes:
       - type: bind
         source: .
@@ -93,7 +102,7 @@ services:
     working_dir: /joystream
     command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
 
-  processor: &processor
+  processor:
     image: joystream/apps
     restart: unless-stopped
     build:
@@ -115,9 +124,19 @@ services:
     command: ["workspace", "query-node-root", "processor:start"]
 
   processor-mnt:
-    <<: *processor
     image: node:14
-    build: .
+    restart: unless-stopped
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      - INDEXER_ENDPOINT_URL=http://hydra-indexer-gateway:${WARTHOG_APP_PORT}/graphql
+      - TYPEORM_HOST=db
+      - TYPEORM_DATABASE=${DB_NAME}
+      - DEBUG=index-builder:*
+      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
+    depends_on:
+      - hydra-indexer-gateway
     volumes:
       - type: bind
         source: .

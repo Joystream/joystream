@@ -14,7 +14,7 @@ typegen:
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
     - storage.StorageBucketsUpdatedForBag
-    - storage.DataObjectdUploaded
+    - storage.DataObjectsUploaded
     - storage.StorageOperatorMetadataSet
     - storage.StorageBucketVoucherLimitsSet
     - storage.PendingDataObjectsAccepted
@@ -31,10 +31,22 @@ typegen:
     - storage.UpdateBlacklist
     - storage.DynamicBagDeleted
     - storage.DynamicBagCreated
-    - storage.DeletionPrizeChanged
     - storage.VoucherChanged
     - storage.StorageBucketDeleted
     - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
+    - storage.DistributionBucketFamilyCreated
+    - storage.DistributionBucketFamilyDeleted
+    - storage.DistributionBucketCreated
+    - storage.DistributionBucketStatusUpdated
+    - storage.DistributionBucketDeleted
+    - storage.DistributionBucketsUpdatedForBag
+    - storage.DistributionBucketsPerBagLimitUpdated
+    - storage.DistributionBucketModeUpdated
+    - storage.FamiliesInDynamicBagCreationPolicyUpdated
+    - storage.DistributionBucketOperatorInvited
+    - storage.DistributionBucketInvitationCancelled
+    - storage.DistributionBucketInvitationAccepted
+    - storage.DistributionBucketMetadataSet
   calls:
     # - members.updateProfile
   outDir: ./mappings/generated/types
@@ -55,8 +67,8 @@ mappings:
       handler: storage_StorageBucketInvitationAccepted
     - event: storage.StorageBucketsUpdatedForBag
       handler: storage_StorageBucketsUpdatedForBag
-    - event: storage.DataObjectdUploaded
-      handler: storage_DataObjectdUploaded
+    - event: storage.DataObjectsUploaded
+      handler: storage_DataObjectsUploaded
     - event: storage.StorageOperatorMetadataSet
       handler: storage_StorageOperatorMetadataSet
     - event: storage.StorageBucketVoucherLimitsSet
@@ -89,14 +101,38 @@ mappings:
       handler: storage_DynamicBagDeleted
     - event: storage.DynamicBagCreated
       handler: storage_DynamicBagCreated
-    - event: storage.DeletionPrizeChanged
-      handler: storage_DeletionPrizeChanged
     - event: storage.VoucherChanged
       handler: storage_VoucherChanged
     - event: storage.StorageBucketDeleted
       handler: storage_StorageBucketDeleted
     - event: storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
       handler: storage_NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
+    - event: storage.DistributionBucketFamilyCreated
+      handler: storage_DistributionBucketFamilyCreated
+    - event: storage.DistributionBucketFamilyDeleted
+      handler: storage_DistributionBucketFamilyDeleted
+    - event: storage.DistributionBucketCreated
+      handler: storage_DistributionBucketCreated
+    - event: storage.DistributionBucketStatusUpdated
+      handler: storage_DistributionBucketStatusUpdated
+    - event: storage.DistributionBucketDeleted
+      handler: storage_DistributionBucketDeleted
+    - event: storage.DistributionBucketsUpdatedForBag
+      handler: storage_DistributionBucketsUpdatedForBag
+    - event: storage.DistributionBucketsPerBagLimitUpdated
+      handler: storage_DistributionBucketsPerBagLimitUpdated
+    - event: storage.DistributionBucketModeUpdated
+      handler: storage_DistributionBucketModeUpdated
+    - event: storage.FamiliesInDynamicBagCreationPolicyUpdated
+      handler: storage_FamiliesInDynamicBagCreationPolicyUpdated
+    - event: storage.DistributionBucketOperatorInvited
+      handler: storage_DistributionBucketOperatorInvited
+    - event: storage.DistributionBucketInvitationCancelled
+      handler: storage_DistributionBucketInvitationCancelled
+    - event: storage.DistributionBucketInvitationAccepted
+      handler: storage_DistributionBucketInvitationAccepted
+    - event: storage.DistributionBucketMetadataSet
+      handler: storage_DistributionBucketMetadataSet
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer

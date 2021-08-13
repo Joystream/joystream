@@ -419,6 +419,9 @@ export interface DataObjectCreationParameters extends Struct {
 /** @name DataObjectId */
 export interface DataObjectId extends u64 {}
 
+/** @name DataObjectIdMap */
+export interface DataObjectIdMap extends BTreeMap<DataObjectId, DataObject> {}
+
 /** @name DataObjectIdSet */
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
@@ -1515,6 +1518,7 @@ export interface WorkerOf extends Struct {
 
 /** @name WorkingGroup */
 export interface WorkingGroup extends Enum {
+  readonly isForum: boolean;
   readonly isStorage: boolean;
   readonly isContent: boolean;
   readonly isDistribution: boolean;

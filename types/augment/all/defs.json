@@ -13,6 +13,7 @@
     },
     "WorkingGroup": {
         "_enum": [
+            "Forum",
             "Storage",
             "Content",
             "Distribution"
@@ -1061,6 +1062,7 @@
     "DistributionBucketFamily": {
         "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
     },
+    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>"
 }
