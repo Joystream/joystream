@@ -1,3 +1,7 @@
+/**
+ * CLI process exit codes.
+ *
+ */
 enum ExitCodes {
   OK = 0,
 
@@ -7,4 +11,5 @@ enum ExitCodes {
   ApiError = 200,
   UnsuccessfulRuntimeCall,
 }
+
 export = ExitCodes

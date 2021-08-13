@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Removes invited storage bucket operator.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:remove-operator"
+ */
 export default class LeaderRemoveOperator extends ApiCommandBase {
   static description = `Remove a storage bucket operator. Requires storage working group leader permissions.`
 
@@ -28,11 +36,7 @@ export default class LeaderRemoveOperator extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    const success = await removeStorageBucketOperator(
-      api,
-      account,
-      storageBucketId
-    )
+    const success = await removeStorageBucketOperator(api, account, storageBucketId)
 
     this.exitAfterRuntimeCall(success)
   }

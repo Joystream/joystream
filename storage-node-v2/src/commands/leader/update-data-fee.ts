@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Updates storage data fee in the runtime.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-data-fee"
+ */
 export default class LeaderUpdateDataFee extends ApiCommandBase {
   static description = `Update data size fee. Requires storage working group leader permissions.`
 

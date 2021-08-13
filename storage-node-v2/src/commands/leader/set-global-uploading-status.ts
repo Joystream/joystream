@@ -3,26 +3,32 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
-export default class LeaderSetUploadingBlock extends ApiCommandBase {
+/**
+ * CLI command:
+ * Manages global uploading block in the runtime.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:set-global-uploading-status"
+ */
+export default class LeaderSetGlobalUploadingStatus extends ApiCommandBase {
   static description = `Set global uploading block. Requires storage working group leader permissions.`
 
   static flags = {
-    enable: flags.boolean({
-      char: 'e',
-      description: 'Enables global uploading block (default).',
-    }),
-    disable: flags.boolean({
-      char: 'd',
-      description: 'Disables global uploading block.',
+    set: flags.enum({
+      char: 's',
+      description: 'Sets global uploading block (on/off).',
+      options: ['on', 'off'],
+      required: true,
     }),
     ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(LeaderSetUploadingBlock)
+    const { flags } = this.parse(LeaderSetGlobalUploadingStatus)
 
-    const disable = flags.disable
-    const newStatus = !disable
+    // Enable blocking?
+    const newStatus = flags.set === 'on'
 
     logger.info('Setting global uploading block...')
     if (flags.dev) {

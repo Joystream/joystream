@@ -3,20 +3,45 @@ import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import { parseBagId } from '../../services/helpers/bagTypes'
 import logger from '../../services/logger'
+import ExitCodes from '../../command-base/ExitCodes'
+import _ from 'lodash'
 
+// Custom 'integer array' oclif flag.
+const integerArrFlags = {
+  integerArr: flags.build({
+    parse: (value: string) => {
+      const arr: number[] = value.split(',').map((v) => {
+        if (!/^-?\d+$/.test(v)) {
+          throw new Error(`Expected comma-separated integers, but received: ${value}`)
+        }
+        return parseInt(v)
+      })
+      return arr
+    },
+  }),
+}
+
+/**
+ * CLI command:
+ * Updates bags-to-buckets relationships.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-bag"
+ */
 export default class LeaderUpdateBag extends ApiCommandBase {
-  static description =
-    'Add/remove a storage bucket from a bag (adds by default).'
+  static description = 'Add/remove a storage bucket from a bag (adds by default).'
 
   static flags = {
-    bucket: flags.integer({
-      char: 'b',
-      required: true,
-      description: 'Storage bucket ID',
+    add: integerArrFlags.integerArr({
+      char: 'a',
+      description: 'ID of a bucket to add to bag',
+      default: [],
     }),
-    remove: flags.boolean({
+    remove: integerArrFlags.integerArr({
       char: 'r',
-      description: 'Remove a bucket from the bag',
+      description: 'ID of a bucket to remove from bag',
+      default: [],
     }),
     bagId: flags.string({
       char: 'i',
@@ -41,24 +66,21 @@ export default class LeaderUpdateBag extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateBag)
 
-    const bucket = flags.bucket ?? 0
-
     logger.info('Updating the bag...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
+    }
+
+    if (_.isEmpty(flags.add) && _.isEmpty(flags.remove)) {
+      logger.error('No bucket ID provided.')
+      this.exit(ExitCodes.InvalidParameters)
     }
 
     const account = this.getAccount(flags)
     const api = await this.getApi()
     const bagId = parseBagId(api, flags.bagId)
 
-    const success = await updateStorageBucketsForBag(
-      api,
-      bagId,
-      account,
-      bucket,
-      flags.remove
-    )
+    const success = await updateStorageBucketsForBag(api, bagId, account, flags.add, flags.remove)
 
     this.exitAfterRuntimeCall(success)
   }

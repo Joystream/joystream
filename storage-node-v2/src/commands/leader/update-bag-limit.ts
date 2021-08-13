@@ -3,9 +3,16 @@ import { updateStorageBucketsPerBagLimit } from '../../services/runtime/extrinsi
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Sets new storage-buckets-per-bag limit.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-bag-limit"
+ */
 export default class LeaderUpdateBagLimit extends ApiCommandBase {
-  static description =
-    'Update StorageBucketsPerBagLimit variable in the Joystream node storage.'
+  static description = 'Update StorageBucketsPerBagLimit variable in the Joystream node storage.'
 
   static flags = {
     limit: flags.integer({
@@ -25,7 +32,7 @@ export default class LeaderUpdateBagLimit extends ApiCommandBase {
     }
 
     const account = this.getAccount(flags)
-    const limit = flags.limit ?? 0
+    const limit = flags.limit
 
     const api = await this.getApi()
     const success = await updateStorageBucketsPerBagLimit(api, account, limit)

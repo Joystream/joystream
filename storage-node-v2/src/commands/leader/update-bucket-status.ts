@@ -3,15 +3,18 @@ import { updateStorageBucketStatus } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
-export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
+/**
+ * CLI command:
+ * Updates the storage bucket status (accept new bags).
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-bucket-status"
+ */
+export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
   static description = 'Update storage bucket status (accepting new bags).'
 
   static flags = {
-    workerId: flags.integer({
-      char: 'w',
-      required: true,
-      description: 'Storage operator worker ID',
-    }),
     bucketId: flags.integer({
       char: 'i',
       required: true,
@@ -25,16 +28,21 @@ export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
       char: 'd',
       description: 'Disables accepting new bags.',
     }),
+    set: flags.enum({
+      char: 's',
+      description: `Sets 'accepting new bags' parameter for the bucket (on/off).`,
+      options: ['on', 'off'],
+      required: true,
+    }),
     ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(OperatorUpdateStorageBucketStatus)
+    const { flags } = this.parse(LeaderUpdateStorageBucketStatus)
 
-    const worker = flags.workerId ?? 0
-    const bucket = flags.bucketId ?? 0
-    const disable = flags.disable
-    const newStatus = !disable
+    const bucket = flags.bucketId
+    // Accept new bags?
+    const newStatus = flags.set === 'on'
 
     logger.info('Updating the storage bucket status...')
     if (flags.dev) {
@@ -44,13 +52,7 @@ export default class OperatorUpdateStorageBucketStatus extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    const success = await updateStorageBucketStatus(
-      api,
-      account,
-      worker,
-      bucket,
-      newStatus
-    )
+    const success = await updateStorageBucketStatus(api, account, bucket, newStatus)
 
     this.exitAfterRuntimeCall(success)
   }

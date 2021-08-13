@@ -1,7 +1,16 @@
 import { Command, flags } from '@oclif/command'
 import { hashFile } from '../../services/helpers/hashing'
-import logger from '../../services/logger'
+import logger, { createStdConsoleLogger } from '../../services/logger'
 
+/**
+ * CLI command:
+ * Hashes the file using blake3 algorithm, convert the hash in the multihash
+ * format.
+ *
+ * @remarks
+ * Should be run only during the development.
+ * Shell command: "dev:multihash"
+ */
 export default class DevMultihash extends Command {
   static description = 'Creates a multihash (blake3) for a file.'
 
@@ -22,5 +31,9 @@ export default class DevMultihash extends Command {
     const multi = await hashFile(flags.file)
 
     logger.info(`Hash: ${multi}`)
+
+    const stdConsoleLogger = createStdConsoleLogger()
+
+    stdConsoleLogger.info(multi)
   }
 }

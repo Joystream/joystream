@@ -3,22 +3,22 @@ import path from 'path'
 import cors from 'cors'
 import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
-import {
-  HttpError,
-  OpenAPIV3,
-} from 'express-openapi-validator/dist/framework/types'
+import { HttpError, OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import {
-  RequestData,
-  verifyTokenSignature,
-  parseUploadToken,
-  UploadToken,
-} from '../helpers/auth'
+import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
-import { httpLogger } from '../../services/logger'
+import { httpLogger, errorLogger } from '../../services/logger'
 
-// Creates web API application.
+/**
+ * Creates Express web application. Uses the OAS spec file for the API.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @param workerId - storage provider ID (worker ID)
+ * @param uploadsDir - directory for the file uploading
+ * @returns Express promise.
+ */
 export async function createApp(
   api: ApiPromise,
   account: KeyringPair,
@@ -59,25 +59,28 @@ export async function createApp(
         },
       },
     })
-  )
+  ) // Required signature.
 
-  // Request validation error handler.
-  /* eslint-disable @typescript-eslint/no-unused-vars */ // Required signature.
-  app.use(
-    (
-      err: HttpError,
-      req: express.Request,
-      res: express.Response,
-      next: express.NextFunction
-    ) => {
+  app.use(errorLogger())
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Request validation error handler.
+    if (err instanceof HttpError) {
       res.status(err.status).json({
         type: 'request_validation',
         message: err.message,
         errors: err.errors,
       })
-      next(err)
+    } else {
+      res.status(500).json({
+        type: 'unknown_error',
+        message: err.message,
+      })
     }
-  )
+
+    next()
+  })
 
   return app
 }
@@ -89,18 +92,17 @@ type ValidateUploadFunction = (
   schema: OpenAPIV3.SecuritySchemeObject
 ) => boolean | Promise<boolean>
 
-// Creates upload validation function.
-function validateUpload(
-  api: ApiPromise,
-  account: KeyringPair
-): ValidateUploadFunction {
+/**
+ * Creates upload validation function with captured parameters from the request.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @returns ValidateUploadFunction.
+ */
+function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFunction {
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  return (
-    req: express.Request,
-    scopes: string[],
-    schema: OpenAPIV3.SecuritySchemeObject
-  ) => {
+  return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
     const tokenString = req.headers['x-api-key'] as string
     const token = parseUploadToken(tokenString)
 
@@ -116,12 +118,14 @@ function validateUpload(
   }
 }
 
-// Throws exceptions on errors.
-function verifyUploadTokenData(
-  accountAddress: string,
-  token: UploadToken,
-  request: RequestData
-): void {
+/**
+ * Verifies upload request token. Throws exceptions on errors.
+ *
+ * @param accountAddress - account address (public key)
+ * @param token - token object
+ * @param request - data from the request to validate token
+ */
+function verifyUploadTokenData(accountAddress: string, token: UploadToken, request: RequestData): void {
   if (!verifyTokenSignature(token, accountAddress)) {
     throw new Error('Invalid signature')
   }

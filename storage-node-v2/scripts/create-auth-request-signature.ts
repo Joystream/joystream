@@ -1,19 +1,19 @@
 #!/usr/bin/env ts-node
 
-import { createApi } from '../src/services/runtime/api'
 import { getAlicePair } from '../src/services/runtime/accounts'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { UploadTokenRequestBody, signTokenBody, UploadTokenRequest } from '../src/services/helpers/auth'
 import { exit } from 'process'
 
 //Wasm init
-createApi('ws://localhost:9944').then(() => {
+cryptoWaitReady().then(() => {
 
   const alice = getAlicePair()
 
   const tokenRequestBody: UploadTokenRequestBody = {
     memberId: 0,
     accountId: alice.address,
-    dataObjectId: 2,
+    dataObjectId: 0,
     storageBucketId: 0,
     bagId: 'static:council'
   }
@@ -28,4 +28,3 @@ createApi('ws://localhost:9944').then(() => {
 
   exit(0)
 })
-

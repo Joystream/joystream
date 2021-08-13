@@ -50,7 +50,6 @@ impl balances::Trait for Test {
 }
 
 parameter_types! {
-    pub const MaxStorageBucketNumber: u64 = 1000;
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
     pub const MaxDistributionBucketNumberPerFamily: u64 = 10;
@@ -85,7 +84,6 @@ impl crate::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;

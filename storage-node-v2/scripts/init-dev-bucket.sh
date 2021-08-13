@@ -4,9 +4,14 @@
 # It prepares an environment, creates a storage bucket and links it to the
 # 'static council bag'.
 
-yarn storage-node dev:init
-yarn storage-node leader:update-bag-limit -l 7 --dev
-yarn storage-node leader:update-voucher-limits -o 100 -s 10000000 --dev
-yarn storage-node leader:create-bucket -i=0 -a -n=100 -s=10000000  --dev 
-yarn storage-node operator:accept-invitation -w=0 -i=0 --dev
-yarn storage-node leader:update-bag -b=0 -i static:council --dev 
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+CLI=../bin/run
+
+${CLI} dev:init
+${CLI} leader:update-bag-limit -l 7 --dev
+${CLI} leader:update-voucher-limits -o 100 -s 10000000 --dev
+BUCKET_ID=`${CLI} leader:create-bucket -i=0 -a -n=100 -s=10000000  --dev` 
+${CLI} operator:accept-invitation -w=0 -i=${BUCKET_ID} --dev
+${CLI} leader:update-bag -a=${BUCKET_ID} -i static:council --dev 

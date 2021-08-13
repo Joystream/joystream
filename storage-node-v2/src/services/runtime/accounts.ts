@@ -5,9 +5,13 @@ import { Keyring } from '@polkadot/keyring'
 import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
 import ExitCodes from '../../command-base/ExitCodes'
 
-export function getAccountFromJsonFile(
-  jsonBackupFilePath: string
-): KeyringPair {
+/**
+ * Parses the JSON file with account data and KeyPair instance.
+ *
+ * @param jsonBackupFilePath - JSON-file path
+ * @returns KeyPair instance.
+ */
+export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair {
   if (!fs.existsSync(jsonBackupFilePath)) {
     throw new CLIError('Input file does not exist!', {
       exit: ExitCodes.FileError,
@@ -23,10 +27,7 @@ export function getAccountFromJsonFile(
     const accountJson = fs.readFileSync(jsonBackupFilePath)
     accountJsonObj = JSON.parse(accountJson.toString())
   } catch (e) {
-    throw new CLIError(
-      'Provided backup file is not valid or cannot be accessed',
-      { exit: ExitCodes.FileError }
-    )
+    throw new CLIError('Provided backup file is not valid or cannot be accessed', { exit: ExitCodes.FileError })
   }
   if (typeof accountJsonObj !== 'object' || accountJsonObj === null) {
     throw new CLIError('Provided backup file is not valid', {
@@ -49,7 +50,14 @@ export function getAccountFromJsonFile(
   return account
 }
 
-// Returns 'Alice' keypair. Should be use in dev-mode only.
+/**
+ * Returns 'Alice' KeyPair instance.
+ *
+ * @remarks
+ * This method should be used in the development mode only.
+ *
+ * @returns 'Alice' KeyPair instance.
+ */
 export function getAlicePair(): KeyringPair {
   const keyring = new Keyring({ type: 'sr25519' })
   return keyring.addFromUri('//Alice')

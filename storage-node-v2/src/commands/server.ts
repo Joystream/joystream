@@ -3,6 +3,13 @@ import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger from '../services/logger'
 
+/**
+ * CLI command:
+ * Starts the storage node server.
+ *
+ * @remarks
+ * Shell command: "server"
+ */
 export default class Server extends ApiCommandBase {
   static description = 'Starts the storage node server.'
 
@@ -24,8 +31,6 @@ export default class Server extends ApiCommandBase {
     }),
     ...ApiCommandBase.flags,
   }
-
-  static args = [{ name: 'file' }]
 
   async run(): Promise<void> {
     const { flags } = this.parse(Server)

@@ -1,8 +1,16 @@
 import { createStorageBucket } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import logger from '../../services/logger'
+import logger, { createStdConsoleLogger } from '../../services/logger'
 
+/**
+ * CLI command:
+ * Creates a storage bucket.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:create-bucket"
+ */
 export default class LeaderCreateBucket extends ApiCommandBase {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
 
@@ -28,7 +36,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
 
     const objectSize = flags.size ?? 0
     const objectNumber = flags.number ?? 0
-    const allowNewBags = flags.allow ?? false
+    const allowNewBags = flags.allow
     const invitedWorker = flags.invited
 
     logger.info('Creating storage bucket...')
@@ -39,7 +47,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    const success = await createStorageBucket(
+    const [success, bucketId] = await createStorageBucket(
       api,
       account,
       invitedWorker,
@@ -47,7 +55,11 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       objectSize,
       objectNumber
     )
+    if (success) {
+      const stdConsoleLogger = createStdConsoleLogger()
 
+      stdConsoleLogger.info(bucketId)
+    }
     this.exitAfterRuntimeCall(success)
   }
 }

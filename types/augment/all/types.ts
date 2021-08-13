@@ -158,6 +158,14 @@ export interface Backer extends Struct {
 /** @name Backers */
 export interface Backers extends Vec<Backer> {}
 
+/** @name Bag */
+export interface Bag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, DataObject>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: DistributionBucketIdSet;
+  readonly deletion_prize: Option<u128>;
+}
+
 /** @name BagId */
 export interface BagId extends Enum {
   readonly isStatic: boolean;
@@ -246,6 +254,9 @@ export interface ChildPositionInParentCategory extends Struct {
   readonly child_nr_in_parent_category: u32;
 }
 
+/** @name Cid */
+export interface Cid extends Bytes {}
+
 /** @name Class */
 export interface Class extends Struct {
   readonly class_permissions: ClassPermissions;
@@ -287,11 +298,8 @@ export interface ClassPermissionsType extends Null {}
 /** @name ClassPropertyValue */
 export interface ClassPropertyValue extends Null {}
 
-/** @name ContentId */
-export interface ContentId extends Text {}
-
 /** @name ContentIdSet */
-export interface ContentIdSet extends BTreeSet<ContentId> {}
+export interface ContentIdSet extends BTreeSet<Cid> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
@@ -405,14 +413,11 @@ export interface DataObject extends Struct {
 
 /** @name DataObjectCreationParameters */
 export interface DataObjectCreationParameters extends Struct {
-  readonly ipfsContentId: Text;
+  readonly ipfsContentId: Bytes;
 }
 
 /** @name DataObjectId */
 export interface DataObjectId extends u64 {}
-
-/** @name DataObjectIdMap */
-export interface DataObjectIdMap extends BTreeMap<DataObjectId, DataObject> {}
 
 /** @name DataObjectIdSet */
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
@@ -444,15 +449,16 @@ export interface DiscussionThread extends Struct {
 
 /** @name DistributionBucket */
 export interface DistributionBucket extends Struct {
-  readonly acceptingNewBags: bool;
+  readonly accepting_new_bags: bool;
   readonly distributing: bool;
-  readonly pendingInvitations: Vec<WorkerId>;
+  readonly pending_invitations: Vec<WorkerId>;
   readonly operators: Vec<WorkerId>;
+  readonly assigned_bags: u64;
 }
 
 /** @name DistributionBucketFamily */
 export interface DistributionBucketFamily extends Struct {
-  readonly distributionBuckets: BTreeMap<DistributionBucketId, DistributionBucket>;
+  readonly distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>;
 }
 
 /** @name DistributionBucketFamilyId */
@@ -469,15 +475,7 @@ export interface Dynamic extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
-}
-
-/** @name DynamicBag */
-export interface DynamicBag extends Struct {
-  readonly objects: DataObjectIdMap;
-  readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: DistributionBucketIdSet;
-  readonly deletion_prize: u128;
+  readonly asChannel: u64;
 }
 
 /** @name DynamicBagCreationPolicy */
@@ -489,20 +487,24 @@ export interface DynamicBagCreationPolicy extends Struct {
 /** @name DynamicBagCreationPolicyDistributorFamiliesMap */
 export interface DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap<DistributionBucketFamilyId, u32> {}
 
+/** @name DynamicBagDeletionPrize */
+export interface DynamicBagDeletionPrize extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagDeletionPrizeRecord */
+export interface DynamicBagDeletionPrizeRecord extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
 /** @name DynamicBagId */
 export interface DynamicBagId extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
-}
-
-/** @name DynamicBagIdType */
-export interface DynamicBagIdType extends Enum {
-  readonly isMember: boolean;
-  readonly asMember: MemberId;
-  readonly isChannel: boolean;
-  readonly asChannel: ChannelId;
+  readonly asChannel: u64;
 }
 
 /** @name DynamicBagType */
@@ -1267,13 +1269,6 @@ export interface Static extends Enum {
   readonly asWorkingGroup: WorkingGroup;
 }
 
-/** @name StaticBag */
-export interface StaticBag extends Struct {
-  readonly objects: DataObjectIdMap;
-  readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: DistributionBucketIdSet;
-}
-
 /** @name StaticBagId */
 export interface StaticBagId extends Enum {
   readonly isCouncil: boolean;
@@ -1289,7 +1284,7 @@ export interface StorageBucket extends Struct {
   readonly operator_status: StorageBucketOperatorStatus;
   readonly accepting_new_bags: bool;
   readonly voucher: Voucher;
-  readonly metadata: Text;
+  readonly metadata: Bytes;
 }
 
 /** @name StorageBucketId */
@@ -1302,9 +1297,9 @@ export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
 export interface StorageBucketOperatorStatus extends Enum {
   readonly isMissing: boolean;
   readonly isInvitedStorageWorker: boolean;
-  readonly asInvitedStorageWorker: u64;
+  readonly asInvitedStorageWorker: WorkerId;
   readonly isStorageWorker: boolean;
-  readonly asStorageWorker: u64;
+  readonly asStorageWorker: WorkerId;
 }
 
 /** @name StorageBucketsPerBagValueConstraint */
@@ -1411,10 +1406,11 @@ export interface UpdatePropertyValuesOperation extends Struct {
 
 /** @name UploadParameters */
 export interface UploadParameters extends Struct {
-  readonly authenticationKey: Text;
+  readonly authenticationKey: Bytes;
   readonly bagId: BagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
   readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly expectedDataSizeFee: u128;
 }
 
 /** @name Url */

@@ -3,6 +3,14 @@ import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Deletes a storage bucket.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:delete-bucket"
+ */
 export default class LeaderDeleteBucket extends ApiCommandBase {
   static description = `Delete a storage bucket. Requires storage working group leader permissions.`
 

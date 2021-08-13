@@ -5,8 +5,8 @@ info:
   contact:
     email: info@joystream.org
   license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    name: GPL-3.0-only
+    url: https://opensource.org/licenses/GPL-3.0
   version: 0.1.0
 externalDocs:
   description: Storage node API
@@ -21,7 +21,7 @@ tags:
 paths:
   /files/{cid}:
     get:
-      operationId: publicApi.files
+      operationId: publicApi.getFile
       description: Returns a media file.
       tags:
         - public
@@ -36,7 +36,7 @@ paths:
         200:
           description: Ok
           content:
-            image/*:
+            video/*:
               schema:
                 type: string
                 format: binary
@@ -44,28 +44,61 @@ paths:
               schema:
                 type: string
                 format: binary
-            video/*:
+            image/*:
               schema:
                 type: string
                 format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         404:
           description: File not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        410:
-          description: File request problem
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /upload:
+        500:
+          description: Unknown server error
+    head:
+      operationId: publicApi.getFileHeaders
+      description: Returns a media file headers.
+      tags:
+        - public
+      parameters:
+        - name: cid
+          required: true
+          in: path
+          description: Content ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+        400:
+          description: Bad request
+        404:
+          description: File not found
+        500:
+          description: Unknown server error
+  /files:
     post:
       security:
         - UploadAuth: []
       description: Upload data
-      operationId: publicApi.upload
+      operationId: publicApi.uploadFile
       tags:
         - public
       requestBody:
@@ -102,21 +135,21 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  id:
                     type: string
-        401:
-          description: Unauthorized
-        410:
-          description: Upload request problem
+        400:
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
 
   /authToken:
     post:
       description: Get auth token from a server.
-      operationId: publicApi.authToken
+      operationId: publicApi.authTokenForUploading
       tags:
         - public
       requestBody:
@@ -137,12 +170,6 @@ paths:
                     type: string
         400:
           description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        410:
-          description: AuthToken request problem
           content:
             application/json:
               schema:

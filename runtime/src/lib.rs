@@ -654,7 +654,6 @@ parameter_types! {
 parameter_types! {
     pub const MaxDistributionBucketNumberPerFamily: u64 = 20; //TODO: adjust value
     pub const MaxDistributionBucketFamilyNumber: u64 = 20; //TODO: adjust value
-    pub const MaxStorageBucketNumber: u64 = 20; //TODO: adjust value
     pub const MaxNumberOfDataObjectsPerBag: u64 = 1000; //TODO: adjust value
     pub const DataObjectDeletionPrize: Balance = 10; //TODO: adjust value
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
@@ -676,7 +675,6 @@ impl storage::Trait for Runtime {
     type DistributionBucketId = DistributionBucketId;
     type DistributionBucketFamilyId = DistributionBucketFamilyId;
     type ChannelId = ChannelId;
-    type MaxStorageBucketNumber = MaxStorageBucketNumber;
     type MaxNumberOfDataObjectsPerBag = MaxNumberOfDataObjectsPerBag;
     type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;

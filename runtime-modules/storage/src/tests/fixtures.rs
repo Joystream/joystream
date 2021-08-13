@@ -14,9 +14,9 @@ use crate::tests::mocks::{
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
 };
 use crate::{
-    BagId, ContentId, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
-    DynamicBagId, DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus,
-    UploadParameters,
+    BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
+    DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -151,7 +151,6 @@ impl CreateStorageBucketFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
         let next_storage_bucket_id = Storage::next_storage_bucket_id();
-        let buckets_number = Storage::storage_buckets_number();
         let actual_result = Storage::create_storage_bucket(
             self.origin.clone().into(),
             self.invite_worker,
@@ -167,7 +166,6 @@ impl CreateStorageBucketFixture {
                 next_storage_bucket_id + 1,
                 Storage::next_storage_bucket_id()
             );
-            assert_eq!(buckets_number + 1, Storage::storage_buckets_number());
             assert!(<crate::StorageBucketById<Test>>::contains_key(
                 next_storage_bucket_id
             ));
@@ -175,7 +173,6 @@ impl CreateStorageBucketFixture {
             Some(next_storage_bucket_id)
         } else {
             assert_eq!(next_storage_bucket_id, Storage::next_storage_bucket_id());
-            assert_eq!(buckets_number, Storage::storage_buckets_number());
             assert!(!<crate::StorageBucketById<Test>>::contains_key(
                 next_storage_bucket_id
             ));
@@ -378,7 +375,6 @@ impl SetStorageOperatorMetadataFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_metadata = Storage::storage_bucket_by_id(self.storage_bucket_id).metadata;
         let actual_result = Storage::set_storage_operator_metadata(
             self.origin.clone().into(),
             self.worker_id,
@@ -387,13 +383,6 @@ impl SetStorageOperatorMetadataFixture {
         );
 
         assert_eq!(actual_result, expected_result);
-        let new_metadata = Storage::storage_bucket_by_id(self.storage_bucket_id).metadata;
-
-        if actual_result.is_ok() {
-            assert_eq!(new_metadata, self.metadata);
-        } else {
-            assert_eq!(old_metadata, new_metadata);
-        }
     }
 }
 
@@ -603,8 +592,8 @@ pub struct MoveDataObjectsFixture {
 impl MoveDataObjectsFixture {
     pub fn default() -> Self {
         Self {
-            src_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
-            dest_bag_id: BagId::<Test>::StaticBag(StaticBagId::Council),
+            src_bag_id: BagId::<Test>::Static(StaticBagId::Council),
+            dest_bag_id: BagId::<Test>::Static(StaticBagId::Council),
             data_object_ids: BTreeSet::new(),
         }
     }
@@ -684,7 +673,6 @@ impl DeleteDataObjectsFixture {
 
 pub struct UpdateStorageBucketStatusFixture {
     origin: RawOrigin<u64>,
-    worker_id: u64,
     storage_bucket_id: u64,
     new_status: bool,
 }
@@ -693,7 +681,6 @@ impl UpdateStorageBucketStatusFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
             new_status: false,
         }
@@ -701,10 +688,6 @@ impl UpdateStorageBucketStatusFixture {
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
     }
 
     pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
@@ -721,7 +704,6 @@ impl UpdateStorageBucketStatusFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_storage_bucket_status(
             self.origin.clone().into(),
-            self.worker_id,
             self.storage_bucket_id,
             self.new_status,
         );
@@ -738,8 +720,8 @@ impl UpdateStorageBucketStatusFixture {
 
 pub struct UpdateBlacklistFixture {
     origin: RawOrigin<u64>,
-    remove_hashes: BTreeSet<ContentId>,
-    add_hashes: BTreeSet<ContentId>,
+    remove_hashes: BTreeSet<Cid>,
+    add_hashes: BTreeSet<Cid>,
 }
 
 impl UpdateBlacklistFixture {
@@ -755,11 +737,11 @@ impl UpdateBlacklistFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_add_hashes(self, add_hashes: BTreeSet<ContentId>) -> Self {
+    pub fn with_add_hashes(self, add_hashes: BTreeSet<Cid>) -> Self {
         Self { add_hashes, ..self }
     }
 
-    pub fn with_remove_hashes(self, remove_hashes: BTreeSet<ContentId>) -> Self {
+    pub fn with_remove_hashes(self, remove_hashes: BTreeSet<Cid>) -> Self {
         Self {
             remove_hashes,
             ..self
@@ -970,7 +952,6 @@ impl UpdateStorageBucketsPerBagLimitFixture {
 
 pub struct SetStorageBucketVoucherLimitsFixture {
     origin: RawOrigin<u64>,
-    worker_id: u64,
     storage_bucket_id: u64,
     new_objects_size_limit: u64,
     new_objects_number_limit: u64,
@@ -980,7 +961,6 @@ impl SetStorageBucketVoucherLimitsFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
             new_objects_size_limit: 0,
             new_objects_number_limit: 0,
@@ -989,10 +969,6 @@ impl SetStorageBucketVoucherLimitsFixture {
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
     }
 
     pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
@@ -1020,7 +996,6 @@ impl SetStorageBucketVoucherLimitsFixture {
         let old_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id).voucher;
         let actual_result = Storage::set_storage_bucket_voucher_limits(
             self.origin.clone().into(),
-            self.worker_id,
             self.storage_bucket_id,
             self.new_objects_size_limit.clone(),
             self.new_objects_number_limit.clone(),
@@ -1104,12 +1079,14 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 
 pub struct CreateDynamicBagFixture {
     bag_id: DynamicBagId<Test>,
+    deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
 }
 
 impl CreateDynamicBagFixture {
     pub fn default() -> Self {
         Self {
             bag_id: Default::default(),
+            deletion_prize: Default::default(),
         }
     }
 
@@ -1117,13 +1094,22 @@ impl CreateDynamicBagFixture {
         Self { bag_id, ..self }
     }
 
+    pub fn with_deletion_prize(self, deletion_prize: DynamicBagDeletionPrize<Test>) -> Self {
+        Self {
+            deletion_prize: Some(deletion_prize),
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Storage::create_dynamic_bag(self.bag_id.clone());
+        let actual_result =
+            Storage::create_dynamic_bag(self.bag_id.clone(), self.deletion_prize.clone());
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(<crate::DynamicBags<Test>>::contains_key(&self.bag_id));
+            let bag_id: BagId<Test> = self.bag_id.clone().into();
+            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
         }
     }
 }
@@ -1853,6 +1839,101 @@ impl SetDistributionBucketMetadataFixture {
             self.worker_id,
             self.family_id,
             self.bucket_id,
+            self.metadata.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct RemoveDistributionBucketOperatorFixture {
+    origin: RawOrigin<u64>,
+    bucket_id: u64,
+    family_id: u64,
+    operator_worker_id: u64,
+}
+
+impl RemoveDistributionBucketOperatorFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID),
+            bucket_id: Default::default(),
+            family_id: Default::default(),
+            operator_worker_id: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bucket_id(self, bucket_id: u64) -> Self {
+        Self { bucket_id, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
+        Self {
+            operator_worker_id,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::remove_distribution_bucket_operator(
+            self.origin.clone().into(),
+            self.family_id,
+            self.bucket_id,
+            self.operator_worker_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            let new_family = Storage::distribution_bucket_family_by_id(self.family_id);
+            let new_bucket = new_family
+                .distribution_buckets
+                .get(&self.bucket_id)
+                .unwrap();
+
+            assert!(!new_bucket.operators.contains(&self.operator_worker_id));
+        }
+    }
+}
+
+pub struct SetDistributionBucketFamilyMetadataFixture {
+    origin: RawOrigin<u64>,
+    family_id: u64,
+    metadata: Vec<u8>,
+}
+
+impl SetDistributionBucketFamilyMetadataFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID),
+            family_id: Default::default(),
+            metadata: Default::default(),
+        }
+    }
+
+    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
+        Self { metadata, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_family_id(self, family_id: u64) -> Self {
+        Self { family_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Storage::set_distribution_bucket_family_metadata(
+            self.origin.clone().into(),
+            self.family_id,
             self.metadata.clone(),
         );
 

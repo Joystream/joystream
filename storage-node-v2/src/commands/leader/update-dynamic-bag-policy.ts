@@ -3,10 +3,19 @@ import { updateNumberOfStorageBucketsInDynamicBagCreationPolicy } from '../../se
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
 import { parseDynamicBagType } from '../../services/helpers/bagTypes'
+import { DynamicBagTypeKey } from '@joystream/types/storage'
 
+/**
+ * CLI command:
+ * Updates dynamic bag creation policy - storage bucket number for new dynamic
+ * bag.
+ *
+ * @remarks
+ * Storage working group leader command. Requires storage WG leader priviliges.
+ * Shell command: "leader:update-dynamic-bag-policy"
+ */
 export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
-  static description =
-    'Update number of storage buckets used in the dynamic bag creation policy.'
+  static description = 'Update number of storage buckets used in the dynamic bag creation policy.'
 
   static flags = {
     number: flags.integer({
@@ -14,13 +23,11 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
       required: true,
       description: 'New storage buckets number',
     }),
-    member: flags.boolean({
-      char: 'e',
-      description: 'Member dynamic bag type (default)',
-    }),
-    channel: flags.boolean({
-      char: 'c',
-      description: 'Channel dynamic bag type',
+    bagType: flags.enum<DynamicBagTypeKey>({
+      char: 't',
+      description: 'Dynamic bag type (Channel, Member).',
+      options: ['Channel', 'Member'],
+      required: true,
     }),
     ...ApiCommandBase.flags,
   }
@@ -28,28 +35,22 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(LeaderUpdateDynamicBagPolicy)
 
-    logger.info('Update "Storage buckets per bag" number limit....')
+    logger.info('Update dynamic bag creation policy....')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
 
     const account = this.getAccount(flags)
-    const newNumber = flags.number ?? 0
-
-    let dynamicBagTypeString: 'Member' | 'Channel' = 'Member' // Default
-    if (flags.channel) {
-      dynamicBagTypeString = 'Channel'
-    }
+    const newNumber = flags.number
 
     const api = await this.getApi()
-    const dynamicBagType = parseDynamicBagType(api, dynamicBagTypeString)
-    const success =
-      await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
-        api,
-        account,
-        dynamicBagType,
-        newNumber
-      )
+    const dynamicBagType = parseDynamicBagType(api, flags.bagType)
+    const success = await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
+      api,
+      account,
+      dynamicBagType,
+      newNumber
+    )
 
     this.exitAfterRuntimeCall(success)
   }

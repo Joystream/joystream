@@ -57,6 +57,7 @@
     "sinon": "^11.1.1",
     "swagger-ui-express": "^4.1.6",
     "ts-node": "^8.8.2",
+    "type-doc": "^0.1.41",
     "typescript": "^3.3"
   },
   "engines": {
@@ -99,7 +100,6 @@
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "yarn lint",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md",
     "build": "tsc --build tsconfig.json",
     "format": "prettier ./src --write",

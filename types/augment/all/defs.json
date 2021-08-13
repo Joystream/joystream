@@ -951,16 +951,10 @@
         "max_min_diff": "u64"
     },
     "DataObjectId": "u64",
-    "DynamicBagIdType": {
-        "_enum": {
-            "Member": "MemberId",
-            "Channel": "ChannelId"
-        }
-    },
     "DynamicBagId": {
         "_enum": {
             "Member": "MemberId",
-            "Channel": "ChannelId"
+            "Channel": "u64"
         }
     },
     "Voucher": {
@@ -979,22 +973,25 @@
         "numberOfStorageBuckets": "u64",
         "families": "BTreeMap<DistributionBucketFamilyId,u32>"
     },
-    "DynamicBag": {
-        "objects": "DataObjectIdMap",
+    "DynamicBagDeletionPrize": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "DynamicBagDeletionPrizeRecord": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "Bag": {
+        "objects": "BTreeMap<DataObjectId,DataObject>",
         "stored_by": "StorageBucketIdSet",
         "distributed_by": "DistributionBucketIdSet",
-        "deletion_prize": "u128"
-    },
-    "StaticBag": {
-        "objects": "DataObjectIdMap",
-        "stored_by": "StorageBucketIdSet",
-        "distributed_by": "DistributionBucketIdSet"
+        "deletion_prize": "Option<u128>"
     },
     "StorageBucket": {
         "operator_status": "StorageBucketOperatorStatus",
         "accepting_new_bags": "bool",
         "voucher": "Voucher",
-        "metadata": "Text"
+        "metadata": "Bytes"
     },
     "StaticBagId": {
         "_enum": {
@@ -1011,7 +1008,7 @@
     "Dynamic": {
         "_enum": {
             "Member": "MemberId",
-            "Channel": "ChannelId"
+            "Channel": "u64"
         }
     },
     "BagId": {
@@ -1022,7 +1019,7 @@
     },
     "DataObjectCreationParameters": {
         "size": "u64",
-        "ipfsContentId": "Text"
+        "ipfsContentId": "Bytes"
     },
     "BagIdType": {
         "_enum": {
@@ -1031,39 +1028,40 @@
         }
     },
     "UploadParameters": {
-        "authenticationKey": "Text",
+        "authenticationKey": "Bytes",
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
-        "deletionPrizeSourceAccountId": "GenericAccountId"
+        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "expectedDataSizeFee": "u128"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
-    "ContentIdSet": "BTreeSet<ContentId>",
-    "ContentId": "Text",
+    "ContentIdSet": "BTreeSet<Cid>",
+    "Cid": "Bytes",
     "StorageBucketOperatorStatus": {
         "_enum": {
             "Missing": "Null",
-            "InvitedStorageWorker": "u64",
-            "StorageWorker": "u64"
+            "InvitedStorageWorker": "WorkerId",
+            "StorageWorker": "WorkerId"
         }
     },
-    "DistributionBucket": {
-        "acceptingNewBags": "bool",
-        "distributing": "bool",
-        "pendingInvitations": "Vec<WorkerId>",
-        "operators": "Vec<WorkerId>"
-    },
-    "DistributionBucketId": "u64",
-    "DistributionBucketFamily": {
-        "distributionBuckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
-    },
-    "DistributionBucketFamilyId": "u64",
     "DataObject": {
         "accepted": "bool",
         "deletion_prize": "u128",
         "size": "u64"
     },
-    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
+    "DistributionBucketId": "u64",
+    "DistributionBucketFamilyId": "u64",
+    "DistributionBucket": {
+        "accepting_new_bags": "bool",
+        "distributing": "bool",
+        "pending_invitations": "Vec<WorkerId>",
+        "operators": "Vec<WorkerId>",
+        "assigned_bags": "u64"
+    },
+    "DistributionBucketFamily": {
+        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
+    },
     "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>"
 }
