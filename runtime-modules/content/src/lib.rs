@@ -11,7 +11,7 @@ mod permissions;
 pub use errors::*;
 pub use permissions::*;
 
-use core::{cmp::max, convert::TryFrom, mem::size_of};
+use core::{cmp::max, convert::TryFrom, hash::Hash, mem::size_of};
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -141,6 +141,9 @@ pub trait Trait:
 
     /// Refund cap during cleanup
     type BloatBondCap: Get<u32>;
+
+    // hash computation
+    fn hash_of<E: Encode>(e: &E) -> Self::Hash;
 }
 
 /// Specifies how a new asset will be provided on creating and updating
@@ -1584,7 +1587,6 @@ decl_module! {
                 actor,
                 video_id,
                 post_id,
-                T::hash(&post.replies_count.encode()),
             ));
         }
 
@@ -1886,7 +1888,6 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         PostCreationParameters =
             PostCreationParameters<<T as Trait>::PostId, <T as Trait>::VideoId>,
-        Hash = <T as frame_system::Trait>::Hash,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2010,7 +2011,7 @@ decl_event!(
         // Posts & Replies
         PostCreated(ContentActor, PostCreationParameters, PostId),
         PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
-        PostDeleted(ContentActor, VideoId, PostId, Hash),
+        PostDeleted(ContentActor, VideoId, PostId),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, MemberId, ModSetOperation),

@@ -104,9 +104,6 @@ fn cannot_create_post_with_nonexistent_video() {
     with_default_mock_builder(|| {
         let member_account = FIRST_MEMBER_ORIGIN;
         let member_id = FIRST_MEMBER_ID;
-        let curator_id = FIRST_CURATOR_ID;
-        let curator_account = FIRST_CURATOR_ORIGIN;
-        let allow_comments = true;
 
         assert_err!(
             Content::create_post(
@@ -115,7 +112,6 @@ fn cannot_create_post_with_nonexistent_video() {
                 PostCreationParameters {
                     video_reference: UNKNOWN_VIDEO_ID,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::VideoPost,
                 }
             ),
@@ -128,7 +124,6 @@ fn cannot_create_post_with_nonexistent_video() {
                 PostCreationParameters {
                     video_reference: UNKNOWN_VIDEO_ID,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::Comment,
                 }
             ),
@@ -162,7 +157,6 @@ fn cannot_create_post_on_a_channel_with_disabled_comment_section() {
                 PostCreationParameters {
                     video_reference: scenario.member_video_id,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::Comment,
                 }
             ),
@@ -195,7 +189,6 @@ fn cannot_comment_non_existing_video_post() {
                 PostCreationParameters {
                     video_reference: scenario.member_video_id,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::Comment,
                 }
             ),
@@ -229,7 +222,6 @@ fn non_authorized_actor_cannot_create_post() {
                 PostCreationParameters {
                     video_reference: scenario.member_video_id,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::VideoPost,
                 }
             ),
@@ -243,7 +235,6 @@ fn non_authorized_actor_cannot_create_post() {
                 PostCreationParameters {
                     video_reference: scenario.curator_video_id,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::VideoPost,
                 }
             ),
@@ -258,7 +249,6 @@ fn non_authorized_actor_cannot_create_post() {
                 PostCreationParameters {
                     video_reference: scenario.member_video_id,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::VideoPost,
                 }
             ),
@@ -272,7 +262,6 @@ fn non_authorized_actor_cannot_create_post() {
                 PostCreationParameters {
                     video_reference: scenario.curator_video_id,
                     parent_id: None,
-                    text: b"abc".to_vec(),
                     post_type: PostType::VideoPost,
                 }
             ),
@@ -315,7 +304,6 @@ fn verify_create_post_effects() {
             PostCreationParameters {
                 video_reference: scenario.member_video_id.clone(),
                 parent_id: None,
-                text: b"abc".to_vec(),
                 post_type: PostType::VideoPost,
             }
         ));
@@ -353,7 +341,6 @@ fn verify_create_post_effects() {
             PostCreationParameters {
                 video_reference: scenario.member_video_id,
                 parent_id: Some(parent_id),
-                text: b"abc".to_vec(),
                 post_type: PostType::Comment,
             }
         ));
@@ -408,7 +395,6 @@ fn setup_testing_scenario_with_video_post(
         PostCreationParameters {
             video_reference: scenario.member_video_id.clone(),
             parent_id: None,
-            text: b"abc".to_vec(),
             post_type: PostType::VideoPost,
         }
     ));
@@ -447,7 +433,6 @@ fn setup_testing_scenario_with_comment_post(
         PostCreationParameters {
             video_reference: scenario.member_video_id.clone(),
             parent_id: scenario.video_post_id,
-            text: b"abc".to_vec(),
             post_type: PostType::Comment,
         }
     ));
@@ -541,6 +526,95 @@ fn cannot_update_mod_set_with_an_invalid_member() {
 }
 
 #[test]
+fn non_authorized_actor_cannot_delete_post() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
+
+        let scenario = setup_testing_scenario_with_comment_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+        );
+
+        let parent_id = scenario.video_post_id.unwrap_or(0);
+        let child_id = scenario.comment_post_id.unwrap_or(0);
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(comment_author_account),
+                parent_id,
+                scenario.member_video_id,
+                ContentActor::Member(comment_author_id),
+            ),
+            Error::<Test>::ActorNotAuthorized,
+        );
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(UNKNOWN_ORIGIN),
+                child_id,
+                scenario.member_video_id,
+                ContentActor::Member(UNKNOWN_MEMBER_ID),
+            ),
+            Error::<Test>::MemberAuthFailed,
+        );
+    })
+}
+
+#[test]
+fn cannot_delete_invalid_post() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
+
+        let scenario = setup_testing_scenario_with_comment_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+        );
+
+        let child_id = scenario.comment_post_id.unwrap_or(0);
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(comment_author_account),
+                child_id,
+                UNKNOWN_VIDEO_ID,
+                ContentActor::Member(comment_author_id),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(comment_author_account),
+                UNKNOWN_POST_ID,
+                scenario.member_video_id,
+                ContentActor::Member(comment_author_id),
+            ),
+            Error::<Test>::PostDoesNotExist,
+        );
+    })
+}
+
+#[test]
 fn cannot_add_too_many_moderators() {
     with_default_mock_builder(|| {
         let member_account = FIRST_MEMBER_ORIGIN;
@@ -583,6 +657,8 @@ fn cannot_add_too_many_moderators() {
 #[test]
 fn verify_delete_post_effects() {
     with_default_mock_builder(|| {
+        run_to_block(1);
+
         let member_account = FIRST_MEMBER_ORIGIN;
         let member_id = FIRST_MEMBER_ID;
         let curator_id = FIRST_CURATOR_ID;
@@ -599,37 +675,50 @@ fn verify_delete_post_effects() {
             comment_author_id,
         );
 
-        // let parent_id = Content::next_post_id();
-
-        // // create post
-        // assert_ok!(Content::create_post(
-        //     Origin::signed(member_account),
-        //     ContentActor::Member(member_id),
-        //     PostCreationParameters {
-        //         video_reference: scenario.member_video_id.clone(),
-        //         parent_id: None,
-        //         text: b"abc".to_vec(),
-        //         post_type: PostType::VideoPost,
-        //     }
-        // ));
-
         let parent_id = scenario.video_post_id.unwrap_or(0);
         let child_id = scenario.comment_post_id.unwrap_or(0);
 
         let replies_count_pre =
             PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
+        let balance_pre = balances::Module::<Test>::free_balance(comment_author_account);
+
+        let bloat_bond = core::cmp::min(
+            PostById::<Test>::get(scenario.member_video_id, child_id).bloat_bond,
+            <Test as Trait>::BloatBondCap::get().into(),
+        );
 
         assert_ok!(Content::delete_post(
-            Origin::signed(member_id),
+            Origin::signed(comment_author_account),
             scenario.member_video_id,
             child_id,
-            ContentActor::Member(member_id),
+            ContentActor::Member(comment_author_id),
+        ));
+
+        // post removed
+        assert!(!PostById::<Test>::contains_key(
+            scenario.member_video_id,
+            child_id
         ));
 
         let replies_count_post =
             PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count;
+        let balance_post = balances::Module::<Test>::free_balance(comment_author_account);
 
+        // replies count decreased
         assert_eq!(replies_count_pre - replies_count_post, 1);
+
+        // refund to post author
+        assert_eq!(balance_post - balance_pre, bloat_bond);
+
+        // event deposited
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostDeleted(
+                ContentActor::Member(comment_author_id),
+                scenario.comment_post_id.unwrap(),
+                scenario.member_video_id,
+            ))
+        );
     })
 }
 
@@ -732,6 +821,18 @@ fn non_authorized_actor_cannot_edit() {
                 b"efg".to_vec(),
             ),
             Error::<Test>::MemberAuthFailed,
+        );
+
+        // valid member but neither one of Author, Channel Owner
+        assert_err!(
+            Content::edit_post_text(
+                Origin::signed(THIRD_MEMBER_ORIGIN),
+                scenario.member_video_id,
+                scenario.video_post_id.unwrap(),
+                ContentActor::Member(THIRD_MEMBER_ID),
+                b"efg".to_vec(),
+            ),
+            Error::<Test>::ActorNotAuthorized,
         );
     })
 }
