@@ -49,9 +49,9 @@ export async function hireStorageWorkingGroupLead(api: ApiPromise): Promise<void
   )
   const newOpeningId = await sendAndFollowSudoNamedTx(api, SudoKeyPair, tx, (result) => {
     const event = getEvent(result, 'storageWorkingGroup', 'OpeningAdded')
-    const bucketId = event?.data[0]
+    const openingId = event?.data[0]
 
-    return bucketId.toNumber()
+    return openingId.toNumber()
   })
 
   if (typeof newOpeningId !== 'number') {
