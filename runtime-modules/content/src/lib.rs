@@ -637,6 +637,9 @@ decl_storage! {
 
         pub ModeratorsCount get (fn moderators_count) config(): u64;
 
+        pub VideoPostIdByVideoId get(fn video_post_by_video_id): map hasher(blake2_128_concat)
+            T::VideoId => T::PostId;
+
     }
 }
 
@@ -1152,6 +1155,8 @@ decl_module! {
             video_id: T::VideoId,
         ) {
 
+        let sender = ensure_signed(origin.clone())?;
+
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1165,6 +1170,9 @@ decl_module! {
             )?;
 
             Self::ensure_video_can_be_removed(video)?;
+
+            // bloat bond logic: channel owner is refunded
+            Self::video_deletion_cleanup_logic(&sender, video_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1507,6 +1515,9 @@ decl_module! {
                     parent_id,
                     |x| x.replies_count = x.replies_count.saturating_add(One::one()))
                 }
+            } else {
+                // insert video post for corresponding videoid
+                <VideoPostIdByVideoId<T>>::insert(params.video_reference, post_id);
             }
 
             // deposit event
@@ -1556,30 +1567,13 @@ decl_module! {
                 &post.author
             )?;
 
-            Self::cleanup(sender, cleanup_actor, post.bloat_bond, post_id)?;
+            Self::cleanup(&sender, cleanup_actor, post.bloat_bond, post_id)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            // two possible cases:
-            match post.post_type {
-                // post is a comment
-                PostType::Comment => {
-                    PostById::<T>::remove(video_id, post_id);
-                    // decrement parent's replies count
-                    if let Some(parent_id) = post.parent_id {
-                        <PostById<T>>::mutate(
-                            &video_id,
-                            &parent_id,
-                            |x| x.replies_count = x.replies_count.saturating_sub(One::one())
-                        );
-                    }
-                }
-
-                // post is a video post
-                PostType::VideoPost => PostById::<T>::remove_prefix(video_id),
-            }
+           Self::delete_post_inner(post.post_type, post_id, video_id, post.parent_id);
 
             // deposit event
             Self::deposit_event(
@@ -1788,13 +1782,13 @@ impl<T: Trait> Module<T> {
     fn pay_off(
         post_id: T::PostId,
         amount: <T as balances::Trait>::Balance,
-        account_id: T::AccountId,
+        account_id: &T::AccountId,
     ) -> DispatchResult {
         let state_cleanup_treasury_account =
             T::VideoCommentsModuleId::get().into_sub_account(post_id);
         <balances::Module<T> as Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
-            &account_id,
+            account_id,
             amount,
             ExistenceRequirement::AllowDeath,
         )
@@ -1816,7 +1810,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn cleanup(
-        sender: <T as frame_system::Trait>::AccountId,
+        sender: &<T as frame_system::Trait>::AccountId,
         cleanup_actor: CleanupActor,
         bloat_bond: <T as balances::Trait>::Balance,
         post_id: T::PostId,
@@ -1840,6 +1834,39 @@ impl<T: Trait> Module<T> {
             }
         }
         Ok(())
+    }
+
+    fn video_deletion_cleanup_logic(sender: &T::AccountId, video_id: T::VideoId) -> DispatchResult {
+        if <VideoPostIdByVideoId<T>>::contains_key(video_id) {
+            let post_id = <VideoPostIdByVideoId<T>>::get(video_id);
+            let bloat_bond = <PostById<T>>::get(video_id, post_id).bloat_bond;
+            Self::cleanup(&sender, CleanupActor::PostAuthor, bloat_bond, post_id)?;
+        }
+        Ok(())
+    }
+
+    fn delete_post_inner(
+        post_type: PostType,
+        post_id: T::PostId,
+        video_id: T::VideoId,
+        maybe_parent_id: Option<T::PostId>,
+    ) {
+        // two possible cases:
+        match post_type {
+            // post is a comment
+            PostType::Comment => {
+                PostById::<T>::remove(video_id, post_id);
+                // decrement parent's replies count
+                if let Some(parent_id) = maybe_parent_id {
+                    <PostById<T>>::mutate(&video_id, &parent_id, |x| {
+                        x.replies_count = x.replies_count.saturating_sub(One::one())
+                    });
+                }
+            }
+
+            // post is a video post
+            PostType::VideoPost => PostById::<T>::remove_prefix(video_id),
+        }
     }
 }
 
