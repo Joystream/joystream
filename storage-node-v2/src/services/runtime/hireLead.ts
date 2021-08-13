@@ -70,9 +70,9 @@ export async function hireStorageWorkingGroupLead(api: ApiPromise): Promise<void
   )
   const newApplicationId = await sendAndFollowNamedTx(api, LeadKeyPair, tx, false, (result) => {
     const event = getEvent(result, 'storageWorkingGroup', 'AppliedOnOpening')
-    const bucketId = event?.data[1]
+    const applicationId = event?.data[1]
 
-    return bucketId.toNumber()
+    return applicationId.toNumber()
   })
 
   // Begin review period
