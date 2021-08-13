@@ -36,7 +36,6 @@ export type IDataObject = {
   size: u64
 }
 
-// DataObject from the storage pallet. Changed due to the types conflict resolution.
 export class DataObject
   extends JoyStructDecorated({
     accepted: bool,

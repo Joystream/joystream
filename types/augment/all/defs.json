@@ -13,7 +13,6 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "Forum",
             "Storage",
             "Content",
             "Distribution"
