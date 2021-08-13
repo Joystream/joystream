@@ -308,6 +308,11 @@ fn verify_create_post_effects() {
             }
         ));
 
+        // video post inserted into the VideoPostIdByVideoId map
+        assert!(VideoPostIdByVideoId::<Test>::contains_key(
+            scenario.member_video_id,
+        ));
+
         let mut balance_post = balances::Module::<Test>::free_balance(member_account);
 
         // post correctly inserted into the double_map
