@@ -237,7 +237,7 @@ function getApi(res: express.Response): ApiPromise {
     return res.locals.api
   }
 
-  throw new WebApiError('No Joystream API loaded.', 500)
+  throw new ServerError('No Joystream API loaded.')
 }
 
 /**
