@@ -553,13 +553,16 @@ fn non_authorized_actor_cannot_delete_post() {
 
         let parent_id = scenario.video_post_id.unwrap_or(0);
         let child_id = scenario.comment_post_id.unwrap_or(0);
-
+        let witness = Test::hash_of(
+            &PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count,
+        );
         assert_err!(
             Content::delete_post(
                 Origin::signed(comment_author_account),
                 parent_id,
                 scenario.member_video_id,
                 ContentActor::Member(comment_author_id),
+                Some(witness),
             ),
             Error::<Test>::ActorNotAuthorized,
         );
@@ -570,6 +573,7 @@ fn non_authorized_actor_cannot_delete_post() {
                 child_id,
                 scenario.member_video_id,
                 ContentActor::Member(UNKNOWN_MEMBER_ID),
+                None,
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -603,6 +607,7 @@ fn cannot_delete_invalid_post() {
                 child_id,
                 UNKNOWN_VIDEO_ID,
                 ContentActor::Member(comment_author_id),
+                None,
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -613,6 +618,7 @@ fn cannot_delete_invalid_post() {
                 UNKNOWN_POST_ID,
                 scenario.member_video_id,
                 ContentActor::Member(comment_author_id),
+                None,
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -697,6 +703,7 @@ fn verify_delete_post_effects() {
             scenario.member_video_id,
             child_id,
             ContentActor::Member(comment_author_id),
+            None,
         ));
 
         // post removed
@@ -745,12 +752,16 @@ fn testing_privileges_for_deletion() {
         );
 
         if let Some(parent_id) = scenario.video_post_id {
+            let witness = Test::hash_of(
+                &PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count,
+            );
             assert_err!(
                 Content::delete_post(
                     Origin::signed(THIRD_MEMBER_ORIGIN),
                     parent_id,
                     scenario.member_video_id,
                     ContentActor::Member(THIRD_MEMBER_ID),
+                    Some(witness),
                 ),
                 Error::<Test>::ActorNotAuthorized,
             );
@@ -761,8 +772,53 @@ fn testing_privileges_for_deletion() {
                     parent_id,
                     scenario.member_video_id,
                     ContentActor::Member(UNKNOWN_MEMBER_ID),
+                    Some(witness),
                 ),
                 Error::<Test>::MemberAuthFailed,
+            );
+        }
+    })
+}
+
+#[test]
+fn cannot_delete_post_provding_invalid_witness() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let allow_comments = true;
+
+        let scenario = setup_testing_scenario_with_video_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            allow_comments,
+        );
+
+        if let Some(parent_id) = scenario.video_post_id {
+            let wrong_witness = Test::hash_of(&1u64);
+            assert_err!(
+                Content::delete_post(
+                    Origin::signed(THIRD_MEMBER_ORIGIN),
+                    parent_id,
+                    scenario.member_video_id,
+                    ContentActor::Member(THIRD_MEMBER_ID),
+                    None,
+                ),
+                Error::<Test>::WitnessNotProvided,
+            );
+
+            assert_err!(
+                Content::delete_post(
+                    Origin::signed(UNKNOWN_ORIGIN),
+                    parent_id,
+                    scenario.member_video_id,
+                    ContentActor::Member(UNKNOWN_MEMBER_ID),
+                    Some(wrong_witness),
+                ),
+                Error::<Test>::WitnessVerificationFailed,
             );
         }
     })

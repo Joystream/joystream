@@ -88,5 +88,11 @@ decl_error! {
         /// cannot edit video post
         CannotEditVideoPost,
 
+        /// failed witness verification
+        WitnessVerificationFailed,
+
+        /// witness not provided
+        WitnessNotProvided,
+
     }
 }

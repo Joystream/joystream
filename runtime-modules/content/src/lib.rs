@@ -1552,11 +1552,25 @@ decl_module! {
             post_id: T::PostId,
             video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            witness: Option<<T as frame_system::Trait>::Hash>,
         ) {
             let sender = ensure_signed(origin.clone())?;
 
             // ensure post exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
+
+            // If we are trying to delete a video post we need witness verification
+            if let PostType::VideoPost = post.post_type {
+                match witness {
+                    None => {
+                        return Err(Error::<T>::WitnessNotProvided.into());
+                    },
+                    Some(witness) => {
+                        ensure!(T::hash_of(&post.replies_count) == witness,
+                        Error::<T>::WitnessVerificationFailed);
+                    }
+                }
+            }
 
             // ensure post can be deleted by actor
             let channel_id = <VideoById<T>>::get(&video_id).in_channel;
