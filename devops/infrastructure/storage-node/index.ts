@@ -3,9 +3,8 @@ import * as aws from '@pulumi/aws'
 import * as eks from '@pulumi/eks'
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
+import { CaddyServiceDeployment } from 'pulumi-common'
 import * as fs from 'fs'
-
-const dns = require('dns')
 
 const awsConfig = new pulumi.Config('aws')
 const config = new pulumi.Config()
@@ -19,17 +18,16 @@ const storage = parseInt(config.get('storage') || '40')
 
 let additionalParams: string[] | pulumi.Input<string>[] = []
 let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
-let caddyVolumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>[]> = []
 let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
 
 // Create a VPC for our cluster.
-const vpc = new awsx.ec2.Vpc('vpc', { numberOfAvailabilityZones: 2 })
+const vpc = new awsx.ec2.Vpc('storage-node-vpc', { numberOfAvailabilityZones: 2 })
 
 // Create an EKS cluster with the default configuration.
-const cluster = new eks.Cluster('eksctl-my-cluster', {
+const cluster = new eks.Cluster('eksctl-storage-node', {
   vpcId: vpc.id,
   subnetIds: vpc.publicSubnetIds,
-  instanceType: 't2.micro',
+  instanceType: 't2.medium',
   providerCredentialOpts: {
     profileName: awsConfig.get('profile'),
   },
@@ -49,6 +47,8 @@ export const colossusImage = repo.buildAndPushImage({
 
 // Create a Kubernetes Namespace
 const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
+
+const resourceOptions = { provider: cluster.provider }
 
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
@@ -82,76 +82,25 @@ volumes.push({
   },
 })
 
-// Create a LoadBalancer Service for the Deployment
-const service = new k8s.core.v1.Service(
-  name,
-  {
-    metadata: {
-      labels: appLabels,
-      namespace: namespaceName,
-    },
-    spec: {
-      type: 'LoadBalancer',
-      ports: [
-        { name: 'http', port: 80 },
-        { name: 'https', port: 443 },
-      ],
-      selector: appLabels,
-    },
-  },
-  {
-    provider: cluster.provider,
-  }
+const caddyEndpoints = [
+  ` {
+    reverse_proxy storage-node:${colossusPort}
+}`,
+]
+
+const caddy = new CaddyServiceDeployment(
+  'caddy-proxy',
+  { lbReady, namespaceName: namespaceName, caddyEndpoints },
+  resourceOptions
 )
 
-// Export the Service name and public LoadBalancer Endpoint
-export const serviceName = service.metadata.name
-// When "done", this will print the hostname
-export let serviceHostname: pulumi.Output<string>
-serviceHostname = service.status.loadBalancer.ingress[0].hostname
+export const endpoint1 = caddy.primaryEndpoint
+export const endpoint2 = caddy.secondaryEndpoint
 
 export let appLink: pulumi.Output<string>
 
 if (lbReady) {
-  async function lookupPromise(url: string) {
-    return new Promise((resolve, reject) => {
-      dns.lookup(url, (err: any, address: any) => {
-        if (err) reject(err)
-        resolve(address)
-      })
-    })
-  }
-
-  const lbIp = serviceHostname.apply((dnsName) => {
-    return lookupPromise(dnsName)
-  })
-
-  const caddyConfig = pulumi.interpolate`${lbIp}.nip.io {
-  reverse_proxy localhost:${colossusPort}
-}`
-
-  const keyConfig = new k8s.core.v1.ConfigMap(name, {
-    metadata: { namespace: namespaceName, labels: appLabels },
-    data: { 'fileData': caddyConfig },
-  })
-  const keyConfigName = keyConfig.metadata.apply((m) => m.name)
-
-  caddyVolumeMounts.push({
-    mountPath: '/etc/caddy/Caddyfile',
-    name: 'caddy-volume',
-    subPath: 'fileData',
-  })
-
-  volumes.push({
-    name: 'caddy-volume',
-    configMap: {
-      name: keyConfigName,
-    },
-  })
-
-  appLink = pulumi.interpolate`https://${lbIp}.nip.io`
-
-  lbIp.apply((value) => console.log(`You can now access the app at: ${value}.nip.io`))
+  appLink = pulumi.interpolate`https://${endpoint1}`
 
   if (!isAnonymous) {
     const remoteKeyFilePath = '/joystream/key-file.json'
@@ -228,20 +177,6 @@ const deployment = new k8s.apps.v1.Deployment(
                 },
               ],
             },
-            // {
-            //   name: 'httpd',
-            //   image: 'crccheck/hello-world',
-            //   ports: [{ name: 'hello-world', containerPort: 8000 }],
-            // },
-            {
-              name: 'caddy',
-              image: 'caddy',
-              ports: [
-                { name: 'caddy-http', containerPort: 80 },
-                { name: 'caddy-https', containerPort: 443 },
-              ],
-              volumeMounts: caddyVolumeMounts,
-            },
             {
               name: 'colossus',
               image: colossusImage,
@@ -278,6 +213,28 @@ const deployment = new k8s.apps.v1.Deployment(
     provider: cluster.provider,
   }
 )
+
+// Create a LoadBalancer Service for the Deployment
+const service = new k8s.core.v1.Service(
+  name,
+  {
+    metadata: {
+      labels: appLabels,
+      namespace: namespaceName,
+      name: 'storage-node',
+    },
+    spec: {
+      ports: [{ name: 'port-1', port: colossusPort }],
+      selector: appLabels,
+    },
+  },
+  {
+    provider: cluster.provider,
+  }
+)
+
+// Export the Service name
+export const serviceName = service.metadata.name
 
 // Export the Deployment name
 export const deploymentName = deployment.metadata.name
