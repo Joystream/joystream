@@ -56,17 +56,41 @@ impl<T: Trait> Module<T> {
         auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>>,
         video: &Video<T>,
     ) -> DispatchResult {
-        if let Some(creator_royalty) = auction_params.creator_royalty {
-            video.ensure_none_issued::<T>()?;
-            Self::ensure_reward_account_is_set(video.in_channel)?;
-            Self::ensure_royalty_bounds_satisfied(creator_royalty)?;
-        } else {
+        if video.is_vnft_issued() {
             video.ensure_nft_transactional_status_is_idle::<T>()?;
+        } else {
+            video.ensure_none_issued::<T>()?;
+            if let Some(creator_royalty) = auction_params.creator_royalty {
+                Self::ensure_reward_account_is_set(video.in_channel)?;
+                Self::ensure_royalty_bounds_satisfied(creator_royalty)?;
+            }
         }
 
         Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
         Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
+
+        if let Some(starts_at) = auction_params.starts_at {
+            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
+        }
+
+        Ok(())
+    }
+
+    /// Ensure starts at bounds satisfied
+    pub(crate) fn ensure_starts_at_delta_bounds_satisfied(
+        starts_at: T::BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            starts_at > <frame_system::Module<T>>::block_number(),
+            Error::<T>::StartsAtLowerBoundExceeded
+        );
+
+        ensure!(
+            starts_at
+                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
+            Error::<T>::StartsAtUpperBoundExceeded
+        );
 
         Ok(())
     }

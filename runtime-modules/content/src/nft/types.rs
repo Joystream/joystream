@@ -142,6 +142,7 @@ pub struct AuctionRecord<AccountId, BlockNumber: BaseArithmetic + Copy, Balance>
     pub auction_duration: BlockNumber,
     pub minimal_bid_step: Balance,
     pub last_bid: Option<Bid<AccountId, BlockNumber, Balance>>,
+    pub starts_at: Option<BlockNumber>,
 }
 
 impl<
@@ -157,6 +158,7 @@ impl<
             starting_price,
             buy_now_price,
             minimal_bid_step,
+            starts_at,
             ..
         } = auction_params;
         Self {
@@ -165,6 +167,7 @@ impl<
             auction_duration,
             minimal_bid_step,
             last_bid: None,
+            starts_at,
         }
     }
 
@@ -210,7 +213,15 @@ impl<
         Ok(())
     }
 
-    /// Check whether auction round time expired
+    /// Ensure auction have been already started
+    pub fn ensure_auction_started<T: Trait>(&self, current_block: BlockNumber) -> DispatchResult {
+        if let Some(starts_at) = self.starts_at {
+            ensure!(starts_at <= current_block, Error::<T>::AuctionDidNotStart);
+        }
+        Ok(())
+    }
+
+    /// Check whether auction expired
     pub fn is_nft_auction_expired(&self, now: BlockNumber) -> bool {
         match &self.last_bid {
             Some(last_bid) => {
@@ -254,4 +265,5 @@ pub struct AuctionParams<VideoId, BlockNumber, Balance> {
     pub starting_price: Balance,
     pub minimal_bid_step: Balance,
     pub buy_now_price: Option<Balance>,
+    pub starts_at: Option<BlockNumber>,
 }

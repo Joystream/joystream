@@ -178,6 +178,9 @@ decl_storage! {
 
         /// Auction platform fee percentage
         pub AuctionFeePercentage get(fn auction_fee_percentage) config(): Perbill;
+
+        /// Max delta between current block and starts at
+        pub AuctionStartsAtMaxDelta get(fn auction_starts_at_max_delta) config(): T::BlockNumber;
     }
 }
 
@@ -1056,6 +1059,11 @@ decl_module! {
             video.ensure_nft_auction_started::<T>()?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
+
+                let current_block = <frame_system::Module<T>>::block_number();
+
+                // Ensure auction have been already started
+                auction.ensure_auction_started::<T>(current_block)?;
 
                 // Return if auction expired
                 let block_number = <frame_system::Module<T>>::block_number();

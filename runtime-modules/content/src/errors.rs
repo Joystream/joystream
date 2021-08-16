@@ -150,5 +150,11 @@ decl_error! {
 
         // Vnft is already issued
         VNFTIsAlreadyIssued,
+
+        // Auction starts at lower bound exceeded
+        StartsAtLowerBoundExceeded,
+
+        // Auction starts at upper bound exceeded
+        StartsAtUpperBoundExceeded,
     }
 }
