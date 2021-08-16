@@ -45,10 +45,10 @@ export const colossusImage = repo.buildAndPushImage({
   context: '../../../',
 })
 
-// Create a Kubernetes Namespace
-const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
-
 const resourceOptions = { provider: cluster.provider }
+
+// Create a Kubernetes Namespace
+const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 
 // Export the Namespace name
 export const namespaceName = ns.metadata.name
@@ -72,7 +72,7 @@ const pvc = new k8s.core.v1.PersistentVolumeClaim(
       },
     },
   },
-  { provider: cluster.provider }
+  resourceOptions
 )
 
 volumes.push({
@@ -209,9 +209,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  {
-    provider: cluster.provider,
-  }
+  resourceOptions
 )
 
 // Create a LoadBalancer Service for the Deployment
@@ -228,9 +226,7 @@ const service = new k8s.core.v1.Service(
       selector: appLabels,
     },
   },
-  {
-    provider: cluster.provider,
-  }
+  resourceOptions
 )
 
 // Export the Service name
