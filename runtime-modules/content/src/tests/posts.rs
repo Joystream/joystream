@@ -448,6 +448,35 @@ fn setup_testing_scenario_with_comment_post(
     scenario
 }
 
+fn setup_testing_scenario_with_moderator(
+    member_account: <Test as frame_system::Trait>::AccountId,
+    member_id: MemberId,
+    curator_account: <Test as frame_system::Trait>::AccountId,
+    curator_id: CuratorId,
+    comment_author_account: <Test as frame_system::Trait>::AccountId,
+    comment_author_id: MemberId,
+    moderator_set: BTreeSet<MemberId>,
+) -> TestingScenario {
+    let scenario = setup_testing_scenario_with_comment_post(
+        member_account,
+        member_id,
+        curator_account,
+        curator_id,
+        comment_author_account,
+        comment_author_id,
+    );
+
+    // create post
+    assert_ok!(Content::update_moderator_set(
+        Origin::signed(member_account),
+        ContentActor::Member(member_id),
+        moderator_set,
+        scenario.member_channel_id,
+    ));
+
+    scenario
+}
+
 #[test]
 fn non_authorized_actor_cannot_delete_post() {
     with_default_mock_builder(|| {
@@ -768,6 +797,62 @@ fn cannot_edit_invalid_post() {
             ),
             Error::<Test>::PostDoesNotExist,
         );
+    })
+}
+
+#[test]
+fn moderator_cannot_delete_post_with_no_rationale() {
+    with_default_mock_builder(|| {
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
+
+        let mod_set: BTreeSet<MemberId> = [SECOND_MEMBER_ID].iter().cloned().collect();
+
+        let scenario = setup_testing_scenario_with_moderator(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+            mod_set,
+        );
+
+        // deletion parameters
+        let params = PostDeletionParameters {
+            witness: None,
+            rationale: None,
+        };
+
+        assert_err!(
+            Content::delete_post(
+                Origin::signed(SECOND_MEMBER_ORIGIN),
+                scenario.member_video_id,
+                scenario.comment_post_id.unwrap_or(0),
+                ContentActor::Member(SECOND_MEMBER_ID),
+                params,
+            ),
+            Error::<Test>::RationaleNotProvidedByModerator,
+        );
+
+        // deletion parameters
+        let correct_params = PostDeletionParameters {
+            witness: None,
+            rationale: Some(b"test".to_vec()),
+        };
+
+        // testing succesful deletion providing rationale
+        assert_ok!(Content::delete_post(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            scenario.member_video_id,
+            scenario.comment_post_id.unwrap_or(0),
+            ContentActor::Member(SECOND_MEMBER_ID),
+            correct_params,
+        ));
     })
 }
 
@@ -1416,30 +1501,50 @@ fn invalid_user_cannot_react() {
     })
 }
 
-// #[test]
-// fn verify_react_to_post_effects() {
-//     with_default_mock_builder(|| {
-//         run_to_block(1);
+#[test]
+fn verify_update_moderator_set_effects() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        let member_account = FIRST_MEMBER_ORIGIN;
+        let member_id = FIRST_MEMBER_ID;
+        let curator_id = FIRST_CURATOR_ID;
+        let curator_account = FIRST_CURATOR_ORIGIN;
+        let comment_author_account = THIRD_MEMBER_ORIGIN;
+        let comment_author_id = THIRD_MEMBER_ID;
 
-//         let (post_id, _member_video_id) = setup_testing_scenario_with_post();
+        let xs: Vec<u64> = vec![1, 2, 3, 4, 5, 6];
+        let mod_set: BTreeSet<MemberId> = xs.iter().cloned().collect();
 
-//         let reaction_id = <tests::mock::Test as Trait>::PostReactionId::from(1u64);
+        let scenario = setup_testing_scenario_with_comment_post(
+            member_account,
+            member_id,
+            curator_account,
+            curator_id,
+            comment_author_account,
+            comment_author_id,
+        );
 
-//         assert_ok!(Content::react_to_post(
-//             Origin::signed(FIRST_MEMBER_ORIGIN),
-//             <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
-//             post_id,
-//             reaction_id
-//         ));
+        // create moderator set
+        assert_ok!(Content::update_moderator_set(
+            Origin::signed(member_account),
+            ContentActor::Member(member_id),
+            mod_set.clone(),
+            scenario.member_channel_id,
+        ));
 
-//         // deposit event
-//         assert_eq!(
-//             System::events().last().unwrap().event,
-//             MetaEvent::content(RawEvent::ReactionToPost(
-//                 <tests::mock::Test as MembershipTypes>::MemberId::from(FIRST_MEMBER_ID),
-//                 post_id,
-//                 reaction_id,
-//             ))
-//         );
-//     })
-// }
+        // event creation
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ModeratorSetUpdated(
+                scenario.member_channel_id,
+                mod_set.clone(),
+            )),
+        );
+
+        // moderator set is actually updated
+        assert_eq!(
+            ChannelById::<Test>::get(scenario.member_channel_id).moderator_set,
+            mod_set,
+        );
+    })
+}

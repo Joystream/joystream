@@ -1570,7 +1570,7 @@ decl_module! {
             let post = Self::ensure_post_exists(video_id, post_id)?;
 
             let witness = params.witness.clone();
-            let rationale = params.witness.clone();
+            let rationale = params.rationale.clone();
 
             // If we are trying to delete a video post we need witness verification
             if let PostType::VideoPost = post.post_type {
