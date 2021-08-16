@@ -302,9 +302,19 @@ const service = new k8s.core.v1.Service(
 export const serviceName = service.metadata.name
 
 const lbReady = config.get('isLoadBalancerReady') === 'true'
+
+const caddyEndpoints = [
+  `/ws-rpc {
+  reverse_proxy node-network:9944
+}`,
+  `/http-rpc {
+  reverse_proxy node-network:9933
+}`,
+]
+
 const caddy = new CaddyServiceDeployment(
   'caddy-proxy',
-  { lbReady, namespaceName: namespaceName, isMinikube },
+  { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
   resourceOptions
 )
 

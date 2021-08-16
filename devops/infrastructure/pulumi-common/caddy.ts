@@ -14,7 +14,7 @@ export class CaddyServiceDeployment extends pulumi.ComponentResource {
   public readonly secondaryEndpoint?: pulumi.Output<string>
 
   constructor(name: string, args: ServiceDeploymentArgs, opts?: pulumi.ComponentResourceOptions) {
-    super('k8sjs:service:ServiceDeployment', name, {}, opts)
+    super('caddy:service:CaddyServiceDeployment', name, {}, opts)
 
     const labels = { app: name }
     let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
@@ -58,14 +58,11 @@ export class CaddyServiceDeployment extends pulumi.ComponentResource {
       })
 
       function getProxyString(ipAddress: pulumi.Output<string>) {
-        return pulumi.interpolate`${ipAddress}.nip.io/ws-rpc {
-          reverse_proxy node-network:9944
+        let result: pulumi.Output<string> = pulumi.interpolate``
+        for (const endpoint of args.caddyEndpoints) {
+          result = pulumi.interpolate`${ipAddress}.nip.io${endpoint}\n${result}`
         }
-
-        ${ipAddress}.nip.io/http-rpc {
-          reverse_proxy node-network:9933
-        }
-        `
+        return result
       }
 
       caddyConfig = pulumi.interpolate`${getProxyString(lbIps[0].address)}
@@ -130,6 +127,8 @@ export class CaddyServiceDeployment extends pulumi.ComponentResource {
 
 export interface ServiceDeploymentArgs {
   namespaceName: pulumi.Output<string>
+  // Endpoints are caddyConfig strings concatenated after IP.nip.io
+  caddyEndpoints: string[]
   lbReady?: boolean
   isMinikube?: boolean
 }
