@@ -232,8 +232,16 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
-{
+pub struct ChannelRecord<
+    MemberId: Ord,
+    CuratorGroupId,
+    DAOId,
+    AccountId,
+    VideoId,
+    PlaylistId,
+    SeriesId,
+    ThreadId,
+> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
@@ -248,6 +256,10 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     reward_account: Option<AccountId>,
     /// Channel Subreddit is ON/OFF
     subreddit_mutable: bool,
+    /// number of threads for channel
+    thread_number: ThreadId,
+    /// moderator set
+    moderator_set: Option<BTreeSet<MemberId>>,
 }
 
 // Channel alias type for simplification.
@@ -259,6 +271,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
+    <T as Trait>::ThreadId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -565,7 +578,7 @@ pub struct PostUpdateParameters {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Post_<MemberId, AccountId, ThreadId, Hash, Balance, BlockNumber> {
+pub struct Post_<MemberId, AccountId, ThreadId, Hash, Balance> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
@@ -577,9 +590,6 @@ pub struct Post_<MemberId, AccountId, ThreadId, Hash, Balance, BlockNumber> {
 
     /// Author account (used for slashing)
     pub author_account: AccountId,
-
-    /// When it was created or last edited
-    pub creation_time: BlockNumber,
 
     /// Whether the post is mutable
     pub mutable: bool,
@@ -594,7 +604,6 @@ pub type Post<T> = Post_<
     <T as Trait>::ThreadId,
     <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
-    <T as frame_system::Trait>::BlockNumber,
 >;
 
 pub trait SubredditLimits {
@@ -656,26 +665,20 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-    /// Map thread identifier to corresponding thread.
-    pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
+        /// Map thread identifier to corresponding thread.
+        pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
             T::ThreadId => Thread<T>;
 
-    /// Thread identifier value to be used for next Thread in threadById.
-    pub NextThreadId get(fn next_thread_id) config(): T::ThreadId;
+        /// Thread identifier value to be used for next Thread in threadById.
+        pub NextThreadId get(fn next_thread_id) config(): T::ThreadId;
 
-    /// Post identifier value to be used for for next post created.
-    pub NextPostId get(fn next_post_id) config(): T::PostId;
+        /// Post identifier value to be used for for next post created.
+        pub NextPostId get(fn next_post_id) config(): T::PostId;
 
-    /// Map post identifier to corresponding post.
-    pub PostById get(fn post_by_id):
-        double_map hasher(blake2_128_concat) T::ThreadId,
-        hasher(blake2_128_concat) T::PostId => Post<T>;
-
-        /// Moderator set for each Subreddit
-        pub ModeratorSetForSubreddit get(fn moderator_set_for_subreddit): double_map
-            hasher(blake2_128_concat) T::ChannelId, hasher(blake2_128_concat) T::MemberId => ();
-        /// Number of subreddit moderators
-        pub NumberOfSubredditModerators get(fn number_of_subreddit_moderators) config(): u64;
+        /// Map post identifier to corresponding post.
+        pub PostById get(fn post_by_id):
+            double_map hasher(blake2_128_concat) T::ThreadId,
+            hasher(blake2_128_concat) T::PostId => Post<T>;
 
     }
 }
@@ -857,6 +860,8 @@ decl_module! {
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
                 subreddit_mutable: params.subreddit_mutable,
+                thread_number: T::ThreadId::zero(),
+                moderator_set: None,
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -1491,7 +1496,7 @@ decl_module! {
             )?;
 
             let title_hash = T::compute_hash(&params.title.encode());
-         let text_hash = T::compute_hash(&params.post_text.encode());
+            let text_hash = T::compute_hash(&params.post_text.encode());
 
 
             //
@@ -1505,7 +1510,7 @@ decl_module! {
                 author_id: member_id,
                 bloat_bond: thread_init_bloat_bond,
                 number_of_posts: T::PostId::zero(),
-                channel_id: params.channel_id,
+                channel_id: params.channel_id.clone(),
             };
 
             // Store thread
@@ -1524,7 +1529,12 @@ decl_module! {
             );
 
             // Update next thread id
-         <NextThreadId<T>>::mutate(|n| *n += One::one());
+            <NextThreadId<T>>::mutate(|n| *n += One::one());
+
+            // update thread count
+            <ChannelById<T>>::mutate(params.channel_id,
+                |x| x.thread_number = x.thread_number.saturating_add(One::one())
+            );
 
             // Generate event
             Self::deposit_event(
@@ -1805,34 +1815,35 @@ decl_module! {
             Ok(())
     }
 
-        #[weight = 10_000_000]
-        fn react_thread(origin,
-              member_id: T::MemberId,
-              thread_id: T::ThreadId,
-              react: T::ReactionId,
-              channel_id: T::ChannelId,
-        ) -> DispatchResult {
-            let account_id = ensure_signed(origin)?;
+    #[weight = 10_000_000]
+    fn react_thread(
+          origin,
+          member_id: T::MemberId,
+          thread_id: T::ThreadId,
+          react: T::ReactionId,
+          channel_id: T::ChannelId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
 
-            // Check that account is forum member
-            Self::ensure_is_forum_user(&account_id, &member_id)?;
+        // Check that account is forum member
+        Self::ensure_is_forum_user(&account_id, &member_id)?;
 
-            // reaction business logic must be off chain
-            //let _thread = Self::ensure_thread_exists(&thread_id)?;
+        // reaction business logic must be off chain
+        //let _thread = Self::ensure_thread_exists(&thread_id)?;
 
-            // subreddit is mutable
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            Self::ensure_subreddit_is_mutable(&channel)?;
+        // subreddit is mutable
+        let channel = Self::ensure_channel_exists(&channel_id)?;
+        Self::ensure_subreddit_is_mutable(&channel)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+        //
+        // == MUTATION SAFE ==
+        //
 
-            Self::deposit_event(
-                RawEvent::ThreadReacted(thread_id, member_id, channel_id, react)
-            );
+        Self::deposit_event(
+            RawEvent::ThreadReacted(thread_id, member_id, channel_id, react)
+        );
 
-            Ok(())
+         Ok(())
         }
 
     #[weight = 10_000_000]
@@ -1840,56 +1851,27 @@ decl_module! {
         origin,
         actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: T::ChannelId,
-        member_id: T::MemberId,
-        member_account_id: <T as frame_system::Trait>::AccountId,
-        op: ModSetOperation,
+        moderator_set: BTreeSet<T::MemberId>,
     ) -> DispatchResult {
 
-        let account_id = ensure_signed(origin)?;
-
         // check that channel exists
-        let _channel = Self::ensure_channel_exists(&channel_id)?;
+        let channel = Self::ensure_channel_exists(&channel_id)?;
 
-        // ensure channel owner is the signer
-        ensure!(Self::actor_is_channel_owner(&account_id, &actor, &channel_id), Error::<T>::ActorNotAuthorized);
+        // ensure channel can be update
+        ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel.owner)?;
 
-        // ensure member is valid
-        Self::ensure_is_forum_user(&member_account_id, &member_id)?;
+        //
+        // == MUTATION SAFE ==
+        //
 
-        let moderators_num = <NumberOfSubredditModerators>::get();
+        <ChannelById<T>>::mutate(channel_id, |x| x.moderator_set = Some(moderator_set.clone()));
 
-        // add or remove moderator
-        match op {
-        ModSetOperation::AddModerator => {
-            ensure!(
-                moderators_num
-                    <= <T::MapLimits as SubredditLimits>::MaxModeratorsForSubreddit::get(),
-                Error::<T>::ModeratorsLimitExceeded
-            );
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <ModeratorSetForSubreddit<T>>::insert(channel_id, member_id, ());
-            <NumberOfSubredditModerators>::mutate(|x| *x = x.saturating_add(1));
-
-        },
-
-            ModSetOperation::RemoveModerator => {
-                Self::ensure_moderator_is_valid(&channel_id, &member_id)?;
-
-                //
-                // == MUTATION SAFE ==
-                //
-
-                <ModeratorSetForSubreddit<T>>::remove(channel_id, member_id);
-                <NumberOfSubredditModerators>::mutate(|x| *x = x.saturating_sub(1));
-            }
-        };
+        Self::deposit_event(
+           RawEvent::ModeratorSetUpdated(channel_id, moderator_set)
+        );
 
         Ok(())
-    }
+        }
     }
 }
 
@@ -2056,13 +2038,13 @@ impl<T: Trait> Module<T> {
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: &T::ChannelId,
     ) -> bool {
-        match actor {
-            ContentActor::Member(member_id) => {
-                <ModeratorSetForSubreddit<T>>::contains_key(channel_id, member_id)
-                    && ensure_member_auth_success::<T>(member_id, account_id).is_ok()
+        if let ContentActor::Member(member_id) = actor {
+            if let Some(bset) = <ChannelById<T>>::get(channel_id).moderator_set {
+                return bset.contains(member_id)
+                    && ensure_member_auth_success::<T>(member_id, account_id).is_ok();
             }
-            _ => false,
         }
+        false
     }
 
     fn actor_is_post_author(
@@ -2129,6 +2111,9 @@ impl<T: Trait> Module<T> {
         thread_id: &T::ThreadId,
     ) -> DispatchResult {
         let channel = Self::ensure_channel_exists(channel_id)?;
+        let bset = channel
+            .moderator_set
+            .unwrap_or(BTreeSet::<T::MemberId>::new());
         match actor {
             ContentActor::Curator(curator_group_id, curator_id) => {
                 // Authorize curator, performing all checks to ensure curator can act
@@ -2153,7 +2138,7 @@ impl<T: Trait> Module<T> {
                 // Ensure the member is the channel owner or is a moderator
                 ensure!(
                     channel.owner == ChannelOwner::Member(*member_id)
-                        || <ModeratorSetForSubreddit<T>>::contains_key(*channel_id, *member_id)
+                        || bset.contains(member_id)
                         || <ThreadById<T>>::get(thread_id).author_id == *member_id,
                     Error::<T>::ActorNotAuthorized
                 );
@@ -2186,7 +2171,6 @@ impl<T: Trait> Module<T> {
             thread_id: thread_id,
             author_id: author_id,
             author_account: account_id,
-            creation_time: frame_system::Module::<T>::block_number(),
             bloat_bond: init_bloat_bond,
             mutable: mutable,
         };
@@ -2209,12 +2193,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn ensure_moderator_is_valid(
+    fn _ensure_moderator_is_valid(
         channel_id: &T::ChannelId,
         moderator_member_id: &T::MemberId,
     ) -> DispatchResult {
+        let bset = <ChannelById<T>>::get(channel_id)
+            .moderator_set
+            .unwrap_or(BTreeSet::<T::MemberId>::new());
         ensure!(
-            <ModeratorSetForSubreddit<T>>::contains_key(channel_id, moderator_member_id),
+            bset.contains(moderator_member_id),
             Error::<T>::ModeratorNotValid,
         );
         Ok(())
@@ -2404,5 +2391,6 @@ decl_event!(
         PostDeleted(PostId, ContentActor, ThreadId),
         PostReacted(PostId, MemberId, ThreadId, ReactionId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
+        ModeratorSetUpdated(ChannelId, BTreeSet<MemberId>),
     }
 );
