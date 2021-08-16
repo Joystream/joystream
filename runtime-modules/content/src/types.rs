@@ -238,13 +238,49 @@ impl<
         Balance: Clone,
     > VideoRecord<ChannelId, SeriesId, AccountId, Moment, MemberId, Balance>
 {
-    /// Ensure vnft for given video was not issued
-    pub fn ensure_vnft_not_issued<T: Trait>(&self) -> DispatchResult {
+    /// Ensure nft status is set to NoneIssued
+    pub fn ensure_none_issued<T: Trait>(&self) -> DispatchResult {
         if let NFTStatus::NoneIssued = self.nft_status {
             Ok(())
         } else {
             Err(Error::<T>::VNFTAlreadyExists.into())
         }
+    }
+
+    /// Whether vnft have been issued
+    pub fn is_vnft_issued(&self) -> bool {
+        match self.nft_status {
+            NFTStatus::Owned(OwnedNFT { is_issued, .. }) => is_issued,
+            _ => false,
+        }
+    }
+
+    /// Ensure vnft is not issued
+    pub fn ensure_vnft_is_issued<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.is_vnft_issued(), Error::<T>::VNFTIsNotIssued);
+        Ok(())
+    }
+
+    /// Ensure vnft is already issued
+    pub fn ensure_vnft_is_not_issued<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.is_vnft_issued(), Error::<T>::VNFTIsAlreadyIssued);
+        Ok(())
+    }
+
+    /// Ensure chosen auction mode is correct
+    pub fn ensure_correct_auction_mode<T: Trait>(
+        &self,
+        auction_mode: &AuctionMode,
+    ) -> DispatchResult {
+        match auction_mode {
+            AuctionMode::WithIssuance(_) => {
+                self.ensure_vnft_is_not_issued::<T>()?;
+            }
+            AuctionMode::WithoutIsuance => {
+                self.ensure_vnft_is_issued::<T>()?;
+            }
+        }
+        Ok(())
     }
 
     /// Ensure given AccountId is vnft owner
@@ -353,6 +389,7 @@ impl<
                 owner: auctioneer_account_id,
                 transactional_status: TransactionalStatus::Auction(auction),
                 creator_royalty: None,
+                is_issued: false,
             });
         }
         self

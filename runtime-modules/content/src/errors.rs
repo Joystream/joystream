@@ -140,6 +140,15 @@ decl_error! {
         NoIncomingTransfers,
 
         // Creator royalty requires reward account to be set.
-        RewardAccountIsNotSet
+        RewardAccountIsNotSet,
+
+        // Actor, which makes an attempt to finish auction is not a winner
+        CallerIsNotAWinner,
+
+        // Vnft is not issued
+        VNFTIsNotIssued,
+
+        // Vnft is already issued
+        VNFTIsAlreadyIssued,
     }
 }

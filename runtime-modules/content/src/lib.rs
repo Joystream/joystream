@@ -960,7 +960,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Authorize auctioneer
-            let auctioneer_account_id = Self::authorize_auctioneer(origin, &auctioneer, &auction_params, &video)?;
+            let auctioneer_account_id = Self::authorize_auctioneer(origin, &auctioneer, &video)?;
 
             // Validate auction_duration & starting_price
             Self::validate_auction_params(&auction_params, &video)?;
@@ -1007,10 +1007,10 @@ decl_module! {
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
-                // Return if auction round time expired
+                // Return if auction expired
                 let now = pallet_timestamp::Module::<T>::now();
 
-                if auction.is_nft_auction_auction_duration_expired(now) {
+                if auction.is_nft_auction_expired(now) {
                     return Ok(())
                 }
 
@@ -1056,9 +1056,10 @@ decl_module! {
             video.ensure_nft_auction_started::<T>()?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
-                // Return if auction round time expired
+
+                // Return if auction expired
                 let now = pallet_timestamp::Module::<T>::now();
-                if auction.is_nft_auction_auction_duration_expired(now) {
+                if auction.is_nft_auction_expired(now) {
                     return Ok(())
                 }
 
@@ -1079,39 +1080,30 @@ decl_module! {
 
                     let last_bid_time = pallet_timestamp::Module::<T>::now();
 
+                    // TODO switch to StakingHandler representation after merging with olympia
+
                     // Unreserve previous bidder balance
                     T::Currency::unreserve(&last_bid.bidder, last_bid.amount);
 
-                    // TODO switch to StakingHandler representation after merging with olympia
+
+                    // Do not charge more then buy now
+                    let bid = match auction.buy_now_price {
+                        Some(buy_now_price) if bid >= buy_now_price => buy_now_price,
+                        _ => bid,
+                    };
 
                     // Make auction bid & update auction data
-                    match auction.buy_now_price {
-                        // Instantly complete auction if bid is greater or equal then buy now price
-                        Some(buy_now_price) if bid >= buy_now_price => {
-                            // Reseve balance for current bid
-                            // Can not fail, needed check made
-                            T::Currency::reserve(&participant_account_id, buy_now_price)?;
-                            auction.make_bid(participant_account_id, buy_now_price, last_bid_time);
 
-                            let video = Self::complete_auction(video, video_id);
-                            VideoById::<T>::insert(video_id, video);
+                    // Reseve balance for current bid
+                    // Can not fail, needed check made
+                    T::Currency::reserve(&participant_account_id, bid)?;
+                    auction.make_bid(participant_account_id, bid, last_bid_time);
 
-                            // Trigger event
-                            Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, Some(last_bid)));
-                        }
-                        _ => {
-                            // Reseve balance for current bid
-                            // Can not fail, needed check made
-                            T::Currency::reserve(&participant_account_id, bid)?;
-                            auction.make_bid(participant_account_id, bid, last_bid_time);
+                    VideoById::<T>::insert(video_id, video);
 
-                            VideoById::<T>::insert(video_id, video);
-
-                            // Trigger event
-                            Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
-                        }
-                    };
-                }
+                    // Trigger event
+                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
+                };
             }
         }
 
@@ -1121,6 +1113,7 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
+            auction_mode: AuctionMode
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
@@ -1132,24 +1125,32 @@ decl_module! {
             // Ensure auction for given video id exists
             video.ensure_nft_auction_started::<T>()?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // Ensure chosen auction mode is correct
+            video.ensure_correct_auction_mode::<T>(&auction_mode)?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
                 // Complete auction if round time expired
                 let now = pallet_timestamp::Module::<T>::now();
 
-                if auction.is_nft_auction_auction_duration_expired(now) {
+                if auction.is_nft_auction_expired(now) {
+
+                    // Ensure caller is auction winner.
+                    auction.ensure_caller_is_auction_winner::<T>(participant_account_id.clone())?;
+
+                    //
+                    // == MUTATION SAFE ==
+                    //
+
                     let last_bid = auction.last_bid.clone();
-                    let video = Self::complete_auction(video, video_id);
+
+                    let video = Self::complete_auction(video, video_id, participant_account_id, auction_mode);
 
                     // Update the video
                     VideoById::<T>::insert(video_id, video.clone());
 
                     // Trigger event
-                    Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, last_bid));
+                    Self::deposit_event(RawEvent::AuctionCompleted(video_id, last_bid));
                 }
             }
         }
@@ -1173,7 +1174,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure have not been issued yet
-            video.ensure_vnft_not_issued::<T>()?;
+            video.ensure_none_issued::<T>()?;
 
             // Enure royalty bounds satisfied, if provided
             if let Some(royalty) = royalty {
@@ -1571,7 +1572,7 @@ decl_event!(
         NftIssued(VideoId, NFTStatus, Metadata),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionCancelled(ContentActor, VideoId),
-        AuctionCompleted(MemberId, VideoId, Bid),
+        AuctionCompleted(VideoId, Bid),
         TransferStarted(VideoId, MemberId, MemberId),
         TransferCancelled(VideoId, MemberId),
         TransferAccepted(VideoId, MemberId),

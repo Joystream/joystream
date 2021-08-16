@@ -1,7 +1,7 @@
 use super::*;
 
 /// Metadata for vNFT issuance
-type Metadata = Vec<u8>;
+pub type Metadata = Vec<u8>;
 
 pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
 pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;
@@ -24,34 +24,15 @@ pub enum TransactionalStatus<
     Auction(AuctionRecord<AccountId, Moment, Balance>),
 }
 
-impl<AccountId, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance> Default
-    for TransactionalStatus<AccountId, Moment, MemberId, Balance>
+impl<
+        AccountId: Default,
+        Moment: BaseArithmetic + Copy,
+        MemberId: Default + Copy,
+        Balance: Default,
+    > Default for TransactionalStatus<AccountId, Moment, MemberId, Balance>
 {
     fn default() -> Self {
         Self::Idle
-    }
-}
-
-impl<
-        AccountId: Default + PartialEq,
-        Moment: BaseArithmetic + Copy,
-        MemberId: Default + Copy,
-        Balance,
-    > OwnedNFT<AccountId, Moment, MemberId, Balance>
-{
-    /// Create new vNFT
-    pub fn new(owner: AccountId, creator_royalty: Option<Royalty>) -> Self {
-        Self {
-            owner,
-            transactional_status: TransactionalStatus::Idle,
-            creator_royalty,
-        }
-    }
-
-    /// Ensure given account id is vNFT owner
-    pub fn ensure_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
-        ensure!(self.owner.eq(owner), Error::<T>::DoesNotOwnVNFT);
-        Ok(())
     }
 }
 
@@ -62,13 +43,32 @@ pub struct OwnedNFT<AccountId, Moment: BaseArithmetic + Copy, MemberId: Default 
     pub owner: AccountId,
     pub transactional_status: TransactionalStatus<AccountId, Moment, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
+    // whether nft is issued
+    pub is_issued: bool,
 }
 
 impl<AccountId: PartialEq, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance>
     OwnedNFT<AccountId, Moment, MemberId, Balance>
 {
+    /// Whether account_id is nft owner
     pub fn is_owner(&self, account_id: &AccountId) -> bool {
         self.owner.eq(account_id)
+    }
+
+    /// Create new vNFT
+    pub fn new(owner: AccountId, creator_royalty: Option<Royalty>) -> Self {
+        Self {
+            owner,
+            transactional_status: TransactionalStatus::Idle,
+            creator_royalty,
+            is_issued: false,
+        }
+    }
+
+    /// Ensure given account id is vNFT owner
+    pub fn ensure_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
+        ensure!(self.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
+        Ok(())
     }
 }
 
@@ -93,7 +93,7 @@ impl<AccountId, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum AuctionMode {
     // Auction, where nft issued at the end
-    WithIssuance(Option<Royalty>, Metadata),
+    WithIssuance(Metadata),
     // Auction for already existing nft
     WithoutIsuance,
 }
@@ -127,7 +127,6 @@ impl<AccountId, Moment: BaseArithmetic + Copy, Balance> Bid<AccountId, Moment, B
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AuctionRecord<AccountId, Moment: BaseArithmetic + Copy, Balance> {
-    pub auction_mode: AuctionMode,
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     pub auction_duration: Moment,
@@ -144,7 +143,6 @@ impl<
     /// Create a new auction record with provided parameters
     pub fn new<VideoId>(auction_params: AuctionParams<VideoId, Moment, Balance>) -> Self {
         let AuctionParams {
-            auction_mode,
             auction_duration,
             starting_price,
             buy_now_price,
@@ -152,7 +150,6 @@ impl<
             ..
         } = auction_params;
         Self {
-            auction_mode,
             starting_price,
             buy_now_price,
             auction_duration,
@@ -192,7 +189,7 @@ impl<
         self.last_bid = Some(bid);
     }
 
-    // Check whether auction have any bids
+    /// Check whether auction have any bids
     fn is_active(&self) -> bool {
         self.last_bid.is_some()
     }
@@ -204,11 +201,28 @@ impl<
     }
 
     /// Check whether auction round time expired
-    pub fn is_nft_auction_auction_duration_expired(&self, now: Moment) -> bool {
+    pub fn is_nft_auction_expired(&self, now: Moment) -> bool {
         match &self.last_bid {
-            Some(last_bid) => (now - last_bid.time) >= self.auction_duration,
+            Some(last_bid) => {
+                // Check whether auction round time expired.
+                let is_auction_round_expired = (now - last_bid.time) >= self.auction_duration;
+
+                // Check whether buy now have been triggered.
+                let is_buy_now_triggered =
+                    matches!(&self.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
+                is_auction_round_expired || is_buy_now_triggered
+            }
             _ => false,
         }
+    }
+
+    /// Ensure caller is auction winner.
+    pub fn ensure_caller_is_auction_winner<T: Trait>(&self, who: AccountId) -> DispatchResult {
+        ensure!(
+            matches!(&self.last_bid, Some(last_bid) if last_bid.bidder == who),
+            Error::<T>::CallerIsNotAWinner
+        );
+        Ok(())
     }
 }
 
@@ -224,7 +238,8 @@ pub type Auction<T> = AuctionRecord<
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AuctionParams<VideoId, Moment, Balance> {
     pub video_id: VideoId,
-    pub auction_mode: AuctionMode,
+    /// Should only be provided if nft is not issued yet
+    pub creator_royalty: Option<Royalty>,
     pub auction_duration: Moment,
     pub starting_price: Balance,
     pub minimal_bid_step: Balance,

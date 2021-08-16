@@ -8,16 +8,11 @@ impl<T: Trait> Module<T> {
     pub(crate) fn authorize_auctioneer(
         origin: T::Origin,
         actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-        auction_params: &AuctionParams<
-            T::VideoId,
-            <T as pallet_timestamp::Trait>::Moment,
-            BalanceOf<T>,
-        >,
         video: &Video<T>,
     ) -> Result<T::AccountId, DispatchError> {
         let account_id = ensure_signed(origin.clone())?;
 
-        if let AuctionMode::WithoutIsuance = auction_params.auction_mode {
+        if video.is_vnft_issued() {
             // Only members are supposed to start auctions for already existing nfts
             if let ContentActor::Member(member_id) = actor {
                 ensure_member_auth_success::<T>(member_id, &account_id)?;
@@ -65,16 +60,12 @@ impl<T: Trait> Module<T> {
         >,
         video: &Video<T>,
     ) -> DispatchResult {
-        match auction_params.auction_mode {
-            AuctionMode::WithIssuance(Some(royalty), _) => {
-                video.ensure_vnft_not_issued::<T>()?;
-                Self::ensure_reward_account_is_set(video.in_channel)?;
-                Self::ensure_royalty_bounds_satisfied(royalty)?;
-            }
-            AuctionMode::WithoutIsuance => {
-                video.ensure_nft_transactional_status_is_idle::<T>()?;
-            }
-            _ => (),
+        if let Some(creator_royalty) = auction_params.creator_royalty {
+            video.ensure_none_issued::<T>()?;
+            Self::ensure_reward_account_is_set(video.in_channel)?;
+            Self::ensure_royalty_bounds_satisfied(creator_royalty)?;
+        } else {
+            video.ensure_nft_transactional_status_is_idle::<T>()?;
         }
 
         Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
@@ -156,11 +147,22 @@ impl<T: Trait> Module<T> {
         creator_royalty: Option<Royalty>,
         metadata: Metadata,
     ) {
-        video.nft_status = NFTStatus::Owned(OwnedNFT {
-            owner,
-            transactional_status: TransactionalStatus::Idle,
-            creator_royalty,
-        });
+        if let NFTStatus::Owned(OwnedNFT {
+            is_issued,
+            transactional_status,
+            ..
+        }) = &mut video.nft_status
+        {
+            *transactional_status = TransactionalStatus::Idle;
+            *is_issued = true;
+        } else {
+            video.nft_status = NFTStatus::Owned(OwnedNFT {
+                is_issued: true,
+                transactional_status: TransactionalStatus::Idle,
+                owner,
+                creator_royalty,
+            })
+        }
 
         Self::deposit_event(RawEvent::NftIssued(
             video_id,
@@ -170,58 +172,60 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete vnft transfer
-    pub(crate) fn complete_vnft_auction_transfer(video: &mut Video<T>, auction_fee: BalanceOf<T>) {
+    pub(crate) fn complete_vnft_auction_transfer(
+        video: &mut Video<T>,
+        auction_fee: BalanceOf<T>,
+        last_bidder: T::AccountId,
+        last_bid_amount: BalanceOf<T>,
+    ) {
         if let NFTStatus::Owned(OwnedNFT {
             owner,
-            transactional_status: TransactionalStatus::Auction(auction),
+            transactional_status,
             creator_royalty,
-        }) = &video.nft_status
+            ..
+        }) = &mut video.nft_status
         {
-            if let Some(last_bid) = &auction.last_bid {
-                let last_bid_amount = last_bid.amount;
-                if let Some(creator_royalty) = creator_royalty {
-                    let royalty = *creator_royalty * last_bid_amount;
+            if let Some(creator_royalty) = creator_royalty {
+                let royalty = *creator_royalty * last_bid_amount;
 
-                    // Slash last bidder bid
-                    T::Currency::slash_reserved(&last_bid.bidder, last_bid_amount);
+                // Slash last bidder bid
+                T::Currency::slash_reserved(&last_bidder, last_bid_amount);
 
-                    // Deposit bid, exluding royalty amount and auction fee into auctioneer account
+                // Deposit bid, exluding royalty amount and auction fee into auctioneer account
 
-                    if last_bid_amount > royalty + auction_fee {
-                        T::Currency::deposit_creating(
-                            &owner,
-                            last_bid_amount - royalty - auction_fee,
-                        );
-                    } else {
-                        T::Currency::deposit_creating(&owner, last_bid_amount - auction_fee);
-                    }
-
-                    // Should always be Some(_) at this stage, because of previously made check.
-                    if let Some(creator_account_id) =
-                        Self::channel_by_id(video.in_channel).reward_account
-                    {
-                        // Deposit royalty into creator account
-                        T::Currency::deposit_creating(&creator_account_id, royalty);
-                    }
+                if last_bid_amount > royalty + auction_fee {
+                    T::Currency::deposit_creating(&owner, last_bid_amount - royalty - auction_fee);
                 } else {
-                    // Slash last bidder bid and deposit it into auctioneer account
-                    T::Currency::slash_reserved(&last_bid.bidder, last_bid_amount);
-
-                    // Deposit bid, exluding auction fee into auctioneer account
                     T::Currency::deposit_creating(&owner, last_bid_amount - auction_fee);
                 }
 
-                video.nft_status = NFTStatus::Owned(OwnedNFT {
-                    owner: last_bid.bidder.clone(),
-                    transactional_status: TransactionalStatus::Idle,
-                    creator_royalty: creator_royalty.clone(),
-                });
+                // Should always be Some(_) at this stage, because of previously made check.
+                if let Some(creator_account_id) =
+                    Self::channel_by_id(video.in_channel).reward_account
+                {
+                    // Deposit royalty into creator account
+                    T::Currency::deposit_creating(&creator_account_id, royalty);
+                }
+            } else {
+                // Slash last bidder bid and deposit it into auctioneer account
+                T::Currency::slash_reserved(&last_bidder, last_bid_amount);
+
+                // Deposit bid, exluding auction fee into auctioneer account
+                T::Currency::deposit_creating(&owner, last_bid_amount - auction_fee);
             }
+
+            *owner = last_bidder;
+            *transactional_status = TransactionalStatus::Idle;
         }
     }
 
     /// Complete auction
-    pub(crate) fn complete_auction(mut video: Video<T>, video_id: T::VideoId) -> Video<T> {
+    pub(crate) fn complete_auction(
+        mut video: Video<T>,
+        video_id: T::VideoId,
+        last_bidder: T::AccountId,
+        auction_mode: AuctionMode,
+    ) -> Video<T> {
         if let NFTStatus::Owned(OwnedNFT {
             owner,
             transactional_status: TransactionalStatus::Auction(auction),
@@ -233,30 +237,25 @@ impl<T: Trait> Module<T> {
                 let bid = last_bid.amount;
                 let auction_fee = Self::auction_fee_percentage() * bid;
 
-                match &auction.auction_mode {
-                    AuctionMode::WithIssuance(royalty, metadata) => {
+                match auction_mode {
+                    AuctionMode::WithIssuance(metadata) => {
                         // Slash last bidder bid
-                        T::Currency::slash_reserved(&last_bid.bidder, bid);
+                        T::Currency::slash_reserved(&last_bidder, bid);
                         // Deposit last bidder bid minus auction fee into auctioneer account
                         T::Currency::deposit_creating(&owner, bid - auction_fee);
 
-                        let creator_royalty = if let Some(royalty) = royalty {
-                            Some(royalty.to_owned())
-                        } else {
-                            None
-                        };
-
-                        // Issue vnft
-                        Self::issue_vnft(
-                            &mut video,
-                            video_id,
-                            last_bid.bidder.clone(),
-                            creator_royalty,
-                            metadata,
-                        );
+                        // Issue vnft.
+                        // We do not need to provide creator royalty here,
+                        // because this data have been already provided at the auction start
+                        Self::issue_vnft(&mut video, video_id, last_bidder, None, metadata);
                     }
                     AuctionMode::WithoutIsuance => {
-                        Self::complete_vnft_auction_transfer(&mut video, auction_fee);
+                        Self::complete_vnft_auction_transfer(
+                            &mut video,
+                            auction_fee,
+                            last_bidder,
+                            bid,
+                        );
                     }
                 }
             }
