@@ -556,13 +556,14 @@ impl Default for PostType {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum CleanupActor {
-    ModeratorOrOwner,
+    ChannelOwner,
+    Moderator,
     PostAuthor,
 }
 
 impl Default for CleanupActor {
     fn default() -> Self {
-        CleanupActor::ModeratorOrOwner
+        CleanupActor::ChannelOwner
     }
 }
 
@@ -589,6 +590,16 @@ pub type Post<T> = Post_<
     <T as Trait>::PostId,
     <T as Trait>::VideoId,
 >;
+
+/// Information on the post being deleted
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct PostDeletionParameters<Hash> {
+    /// optional witnesses in case of video post deletion
+    witness: Option<Hash>,
+    /// rationale in case actor is moderator
+    rationale: Option<Vec<u8>>,
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -634,9 +645,6 @@ decl_storage! {
             hasher(blake2_128_concat) T::PostId => Post<T>;
 
         pub NextPostId get(fn next_post_id): T::PostId;
-
-        pub ModeratorSet get(fn moderator_set): double_map hasher(blake2_128_concat) T::ChannelId,
-        hasher(blake2_128_concat) T::MemberId => ();
 
         pub VideoPostIdByVideoId get(fn video_post_by_video_id): map hasher(blake2_128_concat)
             T::VideoId => T::PostId;
@@ -1554,12 +1562,15 @@ decl_module! {
             post_id: T::PostId,
             video_id: T::VideoId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            witness: Option<<T as frame_system::Trait>::Hash>,
+            params: PostDeletionParameters<<T as frame_system::Trait>::Hash>,
         ) {
             let sender = ensure_signed(origin.clone())?;
 
             // ensure post exists
             let post = Self::ensure_post_exists(video_id, post_id)?;
+
+            let witness = params.witness.clone();
+            let rationale = params.witness.clone();
 
             // If we are trying to delete a video post we need witness verification
             if let PostType::VideoPost = post.post_type {
@@ -1583,6 +1594,11 @@ decl_module! {
                 &post.author
             )?;
 
+            // if deletion actor is a moderator, he must provide rationale
+            if let CleanupActor::Moderator = cleanup_actor {
+                ensure!(rationale != None, Error::<T>::RationaleNotProvidedByModerator);
+            }
+
             Self::cleanup(&sender, cleanup_actor, post.bloat_bond, post_id)?;
 
             //
@@ -1597,6 +1613,7 @@ decl_module! {
                 actor,
                 video_id,
                 post_id,
+                params,
             ));
         }
 
@@ -1639,7 +1656,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             new_moderator_set: BTreeSet<T::MemberId>,
-        channel_id: T::ChannelId
+            channel_id: T::ChannelId
         ) {
             // ensure (origin, actor) is channel owner
             let owner = Self::ensure_channel_exists(&channel_id)?.owner;
@@ -1779,22 +1796,28 @@ impl<T: Trait> Module<T> {
         channel_id: &T::ChannelId,
         author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> Result<CleanupActor, DispatchError> {
+        // if post author
         if author == actor {
             return Ok(CleanupActor::PostAuthor);
         }
 
+        // if moderator
         if let ContentActor::Member(member_id) = actor {
-            if <ModeratorSet<T>>::contains_key(channel_id, member_id) {
-                return Ok(CleanupActor::ModeratorOrOwner);
+            let channel = <ChannelById<T>>::get(channel_id);
+            if channel.moderator_set.contains(member_id) {
+                return Ok(CleanupActor::Moderator);
             }
         }
 
+        // if channel owner
         match ensure_actor_is_channel_owner::<T>(
             origin,
             actor,
             &<ChannelById<T>>::get(channel_id).owner,
         ) {
-            Ok(()) => Ok(CleanupActor::ModeratorOrOwner),
+            Ok(()) => Ok(CleanupActor::ChannelOwner),
+
+            // actor not authorized since it has not passed any checks
             Err(e) => Err(e.into()),
         }
     }
@@ -1836,9 +1859,6 @@ impl<T: Trait> Module<T> {
         post_id: T::PostId,
     ) -> DispatchResult {
         match cleanup_actor {
-            CleanupActor::ModeratorOrOwner => {
-                let _ = balances::Module::<T>::burn(bloat_bond);
-            }
             CleanupActor::PostAuthor => {
                 let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
                 match bloat_bond > cap {
@@ -1851,6 +1871,9 @@ impl<T: Trait> Module<T> {
                     // else refund bloat bond
                     _ => Self::pay_off(post_id, bloat_bond, sender)?,
                 }
+            }
+            _ => {
+                let _ = balances::Module::<T>::burn(bloat_bond);
             }
         }
         Ok(())
@@ -1937,6 +1960,7 @@ decl_event!(
             PostCreationParameters<<T as Trait>::PostId, <T as Trait>::VideoId>,
         BTreeSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
+        PostDeletionParameters = PostDeletionParameters<<T as frame_system::Trait>::Hash>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2055,7 +2079,7 @@ decl_event!(
         // Posts & Replies
         PostCreated(ContentActor, PostCreationParameters, PostId),
         PostTextUpdated(ContentActor, Vec<u8>, PostId, VideoId),
-        PostDeleted(ContentActor, VideoId, PostId),
+        PostDeleted(ContentActor, VideoId, PostId, PostDeletionParameters),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
         ModeratorSetUpdated(ChannelId, BTreeSet),

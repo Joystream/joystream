@@ -94,5 +94,7 @@ decl_error! {
         /// witness not provided
         WitnessNotProvided,
 
+        /// rationale not provided
+        RationaleNotProvidedByModerator,
     }
 }

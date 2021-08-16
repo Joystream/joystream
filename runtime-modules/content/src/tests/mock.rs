@@ -304,7 +304,6 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
-            moderators_count: 0,
         }
     }
 }

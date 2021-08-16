@@ -471,19 +471,30 @@ fn non_authorized_actor_cannot_delete_post() {
 
         let parent_id = scenario.video_post_id.unwrap_or(0);
         let child_id = scenario.comment_post_id.unwrap_or(0);
-        let witness = Test::hash_of(
-            &PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count,
-        );
+
+        // deletion parameters
+        let params = PostDeletionParameters {
+            witness: Some(Test::hash_of(
+                &PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count,
+            )),
+            rationale: None,
+        };
+
         assert_err!(
             Content::delete_post(
                 Origin::signed(comment_author_account),
                 parent_id,
                 scenario.member_video_id,
                 ContentActor::Member(comment_author_id),
-                Some(witness),
+                params,
             ),
             Error::<Test>::ActorNotAuthorized,
         );
+
+        let params = PostDeletionParameters {
+            witness: None,
+            rationale: None,
+        };
 
         assert_err!(
             Content::delete_post(
@@ -491,7 +502,7 @@ fn non_authorized_actor_cannot_delete_post() {
                 child_id,
                 scenario.member_video_id,
                 ContentActor::Member(UNKNOWN_MEMBER_ID),
-                None,
+                params,
             ),
             Error::<Test>::MemberAuthFailed,
         );
@@ -519,13 +530,19 @@ fn cannot_delete_invalid_post() {
 
         let child_id = scenario.comment_post_id.unwrap_or(0);
 
+        // deletion parameters
+        let params = PostDeletionParameters {
+            witness: None,
+            rationale: None,
+        };
+
         assert_err!(
             Content::delete_post(
                 Origin::signed(comment_author_account),
                 child_id,
                 UNKNOWN_VIDEO_ID,
                 ContentActor::Member(comment_author_id),
-                None,
+                params.clone(),
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -536,7 +553,7 @@ fn cannot_delete_invalid_post() {
                 UNKNOWN_POST_ID,
                 scenario.member_video_id,
                 ContentActor::Member(comment_author_id),
-                None,
+                params,
             ),
             Error::<Test>::PostDoesNotExist,
         );
@@ -576,12 +593,18 @@ fn verify_delete_post_effects() {
             <Test as Trait>::BloatBondCap::get().into(),
         );
 
+        // deletion parameters
+        let params = PostDeletionParameters {
+            witness: None,
+            rationale: None,
+        };
+
         assert_ok!(Content::delete_post(
             Origin::signed(comment_author_account),
             scenario.member_video_id,
             child_id,
             ContentActor::Member(comment_author_id),
-            None,
+            params.clone(),
         ));
 
         // post removed
@@ -607,6 +630,7 @@ fn verify_delete_post_effects() {
                 ContentActor::Member(comment_author_id),
                 scenario.comment_post_id.unwrap(),
                 scenario.member_video_id,
+                params,
             ))
         );
     })
@@ -630,16 +654,20 @@ fn testing_privileges_for_deletion() {
         );
 
         if let Some(parent_id) = scenario.video_post_id {
-            let witness = Test::hash_of(
-                &PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count,
-            );
+            // deletion parameters
+            let params = PostDeletionParameters {
+                witness: Some(Test::hash_of(
+                    &PostById::<Test>::get(scenario.member_video_id, parent_id).replies_count,
+                )),
+                rationale: None,
+            };
             assert_err!(
                 Content::delete_post(
                     Origin::signed(THIRD_MEMBER_ORIGIN),
                     parent_id,
                     scenario.member_video_id,
                     ContentActor::Member(THIRD_MEMBER_ID),
-                    Some(witness),
+                    params.clone(),
                 ),
                 Error::<Test>::ActorNotAuthorized,
             );
@@ -650,7 +678,7 @@ fn testing_privileges_for_deletion() {
                     parent_id,
                     scenario.member_video_id,
                     ContentActor::Member(UNKNOWN_MEMBER_ID),
-                    Some(witness),
+                    params,
                 ),
                 Error::<Test>::MemberAuthFailed,
             );
@@ -676,25 +704,34 @@ fn cannot_delete_post_provding_invalid_witness() {
         );
 
         if let Some(parent_id) = scenario.video_post_id {
-            let wrong_witness = Test::hash_of(&1u64);
+            // deletion parameters
+            let params = PostDeletionParameters {
+                witness: None,
+                rationale: None,
+            };
+
             assert_err!(
                 Content::delete_post(
                     Origin::signed(THIRD_MEMBER_ORIGIN),
                     parent_id,
                     scenario.member_video_id,
                     ContentActor::Member(THIRD_MEMBER_ID),
-                    None,
+                    params,
                 ),
                 Error::<Test>::WitnessNotProvided,
             );
 
+            let params = PostDeletionParameters {
+                witness: Some(Test::hash_of(&1u64.encode())),
+                rationale: None,
+            };
             assert_err!(
                 Content::delete_post(
                     Origin::signed(UNKNOWN_ORIGIN),
                     parent_id,
                     scenario.member_video_id,
                     ContentActor::Member(UNKNOWN_MEMBER_ID),
-                    Some(wrong_witness),
+                    params,
                 ),
                 Error::<Test>::WitnessVerificationFailed,
             );
@@ -720,6 +757,7 @@ fn cannot_edit_invalid_post() {
             comment_author_account,
             comment_author_id,
         );
+
         assert_err!(
             Content::edit_post_text(
                 Origin::signed(comment_author_account),
