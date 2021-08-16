@@ -12,10 +12,11 @@ fn lead_cannot_create_channel() {
             Content::create_channel(
                 Origin::signed(LEAD_ORIGIN),
                 ContentActor::Lead,
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -34,10 +35,11 @@ fn curator_owned_channels() {
             Content::create_channel(
                 Origin::signed(FIRST_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -51,10 +53,11 @@ fn curator_owned_channels() {
             Content::create_channel(
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -65,10 +68,11 @@ fn curator_owned_channels() {
             Content::create_channel(
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -80,10 +84,11 @@ fn curator_owned_channels() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-            ChannelCreationParameters {
+            ChannelCreationParameters::<Test> {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                moderator_set: None,
             }
         ));
 
@@ -99,11 +104,13 @@ fn curator_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    moderator_set: BTreeSet::new(),
                 },
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ))
         );
@@ -145,10 +152,11 @@ fn member_owned_channels() {
             Content::create_channel(
                 Origin::signed(UNKNOWN_ORIGIN),
                 ContentActor::Member(MEMBERS_COUNT + 1),
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ),
             Error::<Test>::MemberAuthFailed
@@ -160,10 +168,11 @@ fn member_owned_channels() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParameters {
+            ChannelCreationParameters::<Test> {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                moderator_set: None,
             }
         ));
 
@@ -179,11 +188,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    moderator_set: BTreeSet::new(),
                 },
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ))
         );
@@ -194,10 +205,11 @@ fn member_owned_channels() {
         assert_ok!(Content::create_channel(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
-            ChannelCreationParameters {
+            ChannelCreationParameters::<Test> {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                moderator_set: None,
             }
         ));
 
@@ -213,11 +225,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    moderator_set: BTreeSet::new(),
                 },
-                ChannelCreationParameters {
+                ChannelCreationParameters::<Test> {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    moderator_set: None,
                 }
             ))
         );
@@ -246,6 +260,7 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    moderator_set: BTreeSet::new(),
                 },
                 ChannelUpdateParameters {
                     assets: None,
@@ -282,10 +297,11 @@ fn channel_censoring() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParameters {
+            ChannelCreationParameters::<Test> {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                moderator_set: None,
             }
         ));
 
@@ -358,10 +374,11 @@ fn channel_censoring() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
-            ChannelCreationParameters {
+            ChannelCreationParameters::<Test> {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                moderator_set: None,
             }
         ));
 

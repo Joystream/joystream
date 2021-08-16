@@ -290,7 +290,6 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
-    moderators_count: u64,
 }
 
 impl Default for ExtBuilder {
@@ -326,7 +325,6 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
-            moderators_count: self.moderators_count,
         }
         .assimilate_storage(&mut t)
         .unwrap();

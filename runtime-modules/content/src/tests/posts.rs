@@ -40,10 +40,11 @@ fn setup_testing_scenario(
     assert_ok!(Content::create_channel(
         Origin::signed(member_account),
         ContentActor::Member(member_id),
-        ChannelCreationParameters {
+        ChannelCreationParameters::<Test> {
             assets: vec![],
             meta: vec![],
             reward_account: None,
+            moderator_set: None,
         },
     ));
     let curator_channel_id = Content::next_channel_id();
@@ -54,10 +55,11 @@ fn setup_testing_scenario(
     assert_ok!(Content::create_channel(
         Origin::signed(curator_account),
         ContentActor::Curator(group_id, curator_id),
-        ChannelCreationParameters {
+        ChannelCreationParameters::<Test> {
             assets: vec![],
             meta: vec![],
             reward_account: None,
+            moderator_set: None,
         },
     ));
     //    println!("curator channel done");
@@ -447,90 +449,6 @@ fn setup_testing_scenario_with_comment_post(
 }
 
 #[test]
-fn non_channel_owner_cannot_update_moderator_set() {
-    with_default_mock_builder(|| {
-        let member_account = FIRST_MEMBER_ORIGIN;
-        let member_id = FIRST_MEMBER_ID;
-        let curator_id = FIRST_CURATOR_ID;
-        let curator_account = FIRST_CURATOR_ORIGIN;
-        let allow_comments = false; // disable comments
-
-        let scenario = setup_testing_scenario(
-            member_account,
-            member_id,
-            curator_account,
-            curator_id,
-            allow_comments,
-        );
-
-        // non channel owner cannot create post with a video
-        assert_err!(
-            Content::update_moderator_set(
-                Origin::signed(SECOND_MEMBER_ORIGIN),
-                ContentActor::Member(SECOND_MEMBER_ID),
-                SECOND_MEMBER_ID,
-                scenario.member_channel_id.clone(),
-                ModSetOperation::AddModerator
-            ),
-            Error::<Test>::ActorNotAuthorized,
-        );
-
-        assert_err!(
-            Content::update_moderator_set(
-                Origin::signed(SECOND_CURATOR_ORIGIN),
-                ContentActor::Member(SECOND_CURATOR_GROUP_ID),
-                SECOND_MEMBER_ID,
-                scenario.member_channel_id.clone(),
-                ModSetOperation::AddModerator
-            ),
-            Error::<Test>::ActorNotAuthorized,
-        );
-    })
-}
-
-#[test]
-fn cannot_update_mod_set_with_an_invalid_member() {
-    with_default_mock_builder(|| {
-        let member_account = FIRST_MEMBER_ORIGIN;
-        let member_id = FIRST_MEMBER_ID;
-        let curator_id = FIRST_CURATOR_ID;
-        let curator_account = FIRST_CURATOR_ORIGIN;
-        let allow_comments = false; // disable comments
-
-        let scenario = setup_testing_scenario(
-            member_account,
-            member_id,
-            curator_account,
-            curator_id,
-            allow_comments,
-        );
-
-        // non channel owner cannot create post with a video
-        assert_err!(
-            Content::update_moderator_set(
-                Origin::signed(member_account),
-                ContentActor::Member(member_id),
-                UNKNOWN_MEMBER_ID,
-                scenario.member_channel_id.clone(),
-                ModSetOperation::AddModerator
-            ),
-            Error::<Test>::MemberAuthFailed,
-        );
-
-        assert_err!(
-            Content::update_moderator_set(
-                Origin::signed(member_account),
-                ContentActor::Member(member_id),
-                THIRD_MEMBER_ID,
-                scenario.member_channel_id.clone(),
-                ModSetOperation::RemoveModerator
-            ),
-            Error::<Test>::ModeratorDoesNotExist,
-        );
-    })
-}
-
-#[test]
 fn non_authorized_actor_cannot_delete_post() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -621,46 +539,6 @@ fn cannot_delete_invalid_post() {
                 None,
             ),
             Error::<Test>::PostDoesNotExist,
-        );
-    })
-}
-
-#[test]
-fn cannot_add_too_many_moderators() {
-    with_default_mock_builder(|| {
-        let member_account = FIRST_MEMBER_ORIGIN;
-        let member_id = FIRST_MEMBER_ID;
-        let curator_id = FIRST_CURATOR_ID;
-        let curator_account = FIRST_CURATOR_ORIGIN;
-        let allow_comments = false; // disable comments
-
-        let scenario = setup_testing_scenario(
-            member_account,
-            member_id,
-            curator_account,
-            curator_id,
-            allow_comments,
-        );
-
-        // adding max moderators and then attempting to add an extra one
-        for i in 0..5 {
-            assert_ok!(Content::update_moderator_set(
-                Origin::signed(member_account),
-                ContentActor::Member(member_id),
-                i + 1,
-                scenario.member_channel_id.clone(),
-                ModSetOperation::AddModerator
-            ));
-        }
-        assert_err!(
-            Content::update_moderator_set(
-                Origin::signed(member_account),
-                ContentActor::Member(member_id),
-                6,
-                scenario.member_channel_id.clone(),
-                ModSetOperation::AddModerator,
-            ),
-            Error::<Test>::ModeratorsLimitReached,
         );
     })
 }

@@ -218,8 +218,15 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
-{
+pub struct ChannelRecord<
+    MemberId: Ord,
+    CuratorGroupId,
+    DAOId,
+    AccountId,
+    VideoId,
+    PlaylistId,
+    SeriesId,
+> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
@@ -232,6 +239,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
+    /// moderator set
+    moderator_set: BTreeSet<MemberId>,
 }
 
 // Channel alias type for simplification.
@@ -275,14 +284,22 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<ContentParameters, AccountId> {
+pub struct ChannelCreationParameters_<ContentParameters, AccountId, MemberId: Ord> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata about the channel.
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
+    /// optional moderator set
+    moderator_set: Option<BTreeSet<MemberId>>,
 }
+
+type ChannelCreationParameters<T> = ChannelCreationParameters_<
+    ContentParameters<T>,
+    <T as frame_system::Trait>::AccountId,
+    <T as MembershipTypes>::MemberId,
+>;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -535,20 +552,6 @@ impl Default for PostType {
     }
 }
 
-/// A boolean for selecting the operation type on the moderator set
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ModSetOperation {
-    AddModerator,
-    RemoveModerator,
-}
-
-impl Default for ModSetOperation {
-    fn default() -> Self {
-        ModSetOperation::AddModerator
-    }
-}
-
 /// A boolean in order to differenciate between post author and moderator / owner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -634,8 +637,6 @@ decl_storage! {
 
         pub ModeratorSet get(fn moderator_set): double_map hasher(blake2_128_concat) T::ChannelId,
         hasher(blake2_128_concat) T::MemberId => ();
-
-        pub ModeratorsCount get (fn moderators_count) config(): u64;
 
         pub VideoPostIdByVideoId get(fn video_post_by_video_id): map hasher(blake2_128_concat)
             T::VideoId => T::PostId;
@@ -781,7 +782,7 @@ decl_module! {
         pub fn create_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
+            params: ChannelCreationParameters<T>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
                 origin,
@@ -819,6 +820,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                moderator_set: params.moderator_set.clone().unwrap_or(BTreeSet::new()),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -1608,6 +1610,10 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&member_id, &sender)?;
 
+            //
+            // == MUTATION_SAFE ==
+            //
+
             Self::deposit_event(RawEvent::ReactionToPost(member_id, post_id, reaction_id));
         }
 
@@ -1620,6 +1626,11 @@ decl_module! {
         ) {
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&member_id, &sender)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
             Self::deposit_event(RawEvent::ReactionToVideo(member_id, video_id, reaction_id));
         }
 
@@ -1627,35 +1638,30 @@ decl_module! {
         fn update_moderator_set(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            member_id: T::MemberId,
-            channel_id: T::ChannelId,
-            operation: ModSetOperation,
+            new_moderator_set: BTreeSet<T::MemberId>,
+        channel_id: T::ChannelId
         ) {
             // ensure (origin, actor) is channel owner
             let owner = Self::ensure_channel_exists(&channel_id)?.owner;
-        ensure_actor_is_channel_owner::<T>(origin, &actor, &owner)?;
+            ensure_actor_authorized_to_update_channel::<T>(
+                origin,
+                &actor,
+                // The channel owner will be..
+                &owner,
+            )?;
 
-            // ensure member_id is a valid user
-        ensure_valid_member::<T>(&member_id)?;
+            //
+            // == MUTATION_SAFE ==
+            //
 
-        match operation {
-            ModSetOperation::AddModerator => {
-                // ensure moderator limit is not reached
-                ensure!(<ModeratorsCount>::get() < T::MaxModerators::get(),
-                    Error::<T>::ModeratorsLimitReached);
-                <ModeratorSet<T>>::insert(&channel_id, &member_id, ());
-                <ModeratorsCount>::mutate(|x| *x = x.saturating_add(One::one()));
-            },
-            ModSetOperation::RemoveModerator => {
-                ensure!(<ModeratorSet<T>>::contains_key(&channel_id, &member_id),
-                    Error::<T>::ModeratorDoesNotExist);
-                <ModeratorSet<T>>::remove(&channel_id, &member_id);
-                <ModeratorsCount>::mutate(|x| *x = x.saturating_sub(One::one()));
+            <ChannelById<T>>::mutate(channel_id, |x| x.moderator_set = new_moderator_set.clone());
 
+            Self::deposit_event(
+                RawEvent::ModeratorSetUpdated(
+                    channel_id,
+                    new_moderator_set
+                ));
             }
-        };
-            Self::deposit_event(RawEvent::ModeratorSetUpdated(channel_id, member_id, operation));
-        }
     }
 }
 
@@ -1929,6 +1935,8 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         PostCreationParameters =
             PostCreationParameters<<T as Trait>::PostId, <T as Trait>::VideoId>,
+        BTreeSet = BTreeSet<<T as MembershipTypes>::MemberId>,
+        ChannelCreationParameters = ChannelCreationParameters<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1937,12 +1945,7 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelCreationParameters<ContentParameters, AccountId>,
-        ),
+        ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(
             ContentActor,
             ChannelId,
@@ -2055,6 +2058,6 @@ decl_event!(
         PostDeleted(ContentActor, VideoId, PostId),
         ReactionToPost(MemberId, PostId, ReactionId),
         ReactionToVideo(MemberId, VideoId, ReactionId),
-        ModeratorSetUpdated(ChannelId, MemberId, ModSetOperation),
+        ModeratorSetUpdated(ChannelId, BTreeSet),
     }
 );
