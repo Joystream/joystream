@@ -973,8 +973,9 @@ decl_module! {
             //
 
             // Create new auction
+            let creator_royalty = auction_params.creator_royalty.clone();
             let auction = AuctionRecord::new(auction_params.clone());
-            let video = video.set_auction_transactional_status(auction, auctioneer_account_id);
+            let video = video.set_auction_transactional_status(auction, auctioneer_account_id, creator_royalty);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);

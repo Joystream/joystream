@@ -381,6 +381,7 @@ impl<
         mut self,
         auction: AuctionRecord<AccountId, Moment, Balance>,
         auctioneer_account_id: AccountId,
+        creator_royalty: Option<Royalty>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Auction(auction);
@@ -388,7 +389,7 @@ impl<
             self.nft_status = NFTStatus::Owned(OwnedNFT {
                 owner: auctioneer_account_id,
                 transactional_status: TransactionalStatus::Auction(auction),
-                creator_royalty: None,
+                creator_royalty,
                 is_issued: false,
             });
         }
