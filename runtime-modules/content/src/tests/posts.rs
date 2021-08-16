@@ -741,10 +741,10 @@ fn cannot_delete_post_provding_invalid_witness() {
 
             assert_err!(
                 Content::delete_post(
-                    Origin::signed(THIRD_MEMBER_ORIGIN),
+                    Origin::signed(FIRST_MEMBER_ORIGIN),
                     parent_id,
                     scenario.member_video_id,
-                    ContentActor::Member(THIRD_MEMBER_ID),
+                    ContentActor::Member(FIRST_MEMBER_ID),
                     params,
                 ),
                 Error::<Test>::WitnessNotProvided,

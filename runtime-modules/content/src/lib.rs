@@ -1486,7 +1486,7 @@ decl_module! {
             let post_id = <NextPostId<T>>::get();
 
             // TODO: this cost should be a function of the WeightInfo trait
-            let cleanup_cost = 0;
+            let cleanup_cost = 1;
 
             // initial bloat bond
             let initial_bloat_bond = max(
@@ -1572,17 +1572,10 @@ decl_module! {
             let witness = params.witness.clone();
             let rationale = params.rationale.clone();
 
-            // If we are trying to delete a video post we need witness verification
+
+            // verify witness
             if let PostType::VideoPost = post.post_type {
-                match witness {
-                    None => {
-                        return Err(Error::<T>::WitnessNotProvided.into());
-                    },
-                    Some(witness) => {
-                        ensure!(T::hash_of(&post.replies_count) == witness,
-                        Error::<T>::WitnessVerificationFailed);
-                    }
-                }
+                Self::ensure_witness_verification(witness, post.replies_count)?;
             }
 
             // ensure post can be deleted by actor
@@ -1599,6 +1592,7 @@ decl_module! {
                 ensure!(rationale != None, Error::<T>::RationaleNotProvidedByModerator);
             }
 
+            // proceeed to cleanup
             Self::cleanup(&sender, cleanup_actor, post.bloat_bond, post_id)?;
 
             //
@@ -1910,6 +1904,25 @@ impl<T: Trait> Module<T> {
             // post is a video post
             PostType::VideoPost => PostById::<T>::remove_prefix(video_id),
         }
+    }
+
+    fn ensure_witness_verification(
+        witness: Option<<T as frame_system::Trait>::Hash>,
+        replies_count: T::PostId,
+    ) -> DispatchResult {
+        // If we are trying to delete a video post we need witness verification
+        match witness {
+            None => {
+                return Err(Error::<T>::WitnessNotProvided.into());
+            }
+            Some(witness) => {
+                ensure!(
+                    T::hash_of(&replies_count) == witness,
+                    Error::<T>::WitnessVerificationFailed,
+                );
+            }
+        }
+        Ok(())
     }
 }
 
