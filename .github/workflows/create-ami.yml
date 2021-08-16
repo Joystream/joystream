@@ -1,11 +1,7 @@
-name: Build code and create AMI
+name: Create AWS AMI
 
 on:
-  push:
-    branches:
-      - master
-      - olympia
-      - create-joystream-node-ami
+  workflow_dispatch:
 
 jobs:
   build:
