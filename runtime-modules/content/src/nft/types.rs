@@ -15,21 +15,21 @@ pub type Royalty = Perbill;
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum TransactionalStatus<
     AccountId,
-    Moment: BaseArithmetic + Copy,
+    BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy,
     Balance,
 > {
     Idle,
     InitiatedTransferToMember(MemberId),
-    Auction(AuctionRecord<AccountId, Moment, Balance>),
+    Auction(AuctionRecord<AccountId, BlockNumber, Balance>),
 }
 
 impl<
         AccountId: Default,
-        Moment: BaseArithmetic + Copy,
+        BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy,
         Balance: Default,
-    > Default for TransactionalStatus<AccountId, Moment, MemberId, Balance>
+    > Default for TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>
 {
     fn default() -> Self {
         Self::Idle
@@ -39,16 +39,25 @@ impl<
 /// Owned vNFT representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OwnedNFT<AccountId, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance> {
+pub struct OwnedNFT<
+    AccountId,
+    BlockNumber: BaseArithmetic + Copy,
+    MemberId: Default + Copy,
+    Balance,
+> {
     pub owner: AccountId,
-    pub transactional_status: TransactionalStatus<AccountId, Moment, MemberId, Balance>,
+    pub transactional_status: TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
     // whether nft is issued
     pub is_issued: bool,
 }
 
-impl<AccountId: PartialEq, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance>
-    OwnedNFT<AccountId, Moment, MemberId, Balance>
+impl<
+        AccountId: PartialEq,
+        BlockNumber: BaseArithmetic + Copy,
+        MemberId: Default + Copy,
+        Balance,
+    > OwnedNFT<AccountId, BlockNumber, MemberId, Balance>
 {
     /// Whether account_id is nft owner
     pub fn is_owner(&self, account_id: &AccountId) -> bool {
@@ -75,13 +84,14 @@ impl<AccountId: PartialEq, Moment: BaseArithmetic + Copy, MemberId: Default + Co
 /// Enum, representing nft issuance status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NFTStatus<AccountId, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance> {
+pub enum NFTStatus<AccountId, BlockNumber: BaseArithmetic + Copy, MemberId: Default + Copy, Balance>
+{
     NoneIssued,
-    Owned(OwnedNFT<AccountId, Moment, MemberId, Balance>),
+    Owned(OwnedNFT<AccountId, BlockNumber, MemberId, Balance>),
 }
 
-impl<AccountId, Moment: BaseArithmetic + Copy, MemberId: Default + Copy, Balance> Default
-    for NFTStatus<AccountId, Moment, MemberId, Balance>
+impl<AccountId, BlockNumber: BaseArithmetic + Copy, MemberId: Default + Copy, Balance> Default
+    for NFTStatus<AccountId, BlockNumber, MemberId, Balance>
 {
     fn default() -> Self {
         Self::NoneIssued
@@ -107,14 +117,14 @@ impl Default for AuctionMode {
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Bid<AccountId, Moment: BaseArithmetic + Copy, Balance> {
+pub struct Bid<AccountId, BlockNumber: BaseArithmetic + Copy, Balance> {
     pub bidder: AccountId,
     pub amount: Balance,
-    pub time: Moment,
+    pub time: BlockNumber,
 }
 
-impl<AccountId, Moment: BaseArithmetic + Copy, Balance> Bid<AccountId, Moment, Balance> {
-    fn new(bidder: AccountId, amount: Balance, time: Moment) -> Self {
+impl<AccountId, BlockNumber: BaseArithmetic + Copy, Balance> Bid<AccountId, BlockNumber, Balance> {
+    fn new(bidder: AccountId, amount: Balance, time: BlockNumber) -> Self {
         Self {
             bidder,
             amount,
@@ -126,22 +136,22 @@ impl<AccountId, Moment: BaseArithmetic + Copy, Balance> Bid<AccountId, Moment, B
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionRecord<AccountId, Moment: BaseArithmetic + Copy, Balance> {
+pub struct AuctionRecord<AccountId, BlockNumber: BaseArithmetic + Copy, Balance> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
-    pub auction_duration: Moment,
+    pub auction_duration: BlockNumber,
     pub minimal_bid_step: Balance,
-    pub last_bid: Option<Bid<AccountId, Moment, Balance>>,
+    pub last_bid: Option<Bid<AccountId, BlockNumber, Balance>>,
 }
 
 impl<
         AccountId: Default + PartialEq,
-        Moment: BaseArithmetic + Copy + Default,
+        BlockNumber: BaseArithmetic + Copy + Default,
         Balance: Default + BaseArithmetic,
-    > AuctionRecord<AccountId, Moment, Balance>
+    > AuctionRecord<AccountId, BlockNumber, Balance>
 {
     /// Create a new auction record with provided parameters
-    pub fn new<VideoId>(auction_params: AuctionParams<VideoId, Moment, Balance>) -> Self {
+    pub fn new<VideoId>(auction_params: AuctionParams<VideoId, BlockNumber, Balance>) -> Self {
         let AuctionParams {
             auction_duration,
             starting_price,
@@ -184,8 +194,8 @@ impl<
     }
 
     /// Make auction bid
-    pub fn make_bid(&mut self, who: AccountId, bid: Balance, last_bid_time: Moment) {
-        let bid = Bid::new(who, bid, last_bid_time);
+    pub fn make_bid(&mut self, who: AccountId, bid: Balance, last_bid_block: BlockNumber) {
+        let bid = Bid::new(who, bid, last_bid_block);
         self.last_bid = Some(bid);
     }
 
@@ -201,7 +211,7 @@ impl<
     }
 
     /// Check whether auction round time expired
-    pub fn is_nft_auction_expired(&self, now: Moment) -> bool {
+    pub fn is_nft_auction_expired(&self, now: BlockNumber) -> bool {
         match &self.last_bid {
             Some(last_bid) => {
                 // Check whether auction round time expired.
@@ -229,18 +239,18 @@ impl<
 /// Auction alias type for simplification.
 pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::AccountId,
-    <T as pallet_timestamp::Trait>::Moment,
+    <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
 >;
 
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParams<VideoId, Moment, Balance> {
+pub struct AuctionParams<VideoId, BlockNumber, Balance> {
     pub video_id: VideoId,
     /// Should only be provided if nft is not issued yet
     pub creator_royalty: Option<Royalty>,
-    pub auction_duration: Moment,
+    pub auction_duration: BlockNumber,
     pub starting_price: Balance,
     pub minimal_bid_step: Balance,
     pub buy_now_price: Option<Balance>,

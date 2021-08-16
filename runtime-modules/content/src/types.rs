@@ -215,7 +215,7 @@ pub struct VideoRecord<
     ChannelId,
     SeriesId,
     AccountId,
-    Moment: BaseArithmetic + Copy,
+    BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy,
     Balance,
 > {
@@ -226,17 +226,17 @@ pub struct VideoRecord<
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// Whether nft for this video was issued.
-    pub nft_status: NFTStatus<AccountId, Moment, MemberId, Balance>,
+    pub nft_status: NFTStatus<AccountId, BlockNumber, MemberId, Balance>,
 }
 
 impl<
         ChannelId: Clone,
         SeriesId: Clone,
         AccountId: PartialEq + Default + Clone,
-        Moment: BaseArithmetic + Copy,
+        BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq,
         Balance: Clone,
-    > VideoRecord<ChannelId, SeriesId, AccountId, Moment, MemberId, Balance>
+    > VideoRecord<ChannelId, SeriesId, AccountId, BlockNumber, MemberId, Balance>
 {
     /// Ensure nft status is set to NoneIssued
     pub fn ensure_none_issued<T: Trait>(&self) -> DispatchResult {
@@ -323,7 +323,7 @@ impl<
     }
 
     /// Get nft auction record
-    pub fn get_nft_auction(&self) -> Option<AuctionRecord<AccountId, Moment, Balance>> {
+    pub fn get_nft_auction(&self) -> Option<AuctionRecord<AccountId, BlockNumber, Balance>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -336,7 +336,7 @@ impl<
     }
 
     /// Get nft auction record by reference
-    pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<AccountId, Moment, Balance>> {
+    pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<AccountId, BlockNumber, Balance>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -351,7 +351,7 @@ impl<
     /// Get nft auction record by mutable reference
     pub fn get_nft_auction_ref_mut(
         &mut self,
-    ) -> Option<&mut AuctionRecord<AccountId, Moment, Balance>> {
+    ) -> Option<&mut AuctionRecord<AccountId, BlockNumber, Balance>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref mut auction),
             ..
@@ -379,7 +379,7 @@ impl<
     /// Sets nft transactional status to provided `Auction`
     pub fn set_auction_transactional_status(
         mut self,
-        auction: AuctionRecord<AccountId, Moment, Balance>,
+        auction: AuctionRecord<AccountId, BlockNumber, Balance>,
         auctioneer_account_id: AccountId,
         creator_royalty: Option<Royalty>,
     ) -> Self {
@@ -468,7 +468,7 @@ pub type Video<T> = VideoRecord<
     <T as StorageOwnership>::ChannelId,
     <T as Trait>::SeriesId,
     <T as frame_system::Trait>::AccountId,
-    <T as pallet_timestamp::Trait>::Moment,
+    <T as frame_system::Trait>::BlockNumber,
     <T as MembershipTypes>::MemberId,
     BalanceOf<T>,
 >;

@@ -72,7 +72,6 @@ impl NumericIdentifier for u64 {}
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
-    + pallet_timestamp::Trait
     + ContentActorAuthenticator
     + Clone
     + StorageOwnership
@@ -154,10 +153,10 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
         /// Min auction round time
-        pub MinRoundTime get(fn min_auction_duration) config(): T::Moment;
+        pub MinRoundTime get(fn min_auction_duration) config(): T::BlockNumber;
 
         /// Max auction round time
-        pub MaxRoundTime get(fn max_auction_duration) config(): T::Moment;
+        pub MaxRoundTime get(fn max_auction_duration) config(): T::BlockNumber;
 
         /// Min auction staring price
         pub MinStartingPrice get(fn min_starting_price) config(): BalanceOf<T>;
@@ -951,7 +950,7 @@ decl_module! {
         pub fn start_video_auction(
             origin,
             auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            auction_params: AuctionParams<T::VideoId, <T as pallet_timestamp::Trait>::Moment, BalanceOf<T>>,
+            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>>,
         ) {
 
             let video_id = auction_params.video_id;
@@ -1009,9 +1008,9 @@ decl_module! {
             if let Some(auction) = video.get_nft_auction_ref() {
 
                 // Return if auction expired
-                let now = pallet_timestamp::Module::<T>::now();
+                let block_number = <frame_system::Module<T>>::block_number();
 
-                if auction.is_nft_auction_expired(now) {
+                if auction.is_nft_auction_expired(block_number) {
                     return Ok(())
                 }
 
@@ -1059,14 +1058,15 @@ decl_module! {
             if let Some(auction) = video.get_nft_auction_ref() {
 
                 // Return if auction expired
-                let now = pallet_timestamp::Module::<T>::now();
-                if auction.is_nft_auction_expired(now) {
+                let block_number = <frame_system::Module<T>>::block_number();
+
+                if auction.is_nft_auction_expired(block_number) {
                     return Ok(())
                 }
 
                 // Ensure new bid is greater then last bid + minimal bid step
                 auction.ensure_is_valid_bid::<T>(bid)?;
-            }
+            };
 
             //
             // == MUTATION SAFE ==
@@ -1075,11 +1075,10 @@ decl_module! {
             let mut video = video;
 
             if let Some(auction) = video.get_nft_auction_ref_mut() {
+
                 let last_bid = auction.last_bid.clone();
 
                 if let Some(last_bid) = last_bid {
-
-                    let last_bid_time = pallet_timestamp::Module::<T>::now();
 
                     // TODO switch to StakingHandler representation after merging with olympia
 
@@ -1098,7 +1097,9 @@ decl_module! {
                     // Reseve balance for current bid
                     // Can not fail, needed check made
                     T::Currency::reserve(&participant_account_id, bid)?;
-                    auction.make_bid(participant_account_id, bid, last_bid_time);
+
+                    let block_number = <frame_system::Module<T>>::block_number();
+                    auction.make_bid(participant_account_id, bid, block_number);
 
                     VideoById::<T>::insert(video_id, video);
 
@@ -1132,9 +1133,9 @@ decl_module! {
             if let Some(auction) = video.get_nft_auction_ref() {
 
                 // Complete auction if round time expired
-                let now = pallet_timestamp::Module::<T>::now();
+                let block_number = <frame_system::Module<T>>::block_number();
 
-                if auction.is_nft_auction_expired(now) {
+                if auction.is_nft_auction_expired(block_number) {
 
                     // Ensure caller is auction winner.
                     auction.ensure_caller_is_auction_winner::<T>(participant_account_id.clone())?;
@@ -1437,17 +1438,17 @@ decl_event!(
         IsCensored = bool,
         AuctionParams = AuctionParams<
             <T as Trait>::VideoId,
-            <T as pallet_timestamp::Trait>::Moment,
+            <T as frame_system::Trait>::BlockNumber,
             BalanceOf<T>,
         >,
         Balance = BalanceOf<T>,
         NFTStatus = NFTStatus<
             <T as frame_system::Trait>::AccountId,
-            <T as pallet_timestamp::Trait>::Moment,
+            <T as frame_system::Trait>::BlockNumber,
             <T as MembershipTypes>::MemberId,
             BalanceOf<T>
         >,
-        Bid = Option<Bid<<T as frame_system::Trait>::AccountId, <T as pallet_timestamp::Trait>::Moment, BalanceOf<T>>>,
+        Bid = Option<Bid<<T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::BlockNumber, BalanceOf<T>>>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),

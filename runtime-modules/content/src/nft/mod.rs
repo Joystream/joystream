@@ -53,11 +53,7 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<
-            T::VideoId,
-            <T as pallet_timestamp::Trait>::Moment,
-            BalanceOf<T>,
-        >,
+        auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>>,
         video: &Video<T>,
     ) -> DispatchResult {
         if let Some(creator_royalty) = auction_params.creator_royalty {
@@ -109,9 +105,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure royalty bounds satisfied
+    /// Ensure auction duration bounds satisfied
     pub(crate) fn ensure_auction_duration_bounds_satisfied(
-        auction_duration: T::Moment,
+        auction_duration: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
             auction_duration <= Self::max_auction_duration(),

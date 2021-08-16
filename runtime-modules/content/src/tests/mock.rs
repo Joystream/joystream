@@ -103,7 +103,7 @@ impl frame_system::Trait for Test {
 }
 
 impl pallet_timestamp::Trait for Test {
-    type Moment = u64;
+    type BlockNumber = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
