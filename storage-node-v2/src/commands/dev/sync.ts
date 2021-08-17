@@ -27,7 +27,7 @@ export default class DevSync extends Command {
       required: false,
       description:
         'Storage node host and port (e.g.: some.com:8081) to get data from.',
-    }),    
+    }),
     uploads: flags.string({
       char: 'd',
       required: true,
@@ -42,7 +42,7 @@ export default class DevSync extends Command {
 
     const queryNodeHost = flags.queryNodeHost ?? 'localhost:8081'
     const queryNodeUrl = `http://${queryNodeHost}/graphql`
-    const processNumber = flags.processNumber ?? 30
+    const processNumber = flags.processNumber ?? 20
     const dataSourceOperatorHost =
       flags.dataSourceOperatorHost ?? 'localhost:3333'
     const operatorUrl = `http://${dataSourceOperatorHost}/`
@@ -62,7 +62,7 @@ export default class DevSync extends Command {
   }
 }
 
-//TODO: implement periodical sync
+// TODO: implement periodical sync
 // import sleep from 'sleep-promise'
 // export function runSyncWithInterval() {
 //   setTimeout(async () => {

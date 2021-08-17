@@ -1,4 +1,5 @@
 import { getRuntimeModel, Model } from '../../services/sync/dataObjectsModel'
+import { getAvailableData } from '../../services/sync/remoteData'
 import logger from '../../services/logger'
 import _ from 'lodash'
 import fs from 'fs'
@@ -11,7 +12,7 @@ import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
 const fsPromises = fs.promises
 
-//TODO: use caching
+// TODO: use caching
 export async function getLocalDataObjects(
   uploadDirectory: string
 ): Promise<string[]> {
@@ -25,7 +26,7 @@ export async function performSync(
   processNumber: number,
   queryNodeUrl: string,
   uploadDirectory: string,
-  operatorUrl: string
+  operatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
@@ -42,17 +43,29 @@ export async function performSync(
   logger.debug(`Sync - added objects: ${added.length}`)
   logger.debug(`Sync - deleted objects: ${deleted.length}`)
 
+  const workingStack = new WorkingStack()
   const deletedTasks = deleted.map(
     (fileName) => new DeleteLocalFileTask(uploadDirectory, fileName)
   )
-  const addedTasks = await getDownloadTasks(model, operatorUrl, added, uploadDirectory)
+
+  let addedTasks: SyncTask[]
+  if (operatorUrl !== null) {
+    addedTasks = await getPrepareDownloadTasks(
+      model,
+      added,
+      uploadDirectory,
+      workingStack
+    )
+  } else {
+    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory)
+  }
 
   logger.debug(`Sync - started processing...`)
-  const workingStack = new WorkingStack()
+
   const processSpawner = new TaskProcessorSpawner(workingStack, processNumber)
 
-  workingStack.add(addedTasks)
-  workingStack.add(deletedTasks)
+  await workingStack.add(addedTasks)
+  await workingStack.add(deletedTasks)
 
   await processSpawner.process()
   logger.info('Sync ended.')
@@ -108,11 +121,11 @@ class DownloadFileTask implements SyncTask {
       try {
         await streamPipeline(response.body, fs.createWriteStream(this.filepath))
       } catch (err) {
-        logger.error(`Fetching data error for ${this.url}: ${err}`)
+        logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
       }
     } else {
       logger.error(
-        `Unexpected response for ${this.url}: ${response.statusText}`
+        `Sync - unexpected response for ${this.url}: ${response.statusText}`
       )
     }
   }
@@ -168,7 +181,7 @@ class TaskProcessorSpawner {
   async process(): Promise<void> {
     const processes = []
 
-    for (let i: number = 0; i < this.processNumber; i++) {
+    for (let i = 0; i < this.processNumber; i++) {
       const processor = new TaskProcessor(this.taskSource)
       processes.push(processor.process())
     }
@@ -181,7 +194,7 @@ class TaskProcessor {
   taskSource: TaskSource
   exitOnCompletion: boolean
 
-  constructor(taskSource: TaskSource, exitOnCompletion: boolean = true) {
+  constructor(taskSource: TaskSource, exitOnCompletion = true) {
     this.taskSource = taskSource
     this.exitOnCompletion = exitOnCompletion
   }
@@ -204,32 +217,123 @@ class TaskProcessor {
   }
 }
 
+async function getPrepareDownloadTasks(
+  model: Model,
+  addedCids: string[],
+  uploadDirectory: string,
+  taskSink: TaskSink
+): Promise<PrepareDownloadFileTask[]> {
+  const cidMap = new Map()
+  for (const entry of model.dataObjects) {
+    cidMap.set(entry.cid, entry.bagId)
+  }
+
+  const bucketMap = new Map()
+  for (const entry of model.storageBuckets) {
+    bucketMap.set(entry.id, entry.operatorUrl)
+  }
+
+  const bagMap = new Map()
+  for (const entry of model.bags) {
+    const operatorUrls = []
+
+    for (const bucket of entry.buckets) {
+      if (bucketMap.has(bucket)) {
+        const operatorUrl = bucketMap.get(bucket)
+        if (operatorUrl) {
+          operatorUrls.push(operatorUrl)
+        }
+      }
+    }
+
+    bagMap.set(entry.id, operatorUrls)
+  }
+
+  const tasks = addedCids.map((cid) => {
+    let operatorUrls: string[] = [] // can be empty after look up
+    if (cidMap.has(cid)) {
+      const bagid = cidMap.get(cid)
+      if (bagMap.has(bagid)) {
+        operatorUrls = bagMap.get(bagid)
+      }
+    }
+
+    return new PrepareDownloadFileTask(
+      operatorUrls,
+      cid,
+      uploadDirectory,
+      taskSink
+    )
+  })
+
+  return tasks
+}
 
 async function getDownloadTasks(
-  model: Model,
   operatorUrl: string,
   addedCids: string[],
   uploadDirectory: string
 ): Promise<DownloadFileTask[]> {
-  //model.dataObjects.
-
-  model.bags[0].buckets[0]
-
-  const buckets = new Set()
-
-  for (const bag of bags) {
-    buckets.
-} 
-
-  const urls = new Map()
-  
-  for 
-
-
-
   const addedTasks = addedCids.map(
     (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory)
   )
 
   return addedTasks
+}
+
+class PrepareDownloadFileTask implements SyncTask {
+  cid: string
+  operatorUrlCandidates: string[]
+  taskSink: TaskSink
+  uploadsDirectory: string
+
+  constructor(
+    operatorUrlCandidates: string[],
+    cid: string,
+    uploadsDirectory: string,
+    taskSink: TaskSink
+  ) {
+    this.cid = cid
+    this.taskSink = taskSink
+    // Cloning is critical here. The list will be modified.
+    this.operatorUrlCandidates = _.cloneDeep(operatorUrlCandidates)
+    this.uploadsDirectory = uploadsDirectory
+  }
+
+  description(): string {
+    return `Sync - preparing for download of: ${this.cid} ....`
+  }
+
+  async execute(): Promise<void> {
+    while (!_.isEmpty(this.operatorUrlCandidates)) {
+      const randomUrl = _.sample(this.operatorUrlCandidates)
+      if (!randomUrl) {
+        break // cannot get random URL
+      }
+
+      // Remove random url from the original list.
+      _.remove(this.operatorUrlCandidates, (url) => url === randomUrl)
+
+      try {
+        const chosenBaseUrl = randomUrl
+        const remoteOperatorCids: string[] = await getAvailableData(
+          chosenBaseUrl
+        )
+
+        if (remoteOperatorCids.includes(this.cid)) {
+          const newTask = new DownloadFileTask(
+            chosenBaseUrl,
+            this.cid,
+            this.uploadsDirectory
+          )
+
+          return this.taskSink.add([newTask])
+        }
+      } catch (err) {
+        logger.error(`Sync - fetching data error for ${this.cid}: ${err}`)
+      }
+    }
+
+    logger.warn(`Sync - cannot get operator URLs for ${this.cid}`)
+  }
 }

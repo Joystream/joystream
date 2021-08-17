@@ -433,11 +433,10 @@ function getHttpStatusCodeByError(err: Error): number {
 
   return 500
 }
-
 /**
  * A public endpoint: return all local data objects.
  */
- export async function getAllLocalDataObjects(
+export async function getAllLocalDataObjects(
   req: express.Request,
   res: express.Response
 ): Promise<void> {
@@ -448,7 +447,6 @@ function getHttpStatusCodeByError(err: Error): number {
 
     res.status(200).json(cids)
   } catch (err) {
-
     res.status(500).json({
       type: 'local_data_objects',
       message: err.toString(),

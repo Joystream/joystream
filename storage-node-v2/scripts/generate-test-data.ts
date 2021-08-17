@@ -10,7 +10,7 @@ async function doJob(): Promise<void> {
   const uploadDirectory = '/Users/shamix/uploads2'
   const fileSize = 100
 
-  const objectNumber = 10
+  const objectNumber = 1000
   const bagNumber = 10
   const bucketNumber = 10
 
@@ -39,6 +39,7 @@ async function doJob(): Promise<void> {
     await createBuckets(client, bucketNumber)
     await createBagBucketLinks(client)
     await createBucketWorkerLinks(client)
+    await createBucketOperatorUrls(client)
     const dbTasks = createDataObjects(client, objectNumber)
     await Promise.all(dbTasks)
 
@@ -136,6 +137,11 @@ async function createBagBucketLinks(client: Client): Promise<void> {
     await client.query(
       `INSERT INTO storage_bag_storage_bucket(storage_bag_id, storage_bucket_id) 
        values('1', '2')`
+    )    
+    // Bucket3 to Bag1
+    await client.query(
+      `INSERT INTO storage_bag_storage_bucket(storage_bag_id, storage_bucket_id) 
+       values('1', '3')`
     )
 }
 
@@ -144,6 +150,7 @@ async function createBucketWorkerLinks(client: Client): Promise<void> {
 
     const assignedWorker0 = `{"isTypeOf": "StorageBucketOperatorStatusActive", "workerId": 0}`
     const assignedWorker1 = `{"isTypeOf": "StorageBucketOperatorStatusActive", "workerId": 1}`
+    const assignedWorker2 = `{"isTypeOf": "StorageBucketOperatorStatusActive", "workerId": 2}`
 
     // Bucket1 to Worker0
     await client.query(
@@ -156,6 +163,32 @@ async function createBucketWorkerLinks(client: Client): Promise<void> {
       `UPDATE storage_bucket
        SET operator_status = '${assignedWorker1}'
        WHERE id = '2'`
+    )   
+     // Bucket3 to Worker2
+    await client.query(
+      `UPDATE storage_bucket
+       SET operator_status = '${assignedWorker2}'
+       WHERE id = '3'`
+    )
+}
+
+async function createBucketOperatorUrls(client: Client): Promise<void> {
+    console.log(`Writing bucket operator URLs...`)
+
+    const metadata1 = `http://localhost:3333/`
+    const metadata3 = `http://localhost:3334/`
+
+    // Bucket1
+    await client.query(
+      `UPDATE storage_bucket
+       SET operator_metadata = '${metadata1}'
+       WHERE id = '1'`
+    )
+     // Bucket3
+    await client.query(
+      `UPDATE storage_bucket
+       SET operator_metadata = '${metadata3}'
+       WHERE id = '3'`
     )
 }
 
