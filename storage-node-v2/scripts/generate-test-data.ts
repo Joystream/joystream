@@ -10,7 +10,7 @@ async function doJob(): Promise<void> {
   const uploadDirectory = '/Users/shamix/uploads2'
   const fileSize = 100
 
-  const objectNumber = 1000
+  const objectNumber = 2000
   const bagNumber = 10
   const bucketNumber = 10
 

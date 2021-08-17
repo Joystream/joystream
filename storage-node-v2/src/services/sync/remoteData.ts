@@ -4,7 +4,7 @@ import logger from '../../services/logger'
 import NodeCache from 'node-cache'
 
 // Expiration period in seconds for the local cache.
-const ExpirationPeriod: number = 5 * (60 * 1000) // minutes
+const ExpirationPeriod: number = 5 * 60 // minutes
 
 // Max data entries in local cache
 const MaxEntries = 10000
@@ -34,7 +34,7 @@ export async function getAvailableData(operatorUrl: string): Promise<string[]> {
   }
 
   const cachedData = availableCidsCache.get<string[]>(url)
-  if (!!cachedData) {
+  if (cachedData) {
     logger.debug(`Sync - getting from cache available data for ${url}`)
     return cachedData
   }

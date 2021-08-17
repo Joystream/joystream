@@ -1,7 +1,7 @@
 import NodeCache from 'node-cache'
 
 // Expiration period in seconds for the local nonce cache.
-const TokenExpirationPeriod: number = 30 * 1000 // seconds
+const TokenExpirationPeriod = 30 // seconds
 
 // Max nonce number in local cache
 const MaxNonces = 100000

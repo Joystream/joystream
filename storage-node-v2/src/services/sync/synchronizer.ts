@@ -23,7 +23,7 @@ export async function getLocalDataObjects(
 
 export async function performSync(
   workerId: number,
-  processNumber: number,
+  syncWorkersNumber: number,
   queryNodeUrl: string,
   uploadDirectory: string,
   operatorUrl?: string
@@ -33,7 +33,6 @@ export async function performSync(
     getRuntimeModel(queryNodeUrl, workerId),
     getLocalFileNames(uploadDirectory),
   ])
-  console.log(model)
 
   const requiredCids = model.dataObjects.map((obj) => obj.cid)
 
@@ -62,7 +61,10 @@ export async function performSync(
 
   logger.debug(`Sync - started processing...`)
 
-  const processSpawner = new TaskProcessorSpawner(workingStack, processNumber)
+  const processSpawner = new TaskProcessorSpawner(
+    workingStack,
+    syncWorkersNumber
+  )
 
   await workingStack.add(addedTasks)
   await workingStack.add(deletedTasks)
@@ -295,6 +297,7 @@ class PrepareDownloadFileTask implements SyncTask {
   ) {
     this.cid = cid
     this.taskSink = taskSink
+    // TODO: remove heavy operation
     // Cloning is critical here. The list will be modified.
     this.operatorUrlCandidates = _.cloneDeep(operatorUrlCandidates)
     this.uploadsDirectory = uploadsDirectory
