@@ -71,12 +71,7 @@ impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    frame_system::Trait
-    + ContentActorAuthenticator
-    + Clone
-    + StorageOwnership
-    + MembershipTypes
-    + GovernanceCurrency
+    membership::Trait + ContentActorAuthenticator + Clone + StorageOwnership + GovernanceCurrency
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -109,7 +104,7 @@ pub trait Trait:
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     // Type that handles asset uploads to storage frame_system
-    type StorageSystem: StorageSystem<Self>;
+    type StorageSystem: StorageSystem<Self, Self::MemberId>;
 }
 
 decl_storage! {
@@ -977,7 +972,7 @@ decl_module! {
             // Create new auction
             let creator_royalty = auction_params.creator_royalty.clone();
             let auction = AuctionRecord::new(auction_params.clone());
-            let video = video.set_auction_transactional_status(auction, auctioneer_account_id, creator_royalty);
+            let video = video.set_auction_transactional_status(auction, auctioneer, creator_royalty);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1006,7 +1001,7 @@ decl_module! {
             let auctioneer_account_id = ensure_signed(origin)?;
 
             // Ensure given content actor is auctioneer
-            video.ensure_vnft_ownership::<T>(&auctioneer_account_id)?;
+            video.ensure_vnft_ownership::<T>(&auctioneer)?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
@@ -1138,6 +1133,8 @@ decl_module! {
             // Ensure chosen auction mode is correct
             video.ensure_correct_auction_mode::<T>(&auction_mode)?;
 
+            let owner_account_id = Self::ensure_owner_account_id(&video)?;
+
             if let Some(auction) = video.get_nft_auction_ref() {
 
                 // Complete auction if round time expired
@@ -1154,7 +1151,9 @@ decl_module! {
 
                     let last_bid = auction.last_bid.clone();
 
-                    let video = Self::complete_auction(video, video_id, participant_account_id, auction_mode);
+                    let video = Self::complete_auction(
+                        video, video_id, participant_account_id, participant_id, owner_account_id, auction_mode
+                    );
 
                     // Update the video
                     VideoById::<T>::insert(video_id, video.clone());
@@ -1173,6 +1172,7 @@ decl_module! {
             video_id: T::VideoId,
             royalty: Option<Royalty>,
             metadata: Metadata,
+            to: MemberId<T>
         ) {
 
             // Authorize content actor
@@ -1198,7 +1198,7 @@ decl_module! {
             // Issue vNFT
 
             let mut video = video;
-            Self::issue_vnft(&mut video, video_id, content_actor_account_id, royalty, metadata);
+            Self::issue_vnft(&mut video, video_id, to, royalty, metadata);
         }
 
         /// Start vNFT transfer
@@ -1218,7 +1218,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure from_account_id is vnft owner
-            video.ensure_vnft_ownership::<T>(&from_account_id)?;
+            video.ensure_vnft_ownership::<T>(&ContentActor::Member(from))?;
 
             // Ensure there is not pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1253,7 +1253,7 @@ decl_module! {
             video.ensure_pending_transfer_exists::<T>()?;
 
             // Ensure provided participant owns vnft
-            video.ensure_vnft_ownership::<T>(&participant_account_id)?;
+            video.ensure_vnft_ownership::<T>(&ContentActor::Member(participant_id))?;
 
             //
             // == MUTATION SAFE ==
@@ -1294,7 +1294,7 @@ decl_module! {
             //
 
             // Complete vnft transfer
-            let video = video.complete_vnft_transfer(participant_account_id);
+            let video = video.complete_vnft_transfer(ContentActor::Member(participant_id));
 
             VideoById::<T>::insert(video_id, video);
 
@@ -1398,6 +1398,32 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Ensure owner account id exists, retreive corresponding one.
+    pub fn ensure_owner_account_id(video: &Video<T>) -> Result<T::AccountId, Error<T>> {
+        if let NFTStatus::Owned(owned_nft) = &video.nft_status {
+            match owned_nft.owner {
+                ContentActor::Member(member_id) => {
+                    if let Ok(membership) = <membership::Module<T>>::ensure_membership(member_id) {
+                        Ok(membership.controller_account)
+                    } else {
+                        Err(Error::<T>::RewardAccountIsNotSet)
+                    }
+                }
+                _ => {
+                    if let Some(reward_account) =
+                        Self::channel_by_id(video.in_channel).reward_account
+                    {
+                        Ok(reward_account)
+                    } else {
+                        Err(Error::<T>::RewardAccountIsNotSet)
+                    }
+                }
+            }
+        } else {
+            Err(Error::<T>::VNFTDoesNotExist.into())
+        }
+    }
+
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
@@ -1423,9 +1449,9 @@ decl_event!(
         ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
             <T as ContentActorAuthenticator>::CuratorId,
-            <T as MembershipTypes>::MemberId,
+            MemberId<T>,
         >,
-        <T as MembershipTypes>::MemberId,
+        MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
@@ -1453,10 +1479,18 @@ decl_event!(
         NFTStatus = NFTStatus<
             <T as frame_system::Trait>::AccountId,
             <T as frame_system::Trait>::BlockNumber,
-            <T as MembershipTypes>::MemberId,
-            BalanceOf<T>
+            MemberId<T>,
+            CuratorGroupId<T>,
+            CuratorId<T>,
+            BalanceOf<T>,
         >,
-        Bid = Option<Bid<<T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::BlockNumber, BalanceOf<T>>>,
+        Bid = Option<
+            Bid<
+                <T as frame_system::Trait>::AccountId,
+                <T as frame_system::Trait>::BlockNumber,
+                BalanceOf<T>,
+            >,
+        >,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),

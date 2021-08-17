@@ -7,7 +7,7 @@ pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
 pub(crate) type ContentParameters<T> = ContentParametersRecord<ContentId<T>, DataObjectTypeId<T>>;
 
 pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
-    <T as MembershipTypes>::MemberId,
+    MemberId<T>,
     <T as StorageOwnership>::ChannelId,
     <T as StorageOwnership>::DAOId,
 >;
@@ -42,7 +42,7 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
 // simplification type
 pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
-        <T as MembershipTypes>::MemberId,
+        MemberId<T>,
         <T as ContentActorAuthenticator>::CuratorGroupId,
         <T as StorageOwnership>::DAOId,
     >,
@@ -105,7 +105,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
 
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
-    <T as MembershipTypes>::MemberId,
+    MemberId<T>,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     <T as frame_system::Trait>::AccountId,
@@ -134,7 +134,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
 /// ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
     <T as StorageOwnership>::ChannelId,
-    <T as MembershipTypes>::MemberId,
+    MemberId<T>,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as StorageOwnership>::DAOId,
     BalanceOf<T>,
@@ -217,6 +217,8 @@ pub struct VideoRecord<
     AccountId,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy,
+    CuratorGroupId: Default + Copy,
+    CuratorId: Default + Copy,
     Balance,
 > {
     pub in_channel: ChannelId,
@@ -226,7 +228,7 @@ pub struct VideoRecord<
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// Whether nft for this video was issued.
-    pub nft_status: NFTStatus<AccountId, BlockNumber, MemberId, Balance>,
+    pub nft_status: NFTStatus<AccountId, BlockNumber, MemberId, CuratorGroupId, CuratorId, Balance>,
 }
 
 impl<
@@ -235,8 +237,20 @@ impl<
         AccountId: PartialEq + Default + Clone,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq,
+        CuratorGroupId: Default + Copy + PartialEq,
+        CuratorId: Default + Copy + PartialEq,
         Balance: Clone,
-    > VideoRecord<ChannelId, SeriesId, AccountId, BlockNumber, MemberId, Balance>
+    >
+    VideoRecord<
+        ChannelId,
+        SeriesId,
+        AccountId,
+        BlockNumber,
+        MemberId,
+        CuratorGroupId,
+        CuratorId,
+        Balance,
+    >
 {
     /// Ensure nft status is set to NoneIssued
     pub fn ensure_none_issued<T: Trait>(&self) -> DispatchResult {
@@ -284,7 +298,10 @@ impl<
     }
 
     /// Ensure given AccountId is vnft owner
-    pub fn ensure_vnft_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
+    pub fn ensure_vnft_ownership<T: Trait>(
+        &self,
+        owner: &ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    ) -> DispatchResult {
         if let NFTStatus::Owned(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
             Ok(())
@@ -380,14 +397,14 @@ impl<
     pub fn set_auction_transactional_status(
         mut self,
         auction: AuctionRecord<AccountId, BlockNumber, Balance>,
-        auctioneer_account_id: AccountId,
+        auctioneer: ContentActor<CuratorGroupId, CuratorId, MemberId>,
         creator_royalty: Option<Royalty>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Auction(auction);
         } else {
             self.nft_status = NFTStatus::Owned(OwnedNFT {
-                owner: auctioneer_account_id,
+                owner: auctioneer,
                 transactional_status: TransactionalStatus::Auction(auction),
                 creator_royalty,
                 is_issued: false,
@@ -397,7 +414,10 @@ impl<
     }
 
     /// Completes vnft transfer
-    pub fn complete_vnft_transfer(mut self, new_owner: AccountId) -> Self {
+    pub fn complete_vnft_transfer(
+        mut self,
+        new_owner: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    ) -> Self {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::InitiatedTransferToMember(..),
             ref mut owner,
@@ -469,7 +489,9 @@ pub type Video<T> = VideoRecord<
     <T as Trait>::SeriesId,
     <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::BlockNumber,
-    <T as MembershipTypes>::MemberId,
+    MemberId<T>,
+    CuratorGroupId<T>,
+    CuratorId<T>,
     BalanceOf<T>,
 >;
 

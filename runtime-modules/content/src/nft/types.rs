@@ -5,7 +5,7 @@ pub type Metadata = Vec<u8>;
 
 pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
 pub type CuratorId<T> = <T as ContentActorAuthenticator>::CuratorId;
-pub type MemberId<T> = <T as MembershipTypes>::MemberId;
+pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Owner royalty
 pub type Royalty = Perbill;
@@ -43,9 +43,11 @@ pub struct OwnedNFT<
     AccountId,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy,
+    CuratorGroupId: Default + Copy,
+    CuratorId: Default + Copy,
     Balance,
 > {
-    pub owner: AccountId,
+    pub owner: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     pub transactional_status: TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
     // whether nft is issued
@@ -53,19 +55,24 @@ pub struct OwnedNFT<
 }
 
 impl<
-        AccountId: PartialEq,
+        AccountId,
         BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy,
+        MemberId: Default + Copy + PartialEq,
+        CuratorGroupId: Default + Copy + PartialEq,
+        CuratorId: Default + Copy + PartialEq,
         Balance,
-    > OwnedNFT<AccountId, BlockNumber, MemberId, Balance>
+    > OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, CuratorId, Balance>
 {
-    /// Whether account_id is nft owner
-    pub fn is_owner(&self, account_id: &AccountId) -> bool {
-        self.owner.eq(account_id)
+    /// Whether content actor is nft owner
+    pub fn is_owner(&self, owner: &ContentActor<CuratorGroupId, CuratorId, MemberId>) -> bool {
+        self.owner.eq(owner)
     }
 
     /// Create new vNFT
-    pub fn new(owner: AccountId, creator_royalty: Option<Royalty>) -> Self {
+    pub fn new(
+        owner: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+        creator_royalty: Option<Royalty>,
+    ) -> Self {
         Self {
             owner,
             transactional_status: TransactionalStatus::Idle,
@@ -75,7 +82,10 @@ impl<
     }
 
     /// Ensure given account id is vNFT owner
-    pub fn ensure_ownership<T: Trait>(&self, owner: &AccountId) -> DispatchResult {
+    pub fn ensure_ownership<T: Trait>(
+        &self,
+        owner: &ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    ) -> DispatchResult {
         ensure!(self.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
         Ok(())
     }
@@ -84,14 +94,26 @@ impl<
 /// Enum, representing nft issuance status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NFTStatus<AccountId, BlockNumber: BaseArithmetic + Copy, MemberId: Default + Copy, Balance>
-{
+pub enum NFTStatus<
+    AccountId,
+    BlockNumber: BaseArithmetic + Copy,
+    MemberId: Default + Copy,
+    CuratorGroupId: Default + Copy,
+    CuratorId: Default + Copy,
+    Balance,
+> {
     NoneIssued,
-    Owned(OwnedNFT<AccountId, BlockNumber, MemberId, Balance>),
+    Owned(OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, CuratorId, Balance>),
 }
 
-impl<AccountId, BlockNumber: BaseArithmetic + Copy, MemberId: Default + Copy, Balance> Default
-    for NFTStatus<AccountId, BlockNumber, MemberId, Balance>
+impl<
+        AccountId,
+        BlockNumber: BaseArithmetic + Copy,
+        MemberId: Default + Copy,
+        CuratorGroupId: Default + Copy,
+        CuratorId: Default + Copy,
+        Balance,
+    > Default for NFTStatus<AccountId, BlockNumber, MemberId, CuratorGroupId, CuratorId, Balance>
 {
     fn default() -> Self {
         Self::NoneIssued

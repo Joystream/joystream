@@ -18,7 +18,7 @@ use common::storage::StorageSystem;
 
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
-pub type MemberId = <Test as MembershipTypes>::MemberId;
+pub type MemberId = <Test as membership::Trait>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 // pub type DAOId = <Test as StorageOwnership>::DAOId;
 
@@ -107,11 +107,6 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
-}
-
-impl common::MembershipTypes for Test {
-    type MemberId = u64;
-    type ActorId = u64;
 }
 
 impl common::StorageOwnership for Test {
