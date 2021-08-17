@@ -1479,10 +1479,8 @@ decl_module! {
             // ensure that signer is member_id and member_id refers to a valid member
             Self::ensure_is_forum_user(&account_id, &member_id)?;
 
-            // ensure valid channel && thread can be added to subreddit
-            let channel = Self::ensure_channel_exists(&params.channel_id)?;
-         Self::ensure_subreddit_is_mutable(&channel)?;
-
+            // ensure subreddit is mutable
+            Self::ensure_subreddit_is_mutable(&params.channel_id)?;
 
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
@@ -1624,6 +1622,7 @@ decl_module! {
            RawEvent::ThreadDeleted(
                thread_id,
                deletion_actor,
+               operation,
              ));
 
             Ok(())
@@ -1642,12 +1641,9 @@ decl_module! {
         // Make sure thread exists and is mutable
         Self::ensure_is_forum_user(&account_id, &member_id)?;
 
-        // make sure thread is valid
-        let thread = Self::ensure_thread_exists(&thread_id)?;
-
-        // ensure subreddit can be edited
-        let channel = Self::ensure_channel_exists(&thread.channel_id)?;
-        Self::ensure_subreddit_is_mutable(&channel)?;
+        // make sure subreddit is mutable
+        let channel_id = Self::ensure_thread_exists(&thread_id)?.channel_id;
+        Self::ensure_subreddit_is_mutable(&channel_id)?;
 
         // computing text hash and post price
         let init_bloat_bond = Self::compute_bloat_bond(params.text.len(), T::PostCleanupCost::get());
@@ -1727,44 +1723,52 @@ decl_module! {
     }
 
     #[weight = 10_000_000]
-    fn delete_post(_origin,
-           actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-           thread_id: T::ThreadId,
-           post_id: T::PostId,
-          ) -> DispatchResult {
+    fn delete_post(
+        origin,
+        deletion_actor: DeletionActor<T>,
+        thread_id: T::ThreadId,
+        post_id: T::PostId,
+        operation: DeleteOperation,
+    ) -> DispatchResult {
 
-       //  let account_id = ensure_signed(origin)?;
+        let sender = ensure_signed(origin)?;
 
-       //  let _thread = Self::ensure_thread_exists(&thread_id)?;
+        let post = Self::ensure_post_exists(&thread_id, &post_id)?;
+        let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
-       //  let post = Self::ensure_post_exists(&thread_id, &post_id)?;
-
-       //  // obtain channel
-       //  let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
-
-       //  // if actor is channel owner bond is burned
-       //  if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
-       //     Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
-       //     let _ = balances::Module::<T>::burn(post.bloat_bond);
-       //     }
-
-       // // if actor is author bond is returned
-       // if Self::actor_is_post_author(&account_id, &actor, &post) {
-       //     let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
-       // } else {
-       //     return Err(Error::<T>::ActorNotAuthorized.into());
-       // }
+        // only thread author is refunded up to a certain amount
+        match deletion_actor.clone() {
+            DeletionActor::<T>::ChannelOwner(actor) => {
+                Self::ensure_actor_is_channel_owner(&sender, &actor, &channel_id)?;
+                let _ = balances::Module::<T>::burn(post.bloat_bond);
+        },
+            DeletionActor::<T>::Moderator(member_id, rationale) => {
+                Self::ensure_actor_is_moderator(&sender, &member_id, &channel_id)?;
+                ensure!(!rationale.is_empty(), Error::<T>::RationaleNotProvided);
+                let _ = balances::Module::<T>::burn(post.bloat_bond);
+        },
+            DeletionActor::<T>::Author(member_id) => {
+                Self::ensure_actor_is_author(&sender, &member_id, &post.author_id)?;
+                let _ = Self::pay_off(thread_id, post.bloat_bond, &sender)?;
+            }
+        }
 
         //
         // == MUTATION SAFE ==
         //
 
-        Self::delete_post_inner(&thread_id, &post_id);
+        match operation {
+            DeleteOperation::Delete => Self::delete_post_inner(&thread_id, &post_id),
+            DeleteOperation::Archive => {
+                <PostById<T>>::mutate(&thread_id, &post_id, |post| post.archived = true);
+            }
+        }
 
         Self::deposit_event(RawEvent::PostDeleted(
             post_id,
-            actor,
             thread_id,
+            deletion_actor,
+            operation,
         ));
 
         Ok(())
@@ -1776,7 +1780,6 @@ decl_module! {
               thread_id: T::ThreadId,
               post_id: T::PostId,
               react: T::ReactionId,
-              channel_id: T::ChannelId,
     ) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
 
@@ -1788,8 +1791,8 @@ decl_module! {
             let _post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
             // subreddit is mutable
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            Self::ensure_subreddit_is_mutable(&channel)?;
+            let channel_id = <ThreadById<T>>::get(&thread_id).channel_id;
+            Self::ensure_subreddit_is_mutable(&channel_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1808,19 +1811,15 @@ decl_module! {
           member_id: T::MemberId,
           thread_id: T::ThreadId,
           react: T::ReactionId,
-          channel_id: T::ChannelId,
     ) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
+        let sender = ensure_signed(origin)?;
 
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &member_id)?;
-
-        // reaction business logic must be off chain
-        //let _thread = Self::ensure_thread_exists(&thread_id)?;
+        Self::ensure_is_forum_user(&sender, &member_id)?;
 
         // subreddit is mutable
-        let channel = Self::ensure_channel_exists(&channel_id)?;
-        Self::ensure_subreddit_is_mutable(&channel)?;
+        let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
+        Self::ensure_subreddit_is_mutable(&channel_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -2138,7 +2137,8 @@ impl<T: Trait> Module<T> {
         new_post_id
     }
 
-    fn ensure_subreddit_is_mutable(channel: &Channel<T>) -> Result<(), Error<T>> {
+    fn ensure_subreddit_is_mutable(channel_id: &T::ChannelId) -> Result<(), Error<T>> {
+        let channel = <ChannelById<T>>::get(channel_id);
         ensure!(
             channel.subreddit_mutable,
             Error::<T>::SubredditCannotBeModified
@@ -2325,10 +2325,10 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, MemberId, ThreadCreationParameters),
-        ThreadDeleted(ThreadId, DeletionActor),
+        ThreadDeleted(ThreadId, DeletionActor, DeleteOperation),
         PostAdded(PostId, MemberId, PostCreationParameters),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
-        PostDeleted(PostId, ContentActor, ThreadId),
+        PostDeleted(PostId, ThreadId, DeletionActor, DeleteOperation),
         PostReacted(PostId, MemberId, ThreadId, ReactionId),
         ThreadReacted(ThreadId, MemberId, ChannelId, ReactionId),
         ModeratorSetUpdated(ChannelId, BTreeSet<MemberId>),
