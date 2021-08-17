@@ -1,5 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import { performSync } from '../../services/sync/synchronizer'
+import logger from '../../services/logger'
 
 export default class DevSync extends Command {
   static description =
@@ -12,7 +13,7 @@ export default class DevSync extends Command {
       required: true,
       description: 'Storage node operator worker ID.',
     }),
-    processNumber: flags.integer({
+    syncWorkersNumber: flags.integer({
       char: 'p',
       required: false,
       description: 'Sync workers number (max async operations in progress).',
@@ -35,14 +36,14 @@ export default class DevSync extends Command {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { flags } = this.parse(DevSync)
 
-    console.log('Syncing...')
+    logger.info('Syncing...')
 
     const queryNodeHost = flags.queryNodeHost ?? 'localhost:8081'
     const queryNodeUrl = `http://${queryNodeHost}/graphql`
-    const processNumber = flags.processNumber ?? 20
+    const syncWorkersNumber = flags.syncWorkersNumber ?? 20
     const dataSourceOperatorHost =
       flags.dataSourceOperatorHost ?? 'localhost:3333'
     const operatorUrl = `http://${dataSourceOperatorHost}/`
@@ -50,25 +51,14 @@ export default class DevSync extends Command {
     try {
       await performSync(
         flags.workerId,
-        processNumber,
+        syncWorkersNumber,
         queryNodeUrl,
         flags.uploads,
         operatorUrl
       )
     } catch (err) {
-      console.log(err)
-      console.log(JSON.stringify(err, null, 2))
+      logger.error(err)
+      logger.error(JSON.stringify(err, null, 2))
     }
   }
 }
-
-// TODO: implement periodical sync
-// import sleep from 'sleep-promise'
-// export function runSyncWithInterval() {
-//   setTimeout(async () => {
-//     await sleep(5000)
-//     console.log('Syncing with timeout...')
-//     await performSync()
-//     runSyncWithInterval()
-//   }, 0)
-// }
