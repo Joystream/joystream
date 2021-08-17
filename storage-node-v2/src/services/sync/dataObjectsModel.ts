@@ -35,15 +35,15 @@ export async function getRuntimeModel(
 ): Promise<Model> {
   const api = new QueryNodeApi(queryNodeUrl)
 
-  let allBuckets = await getAllBuckets(api)
+  const allBuckets = await getAllBuckets(api)
 
-  let bucketIds = allBuckets
+  const bucketIds = allBuckets
     .filter((bucket) => bucket.operatorStatus?.workerId === workerId)
     .map((bucket) => bucket.id)
-  let assignedBags = await getAllAssignedBags(api, bucketIds)
+  const assignedBags = await getAllAssignedBags(api, bucketIds)
 
-  let bagIds = assignedBags.map((bag) => bag.id)
-  let assignedDataObjects = await getAllAssignedDataObjects(api, bagIds)
+  const bagIds = assignedBags.map((bag) => bag.id)
+  const assignedDataObjects = await getAllAssignedDataObjects(api, bagIds)
 
   const model: Model = {
     storageBuckets: allBuckets.map((bucket) => ({
@@ -99,7 +99,7 @@ async function getAllObjectsWithPaging<T>(
   objectName: string,
   query: (offset: number, limit: number) => Promise<T[]>
 ): Promise<T[]> {
-  let result = []
+  const result = []
   const limit = 1000 // TODO: make as parameter?
   let offset = 0
 
