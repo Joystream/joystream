@@ -288,7 +288,7 @@ parameter_types! {
     pub const PostDeposit: u64 = 10;
     pub const BloatBondCap: u32 = 100;
     pub const PostOwnershipDuration: u32 = 200;
-    pub const MaxModeratorsForSubreddit: u64 = 10;
+    pub const MaxModeratorsForSubreddit: usize = 10;
     pub const BytePrice: usize = 1;
     pub const PostCleanupCost: u32 = 2;
     pub const ThreadCleanupCost: u32 = 2;
@@ -322,7 +322,6 @@ pub struct ExtBuilder {
     next_curator_group_id: u64,
     next_post_id: u64,
     next_thread_id: u64,
-    number_of_subreddit_moderators: u64,
 }
 
 impl Default for ExtBuilder {
@@ -339,7 +338,6 @@ impl Default for ExtBuilder {
             next_curator_group_id: 1,
             next_post_id: 1,
             next_thread_id: 1,
-            number_of_subreddit_moderators: 0,
         }
     }
 }
@@ -362,7 +360,6 @@ impl ExtBuilder {
             next_curator_group_id: self.next_curator_group_id,
             next_post_id: self.next_post_id,
             next_thread_id: self.next_thread_id,
-            number_of_subreddit_moderators: self.number_of_subreddit_moderators,
         }
         .assimilate_storage(&mut t)
         .unwrap();

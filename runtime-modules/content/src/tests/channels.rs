@@ -105,6 +105,8 @@ fn curator_owned_channels() {
                     is_censored: false,
                     reward_account: None,
                     subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -191,6 +193,8 @@ fn member_owned_channels() {
                     is_censored: false,
                     reward_account: None,
                     subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -228,6 +232,8 @@ fn member_owned_channels() {
                     is_censored: false,
                     reward_account: None,
                     subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
@@ -264,6 +270,8 @@ fn member_owned_channels() {
                     is_censored: false,
                     reward_account: None,
                     subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelUpdateParameters {
                     assets: None,
