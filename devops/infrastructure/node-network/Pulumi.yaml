@@ -19,3 +19,6 @@ template:
     isLoadBalancerReady:
       description: Whether the load balancer service is ready and has been assigned an IP
       default: false
+    nodeImage:
+      description: Docker image with tag to be used as validator and RPC nodes
+      default: 'joystream/node:latest'

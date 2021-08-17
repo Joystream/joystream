@@ -56,6 +56,7 @@ const networkSuffix = config.get('networkSuffix') || '8129'
 const numberOfValidators = config.getNumber('numberOfValidators') || 1
 const chainDataPath = '/chain-data'
 const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
+const nodeImage = config.get('nodeImage') || 'joystream/node:latest'
 
 const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
 let pvcClaimName: pulumi.Output<any>
@@ -126,7 +127,7 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
             ...subkeyContainers,
             {
               name: 'builder-node',
-              image: 'joystream/node:latest',
+              image: nodeImage,
               command: ['/bin/sh', '-c'],
               args: [
                 `/joystream/chain-spec-builder generate -a ${numberOfValidators} \
@@ -167,7 +168,7 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
             },
             {
               name: 'raw-chain-spec',
-              image: 'joystream/node:latest',
+              image: nodeImage,
               command: ['/bin/sh', '-c'],
               args: [`/joystream/node build-spec --chain ${chainDataPath}/chainspec.json --raw > ${chainSpecPath}`],
               volumeMounts: [
@@ -206,7 +207,7 @@ const validators = []
 for (let i = 1; i <= numberOfValidators; i++) {
   const validator = new ValidatorServiceDeployment(
     `node-${i}`,
-    { namespace: namespaceName, index: i, chainSpecPath, dataPath: chainDataPath, pvc: pvcClaimName },
+    { namespace: namespaceName, index: i, chainSpecPath, dataPath: chainDataPath, pvc: pvcClaimName, nodeImage },
     { ...resourceOptions, dependsOn: chainDataPrepareJob }
   )
   validators.push(validator)
@@ -231,7 +232,7 @@ const deployment = new k8s.apps.v1.Deployment(
           containers: [
             {
               name: 'rpc-node',
-              image: 'joystream/node:latest',
+              image: nodeImage,
               ports: [
                 { name: 'rpc-9944', containerPort: 9944 },
                 { name: 'rpc-9933', containerPort: 9933 },

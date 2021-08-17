@@ -38,7 +38,8 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext numberOfValidators=2 --plaintext isMinikube=true --plaintext networkSuffix=8122
+    --plaintext numberOfValidators=2 --plaintext isMinikube=true --plaintext networkSuffix=8122 \
+    --plaintext nodeImage=joystream/node:latest
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
