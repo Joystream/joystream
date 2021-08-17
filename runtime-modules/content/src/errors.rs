@@ -103,6 +103,9 @@ decl_error! {
         /// Thread Archived
         ArchivedThreadCannotBeModified,
 
+        /// Rationale not provided
+        RationaleNotProvided,
+
 
     }
 }

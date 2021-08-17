@@ -620,9 +620,10 @@ pub trait SubredditLimits {
 /// Represents an operation in order to add/remove moderators
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub enum ModSetOperation {
-    AddModerator,
-    RemoveModerator,
+pub enum DeletionActor {
+    ChannelOwner,
+    Moderator,
+    Author,
 }
 
 decl_storage! {
@@ -1553,6 +1554,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             thread_id: T::ThreadId,
+            rationale: Option<Vec<u8>>,
         ) -> DispatchResult {
             // Ensure data migration is done
            // Self::ensure_data_migration_done()?;
@@ -1562,7 +1564,7 @@ decl_module! {
            let channel_id = thread.channel_id;
 
 
-            Self::ensure_can_delete_thread(
+            let deletion_actor = Self::ensure_can_delete_thread(
                 &account_id,
                 &actor,
                 &channel_id,
@@ -1570,35 +1572,42 @@ decl_module! {
             )?;
 
            // iterate over values that share the first key
-            let iter = <PostById<T>>::iter_prefix_values(thread_id);
+           let iter = <PostById<T>>::iter_prefix_values(thread_id);
 
            // Pay off to author or burn tokens
-           if let ContentActor::Member(member) = actor {
-               if member == thread.author_id {
-                   let _ = Self::pay_off(thread_id, thread.bloat_bond, &account_id);
-               }
-           } else {
+           match deletion_actor {
+               DeletionActor::Author => {
+                   let _ = Self::pay_off(thread_id, thread.bloat_bond, &account_id)?;
+               },
+               DeletionActor::Moderator => {
+                   ensure!(rationale != None, Error::<T>::RationaleNotProvided)?;
                    let _ = balances::Module::<T>::burn(thread.bloat_bond);
+               }
+               _ => let _ = balances::Module::<T>::burn(thread.bloat_bond)?;
            }
+
+           // burn all the other bloat bonds
+           let to_burn = iter.fold(0, |acc, x| acc + x);
+            _ => let _ = balances::Module::<T>::burn(thread.bloat_bond)?;
+
 
            //
            // == MUTATION SAFE ==
            //
 
-           // burn all the other bloat bonds
-           let _ = iter.map(|post| balances::Module::<T>::burn(post.bloat_bond));
 
-            // delete all the posts in the thread
-            <PostById<T>>::remove_prefix(&thread_id);
+           // delete all the posts in the thread
+           <PostById<T>>::remove_prefix(&thread_id);
 
-            // Delete thread
-            <ThreadById<T>>::remove(thread_id);
+           // Delete thread
+           <ThreadById<T>>::remove(thread_id);
 
-            // Store the event
-            Self::deposit_event(RawEvent::ThreadDeleted(
-                thread_id,
-                actor,
-              ));
+           // Store the event
+           Self::deposit_event(RawEvent::ThreadDeleted(
+               thread_id,
+               actor,
+               rationale,
+             ));
 
             Ok(())
         }
@@ -2129,21 +2138,26 @@ impl<T: Trait> Module<T> {
                     Error::<T>::ActorNotAuthorized
                 );
 
-                Ok(())
+                Ok(DeletionActor::ChannelOwner)
             }
             ContentActor::Member(member_id) => {
                 // check valid member
                 ensure_member_auth_success::<T>(member_id, account_id)?;
 
                 // Ensure the member is the channel owner or is a moderator
-                ensure!(
-                    channel.owner == ChannelOwner::Member(*member_id)
-                        || bset.contains(member_id)
-                        || <ThreadById<T>>::get(thread_id).author_id == *member_id,
-                    Error::<T>::ActorNotAuthorized
-                );
+                if channel.owner == ChannelOwner::Member(*member_id) {
+                    return Ok(DeletionActor::ChannelOwner);
+                }
 
-                Ok(())
+                if bset.contains(member_id) {
+                    return Ok(DeletionActor::Moderator);
+                }
+
+                if <ThreadById<T>>::get(thread_id).author_id == *member_id {
+                    return Ok(DeletionActor::Author);
+                }
+
+                return Err(Error::<T>::ActorNotAuthorized.into());
             }
 
             // no permission for the lead at the moment
@@ -2385,7 +2399,7 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, MemberId, ThreadCreationParameters),
-        ThreadDeleted(ThreadId, ContentActor),
+        ThreadDeleted(ThreadId, ContentActor, Option<Vec<u8>>),
         PostAdded(PostId, MemberId, PostCreationParameters),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, ContentActor, ThreadId),
