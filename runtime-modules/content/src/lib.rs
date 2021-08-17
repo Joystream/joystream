@@ -533,11 +533,11 @@ pub struct ThreadCreationParameters<ChannelId> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
-pub struct Thread_<MemberId, Balance, NumberOfPosts, ChannelId> {
+pub struct Thread_<MemberId, NumberOfPosts, ChannelId, Balance> {
     /// Author of post.
     pub author_id: MemberId,
 
-    /// State bloat bond
+    /// bloat bond deposit during thread creation
     pub bloat_bond: Balance,
 
     /// Number of posts in the thread
@@ -552,9 +552,9 @@ pub struct Thread_<MemberId, Balance, NumberOfPosts, ChannelId> {
 
 pub type Thread<T> = Thread_<
     <T as MembershipTypes>::MemberId,
-    <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
     <T as StorageOwnership>::ChannelId,
+    <T as balances::Trait>::Balance,
 >;
 
 /// Information about the post being created
@@ -1485,36 +1485,21 @@ decl_module! {
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
 
-            // reserve cleanup payoff in the thread + the cost of creating the first post
-            let thread_init_bloat_bond = Self::compute_bloat_bond(
-                params.post_text.len().saturating_add(params.title.len()),
-                T::PostCleanupCost::get() + T::ThreadCleanupCost::get()
+        // compute bloat bond for thread
+            let thread_bloat_bond = Self::compute_bloat_bond(
+                std::mem::size_of::<Thread<T>>(),
+                <T as balances::Trait>::Balance::one()
             );
-
-            // first post bond is taken into account into the thread bond.
-            // makes no sense to delete the first post of a reddit discussion and not delete
-            // the whole discussion. So the only way to delete the first post is to delete the
-            // thread. In any case only the thread author gets the bond if he is the actor of
-            // the deletion
-
-            let first_post_init_bloat_bond = <T as balances::Trait>::Balance::zero();
-
-            Self::transfer_to_state_cleanup_treasury_account(
-                thread_init_bloat_bond,
-                new_thread_id,
-                &account_id
-            )?;
 
             //
             // == MUTATION SAFE ==
             //
 
-
             // Build a new thread
             let new_thread = Thread_ {
                 author_id: member_id,
-                bloat_bond: thread_init_bloat_bond,
                 number_of_posts: T::PostId::zero(),
+                bloat_bond: thread_bloat_bond,
                 channel_id: params.channel_id.clone(),
                 archived: false,
             };
@@ -1524,12 +1509,13 @@ decl_module! {
                 *value = new_thread.clone()
             });
 
-            // Add inital post to thread
+            // Add inital post to thread: with zero bloat bond, for easier accounting during
+           // thread deletion
             let _ = Self::add_new_post(
                 new_thread_id,
                 member_id,
                 account_id,
-                first_post_init_bloat_bond,
+                <T as balances::Trait>::Balance::zero(),
                 params.post_mutable,
             );
 
@@ -1646,7 +1632,10 @@ decl_module! {
         Self::ensure_subreddit_is_mutable(&channel_id)?;
 
         // computing text hash and post price
-        let init_bloat_bond = Self::compute_bloat_bond(params.text.len(), T::PostCleanupCost::get());
+        let init_bloat_bond = Self::compute_bloat_bond(
+            std::mem::size_of::<Post<T>>(),
+            <T as balances::Trait>::Balance::one(),
+        );
 
         // transfer bond to threasury account
         Self::transfer_to_state_cleanup_treasury_account(
