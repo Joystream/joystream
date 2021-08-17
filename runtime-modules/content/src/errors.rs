@@ -31,12 +31,6 @@ decl_error! {
         /// Member Id invalid
         MemberIdInvalid,
 
-        /// Account does not match thread author
-        AccountDoesNotMatchThreadAuthor,
-
-        /// Account does not match Post author
-        AccountDoesNotMatchPostAuthor,
-
         /// Moderator canont update category
         ModeratorCantUpdateCategory,
 
@@ -88,9 +82,6 @@ decl_error! {
         /// Error encountered when transversing forum categories
         MapSizeLimit,
 
-        /// User is not a moderator
-        ModeratorNotValid,
-
         /// Subreddit cannot be Modified
         SubredditCannotBeModified,
 
@@ -106,6 +97,14 @@ decl_error! {
         /// Rationale not provided
         RationaleNotProvided,
 
+        /// Actor not a channel owner
+        ActorNotAChannelOwner,
+
+        /// User is not a moderator
+        ActorNotAModerator,
+
+        /// User is not a post/thread author
+        ActorNotAnAuthor,
 
     }
 }

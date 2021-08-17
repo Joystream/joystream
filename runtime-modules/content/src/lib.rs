@@ -533,10 +533,7 @@ pub struct ThreadCreationParameters<ChannelId> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
-pub struct Thread_<MemberId, Hash, Balance, NumberOfPosts, ChannelId> {
-    /// Title hash
-    pub title_hash: Hash,
-
+pub struct Thread_<MemberId, Balance, NumberOfPosts, ChannelId> {
     /// Author of post.
     pub author_id: MemberId,
 
@@ -548,11 +545,13 @@ pub struct Thread_<MemberId, Hash, Balance, NumberOfPosts, ChannelId> {
 
     /// channel whose forum this thread belongs to
     pub channel_id: ChannelId,
+
+    /// thread archived or not
+    pub archived: bool,
 }
 
 pub type Thread<T> = Thread_<
     <T as MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
     <T as Trait>::PostId,
     <T as StorageOwnership>::ChannelId,
@@ -578,13 +577,7 @@ pub struct PostUpdateParameters {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Post_<MemberId, AccountId, ThreadId, Hash, Balance> {
-    /// Id of thread to which this post corresponds.
-    pub thread_id: ThreadId,
-
-    /// Hash of current text
-    pub text_hash: Hash,
-
+pub struct Post_<MemberId, AccountId, Balance> {
     /// Author of post.
     pub author_id: MemberId,
 
@@ -596,13 +589,14 @@ pub struct Post_<MemberId, AccountId, ThreadId, Hash, Balance> {
 
     /// State bloat Bond,
     pub bloat_bond: Balance,
+
+    /// archived
+    pub archived: bool,
 }
 
 pub type Post<T> = Post_<
     <T as MembershipTypes>::MemberId,
     <T as frame_system::Trait>::AccountId,
-    <T as Trait>::ThreadId,
-    <T as frame_system::Trait>::Hash,
     <T as balances::Trait>::Balance,
 >;
 
@@ -617,14 +611,31 @@ pub trait SubredditLimits {
     type PostOwnershipDuration: Get<u32>;
 }
 
-/// Represents an operation in order to add/remove moderators
+/// Represents a deletion actor
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub enum DeletionActor {
-    ChannelOwner,
-    Moderator,
-    Author,
+pub enum DeletionActor_<Actor, MemberId> {
+    ChannelOwner(Actor),
+    Moderator(MemberId, Vec<u8>),
+    Author(MemberId),
 }
+
+/// Boolean in order to distinguish between deletion or archival
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum DeleteOperation {
+    Delete,
+    Archive,
+}
+
+type DeletionActor<T> = DeletionActor_<
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >,
+    <T as MembershipTypes>::MemberId,
+>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -1496,10 +1507,6 @@ decl_module! {
                 &account_id
             )?;
 
-            let title_hash = T::compute_hash(&params.title.encode());
-            let text_hash = T::compute_hash(&params.post_text.encode());
-
-
             //
             // == MUTATION SAFE ==
             //
@@ -1507,11 +1514,11 @@ decl_module! {
 
             // Build a new thread
             let new_thread = Thread_ {
-                title_hash: title_hash,
                 author_id: member_id,
                 bloat_bond: thread_init_bloat_bond,
                 number_of_posts: T::PostId::zero(),
                 channel_id: params.channel_id.clone(),
+                archived: false,
             };
 
             // Store thread
@@ -1522,7 +1529,6 @@ decl_module! {
             // Add inital post to thread
             let _ = Self::add_new_post(
                 new_thread_id,
-                text_hash,
                 member_id,
                 account_id,
                 first_post_init_bloat_bond,
@@ -1551,62 +1557,73 @@ decl_module! {
 
        #[weight = 10_000_000]
        fn delete_thread(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            thread_id: T::ThreadId,
-            rationale: Option<Vec<u8>>,
-        ) -> DispatchResult {
-            // Ensure data migration is done
-           // Self::ensure_data_migration_done()?;
+           origin,
+           deletion_actor: DeletionActor<T>,
+           thread_id: T::ThreadId,
+           operation: DeleteOperation,
+       ) -> DispatchResult {
 
-           let account_id = ensure_signed(origin)?;
+           let sender = ensure_signed(origin)?;
            let thread = Self::ensure_thread_exists(&thread_id)?;
            let channel_id = thread.channel_id;
 
 
-            let deletion_actor = Self::ensure_can_delete_thread(
-                &account_id,
-                &actor,
-                &channel_id,
-                &thread_id,
-            )?;
-
            // iterate over values that share the first key
            let iter = <PostById<T>>::iter_prefix_values(thread_id);
 
-           // Pay off to author or burn tokens
-           match deletion_actor {
-               DeletionActor::Author => {
-                   let _ = Self::pay_off(thread_id, thread.bloat_bond, &account_id)?;
-               },
-               DeletionActor::Moderator => {
-                   ensure!(rationale != None, Error::<T>::RationaleNotProvided)?;
+           // only thread author is refunded up to a certain amount
+           match deletion_actor.clone() {
+               DeletionActor::<T>::ChannelOwner(actor) => {
+                   Self::ensure_actor_is_channel_owner(&sender, &actor, &channel_id)?;
                    let _ = balances::Module::<T>::burn(thread.bloat_bond);
+           },
+               DeletionActor::<T>::Moderator(member_id, rationale) => {
+                   Self::ensure_actor_is_moderator(&sender, &member_id, &channel_id)?;
+                   ensure!(!rationale.is_empty(), Error::<T>::RationaleNotProvided);
+                   let _ = balances::Module::<T>::burn(thread.bloat_bond);
+           },
+               DeletionActor::<T>::Author(member_id) => {
+                   Self::ensure_actor_is_author(&sender, &member_id, &thread.author_id)?;
+                   let _ = Self::pay_off(thread_id, thread.bloat_bond, &sender)?;
                }
-               _ => let _ = balances::Module::<T>::burn(thread.bloat_bond)?;
            }
 
            // burn all the other bloat bonds
-           let to_burn = iter.fold(0, |acc, x| acc + x);
-            _ => let _ = balances::Module::<T>::burn(thread.bloat_bond)?;
+           let to_burn: <T as balances::Trait>::Balance = iter.fold(
+               <T as balances::Trait>::Balance::zero(),
+               |acc, post| acc.saturating_add(post.bloat_bond)
+           );
 
+           let _ = balances::Module::<T>::burn(to_burn);
 
            //
            // == MUTATION SAFE ==
            //
 
+           match operation {
+               DeleteOperation::Delete => {
+                   // delete all the posts in the thread
+                   <PostById<T>>::remove_prefix(&thread_id);
 
-           // delete all the posts in the thread
-           <PostById<T>>::remove_prefix(&thread_id);
+                   // Delete thread
+                   <ThreadById<T>>::remove(thread_id);
+               },
+               DeleteOperation::Archive => {
+                   // archive all the posts in the thread
+                   let _ = <PostById<T>>::iter_prefix_values(&thread_id)
+                       .map(|mut post| post.archived = true);
 
-           // Delete thread
-           <ThreadById<T>>::remove(thread_id);
+                   // archive thread
+                   <ThreadById<T>>::mutate(&thread_id, |thread| thread.archived = true);
+               }
+           }
+
 
            // Store the event
-           Self::deposit_event(RawEvent::ThreadDeleted(
+           Self::deposit_event(
+           RawEvent::ThreadDeleted(
                thread_id,
-               actor,
-               rationale,
+               deletion_actor,
              ));
 
             Ok(())
@@ -1633,7 +1650,6 @@ decl_module! {
         Self::ensure_subreddit_is_mutable(&channel)?;
 
         // computing text hash and post price
-        let text_hash = T::compute_hash(&params.text.encode());
         let init_bloat_bond = Self::compute_bloat_bond(params.text.len(), T::PostCleanupCost::get());
 
         // transfer bond to threasury account
@@ -1650,7 +1666,6 @@ decl_module! {
         // Add new post
         let post_id = Self::add_new_post(
             thread_id,
-            text_hash,
             member_id,
             account_id,
             init_bloat_bond,
@@ -1676,30 +1691,17 @@ decl_module! {
             post_id: T::PostId,
             params: PostUpdateParameters,
         ) -> DispatchResult {
-            // Ensure data migration is done
 
-            let account_id = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
 
-            // Check that account is forum member
-            Self::ensure_is_forum_user(&account_id, &member_id)?;
-
-            // Cannot edit post belonging to deleted threads
-            let thread = Self::ensure_thread_exists(&thread_id)?;
-
-            // Make sure there exists a mutable post with post id `post_id`
+            // ensure post exists
             let post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
-            // Post must be mutable in order to be modified
-            ensure!(post.mutable, Error::<T>::PostCannotBeModified);
+            // Check member is post author
+            Self::ensure_actor_is_author(&sender, &member_id, &post.author_id)?;
 
-            // Signer does not match creator of post with identifier postId
-            ensure!(post.author_id == member_id, Error::<T>::AccountDoesNotMatchPostAuthor);
-
-            // bloat_bond == 0 -> cannot edit post
-            ensure!(
-               post.bloat_bond != <T as balances::Trait>::Balance::zero(),
-               Error::<T>::PostCannotBeModified
-            );
+            // Post must be mutable and not archived
+            ensure!(!post.mutable || post.archived, Error::<T>::PostCannotBeModified);
 
             //
             // == MUTATION SAFE ==
@@ -1707,33 +1709,9 @@ decl_module! {
 
             // Update post parameters
             let mut post = post;
-            let mut thread = thread;
-
-            // Maybe update text hash
-            if let Some(new_text) = &params.text {
-                let new_text_hash = T::compute_hash(&new_text);
-                post.text_hash = new_text_hash;
-
-                // update bloat bond for post
-                let old_bond = post.bloat_bond;
-                let new_bond = Self::compute_bloat_bond(new_text.len(), T::PostCleanupCost::get());
-                post.bloat_bond = new_bond;
-
-                // update bloat bond for thread
-                let thread_size_bond = thread.bloat_bond
-                    .saturating_sub(old_bond)
-                    .saturating_add(new_bond);
-                let thread_cleanup_bond = T::ThreadCleanupCost::get() + T::PostCleanupCost::get() + T::CleanupMargin::get();
-                    thread.bloat_bond = min(
-                        max(thread_size_bond, thread_cleanup_bond),
-                        <T as balances::Trait>::Balance::from(
-                    <T::MapLimits as SubredditLimits>::BloatBondCap::get(),
-                        ),
-                    );
+            if let Some(new_mutability) = &params.mutable {
+                post.mutable = new_mutability.clone()
             }
-
-            // Maybe update post mutability
-            if let Some(new_mutability) = &params.mutable { post.mutable = new_mutability.clone() }
 
             <PostById<T>>::insert(thread_id, post_id, post);
 
@@ -1749,33 +1727,33 @@ decl_module! {
     }
 
     #[weight = 10_000_000]
-    fn delete_post(origin,
+    fn delete_post(_origin,
            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
            thread_id: T::ThreadId,
            post_id: T::PostId,
           ) -> DispatchResult {
 
-        let account_id = ensure_signed(origin)?;
+       //  let account_id = ensure_signed(origin)?;
 
-        let _thread = Self::ensure_thread_exists(&thread_id)?;
+       //  let _thread = Self::ensure_thread_exists(&thread_id)?;
 
-        let post = Self::ensure_post_exists(&thread_id, &post_id)?;
+       //  let post = Self::ensure_post_exists(&thread_id, &post_id)?;
 
-        // obtain channel
-        let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
+       //  // obtain channel
+       //  let channel_id = <ThreadById<T>>::get(thread_id).channel_id;
 
-        // if actor is channel owner bond is burned
-        if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
-           Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
-           let _ = balances::Module::<T>::burn(post.bloat_bond);
-           }
+       //  // if actor is channel owner bond is burned
+       //  if Self::actor_is_channel_owner(&account_id, &actor, &channel_id) ||
+       //     Self::actor_is_subreddit_moderator(&account_id, &actor, &channel_id) {
+       //     let _ = balances::Module::<T>::burn(post.bloat_bond);
+       //     }
 
-       // if actor is author bond is returned
-       if Self::actor_is_post_author(&account_id, &actor, &post) {
-           let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
-       } else {
-           return Err(Error::<T>::ActorNotAuthorized.into());
-       }
+       // // if actor is author bond is returned
+       // if Self::actor_is_post_author(&account_id, &actor, &post) {
+       //     let _ = Self::pay_off(thread_id, post.bloat_bond, &account_id);
+       // } else {
+       //     return Err(Error::<T>::ActorNotAuthorized.into());
+       // }
 
         //
         // == MUTATION SAFE ==
@@ -2015,11 +1993,11 @@ impl<T: Trait> Module<T> {
         Ok(PostById::<T>::get(thread_id, post_id))
     }
 
-    fn actor_is_channel_owner(
+    fn ensure_actor_is_channel_owner(
         account_id: &T::AccountId,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         channel_id: &T::ChannelId,
-    ) -> bool {
+    ) -> DispatchResult {
         let owner = <ChannelById<T>>::get(channel_id).owner;
 
         match actor {
@@ -2029,45 +2007,48 @@ impl<T: Trait> Module<T> {
                     curator_id,
                     curator_group_id,
                     account_id,
-                )
-                .is_ok()
-                    && owner == ChannelOwner::CuratorGroup(*curator_group_id)
+                )?;
+                ensure!(
+                    owner == ChannelOwner::CuratorGroup(*curator_group_id),
+                    Error::<T>::ActorNotAChannelOwner,
+                );
             }
             ContentActor::Member(member_id) => {
                 // Authenticate valid member
-                ensure_member_auth_success::<T>(member_id, account_id).is_ok()
-                    && owner == ChannelOwner::Member(*member_id)
+                ensure_member_auth_success::<T>(member_id, account_id)?;
+                ensure!(
+                    owner == ChannelOwner::Member(*member_id),
+                    Error::<T>::ActorNotAChannelOwner,
+                );
             }
-            _ => false,
+            _ => {
+                return Err(Error::<T>::ActorNotAChannelOwner.into());
+            }
         }
+
+        Ok(())
     }
 
-    fn actor_is_subreddit_moderator(
+    fn ensure_actor_is_moderator(
         account_id: &T::AccountId,
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        member_id: &T::MemberId,
         channel_id: &T::ChannelId,
-    ) -> bool {
-        if let ContentActor::Member(member_id) = actor {
-            if let Some(bset) = <ChannelById<T>>::get(channel_id).moderator_set {
-                return bset.contains(member_id)
-                    && ensure_member_auth_success::<T>(member_id, account_id).is_ok();
-            }
+    ) -> DispatchResult {
+        if let Some(bset) = <ChannelById<T>>::get(channel_id).moderator_set {
+            ensure!(bset.contains(member_id), Error::<T>::ActorNotAModerator);
+            ensure_member_auth_success::<T>(member_id, account_id)?;
         }
-        false
+        Err(Error::<T>::ActorNotAModerator.into())
     }
 
-    fn actor_is_post_author(
+    fn ensure_actor_is_author(
         account_id: &T::AccountId,
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        post: &Post<T>,
-    ) -> bool {
-        match actor {
-            ContentActor::Member(member_id) => {
-                post.author_id == *member_id
-                    && ensure_member_auth_success::<T>(member_id, account_id).is_ok()
-            }
-            _ => false,
-        }
+        member_id: &T::MemberId,
+        author_id: &T::MemberId,
+    ) -> DispatchResult {
+        ensure_member_auth_success::<T>(member_id, account_id)?;
+        ensure!(member_id == author_id, Error::<T>::ActorNotAnAuthor);
+        Ok(())
     }
 
     fn pay_off(
@@ -2076,10 +2057,22 @@ impl<T: Trait> Module<T> {
         account_id: &T::AccountId,
     ) -> DispatchResult {
         let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        let cap = <T as balances::Trait>::Balance::from(
+            <T::MapLimits as SubredditLimits>::BloatBondCap::get(),
+        );
+        let refund_amount = match amount > cap {
+            true => {
+                let to_burn = amount.saturating_sub(cap);
+                let _ = balances::Module::<T>::burn(to_burn);
+                cap
+            }
+            false => amount,
+        };
+
         <Balances<T> as Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
-            amount,
+            refund_amount,
             ExistenceRequirement::AllowDeath,
         )
     }
@@ -2113,61 +2106,8 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_can_delete_thread(
-        account_id: &T::AccountId,
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        channel_id: &T::ChannelId,
-        thread_id: &T::ThreadId,
-    ) -> DispatchResult {
-        let channel = Self::ensure_channel_exists(channel_id)?;
-        let bset = channel
-            .moderator_set
-            .unwrap_or(BTreeSet::<T::MemberId>::new());
-        match actor {
-            ContentActor::Curator(curator_group_id, curator_id) => {
-                // Authorize curator, performing all checks to ensure curator can act
-                CuratorGroup::<T>::perform_curator_in_group_auth(
-                    curator_id,
-                    curator_group_id,
-                    account_id,
-                )?;
-
-                // Ensure curator group is the channel owner.
-                ensure!(
-                    channel.owner == ChannelOwner::CuratorGroup(*curator_group_id),
-                    Error::<T>::ActorNotAuthorized
-                );
-
-                Ok(DeletionActor::ChannelOwner)
-            }
-            ContentActor::Member(member_id) => {
-                // check valid member
-                ensure_member_auth_success::<T>(member_id, account_id)?;
-
-                // Ensure the member is the channel owner or is a moderator
-                if channel.owner == ChannelOwner::Member(*member_id) {
-                    return Ok(DeletionActor::ChannelOwner);
-                }
-
-                if bset.contains(member_id) {
-                    return Ok(DeletionActor::Moderator);
-                }
-
-                if <ThreadById<T>>::get(thread_id).author_id == *member_id {
-                    return Ok(DeletionActor::Author);
-                }
-
-                return Err(Error::<T>::ActorNotAuthorized.into());
-            }
-
-            // no permission for the lead at the moment
-            _ => Err(Error::<T>::ActorNotAuthorized.into()),
-        }
-    }
-
     pub fn add_new_post(
         thread_id: T::ThreadId,
-        text_hash: T::Hash,
         author_id: T::MemberId,
         account_id: T::AccountId,
         init_bloat_bond: <T as balances::Trait>::Balance,
@@ -2181,12 +2121,11 @@ impl<T: Trait> Module<T> {
 
         // Build a post
         let new_post = Post_ {
-            text_hash: text_hash,
-            thread_id: thread_id,
             author_id: author_id,
             author_account: account_id,
             bloat_bond: init_bloat_bond,
             mutable: mutable,
+            archived: false,
         };
 
         <PostById<T>>::insert(thread_id, new_post_id, new_post);
@@ -2203,20 +2142,6 @@ impl<T: Trait> Module<T> {
         ensure!(
             channel.subreddit_mutable,
             Error::<T>::SubredditCannotBeModified
-        );
-        Ok(())
-    }
-
-    fn _ensure_moderator_is_valid(
-        channel_id: &T::ChannelId,
-        moderator_member_id: &T::MemberId,
-    ) -> DispatchResult {
-        let bset = <ChannelById<T>>::get(channel_id)
-            .moderator_set
-            .unwrap_or(BTreeSet::<T::MemberId>::new());
-        ensure!(
-            bset.contains(moderator_member_id),
-            Error::<T>::ModeratorNotValid,
         );
         Ok(())
     }
@@ -2277,6 +2202,7 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         PostUpdateParameters = PostUpdateParameters,
         MemberId = <T as MembershipTypes>::MemberId,
+        DeletionActor = DeletionActor<T>,
         ThreadCreationParameters = ThreadCreationParameters<<T as StorageOwnership>::ChannelId>,
         PostCreationParameters = PostCreationParameters<<T as Trait>::ThreadId>,
     {
@@ -2399,7 +2325,7 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, MemberId, ThreadCreationParameters),
-        ThreadDeleted(ThreadId, ContentActor, Option<Vec<u8>>),
+        ThreadDeleted(ThreadId, DeletionActor),
         PostAdded(PostId, MemberId, PostCreationParameters),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, ContentActor, ThreadId),
