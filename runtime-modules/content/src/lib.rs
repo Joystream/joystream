@@ -602,7 +602,7 @@ pub type Post<T> = Post_<
 
 pub trait SubredditLimits {
     /// Maximum moderator count for a subreddit
-    type MaxModeratorsForSubreddit: Get<u64>;
+    type MaxModeratorsForSubreddit: Get<usize>;
 
     /// Cap on bloat bond
     type BloatBondCap: Get<u32>;
@@ -1843,8 +1843,15 @@ decl_module! {
         // check that channel exists
         let channel = Self::ensure_channel_exists(&channel_id)?;
 
-        // ensure channel can be update
+        // ensure channel can be updated
         ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel.owner)?;
+
+        // ensure moderators number does not exceed the limit
+        ensure!(
+            moderator_set.len()
+                <= <T::MapLimits as SubredditLimits>::MaxModeratorsForSubreddit::get(),
+            Error::<T>::ModeratorsLimitExceeded
+        );
 
         //
         // == MUTATION SAFE ==
