@@ -560,10 +560,9 @@ pub type Thread<T> = Thread_<
 /// Information about the post being created
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PostCreationParameters<ThreadId> {
-    text: Vec<u8>,
+pub struct PostCreationParameters {
     mutable: bool,
-    thread_id: ThreadId,
+    text: Vec<u8>,
 }
 
 /// Information about the post being updated
@@ -577,12 +576,9 @@ pub struct PostUpdateParameters {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Post_<MemberId, AccountId, Balance> {
+pub struct Post_<MemberId, Balance> {
     /// Author of post.
     pub author_id: MemberId,
-
-    /// Author account (used for slashing)
-    pub author_account: AccountId,
 
     /// Whether the post is mutable
     pub mutable: bool,
@@ -594,11 +590,7 @@ pub struct Post_<MemberId, AccountId, Balance> {
     pub archived: bool,
 }
 
-pub type Post<T> = Post_<
-    <T as MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::AccountId,
-    <T as balances::Trait>::Balance,
->;
+pub type Post<T> = Post_<<T as MembershipTypes>::MemberId, <T as balances::Trait>::Balance>;
 
 pub trait SubredditLimits {
     /// Maximum moderator count for a subreddit
@@ -1474,18 +1466,15 @@ decl_module! {
             params: ThreadCreationParameters<T::ChannelId>,
         ) -> DispatchResult {
 
-         let account_id = ensure_signed(origin)?;
+         let sender = ensure_signed(origin)?;
 
             // ensure that signer is member_id and member_id refers to a valid member
-            Self::ensure_is_forum_user(&account_id, &member_id)?;
+            Self::ensure_is_forum_user(&sender, &member_id)?;
 
             // ensure subreddit is mutable
             Self::ensure_subreddit_is_mutable(&params.channel_id)?;
 
-            // Create and add new thread
-            let new_thread_id = <NextThreadId<T>>::get();
-
-        // compute bloat bond for thread
+            // compute bloat bond for thread
             let thread_bloat_bond = Self::compute_bloat_bond(
                 std::mem::size_of::<Thread<T>>(),
                 <T as balances::Trait>::Balance::one()
@@ -1495,42 +1484,30 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Build a new thread
-            let new_thread = Thread_ {
-                author_id: member_id,
-                number_of_posts: T::PostId::zero(),
-                bloat_bond: thread_bloat_bond,
-                channel_id: params.channel_id.clone(),
-                archived: false,
-            };
+           let thread_id = <NextThreadId<T>>::get();
+           let post_id = <NextPostId<T>>::get();
 
-            // Store thread
-            <ThreadById<T>>::mutate(new_thread_id, |value| {
-                *value = new_thread.clone()
-            });
-
-            // Add inital post to thread: with zero bloat bond, for easier accounting during
-           // thread deletion
-            let _ = Self::add_new_post(
-                new_thread_id,
-                member_id,
-                account_id,
-                <T as balances::Trait>::Balance::zero(),
-                params.post_mutable,
+            Self::create_thread_inner(
+               member_id.clone(),
+               thread_id.clone(),
+               thread_bloat_bond,
+               params.channel_id.clone(),
             );
 
-            // Update next thread id
-            <NextThreadId<T>>::mutate(|n| *n += One::one());
-
-            // update thread count
-            <ChannelById<T>>::mutate(params.channel_id,
-                |x| x.thread_number = x.thread_number.saturating_add(One::one())
+            // Add inital post to thread:
+            // with zero bloat bond, for easier accounting during thread deletion
+            let _ = Self::create_post_inner(
+                thread_id.clone(),
+                post_id.clone(),
+                member_id.clone(),
+                <T as balances::Trait>::Balance::zero(),
+                params.post_mutable,
             );
 
             // Generate event
             Self::deposit_event(
                 RawEvent::ThreadCreated(
-                    new_thread_id,
+                    thread_id,
                     member_id,
                     params,
                 )
@@ -1591,6 +1568,10 @@ decl_module! {
 
                    // Delete thread
                    <ThreadById<T>>::remove(thread_id);
+
+                  // decrease channel counter
+                  <ChannelById<T>>::mutate(channel_id,
+                        |channel| channel.thread_number.saturating_sub(One::one()));
                },
                DeleteOperation::Archive => {
                    // archive all the posts in the thread
@@ -1616,16 +1597,15 @@ decl_module! {
 
     #[weight = 10_000_000]
     fn create_post(
-         origin,
-         member_id: T::MemberId,
-         params: PostCreationParameters<T::ThreadId>,
+        origin,
+        member_id: T::MemberId,
+        thread_id: T::ThreadId,
+        params: PostCreationParameters,
     ) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        let thread_id = params.thread_id.clone();
+        let sender = ensure_signed(origin)?;
 
         // Make sure thread exists and is mutable
-        Self::ensure_is_forum_user(&account_id, &member_id)?;
+        Self::ensure_is_forum_user(&sender, &member_id)?;
 
         // make sure subreddit is mutable
         let channel_id = Self::ensure_thread_exists(&thread_id)?.channel_id;
@@ -1641,25 +1621,28 @@ decl_module! {
         Self::transfer_to_state_cleanup_treasury_account(
             init_bloat_bond,
             thread_id,
-            &account_id
+            &sender,
         )?;
 
         //
         // == MUTATION SAFE ==
         //
 
+        let post_id = <NextPostId<T>>::get();
+
         // Add new post
-        let post_id = Self::add_new_post(
+        Self::create_post_inner(
             thread_id,
+            post_id,
             member_id,
-            account_id,
             init_bloat_bond,
             params.mutable,
         );
 
         // Generate event
         Self::deposit_event(
-            RawEvent::PostAdded(
+            RawEvent::PostCreated(
+                thread_id,
                 post_id,
                 member_id,
                 params,
@@ -2101,36 +2084,56 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn add_new_post(
+    pub fn create_thread_inner(
+        member_id: T::MemberId,
         thread_id: T::ThreadId,
+        bloat_bond: <T as balances::Trait>::Balance,
+        channel_id: T::ChannelId,
+    ) {
+        // Build a new thread
+        let new_thread = Thread_ {
+            author_id: member_id,
+            number_of_posts: T::PostId::zero(),
+            bloat_bond: bloat_bond,
+            channel_id: channel_id.clone(),
+            archived: false,
+        };
+
+        // Store thread
+        <ThreadById<T>>::mutate(thread_id, |value| *value = new_thread.clone());
+
+        // Update next thread id
+        <NextThreadId<T>>::mutate(|n| *n += One::one());
+
+        // update thread count
+        <ChannelById<T>>::mutate(channel_id, |x| {
+            x.thread_number = x.thread_number.saturating_add(One::one())
+        });
+    }
+
+    pub fn create_post_inner(
+        thread_id: T::ThreadId,
+        post_id: T::PostId,
         author_id: T::MemberId,
-        account_id: T::AccountId,
         init_bloat_bond: <T as balances::Trait>::Balance,
         mutable: bool,
-    ) -> T::PostId {
-        // Make and add initial post
-        let new_post_id = <NextPostId<T>>::get();
-
-        // Update next post id
-        <NextPostId<T>>::mutate(|n| *n += One::one());
-
+    ) {
         // Build a post
         let new_post = Post_ {
             author_id: author_id,
-            author_account: account_id,
             bloat_bond: init_bloat_bond,
             mutable: mutable,
             archived: false,
         };
 
-        <PostById<T>>::insert(thread_id, new_post_id, new_post);
+        // Update next post id
+        <NextPostId<T>>::mutate(|n| *n += One::one());
 
-        let mut thread = <ThreadById<T>>::get(thread_id);
-        thread.number_of_posts = thread.number_of_posts.saturating_add(T::PostId::one());
+        <PostById<T>>::insert(thread_id, post_id, new_post);
 
-        <ThreadById<T>>::mutate(thread_id, |value| *value = thread);
-
-        new_post_id
+        <ThreadById<T>>::mutate(thread_id, |thread| {
+            thread.number_of_posts = thread.number_of_posts.saturating_add(T::PostId::one())
+        });
     }
 
     fn ensure_subreddit_is_mutable(channel_id: &T::ChannelId) -> Result<(), Error<T>> {
@@ -2200,7 +2203,6 @@ decl_event!(
         MemberId = <T as MembershipTypes>::MemberId,
         DeletionActor = DeletionActor<T>,
         ThreadCreationParameters = ThreadCreationParameters<<T as StorageOwnership>::ChannelId>,
-        PostCreationParameters = PostCreationParameters<<T as Trait>::ThreadId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2322,7 +2324,7 @@ decl_event!(
         PersonDeleted(ContentActor, PersonId),
         ThreadCreated(ThreadId, MemberId, ThreadCreationParameters),
         ThreadDeleted(ThreadId, DeletionActor, DeleteOperation),
-        PostAdded(PostId, MemberId, PostCreationParameters),
+        PostCreated(ThreadId, PostId, MemberId, PostCreationParameters),
         PostUpdated(PostId, MemberId, ThreadId, PostUpdateParameters),
         PostDeleted(PostId, ThreadId, DeletionActor, DeleteOperation),
         PostReacted(PostId, MemberId, ThreadId, ReactionId),

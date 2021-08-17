@@ -72,28 +72,37 @@ fn create_thread_mock(
 
 fn delete_thread_mock(
     sender: <Test as frame_system::Trait>::AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    actor: DeletionActor<Test>,
     thread_id: <Test as Trait>::ThreadId,
     result: DispatchResult,
 ) -> <Test as Trait>::ThreadId {
     let balance_before = balances::Module::<Test>::free_balance(sender);
 
-    // assert_eq!(
-    //     Content::delete_thread(Origin::signed(sender), actor.clone(), thread_id.clone()),
-    //     result
-    // );
+    assert_eq!(
+        Content::delete_thread(
+            Origin::signed(sender),
+            actor.clone(),
+            thread_id.clone(),
+            DeleteOperation::Delete,
+        ),
+        result
+    );
 
     if result.is_ok() {
         assert!(ChannelById::<Test>::contains_key(thread_id));
-        // assert_eq!(
-        //     System::events().last().unwrap().event,
-        //     MetaEvent::content(RawEvent::ThreadDeleted(thread_id, actor))
-        // );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ThreadDeleted(
+                thread_id.clone(),
+                actor.clone(),
+                DeleteOperation::Delete
+            ))
+        );
 
         let thread = Content::thread_by_id(thread_id);
 
         // verify that thread author balance is increased
-        if let ContentActor::Member(member) = actor {
+        if let DeletionActor::<Test>::Author(member) = actor {
             if member == thread.author_id {
                 assert_eq!(
                     balances::Module::<Test>::free_balance(sender) - balance_before,
@@ -226,20 +235,18 @@ fn react_post_mock(
     reaction_id: <Test as Trait>::ReactionId,
     thread_id: <Test as Trait>::ThreadId,
     post_id: <Test as Trait>::PostId,
-    channel_id: <Test as StorageOwnership>::ChannelId,
     result: DispatchResult,
 ) {
-    // assert_eq!(
-    //     Content::react_post(
-    //         Origin::signed(sender),
-    //         member_id.clone(),
-    //         thread_id.clone(),
-    //         post_id.clone(),
-    //         reaction_id.clone(),
-    //         channel_id.clone(),
-    //     ),
-    //     result
-    // );
+    assert_eq!(
+        Content::react_post(
+            Origin::signed(sender),
+            member_id.clone(),
+            thread_id.clone(),
+            post_id.clone(),
+            reaction_id.clone(),
+        ),
+        result
+    );
 
     if result.is_ok() {
         // 1. event is deposited
@@ -263,16 +270,15 @@ fn react_thread_mock(
     channel_id: <Test as StorageOwnership>::ChannelId,
     result: DispatchResult,
 ) {
-    // assert_eq!(
-    //     Content::react_thread(
-    //         Origin::signed(sender),
-    //         member_id.clone(),
-    //         thread_id.clone(),
-    //         reaction_id.clone(),
-    //         channel_id.clone(),
-    //     ),
-    //     result
-    // );
+    assert_eq!(
+        Content::react_thread(
+            Origin::signed(sender),
+            member_id.clone(),
+            thread_id.clone(),
+            reaction_id.clone(),
+        ),
+        result
+    );
 
     if result.is_ok() {
         // 1. event is deposited
@@ -385,7 +391,7 @@ fn cannot_delete_invalid_thread() {
 
         let _ = delete_thread_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DeletionActor::<Test>::Author(FIRST_MEMBER_ID),
             INVALID_THREAD,
             Err(Error::<Test>::ThreadDoesNotExist.into()),
         );
@@ -420,7 +426,7 @@ fn non_author_or_invalid_member_cannot_delete_thread() {
         );
         let _ = delete_thread_mock(
             UNKNOWN_ORIGIN,
-            ContentActor::Member(NOT_FORUM_MEMBER_ID),
+            DeletionActor::<Test>::Author(NOT_FORUM_MEMBER_ID),
             thread_id,
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
@@ -864,7 +870,6 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
             post_id,
-            channel_id,
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
 
@@ -923,7 +928,6 @@ fn verify_react_post_and_thread_effects() {
             <Test as Trait>::ReactionId::from(1u64),
             thread_id,
             post_id,
-            channel_id,
             Ok(()),
         );
 
@@ -1041,7 +1045,7 @@ fn verify_delete_thread_effects() {
 
         let _ = delete_thread_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DeletionActor::<Test>::Author(FIRST_MEMBER_ID),
             thread_id,
             Ok(()),
         );
