@@ -117,18 +117,18 @@ class DownloadFileTask implements SyncTask {
   async execute(): Promise<void> {
     const streamPipeline = promisify(pipeline)
 
-    const response = await fetch(this.url)
+    try {
+      const response = await fetch(this.url)
 
-    if (response.ok) {
-      try {
+      if (response.ok) {
         await streamPipeline(response.body, fs.createWriteStream(this.filepath))
-      } catch (err) {
-        logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
+      } else {
+        logger.error(
+          `Sync - unexpected response for ${this.url}: ${response.statusText}`
+        )
       }
-    } else {
-      logger.error(
-        `Sync - unexpected response for ${this.url}: ${response.statusText}`
-      )
+    } catch (err) {
+      logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
     }
   }
 }
