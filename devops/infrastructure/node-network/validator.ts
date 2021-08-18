@@ -17,7 +17,7 @@ export class ValidatorServiceDeployment extends pulumi.ComponentResource {
     const labels = { app: name }
     const container: k8stypes.core.v1.Container = {
       name: `joystream-node-${args.index}`,
-      image: nodeImage,
+      image: args.nodeImage,
       args: [
         '--chain',
         args.chainSpecPath,

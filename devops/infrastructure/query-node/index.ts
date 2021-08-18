@@ -31,7 +31,7 @@ if (isMinikube) {
   // joystreamAppsImage = pulumi.interpolate`joystream/apps`
 } else {
   // Create a VPC for our cluster.
-  const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2 })
+  const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
 
   // Create an EKS cluster with the default configuration.
   const cluster = new eks.Cluster('eksctl-query-node', {

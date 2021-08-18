@@ -21,7 +21,7 @@ let volumeMounts: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.VolumeMount>
 let volumes: pulumi.Input<pulumi.Input<k8s.types.input.core.v1.Volume>[]> = []
 
 // Create a VPC for our cluster.
-const vpc = new awsx.ec2.Vpc('storage-node-vpc', { numberOfAvailabilityZones: 2 })
+const vpc = new awsx.ec2.Vpc('storage-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
 
 // Create an EKS cluster with the default configuration.
 const cluster = new eks.Cluster('eksctl-storage-node', {
