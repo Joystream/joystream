@@ -6,7 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
-import fetch from 'node-fetch'
+import fetch from 'cross-fetch'
 import urljoin from 'url-join'
 import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
@@ -120,8 +120,9 @@ class DownloadFileTask implements SyncTask {
     try {
       const response = await fetch(this.url)
 
-      if (response.ok) {
-        await streamPipeline(response.body, fs.createWriteStream(this.filepath))
+      if (response.ok && response.body !== null) {
+        const body = response.body as unknown as NodeJS.ReadableStream
+        await streamPipeline(body, fs.createWriteStream(this.filepath))
       } else {
         logger.error(
           `Sync - unexpected response for ${this.url}: ${response.statusText}`
