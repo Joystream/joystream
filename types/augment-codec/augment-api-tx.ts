@@ -2872,7 +2872,7 @@ declare module '@polkadot/api/types/submittable' {
        * - `calls`: The calls to be dispatched from the same origin.
        *
        * If origin is root then call are dispatch without checking origin filter. (This includes
-       * bypassing `frame_system::Config::BaseCallFilter`).
+       * bypassing `frame_system::Trait::BaseCallFilter`).
        *
        * # <weight>
        * - Base weight: 14.39 + .987 * c µs
