@@ -10,10 +10,15 @@ async function doJob(): Promise<void> {
   const uploadDirectory = '/Users/shamix/uploads2'
   const fileSize = 100
 
-  const objectNumber = 2000
+  const objectNumber = 3000
   const bagNumber = 10
   const bucketNumber = 10
 
+  const urls = [
+    `http://localhost:3333/`,
+    `http://localhost:3334/`,
+    `http://localhost:3335/`,
+  ]
 
   const updateDb = true
   const generateFiles = true
@@ -39,7 +44,7 @@ async function doJob(): Promise<void> {
     await createBuckets(client, bucketNumber)
     await createBagBucketLinks(client)
     await createBucketWorkerLinks(client)
-    await createBucketOperatorUrls(client)
+    await createBucketOperatorUrls(client, urls)
     const dbTasks = createDataObjects(client, objectNumber)
     await Promise.all(dbTasks)
 
@@ -172,24 +177,19 @@ async function createBucketWorkerLinks(client: Client): Promise<void> {
     )
 }
 
-async function createBucketOperatorUrls(client: Client): Promise<void> {
+async function createBucketOperatorUrls(client: Client, urls: string[]): Promise<void> {
     console.log(`Writing bucket operator URLs...`)
 
-    const metadata1 = `http://localhost:3333/`
-    const metadata3 = `http://localhost:3334/`
+    for (let i = 0; i < urls.length; i++) {
+      const bucketId = i + 1
+      const metadata = urls[i]
 
-    // Bucket1
-    await client.query(
-      `UPDATE storage_bucket
-       SET operator_metadata = '${metadata1}'
-       WHERE id = '1'`
-    )
-     // Bucket3
-    await client.query(
-      `UPDATE storage_bucket
-       SET operator_metadata = '${metadata3}'
-       WHERE id = '3'`
-    )
+      await client.query(
+        `UPDATE storage_bucket
+         SET operator_metadata = '${metadata}'
+         WHERE id = '${bucketId}'`
+      )
+    }
 }
 
 doJob().then(() => {
