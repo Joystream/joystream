@@ -67,7 +67,7 @@ pub use types::{
 };
 
 // Max allowed value for 'Funding Request' proposal
-const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000_u32;
+const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000u32;
 // Max validator count for the 'Set Max Validator Count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
 // Max number of account that a fund request accept

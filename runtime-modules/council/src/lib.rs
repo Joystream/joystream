@@ -916,7 +916,7 @@ impl<T: Config> Module<T> {
                 // clear candidate record and unlock their candidacy stake
                 Mutations::<T>::clear_candidate(&membership_id, &candidate);
 
-                (candidate, membership_id, now, 0_u32.into()).into()
+                (candidate, membership_id, now, 0u32.into()).into()
             })
             .collect();
         // prepare council users for event
@@ -980,7 +980,7 @@ impl<T: Config> Module<T> {
                     Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
 
                 // depleted budget or no accumulated reward to be paid?
-                if balance == 0_u32.into() || unpaid_reward == 0_u32.into() {
+                if balance == 0u32.into() || unpaid_reward == 0u32.into() {
                     // no need to update council member record here; their unpaid reward will be
                     // recalculated next time rewards are paid
 
@@ -988,7 +988,7 @@ impl<T: Config> Module<T> {
                     Self::deposit_event(RawEvent::RewardPayment(
                         council_member.membership_id,
                         council_member.reward_account_id.clone(),
-                        0_u32.into(),
+                        0u32.into(),
                         unpaid_reward,
                     ));
                     return balance;
@@ -1184,7 +1184,7 @@ impl<T: Config> Calculations<T> {
     ) -> (Balance<T>, Balance<T>) {
         // check if reward has enough balance
         if reward_amount <= budget_balance {
-            return (*reward_amount, 0_u32.into());
+            return (*reward_amount, 0u32.into());
         }
 
         // calculate missing balance

@@ -655,7 +655,7 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
             member_id: 1,
             title: b"title".to_vec(),
             description: b"body".to_vec(),
-            staking_account_id: Some(<BalanceOf<Test>>::from(100_000_u32)),
+            staking_account_id: Some(<BalanceOf<Test>>::from(100_000u32)),
             exact_execution_block: None,
         };
 
