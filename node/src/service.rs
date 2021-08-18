@@ -7,12 +7,14 @@ use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
-use sc_network::Event;
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
+use sc_network::{Event, NetworkService};
+use sc_service::{error::Error as ServiceError, Configuration, RpcHandlers, TaskManager};
 use std::sync::Arc;
 use std::time::Duration;
 
 use sc_finality_grandpa::FinalityProofProvider;
+use sp_inherents::InherentDataProviders;
+use sp_runtime::traits::Block as BlockT;
 
 // Our native executor instance.
 native_executor_instance!(
@@ -26,10 +28,31 @@ type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
+type LightClient = sc_service::TLightClient<Block, RuntimeApi, Executor>;
+
 // Runtime type overrides
 type BlockNumber = u32;
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
+
+pub struct NewFullBase {
+    pub task_manager: TaskManager,
+    pub inherent_data_providers: InherentDataProviders,
+    pub client: Arc<FullClient>,
+    pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
+    pub network_status_sinks: sc_service::NetworkStatusSinks<Block>,
+    pub transaction_pool: Arc<sc_transaction_pool::FullPool<Block, FullClient>>,
+}
+
+pub struct NewLightBase {
+    pub task_manager: TaskManager,
+    pub rpc_handlers: RpcHandlers,
+    pub client: Arc<LightClient>,
+    pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
+    pub transaction_pool: Arc<
+        sc_transaction_pool::LightPool<Block, LightClient, sc_network::config::OnDemand<Block>>,
+    >,
+}
 
 type PartialComponentsList = sc_service::PartialComponents<
     FullClient,
@@ -87,7 +110,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsList, Serv
     let (block_import, babe_link) =
         sc_consensus_babe::block_import(babe_config, grandpa_block_import.clone(), client.clone())?;
 
-    let inherent_data_providers = sp_inherents::InherentDataProviders::new();
+    let inherent_data_providers = InherentDataProviders::new();
 
     let import_queue = sc_consensus_babe::import_queue(
         babe_link.clone(),
@@ -121,8 +144,8 @@ fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
     Err("Remote Keystore not supported.")
 }
 
-/// Builds a new service for a full client.
-pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> {
+/// Creates a full service from the configuration.
+pub fn new_full_base(mut config: Configuration) -> Result<NewFullBase, ServiceError> {
     let sc_service::PartialComponents {
         client,
         backend,
@@ -233,7 +256,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
             remote_blockchain: None,
             backend,
             system_rpc_tx,
-            network_status_sinks,
+            network_status_sinks: network_status_sinks.clone(),
             config,
         })?;
 
@@ -241,7 +264,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         let proposer = sc_basic_authorship::ProposerFactory::new(
             task_manager.spawn_handle(),
             client.clone(),
-            transaction_pool,
+            transaction_pool.clone(),
             prometheus_registry.as_ref(),
         );
 
@@ -255,7 +278,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
             env: proposer,
             block_import,
             sync_oracle: network.clone(),
-            inherent_data_providers,
+            inherent_data_providers: inherent_data_providers.clone(),
             force_authoring,
             backoff_authoring_blocks,
             babe_link,
@@ -282,7 +305,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
                     }
                 });
         let (authority_discovery_worker, _service) = sc_authority_discovery::new_worker_and_service(
-            client,
+            client.clone(),
             network.clone(),
             Box::pin(dht_event_stream),
             authority_discovery_role,
@@ -323,7 +346,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         let grandpa_config = sc_finality_grandpa::GrandpaParams {
             config: grandpa_config,
             link: grandpa_link,
-            network,
+            network: network.clone(),
             voting_rule: sc_finality_grandpa::VotingRulesBuilder::default().build(),
             telemetry_on_connect: telemetry_connection_notifier.map(|x| x.on_connect_stream()),
             prometheus_registry,
@@ -339,11 +362,24 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
     }
 
     network_starter.start_network();
-    Ok(task_manager)
+
+    Ok(NewFullBase {
+        task_manager,
+        inherent_data_providers,
+        client,
+        network,
+        network_status_sinks,
+        transaction_pool,
+    })
 }
 
-/// Builds a new service for a light client.
-pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError> {
+/// Builds a new service for a full client.
+pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
+    new_full_base(config).map(|NewFullBase { task_manager, .. }| task_manager)
+}
+
+/// Creates a light service from the configuration.
+pub fn new_light_base(mut config: Configuration) -> Result<NewLightBase, ServiceError> {
     let (client, backend, keystore_container, mut task_manager, on_demand) =
         sc_service::new_light_parts::<Block, RuntimeApi, Executor>(&config)?;
 
@@ -374,7 +410,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
     let (block_import, babe_link) =
         sc_consensus_babe::block_import(babe_config, grandpa_block_import, client.clone())?;
 
-    let inherent_data_providers = sp_inherents::InherentDataProviders::new();
+    let inherent_data_providers = InherentDataProviders::new();
 
     let import_queue = sc_consensus_babe::import_queue(
         babe_link,
@@ -409,22 +445,33 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
         );
     }
 
-    sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+    let (rpc_handlers, _) = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         remote_blockchain: Some(backend.remote_blockchain()),
-        transaction_pool,
+        transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         on_demand: Some(on_demand),
         rpc_extensions_builder: Box::new(|_, _| ()),
         config,
-        client,
+        client: client.clone(),
         keystore: keystore_container.sync_keystore(),
         backend,
-        network,
+        network: network.clone(),
         network_status_sinks,
         system_rpc_tx,
     })?;
 
     network_starter.start_network();
 
-    Ok(task_manager)
+    Ok(NewLightBase {
+        task_manager,
+        rpc_handlers,
+        client,
+        network,
+        transaction_pool,
+    })
+}
+
+/// Builds a new service for a light client.
+pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
+    new_light_base(config).map(|NewLightBase { task_manager, .. }| task_manager)
 }

@@ -290,7 +290,7 @@ pub fn testnet_genesis(
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::service::{new_full_base, new_light_base, NewFullBase};
+    use crate::service::{new_full_base, new_light_base, NewFullBase, NewLightBase};
     use sc_service_test;
 
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
@@ -363,7 +363,7 @@ pub(crate) mod tests {
                     network,
                     transaction_pool,
                     ..
-                } = new_full_base(config, |_, _| ())?;
+                } = new_full_base(config)?;
                 Ok(sc_service_test::TestNetComponents::new(
                     task_manager,
                     client,
@@ -372,9 +372,15 @@ pub(crate) mod tests {
                 ))
             },
             |config| {
-                let (keep_alive, _, client, network, transaction_pool) = new_light_base(config)?;
+                let NewLightBase {
+                    task_manager,
+                    client,
+                    network,
+                    transaction_pool,
+                    ..
+                } = new_light_base(config)?;
                 Ok(sc_service_test::TestNetComponents::new(
-                    keep_alive,
+                    task_manager,
                     client,
                     network,
                     transaction_pool,
