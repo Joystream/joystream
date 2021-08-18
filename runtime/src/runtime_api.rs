@@ -69,15 +69,6 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 
-// Default Executive type without the RuntimeUpgrade
-// pub type Executive = frame_executive::Executive<
-//     Runtime,
-//     Block,
-//     frame_system::ChainContext<Runtime>,
-//     Runtime,
-//     AllModules,
-// >;
-
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {

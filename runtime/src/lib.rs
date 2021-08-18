@@ -6,6 +6,7 @@
 //Substrate internal issues.
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::unnecessary_mut_passed)]
+#![allow(non_fmt_panic)]
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -445,6 +446,10 @@ impl pallet_im_online::Config for Runtime {
     // the reference machine in an acceptable time.
     type WeightInfo = ();
     type UnsignedPriority = ImOnlineUnsignedPriority;
+}
+
+parameter_types! {
+    pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MAXIMUM_BLOCK_WEIGHT;
 }
 
 impl pallet_offences::Config for Runtime {

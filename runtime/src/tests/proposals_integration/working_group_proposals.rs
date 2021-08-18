@@ -7,7 +7,6 @@ use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use frame_system::RawOrigin;
 use proposals_codex::CreateOpeningParameters;
-use sp_std::convert::TryInto;
 use strum::IntoEnumIterator;
 use working_group::StakeParameters;
 
@@ -500,7 +499,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                     stake: T::Balance::from(<Runtime as working_group::Config<
                         MembershipWorkingGroupInstance,
                     >>::MinimumApplicationStake::get()
-                        as u64),
+                        as u32),
                     staking_account_id: account_id.into(),
                 },
             },
