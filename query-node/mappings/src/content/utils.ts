@@ -620,7 +620,9 @@ async function prepareLanguage(
 
   // create new language
   const newLanguage = new Language({
-    id: await getNextId(db),
+    // set id as iso to overcome current graphql filtering limitations (so we can use query `videos(where: {languageId_eq: 'en'})`)
+    // id: await getNextId(db),
+    id: languageIso,
     iso: languageIso,
     createdInBlock: event.blockNumber,
 
