@@ -6,8 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
-import fetch from 'cross-fetch'
-import superagent from 'superagent'
+import fetch from 'node-fetch'
 import urljoin from 'url-join'
 import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
@@ -119,19 +118,25 @@ class DownloadFileTask implements SyncTask {
     const streamPipeline = promisify(pipeline)
 
     try {
-      // Casting because of:
-      // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
-      const request = superagent.get(
-        this.url
-      ) as unknown as NodeJS.ReadableStream
+      const response = await fetch(this.url, {
+        timeout: 30 * 60 * 1000, // 30 min for large files (~ 10 GB)
+      })
 
-      await streamPipeline(request, fs.createWriteStream(this.filepath))
+      if (response.ok) {
+        await streamPipeline(response.body, fs.createWriteStream(this.filepath))
+      } else {
+        logger.error(
+          `Sync - unexpected response for ${this.url}: ${response.statusText}`
+        )
+      }
     } catch (err) {
       logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
       try {
         await fs.unlinkSync(this.filepath)
-      }catch(err) {
-        logger.error(`Sync - cannot cleanup file ${this.filepath}: ${err}`)
+      } catch (err) {
+        logger.error(
+          `Sync - cannot cleanup file on failed download ${this.filepath}: ${err}`
+        )
       }
     }
   }
