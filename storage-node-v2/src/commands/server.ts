@@ -112,7 +112,9 @@ function runSyncWithInterval(
   syncIntervalMinutes: number
 ) {
   setTimeout(async () => {
-    const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
+    //TODO: restore
+    //   const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
+    const sleepIntevalInSeconds = 10000
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
     await sleep(sleepIntevalInSeconds)
     logger.info(`Resume syncing....`)
