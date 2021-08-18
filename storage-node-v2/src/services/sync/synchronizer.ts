@@ -7,6 +7,7 @@ import path from 'path'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
 import fetch from 'cross-fetch'
+import superagent from 'superagent'
 import urljoin from 'url-join'
 import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
@@ -118,18 +119,20 @@ class DownloadFileTask implements SyncTask {
     const streamPipeline = promisify(pipeline)
 
     try {
-      const response = await fetch(this.url)
+      // Casting because of:
+      // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
+      const request = superagent.get(
+        this.url
+      ) as unknown as NodeJS.ReadableStream
 
-      if (response.ok && response.body !== null) {
-        const body = response.body as unknown as NodeJS.ReadableStream
-        await streamPipeline(body, fs.createWriteStream(this.filepath))
-      } else {
-        logger.error(
-          `Sync - unexpected response for ${this.url}: ${response.statusText}`
-        )
-      }
+      await streamPipeline(request, fs.createWriteStream(this.filepath))
     } catch (err) {
       logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
+      try {
+        await fs.unlinkSync(this.filepath)
+      }catch(err) {
+        logger.error(`Sync - cannot cleanup file ${this.filepath}: ${err}`)
+      }
     }
   }
 }
