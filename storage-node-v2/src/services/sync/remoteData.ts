@@ -41,7 +41,9 @@ export async function getAvailableData(operatorUrl: string): Promise<string[]> {
 
   try {
     logger.debug(`Sync - fetching available data for ${url}`)
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      timeout: 120 * 1000, // 2 min
+    })
     if (!response.ok) {
       logger.error(
         `Sync - unexpected response for ${url}: ${response.statusText}`
