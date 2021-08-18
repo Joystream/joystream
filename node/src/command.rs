@@ -23,11 +23,12 @@ use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {
-        "Substrate Node".into()
+        "joystream-node".into()
+
     }
 
     fn impl_version() -> String {
-        "SUBSTRATE_CLI_IMPL_VERSION".into()
+        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
     }
 
     fn description() -> String {
