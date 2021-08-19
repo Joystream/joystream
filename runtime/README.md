@@ -9,7 +9,7 @@ Joystream node execute the code's logic to validate transactions and blocks on t
 
 When building joystream-node as described in [../node/README.md](../node/README.md), in addition to the joystream-node binary being built the WASM blob artifact is produced in:
 
-`./target/release/wbuild/joystream-node-runtime/node_runtime.compact.wasm`
+`./target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm`
 
 
 ### Deployment
