@@ -30,7 +30,7 @@ USAGE
 <!-- commands -->
 * [`storage-node dev:init`](#storage-node-devinit)
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
-* [`storage-node dev:sync [FILE]`](#storage-node-devsync-file)
+* [`storage-node dev:sync`](#storage-node-devsync)
 * [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
@@ -50,7 +50,7 @@ USAGE
 * [`storage-node operator:set-bucket-limits`](#storage-node-operatorset-bucket-limits)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
 * [`storage-node operator:update-bucket-status`](#storage-node-operatorupdate-bucket-status)
-* [`storage-node server [FILE]`](#storage-node-server-file)
+* [`storage-node server`](#storage-node-server)
 
 ## `storage-node dev:init`
 
@@ -85,18 +85,26 @@ OPTIONS
 
 _See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/multihash.ts)_
 
-## `storage-node dev:sync [FILE]`
+## `storage-node dev:sync`
 
-describe the command here
+Synchronizes data - it fixes the differences between local data folder and worker ID obligations from the runtime.
 
 ```
 USAGE
-  $ storage-node dev:sync [FILE]
+  $ storage-node dev:sync
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
+  -d, --uploads=uploads                                (required) Data uploading directory (absolute path).
+  -h, --help                                           show CLI help
+
+  -o, --dataSourceOperatorHost=dataSourceOperatorHost  Storage node host and port (e.g.: some.com:8081) to get data
+                                                       from.
+
+  -p, --syncWorkersNumber=syncWorkersNumber            Sync workers number (max async operations in progress).
+
+  -q, --queryNodeHost=queryNodeHost                    Query node host and port (e.g.: some.com:8081)
+
+  -w, --workerId=workerId                              (required) Storage node operator worker ID.
 ```
 
 _See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/sync.ts)_
@@ -529,24 +537,32 @@ OPTIONS
 
 _See code: [src/commands/operator/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/update-bucket-status.ts)_
 
-## `storage-node server [FILE]`
+## `storage-node server`
 
 Starts the storage node server.
 
 ```
 USAGE
-  $ storage-node server [FILE]
+  $ storage-node server
 
 OPTIONS
-  -d, --uploads=uploads    (required) Data uploading directory (absolute path).
-  -h, --help               show CLI help
-  -k, --keyfile=keyfile    Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                Use development mode
-  -o, --port=port          (required) Server port.
-  -p, --password=password  Key file password (optional).
-  -u, --apiUrl=apiUrl      Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944
-  -w, --worker=worker      (required) Storage provider worker ID
+  -d, --uploads=uploads                      (required) Data uploading directory (absolute path).
+  -h, --help                                 show CLI help
+  -i, --syncInterval=syncInterval            [default: 1] Interval between syncronizations (in minutes)
+  -k, --keyfile=keyfile                      Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                                  Use development mode
+  -o, --port=port                            (required) Server port.
+  -p, --password=password                    Key file password (optional).
+  -q, --queryNodeHost=queryNodeHost          Query node host and port (e.g.: some.com:8081)
+  -r, --syncWorkersNumber=syncWorkersNumber  [default: 20] Sync workers number (max async operations in progress).
+  -s, --sync                                 Enable data synchronization.
+
+  -u, --apiUrl=apiUrl                        Runtime API URL. Mandatory in non-dev environment. Default is
+                                             ws://localhost:9944
+
+  -w, --worker=worker                        (required) Storage provider worker ID
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/server.ts)_
+
 <!-- commandsstop -->

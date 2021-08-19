@@ -8,9 +8,9 @@ import { exit } from 'process'
 
 async function doJob(): Promise<void> {
   const uploadDirectory = '/Users/shamix/uploads2'
-  const fileSize = 100
+  const fileSize = 100000000
 
-  const objectNumber = 3000
+  const objectNumber = 100
   const bagNumber = 10
   const bucketNumber = 10
 

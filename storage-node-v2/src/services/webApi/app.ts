@@ -26,7 +26,11 @@ export async function createApp(
   account: KeyringPair,
   workerId: number,
   uploadsDir: string,
-  maxFileSize: number
+  maxFileSize: number,
+  config: {
+    version: string,
+    userAgent: string
+  }
 ): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
 
@@ -43,6 +47,7 @@ export async function createApp(
       res.locals.storageProviderAccount = account
       res.locals.workerId = workerId
       res.locals.api = api
+      res.locals.config = config
       next()
     },
     // Setup OpenAPiValidator

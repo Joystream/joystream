@@ -179,7 +179,7 @@ export async function authTokenForUploading(req: express.Request, res: express.R
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getFileObject(req: express.Request): Express.Multer.File {
   if (req.file) {
@@ -214,7 +214,7 @@ function getWorkerId(res: express.Response): number {
  *
  * @remarks
  * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getUploadsDir(res: express.Response): string {
   if (res.locals.uploadsDir) {
@@ -229,7 +229,7 @@ function getUploadsDir(res: express.Response): string {
  *
  * @remarks
  * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getAccount(res: express.Response): KeyringPair {
   if (res.locals.storageProviderAccount) {
@@ -244,7 +244,7 @@ function getAccount(res: express.Response): KeyringPair {
  *
  * @remarks
  * This is a helper function. It parses the response object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getApi(res: express.Response): ApiPromise {
   if (res.locals.api) {
@@ -259,7 +259,7 @@ function getApi(res: express.Response): ApiPromise {
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getCid(req: express.Request): string {
   const cid = req.params.cid || ''
@@ -275,7 +275,7 @@ function getCid(req: express.Request): string {
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
- * throws an error on failier.
+ * throws an error on failure.
  */
 function getTokenRequest(req: express.Request): UploadTokenRequest {
   const tokenRequest = req.body as UploadTokenRequest
@@ -452,4 +452,42 @@ export async function getAllLocalDataObjects(
       message: err.toString(),
     })
   }
+}
+
+/**
+ * A public endpoint: return the server version.
+ */
+export async function getVersion(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  try {
+    const config = getCommandConfig(res)
+
+    // Copy from an object, because the actual object could contain more data.
+    res.status(200).json({
+      version: config.version,
+      userAgent: config.userAgent,
+    })
+  } catch (err) {
+    res.status(500).json({
+      type: 'version',
+      message: err.toString(),
+    })
+  }
+}
+
+/**
+ * Returns a command config.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failure.
+ */
+ function getCommandConfig(res: express.Response): {version: string, userAgent: string} {
+  if (res.locals.config) {
+    return res.locals.config
+  }
+
+  throw new Error('No upload directory path loaded.')
 }
