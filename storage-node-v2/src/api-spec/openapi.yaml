@@ -186,7 +186,7 @@ paths:
       operationId: publicApi.getAllLocalDataObjects
       description: Returns all local data objects.
       tags:
-        - public
+        - state
       responses:
         200:
           description: Ok
@@ -196,6 +196,20 @@ paths:
                 type: array
                 items:
                   type: string
+
+  /version:
+    get:
+      operationId: publicApi.getVersion
+      description: Returns server version.
+      tags:
+        - state
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
 
 components:
   securitySchemes:
@@ -242,4 +256,13 @@ components:
         type:
           type: string
         message:
+          type: string    
+    VersionResponse:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+        userAgent:
           type: string
