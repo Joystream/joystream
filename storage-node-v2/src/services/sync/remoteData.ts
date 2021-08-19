@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+import superagent from 'superagent'
 import urljoin from 'url-join'
 import logger from '../../services/logger'
 import NodeCache from 'node-cache'
@@ -41,18 +41,10 @@ export async function getAvailableData(operatorUrl: string): Promise<string[]> {
 
   try {
     logger.debug(`Sync - fetching available data for ${url}`)
-    const response = await fetch(url, {
-      timeout: 120 * 1000, // 2 min
-    })
-    if (!response.ok) {
-      logger.error(
-        `Sync - unexpected response for ${url}: ${response.statusText}`
-      )
+    const timeoutMs = 120 * 1000 // 2 min
+    const response = await superagent.get(url).timeout(timeoutMs)
 
-      return []
-    }
-
-    const data = await response.json()
+    const data = response.body
     availableCidsCache.set(url, data, ExpirationPeriod)
 
     return data

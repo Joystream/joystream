@@ -5,7 +5,7 @@ import {
   InMemoryCache,
   DocumentNode,
 } from '@apollo/client'
-import fetch from 'node-fetch'
+import fetch from 'cross-fetch'
 import {
   GetStorageBucketDetails,
   GetStorageBucketDetailsQuery,
@@ -31,7 +31,7 @@ export class QueryNodeApi {
 
   public constructor(endpoint: string) {
     this.apolloClient = new ApolloClient({
-      link: new HttpLink({ uri: endpoint, fetch: fetch as any }),
+      link: new HttpLink({ uri: endpoint, fetch }),
       cache: new InMemoryCache(),
       defaultOptions: {
         query: { fetchPolicy: 'no-cache', errorPolicy: 'all' },
