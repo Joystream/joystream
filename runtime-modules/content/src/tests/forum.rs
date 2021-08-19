@@ -122,39 +122,45 @@ fn delete_thread_mock(
 fn create_post_mock(
     sender: <Test as frame_system::Trait>::AccountId,
     member_id: MemberId,
-    params: PostCreationParameters<<Test as Trait>::ThreadId>,
+    params: PostCreationParameters,
+    thread_id: <Test as Trait>::ThreadId,
     result: DispatchResult,
 ) -> <Test as Trait>::PostId {
     let post_id = Content::next_post_id();
-    let thread = Content::thread_by_id(params.thread_id.clone());
 
     let balance_before = balances::Module::<Test>::free_balance(sender);
 
     assert_eq!(
-        Content::create_post(Origin::signed(sender), member_id.clone(), params.clone()),
+        Content::create_post(
+            Origin::signed(sender),
+            member_id.clone(),
+            thread_id.clone(),
+            params.clone()
+        ),
         result
     );
 
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::PostAdded(
+            MetaEvent::content(RawEvent::PostCreated(
+                thread_id,
                 post_id,
-                FIRST_MEMBER_ID,
+                member_id,
                 params.clone(),
             ))
         );
 
         // 2. post counter for thread increased by 1
         assert_eq!(
-            Content::thread_by_id(params.thread_id).number_of_posts - thread.number_of_posts,
+            Content::thread_by_id(thread_id).number_of_posts - thread.number_of_posts,
             1,
         );
 
         // 3. balance is adjusted
         assert_eq!(
             balance_before - balances::Module::<Test>::free_balance(sender),
-            Content::post_by_id(params.thread_id, post_id).bloat_bond
+            Content::post_by_id(thread_id, post_id).bloat_bond
         );
     }
     post_id
@@ -463,10 +469,10 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
         let _ = create_post_mock(
             FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
+            INVALID_THREAD,
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: INVALID_THREAD,
             },
             Err(Error::<Test>::ThreadDoesNotExist.into()),
         );
