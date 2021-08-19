@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-constitution'
-version = '1.0.0'
+version = '2.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 

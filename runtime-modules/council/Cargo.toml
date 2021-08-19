@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-council'
-version = '1.1.0'
+version = '2.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 

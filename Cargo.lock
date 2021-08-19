@@ -127,9 +127,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "595d3cfa7a60d4555cb5067b99f07142a08ea778de5cf993f7b75c7d8fabc486"
+checksum = "28ae2b3dec75a406790005a200b1bd89785afc02517a00ca99ecfe093ee9e6cf"
 
 [[package]]
 name = "approx"
@@ -455,9 +455,9 @@ dependencies = [
 
 [[package]]
 name = "bitflags"
-version = "1.2.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
+checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitvec"
@@ -755,7 +755,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "ansi_term 0.12.1",
  "async-std",
@@ -2043,9 +2043,9 @@ dependencies = [
 
 [[package]]
 name = "httparse"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3a87b616e37e93c22fb19bcd386f02f3af5ea98a25670ad0fce773de23c5e68"
+checksum = "7ba8d84e9efea6aedae6fed9b6d9cfcaac6c53992b437d79a87a549d5537fea9"
 
 [[package]]
 name = "httpdate"
@@ -2292,16 +2292,16 @@ checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
 
 [[package]]
 name = "jobserver"
-version = "0.1.23"
+version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5ca711fd837261e14ec9e674f092cbb931d3fa1482b017ae59328ddc6f3212b"
+checksum = "af25a77299a7f711a01975c35a6a424eb6862092cc2d6c72c4ed6cbc56dfc1fa"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "joystream-node"
-version = "4.1.0"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2364,7 +2364,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "8.1.0"
+version = "9.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2372,6 +2372,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "getrandom 0.2.3",
  "hex-literal",
  "lazy_static",
  "lite-json",
@@ -2408,7 +2409,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility 1.0.0",
+ "pallet-utility 2.0.0",
  "pallet-utility 3.0.0",
  "pallet-working-group",
  "parity-scale-codec",
@@ -3236,9 +3237,9 @@ dependencies = [
 
 [[package]]
 name = "matches"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
+checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 
 [[package]]
 name = "matrixmultiply"
@@ -3257,9 +3258,9 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 
 [[package]]
 name = "memchr"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b16bd47d9e329435e309c58469fe0791c2d0d1ba96ec0954152a5ae2b04387dc"
+checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "memmap2"
@@ -3640,9 +3641,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.26.0"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c55827317fb4c08822499848a14237d2874d6f139828893017237e7ab93eb386"
+checksum = "ee2766204889d09937d00bfbb7fec56bb2a199e2ade963cab19185d8a6104c7c"
 dependencies = [
  "memchr",
 ]
@@ -3755,7 +3756,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-blog"
-version = "3.0.0"
+version = "4.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3766,7 +3767,6 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec",
- "serde",
  "sp-arithmetic",
  "sp-core",
  "sp-io",
@@ -3776,7 +3776,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-bounty"
-version = "1.0.1"
+version = "2.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3799,7 +3799,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-common"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3815,7 +3815,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-constitution"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3830,7 +3830,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-content-directory"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3846,7 +3846,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-council"
-version = "1.1.0"
+version = "2.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3869,7 +3869,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-forum"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3931,7 +3931,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-membership"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3952,7 +3952,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-memo"
-version = "3.1.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4000,7 +4000,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "4.0.2"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4032,7 +4032,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4054,7 +4054,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "4.0.1"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4090,7 +4090,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-referendum"
-version = "1.0.1"
+version = "2.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4112,7 +4112,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-service-discovery"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4191,7 +4191,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking-handler"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4219,7 +4219,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-storage"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4316,7 +4316,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-utility"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4357,7 +4357,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-working-group"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8125,9 +8125,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9ff14f98b1a4b289c6248a023c1c2fa1491062964e9fed67ab29c4e4da4a052"
+checksum = "2ca517f43f0fb96e0c3072ed5c275fe5eece87e8cb52f4a77b69226d3b1c9df8"
 dependencies = [
  "lazy_static",
 ]
@@ -8165,9 +8165,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.19"
+version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab69019741fca4d98be3c62d2b75254528b5432233fd8a4d2739fec20278de48"
+checksum = "b9cbe87a2fa7e35900ce5de20220a582a9483a7063811defce79d7cbd59d4cfe"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",
@@ -8259,12 +8259,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-bidi"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eeb8be209bb1c96b7c177c7420d26e04eccacb0eeae6b980e35fcb74678107e0"
-dependencies = [
- "matches",
-]
+checksum = "246f4c42e67e7a4e3c6106ff716a5d067d4132a642840b242e357e468a2a0085"
 
 [[package]]
 name = "unicode-normalization"

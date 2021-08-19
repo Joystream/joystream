@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-proposals-engine'
-version = '4.0.1'
+version = '5.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 

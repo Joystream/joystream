@@ -4,12 +4,13 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '8.1.0'
+version = '9.0.0'
 
 [dependencies]
 # Third-party dependencies
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
+getrandom = { version = "0.2", default-features = false,  features = ["js"] }
 lite-json = { version = '0.1.3', default-features = false}
 codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive'] }
 smallvec = "1.6.0"
