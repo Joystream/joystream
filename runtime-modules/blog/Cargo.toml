@@ -28,7 +28,7 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking', 'membership']
+runtime-benchmarks = ['frame-benchmarking', 'membership/std']
 std = [
 	'serde',
 	'codec/std',
@@ -39,5 +39,4 @@ std = [
     'common/std',
     'sp-arithmetic/std',
     'balances/std',
-	'membership/std',
 ]

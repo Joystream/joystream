@@ -4,7 +4,7 @@ import mockedProposal from './ProposalDetails.mock';
 //   {
 //     title: "Send me some tokens for coffee",
 //     description:
-//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Module staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
+//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
 //     finalized: "approved",
 //     details: {
 //       createdBy: {
@@ -21,7 +21,7 @@ import mockedProposal from './ProposalDetails.mock';
 //   {
 //     title: "Send me some tokens for coffee",
 //     description:
-//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Module staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
+//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
 
 //     finalized: "slashed",
 //     details: {
@@ -39,7 +39,7 @@ import mockedProposal from './ProposalDetails.mock';
 //   {
 //     title: "Send me some tokens for coffee",
 //     description:
-//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Module staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
+//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
 
 //     finalized: "approved",
 //     details: {
@@ -57,7 +57,7 @@ import mockedProposal from './ProposalDetails.mock';
 //   {
 //     title: "Send me some tokens for coffee",
 //     description:
-//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Module staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
+//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
 
 //     finalized: "approved",
 //     details: {
@@ -75,7 +75,7 @@ import mockedProposal from './ProposalDetails.mock';
 //   {
 //     title: "Send me some tokens for coffee",
 //     description:
-//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Module staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
+//       "Change the total reward across all validators in a given block. This is not the direct reward, but base reward for Pallet staking module. The minimum value must be greater than 450 tJOY based on current runtime. Also, coffee is getting expensive.",
 
 //     finalized: "withdrawn",
 //     details: {

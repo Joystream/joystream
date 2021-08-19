@@ -22,7 +22,6 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 [features]
 default = ['std']
 std = [
-    'serde',
     'sp-std/std',
     'frame-support/std',
     'frame-system/std',
