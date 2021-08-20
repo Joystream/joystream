@@ -256,7 +256,7 @@ components:
         type:
           type: string
         message:
-          type: string    
+          type: string
     VersionResponse:
       type: object
       required:
