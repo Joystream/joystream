@@ -11,7 +11,6 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
-serde = { version = "1.0.101", optional = true, features = ["derive"] }
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
@@ -19,11 +18,11 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 codec = { package = 'parity-scale-codec', version = '2.1.1', default-features = false, features = ['derive'] }
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353'}
+serde = { version = "1.0.101", features = ["derive"] }
 
 [features]
 default = ['std']
 std = [
-    'serde',
     'sp-std/std',
     'frame-support/std',
     'frame-system/std',
