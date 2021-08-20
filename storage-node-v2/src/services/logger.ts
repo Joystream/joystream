@@ -1,5 +1,4 @@
-import winston, { Logger, transport } from 'winston'
-
+import winston, { transport } from 'winston'
 import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
@@ -66,8 +65,10 @@ function createDefaultLogger(): winston.Logger {
   return winston.createLogger(defaultOptions)
 }
 
+// Default global logger variable
 let InnerLogger = createDefaultLogger()
 
+// Enables changing the underlying logger which is default import in other modules.
 const proxy = new Proxy(InnerLogger, {
   get(target: winston.Logger, propKey: symbol) {
     const method = Reflect.get(target, propKey)
@@ -82,6 +83,7 @@ export default proxy
 /**
  * Creates Express-Winston logger handler.
  *
+ * @param elasticSearchEndpoint - elastic search engine endpoint (optional).
  * @returns  Express-Winston logger handler
  *
  */
@@ -185,19 +187,28 @@ function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
   return logger
 }
 
-export function initElasticLogger(elasticSearchEndpoint: string): Logger {
+/**
+ * Updates the default system logger with elastic search capabilities.
+ *
+ * @param elasticSearchEndpoint - elastic search engine endpoint.
+ */
+export function initElasticLogger(elasticSearchEndpoint: string): void {
   InnerLogger = createElasticLogger(elasticSearchEndpoint)
-
-  return InnerLogger
 }
 
+/**
+ * Creates winston logger transport for the elastic search engine.
+ *
+ * @param elasticSearchEndpoint - elastic search engine endpoint.
+ * @returns elastic search winston transport
+ */
 function createElasticTransport(
   elasticSearchEndpoint: string
 ): winston.transport {
   const esTransportOpts = {
     level: 'debug', // TODO: consider changing to warn
     clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
-    index: 'storage-node'
+    index: 'storage-node',
   }
   return new ElasticsearchTransport(esTransportOpts)
 }

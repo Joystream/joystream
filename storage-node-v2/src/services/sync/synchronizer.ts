@@ -10,6 +10,7 @@ import superagent from 'superagent'
 import urljoin from 'url-join'
 import AwaitLock from 'await-lock'
 import sleep from 'sleep-promise'
+import { v4 as uuidv4 } from 'uuid'
 const fsPromises = fs.promises
 
 // TODO: use caching
@@ -102,20 +103,24 @@ class DeleteLocalFileTask implements SyncTask {
 }
 
 class DownloadFileTask implements SyncTask {
-  filepath: string
+  id: string
+  uploadsDirectory: string
   url: string
 
-  constructor(baseUrl: string, filename: string, uploadsDirectory: string) {
-    this.filepath = path.join(uploadsDirectory, filename)
-    this.url = urljoin(baseUrl, 'api/v1/files', filename)
+  constructor(baseUrl: string, id: string, uploadsDirectory: string) {
+    this.id = id
+    this.uploadsDirectory = uploadsDirectory
+    this.url = urljoin(baseUrl, 'api/v1/files', id)
   }
 
   description(): string {
-    return `Sync - downloading file: ${this.url} as ${this.filepath} ....`
+    return `Sync - downloading file: ${this.url} to ${this.uploadsDirectory} ....`
   }
 
   async execute(): Promise<void> {
     const streamPipeline = promisify(pipeline)
+    const filepath = path.join(this.uploadsDirectory, this.id)
+
     try {
       const timeoutMs = 30 * 60 * 1000 // 30 min for large files (~ 10 GB)
       // Casting because of:
@@ -124,16 +129,20 @@ class DownloadFileTask implements SyncTask {
         .get(this.url)
         .timeout(timeoutMs) as unknown as NodeJS.ReadableStream
 
-      const fileStream = fs.createWriteStream(this.filepath)
-
+      // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
+      // This partial downloads will be cleaned up during the next sync iteration.
+      const tempFilePath = path.join(this.uploadsDirectory, uuidv4())
+      const fileStream = fs.createWriteStream(tempFilePath)
       await streamPipeline(request, fileStream)
+
+      await fsPromises.rename(tempFilePath, filepath)
     } catch (err) {
       logger.error(`Sync - fetching data error for ${this.url}: ${err}`)
       try {
-        logger.warn(`Cleaning up file ${this.filepath}`)
-        await fs.unlinkSync(this.filepath)
+        logger.warn(`Cleaning up file ${filepath}`)
+        await fs.unlinkSync(filepath)
       } catch (err) {
-        logger.error(`Sync - cannot cleanup file ${this.filepath}: ${err}`)
+        logger.error(`Sync - cannot cleanup file ${filepath}: ${err}`)
       }
     }
   }

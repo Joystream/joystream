@@ -43,6 +43,7 @@
     "superagent": "^6.1.0",
     "tslib": "^1",
     "url-join": "^4.0.1",
+    "uuid": "^8.3.2",
     "winston": "^3.3.3",
     "winston-elasticsearch": "^0.15.8"
   },
