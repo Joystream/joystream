@@ -224,7 +224,6 @@ pub fn testnet_genesis(
 
     let balances: Vec<_> = endowed_accounts
         .into_iter()
-        .cloned()
         .map(|k| (k, ENDOWMENT))
         .chain(
             initial_balances
@@ -234,9 +233,9 @@ pub fn testnet_genesis(
         .collect();
 
     let balances: Vec<_> = balances
-            .into_iter()
-            .chain(initial_authorities_accounts.into_iter().map(|x| (x, STASH)))
-            .collect() ;
+        .into_iter()
+        .chain(initial_authorities_accounts.into_iter().map(|x| (x, STASH)))
+        .collect();
 
 
     GenesisConfig {
