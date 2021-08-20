@@ -213,23 +213,39 @@ pub fn testnet_genesis(
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
 
+    let initial_authorities_accounts: Vec<_> = initial_authorities.iter().map(|x| x.0.clone()).collect();
+
+    // Filter duplicates between initial_authorities_accounts & endowed_accounts
+    let endowed_accounts: Vec<_> = endowed_accounts
+        .into_iter()
+        // Filter duplicates between initial_authorities_accounts & endowed_accounts
+        .filter(|k| !initial_authorities_accounts.contains(k))
+        .collect();
+
+    let balances: Vec<_> = endowed_accounts
+        .into_iter()
+        .cloned()
+        .map(|k| (k, ENDOWMENT))
+        .chain(
+            initial_balances
+                .iter()
+                .map(|(account, balance)| (account.clone(), *balance)),
+        )
+        .collect();
+
+    let balances: Vec<_> = balances
+            .into_iter()
+            .chain(initial_authorities_accounts.into_iter().map(|x| (x, STASH)))
+            .collect() ;
+
+
     GenesisConfig {
         frame_system: Some(SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
             changes_trie_config: Default::default(),
         }),
-        pallet_balances: Some(BalancesConfig {
-            balances: endowed_accounts
-                .iter()
-                .cloned()
-                .map(|k| (k, ENDOWMENT))
-                .chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
-                .chain(
-                    initial_balances
-                        .iter()
-                        .map(|(account, balance)| (account.clone(), *balance)),
-                )
-                .collect(),
+        pallet_balances: Some(BalancesConfig { 
+            balances: balances
         }),
         pallet_staking: Some(StakingConfig {
             validator_count: 20,
