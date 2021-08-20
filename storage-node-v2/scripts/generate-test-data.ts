@@ -21,7 +21,7 @@ async function doJob(): Promise<void> {
   ]
 
   const updateDb = true
-  const generateFiles = true
+  const generateFiles = false
 
   if (updateDb) {
     const config : ClientConfig = {
