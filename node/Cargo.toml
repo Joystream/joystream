@@ -86,6 +86,7 @@ sc-service-test = { git = 'https://github.com/paritytech/substrate.git', rev = '
 frame-system = { package = 'frame-system', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 pallet-transaction-payment = { package = 'pallet-transaction-payment', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 pallet-grandpa = { package = 'pallet-grandpa', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+async-std = {version = "1.9.0", features = ["attributes"]}
 
 [build-dependencies]
 structopt = { version = "0.3.8", optional = true }

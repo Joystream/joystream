@@ -2303,6 +2303,7 @@ dependencies = [
 name = "joystream-node"
 version = "5.0.0"
 dependencies = [
+ "async-std",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-system",
@@ -3767,6 +3768,7 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec",
+ "serde",
  "sp-arithmetic",
  "sp-core",
  "sp-io",
@@ -4199,6 +4201,7 @@ dependencies = [
  "pallet-common",
  "pallet-timestamp",
  "parity-scale-codec",
+ "serde",
  "sp-arithmetic",
  "sp-core",
  "sp-io",
