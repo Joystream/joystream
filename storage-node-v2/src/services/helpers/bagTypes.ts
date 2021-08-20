@@ -5,6 +5,18 @@ import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
 /**
+ * Special error type for bagId parsing. Extends the CLIError with setting
+ * the `InvalidParameters` exit code.
+ */
+export class BagIdValidationError extends CLIError {
+  constructor(err: string) {
+    super(err, {
+      exit: ExitCodes.InvalidParameters,
+    })
+  }
+}
+
+/**
  * Parses the type string and returns the DynamicBagType instance.
  *
  * @remarks
@@ -50,9 +62,7 @@ class BagIdParser {
     this.bagIdParts = bagId.trim().toLowerCase().split(':')
 
     if (this.bagIdParts.length > 3 || this.bagIdParts.length < 2) {
-      throw new CLIError(`Invalid bagId: ${bagId}`, {
-        exit: ExitCodes.InvalidParameters,
-      })
+      throw new BagIdValidationError(`Invalid bagId: ${bagId}`)
     }
   }
 
@@ -69,9 +79,7 @@ class BagIdParser {
       return this.parseDynamicBagId()
     }
 
-    throw new CLIError(`Invalid bagId: ${this.bagId}`, {
-      exit: ExitCodes.InvalidParameters,
-    })
+    throw new BagIdValidationError(`Invalid bagId: ${this.bagId}`)
   }
 
   /**
@@ -112,9 +120,7 @@ class BagIdParser {
       }
     }
 
-    throw new CLIError(`Invalid static bagId: ${this.bagId}`, {
-      exit: ExitCodes.InvalidParameters,
-    })
+    throw new BagIdValidationError(`Invalid static bagId: ${this.bagId}`)
   }
 
   /**
@@ -147,8 +153,6 @@ class BagIdParser {
       }
     }
 
-    throw new CLIError(`Invalid dynamic bagId: ${this.bagId}`, {
-      exit: ExitCodes.InvalidParameters,
-    })
+    throw new BagIdValidationError(`Invalid dynamic bagId: ${this.bagId}`)
   }
 }
