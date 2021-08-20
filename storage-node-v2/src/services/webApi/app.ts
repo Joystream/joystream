@@ -28,9 +28,10 @@ export async function createApp(
   uploadsDir: string,
   maxFileSize: number,
   config: {
-    version: string,
+    version: string
     userAgent: string
-  }
+  },
+  elasticSearchEndpoint?: string
 ): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
 
@@ -38,7 +39,7 @@ export async function createApp(
 
   app.use(cors())
   app.use(express.json())
-  app.use(httpLogger())
+  app.use(httpLogger(elasticSearchEndpoint))
 
   app.use(
     // Set parameters for each request.

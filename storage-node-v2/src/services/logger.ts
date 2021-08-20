@@ -1,14 +1,17 @@
-import winston from 'winston'
+import winston, { Logger, transport } from 'winston'
+
 import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
+import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 /**
  * Creates basic Winston logger. Console output redirected to the stderr.
  *
- * @returns Winston logger
+ * @returns Winston logger options
  *
  */
-function createDefaultLogger(): winston.Logger {
+function createDefaultLoggerOptions(): winston.LoggerOptions {
+  // Levels
   const levels = {
     error: 0,
     warn: 1,
@@ -23,6 +26,7 @@ function createDefaultLogger(): winston.Logger {
     return isDevelopment ? 'debug' : 'warn'
   }
 
+  // Colors
   const colors = {
     error: 'red',
     warn: 'yellow',
@@ -30,39 +34,71 @@ function createDefaultLogger(): winston.Logger {
     http: 'magenta',
     debug: 'white',
   }
-
   winston.addColors(colors)
 
+  // Formats
   const format = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-    winston.format.colorize({ all: true }),
+    winston.format.colorize(),
     winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
   )
 
   // Redirect all logs to the stderr
   const transports = [new winston.transports.Console({ stderrLevels: Object.keys(levels) })]
 
-  return winston.createLogger({
+  return {
     level: level(),
     levels,
     format,
     transports,
-  })
+  }
 }
 
-const Logger = createDefaultLogger()
+/**
+ * Creates basic Winston logger.
+ *
+ * @returns Winston logger
+ *
+ */
+function createDefaultLogger(): winston.Logger {
+  const defaultOptions = createDefaultLoggerOptions()
 
-export default Logger
+  return winston.createLogger(defaultOptions)
+}
+
+let InnerLogger = createDefaultLogger()
+
+const proxy = new Proxy(InnerLogger, {
+  get(target: winston.Logger, propKey: symbol) {
+    const method = Reflect.get(target, propKey)
+    return (...args: unknown[]) => {
+      return method.apply(InnerLogger, args)
+    }
+  },
+})
+
+export default proxy
+
 /**
  * Creates Express-Winston logger handler.
  *
  * @returns  Express-Winston logger handler
  *
  */
-export function httpLogger(): Handler {
+export function httpLogger(elasticSearchEndpoint?: string): Handler {
+  const transports: winston.transport[] = [new winston.transports.Console()]
+
+  if (elasticSearchEndpoint) {
+    const esTransport = createElasticTransport(elasticSearchEndpoint)
+    transports.push(esTransport)
+  }
+
   const opts: expressWinston.LoggerOptions = {
-    transports: [new winston.transports.Console()],
-    format: winston.format.combine(winston.format.json()),
+    transports,
+    format: winston.format.combine(
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+      winston.format.json()
+    ),
     meta: true,
     msg: 'HTTP {{req.method}} {{req.url}}',
     expressFormat: true,
@@ -108,4 +144,60 @@ export function createStdConsoleLogger(): winston.Logger {
     format,
     transports,
   })
+}
+ * Creates Winston logger with Elastic search.
+ *
+ * @returns Winston logger
+ *
+ */
+function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
+  const loggerOptions = createDefaultLoggerOptions()
+
+  // Formats
+  loggerOptions.format = winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+    winston.format.printf(
+      (info) => `${info.timestamp} ${info.level}: ${info.message}`
+    )
+  )
+
+  // Transports
+  let transports: transport[] = []
+  if (loggerOptions.transports !== undefined) {
+    transports = Array.isArray(loggerOptions.transports)
+      ? loggerOptions.transports
+      : [loggerOptions.transports]
+  }
+
+  const esTransport = createElasticTransport(elasticSearchEndpoint)
+  transports.push(esTransport)
+
+  // Logger
+  const logger = winston.createLogger(loggerOptions)
+
+  // Handle logger error.
+  logger.on('error', (err) => {
+    // Allow console for logging errors of the logger.
+    /* eslint-disable no-console */
+    console.error('Error in logger caught:', err)
+  })
+
+  return logger
+}
+
+export function initElasticLogger(elasticSearchEndpoint: string): Logger {
+  InnerLogger = createElasticLogger(elasticSearchEndpoint)
+
+  return InnerLogger
+}
+
+function createElasticTransport(
+  elasticSearchEndpoint: string
+): winston.transport {
+  const esTransportOpts = {
+    level: 'debug', // TODO: consider changing to warn
+    clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
+    index: 'storage-node'
+  }
+  return new ElasticsearchTransport(esTransportOpts)
 }

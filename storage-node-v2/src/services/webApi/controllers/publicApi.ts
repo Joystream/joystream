@@ -484,7 +484,10 @@ export async function getVersion(
  * This is a helper function. It parses the response object for a variable and
  * throws an error on failure.
  */
- function getCommandConfig(res: express.Response): {version: string, userAgent: string} {
+function getCommandConfig(res: express.Response): {
+  version: string
+  userAgent: string
+} {
   if (res.locals.config) {
     return res.locals.config
   }

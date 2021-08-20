@@ -1,7 +1,8 @@
 import { flags } from '@oclif/command'
 import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
-import logger from '../services/logger'
+import logger, { initElasticLogger } from '../services/logger'
+
 import { performSync } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
 import _ from 'lodash'
@@ -53,11 +54,22 @@ export default class Server extends ApiCommandBase {
       description: 'Sync workers number (max async operations in progress).',
       default: 20,
     }),
+    elasticSearchHost: flags.string({
+      char: 'e',
+      required: false,
+      description: 'Elasticsearch host and port (e.g.: some.com:8081).',
+    }),
     ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
+
+    let elasticUrl
+    if (!_.isEmpty(flags.elasticSearchHost)) {
+      elasticUrl = `http://${flags.elasticSearchHost}`
+      initElasticLogger(elasticUrl)
+    }
 
     if (flags.dev) {
       await this.ensureDevelopmentChain()
@@ -91,7 +103,15 @@ export default class Server extends ApiCommandBase {
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
-      const app = await createApp(api, account, workerId, flags.uploads, maxFileSize)
+      const app = await createApp(
+        api,
+        account,
+        workerId,
+        flags.uploads,
+		maxFileSize,
+        this.config,
+        elasticUrl
+      )
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {
