@@ -1,6 +1,6 @@
 import superagent from 'superagent'
 import urljoin from 'url-join'
-import logger from '../../services/logger'
+import logger from '../logger'
 import NodeCache from 'node-cache'
 
 // Expiration period in seconds for the local cache.

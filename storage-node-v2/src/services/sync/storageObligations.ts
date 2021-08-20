@@ -1,5 +1,5 @@
-import { QueryNodeApi } from '../../services/queryNode/api'
-import logger from '../../services/logger'
+import { QueryNodeApi } from '../queryNode/api'
+import logger from '../logger'
 import { u8aToString, hexToU8a } from '@polkadot/util'
 import {
   StorageBagDetailsFragment,
