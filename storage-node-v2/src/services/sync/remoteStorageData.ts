@@ -25,7 +25,7 @@ const badOperatorUrls = new NodeCache({
 })
 
 export async function getAvailableData(operatorUrl: string): Promise<string[]> {
-  const url = urljoin(operatorUrl, 'api/v1/sync')
+  const url = urljoin(operatorUrl, 'api/v1/state/data-objects')
 
   const faultyOperator = badOperatorUrls.has(operatorUrl)
   if (faultyOperator) {

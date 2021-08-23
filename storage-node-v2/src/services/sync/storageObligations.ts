@@ -7,7 +7,7 @@ import {
   DataObjectDetailsFragment,
 } from '../queryNode/generated/queries'
 
-export type Model = {
+export type DataObligations = {
   storageBuckets: StorageBucket[]
   bags: Bag[]
   dataObjects: DataObject[]
@@ -29,10 +29,10 @@ type DataObject = {
   bagId: string
 }
 
-export async function getRuntimeModel(
+export async function getStorageObligationsFromRuntime(
   queryNodeUrl: string,
   workerId: number
-): Promise<Model> {
+): Promise<DataObligations> {
   const api = new QueryNodeApi(queryNodeUrl)
 
   const allBuckets = await getAllBuckets(api)
@@ -45,7 +45,7 @@ export async function getRuntimeModel(
   const bagIds = assignedBags.map((bag) => bag.id)
   const assignedDataObjects = await getAllAssignedDataObjects(api, bagIds)
 
-  const model: Model = {
+  const model: DataObligations = {
     storageBuckets: allBuckets.map((bucket) => ({
       id: bucket.id,
       operatorUrl: extractOperatorUrl(bucket.operatorMetadata),

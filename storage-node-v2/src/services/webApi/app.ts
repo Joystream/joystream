@@ -19,6 +19,9 @@ import { getLocalDataObjects } from '../../services/sync/synchronizer'
  * @param workerId - storage provider ID (worker ID)
  * @param uploadsDir - directory for the file uploading
  * @param maxFileSize - max allowed file size
+ * @param config - environment configuration
+ * @param queryNodeUrl - Query Node endpoint URL
+ * @param elasticSearchEndpoint - ElasticSearch endpoint URL(optional)
  * @returns Express promise.
  */
 export async function createApp(
@@ -31,6 +34,7 @@ export async function createApp(
     version: string
     userAgent: string
   },
+  queryNodeUrl: string,
   elasticSearchEndpoint?: string
 ): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
@@ -49,6 +53,7 @@ export async function createApp(
       res.locals.workerId = workerId
       res.locals.api = api
       res.locals.config = config
+      res.locals.queryNodeUrl = queryNodeUrl
       next()
     },
     // Setup OpenAPiValidator

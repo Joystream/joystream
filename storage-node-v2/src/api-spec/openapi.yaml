@@ -181,7 +181,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /sync:
+  /state/data-objects:
     get:
       operationId: publicApi.getAllLocalDataObjects
       description: Returns all local data objects.
@@ -193,9 +193,21 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
+                $ref: '#/components/schemas/DataObjectResponse'
+
+  /state/data-objects/{bagId}:
+    get:
+      operationId: publicApi.getLocalDataObjectsByBagId
+      description: Returns local data objects for the bag.
+      tags:
+        - state
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataObjectResponse'
 
   /version:
     get:
@@ -265,4 +277,8 @@ components:
         version:
           type: string
         userAgent:
-          type: string
+          type: string    
+    DataObjectResponse:
+      type: array
+      items:
+        type: string

@@ -45,7 +45,7 @@ export default class Server extends ApiCommandBase {
     }),
     queryNodeHost: flags.string({
       char: 'q',
-      required: false,
+      required: true,
       description: 'Query node host and port (e.g.: some.com:8081)',
     }),
     syncWorkersNumber: flags.integer({
@@ -71,19 +71,16 @@ export default class Server extends ApiCommandBase {
       initElasticLogger(elasticUrl)
     }
 
+    const queryNodeUrl = `http://${flags.queryNodeHost}/graphql`
+    logger.info(`Query node endpoint set: ${queryNodeUrl}`)
+
+
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
 
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
-
-      if (_.isEmpty(flags.queryNodeHost)) {
-        this.error('Query node host parameter required with enabled sync.')
-      }
-
-      const queryNodeUrl = `http://${flags.queryNodeHost}/graphql`
-      logger.info(`Query node endpoint set: ${queryNodeUrl}`)
 
       runSyncWithInterval(
         flags.worker,
@@ -110,7 +107,8 @@ export default class Server extends ApiCommandBase {
         flags.uploads,
 		maxFileSize,
         this.config,
-        elasticUrl
+        queryNodeUrl,
+        elasticUrl,
       )
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
