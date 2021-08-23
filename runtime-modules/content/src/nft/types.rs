@@ -20,7 +20,7 @@ pub enum TransactionalStatus<
     Balance,
 > {
     Idle,
-    InitiatedTransferToMember(MemberId),
+    InitiatedTransferToMember(MemberId, Option<Balance>),
     Auction(AuctionRecord<AccountId, BlockNumber, Balance, MemberId>),
 }
 

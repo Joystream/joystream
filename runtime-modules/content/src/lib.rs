@@ -1219,13 +1219,14 @@ decl_module! {
             Self::issue_vnft(&mut video, video_id, to, royalty, metadata);
         }
 
-        /// Start vNFT transfer
+        /// Offer vNFT 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn start_transfer(
+        pub fn offer_vnft(
             origin,
             video_id: T::VideoId,
             from: MemberId<T>,
             to: MemberId<T>,
+            price: Option<BalanceOf<T>>,
         ) {
 
             // Authorize participant under given member id
@@ -1246,15 +1247,15 @@ decl_module! {
             //
 
             // Set nft transactional status to InitiatedTransferToMember
-            video.set_pending_transfer_transactional_status(to);
+            video.set_pending_transfer_transactional_status(to, price);
 
             // Trigger event
             Self::deposit_event(RawEvent::TransferStarted(video_id, from, to));
         }
 
-        /// Cancel vNFT transfer
+        /// Cancel vNFT offer
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_transfer(
+        pub fn cancel_offer(
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
@@ -1286,9 +1287,9 @@ decl_module! {
             Self::deposit_event(RawEvent::TransferCancelled(video_id, participant_id));
         }
 
-        /// Accept incoming vNFT transfer
+        /// Accept incoming vNFT offer
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn accept_incoming_vnft(
+        pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
