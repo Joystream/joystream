@@ -1,8 +1,22 @@
 import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import * as express from 'express'
 import _ from 'lodash'
-import { getStorageObligationsFromRuntime } from '../../sync/storageObligations'
+import {
+  getStorageObligationsFromRuntime,
+  DataObligations,
+} from '../../sync/storageObligations'
 import { getUploadsDir, getWorkerId } from './common'
+
+import NodeCache from 'node-cache'
+
+// Expiration period in seconds for the local cache.
+const ExpirationPeriod = 30 // minutes
+
+// Local in-memory cache for data
+const dataCache = new NodeCache({
+  stdTTL: ExpirationPeriod,
+  deleteOnExpire: true,
+})
 
 /**
  * A public endpoint: serves files by CID.
@@ -17,7 +31,7 @@ export async function getAllLocalDataObjects(
   try {
     const uploadsDir = getUploadsDir(res)
 
-    const cids = await getLocalDataObjects(uploadsDir)
+    const cids = await getCachedLocalDataObjects(uploadsDir)
 
     res.status(200).json(cids)
   } catch (err) {
@@ -44,8 +58,8 @@ export async function getLocalDataObjectsByBagId(
 
     // TODO: Introduce dedicated QueryNode method.
     const [cids, obligations] = await Promise.all([
-      getLocalDataObjects(uploadsDir),
-      getStorageObligationsFromRuntime(queryNodeUrl, workerId),
+      getCachedLocalDataObjects(uploadsDir),
+      getCachedDataObjectsObligations(queryNodeUrl, workerId),
     ])
 
     const requiredCids = obligations.dataObjects
@@ -133,4 +147,47 @@ function getQueryNodeUrl(res: express.Response): string {
   }
 
   throw new Error('No Query Node URL loaded.')
+}
+
+/**
+ * Returns cached data objects IDs from the local data storage. Data could be
+ * obsolete until cache expiration.
+ *
+ */
+async function getCachedLocalDataObjects(
+  uploadsDir: string
+): Promise<string[]> {
+  const entryName = 'local_data_object'
+
+  if (!dataCache.has(entryName)) {
+    const data = await getLocalDataObjects(uploadsDir)
+
+    dataCache.set(entryName, data)
+  }
+  return dataCache.get(entryName) ?? []
+}
+
+/**
+ * Returns cached data objects IDs from the local data storage. Data could be
+ * obsolete until cache expiration.
+ *
+ */
+async function getCachedDataObjectsObligations(
+  queryNodeUrl: string,
+  workerId: number
+): Promise<DataObligations> {
+  const emptyObligations = {
+    bags: [],
+    storageBuckets: [],
+    dataObjects: [],
+  }
+  const entryName = 'data_object_obligations'
+
+  if (!dataCache.has(entryName)) {
+    const data = await getStorageObligationsFromRuntime(queryNodeUrl, workerId)
+
+    dataCache.set(entryName, data)
+  }
+
+  return dataCache.get(entryName) ?? emptyObligations
 }
