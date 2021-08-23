@@ -26,6 +26,8 @@ import send from 'send'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
 import { timeout } from 'promise-timeout'
+import _ from 'lodash'
+import { getStorageObligationsFromRuntime } from '../../sync/storageObligations'
 const fsPromises = fs.promises
 
 /**
@@ -436,7 +438,39 @@ export async function getAllLocalDataObjects(
     res.status(200).json(cids)
   } catch (err) {
     res.status(500).json({
-      type: 'local_data_objects',
+      type: 'all_data_objects',
+      message: err.toString(),
+    })
+  }
+}
+
+/**
+ * A public endpoint: return local data objects for the bag.
+ */
+export async function getLocalDataObjectsByBagId(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  try {
+    const uploadsDir = getUploadsDir(res)
+
+    const workerId = getWorkerId(res)
+    const queryNodeUrl = getQueryNodeUrl(res)
+    const bagId = getBagId(req)
+
+    // TODO: Introduce dedicated QueryNode method.
+    const [cids, obligations] = await Promise.all([
+      getLocalDataObjects(uploadsDir),
+      getStorageObligationsFromRuntime(queryNodeUrl, workerId)])
+
+    const requiredCids = obligations.dataObjects.filter((obj) => obj.bagId == bagId).map((obj) => obj.cid)
+
+    const localDataForBag = _.intersection(cids, requiredCids)
+
+    res.status(200).json(localDataForBag)
+  } catch (err) {
+    res.status(500).json({
+      type: 'data_objects_by_bag',
       message: err.toString(),
     })
   }
@@ -481,4 +515,35 @@ function getCommandConfig(res: express.Response): {
   }
 
   throw new Error('No upload directory path loaded.')
+}
+
+/**
+ * Returns Bag ID from the request.
+ *
+ * @remarks
+ * This is a helper function. It parses the request object for a variable and
+ * throws an error on failure.
+ */
+ function getBagId(req: express.Request): string {
+  const bagId = req.params.bagId || ''
+  if (bagId.length > 0) {
+    return bagId
+  }
+
+  throw new Error('No bagId provided.')
+}
+
+/**
+ * Returns the QueryNode URL from the starting parameters.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failure.
+ */
+ function getQueryNodeUrl(res: express.Response): string {
+  if (res.locals.queryNodeUrl) {
+    return res.locals.queryNodeUrl
+  }
+
+  throw new Error('No Query Node URL loaded.')
 }

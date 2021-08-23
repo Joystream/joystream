@@ -1,4 +1,4 @@
-import { getRuntimeModel, Model } from './storageObligations'
+import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
 import logger from '../../services/logger'
 import {
   SyncTask,
@@ -30,7 +30,7 @@ export async function performSync(
 ): Promise<void> {
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
-    getRuntimeModel(queryNodeUrl, workerId),
+    getStorageObligationsFromRuntime(queryNodeUrl, workerId),
     getLocalFileNames(uploadDirectory),
   ])
 
@@ -78,7 +78,7 @@ async function getLocalFileNames(directory: string): Promise<string[]> {
 }
 
 async function getPrepareDownloadTasks(
-  model: Model,
+  model: DataObligations,
   addedCids: string[],
   uploadDirectory: string,
   taskSink: TaskSink
