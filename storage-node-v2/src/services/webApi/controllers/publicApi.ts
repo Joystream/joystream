@@ -25,6 +25,7 @@ import path from 'path'
 import send from 'send'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
+import { timeout } from 'promise-timeout'
 const fsPromises = fs.promises
 
 /**
@@ -301,9 +302,16 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
     throw new WebApiError('Invalid upload token request signature.', 401)
   }
 
-  const membership = await api.query.members.membershipById(tokenRequest.data.memberId)
-  if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
-    throw new WebApiError(`Provided controller account and member id don't match.`, 401)
+  const membershipPromise = api.query.members.membershipById(
+    tokenRequest.data.memberId
+  )
+
+  const membership = (await timeout(membershipPromise, 5000)) as Membership
+
+  if (
+    membership.controller_account.toString() !== tokenRequest.data.accountId
+  ) {
+    throw new Error(`Provided controller account and member id don't match.`)
   }
 }
 
