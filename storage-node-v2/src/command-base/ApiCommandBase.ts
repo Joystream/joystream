@@ -74,9 +74,13 @@ export default abstract class ApiCommandBase extends Command {
 
     // Some dev commands doesn't contain flags variables.
     const apiUrl = flags.apiUrl ?? 'ws://localhost:9944'
-    this.api = await createApi(apiUrl)
 
     logger.info(`Initialized runtime connection: ${apiUrl}`)
+    try {
+      this.api = await createApi(apiUrl)
+    } catch (err) {
+      logger.error(`Creating runtime API error: ${err}`)
+    }
 
     await this.getApi()
   }

@@ -24,8 +24,16 @@ export class ExtrinsicFailedError extends CLIError {}
  */
 export async function createApi(apiUrl: string): Promise<ApiPromise> {
   const provider = new WsProvider(apiUrl)
+  provider.on('error', (err) =>
+    logger.error(`Api provider error: ${err.target?._url}`)
+  )
 
-  return await ApiPromise.create({ provider, types })
+  const api = await ApiPromise.create({ provider, types })
+  api.on('error', (err) =>
+    logger.error(`Api promise error: ${err.target?._url}`)
+  )
+
+  return api
 }
 
 /**
