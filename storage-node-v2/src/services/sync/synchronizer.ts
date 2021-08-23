@@ -12,6 +12,7 @@ import fs from 'fs'
 const fsPromises = fs.promises
 
 // TODO: use caching
+// TODO: move data acquiring to the services
 export async function getLocalDataObjects(
   uploadDirectory: string
 ): Promise<string[]> {
