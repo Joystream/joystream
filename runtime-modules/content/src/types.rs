@@ -216,7 +216,7 @@ pub struct VideoRecord<
     SeriesId,
     AccountId,
     BlockNumber: BaseArithmetic + Copy,
-    MemberId: Default + Copy,
+    MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
     DAOId: Default + Copy,
     Balance,
@@ -236,7 +236,7 @@ impl<
         SeriesId: Clone,
         AccountId: PartialEq + Default + Clone,
         BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy + PartialEq,
+        MemberId: Default + Copy + PartialEq + Ord,
         CuratorGroupId: Default + Copy + PartialEq,
         DAOId: Default + Copy + PartialEq,
         Balance: Clone,
@@ -321,26 +321,25 @@ impl<
         )
     }
 
-    /// Ensure nft auction is not started
-    pub fn ensure_nft_auction_is_not_started<T: Trait>(&self) -> DispatchResult {
+    /// Ensure nft is not in auction state
+    pub fn ensure_nft_is_not_in_auction_state<T: Trait>(&self) -> DispatchResult {
         ensure!(
             !self.is_nft_auction_started(),
-            Error::<T>::AuctionAlreadyStarted
+            Error::<T>::AlreadyInAuctionState
         );
         Ok(())
     }
 
-    /// Check whether nft auction have been started
-    pub fn ensure_nft_auction_started<T: Trait>(&self) -> DispatchResult {
-        ensure!(
-            self.is_nft_auction_started(),
-            Error::<T>::AuctionDidNotStart
-        );
+    /// Ensure nft is in auction state
+    pub fn ensure_nft_auction_state<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.is_nft_auction_started(), Error::<T>::NotInAuctionState);
         Ok(())
     }
 
     /// Get nft auction record
-    pub fn get_nft_auction(&self) -> Option<AuctionRecord<AccountId, BlockNumber, Balance>> {
+    pub fn get_nft_auction(
+        &self,
+    ) -> Option<AuctionRecord<AccountId, BlockNumber, Balance, MemberId>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -353,7 +352,9 @@ impl<
     }
 
     /// Get nft auction record by reference
-    pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<AccountId, BlockNumber, Balance>> {
+    pub fn get_nft_auction_ref(
+        &self,
+    ) -> Option<&AuctionRecord<AccountId, BlockNumber, Balance, MemberId>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -368,7 +369,7 @@ impl<
     /// Get nft auction record by mutable reference
     pub fn get_nft_auction_ref_mut(
         &mut self,
-    ) -> Option<&mut AuctionRecord<AccountId, BlockNumber, Balance>> {
+    ) -> Option<&mut AuctionRecord<AccountId, BlockNumber, Balance, MemberId>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref mut auction),
             ..
@@ -396,7 +397,7 @@ impl<
     /// Sets nft transactional status to provided `Auction`
     pub fn set_auction_transactional_status(
         mut self,
-        auction: AuctionRecord<AccountId, BlockNumber, Balance>,
+        auction: AuctionRecord<AccountId, BlockNumber, Balance, MemberId>,
         auctioneer: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
         creator_royalty: Option<Royalty>,
     ) -> Self {

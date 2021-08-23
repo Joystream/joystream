@@ -42,7 +42,7 @@ impl<T: Trait> Module<T> {
 
     /// Safety/bound checks for auction parameters
     pub(crate) fn validate_auction_params(
-        auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>>,
+        auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, MemberId<T>>,
         video: &Video<T>,
     ) -> DispatchResult {
         if video.is_vnft_issued() {

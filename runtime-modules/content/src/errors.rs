@@ -156,5 +156,14 @@ decl_error! {
 
         // Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
+
+        // Nft is already in auction state
+        AlreadyInAuctionState,
+
+        // Nft is not in auction state
+        NotInAuctionState,
+
+        // MEmber is not allowed to participate in auction
+        MemberIsNotAllowedToParticipate
     }
 }

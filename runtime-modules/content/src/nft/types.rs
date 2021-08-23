@@ -16,18 +16,18 @@ pub type Royalty = Perbill;
 pub enum TransactionalStatus<
     AccountId,
     BlockNumber: BaseArithmetic + Copy,
-    MemberId: Default + Copy,
+    MemberId: Default + Copy + Ord,
     Balance,
 > {
     Idle,
     InitiatedTransferToMember(MemberId),
-    Auction(AuctionRecord<AccountId, BlockNumber, Balance>),
+    Auction(AuctionRecord<AccountId, BlockNumber, Balance, MemberId>),
 }
 
 impl<
         AccountId: Default,
         BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy,
+        MemberId: Default + Copy + Ord,
         Balance: Default,
     > Default for TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>
 {
@@ -57,7 +57,7 @@ impl<MemberId: Default + Copy, CuratorGroupId: Default + Copy, DAOId: Default + 
 pub struct OwnedNFT<
     AccountId,
     BlockNumber: BaseArithmetic + Copy,
-    MemberId: Default + Copy,
+    MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
     DAOId: Default + Copy,
     Balance,
@@ -72,7 +72,7 @@ pub struct OwnedNFT<
 impl<
         AccountId,
         BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy + PartialEq,
+        MemberId: Default + Copy + PartialEq + Ord,
         CuratorGroupId: Default + Copy + PartialEq,
         DAOId: Default + Copy + PartialEq,
         Balance,
@@ -112,7 +112,7 @@ impl<
 pub enum NFTStatus<
     AccountId,
     BlockNumber: BaseArithmetic + Copy,
-    MemberId: Default + Copy,
+    MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
     DAOId: Default + Copy,
     Balance,
@@ -124,7 +124,7 @@ pub enum NFTStatus<
 impl<
         AccountId,
         BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy,
+        MemberId: Default + Copy + Ord,
         CuratorGroupId: Default + Copy,
         DAOId: Default + Copy,
         Balance,
@@ -173,29 +173,34 @@ impl<AccountId, BlockNumber: BaseArithmetic + Copy, Balance> Bid<AccountId, Bloc
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionRecord<AccountId, BlockNumber: BaseArithmetic + Copy, Balance> {
+pub struct AuctionRecord<AccountId, BlockNumber: BaseArithmetic + Copy, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     pub auction_duration: BlockNumber,
     pub minimal_bid_step: Balance,
     pub last_bid: Option<Bid<AccountId, BlockNumber, Balance>>,
     pub starts_at: Option<BlockNumber>,
+    pub whitelist: Option<BTreeSet<MemberId>>,
 }
 
 impl<
         AccountId: Default + PartialEq,
         BlockNumber: BaseArithmetic + Copy + Default,
         Balance: Default + BaseArithmetic,
-    > AuctionRecord<AccountId, BlockNumber, Balance>
+        MemberId: Default + PartialEq + Ord,
+    > AuctionRecord<AccountId, BlockNumber, Balance, MemberId>
 {
     /// Create a new auction record with provided parameters
-    pub fn new<VideoId>(auction_params: AuctionParams<VideoId, BlockNumber, Balance>) -> Self {
+    pub fn new<VideoId>(
+        auction_params: AuctionParams<VideoId, BlockNumber, Balance, MemberId>,
+    ) -> Self {
         let AuctionParams {
             auction_duration,
             starting_price,
             buy_now_price,
             minimal_bid_step,
             starts_at,
+            whitelist,
             ..
         } = auction_params;
         Self {
@@ -205,6 +210,7 @@ impl<
             minimal_bid_step,
             last_bid: None,
             starts_at,
+            whitelist,
         }
     }
 
@@ -282,6 +288,17 @@ impl<
         );
         Ok(())
     }
+
+    /// If whitelist set, ensure provided member is authorized to make bids
+    pub fn ensure_whitelisted_participant<T: Trait>(&self, who: MemberId) -> DispatchResult {
+        if let Some(whitelist) = &self.whitelist {
+            ensure!(
+                whitelist.contains(&who),
+                Error::<T>::MemberIsNotAllowedToParticipate
+            );
+        }
+        Ok(())
+    }
 }
 
 /// Auction alias type for simplification.
@@ -289,12 +306,13 @@ pub type Auction<T> = AuctionRecord<
     <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::BlockNumber,
     BalanceOf<T>,
+    MemberId<T>,
 >;
 
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct AuctionParams<VideoId, BlockNumber, Balance> {
+pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
     pub video_id: VideoId,
     /// Should only be provided if nft is not issued yet
     pub creator_royalty: Option<Royalty>,
@@ -303,4 +321,5 @@ pub struct AuctionParams<VideoId, BlockNumber, Balance> {
     pub minimal_bid_step: Balance,
     pub buy_now_price: Option<Balance>,
     pub starts_at: Option<BlockNumber>,
+    pub whitelist: Option<BTreeSet<MemberId>>,
 }

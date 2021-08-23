@@ -948,7 +948,7 @@ decl_module! {
         pub fn start_video_auction(
             origin,
             auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>>,
+            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
         ) {
 
             let video_id = auction_params.video_id;
@@ -971,7 +971,7 @@ decl_module! {
             Self::validate_auction_params(&auction_params, &video)?;
 
             // Ensure nft auction is not started
-            video.ensure_nft_auction_is_not_started::<T>()?;
+            video.ensure_nft_is_not_in_auction_state::<T>()?;
 
             //
             // == MUTATION SAFE ==
@@ -1012,7 +1012,7 @@ decl_module! {
             )?;
 
             // Ensure auction for given video id exists
-            video.ensure_nft_auction_started::<T>()?;
+            video.ensure_nft_auction_state::<T>()?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
@@ -1060,7 +1060,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure auction for given video id exists
-            video.ensure_nft_auction_started::<T>()?;
+            video.ensure_nft_auction_state::<T>()?;
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
@@ -1068,6 +1068,9 @@ decl_module! {
 
                 // Ensure auction have been already started
                 auction.ensure_auction_started::<T>(current_block)?;
+
+                // Ensure participant have been already added to whitelist if set
+                auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
                 // Return if auction expired
                 let block_number = <frame_system::Module<T>>::block_number();
@@ -1137,7 +1140,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure auction for given video id exists
-            video.ensure_nft_auction_started::<T>()?;
+            video.ensure_nft_auction_state::<T>()?;
 
             // Ensure chosen auction mode is correct
             video.ensure_correct_auction_mode::<T>(&auction_mode)?;
@@ -1490,6 +1493,7 @@ decl_event!(
             <T as Trait>::VideoId,
             <T as frame_system::Trait>::BlockNumber,
             BalanceOf<T>,
+            MemberId<T>,
         >,
         Balance = BalanceOf<T>,
         NFTStatus = NFTStatus<
