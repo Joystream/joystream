@@ -5,9 +5,7 @@ import * as pulumi from '@pulumi/pulumi'
 import { configMapFromFile } from './configMap'
 import * as k8s from '@pulumi/kubernetes'
 import * as s3Helpers from './s3Helpers'
-import { CaddyServiceDeployment } from './caddy'
-import { workers } from 'cluster'
-// import * as fs from 'fs'
+import { CaddyServiceDeployment } from 'pulumi-common'
 
 require('dotenv').config()
 
@@ -33,10 +31,10 @@ if (isMinikube) {
   // joystreamAppsImage = pulumi.interpolate`joystream/apps`
 } else {
   // Create a VPC for our cluster.
-  const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2 })
+  const vpc = new awsx.ec2.Vpc('query-node-vpc', { numberOfAvailabilityZones: 2, numberOfNatGateways: 1 })
 
   // Create an EKS cluster with the default configuration.
-  const cluster = new eks.Cluster('eksctl-my-cluster', {
+  const cluster = new eks.Cluster('eksctl-query-node', {
     vpcId: vpc.id,
     subnetIds: vpc.publicSubnetIds,
     desiredCapacity: 3,
@@ -441,12 +439,23 @@ const service = new k8s.core.v1.Service(
 // Export the Service name and public LoadBalancer Endpoint
 export const serviceName = service.metadata.name
 
-// When "done", this will print the public IP.
-// export let serviceHostname: pulumi.Output<string>
+const caddyEndpoints = [
+  `/indexer/* {
+    uri strip_prefix /indexer
+    reverse_proxy query-node:4000
+}`,
+  `/server/* {
+    uri strip_prefix /server
+    reverse_proxy query-node:8081
+}`,
+]
 
-// serviceHostname = service.status.loadBalancer.ingress[0].hostname
 const lbReady = config.get('isLoadBalancerReady') === 'true'
-const caddy = new CaddyServiceDeployment('caddy-proxy', { lbReady, namespaceName: namespaceName }, resourceOptions)
+const caddy = new CaddyServiceDeployment(
+  'caddy-proxy',
+  { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
+  resourceOptions
+)
 
 export const endpoint1 = caddy.primaryEndpoint
 export const endpoint2 = caddy.secondaryEndpoint
