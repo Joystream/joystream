@@ -183,7 +183,7 @@ paths:
 
   /state/data-objects:
     get:
-      operationId: publicApi.getAllLocalDataObjects
+      operationId: stateApi.getAllLocalDataObjects
       description: Returns all local data objects.
       tags:
         - state
@@ -195,9 +195,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataObjectResponse'
 
-  /state/data-objects/{bagId}:
+  /state/bags/{bagId}/data-objects:
     get:
-      operationId: publicApi.getLocalDataObjectsByBagId
+      operationId: stateApi.getLocalDataObjectsByBagId
       description: Returns local data objects for the bag.
       tags:
         - state
@@ -211,7 +211,7 @@ paths:
 
   /version:
     get:
-      operationId: publicApi.getVersion
+      operationId: stateApi.getVersion
       description: Returns server version.
       tags:
         - state
@@ -277,7 +277,7 @@ components:
         version:
           type: string
         userAgent:
-          type: string    
+          type: string
     DataObjectResponse:
       type: array
       items:

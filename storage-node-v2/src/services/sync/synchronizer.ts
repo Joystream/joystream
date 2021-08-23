@@ -1,4 +1,7 @@
-import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
+import {
+  getStorageObligationsFromRuntime,
+  DataObligations,
+} from './storageObligations'
 import logger from '../../services/logger'
 import {
   SyncTask,

@@ -74,7 +74,6 @@ export default class Server extends ApiCommandBase {
     const queryNodeUrl = `http://${flags.queryNodeHost}/graphql`
     logger.info(`Query node endpoint set: ${queryNodeUrl}`)
 
-
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
@@ -108,7 +107,7 @@ export default class Server extends ApiCommandBase {
 		maxFileSize,
         this.config,
         queryNodeUrl,
-        elasticUrl,
+        elasticUrl
       )
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
