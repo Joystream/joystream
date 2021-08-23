@@ -114,8 +114,7 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
-    const api = getApi(res)
-    await verifyFileMimeType(fileObj.path)
+    verifyFileSize(fileObj.size)
 
     const hash = await hashFile(fileObj.path)
     const bagId = parseBagId(api, uploadRequest.bagId)
@@ -367,25 +366,6 @@ async function cleanupFileOnError(cleanupFileName: string, error: string): Promi
     } catch (err) {
       logger.error(`Cannot delete the file (${cleanupFileName}) on error: ${error}. IO error: ${err}`)
     }
-  }
-}
-
-/**
- * Verifies the mime type of the file by its content. It throws an exception
- * if the mime type differs from allowed list ('image/', 'video/', 'audio/').
- *
- * @param filePath - file path to detect mime types
- * @param error - external error
- * @returns void promise.
- */
-async function verifyFileMimeType(filePath: string): Promise<void> {
-  const allowedMimeTypes = ['image/', 'video/', 'audio/']
-
-  const fileInfo = await getFileInfo(filePath)
-  const correctMimeType = allowedMimeTypes.some((allowedType) => fileInfo.mimeType.startsWith(allowedType))
-
-  if (!correctMimeType) {
-    throw new WebApiError(`Incorrect mime type detected: ${fileInfo.mimeType}`, 400)
   }
 }
 
