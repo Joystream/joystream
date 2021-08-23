@@ -8,35 +8,24 @@ impl<T: Trait> Module<T> {
     pub(crate) fn authorize_auctioneer(
         origin: T::Origin,
         actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
         video: &Video<T>,
     ) -> Result<T::AccountId, DispatchError> {
         let account_id = ensure_signed(origin.clone())?;
 
         if video.is_vnft_issued() {
             // Only members are supposed to start auctions for already existing nfts
-            if let ContentActor::Member(member_id) = actor {
+            if let ChannelOwner::Member(member_id) = owner {
                 ensure_member_auth_success::<T>(member_id, &account_id)?;
 
-                video.ensure_vnft_ownership::<T>(actor)?;
+                video.ensure_vnft_ownership::<T>(owner)?;
             } else {
                 return Err(Error::<T>::ActorNotAuthorizedToManageAuction.into());
             }
         } else {
-            // TODO: Move to common pallet
-            Self::authorize_content_actor(origin, actor)?;
+            ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)?;
         }
         Ok(account_id)
-    }
-
-    /// Authorize content actor
-    pub(crate) fn authorize_content_actor(
-        origin: T::Origin,
-        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-    ) -> Result<(), Error<T>> {
-        // TODO: Move to common pallet
-        ensure_actor_authorized_to_create_channel::<T>(origin, actor)
-            .map_err(|_| Error::<T>::ActorNotAuthorizedToManageAuction)?;
-        Ok(())
     }
 
     /// Ensure auction participant has sufficient balance to make bid
@@ -179,7 +168,7 @@ impl<T: Trait> Module<T> {
             video.nft_status = NFTStatus::Owned(OwnedNFT {
                 is_issued: true,
                 transactional_status: TransactionalStatus::Idle,
-                owner: ContentActor::Member(owner),
+                owner: NFTOwner::Member(owner),
                 creator_royalty,
             })
         }
@@ -238,7 +227,7 @@ impl<T: Trait> Module<T> {
                 T::Currency::deposit_creating(&owner_account_id, last_bid_amount - auction_fee);
             }
 
-            *owner = ContentActor::Member(last_bidder);
+            *owner = NFTOwner::Member(last_bidder);
             *transactional_status = TransactionalStatus::Idle;
         }
     }
@@ -253,7 +242,6 @@ impl<T: Trait> Module<T> {
         auction_mode: AuctionMode,
     ) -> Video<T> {
         if let NFTStatus::Owned(OwnedNFT {
-            owner,
             transactional_status: TransactionalStatus::Auction(auction),
             ..
         }) = &video.nft_status
