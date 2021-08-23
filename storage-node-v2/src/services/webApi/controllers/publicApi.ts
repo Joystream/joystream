@@ -12,7 +12,6 @@ import {
   createNonce,
   getTokenExpirationTime,
 } from '../../../services/helpers/tokenNonceKeeper'
-import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
 import { parseBagId } from '../../helpers/bagTypes'
 import { BagId } from '@joystream/types/storage'
@@ -26,8 +25,7 @@ import send from 'send'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
 import { timeout } from 'promise-timeout'
-import _ from 'lodash'
-import { getStorageObligationsFromRuntime } from '../../sync/storageObligations'
+import { getUploadsDir, getWorkerId } from './common'
 const fsPromises = fs.promises
 
 /**
@@ -397,8 +395,6 @@ function sendResponseWithError(res: express.Response, err: Error, errorType: str
 function isNofileError(err: Error): boolean {
   return err.toString().includes('ENOENT')
 }
-
-/**
  * Get the status code by error.
  *
  * @param err - error
