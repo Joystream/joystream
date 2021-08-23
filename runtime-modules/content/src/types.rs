@@ -214,12 +214,12 @@ pub struct VideoUpdateParameters<ContentParameters> {
 pub struct VideoRecord<
     ChannelId,
     SeriesId,
-    AccountId,
+    AccountId: Default,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
     DAOId: Default + Copy,
-    Balance,
+    Balance: Default,
 > {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
@@ -239,7 +239,7 @@ impl<
         MemberId: Default + Copy + PartialEq + Ord,
         CuratorGroupId: Default + Copy + PartialEq,
         DAOId: Default + Copy + PartialEq,
-        Balance: Clone,
+        Balance: Clone + Default,
     >
     VideoRecord<
         ChannelId,
@@ -414,22 +414,6 @@ impl<
         self
     }
 
-    /// Completes vnft transfer
-    pub fn complete_vnft_transfer(
-        mut self,
-        new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
-    ) -> Self {
-        if let NFTStatus::Owned(OwnedNFT {
-            transactional_status: TransactionalStatus::InitiatedTransferToMember(..),
-            ref mut owner,
-            ..
-        }) = self.nft_status
-        {
-            *owner = NFTOwner::ChannelOwner(new_owner);
-        }
-        self.set_idle_transactional_status()
-    }
-
     /// Set nft transactional status to `Idle`
     pub fn set_idle_transactional_status(mut self) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
@@ -438,48 +422,35 @@ impl<
         self
     }
 
-    /// Set nft transactional status to `InitiatedTransferToMember`
-    pub fn set_pending_transfer_transactional_status(mut self, to: MemberId, price: Balance) -> Self {
+    /// Set nft transactional status to `InitiatedOfferToMember`
+    pub fn set_pending_offer_transactional_status(
+        mut self,
+        to: MemberId,
+        offer_details: Option<OfferDetails<AccountId, Balance>>,
+    ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status = TransactionalStatus::InitiatedTransferToMember(to, price);
+            owned_nft.transactional_status = TransactionalStatus::InitiatedOfferToMember(to, offer_details);
         }
         self
     }
 
     /// Whether pending tansfer exist
-    pub fn is_pending_transfer_transactional_status(&self) -> bool {
+    pub fn is_pending_offer_transactional_status(&self) -> bool {
         matches!(
             self.nft_status,
             NFTStatus::Owned(OwnedNFT {
-                transactional_status: TransactionalStatus::InitiatedTransferToMember(..),
+                transactional_status: TransactionalStatus::InitiatedOfferToMember(..),
                 ..
             })
         )
     }
 
-    /// Ensure vNFT has pending transfer
-    pub fn ensure_pending_transfer_exists<T: Trait>(&self) -> DispatchResult {
+    /// Ensure vNFT has pending offer
+    pub fn ensure_pending_offer_exists<T: Trait>(&self) -> DispatchResult {
         ensure!(
-            self.is_pending_transfer_transactional_status(),
+            self.is_pending_offer_transactional_status(),
             Error::<T>::PendingTransferDoesNotExist
         );
-        Ok(())
-    }
-
-    /// Ensure new pending transfer for given participant available to proceed
-    pub fn ensure_new_pending_transfer_available<T: Trait>(
-        &self,
-        participant: MemberId,
-    ) -> DispatchResult {
-        let is_available = matches!(
-            self.nft_status,
-            NFTStatus::Owned(OwnedNFT {
-                transactional_status: TransactionalStatus::InitiatedTransferToMember(to, _),
-                ..
-            }) if participant == to
-        );
-
-        ensure!(is_available, Error::<T>::NoIncomingTransfers);
         Ok(())
     }
 }

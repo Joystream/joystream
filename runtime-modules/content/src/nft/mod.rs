@@ -180,6 +180,50 @@ impl<T: Trait> Module<T> {
         ));
     }
 
+    /// Ensure new pending offer for given participant is available to proceed
+    pub fn ensure_new_pending_offer_available_to_proceed(
+        video: &Video<T>,
+        participant: T::MemberId,
+        participant_account_id: &T::AccountId,
+    ) -> DispatchResult {
+        match &video.nft_status {
+            NFTStatus::Owned(OwnedNFT {
+                transactional_status: TransactionalStatus::InitiatedOfferToMember(to, offer_details),
+                ..
+            }) if participant == *to => {
+                if let Some(offer_details) = offer_details {
+                    ensure!(
+                        T::Currency::can_slash(participant_account_id, offer_details.price),
+                        Error::<T>::InsufficientBalance
+                    );
+                }
+            }
+            _ => return Err(Error::<T>::NoIncomingTransfers.into()),
+        }
+        Ok(())
+    }
+
+    /// Completes vnft offer
+    pub fn complete_vnft_offer(mut video: Video<T>, new_owner_account_id: T::AccountId) -> Video<T> {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::InitiatedOfferToMember(to, offer_details),
+            ref mut owner,
+            ..
+        }) = &mut video.nft_status
+        {
+            if let Some(offer_details) = offer_details {
+
+                T::Currency::slash(&new_owner_account_id, offer_details.price);
+
+                T::Currency::deposit_creating(&offer_details.account_id, offer_details.price);
+            }
+          
+            *owner = NFTOwner::Member(*to);
+        }
+
+        video.set_idle_transactional_status()
+    }
+
     /// Complete vnft transfer
     pub(crate) fn complete_vnft_auction_transfer(
         video: &mut Video<T>,

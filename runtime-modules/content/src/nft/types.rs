@@ -10,17 +10,35 @@ pub type MemberId<T> = <T as membership::Trait>::MemberId;
 /// Owner royalty
 pub type Royalty = Perbill;
 
+/// Offer details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct OfferDetails<AccountId: Default, Balance: Default> {
+    pub account_id: AccountId,
+    pub price: Balance,
+}
+
+impl<AccountId: Default, Balance: Default> OfferDetails<AccountId, Balance> {
+    /// Creates new `OfferDetails` instance
+    pub fn new(account_id: AccountId, price: Balance) -> Self {
+        Self {
+            account_id,
+            price,
+        }
+    }
+}
+
 /// NFT transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum TransactionalStatus<
-    AccountId,
+    AccountId: Default,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
-    Balance,
+    Balance: Default,
 > {
     Idle,
-    InitiatedTransferToMember(MemberId, Option<Balance>),
+    InitiatedOfferToMember(MemberId, Option<OfferDetails<AccountId, Balance>>),
     Auction(AuctionRecord<AccountId, BlockNumber, Balance, MemberId>),
 }
 
@@ -55,12 +73,12 @@ impl<MemberId: Default + Copy, CuratorGroupId: Default + Copy, DAOId: Default + 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct OwnedNFT<
-    AccountId,
+    AccountId: Default,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
     DAOId: Default + Copy,
-    Balance,
+    Balance: Default,
 > {
     pub owner: NFTOwner<MemberId, CuratorGroupId, DAOId>,
     pub transactional_status: TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>,
@@ -70,12 +88,12 @@ pub struct OwnedNFT<
 }
 
 impl<
-        AccountId,
+        AccountId: Default,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq + Ord,
         CuratorGroupId: Default + Copy + PartialEq,
         DAOId: Default + Copy + PartialEq,
-        Balance,
+        Balance: Default,
     > OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     /// Whether content actor is nft owner
@@ -110,24 +128,24 @@ impl<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NFTStatus<
-    AccountId,
+    AccountId: Default,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
     DAOId: Default + Copy,
-    Balance,
+    Balance: Default,
 > {
     NoneIssued,
     Owned(OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>),
 }
 
 impl<
-        AccountId,
+        AccountId: Default,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + Ord,
         CuratorGroupId: Default + Copy,
         DAOId: Default + Copy,
-        Balance,
+        Balance: Default,
     > Default for NFTStatus<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     fn default() -> Self {

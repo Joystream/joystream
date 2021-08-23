@@ -1219,7 +1219,7 @@ decl_module! {
             Self::issue_vnft(&mut video, video_id, to, royalty, metadata);
         }
 
-        /// Offer vNFT 
+        /// Offer vNFT
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn offer_vnft(
             origin,
@@ -1246,8 +1246,14 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Set nft transactional status to InitiatedTransferToMember
-            video.set_pending_transfer_transactional_status(to, price);
+            // Set nft transactional status to InitiatedOfferToMember
+            let offer_details = if let Some(price) = price {
+                Some(OfferDetails::new(from_account_id, price))
+            } else {
+                None
+            };
+
+            video.set_pending_offer_transactional_status(to, offer_details);
 
             // Trigger event
             Self::deposit_event(RawEvent::TransferStarted(video_id, from, to));
@@ -1269,7 +1275,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure given pending transfer exists
-            video.ensure_pending_transfer_exists::<T>()?;
+            video.ensure_pending_offer_exists::<T>()?;
 
             // Ensure provided participant owns vnft
             video.ensure_vnft_ownership::<T>(&ChannelOwner::Member(participant_id))?;
@@ -1302,18 +1308,15 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure nft transactional status is set to InitiatedTransferToMember
-            video.ensure_pending_transfer_exists::<T>()?;
-
             // Ensure new pending transfer available to proceed
-            video.ensure_new_pending_transfer_available::<T>(participant_id)?;
+            Self::ensure_new_pending_offer_available_to_proceed(&video, participant_id, &participant_account_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Complete vnft transfer
-            let video = video.complete_vnft_transfer(ChannelOwner::Member(participant_id));
+            let video = Self::complete_vnft_offer(video, participant_account_id);
 
             VideoById::<T>::insert(video_id, video);
 
