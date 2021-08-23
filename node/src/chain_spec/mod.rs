@@ -302,105 +302,136 @@ pub fn testnet_genesis(
     }
 }
 
+fn development_config_genesis() -> GenesisConfig {
+	testnet_genesis(
+		vec![
+			authority_keys_from_seed("Alice"),
+		],
+		get_account_id_from_seed::<sr25519::Public>("Alice"),
+		None,
+		true,
+	)
+}
+
+/// Development config (single validator Alice)
+pub fn development_config() -> ChainSpec {
+	ChainSpec::from_genesis(
+		"Development",
+		"dev",
+		ChainType::Development,
+		development_config_genesis,
+		vec![],
+		None,
+		None,
+		None,
+		Default::default(),
+	)
+}
+
+fn local_testnet_genesis() -> GenesisConfig {
+	testnet_genesis(
+		vec![
+			authority_keys_from_seed("Alice"),
+			authority_keys_from_seed("Bob"),
+		],
+		get_account_id_from_seed::<sr25519::Public>("Alice"),
+		None,
+		false,
+	)
+}
+
+/// Local testnet config (multivalidator Alice + Bob)
+pub fn local_testnet_config() -> ChainSpec {
+	ChainSpec::from_genesis(
+		"Local Testnet",
+		"local_testnet",
+		ChainType::Local,
+		local_testnet_genesis,
+		vec![],
+		None,
+		None,
+		None,
+		Default::default(),
+	)
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::*;
-    use crate::service::{new_full_base, new_light_base, NewFullBase, NewLightBase};
-    use sc_service_test;
+	use super::*;
+	use crate::service::{new_full_base, new_light_base, NewFullBase};
+	use sc_service_test;
+	use sp_runtime::BuildStorage;
 
-    fn local_testnet_genesis_instant_single() -> GenesisConfig {
-        testnet_genesis(
-            vec![get_authority_keys_from_seed("Alice")],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![get_authority_keys_from_seed("Alice").0],
-            initial_members::none(),
-            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            vec![],
-        )
-    }
+	fn local_testnet_genesis_instant_single() -> GenesisConfig {
+		testnet_genesis(
+			vec![
+				authority_keys_from_seed("Alice"),
+			],
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			None,
+			false,
+		)
+	}
 
-    /// Local testnet config (single validator - Alice)
-    pub fn integration_test_config_with_single_authority() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis_instant_single,
-            vec![],
-            None,
-            None,
-            None,
-            Default::default(),
-        )
-    }
+	/// Local testnet config (single validator - Alice)
+	pub fn integration_test_config_with_single_authority() -> ChainSpec {
+		ChainSpec::from_genesis(
+			"Integration Test",
+			"test",
+			ChainType::Development,
+			local_testnet_genesis_instant_single,
+			vec![],
+			None,
+			None,
+			None,
+			Default::default(),
+		)
+	}
 
-    fn local_testnet_genesis() -> GenesisConfig {
-        testnet_genesis(
-            vec![
-                get_authority_keys_from_seed("Alice"),
-                get_authority_keys_from_seed("Bob"),
-            ],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![
-                get_authority_keys_from_seed("Alice").0,
-                get_authority_keys_from_seed("Bob").0,
-            ],
-            initial_members::none(),
-            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            vec![],
-        )
-    }
+	/// Local testnet config (multivalidator Alice + Bob)
+	pub fn integration_test_config_with_two_authorities() -> ChainSpec {
+		ChainSpec::from_genesis(
+			"Integration Test",
+			"test",
+			ChainType::Development,
+			local_testnet_genesis,
+			vec![],
+			None,
+			None,
+			None,
+			Default::default(),
+		)
+	}
 
-    /// Local testnet config (multivalidator Alice + Bob)
-    pub fn integration_test_config_with_two_authorities() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis,
-            vec![],
-            None,
-            None,
-            None,
-            Default::default(),
-        )
-    }
+	#[test]
+	#[ignore]
+	fn test_connectivity() {
+		sc_service_test::connectivity(
+			integration_test_config_with_two_authorities(),
+			|config| {
+				let NewFullBase { task_manager, client, network, transaction_pool, .. }
+					= new_full_base(config,|_, _| ())?;
+				Ok(sc_service_test::TestNetComponents::new(task_manager, client, network, transaction_pool))
+			},
+			|config| {
+				let (keep_alive, _, _, client, network, transaction_pool) = new_light_base(config)?;
+				Ok(sc_service_test::TestNetComponents::new(keep_alive, client, network, transaction_pool))
+			}
+		);
+	}
 
-    #[test]
-    #[ignore]
-    fn test_connectivity() {
-        sc_service_test::connectivity(
-            integration_test_config_with_two_authorities(),
-            |config| {
-                let NewFullBase {
-                    task_manager,
-                    client,
-                    network,
-                    transaction_pool,
-                    ..
-                } = new_full_base(config)?;
-                Ok(sc_service_test::TestNetComponents::new(
-                    task_manager,
-                    client,
-                    network,
-                    transaction_pool,
-                ))
-            },
-            |config| {
-                let NewLightBase {
-                    task_manager,
-                    client,
-                    network,
-                    transaction_pool,
-                    ..
-                } = new_light_base(config)?;
-                Ok(sc_service_test::TestNetComponents::new(
-                    task_manager,
-                    client,
-                    network,
-                    transaction_pool,
-                ))
-            },
-        );
-    }
+	#[test]
+	fn test_create_development_chain_spec() {
+		development_config().build_storage().unwrap();
+	}
+
+	#[test]
+	fn test_create_local_testnet_chain_spec() {
+		local_testnet_config().build_storage().unwrap();
+	}
+
+	#[test]
+	fn test_staging_test_net_chain_spec() {
+		staging_testnet_config().build_storage().unwrap();
+	}
 }
