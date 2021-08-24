@@ -48,6 +48,7 @@ fn create_thread_mock(
     let thread_id = Content::next_thread_id();
 
     let balance_before = balances::Module::<Test>::free_balance(sender);
+    println!("balance before:\t{:?}", balance_before);
 
     assert_eq!(
         Content::create_thread(Origin::signed(sender), member_id.clone(), params.clone()),
@@ -61,11 +62,12 @@ fn create_thread_mock(
             MetaEvent::content(RawEvent::ThreadCreated(thread_id, member_id, params))
         );
         assert_eq!(Content::next_thread_id(), thread_id + 1);
+
+        // verify balance deposit
         let thread = ThreadById::<Test>::get(thread_id);
-        assert_eq!(
-            balance_before - balances::Module::<Test>::free_balance(sender),
-            thread.bloat_bond,
-        );
+        let balance_after = balances::Module::<Test>::free_balance(sender);
+        println!("balance after:\t{:?}", balance_after);
+        assert_eq!(balance_before - balance_after, thread.bloat_bond,);
     }
     thread_id
 }
@@ -129,6 +131,7 @@ fn create_post_mock(
     let post_id = Content::next_post_id();
 
     let balance_before = balances::Module::<Test>::free_balance(sender);
+    let thread = ThreadById::<Test>::get(thread_id);
 
     assert_eq!(
         Content::create_post(
@@ -168,42 +171,49 @@ fn create_post_mock(
 
 fn delete_post_mock(
     sender: <Test as frame_system::Trait>::AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    actor: DeletionActor<Test>,
     thread_id: <Test as Trait>::ThreadId,
     post_id: <Test as Trait>::PostId,
+    operation: DeleteOperation,
     result: DispatchResult,
 ) {
-    let mut balance_before = 0;
-    if let ContentActor::Member(_) = actor {
-        balance_before = balances::Module::<Test>::free_balance(sender);
-    }
+    let balance_before = match actor {
+        DeletionActor::<Test>::Author(_) => balances::Module::<Test>::free_balance(sender),
+        _ => <Test as balances::Trait>::Balance::zero(),
+    };
 
     let bond = Content::post_by_id(thread_id.clone(), post_id.clone()).bloat_bond;
 
-    // assert_eq!(
-    //     Content::delete_post(
-    //         Origin::signed(sender),
-    //         actor.clone(),
-    //         thread_id.clone(),
-    //         post_id.clone(),
-    //     ),
-    //     result
-    // );
+    assert_eq!(
+        Content::delete_post(
+            Origin::signed(sender),
+            actor.clone(),
+            thread_id,
+            post_id,
+            operation.clone(),
+        ),
+        result
+    );
 
     if result.is_ok() {
         // 1. Deposit event
-        // assert_eq!(
-        //     System::events().last().unwrap().event,
-        //     MetaEvent::content(RawEvent::PostDeleted(post_id, actor, thread_id))
-        // );
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::PostDeleted(
+                post_id,
+                thread_id,
+                actor.clone(),
+                operation.clone(),
+            ))
+        );
 
         // 2. Post Author is refunded
-        if let ContentActor::Member(_) = actor {
+        if let DeletionActor::<Test>::Author(_) = actor {
             assert_eq!(
                 balances::Module::<Test>::free_balance(sender) - balance_before,
                 bond
-            );
-        }
+            )
+        };
     }
 }
 
@@ -303,7 +313,7 @@ fn react_thread_mock(
 #[test]
 fn invalid_member_cannot_create_thread() {
     with_default_mock_builder(|| {
-        func(UNKNOWN_ORIGIN);
+        func(FIRST_MEMBER_ORIGIN);
         let channel_id = create_channel_mock(
             SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
@@ -469,11 +479,11 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
         let _ = create_post_mock(
             FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
-            INVALID_THREAD,
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
             },
+            INVALID_THREAD,
             Err(Error::<Test>::ThreadDoesNotExist.into()),
         );
 
@@ -496,8 +506,8 @@ fn cannot_create_post_in_invalid_or_immutable_thread() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Err(Error::<Test>::SubredditCannotBeModified.into()),
         );
     })
@@ -537,8 +547,8 @@ fn non_authorized_or_invalid_member_cannot_create_post() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Err(Error::<Test>::MemberAuthFailed.into()),
         );
     })
@@ -578,8 +588,8 @@ fn non_author_or_invalid_member_cannot_edit_post() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
@@ -643,11 +653,12 @@ fn cannot_edit_invalid_post() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
+        // cannot edit invalid post/thread combination
         let _ = edit_post_mock(
             FIRST_MEMBER_ORIGIN,
             FIRST_MEMBER_ID,
@@ -669,7 +680,7 @@ fn cannot_edit_invalid_post() {
                 text: None,
                 mutable: None,
             },
-            Err(Error::<Test>::ThreadDoesNotExist.into()),
+            Err(Error::<Test>::PostDoesNotExist.into()),
         );
     })
 }
@@ -707,25 +718,27 @@ fn non_author_or_invalid_member_cannot_delete_post() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
         let _ = delete_post_mock(
             UNKNOWN_ORIGIN,
-            ContentActor::Member(NOT_FORUM_MEMBER_ID),
+            DeletionActor::<Test>::Author(NOT_FORUM_MEMBER_ID),
             thread_id,
             post_id,
-            Err(Error::<Test>::ActorNotAuthorized.into()),
+            DeleteOperation::Delete,
+            Err(Error::<Test>::MemberAuthFailed.into()),
         );
 
         let _ = delete_post_mock(
             THIRD_MEMBER_ORIGIN,
-            ContentActor::Member(THIRD_MEMBER_ID),
+            DeletionActor::<Test>::Author(THIRD_MEMBER_ID),
             thread_id,
             post_id,
-            Err(Error::<Test>::ActorNotAuthorized.into()),
+            DeleteOperation::Delete,
+            Err(Error::<Test>::ActorNotAnAuthor.into()),
         );
     })
 }
@@ -763,24 +776,26 @@ fn cannot_delete_invalid_post() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
         let _ = delete_post_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DeletionActor::<Test>::Author(FIRST_MEMBER_ID),
             thread_id,
             INVALID_POST,
+            DeleteOperation::Delete,
             Err(Error::<Test>::PostDoesNotExist.into()),
         );
         let _ = delete_post_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DeletionActor::<Test>::Author(FIRST_MEMBER_ID),
             INVALID_THREAD,
             post_id,
-            Err(Error::<Test>::ThreadDoesNotExist.into()),
+            DeleteOperation::Delete,
+            Err(Error::<Test>::PostDoesNotExist.into()),
         );
     })
 }
@@ -818,16 +833,17 @@ fn verify_delete_post_effects() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
         let _ = delete_post_mock(
             FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            DeletionActor::<Test>::Author(FIRST_MEMBER_ID),
             thread_id,
             post_id,
+            DeleteOperation::Delete,
             Ok(()),
         );
     })
@@ -865,8 +881,8 @@ fn invalid_forum_user_cannot_react_post_or_thread() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
@@ -923,8 +939,8 @@ fn verify_react_post_and_thread_effects() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 
@@ -952,7 +968,7 @@ fn verify_react_post_and_thread_effects() {
 fn cannot_add_or_remove_invalid_moderator() {
     with_default_mock_builder(|| {
         func(FIRST_MEMBER_ORIGIN);
-        let channel_id = create_channel_mock(
+        let _channel_id = create_channel_mock(
             SECOND_MEMBER_ORIGIN,
             ContentActor::Member(SECOND_MEMBER_ID),
             ChannelCreationParameters {
@@ -1044,8 +1060,8 @@ fn verify_delete_thread_effects() {
             PostCreationParameters {
                 text: vec![1, 2],
                 mutable: true,
-                thread_id: thread_id,
             },
+            thread_id,
             Ok(()),
         );
 

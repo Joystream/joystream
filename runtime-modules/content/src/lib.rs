@@ -629,6 +629,16 @@ type DeletionActor<T> = DeletionActor_<
     <T as MembershipTypes>::MemberId,
 >;
 
+/// Represents a deletion actor
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum PostOrThreadId_<PostId, ThreadId> {
+    Post(PostId),
+    Thread(ThreadId),
+}
+
+type PostOrThreadId<T> = PostOrThreadId_<<T as Trait>::PostId, <T as Trait>::ThreadId>;
+
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
         pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -1468,24 +1478,36 @@ decl_module! {
 
          let sender = ensure_signed(origin)?;
 
-            // ensure that signer is member_id and member_id refers to a valid member
-            Self::ensure_is_forum_user(&sender, &member_id)?;
+         // ensure that signer is member_id and member_id refers to a valid member
+         Self::ensure_is_forum_user(&sender, &member_id)?;
 
-            // ensure subreddit is mutable
-            Self::ensure_subreddit_is_mutable(&params.channel_id)?;
+         // ensure channel exists and subreddit is mutable
+         let channel = Self::ensure_channel_exists(&params.channel_id)?;
+         ensure!(
+             channel.subreddit_mutable,
+             Error::<T>::SubredditCannotBeModified
+         );
 
-            // compute bloat bond for thread
-            let thread_bloat_bond = Self::compute_bloat_bond(
+         // compute bloat bond for thread
+         let thread_bloat_bond = Self::compute_bloat_bond(
                 std::mem::size_of::<Thread<T>>(),
                 <T as balances::Trait>::Balance::one()
-            );
+         );
+
+
+        let thread_id = <NextThreadId<T>>::get();
+        let post_id = <NextPostId<T>>::get();
+
+        Self::transfer_to_state_cleanup_treasury_account(
+            thread_bloat_bond,
+            PostOrThreadId::<T>::Thread(thread_id),
+            &sender,
+        )?;
+
 
             //
             // == MUTATION SAFE ==
             //
-
-           let thread_id = <NextThreadId<T>>::get();
-           let post_id = <NextPostId<T>>::get();
 
             Self::create_thread_inner(
                member_id.clone(),
@@ -1617,18 +1639,18 @@ decl_module! {
             <T as balances::Trait>::Balance::one(),
         );
 
+        let post_id = <NextPostId<T>>::get();
+
         // transfer bond to threasury account
         Self::transfer_to_state_cleanup_treasury_account(
             init_bloat_bond,
-            thread_id,
+            PostOrThreadId::<T>::Post(post_id),
             &sender,
         )?;
 
         //
         // == MUTATION SAFE ==
         //
-
-        let post_id = <NextPostId<T>>::get();
 
         // Add new post
         Self::create_post_inner(
@@ -2072,10 +2094,16 @@ impl<T: Trait> Module<T> {
 
     fn transfer_to_state_cleanup_treasury_account(
         amount: <T as balances::Trait>::Balance,
-        thread_id: T::ThreadId,
+        id: PostOrThreadId<T>,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account = match id {
+            PostOrThreadId::<T>::Thread(thread_id) => {
+                T::ModuleId::get().into_sub_account(thread_id)
+            }
+            PostOrThreadId::<T>::Post(post_id) => T::ModuleId::get().into_sub_account(post_id),
+        };
+
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
