@@ -57,6 +57,7 @@ const numberOfValidators = config.getNumber('numberOfValidators') || 1
 const chainDataPath = '/chain-data'
 const chainSpecPath = `${chainDataPath}/chainspec-raw.json`
 const nodeImage = config.get('nodeImage') || 'joystream/node:latest'
+const encryptKey = config.get('encryptionKey') || '1234'
 
 const subkeyContainers = getSubkeyContainers(numberOfValidators, chainDataPath)
 let pvcClaimName: pulumi.Output<any>
@@ -178,6 +179,18 @@ const chainDataPrepareJob = new k8s.batch.v1.Job(
                 },
               ],
             },
+            {
+              name: '7z',
+              image: 'danielwhatmuff/7z-docker',
+              command: ['/bin/sh', '-c'],
+              args: [`7z a -p${encryptKey} ${chainDataPath}/chain-data.7z ${chainDataPath}/*`],
+              volumeMounts: [
+                {
+                  name: 'config-data',
+                  mountPath: chainDataPath,
+                },
+              ],
+            },
           ],
           volumes: [
             {
@@ -289,6 +302,7 @@ const service = new k8s.core.v1.Service(
       name: 'node-network',
     },
     spec: {
+      type: isMinikube ? 'NodePort' : 'ClusterIP',
       ports: [
         { name: 'port-1', port: 9944 },
         { name: 'port-2', port: 9933 },
@@ -313,11 +327,16 @@ const caddyEndpoints = [
 }`,
 ]
 
-const caddy = new CaddyServiceDeployment(
-  'caddy-proxy',
-  { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
-  resourceOptions
-)
+export let endpoint1: pulumi.Output<string>
+export let endpoint2: pulumi.Output<string>
 
-export const endpoint1 = caddy.primaryEndpoint
-export const endpoint2 = caddy.secondaryEndpoint
+if (!isMinikube) {
+  const caddy = new CaddyServiceDeployment(
+    'caddy-proxy',
+    { lbReady, namespaceName: namespaceName, isMinikube, caddyEndpoints },
+    resourceOptions
+  )
+
+  endpoint1 = pulumi.interpolate`${caddy.primaryEndpoint}`
+  endpoint2 = pulumi.interpolate`${caddy.secondaryEndpoint}`
+}
