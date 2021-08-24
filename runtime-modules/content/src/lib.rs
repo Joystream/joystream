@@ -1488,7 +1488,7 @@ decl_module! {
              Error::<T>::SubredditCannotBeModified
          );
 
-         // compute bloat bond for thread
+         // compute bloat bond for thread, cleanup cost = 1
          let thread_bloat_bond = Self::compute_bloat_bond(
                 std::mem::size_of::<Thread<T>>(),
                 <T as balances::Trait>::Balance::one()
@@ -1633,7 +1633,7 @@ decl_module! {
         let channel_id = Self::ensure_thread_exists(&thread_id)?.channel_id;
         Self::ensure_subreddit_is_mutable(&channel_id)?;
 
-        // computing text hash and post price
+        // computing text hash and post price, cleanup cost = 1
         let init_bloat_bond = Self::compute_bloat_bond(
             std::mem::size_of::<Post<T>>(),
             <T as balances::Trait>::Balance::one(),
