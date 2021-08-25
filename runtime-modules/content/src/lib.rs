@@ -1100,7 +1100,6 @@ decl_module! {
                     // Unreserve previous bidder balance
                     T::Currency::unreserve(&last_bid.bidder, last_bid.amount);
 
-
                     // Do not charge more then buy now
                     let bid = match auction.buy_now_price {
                         Some(buy_now_price) if bid >= buy_now_price => buy_now_price,
@@ -1239,7 +1238,7 @@ decl_module! {
             // Ensure from is vnft owner
             video.ensure_vnft_ownership::<T>(&ChannelOwner::Member(from))?;
 
-            // Ensure there is no pending transfer or existing auction for given nft.
+            // Ensure there is no pending offer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
 
             //
@@ -1276,7 +1275,7 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure given pending transfer exists
+            // Ensure given pending offer exists
             video.ensure_pending_offer_exists::<T>()?;
 
             // Ensure provided participant owns vnft
@@ -1286,7 +1285,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Cancel pending transfer
+            // Cancel pending offer
             let video = video.set_idle_transactional_status();
 
             VideoById::<T>::insert(video_id, video);
@@ -1310,14 +1309,14 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure new pending transfer available to proceed
+            // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&video, participant_id, &participant_account_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Complete vnft transfer
+            // Complete vnft offer
             let video = Self::complete_vnft_offer(video, participant_account_id);
 
             VideoById::<T>::insert(video_id, video);
@@ -1358,7 +1357,38 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::SellOrderMade(video_id, participant_id, price));
+            Self::deposit_event(RawEvent::VNFTSellOrderMade(video_id, participant_id, price));
+        }
+
+        /// Buy vNFT
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn buy_vnft(
+            origin,
+            video_id: T::VideoId,
+            participant_id: MemberId<T>,
+        ) {
+
+            // Authorize participant under given member id
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure given participant can buy vnft now
+            Self::ensure_can_buy_now(&video, &participant_account_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Buy vnft
+            let video = Self::buy_now(video, participant_account_id, participant_id);
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::VNFTBought(video_id, participant_id));
         }
     }
 }
@@ -1681,6 +1711,7 @@ decl_event!(
         OfferStarted(VideoId, MemberId, MemberId, Option<Balance>),
         OfferCancelled(VideoId, MemberId),
         OfferAccepted(VideoId, MemberId),
-        SellOrderMade(VideoId, MemberId, Balance),
+        VNFTSellOrderMade(VideoId, MemberId, Balance),
+        VNFTBought(VideoId, MemberId),
     }
 );

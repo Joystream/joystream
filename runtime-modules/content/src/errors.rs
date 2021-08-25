@@ -163,7 +163,10 @@ decl_error! {
         // Nft is not in auction state
         NotInAuctionState,
 
-        // MEmber is not allowed to participate in auction
-        MemberIsNotAllowedToParticipate
+        // Member is not allowed to participate in auction
+        MemberIsNotAllowedToParticipate,
+
+        // Given video nft is not in buy now state
+        VNFTNotInBuyNowState,
     }
 }
