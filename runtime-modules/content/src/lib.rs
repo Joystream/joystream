@@ -1256,7 +1256,7 @@ decl_module! {
             video.set_pending_offer_transactional_status(to, offer_details);
 
             // Trigger event
-            Self::deposit_event(RawEvent::TransferStarted(video_id, from, to));
+            Self::deposit_event(RawEvent::OfferStarted(video_id, from, to, price));
         }
 
         /// Cancel vNFT offer
@@ -1290,7 +1290,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::TransferCancelled(video_id, participant_id));
+            Self::deposit_event(RawEvent::OfferCancelled(video_id, participant_id));
         }
 
         /// Accept incoming vNFT offer
@@ -1321,7 +1321,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::TransferAccepted(video_id, participant_id));
+            Self::deposit_event(RawEvent::OfferAccepted(video_id, participant_id));
         }
     }
 }
@@ -1641,8 +1641,8 @@ decl_event!(
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionCancelled(ContentActor, VideoId),
         AuctionCompleted(VideoId, Bid),
-        TransferStarted(VideoId, MemberId, MemberId),
-        TransferCancelled(VideoId, MemberId),
-        TransferAccepted(VideoId, MemberId),
+        OfferStarted(VideoId, MemberId, MemberId, Option<Balance>),
+        OfferCancelled(VideoId, MemberId),
+        OfferAccepted(VideoId, MemberId),
     }
 );

@@ -429,7 +429,8 @@ impl<
         offer_details: Option<OfferDetails<AccountId, Balance>>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status = TransactionalStatus::InitiatedOfferToMember(to, offer_details);
+            owned_nft.transactional_status =
+                TransactionalStatus::InitiatedOfferToMember(to, offer_details);
         }
         self
     }

@@ -204,7 +204,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// Completes vnft offer
-    pub fn complete_vnft_offer(mut video: Video<T>, new_owner_account_id: T::AccountId) -> Video<T> {
+    pub fn complete_vnft_offer(
+        mut video: Video<T>,
+        new_owner_account_id: T::AccountId,
+    ) -> Video<T> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::InitiatedOfferToMember(to, offer_details),
             ref mut owner,
@@ -212,12 +215,11 @@ impl<T: Trait> Module<T> {
         }) = &mut video.nft_status
         {
             if let Some(offer_details) = offer_details {
-
                 T::Currency::slash(&new_owner_account_id, offer_details.price);
 
                 T::Currency::deposit_creating(&offer_details.account_id, offer_details.price);
             }
-          
+
             *owner = NFTOwner::Member(*to);
         }
 

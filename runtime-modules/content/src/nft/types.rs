@@ -21,10 +21,7 @@ pub struct OfferDetails<AccountId: Default, Balance: Default> {
 impl<AccountId: Default, Balance: Default> OfferDetails<AccountId, Balance> {
     /// Creates new `OfferDetails` instance
     pub fn new(account_id: AccountId, price: Balance) -> Self {
-        Self {
-            account_id,
-            price,
-        }
+        Self { account_id, price }
     }
 }
 
@@ -54,6 +51,7 @@ impl<
     }
 }
 
+/// enum, representing NFT owner
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NFTOwner<MemberId: Default + Copy, CuratorGroupId: Default + Copy, DAOId: Default + Copy> {
