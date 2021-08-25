@@ -6,7 +6,10 @@ import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
-import { getNonce } from './transactionNonceKeeper'
+import {
+  getTransactionNonce,
+  resetTransactionNonceCache,
+} from './transactionNonceKeeper'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
@@ -156,22 +159,26 @@ export async function sendAndFollowNamedTx<T>(
   sudoCall = false,
   eventParser: ((result: ISubmittableResult) => T) | null = null
 ): Promise<T | void> {
-  logger.debug(`Sending ${tx.method.section}.${tx.method.method} extrinsic...`)
+  try {
+    logger.debug(`Sending ${tx.method.section}.${tx.method.method} extrinsic...`)
+    if (sudoCall) {
+      tx = api.tx.sudo.sudo(tx)
+    }
+    const nonce = await getTransactionNonce(api, account)
 
-  if (sudoCall) {
-    tx = api.tx.sudo.sudo(tx)
+    const result = await sendExtrinsic(api, account, tx, nonce)
+    let eventResult: T | void
+    if (eventParser) {
+      eventResult = eventParser(result)
+    }
+    logger.debug(`Extrinsic successful!`)
+  
+    return eventResult
+
+  } catch (err) {
+    await resetTransactionNonceCache()
+    throw err
   }
-  const nonce = await getNonce(api, account)
-
-  const result = await sendExtrinsic(api, account, tx, nonce)
-
-  let eventResult: T | void
-  if (eventParser) {
-    eventResult = eventParser(result)
-  }
-  logger.debug(`Extrinsic successful!`)
-
-  return eventResult
 }
 
 /**
