@@ -6,17 +6,29 @@ import superagent from 'superagent'
 import urljoin from 'url-join'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../services/logger'
-import { getAvailableData } from './remoteStorageData'
-import { TaskSink } from './workingProcess'
 import _ from 'lodash'
-
+import { getRemoteDataObjects } from './remoteStorageData'
+import { TaskSink } from './workingProcess'
 const fsPromises = fs.promises
 
+/**
+ * Defines syncronization task abstraction.
+ */
 export interface SyncTask {
+  /**
+   * Returns human-friendly task description.
+   */
   description(): string
+
+  /**
+   * Performs the task.
+   */
   execute(): Promise<void>
 }
 
+/**
+ * Deletes the file in the local storage by its name.
+ */
 export class DeleteLocalFileTask implements SyncTask {
   uploadsDirectory: string
   filename: string
@@ -36,6 +48,9 @@ export class DeleteLocalFileTask implements SyncTask {
   }
 }
 
+/**
+ * Download the file from the remote storage node to the local storage.
+ */
 export class DownloadFileTask implements SyncTask {
   id: string
   uploadsDirectory: string
@@ -82,6 +97,9 @@ export class DownloadFileTask implements SyncTask {
   }
 }
 
+/**
+ * Resolve remote storage node URLs and creates file downloading tasks (DownloadFileTask).
+ */
 export class PrepareDownloadFileTask implements SyncTask {
   cid: string
   operatorUrlCandidates: string[]
@@ -96,9 +114,7 @@ export class PrepareDownloadFileTask implements SyncTask {
   ) {
     this.cid = cid
     this.taskSink = taskSink
-    // TODO: remove heavy operation
-    // Cloning is critical here. The list will be modified.
-    this.operatorUrlCandidates = _.cloneDeep(operatorUrlCandidates)
+    this.operatorUrlCandidates = operatorUrlCandidates
     this.uploadsDirectory = uploadsDirectory
   }
 
@@ -107,18 +123,29 @@ export class PrepareDownloadFileTask implements SyncTask {
   }
 
   async execute(): Promise<void> {
-    while (!_.isEmpty(this.operatorUrlCandidates)) {
-      const randomUrl = _.sample(this.operatorUrlCandidates)
-      if (!randomUrl) {
-        break // cannot get random URL
+    // Create an array of operator URL indices to maintain a random URL choice
+    // cannot use the original array because we shouldn't modify the original data.
+    // And cloning it seems like a heavy operation.
+    const operatorUrlIndices: number[] = [
+      ...Array(this.operatorUrlCandidates.length).keys(),
+    ]
+
+    while (!_.isEmpty(operatorUrlIndices)) {
+      const randomUrlIndex = _.sample(operatorUrlIndices)
+      if (randomUrlIndex === undefined) {
+        logger.warn(`Sync - cannot get a random URL`)
+        break
       }
 
+      const randomUrl = this.operatorUrlCandidates[randomUrlIndex]
+      logger.debug(`Sync - random storage node URL was chosen ${randomUrl}`)
+
       // Remove random url from the original list.
-      _.remove(this.operatorUrlCandidates, (url) => url === randomUrl)
+      _.remove(operatorUrlIndices, (index) => index === randomUrlIndex)
 
       try {
         const chosenBaseUrl = randomUrl
-        const remoteOperatorCids: string[] = await getAvailableData(
+        const remoteOperatorCids: string[] = await getRemoteDataObjects(
           chosenBaseUrl
         )
 

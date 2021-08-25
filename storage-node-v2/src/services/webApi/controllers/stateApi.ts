@@ -1,11 +1,8 @@
 import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import * as express from 'express'
 import _ from 'lodash'
-import {
-  getStorageObligationsFromRuntime,
-  DataObligations,
-} from '../../sync/storageObligations'
-import { getUploadsDir, getWorkerId } from './common'
+import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
+import { getUploadsDir } from './common'
 
 import NodeCache from 'node-cache'
 
@@ -52,19 +49,14 @@ export async function getLocalDataObjectsByBagId(
   try {
     const uploadsDir = getUploadsDir(res)
 
-    const workerId = getWorkerId(res)
     const queryNodeUrl = getQueryNodeUrl(res)
     const bagId = getBagId(req)
 
     // TODO: Introduce dedicated QueryNode method.
-    const [cids, obligations] = await Promise.all([
+    const [cids, requiredCids] = await Promise.all([
       getCachedLocalDataObjects(uploadsDir),
-      getCachedDataObjectsObligations(queryNodeUrl, workerId),
+      getCachedDataObjectsObligations(queryNodeUrl, bagId),
     ])
-
-    const requiredCids = obligations.dataObjects
-      .filter((obj) => obj.bagId === bagId)
-      .map((obj) => obj.cid)
 
     const localDataForBag = _.intersection(cids, requiredCids)
 
@@ -174,20 +166,15 @@ async function getCachedLocalDataObjects(
  */
 async function getCachedDataObjectsObligations(
   queryNodeUrl: string,
-  workerId: number
-): Promise<DataObligations> {
-  const emptyObligations = {
-    bags: [],
-    storageBuckets: [],
-    dataObjects: [],
-  }
+  bagId: string
+): Promise<string[]> {
   const entryName = 'data_object_obligations'
 
   if (!dataCache.has(entryName)) {
-    const data = await getStorageObligationsFromRuntime(queryNodeUrl, workerId)
+    const data = await getDataObjectIDsByBagId(queryNodeUrl, bagId)
 
     dataCache.set(entryName, data)
   }
 
-  return dataCache.get(entryName) ?? emptyObligations
+  return dataCache.get(entryName) ?? []
 }

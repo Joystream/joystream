@@ -129,7 +129,8 @@
     "format": "prettier ./src --write",
     "lint": "eslint ./src --ext .ts",
     "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021",
-    "generate:types:graphql": "yarn graphql-codegen -c ./src/services/queryNode/codegen.yml"
+    "generate:types:graphql": "yarn graphql-codegen -c ./src/services/queryNode/codegen.yml",
+    "ensure": "yarn format && yarn lint --fix && yarn build"
   },
   "types": "lib/index.d.ts"
 }

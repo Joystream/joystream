@@ -64,6 +64,16 @@ export async function getStorageObligationsFromRuntime(
   return model
 }
 
+export async function getDataObjectIDsByBagId(
+  queryNodeUrl: string,
+  bagId: string
+): Promise<string[]> {
+  const api = new QueryNodeApi(queryNodeUrl)
+  const dataObjects = await getAllAssignedDataObjects(api, [bagId])
+
+  return dataObjects.map((obj) => obj.ipfsHash)
+}
+
 async function getAllBuckets(
   api: QueryNodeApi
 ): Promise<StorageBucketDetailsFragment[]> {

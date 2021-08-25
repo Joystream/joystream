@@ -26,6 +26,10 @@ import {
   StorageBagWhereInput,
 } from './generated/schema'
 
+/**
+ * Query node class helper. Incapsulates custom queries.
+ *
+ */
 export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
 
@@ -39,7 +43,13 @@ export class QueryNodeApi {
     })
   }
 
-  // Get entity by unique input
+  /**
+   * Get entity by unique input
+   *
+   * @param query - actual query
+   * @param variables - query parameters
+   * @param resultKey - hepls result parsing
+   */
   protected async uniqueEntityQuery<
     QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
     VariablesT extends Record<string, unknown>
@@ -80,7 +90,13 @@ export class QueryNodeApi {
     return result.data[resultKey][0]
   }
 
-  // Query-node: get multiple entities
+  /**
+   * Query-node: get multiple entities
+   *
+   * @param query - actual query
+   * @param variables - query parameters
+   * @param resultKey - hepls result parsing
+   */
   protected async multipleEntitiesQuery<
     QueryT extends { [k: string]: unknown[] },
     VariablesT extends Record<string, unknown>
@@ -100,6 +116,12 @@ export class QueryNodeApi {
     return result.data[resultKey]
   }
 
+  /**
+   * Returns storage bucket info by pages.
+   *
+   * @param offset - starting record of the page
+   * @param limit - page size
+   */
   public async getStorageBucketDetails(
     offset: number,
     limit: number
@@ -116,6 +138,13 @@ export class QueryNodeApi {
     return result
   }
 
+  /**
+   * Returns storage bag info by pages for the given buckets.
+   *
+   * @param bucketIds - query filter: bucket IDs
+   * @param offset - starting record of the page
+   * @param limit - page size
+   */
   public async getStorageBagsDetails(
     bucketIds: string[],
     offset: number,
@@ -134,6 +163,13 @@ export class QueryNodeApi {
     return result
   }
 
+  /**
+   * Returns data objects info by pages for the given bags.
+   *
+   * @param bagIds - query filter: bag IDs
+   * @param offset - starting record of the page
+   * @param limit - page size
+   */
   public async getDataObjectDetails(
     bagIds: string[],
     offset: number,
