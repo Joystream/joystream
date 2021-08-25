@@ -16,6 +16,7 @@ fn lead_cannot_create_channel() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -38,6 +39,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -55,6 +57,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -69,6 +72,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -84,6 +88,7 @@ fn curator_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                subreddit_mutable: true,
             }
         ));
 
@@ -99,11 +104,15 @@ fn curator_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ))
         );
@@ -117,6 +126,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                subreddit_mutable: None,
             }
         ));
 
@@ -129,6 +139,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                subreddit_mutable: None,
             }
         ));
     })
@@ -149,6 +160,7 @@ fn member_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ),
             Error::<Test>::MemberAuthFailed
@@ -164,6 +176,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                subreddit_mutable: true,
             }
         ));
 
@@ -179,11 +192,15 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ))
         );
@@ -198,6 +215,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                subreddit_mutable: true,
             }
         ));
 
@@ -213,11 +231,15 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    subreddit_mutable: true,
                 }
             ))
         );
@@ -231,6 +253,7 @@ fn member_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                subreddit_mutable: None,
             }
         ));
 
@@ -246,11 +269,15 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    subreddit_mutable: true,
+                    moderator_set: None,
+                    thread_number: 0,
                 },
                 ChannelUpdateParameters {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    subreddit_mutable: None,
                 }
             ))
         );
@@ -265,6 +292,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    subreddit_mutable: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -286,6 +314,7 @@ fn channel_censoring() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                subreddit_mutable: true,
             }
         ));
 
@@ -362,6 +391,7 @@ fn channel_censoring() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                subreddit_mutable: true,
             }
         ));
 

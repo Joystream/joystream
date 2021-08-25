@@ -16,6 +16,7 @@ fn create_member_channel() -> ChannelId {
             assets: vec![],
             meta: vec![],
             reward_account: None,
+            subreddit_mutable: true,
         }
     ));
 

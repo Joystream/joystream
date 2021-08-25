@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
+use sp_runtime::traits::Hash;
 
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -25,16 +26,19 @@ pub type ChannelId = <Test as StorageOwnership>::ChannelId;
 /// Origins
 
 pub const LEAD_ORIGIN: u64 = 1;
-
 pub const FIRST_CURATOR_ORIGIN: u64 = 2;
 pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
+pub const THIRD_MEMBER_ORIGIN: u64 = 6;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
 
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
+
+// initial money endowed to an account
+pub const INITIAL_ENDOW: u64 = 100;
 
 /// Runtime Id's
 
@@ -46,6 +50,13 @@ pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+pub const THIRD_MEMBER_ID: MemberId = 3;
+pub const NOT_FORUM_MEMBER_ID: MemberId = 114;
+
+/// Invalid IDs
+pub const INVALID_POST: <Test as Trait>::PostId = 222;
+pub const INVALID_CHANNEL: <Test as StorageOwnership>::ChannelId = 444;
+pub const INVALID_THREAD: <Test as Trait>::ThreadId = 555;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -237,6 +248,63 @@ impl Trait for Test {
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem = MockStorageSystem;
+
+    // counting posts
+    type PostId = u64;
+
+    // counting threads
+    type ThreadId = u64;
+
+    // reaction id
+    type ReactionId = u64;
+
+    // limit for categories
+    type MapLimits = MapLimits;
+
+    // byte price
+    type BytePrice = BytePrice;
+
+    // thread cleanup cost
+    type ThreadCleanupCost = ThreadCleanupCost;
+
+    // post cleanup cost
+    type PostCleanupCost = PostCleanupCost;
+
+    // cleanup margin
+    type CleanupMargin = CleanupMargin;
+
+    // module id type
+    type ModuleId = ForumModuleId;
+
+    fn compute_hash(text: &[u8]) -> Self::Hash {
+        Self::Hashing::hash(text)
+    }
+}
+
+parameter_types! {
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const PostLifeTime: u64 = 100;
+    pub const ThreadDeposit: u64 = 100;
+    pub const PostDeposit: u64 = 10;
+    pub const BloatBondCap: u32 = 100;
+    pub const PostOwnershipDuration: u32 = 200;
+    pub const MaxModeratorsForSubreddit: usize = 10;
+    pub const BytePrice: usize = 1;
+    pub const PostCleanupCost: u32 = 2;
+    pub const ThreadCleanupCost: u32 = 2;
+    pub const CleanupMargin: u32 = 5;
+    pub const ForumModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+
+//    pub const ForumModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+}
+
+pub struct MapLimits;
+
+impl SubredditLimits for MapLimits {
+    type BloatBondCap = BloatBondCap;
+    type PostOwnershipDuration = PostOwnershipDuration;
+    type MaxModeratorsForSubreddit = MaxModeratorsForSubreddit;
+    //    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 pub type System = frame_system::Module<Test>;
@@ -252,6 +320,8 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    next_post_id: u64,
+    next_thread_id: u64,
 }
 
 impl Default for ExtBuilder {
@@ -266,6 +336,8 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            next_post_id: 1,
+            next_thread_id: 1,
         }
     }
 }
@@ -286,6 +358,8 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            next_post_id: self.next_post_id,
+            next_thread_id: self.next_thread_id,
         }
         .assimilate_storage(&mut t)
         .unwrap();

@@ -28,6 +28,12 @@ decl_error! {
         /// Curator id is not a worker id in content working group
         CuratorIdInvalid,
 
+        /// Member Id invalid
+        MemberIdInvalid,
+
+        /// Moderator canont update category
+        ModeratorCantUpdateCategory,
+
         // Authentication Errors
         // ---------------------
 
@@ -52,6 +58,9 @@ decl_error! {
         /// A Channel or Video Category does not exist.
         CategoryDoesNotExist,
 
+        /// A Post does not exist.
+        PostDoesNotExist,
+
         /// Channel does not exist
         ChannelDoesNotExist,
 
@@ -62,6 +71,40 @@ decl_error! {
         VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels
+        CannotCensoreCuratorGroupOwnedChannels,
+
+        /// thread does not exists
+        ThreadDoesNotExist,
+
+        /// category does not exists
+        ForumCategoryDoesNotExist,
+
+        /// Error encountered when transversing forum categories
+        MapSizeLimit,
+
+        /// Subreddit cannot be Modified
+        SubredditCannotBeModified,
+
+        /// Post cannot be Modified
+        PostCannotBeModified,
+
+        /// Moderator Limits exceeded
+        ModeratorsLimitExceeded,
+
+        /// Thread Archived
+        ArchivedThreadCannotBeModified,
+
+        /// Rationale not provided
+        RationaleNotProvided,
+
+        /// Actor not a channel owner
+        ActorNotAChannelOwner,
+
+        /// User is not a moderator
+        ActorNotAModerator,
+
+        /// User is not a post/thread author
+        ActorNotAnAuthor,
+
     }
 }
