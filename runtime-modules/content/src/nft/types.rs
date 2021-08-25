@@ -10,16 +10,16 @@ pub type MemberId<T> = <T as membership::Trait>::MemberId;
 /// Owner royalty
 pub type Royalty = Perbill;
 
-/// Offer details
+/// Order details
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OfferDetails<AccountId: Default, Balance: Default> {
+pub struct OrderDetails<AccountId: Default, Balance: Default> {
     pub account_id: AccountId,
     pub price: Balance,
 }
 
-impl<AccountId: Default, Balance: Default> OfferDetails<AccountId, Balance> {
-    /// Creates new `OfferDetails` instance
+impl<AccountId: Default, Balance: Default> OrderDetails<AccountId, Balance> {
+    /// Creates new `OrderDetails` instance
     pub fn new(account_id: AccountId, price: Balance) -> Self {
         Self { account_id, price }
     }
@@ -35,8 +35,9 @@ pub enum TransactionalStatus<
     Balance: Default,
 > {
     Idle,
-    InitiatedOfferToMember(MemberId, Option<OfferDetails<AccountId, Balance>>),
+    InitiatedOfferToMember(MemberId, Option<OrderDetails<AccountId, Balance>>),
     Auction(AuctionRecord<AccountId, BlockNumber, Balance, MemberId>),
+    BuyNow(OrderDetails<AccountId, Balance>),
 }
 
 impl<

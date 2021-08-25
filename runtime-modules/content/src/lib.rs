@@ -1236,10 +1236,10 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure from_account_id is vnft owner
+            // Ensure from is vnft owner
             video.ensure_vnft_ownership::<T>(&ChannelOwner::Member(from))?;
 
-            // Ensure there is not pending transfer or existing auction for given nft.
+            // Ensure there is no pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
 
             //
@@ -1248,12 +1248,14 @@ decl_module! {
 
             // Set nft transactional status to InitiatedOfferToMember
             let offer_details = if let Some(price) = price {
-                Some(OfferDetails::new(from_account_id, price))
+                Some(OrderDetails::new(from_account_id, price))
             } else {
                 None
             };
 
-            video.set_pending_offer_transactional_status(to, offer_details);
+            let video = video.set_pending_offer_transactional_status(to, offer_details);
+
+            VideoById::<T>::insert(video_id, video);
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferStarted(video_id, from, to, price));
@@ -1322,6 +1324,41 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::OfferAccepted(video_id, participant_id));
+        }
+
+        /// Sell vNFT
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn sell_vnft(
+            origin,
+            video_id: T::VideoId,
+            participant_id: MemberId<T>,
+            price: BalanceOf<T>,
+        ) {
+
+            // Authorize participant under given member id
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure participant_id is vnft owner
+            video.ensure_vnft_ownership::<T>(&ChannelOwner::Member(participant_id))?;
+
+            // Ensure there is no pending transfer or existing auction for given nft.
+            video.ensure_nft_transactional_status_is_idle::<T>()?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Place vnft sell order
+            let video = video.set_buy_now_transactionl_status(participant_account_id, price);
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::SellOrderMade(video_id, participant_id, price));
         }
     }
 }
@@ -1644,5 +1681,6 @@ decl_event!(
         OfferStarted(VideoId, MemberId, MemberId, Option<Balance>),
         OfferCancelled(VideoId, MemberId),
         OfferAccepted(VideoId, MemberId),
+        SellOrderMade(VideoId, MemberId, Balance),
     }
 );

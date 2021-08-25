@@ -394,6 +394,19 @@ impl<
         Ok(())
     }
 
+    /// Sets nft transactional status to `BuyNow`
+    pub fn set_buy_now_transactionl_status(
+        mut self,
+        participant_account_id: AccountId,
+        buy_now_price: Balance,
+    ) -> Self {
+        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+            let order_details = OrderDetails::new(participant_account_id, buy_now_price);
+            owned_nft.transactional_status = TransactionalStatus::BuyNow(order_details);
+        }
+        self
+    }
+
     /// Sets nft transactional status to provided `Auction`
     pub fn set_auction_transactional_status(
         mut self,
@@ -426,7 +439,7 @@ impl<
     pub fn set_pending_offer_transactional_status(
         mut self,
         to: MemberId,
-        offer_details: Option<OfferDetails<AccountId, Balance>>,
+        offer_details: Option<OrderDetails<AccountId, Balance>>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status =
