@@ -36,7 +36,7 @@ export default class Server extends ApiCommandBase {
     sync: flags.boolean({
       char: 's',
       description: 'Enable data synchronization.',
-      default: false, // TODO: turn on by default
+      default: false,
     }),
     syncInterval: flags.integer({
       char: 'i',

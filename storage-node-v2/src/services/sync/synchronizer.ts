@@ -14,19 +14,23 @@ import _ from 'lodash'
 import fs from 'fs'
 const fsPromises = fs.promises
 
-// TODO: use caching
-// TODO: move data acquiring to the services
-export async function getLocalDataObjects(
-  uploadDirectory: string
-): Promise<string[]> {
-  const localCids = await getLocalFileNames(uploadDirectory)
-
-  return localCids
-}
-
+/**
+ * Runs the data synchronization workflow. It compares the current node's
+ * storage obligations with the local storage and fixes the difference.
+ * The sync process uses the QueryNode for defining storage obligations and
+ * remote storage nodes' URL for data obtaining.
+ *
+ * @param workerId - current storage provider ID
+ * @param asyncWorkersNumber - maximum parallel downloads number
+ * @param queryNodeUrl - Query Node endpoint URL
+ * @param uploadDirectory - local directory to get file names from
+ * @param operatorUrl - (optional) defines the data source URL. If not set
+ * the source URL is resolved for each data object separately using the Query
+ * Node information about the storage providers.
+ */
 export async function performSync(
   workerId: number,
-  syncWorkersNumber: number,
+  asyncWorkersNumber: number,
   queryNodeUrl: string,
   uploadDirectory: string,
   operatorUrl?: string
@@ -66,7 +70,7 @@ export async function performSync(
 
   const processSpawner = new TaskProcessorSpawner(
     workingStack,
-    syncWorkersNumber
+    asyncWorkersNumber
   )
 
   await workingStack.add(addedTasks)
@@ -76,28 +80,41 @@ export async function performSync(
   logger.info('Sync ended.')
 }
 
+/**
+ * Returns file names from the local directory.
+ *
+ * @param directory - local directory to get file names from
+ */
 async function getLocalFileNames(directory: string): Promise<string[]> {
   return fsPromises.readdir(directory)
 }
 
+/**
+ * Creates the download preparation tasks.
+ *
+ * @param dataObligations - defines the current data obligations for the node
+ * @param addedCids - data object IDs to download
+ * @param uploadDirectory - local directory for data uploading
+ * @param taskSink - a destination for the newly created tasks
+ */
 async function getPrepareDownloadTasks(
-  model: DataObligations,
+  dataObligations: DataObligations,
   addedCids: string[],
   uploadDirectory: string,
   taskSink: TaskSink
 ): Promise<PrepareDownloadFileTask[]> {
   const cidMap = new Map()
-  for (const entry of model.dataObjects) {
+  for (const entry of dataObligations.dataObjects) {
     cidMap.set(entry.cid, entry.bagId)
   }
 
   const bucketMap = new Map()
-  for (const entry of model.storageBuckets) {
+  for (const entry of dataObligations.storageBuckets) {
     bucketMap.set(entry.id, entry.operatorUrl)
   }
 
   const bagMap = new Map()
-  for (const entry of model.bags) {
+  for (const entry of dataObligations.bags) {
     const operatorUrls = []
 
     for (const bucket of entry.buckets) {
@@ -132,6 +149,13 @@ async function getPrepareDownloadTasks(
   return tasks
 }
 
+/**
+ * Creates the download file tasks.
+ *
+ * @param operatorUrl - defines the data source URL.
+ * @param addedCids - data object IDs to download
+ * @param uploadDirectory - local directory for data uploading
+ */
 async function getDownloadTasks(
   operatorUrl: string,
   addedCids: string[],
@@ -142,4 +166,17 @@ async function getDownloadTasks(
   )
 
   return addedTasks
+}
+
+/**
+ * Returns local data objects info.
+ *
+ * @param uploadDirectory - local directory to get file names from
+ */
+export async function getLocalDataObjects(
+  uploadDirectory: string
+): Promise<string[]> {
+  const localCids = await getLocalFileNames(uploadDirectory)
+
+  return localCids
 }

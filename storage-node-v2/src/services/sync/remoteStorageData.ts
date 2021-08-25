@@ -24,7 +24,15 @@ const badOperatorUrls = new NodeCache({
   maxKeys: MaxEntries,
 })
 
-export async function getAvailableData(operatorUrl: string): Promise<string[]> {
+/**
+ * Queries the remote storage node for its data object IDs from the storage.
+ * It caches the result (including errors) for some limited time.
+ *
+ * @param operatorUrl - remote storage node URL
+ */
+export async function getRemoteDataObjects(
+  operatorUrl: string
+): Promise<string[]> {
   const url = urljoin(operatorUrl, 'api/v1/state/data-objects')
 
   const faultyOperator = badOperatorUrls.has(operatorUrl)

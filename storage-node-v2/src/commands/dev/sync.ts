@@ -2,9 +2,18 @@ import { Command, flags } from '@oclif/command'
 import { performSync } from '../../services/sync/synchronizer'
 import logger from '../../services/logger'
 
+/**
+ * CLI command:
+ * Synchronizes data: fixes the difference between node obligations and local
+ * storage.
+ *
+ * @remarks
+ * Should be run only during the development.
+ * Shell command: "dev:upload"
+ */
 export default class DevSync extends Command {
   static description =
-    'Synchronizes data - it fixes the differences between local data folder and worker ID obligations from the runtime.'
+    'Synchronizes the data - it fixes the differences between local data folder and worker ID obligations from the runtime.'
 
   static flags = {
     help: flags.help({ char: 'h' }),
