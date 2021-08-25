@@ -1536,7 +1536,7 @@ decl_module! {
             );
 
             Ok(())
-     }
+       }
 
        #[weight = 10_000_000]
        fn delete_thread(
