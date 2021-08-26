@@ -1,6 +1,11 @@
 import { Command, flags } from '@oclif/command'
 import { createApi } from '../services/runtime/api'
-import { getAccountFromJsonFile, getAlicePair, getAccountFromUri } from '../services/runtime/accounts'
+import {
+  getAccountFromJsonFile,
+  getAlicePair,
+  getAccountFromUri
+} from '../services/runtime/accounts'
+import { parseBagId } from '../services/helpers/bagTypes'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../services/logger'
@@ -35,6 +40,24 @@ export default abstract class ApiCommandBase extends Command {
       char: 'y',
       description:
         'Account URI (optional). Has a priority over the keyfile and password flags. Could be overriden by ACCOUNT_URI environment variable.',
+  }
+
+  static extraFlags = {
+    bagId: flags.build({
+      parse: (value: string) => {
+        return parseBagId(value)
+      },
+      description: `Bag ID. Format: {bag_type}:{sub_type}:{id}.
+    - Bag types: 'static', 'dynamic'
+    - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+    - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+    Examples:
+    - static:council
+    - static:wg:storage
+    - dynamic:member:4`,
     }),
   }
 
