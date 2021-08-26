@@ -2,10 +2,12 @@ import { flags } from '@oclif/command'
 import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger, { initElasticLogger } from '../services/logger'
-
 import { performSync } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
+import rimraf from 'rimraf'
 import _ from 'lodash'
+import path from 'path'
+import { promisify } from 'util'
 
 /**
  * CLI command:
@@ -71,6 +73,9 @@ export default class Server extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
+    const tempDirName = 'temp'
+    await removeTempDirectory(flags.uploads, tempDirName)
+
     let elasticUrl
     if (!_.isEmpty(flags.elasticSearchHost)) {
       elasticUrl = `http://${flags.elasticSearchHost}`
@@ -109,21 +114,23 @@ export default class Server extends ApiCommandBase {
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
-      const app = await createApp(
+      const app = await createApp({
         api,
         account,
         workerId,
-        flags.uploads,
 		maxFileSize,
         this.config,
+        uploadsDir: flags.uploads,
+        tempDirName,
+        process: this.config,
         queryNodeUrl,
-        !flags.disableUploadAuth,
-        elasticUrl
-      )
+        enableUploadingAuth: !flags.disableUploadAuth,
+        elasticSearchEndpoint: elasticUrl,
+      })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {
-      logger.error(`Error: ${err}`)
+      logger.error(`Server error: ${err}`)
     }
   }
 
@@ -166,4 +173,16 @@ function runSyncWithInterval(
       syncIntervalMinutes
     )
   }, 0)
+}
+
+async function removeTempDirectory(uploadsDir: string, tempDirName: string) {
+  try {
+    logger.info(`Removing temp directory ...`)
+    const tempFileUploadingDir = path.join(uploadsDir, tempDirName)
+
+    const rimrafAsync = promisify(rimraf)
+    await rimrafAsync(tempFileUploadingDir)
+  } catch (err) {
+    logger.error(`Removing temp directory error: ${err}`)
+  }
 }

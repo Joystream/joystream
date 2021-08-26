@@ -16,50 +16,82 @@ import { httpLogger, errorLogger } from '../../services/logger'
 import { getLocalDataObjects } from '../../services/sync/synchronizer'
 
 /**
- * Creates Express web application. Uses the OAS spec file for the API.
- *
- * @param api - runtime API promise
- * @param account - KeyringPair instance
- * @param workerId - storage provider ID (worker ID)
- * @param uploadsDir - directory for the file uploading
- * @param maxFileSize - max allowed file size
- * @param config - environment configuration
- * @param queryNodeUrl - Query Node endpoint URL
- * @param enableUploadingAuth - enables uploading auth-schema validation
- * @param elasticSearchEndpoint - ElasticSearch endpoint URL(optional)
- * @returns Express promise.
+ * Web application parameters.
  */
-export async function createApp(
-  api: ApiPromise,
-  account: KeyringPair,
-  workerId: number,
-  uploadsDir: string,
-  maxFileSize: number,
-  config: {
+export type AppConfig = {
+  /**
+   * Runtime API promise
+   */
+  api: ApiPromise
+
+  /**
+   * KeyringPair instance
+   */
+  account: KeyringPair
+
+  /**
+   * Storage provider ID (worker ID)
+   */
+  workerId: number
+
+  /**
+   * Directory for the file uploading
+   */
+  uploadsDir: string
+  /**
+   * Directory within the `uploadsDir` for temporary file uploading
+   */
+  tempDirName: string
+
+  /**
+   *  Environment configuration
+   */
+  process: {
     version: string
     userAgent: string
-  },
-  queryNodeUrl: string,
-  enableUploadingAuth: boolean,
+  }
+
+  /**
+   * Query Node endpoint URL
+   */
+  queryNodeUrl: string
+
+  /**
+   * Enables uploading auth-schema validation
+   */
+  enableUploadingAuth: boolean
+
+  /**
+   * Runtime API promise
+   */
   elasticSearchEndpoint?: string
-): Promise<Express> {
+}
+
+/**
+ * Creates Express web application. Uses the OAS spec file for the API.
+ *
+ * @param config - web app configuration parameters
+ * @returns Express promise.
+ */
+export async function createApp(config: AppConfig): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
+  const tempFileUploadingDir = path.join(config.uploadsDir, config.tempDirName)
 
   const app = express()
 
   app.use(cors())
   app.use(express.json())
-  app.use(httpLogger(elasticSearchEndpoint))
+  app.use(httpLogger(config.elasticSearchEndpoint))
 
   app.use(
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
-      res.locals.uploadsDir = uploadsDir
-      res.locals.storageProviderAccount = account
-      res.locals.workerId = workerId
-      res.locals.api = api
-      res.locals.config = config
-      res.locals.queryNodeUrl = queryNodeUrl
+      res.locals.uploadsDir = config.uploadsDir
+      res.locals.storageProviderAccount = config.account
+      res.locals.workerId = config.workerId
+      res.locals.api = config.api
+      res.locals.config = config.process
+      res.locals.queryNodeUrl = config.queryNodeUrl
       next()
     },
     // Setup OpenAPiValidator
@@ -73,7 +105,7 @@ export async function createApp(
         resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
       fileUploader: {
-        dest: uploadsDir,
+        dest: tempFileUploadingDir,
         // Busboy library settings
         limits: {
           // For multipart forms, the max number of file fields (Default: Infinity)
@@ -83,9 +115,9 @@ export async function createApp(
         },
       },
       validateSecurity: setupUploadingValidation(
-        enableUploadingAuth,
-        api,
-        account
+        config.enableUploadingAuth,
+        config.api,
+        config.account
       ),
     })
   ) // Required signature.

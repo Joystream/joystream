@@ -35,10 +35,11 @@ export async function getTransactionNonce(
     let nonce: Index | undefined = nonceCache.get(nonceEntryName)
     if (nonce === undefined) {
       nonce = await api.rpc.system.accountNextIndex(account.address)
-      nonceCache.set(nonceEntryName, nonce)
     } else {
       nonce = nonce.add(new BN(1)) as Index
     }
+
+    nonceCache.set(nonceEntryName, nonce)
 
     logger.debug(`Last transaction nonce:${nonce}`)
     return nonce as Index

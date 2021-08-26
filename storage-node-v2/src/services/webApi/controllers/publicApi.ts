@@ -121,8 +121,9 @@ export async function uploadFile(req: express.Request, res: express.Response): P
 
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
-    // Prepare new file name
-    const newPath = fileObj.path.replace(fileObj.filename, hash)
+    // Prepare new file name\
+    const uploadsDir = getUploadsDir(res)
+    const newPath = path.join(uploadsDir, hash)
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
