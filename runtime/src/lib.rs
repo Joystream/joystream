@@ -481,7 +481,13 @@ impl stake::Trait for Runtime {
                 crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
             ),
             (
-                crate::integration::working_group::OperationsWgStakingEventsHandler1<Self>,
+                (
+                    (
+                        crate::integration::working_group::OperationsWgStakingEventsHandler1<Self>,
+                        crate::integration::working_group::OperationsWgStakingEventsHandler2<Self>,
+                    ),
+                    crate::integration::working_group::OperationsWgStakingEventsHandler3<Self>,
+                ),
                 crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
             ),
         ),
