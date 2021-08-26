@@ -16,6 +16,7 @@ fn lead_cannot_create_channel() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::ActorCannotOwnChannel
@@ -38,6 +39,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorGroupIsNotActive
@@ -55,6 +57,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup
@@ -69,6 +72,7 @@ fn curator_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::CuratorAuthFailed
@@ -84,6 +88,7 @@ fn curator_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -99,11 +104,13 @@ fn curator_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ))
         );
@@ -117,6 +124,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                collaborators: None,
             }
         ));
 
@@ -129,6 +137,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                collaborators: None,
             }
         ));
     })
@@ -149,6 +158,7 @@ fn member_owned_channels() {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ),
             Error::<Test>::MemberAuthFailed
@@ -164,6 +174,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -179,11 +190,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ))
         );
@@ -198,6 +211,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -213,11 +227,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 }
             ))
         );
@@ -231,6 +247,7 @@ fn member_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
+                collaborators: None,
             }
         ));
 
@@ -246,11 +263,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
+                    collaborators: BTreeSet::new(),
                 },
                 ChannelUpdateParameters {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    collaborators: None,
                 }
             ))
         );
@@ -265,6 +284,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
+                    collaborators: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -286,6 +306,7 @@ fn channel_censoring() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 
@@ -362,6 +383,7 @@ fn channel_censoring() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
+                collaborators: BTreeSet::new(),
             }
         ));
 

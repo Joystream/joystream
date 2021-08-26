@@ -189,8 +189,16 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
-{
+pub struct ChannelRecord<
+    MemberId,
+    CuratorGroupId,
+    DAOId,
+    AccountId,
+    VideoId,
+    PlaylistId,
+    SeriesId,
+    CollaboratorsSetType,
+> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
@@ -203,6 +211,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
+    /// collaborator set
+    collaborators: CollaboratorsSetType,
 }
 
 // Channel alias type for simplification.
@@ -214,6 +224,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
+    BTreeSet<<T as MembershipTypes>::MemberId>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -246,25 +257,29 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<ContentParameters, AccountId> {
+pub struct ChannelCreationParameters<ContentParameters, AccountId, CollaboratorsSetType> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata about the channel.
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
+    /// initial collaborator set
+    collaborators: CollaboratorsSetType,
 }
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters<ContentParameters, AccountId> {
+pub struct ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSetType> {
     /// Assets referenced by metadata
     assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
+    /// collaborator set
+    collaborators: Option<CollaboratorsSetType>,
 }
 
 /// A category that videos can belong to.
@@ -636,7 +651,10 @@ decl_module! {
         pub fn create_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
+            params: ChannelCreationParameters<
+                        ContentParameters<T>,
+                        T::AccountId,
+                        BTreeSet<<T as MembershipTypes>::MemberId>>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
                 origin,
@@ -674,6 +692,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                collaborators: params.collaborators.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -686,12 +705,15 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: ChannelUpdateParameters<ContentParameters<T>, T::AccountId>,
+            params: ChannelUpdateParameters<
+                        ContentParameters<T>,
+                        T::AccountId,
+                        BTreeSet<<T as MembershipTypes>::MemberId>>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel::<T>(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
                 &channel.owner,
@@ -726,6 +748,12 @@ decl_module! {
                 channel.reward_account = reward_account.clone();
             }
 
+
+            // maybe update collaborators set
+            if let Some(collabs) = &params.collaborators {
+                channel.collaborators = collabs.clone();
+            }
+
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -752,7 +780,7 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel::<T>(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
                 &channel.owner,
@@ -904,10 +932,11 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_update_channel::<T>(
+            Self::ensure_actor_can_update_channel_content(
                 origin,
                 &actor,
                 &channel.owner,
+                &channel,
             )?;
 
             // Pick out the assets to be uploaded to storage frame_system
@@ -960,11 +989,13 @@ decl_module! {
         ) {
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
 
-            ensure_actor_authorized_to_update_channel::<T>(
+            Self::ensure_actor_can_update_channel_content(
                 origin,
                 &actor,
                 &Self::channel_by_id(channel_id).owner,
+                &channel,
             )?;
 
             // Pick out the assets to be uploaded to storage frame_system
@@ -1012,12 +1043,14 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
 
-            ensure_actor_authorized_to_update_channel::<T>(
+            Self::ensure_actor_can_update_channel_content(
                 origin,
                 &actor,
                 // The channel owner will be..
                 &Self::channel_by_id(channel_id).owner,
+                &channel,
             )?;
 
             Self::ensure_video_can_be_removed(video)?;
@@ -1358,6 +1391,63 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Enure actor can update channels and videos in the channel
+    pub fn ensure_actor_authorized_to_update_channel(
+        origin: T::Origin,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    ) -> DispatchResult {
+        // Only owner of a channel can update and delete channel assets.
+        // Lead can update and delete curator group owned channel assets.
+        match actor {
+            ContentActor::Lead => {
+                ensure_lead_can_update_assets::<T>(origin, owner)?;
+                Ok(())
+            }
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                ensure_curator_group_is_channel_owner::<T>(
+                    origin,
+                    curator_group_id,
+                    curator_id,
+                    owner,
+                )?;
+                Ok(())
+            }
+            ContentActor::Member(member_id) => {
+                ensure_member_is_channel_owner::<T>(origin, member_id, owner)?;
+                Ok(())
+            }
+        }
+    }
+
+    // Enure actor can update channels and videos in the channel
+    pub fn ensure_actor_can_update_channel_content(
+        origin: T::Origin,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+        channel: &Channel<T>,
+    ) -> DispatchResult {
+        // Channel content can be updated by owner and collaborators only
+        match actor {
+            ContentActor::Lead => Err(Error::<T>::ActorNotAuthorized.into()),
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                ensure_curator_group_is_channel_owner::<T>(
+                    origin,
+                    curator_group_id,
+                    curator_id,
+                    owner,
+                )
+            }
+            ContentActor::Member(member_id) => {
+                let is_owner =
+                    ensure_member_is_channel_owner::<T>(origin, member_id, owner).is_ok();
+                let is_collab = channel.collaborators.contains(member_id);
+                ensure!(is_owner || is_collab, Error::<T>::ActorNotAuthorized);
+                Ok(())
+            }
+        }
+    }
+
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
@@ -1389,6 +1479,7 @@ decl_event!(
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        CollaboratorsSetType = BTreeSet<<T as MembershipTypes>::MemberId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1401,13 +1492,13 @@ decl_event!(
             ContentActor,
             ChannelId,
             Channel,
-            ChannelCreationParameters<ContentParameters, AccountId>,
+            ChannelCreationParameters<ContentParameters, AccountId, CollaboratorsSetType>,
         ),
         ChannelUpdated(
             ContentActor,
             ChannelId,
             Channel,
-            ChannelUpdateParameters<ContentParameters, AccountId>,
+            ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSetType>,
         ),
         ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
