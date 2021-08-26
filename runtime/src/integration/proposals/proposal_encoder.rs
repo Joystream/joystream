@@ -22,7 +22,15 @@ macro_rules! wrap_working_group_call {
                 Call::ContentDirectoryWorkingGroup($working_group_instance_call)
             }
             WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
-            WorkingGroup::Operations => Call::OperationsWorkingGroup($working_group_instance_call),
+            WorkingGroup::Operations1 => {
+                Call::OperationsWorkingGroup1($working_group_instance_call)
+            }
+            WorkingGroup::Operations2 => {
+                Call::OperationsWorkingGroup2($working_group_instance_call)
+            }
+            WorkingGroup::Operations3 => {
+                Call::OperationsWorkingGroup3($working_group_instance_call)
+            }
             WorkingGroup::Gateway => Call::GatewayWorkingGroup($working_group_instance_call),
         }
     }};
