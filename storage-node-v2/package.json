@@ -109,11 +109,14 @@
       "@oclif/plugin-help"
     ],
     "topics": {
-      "wg": {
-        "description": "Storage working group commands."
+      "dev": {
+        "description": "Development mode commands."
       },
-      "wg:leader": {
+      "leader": {
         "description": "Storage working group leader commands."
+      },      
+      "operator": {
+        "description": "Storage provider(operator) commands."
       }
     }
   },
