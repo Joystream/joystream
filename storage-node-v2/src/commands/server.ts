@@ -59,6 +59,12 @@ export default class Server extends ApiCommandBase {
       required: false,
       description: 'Elasticsearch host and port (e.g.: some.com:8081).',
     }),
+    disableUploadAuth: flags.boolean({
+      char: 'a',
+      description:
+        'Disable uploading authentication (should be used in testing-context only).',
+      default: false,
+    }),
     ...ApiCommandBase.flags,
   }
 
@@ -76,6 +82,10 @@ export default class Server extends ApiCommandBase {
 
     if (flags.dev) {
       await this.ensureDevelopmentChain()
+    }
+
+    if (flags.disableUploadAuth) {
+      logger.warn(`Uploading auth-schema disabled.`)
     }
 
     if (flags.sync) {
@@ -107,6 +117,7 @@ export default class Server extends ApiCommandBase {
 		maxFileSize,
         this.config,
         queryNodeUrl,
+        !flags.disableUploadAuth,
         elasticUrl
       )
       logger.info(`Listening on http://localhost:${port}`)
