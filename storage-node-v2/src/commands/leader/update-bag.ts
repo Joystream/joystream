@@ -1,7 +1,6 @@
 import { flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import { parseBagId } from '../../services/helpers/bagTypes'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import _ from 'lodash'
@@ -43,22 +42,9 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       description: 'ID of a bucket to remove from bag',
       default: [],
     }),
-    bagId: flags.string({
+    bagId: ApiCommandBase.extraFlags.bagId({
       char: 'i',
       required: true,
-      description: `
-      Bag ID. Format: {bag_type}:{sub_type}:{id}.
-      - Bag types: 'static', 'dynamic'
-      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-      - Id: 
-        - absent for 'static:council'
-        - working group name for 'static:wg'
-        - integer for 'dynamic:member' and 'dynamic:channel'
-      Examples:
-      - static:council
-      - static:wg:storage
-      - dynamic:member:4
-      `,
     }),
     ...ApiCommandBase.flags,
   }
@@ -78,7 +64,6 @@ export default class LeaderUpdateBag extends ApiCommandBase {
 
     const account = this.getAccount(flags)
     const api = await this.getApi()
-    const bagId = parseBagId(api, flags.bagId)
 
     const success = await updateStorageBucketsForBag(api, bagId, account, flags.add, flags.remove)
 
