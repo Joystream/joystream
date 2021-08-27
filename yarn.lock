@@ -9421,7 +9421,7 @@ cli-cursor@^3.1.0:
   dependencies:
     restore-cursor "^3.1.0"
 
-cli-highlight@^2.1.10:
+cli-highlight@^2.1.11:
   version "2.1.11"
   resolved "https://registry.yarnpkg.com/cli-highlight/-/cli-highlight-2.1.11.tgz#49736fa452f0aaf4fae580e30acb26828d2dc1bf"
   integrity sha512-9KDcoEVwyUXrjcJNvHD0NFc/hiwe/WPVYIleQh2O1N2Zro5gWJZ/K+3DGn8w8P/F6FxOgzyC5bxDyHIgCSPhGg==
@@ -28220,15 +28220,15 @@ typeorm-typedi-extensions@^0.2.3:
   integrity sha512-T9i1NvRZNjPn9Jb8oT772ihfn6PwdqDVpzPCtKSqjkZGOgXrCkdyD3dDrzfMaoWJ1afU58bVx2CMb95FzT42Ow==
 
 typeorm@^0.2.25, typeorm@^0.2.31:
-  version "0.2.34"
-  resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.34.tgz#637b3cec2de54ee7f423012b813a2022c0aacc8b"
-  integrity sha512-FZAeEGGdSGq7uTH3FWRQq67JjKu0mgANsSZ04j3kvDYNgy9KwBl/6RFgMVgiSgjf7Rqd7NrhC2KxVT7I80qf7w==
+  version "0.2.37"
+  resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.37.tgz#1a5e59216077640694d27c04c99ed3f968d15dc8"
+  integrity sha512-7rkW0yCgFC24I5T0f3S/twmLSuccPh1SQmxET/oDWn2sSDVzbyWdnItSdKy27CdJGTlKHYtUVeOcMYw5LRsXVw==
   dependencies:
     "@sqltools/formatter" "^1.2.2"
     app-root-path "^3.0.0"
     buffer "^6.0.3"
     chalk "^4.1.0"
-    cli-highlight "^2.1.10"
+    cli-highlight "^2.1.11"
     debug "^4.3.1"
     dotenv "^8.2.0"
     glob "^7.1.6"
@@ -28239,7 +28239,7 @@ typeorm@^0.2.25, typeorm@^0.2.31:
     tslib "^2.1.0"
     xml2js "^0.4.23"
     yargonaut "^1.1.4"
-    yargs "^16.2.0"
+    yargs "^17.0.1"
     zen-observable-ts "^1.0.0"
 
 typescript-formatter@^7.2.2:
@@ -30239,6 +30239,19 @@ yargs@^16.0.0, yargs@^16.2.0:
   version "16.2.0"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-16.2.0.tgz#1c82bf0f6b6a66eafce7ef30e376f49a12477f66"
   integrity sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw==
+  dependencies:
+    cliui "^7.0.2"
+    escalade "^3.1.1"
+    get-caller-file "^2.0.5"
+    require-directory "^2.1.1"
+    string-width "^4.2.0"
+    y18n "^5.0.5"
+    yargs-parser "^20.2.2"
+
+yargs@^17.0.1:
+  version "17.1.1"
+  resolved "https://registry.yarnpkg.com/yargs/-/yargs-17.1.1.tgz#c2a8091564bdb196f7c0a67c1d12e5b85b8067ba"
+  integrity sha512-c2k48R0PwKIqKhPMWjeiF6y2xY/gPMUlro0sgxqXpbOIohWiLNXWslsootttv7E1e73QPAMQSg5FeySbVcpsPQ==
   dependencies:
     cliui "^7.0.2"
     escalade "^3.1.1"

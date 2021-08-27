@@ -28,6 +28,7 @@
     "express-openapi-validator": "^4.12.4",
     "express-winston": "^4.1.0",
     "file-type": "^16.5.0",
+    "lodash": "^4.17.21",
     "multihashes": "^4.0.2",
     "node-cache": "^5.1.2",
     "openapi-editor": "^0.3.0",
@@ -62,6 +63,10 @@
   },
   "engines": {
     "node": ">=8.0.0"
+  },
+  "volta": {
+    "node": "12.18.2",
+    "yarn": "1.22.4"
   },
   "files": [
     "/bin",

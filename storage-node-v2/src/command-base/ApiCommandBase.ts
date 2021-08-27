@@ -1,12 +1,13 @@
 import { Command, flags } from '@oclif/command'
 import { createApi } from '../services/runtime/api'
-import { getAccountFromJsonFile, getAlicePair } from '../services/runtime/accounts'
+import { getAccountFromJsonFile, getAlicePair, getAccountFromUri } from '../services/runtime/accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import logger from '../services/logger'
 import ExitCodes from './ExitCodes'
 import { CLIError } from '@oclif/errors'
 import { Input } from '@oclif/parser'
+import _ from 'lodash'
 
 /**
  * Parent class for all runtime-based commands. Defines common functions.
@@ -19,7 +20,8 @@ export default abstract class ApiCommandBase extends Command {
     dev: flags.boolean({ char: 'm', description: 'Use development mode' }),
     apiUrl: flags.string({
       char: 'u',
-      description: 'Runtime API URL. Mandatory in non-dev environment. Default is ws://localhost:9944',
+      description: 'Runtime API URL. Mandatory in non-dev environment.',
+      default: 'ws://localhost:9944',
     }),
     keyfile: flags.string({
       char: 'k',
@@ -28,6 +30,10 @@ export default abstract class ApiCommandBase extends Command {
     password: flags.string({
       char: 'p',
       description: 'Key file password (optional).',
+    }),
+    accountURI: flags.string({
+      char: 'y',
+      description: 'Account URI (optional). Overrides keyfile and password flags.',
     }),
   }
 
@@ -65,9 +71,9 @@ export default abstract class ApiCommandBase extends Command {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { flags } = this.parse(<Input<any>>this.constructor)
 
-    const apiUrl = flags.apiUrl ?? 'ws://localhost:9944'
+    this.api = await createApi(flags.apiUrl)
 
-    this.api = await createApi(apiUrl)
+    logger.info(`Initialized runtime connection: ${flags.apiUrl}`)
 
     await this.getApi()
   }
@@ -97,25 +103,26 @@ export default abstract class ApiCommandBase extends Command {
    * @param dev - indicates the development mode (optional).
    * @param keyfile - key file path (optional).
    * @param password - password for the key file (optional).
+   * @param accountURI - accountURI (optional). Overrides keyfile and password flags.
    * @returns KeyringPair instance.
    */
-  getAccount(flags: { dev?: boolean; keyfile?: string; password?: string }): KeyringPair {
+  getAccount(flags: { dev?: boolean; keyfile?: string; password?: string; accountURI?: string }): KeyringPair {
     const keyfile = flags.keyfile ?? ''
     const password = flags.password
+    const accountURI = flags.accountURI
 
-    let account: KeyringPair
     if (flags.dev) {
-      account = getAlicePair()
-    } else {
-      if (keyfile === '') {
-        this.error('Keyfile must be set.')
-      }
-
-      account = getAccountFromJsonFile(keyfile)
+      return getAlicePair()
+    } else if (!_.isEmpty(accountURI) && accountURI !== undefined) {
+      return getAccountFromUri(accountURI)
+    } else if (!_.isEmpty(keyfile)) {
+      const account = getAccountFromJsonFile(keyfile)
       account.unlock(password)
-    }
 
-    return account
+      return account
+    } else {
+      this.error('Keyfile or account URI must be set.')
+    }
   }
 
   /**
