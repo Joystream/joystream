@@ -290,9 +290,8 @@ impl<
 
     /// Ensure auction type is `Open`
     pub fn ensure_is_open_auction<T: Trait>(&self) -> DispatchResult {
-        matches!(
-            &self.auction_type,
-            AuctionType::Open(_),
+        ensure!(
+            matches!(&self.auction_type, AuctionType::Open(_)),
             Error::<T>::IsNotOpenAuctionType
         );
         Ok(())
@@ -306,7 +305,7 @@ impl<
     ) -> DispatchResult {
         if let AuctionType::Open(bid_lock_duration) = &self.auction_type {
             ensure!(
-                current_block - bid.time >= bid_lock_duration,
+                current_block - bid.time >= *bid_lock_duration,
                 Error::<T>::BidLockDurationIsNotExpired
             );
         }
@@ -323,7 +322,7 @@ impl<
         self.ensure_is_open_auction::<T>()?;
 
         // ensure last bid exists
-        let last_bid = auction.ensure_last_bid_exists::<T>()?;
+        let last_bid = self.ensure_last_bid_exists::<T>()?;
 
         // Ensure caller is last bidder.
         self.ensure_caller_is_last_bidder::<T>(who)?;

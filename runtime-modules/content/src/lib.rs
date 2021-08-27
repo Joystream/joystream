@@ -1074,9 +1074,9 @@ decl_module! {
             // Ensure new bid is greater then last bid + minimal bid step
             auction.ensure_is_valid_bid::<T>(bid)?;
 
-            let last_bidder_account_id = if let Some(last_bid) = auction.last_bid {
+            let last_bid_data = if let Some(last_bid) = auction.last_bid {
                 let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-                Some(last_bidder_account_id)
+                Some((last_bidder_account_id, last_bid.amount))
             } else {
                 None
             };
@@ -1086,8 +1086,8 @@ decl_module! {
             //
 
             // Unreserve previous bidder balance
-            if let Some(last_bidder_account_id) = last_bidder_account_id {
-                T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
+            if let Some((last_bidder_account_id, last_bid_amount)) = last_bid_data {
+                T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
             }
 
             // Do not charge more then buy now
