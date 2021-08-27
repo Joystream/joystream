@@ -8,24 +8,115 @@ impl<T: Trait> Module<T> {
     pub(crate) fn authorize_auctioneer(
         origin: T::Origin,
         actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
         video: &Video<T>,
-    ) -> Result<T::AccountId, DispatchError> {
-        let account_id = ensure_signed(origin.clone())?;
-
+    ) -> Result<NFTOwner<T::MemberId, T::CuratorGroupId, T::DAOId>, DispatchError> {
         if video.is_vnft_issued() {
-            // Only members are supposed to start auctions for already existing nfts
-            if let ChannelOwner::Member(member_id) = owner {
+            // Only members are supposed to manage auctions for already issued nfts
+            if let ContentActor::Member(member_id) = actor {
+                let account_id = ensure_signed(origin.clone())?;
+
                 ensure_member_auth_success::<T>(member_id, &account_id)?;
 
-                video.ensure_vnft_ownership::<T>(owner)?;
+                let nft_owner = NFTOwner::Member(*member_id);
+                video.ensure_vnft_ownership::<T>(&nft_owner)?;
+
+                Ok(nft_owner)
             } else {
                 return Err(Error::<T>::ActorNotAuthorizedToManageAuction.into());
             }
         } else {
-            ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)?;
+            // Ensure channel exists, retrieve channel owner
+            let channel_owner = Self::ensure_channel_exists(&video.in_channel)?.owner;
+
+            ensure_actor_authorized_to_update_channel::<T>(origin, actor, &channel_owner)?;
+
+            Ok(NFTOwner::ChannelOwner(channel_owner))
         }
-        Ok(account_id)
+    }
+
+    /// Check whether nft auction expired
+    pub(crate) fn is_nft_auction_expired(auction: &Auction<T>) -> bool {
+        match &auction.last_bid {
+            Some(last_bid) => {
+                // Check whether buy now have been triggered.
+                let is_buy_now_triggered =
+                    matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
+                if let AuctionType::English(round_duration) = auction.auction_type {
+                    let now = <frame_system::Module<T>>::block_number();
+
+                    // Check whether auction round time expired.
+                    let is_auction_round_expired = (now - last_bid.time) >= round_duration;
+                    is_auction_round_expired || is_buy_now_triggered
+                } else {
+                    // Open auction expires only if buy now have been triggered
+                    is_buy_now_triggered
+                }
+            }
+            _ => false,
+        }
+    }
+
+    /// Ensure nft auction can be completed
+    pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
+        let can_be_completed = match &auction.last_bid {
+            Some(last_bid) => {
+                if let AuctionType::English(round_duration) = auction.auction_type {
+                    let now = <frame_system::Module<T>>::block_number();
+
+                    // Check whether auction round time expired.
+                    let is_auction_round_expired = (now - last_bid.time) >= round_duration;
+
+                    // Check whether buy now have been triggered.
+                    let is_buy_now_triggered = matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
+
+                    is_auction_round_expired || is_buy_now_triggered
+                } else {
+                    // Open auction can be completed at any time
+                    true
+                }
+            }
+            _ => true,
+        };
+
+        ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
+        Ok(())
+    }
+
+    /// Ensure given actor is authorized to complete auction.
+    pub fn ensure_actor_authorized_to_complete_auction(
+        origin: T::Origin,
+        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        auction: &Auction<T>,
+        video: &Video<T>,
+    ) -> DispatchResult {
+        match auction.auction_type {
+            AuctionType::English(_) => Self::ensure_actor_is_winner(origin, actor, auction),
+            AuctionType::Open(_) => {
+                match (
+                    Self::authorize_auctioneer(origin.clone(), actor, video),
+                    Self::ensure_actor_is_winner(origin, actor, auction),
+                ) {
+                    (Err(e), Err(_)) => return Err(e),
+                    _ => Ok(()),
+                }
+            }
+        }
+    }
+
+    fn ensure_actor_is_winner(
+        origin: T::Origin,
+        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        auction: &Auction<T>,
+    ) -> DispatchResult {
+        if let ContentActor::Member(member_id) = actor {
+            let account_id = ensure_signed(origin.clone())?;
+
+            ensure_member_auth_success::<T>(member_id, &account_id)?;
+
+            auction.ensure_caller_is_auction_winner::<T>(*member_id)
+        } else {
+            Err(Error::<T>::ActorNotAuthorizedToManageAuction.into())
+        }
     }
 
     /// Ensure auction participant has sufficient balance to make bid
@@ -55,7 +146,15 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
+        match auction_params.auction_type {
+            AuctionType::English(round_duration) => {
+                Self::ensure_round_duration_bounds_satisfied(round_duration)?;
+            }
+            AuctionType::Open(lock_duration) => {
+                Self::ensure_bid_lock_duration_bounds_satisfied(lock_duration)?;
+            }
+        }
+
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
         Self::ensure_bid_step_bounds_satisfied(auction_params.minimal_bid_step)?;
 
@@ -119,16 +218,32 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure auction duration bounds satisfied
-    pub(crate) fn ensure_auction_duration_bounds_satisfied(
-        auction_duration: T::BlockNumber,
+    pub(crate) fn ensure_round_duration_bounds_satisfied(
+        round_duration: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            auction_duration <= Self::max_auction_duration(),
+            round_duration <= Self::max_round_duration(),
             Error::<T>::RoundTimeUpperBoundExceeded
         );
         ensure!(
-            auction_duration >= Self::min_auction_duration(),
+            round_duration >= Self::min_round_duration(),
             Error::<T>::RoundTimeLowerBoundExceeded
+        );
+
+        Ok(())
+    }
+
+    /// Ensure bid lock duration bounds satisfied
+    pub(crate) fn ensure_bid_lock_duration_bounds_satisfied(
+        bid_lock_duration: T::BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            bid_lock_duration <= Self::max_bid_lock_duration(),
+            Error::<T>::BidLockDurationUpperBoundExceeded
+        );
+        ensure!(
+            bid_lock_duration >= Self::min_bid_lock_duration(),
+            Error::<T>::BidLockDurationLowerBoundExceeded
         );
         Ok(())
     }
@@ -146,38 +261,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::StartingPriceLowerBoundExceeded
         );
         Ok(())
-    }
-
-    /// Issue vnft
-    pub(crate) fn issue_vnft(
-        video: &mut Video<T>,
-        video_id: T::VideoId,
-        owner: T::MemberId,
-        creator_royalty: Option<Royalty>,
-        metadata: Metadata,
-    ) {
-        if let NFTStatus::Owned(OwnedNFT {
-            is_issued,
-            transactional_status,
-            ..
-        }) = &mut video.nft_status
-        {
-            *transactional_status = TransactionalStatus::Idle;
-            *is_issued = true;
-        } else {
-            video.nft_status = NFTStatus::Owned(OwnedNFT {
-                is_issued: true,
-                transactional_status: TransactionalStatus::Idle,
-                owner: NFTOwner::Member(owner),
-                creator_royalty,
-            })
-        }
-
-        Self::deposit_event(RawEvent::NftIssued(
-            video_id,
-            video.nft_status.clone(),
-            metadata,
-        ));
     }
 
     /// Ensure given participant have sufficient free balance
@@ -229,6 +312,46 @@ impl<T: Trait> Module<T> {
             _ => return Err(Error::<T>::NoIncomingTransfers.into()),
         }
         Ok(())
+    }
+
+    /// Issue vnft
+    pub(crate) fn issue_vnft(
+        actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+        video: &mut Video<T>,
+        video_id: T::VideoId,
+        royalty: Option<Royalty>,
+        metadata: Metadata,
+        owner: T::MemberId,
+    ) {
+        let creator_royalty = if let NFTStatus::Owned(OwnedNFT {
+            is_issued,
+            transactional_status,
+            creator_royalty,
+            ..
+        }) = &mut video.nft_status
+        {
+            *transactional_status = TransactionalStatus::Idle;
+            *is_issued = true;
+
+            creator_royalty.to_owned()
+        } else {
+            video.nft_status = NFTStatus::Owned(OwnedNFT {
+                is_issued: true,
+                transactional_status: TransactionalStatus::Idle,
+                owner: NFTOwner::Member(owner),
+                creator_royalty: royalty,
+            });
+
+            royalty
+        };
+
+        Self::deposit_event(RawEvent::NftIssued(
+            actor,
+            video_id,
+            creator_royalty,
+            metadata,
+            owner,
+        ));
     }
 
     /// Buy vnft
@@ -330,10 +453,10 @@ impl<T: Trait> Module<T> {
 
     /// Complete auction
     pub(crate) fn complete_auction(
+        actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
         mut video: Video<T>,
         video_id: T::VideoId,
         last_bidder_account_id: T::AccountId,
-        last_bidder: T::MemberId,
         owner_account_id: T::AccountId,
         auction_mode: AuctionMode,
     ) -> Video<T> {
@@ -345,6 +468,7 @@ impl<T: Trait> Module<T> {
             let auction = auction.to_owned();
             if let Some(last_bid) = auction.last_bid {
                 let bid = last_bid.amount;
+                let last_bidder = last_bid.bidder;
                 let auction_fee = Self::auction_fee_percentage() * bid;
 
                 match auction_mode {
@@ -357,7 +481,7 @@ impl<T: Trait> Module<T> {
                         // Issue vnft.
                         // We do not need to provide creator royalty here,
                         // because this data have been already provided at the auction start
-                        Self::issue_vnft(&mut video, video_id, last_bidder, None, metadata);
+                        Self::issue_vnft(actor, &mut video, video_id, None, metadata, last_bidder);
                     }
                     AuctionMode::WithoutIsuance => {
                         Self::complete_vnft_auction_transfer(

@@ -212,9 +212,9 @@ pub struct VideoUpdateParameters<ContentParameters> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoRecord<
+    AccountId: Default + Ord,
     ChannelId,
     SeriesId,
-    AccountId: Default,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
@@ -232,9 +232,9 @@ pub struct VideoRecord<
 }
 
 impl<
+        AccountId: Default + Ord,
         ChannelId: Clone,
         SeriesId: Clone,
-        AccountId: PartialEq + Default + Clone,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq + Ord,
         CuratorGroupId: Default + Copy + PartialEq,
@@ -242,9 +242,9 @@ impl<
         Balance: Clone + Default,
     >
     VideoRecord<
+        AccountId,
         ChannelId,
         SeriesId,
-        AccountId,
         BlockNumber,
         MemberId,
         CuratorGroupId,
@@ -297,17 +297,15 @@ impl<
         Ok(())
     }
 
-    /// Ensure given AccountId is vnft owner
+    /// Ensure given NFTOwner is vnft owner
     pub fn ensure_vnft_ownership<T: Trait>(
         &self,
-        owner: &ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+        owner: &NFTOwner<MemberId, CuratorGroupId, DAOId>,
     ) -> DispatchResult {
         if let NFTStatus::Owned(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
-            Ok(())
-        } else {
-            Err(Error::<T>::VNFTDoesNotExist.into())
         }
+        Ok(())
     }
 
     /// Check whether nft transactional status is set to `Auction`
@@ -321,25 +319,23 @@ impl<
         )
     }
 
-    /// Ensure nft is not in auction state
-    pub fn ensure_nft_is_not_in_auction_state<T: Trait>(&self) -> DispatchResult {
-        ensure!(
-            !self.is_nft_auction_started(),
-            Error::<T>::AlreadyInAuctionState
-        );
-        Ok(())
-    }
-
     /// Ensure nft is in auction state
-    pub fn ensure_nft_auction_state<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_nft_auction_started(), Error::<T>::NotInAuctionState);
-        Ok(())
+    pub fn ensure_nft_auction_state<T: Trait>(
+        &self,
+    ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId>, Error<T>> {
+        if let NFTStatus::Owned(OwnedNFT {
+            transactional_status: TransactionalStatus::Auction(auction),
+            ..
+        }) = &self.nft_status
+        {
+            Ok(auction.clone())
+        } else {
+            Err(Error::<T>::NotInAuctionState.into())
+        }
     }
 
     /// Get nft auction record
-    pub fn get_nft_auction(
-        &self,
-    ) -> Option<AuctionRecord<AccountId, BlockNumber, Balance, MemberId>> {
+    pub fn get_nft_auction(&self) -> Option<AuctionRecord<BlockNumber, Balance, MemberId>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -352,9 +348,7 @@ impl<
     }
 
     /// Get nft auction record by reference
-    pub fn get_nft_auction_ref(
-        &self,
-    ) -> Option<&AuctionRecord<AccountId, BlockNumber, Balance, MemberId>> {
+    pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<BlockNumber, Balance, MemberId>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
@@ -369,7 +363,7 @@ impl<
     /// Get nft auction record by mutable reference
     pub fn get_nft_auction_ref_mut(
         &mut self,
-    ) -> Option<&mut AuctionRecord<AccountId, BlockNumber, Balance, MemberId>> {
+    ) -> Option<&mut AuctionRecord<BlockNumber, Balance, MemberId>> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref mut auction),
             ..
@@ -410,15 +404,15 @@ impl<
     /// Sets nft transactional status to provided `Auction`
     pub fn set_auction_transactional_status(
         mut self,
-        auction: AuctionRecord<AccountId, BlockNumber, Balance, MemberId>,
-        auctioneer: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+        auction: AuctionRecord<BlockNumber, Balance, MemberId>,
+        owner: NFTOwner<MemberId, CuratorGroupId, DAOId>,
         creator_royalty: Option<Royalty>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Auction(auction);
         } else {
             self.nft_status = NFTStatus::Owned(OwnedNFT {
-                owner: NFTOwner::ChannelOwner(auctioneer),
+                owner,
                 transactional_status: TransactionalStatus::Auction(auction),
                 creator_royalty,
                 is_issued: false,
@@ -471,9 +465,9 @@ impl<
 
 /// Video alias type for simplification.
 pub type Video<T> = VideoRecord<
+    <T as frame_system::Trait>::AccountId,
     <T as StorageOwnership>::ChannelId,
     <T as Trait>::SeriesId,
-    <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     CuratorGroupId<T>,

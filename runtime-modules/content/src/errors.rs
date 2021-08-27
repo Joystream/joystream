@@ -64,6 +64,9 @@ decl_error! {
         /// Curators can only censor non-curator group owned channels
         CannotCensoreCuratorGroupOwnedChannels,
 
+        /// Actor cannot authorize as lead for given extrinsic
+        ActorCannotBeLead,
+
         // Auction Errors
         // ---------------------
 
@@ -103,6 +106,12 @@ decl_error! {
         /// Round time lower bound exceeded
         RoundTimeLowerBoundExceeded,
 
+        /// Bid lock duration upper bound exceeded
+        BidLockDurationUpperBoundExceeded,
+
+        /// Bid lock duration lower bound exceeded
+        BidLockDurationLowerBoundExceeded,
+
         /// Starting price upper bound exceeded
         StartingPriceUpperBoundExceeded,
 
@@ -124,10 +133,7 @@ decl_error! {
         /// Already active auction cannot be cancelled
         ActionIsAlreadyActive,
 
-        /// Provided actor is not an auction auctioneer.
-        ActorIsNotAnAuctioneer,
-
-        /// Can not create aution for vNFT, if auction have been already started or nft is locked for the transfer
+        /// Can not create auction for vNFT, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
         /// No pending transfers for given vNFT
@@ -145,6 +151,15 @@ decl_error! {
         // Actor, which makes an attempt to finish auction is not a winner
         CallerIsNotAWinner,
 
+        // Actor is not authorized to complete auction.
+        ActorIsNotAuthorizedToCompleteAuction,
+
+        // Auction cannot be completed
+        AuctionCannotBeCompleted,
+
+        // Auction does not have bids
+        LastBidDoesNotExist,
+
         // Vnft is not issued
         VNFTIsNotIssued,
 
@@ -157,14 +172,14 @@ decl_error! {
         // Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
 
-        // Nft is already in auction state
-        AlreadyInAuctionState,
-
         // Nft is not in auction state
         NotInAuctionState,
 
         // Member is not allowed to participate in auction
         MemberIsNotAllowedToParticipate,
+
+        // Member profile not found
+        MemberProfileNotFound,
 
         // Given video nft is not in buy now state
         VNFTNotInBuyNowState,
