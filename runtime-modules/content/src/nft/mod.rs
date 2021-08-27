@@ -90,12 +90,14 @@ impl<T: Trait> Module<T> {
         video: &Video<T>,
     ) -> DispatchResult {
         match auction.auction_type {
-            AuctionType::English(_) => Self::ensure_actor_is_winner(origin, actor, auction),
+            AuctionType::English(_) => Self::ensure_actor_is_last_bidder(origin, actor, auction),
             AuctionType::Open(_) => {
                 match (
                     Self::authorize_auctioneer(origin.clone(), actor, video),
-                    Self::ensure_actor_is_winner(origin, actor, auction),
+                    Self::ensure_actor_is_last_bidder(origin, actor, auction),
                 ) {
+                    // Open auction canot be complited only if caller is neither last bidder no auctioneer
+                    // Room for error improvement by specifing exact actor
                     (Err(e), Err(_)) => return Err(e),
                     _ => Ok(()),
                 }
@@ -103,7 +105,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_actor_is_winner(
+    fn ensure_actor_is_last_bidder(
         origin: T::Origin,
         actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
         auction: &Auction<T>,
@@ -113,7 +115,7 @@ impl<T: Trait> Module<T> {
 
             ensure_member_auth_success::<T>(member_id, &account_id)?;
 
-            auction.ensure_caller_is_auction_winner::<T>(*member_id)
+            auction.ensure_caller_is_last_bidder::<T>(*member_id)
         } else {
             Err(Error::<T>::ActorNotAuthorizedToManageAuction.into())
         }

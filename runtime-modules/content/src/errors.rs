@@ -183,5 +183,11 @@ decl_error! {
 
         // Given video nft is not in buy now state
         VNFTNotInBuyNowState,
+
+        // Auction type is not `Open`
+        IsNotOpenAuctionType,
+
+        // Bid lock duration is not expired
+        BidLockDurationIsNotExpired,
     }
 }

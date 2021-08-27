@@ -253,6 +253,11 @@ impl<
         self.last_bid = Some(bid);
     }
 
+    /// Cnacel auction bid
+    pub fn cancel_bid(&mut self) {
+        self.last_bid = None;
+    }
+
     /// Check whether auction have any bids
     fn is_active(&self) -> bool {
         self.last_bid.is_some()
@@ -272,15 +277,59 @@ impl<
         Ok(())
     }
 
-    /// Whether caller is auction winner
-    pub fn is_auction_winner(&self, who: MemberId) -> bool {
+    /// Whether caller is last bidder
+    pub fn is_last_bidder(&self, who: MemberId) -> bool {
         matches!(&self.last_bid, Some(last_bid) if last_bid.bidder == who)
     }
 
-    /// Ensure caller is auction winner.
-    pub fn ensure_caller_is_auction_winner<T: Trait>(&self, who: MemberId) -> DispatchResult {
-        ensure!(self.is_auction_winner(who), Error::<T>::CallerIsNotAWinner);
+    /// Ensure caller is last bidder.
+    pub fn ensure_caller_is_last_bidder<T: Trait>(&self, who: MemberId) -> DispatchResult {
+        ensure!(self.is_last_bidder(who), Error::<T>::CallerIsNotAWinner);
         Ok(())
+    }
+
+    /// Ensure auction type is `Open`
+    pub fn ensure_is_open_auction<T: Trait>(&self) -> DispatchResult {
+        matches!(
+            &self.auction_type,
+            AuctionType::Open(_),
+            Error::<T>::IsNotOpenAuctionType
+        );
+        Ok(())
+    }
+
+    /// Ensure bid lock duration expired
+    pub fn ensure_bid_lock_duration_expired<T: Trait>(
+        &self,
+        current_block: BlockNumber,
+        bid: &Bid<MemberId, BlockNumber, Balance>,
+    ) -> DispatchResult {
+        if let AuctionType::Open(bid_lock_duration) = &self.auction_type {
+            ensure!(
+                current_block - bid.time >= bid_lock_duration,
+                Error::<T>::BidLockDurationIsNotExpired
+            );
+        }
+        Ok(())
+    }
+
+    /// Ensure bid can be cancelled
+    pub fn ensure_bid_can_be_canceled<T: Trait>(
+        &self,
+        who: MemberId,
+        current_block: BlockNumber,
+    ) -> DispatchResult {
+        // ensure is open auction
+        self.ensure_is_open_auction::<T>()?;
+
+        // ensure last bid exists
+        let last_bid = auction.ensure_last_bid_exists::<T>()?;
+
+        // Ensure caller is last bidder.
+        self.ensure_caller_is_last_bidder::<T>(who)?;
+
+        // ensure bid lock duration expired
+        self.ensure_bid_lock_duration_expired::<T>(current_block, last_bid)
     }
 
     /// If whitelist set, ensure provided member is authorized to make bids
