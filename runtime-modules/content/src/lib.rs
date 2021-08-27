@@ -1074,45 +1074,44 @@ decl_module! {
             // Ensure new bid is greater then last bid + minimal bid step
             auction.ensure_is_valid_bid::<T>(bid)?;
 
+            let last_bidder_account_id = if let Some(last_bid) = auction.last_bid {
+                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+                Some(last_bidder_account_id)
+            } else {
+                None
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Unreserve previous bidder balance
+            if let Some(last_bidder_account_id) = last_bidder_account_id {
+                T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
+            }
+
+            // Do not charge more then buy now
+            let bid = match auction.buy_now_price {
+                Some(buy_now_price) if bid >= buy_now_price => buy_now_price,
+                _ => bid,
+            };
+
+            // Reseve balance for current bid
+            // Can not fail, needed check made
+            T::Currency::reserve(&participant_account_id, bid)?;
+
+            // Make auction bid & update auction data
+            let block_number = <frame_system::Module<T>>::block_number();
+
             let mut video = video;
 
             if let Some(auction) = video.get_nft_auction_ref_mut() {
+                auction.make_bid(participant_id, bid, block_number);
 
-                let last_bid = auction.last_bid.clone();
+                VideoById::<T>::insert(video_id, video);
 
-                if let Some(last_bid) = last_bid {
-
-                    let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-
-                    //
-                    // == MUTATION SAFE ==
-                    //
-
-                    // TODO switch to StakingHandler representation after merging with olympia
-
-                    // Unreserve previous bidder balance
-                    T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
-
-                    // Do not charge more then buy now
-                    let bid = match auction.buy_now_price {
-                        Some(buy_now_price) if bid >= buy_now_price => buy_now_price,
-                        _ => bid,
-                    };
-
-                    // Make auction bid & update auction data
-
-                    // Reseve balance for current bid
-                    // Can not fail, needed check made
-                    T::Currency::reserve(&participant_account_id, bid)?;
-
-                    let block_number = <frame_system::Module<T>>::block_number();
-                    auction.make_bid(participant_id, bid, block_number);
-
-                    VideoById::<T>::insert(video_id, video);
-
-                    // Trigger event
-                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
-                };
+                // Trigger event
+                Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
             }
         }
 
