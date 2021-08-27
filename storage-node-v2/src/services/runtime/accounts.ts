@@ -59,8 +59,7 @@ export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair 
  * @returns 'Alice' KeyPair instance.
  */
 export function getAlicePair(): KeyringPair {
-  const keyring = configureKeyring()
-  return keyring.addFromUri('//Alice')
+  return getAccountFromUri('//Alice')
 }
 
 /**

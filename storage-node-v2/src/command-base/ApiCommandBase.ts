@@ -17,7 +17,7 @@ export default abstract class ApiCommandBase extends Command {
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    dev: flags.boolean({ char: 'm', description: 'Use development mode' }),
+    dev: flags.boolean({ char: 'm', description: 'Use development mode', default: false }),
     apiUrl: flags.string({
       char: 'u',
       description: 'Runtime API URL. Mandatory in non-dev environment.',
@@ -29,11 +29,12 @@ export default abstract class ApiCommandBase extends Command {
     }),
     password: flags.string({
       char: 'p',
-      description: 'Key file password (optional).',
+      description: 'Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.',
     }),
     accountURI: flags.string({
       char: 'y',
-      description: 'Account URI (optional). Overrides keyfile and password flags.',
+      description:
+        'Account URI (optional). Has a priority over the keyfile and password flags. Could be overriden by ACCOUNT_URI environment variable.',
     }),
   }
 
@@ -71,9 +72,11 @@ export default abstract class ApiCommandBase extends Command {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { flags } = this.parse(<Input<any>>this.constructor)
 
-    this.api = await createApi(flags.apiUrl)
+    // Some dev commands doesn't contain flags variables.
+    const apiUrl = flags.apiUrl ?? 'ws://localhost:9944'
+    this.api = await createApi(apiUrl)
 
-    logger.info(`Initialized runtime connection: ${flags.apiUrl}`)
+    logger.info(`Initialized runtime connection: ${apiUrl}`)
 
     await this.getApi()
   }
@@ -106,21 +109,47 @@ export default abstract class ApiCommandBase extends Command {
    * @param accountURI - accountURI (optional). Overrides keyfile and password flags.
    * @returns KeyringPair instance.
    */
-  getAccount(flags: { dev?: boolean; keyfile?: string; password?: string; accountURI?: string }): KeyringPair {
-    const keyfile = flags.keyfile ?? ''
-    const password = flags.password
-    const accountURI = flags.accountURI
+  getAccount(flags: { dev: boolean; keyfile?: string; password?: string; accountURI?: string }): KeyringPair {
+    // Select account URI variable from flags key and environment variable.
+    let accountURI = flags.accountURI ?? ''
+    if (!_.isEmpty(process.env.ACCOUNT_URI)) {
+      if (!_.isEmpty(flags.accountURI)) {
+        logger.warn(
+          `Both enviroment variable and command line argument were provided for the account URI. Environment variable has a priority.`
+        )
+      }
+      accountURI = process.env.ACCOUNT_URI ?? ''
+    }
 
+    // Select password variable from flags key and environment variable.
+    let password = flags.password
+    if (!_.isEmpty(process.env.ACCOUNT_PWD)) {
+      if (!_.isEmpty(flags.password)) {
+        logger.warn(
+          `Both enviroment variable and command line argument were provided for the password. Environment variable has a priority.`
+        )
+      }
+      password = process.env.ACCOUNT_PWD ?? ''
+    }
+
+    const keyfile = flags.keyfile ?? ''
+    // Create the Alice account for development mode.
     if (flags.dev) {
       return getAlicePair()
-    } else if (!_.isEmpty(accountURI) && accountURI !== undefined) {
+    }
+    // Create an account using account URI
+    else if (!_.isEmpty(accountURI)) {
       return getAccountFromUri(accountURI)
-    } else if (!_.isEmpty(keyfile)) {
+    }
+    // Create an account using the keyfile and password.
+    else if (!_.isEmpty(keyfile)) {
       const account = getAccountFromJsonFile(keyfile)
       account.unlock(password)
 
       return account
-    } else {
+    }
+    // Cannot create any account for these parameters.
+    else {
       this.error('Keyfile or account URI must be set.')
     }
   }
