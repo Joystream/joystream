@@ -23,7 +23,7 @@ use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {
-        "joystream-node".into()
+        "Joystream Node".into()
     }
 
     fn impl_version() -> String {
@@ -39,11 +39,11 @@ impl SubstrateCli for Cli {
     }
 
     fn support_url() -> String {
-        "support.anonymous.an".into()
+        "https://www.joystream.org/".into()
     }
 
     fn copyright_start_year() -> i32 {
-        2017
+        2019
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
