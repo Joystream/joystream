@@ -107,8 +107,7 @@ type WeightInfoCodex<T> = <T as Config>::WeightInfo;
 
 /// 'Proposals codex' substrate module Config
 pub trait Config:
-    frame_system::Config
-    + proposals_engine::Config
+    proposals_engine::Config
     + proposals_discussion::Config
     + common::membership::Config
     + staking::Config
