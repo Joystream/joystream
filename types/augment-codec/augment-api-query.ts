@@ -3,7 +3,7 @@
 
 import type { Bytes, Option, Vec, bool, u32, u64 } from '@polkadot/types';
 import type { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
-import type { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassOf, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import type { Application, ApplicationId, ApplicationOf, Bag, BagId, Category, CategoryId, Channel, ChannelId, Cid, Class, ClassId, ClassOf, ClassPermissionsType, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectId, DiscussionPost, DiscussionThread, DistributionBucketFamily, DistributionBucketFamilyId, DistributionBucketId, DynamicBagCreationPolicy, DynamicBagType, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, EntityOf, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Stake, StakeId, StorageBucket, StorageBucketId, Thread, ThreadCounter, ThreadId, TransferableStake, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
 import type { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import type { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import type { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -331,61 +331,60 @@ declare module '@polkadot/api/types/storage' {
       votes: AugmentedQuery<ApiType, (arg: Hash | string | Uint8Array) => Observable<SealedVote>, [Hash]>;
       votingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>, []>;
     };
-    dataDirectory: {
+    distributionWorkingGroup: {
       /**
-       * Maps data objects by their content id.
+       * Count of active workers.
        **/
-      dataObjectByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Option<DataObject>>, [ContentId]>;
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       /**
-       * List of ids known to the frame_system.
+       * Maps identifier to worker application on opening.
        **/
-      knownContentIds: AugmentedQuery<ApiType, () => Observable<Vec<ContentId>>, []>;
-    };
-    dataObjectStorageRegistry: {
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>, [ApplicationId]>;
       /**
-       * Defines first relationship id.
+       * The current lead.
        **/
-      firstRelationshipId: AugmentedQuery<ApiType, () => Observable<DataObjectStorageRelationshipId>, []>;
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>, []>;
       /**
-       * Defines next relationship id.
+       * Map member id by hiring application id.
+       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
        **/
-      nextRelationshipId: AugmentedQuery<ApiType, () => Observable<DataObjectStorageRelationshipId>, []>;
+      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>, [HiringApplicationId]>;
       /**
-       * Mapping of Data object types
+       * The mint currently funding the rewards for this module.
        **/
-      relationships: AugmentedQuery<ApiType, (arg: DataObjectStorageRelationshipId | AnyNumber | Uint8Array) => Observable<Option<DataObjectStorageRelationship>>, [DataObjectStorageRelationshipId]>;
+      mint: AugmentedQuery<ApiType, () => Observable<MintId>, []>;
       /**
-       * Keeps a list of storage relationships per content id.
+       * Next identifier value for new worker application.
        **/
-      relationshipsByContentId: AugmentedQuery<ApiType, (arg: ContentId | string | Uint8Array) => Observable<Vec<DataObjectStorageRelationshipId>>, [ContentId]>;
-    };
-    dataObjectTypeRegistry: {
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>, []>;
       /**
-       * Mapping of Data object types.
+       * Next identifier value for new worker opening.
        **/
-      dataObjectTypes: AugmentedQuery<ApiType, (arg: DataObjectTypeId | AnyNumber | Uint8Array) => Observable<Option<DataObjectType>>, [DataObjectTypeId]>;
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>, []>;
       /**
-       * Data object type ids should start at this value.
+       * Next identifier for new worker.
        **/
-      firstDataObjectTypeId: AugmentedQuery<ApiType, () => Observable<DataObjectTypeId>, []>;
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>, []>;
       /**
-       * Provides id counter for the data object types.
+       * Maps identifier to worker opening.
        **/
-      nextDataObjectTypeId: AugmentedQuery<ApiType, () => Observable<DataObjectTypeId>, []>;
-    };
-    discovery: {
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>, [OpeningId]>;
       /**
-       * Mapping of service providers' storage provider id to their ServiceProviderRecord
+       * Opening human readable text length limits
        **/
-      accountInfoByStorageProviderId: AugmentedQuery<ApiType, (arg: StorageProviderId | AnyNumber | Uint8Array) => Observable<ServiceProviderRecord>, [StorageProviderId]>;
+      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
       /**
-       * Bootstrap endpoints maintained by root
+       * Worker application human readable text length limits
        **/
-      bootstrapEndpoints: AugmentedQuery<ApiType, () => Observable<Vec<Url>>, []>;
+      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
       /**
-       * Lifetime of an ServiceProviderRecord record in AccountInfoByAccountId map
+       * Maps identifier to corresponding worker.
        **/
-      defaultLifetime: AugmentedQuery<ApiType, () => Observable<BlockNumber>, []>;
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>, [WorkerId]>;
+      /**
+       * Worker exit rationale text length limits.
+       **/
+      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>, []>;
     };
     forum: {
       /**
@@ -1011,6 +1010,80 @@ declare module '@polkadot/api/types/storage' {
        * and slash value of the era.
        **/
       validatorSlashInEra: AugmentedQueryDoubleMap<ApiType, (key1: EraIndex | AnyNumber | Uint8Array, key2: AccountId | string | Uint8Array) => Observable<Option<ITuple<[Perbill, BalanceOf]>>>, [EraIndex, AccountId]>;
+    };
+    storage: {
+      /**
+       * Bags storage map.
+       **/
+      bags: AugmentedQuery<ApiType, (arg: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array) => Observable<Bag>, [BagId]>;
+      /**
+       * Blacklisted data object hashes.
+       **/
+      blacklist: AugmentedQuery<ApiType, (arg: Cid | string | Uint8Array) => Observable<ITuple<[]>>, [Cid]>;
+      /**
+       * Blacklist collection counter.
+       **/
+      currentBlacklistSize: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Size based pricing of new objects uploaded.
+       **/
+      dataObjectPerMegabyteFee: AugmentedQuery<ApiType, () => Observable<BalanceOf>, []>;
+      /**
+       * 'Data objects for bags' storage double map.
+       **/
+      dataObjectsById: AugmentedQueryDoubleMap<ApiType, (key1: BagId | { Static: any } | { Dynamic: any } | string | Uint8Array, key2: DataObjectId | AnyNumber | Uint8Array) => Observable<DataObject>, [BagId, DataObjectId]>;
+      /**
+       * Distribution bucket families.
+       **/
+      distributionBucketFamilyById: AugmentedQuery<ApiType, (arg: DistributionBucketFamilyId | AnyNumber | Uint8Array) => Observable<DistributionBucketFamily>, [DistributionBucketFamilyId]>;
+      /**
+       * Total number of distribution bucket families in the system.
+       **/
+      distributionBucketFamilyNumber: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * "Distribution buckets per bag" number limit.
+       **/
+      distributionBucketsPerBagLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * DynamicBagCreationPolicy by bag type storage map.
+       **/
+      dynamicBagCreationPolicies: AugmentedQuery<ApiType, (arg: DynamicBagType | 'Member' | 'Channel' | number | Uint8Array) => Observable<DynamicBagCreationPolicy>, [DynamicBagType]>;
+      /**
+       * Data object id counter. Starts at zero.
+       **/
+      nextDataObjectId: AugmentedQuery<ApiType, () => Observable<DataObjectId>, []>;
+      /**
+       * Distribution bucket family id counter. Starts at zero.
+       **/
+      nextDistributionBucketFamilyId: AugmentedQuery<ApiType, () => Observable<DistributionBucketFamilyId>, []>;
+      /**
+       * Distribution bucket id counter. Starts at zero.
+       **/
+      nextDistributionBucketId: AugmentedQuery<ApiType, () => Observable<DistributionBucketId>, []>;
+      /**
+       * Storage bucket id counter. Starts at zero.
+       **/
+      nextStorageBucketId: AugmentedQuery<ApiType, () => Observable<StorageBucketId>, []>;
+      /**
+       * Storage buckets.
+       **/
+      storageBucketById: AugmentedQuery<ApiType, (arg: StorageBucketId | AnyNumber | Uint8Array) => Observable<StorageBucket>, [StorageBucketId]>;
+      /**
+       * "Storage buckets per bag" number limit.
+       **/
+      storageBucketsPerBagLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Defines whether all new uploads blocked
+       **/
+      uploadingBlocked: AugmentedQuery<ApiType, () => Observable<bool>, []>;
+      /**
+       * "Max objects number for a storage bucket voucher" number limit.
+       **/
+      voucherMaxObjectsNumberLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * "Max objects size for a storage bucket voucher" number limit.
+       **/
+      voucherMaxObjectsSizeLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
     };
     storageWorkingGroup: {
       /**

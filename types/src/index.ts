@@ -11,9 +11,10 @@ import hiring from './hiring'
 import contentWorkingGroup from './content-working-group'
 import workingGroup from './working-group'
 import discovery from './discovery'
-import media from './media'
 import proposals from './proposals'
 import contentDirectory from './content-directory'
+import storage from './storage'
+
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
@@ -33,9 +34,9 @@ export {
   contentWorkingGroup,
   workingGroup,
   discovery,
-  media,
   proposals,
   contentDirectory,
+  storage,
 }
 
 export const types: RegistryTypes = {
@@ -51,9 +52,9 @@ export const types: RegistryTypes = {
   ...contentWorkingGroup,
   ...workingGroup,
   ...discovery,
-  ...media,
   ...proposals,
   ...contentDirectory,
+  ...storage,
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)

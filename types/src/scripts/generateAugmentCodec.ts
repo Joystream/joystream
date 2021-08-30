@@ -20,9 +20,9 @@ import hiring from '../hiring'
 import contentWorkingGroup from '../content-working-group'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
-import media from '../media'
 import proposals from '../proposals'
 import contentDirectory from '../content-directory'
+import storage from '../storage'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
 const AUGMENT_CODEC_PATH = path.join(__dirname, '../../augment-codec')
@@ -42,9 +42,9 @@ const typesByModule = {
   'content-working-group': contentWorkingGroup,
   'working-group': workingGroup,
   'discovery': discovery,
-  'media': media,
   'proposals': proposals,
   'content-directory': contentDirectory,
+  'storage': storage,
 }
 
 type Imports = { [moduleName: string]: string[] }

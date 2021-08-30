@@ -1,0 +1,223 @@
+openapi: 3.0.3
+info:
+  title: Storage node API
+  description: Storage node API
+  contact:
+    email: info@joystream.org
+  license:
+    name: GPL-3.0-only
+    url: https://opensource.org/licenses/GPL-3.0
+  version: 0.1.0
+externalDocs:
+  description: Storage node API
+  url: https://github.com/Joystream/joystream/issues/2224
+servers:
+  - url: http://localhost:3333/api/v1/
+
+tags:
+  - name: public
+    description: Public storage node API
+
+paths:
+  /files/{cid}:
+    get:
+      operationId: publicApi.getFile
+      description: Returns a media file.
+      tags:
+        - public
+      parameters:
+        - name: cid
+          required: true
+          in: path
+          description: Content ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            video/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            image/*:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unknown server error
+    head:
+      operationId: publicApi.getFileHeaders
+      description: Returns a media file headers.
+      tags:
+        - public
+      parameters:
+        - name: cid
+          required: true
+          in: path
+          description: Content ID
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+        400:
+          description: Bad request
+        404:
+          description: File not found
+        500:
+          description: Unknown server error
+  /files:
+    post:
+      security:
+        - UploadAuth: []
+      description: Upload data
+      operationId: publicApi.uploadFile
+      tags:
+        - public
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - dataObjectId
+                - storageBucketId
+                - bagId
+              properties:
+                file:
+                  description: Data file
+                  type: string
+                  format: binary
+                dataObjectId:
+                  description: Data object runtime ID
+                  type: string
+                  pattern: '^\d+$' #integer
+                storageBucketId:
+                  description: Storage bucket ID
+                  type: string
+                  pattern: '^\d+$' #integer
+                bagId:
+                  description: Bag ID
+                  type: string
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+
+  /authToken:
+    post:
+      description: Get auth token from a server.
+      operationId: publicApi.authTokenForUploading
+      tags:
+        - public
+      requestBody:
+        description: Token request parameters,
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    UploadAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    TokenRequest:
+      type: object
+      required:
+        - data
+        - signature
+      properties:
+        data:
+          type: object
+          required:
+            - memberId
+            - accountId
+            - dataObjectId
+            - storageBucketId
+            - bagId
+          properties:
+            memberId:
+              type: integer
+              format: int64
+            accountId:
+              type: string
+            dataObjectId:
+              type: integer
+              format: int64
+            storageBucketId:
+              type: integer
+              format: int64
+            bagId:
+              type: string
+        signature:
+          type: string
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        type:
+          type: string
+        message:
+          type: string

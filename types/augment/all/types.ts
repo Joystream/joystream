@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, U8aFixed, Vec, bool, i16, i32, i64, u128, u16, u32, u64 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, Vec, bool, i16, i32, i64, u128, u16, u32, u64 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash } from '@polkadot/types/interfaces/runtime';
 
@@ -158,6 +158,30 @@ export interface Backer extends Struct {
 /** @name Backers */
 export interface Backers extends Vec<Backer> {}
 
+/** @name Bag */
+export interface Bag extends Struct {
+  readonly objects: BTreeMap<DataObjectId, DataObject>;
+  readonly stored_by: StorageBucketIdSet;
+  readonly distributed_by: Vec<DistributionBucketId>;
+  readonly deletion_prize: Option<u128>;
+}
+
+/** @name BagId */
+export interface BagId extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+  readonly asDynamic: Dynamic;
+}
+
+/** @name BagIdType */
+export interface BagIdType extends Enum {
+  readonly isStatic: boolean;
+  readonly asStatic: Static;
+  readonly isDynamic: boolean;
+  readonly asDynamic: Dynamic;
+}
+
 /** @name BalanceOfMint */
 export interface BalanceOfMint extends u128 {}
 
@@ -230,6 +254,9 @@ export interface ChildPositionInParentCategory extends Struct {
   readonly child_nr_in_parent_category: u32;
 }
 
+/** @name Cid */
+export interface Cid extends Bytes {}
+
 /** @name Class */
 export interface Class extends Struct {
   readonly class_permissions: ClassPermissions;
@@ -271,8 +298,8 @@ export interface ClassPermissionsType extends Null {}
 /** @name ClassPropertyValue */
 export interface ClassPropertyValue extends Null {}
 
-/** @name ContentId */
-export interface ContentId extends U8aFixed {}
+/** @name ContentIdSet */
+export interface ContentIdSet extends BTreeSet<Cid> {}
 
 /** @name CreateEntityOperation */
 export interface CreateEntityOperation extends Struct {
@@ -380,35 +407,20 @@ export interface CuratorRoleStakeProfile extends Struct {
 
 /** @name DataObject */
 export interface DataObject extends Struct {
-  readonly owner: MemberId;
-  readonly added_at: BlockAndTime;
-  readonly type_id: DataObjectTypeId;
-  readonly liaison: StorageProviderId;
-  readonly liaison_judgement: LiaisonJudgement;
-  readonly ipfs_content_id: Text;
+  readonly accepted: bool;
+  readonly deletion_prize: u128;
 }
 
-/** @name DataObjectsMap */
-export interface DataObjectsMap extends BTreeMap<ContentId, DataObject> {}
-
-/** @name DataObjectStorageRelationship */
-export interface DataObjectStorageRelationship extends Struct {
-  readonly content_id: ContentId;
-  readonly storage_provider: StorageProviderId;
-  readonly ready: bool;
+/** @name DataObjectCreationParameters */
+export interface DataObjectCreationParameters extends Struct {
+  readonly ipfsContentId: Bytes;
 }
 
-/** @name DataObjectStorageRelationshipId */
-export interface DataObjectStorageRelationshipId extends u64 {}
+/** @name DataObjectId */
+export interface DataObjectId extends u64 {}
 
-/** @name DataObjectType */
-export interface DataObjectType extends Struct {
-  readonly description: Text;
-  readonly active: bool;
-}
-
-/** @name DataObjectTypeId */
-export interface DataObjectTypeId extends u64 {}
+/** @name DataObjectIdSet */
+export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
 /** @name Deactivated */
 export interface Deactivated extends Struct {
@@ -433,6 +445,65 @@ export interface DiscussionThread extends Struct {
   readonly title: Bytes;
   readonly created_at: u32;
   readonly author_id: MemberId;
+}
+
+/** @name DistributionBucket */
+export interface DistributionBucket extends Struct {
+  readonly accepting_new_bags: bool;
+  readonly distributing: bool;
+  readonly pending_invitations: Vec<WorkerId>;
+  readonly operators: Vec<WorkerId>;
+  readonly assigned_bags: u64;
+}
+
+/** @name DistributionBucketFamily */
+export interface DistributionBucketFamily extends Struct {
+  readonly distribution_buckets: BTreeMap<DistributionBucketId, DistributionBucket>;
+}
+
+/** @name DistributionBucketFamilyId */
+export interface DistributionBucketFamilyId extends u64 {}
+
+/** @name DistributionBucketId */
+export interface DistributionBucketId extends u64 {}
+
+/** @name Dynamic */
+export interface Dynamic extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
+
+/** @name DynamicBagCreationPolicy */
+export interface DynamicBagCreationPolicy extends Struct {
+  readonly numberOfStorageBuckets: u64;
+}
+
+/** @name DynamicBagDeletionPrize */
+export interface DynamicBagDeletionPrize extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagDeletionPrizeRecord */
+export interface DynamicBagDeletionPrizeRecord extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagId */
+export interface DynamicBagId extends Enum {
+  readonly isMember: boolean;
+  readonly asMember: MemberId;
+  readonly isChannel: boolean;
+  readonly asChannel: u64;
+}
+
+/** @name DynamicBagType */
+export interface DynamicBagType extends Enum {
+  readonly isMember: boolean;
+  readonly isChannel: boolean;
 }
 
 /** @name ElectionParameters */
@@ -627,13 +698,6 @@ export interface LeadRoleState extends Enum {
   readonly isActive: boolean;
   readonly isExited: boolean;
   readonly asExited: ExitedLeadRole;
-}
-
-/** @name LiaisonJudgement */
-export interface LiaisonJudgement extends Enum {
-  readonly isPending: boolean;
-  readonly isAccepted: boolean;
-  readonly isRejected: boolean;
 }
 
 /** @name LookupSource */
@@ -1191,8 +1255,51 @@ export interface StakingStatus extends Enum {
   readonly asStaked: Staked;
 }
 
+/** @name Static */
+export interface Static extends Enum {
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
+}
+
+/** @name StaticBagId */
+export interface StaticBagId extends Enum {
+  readonly isCouncil: boolean;
+  readonly isWorkingGroup: boolean;
+  readonly asWorkingGroup: WorkingGroup;
+}
+
 /** @name Status */
 export interface Status extends bool {}
+
+/** @name StorageBucket */
+export interface StorageBucket extends Struct {
+  readonly operator_status: StorageBucketOperatorStatus;
+  readonly accepting_new_bags: bool;
+  readonly voucher: Voucher;
+  readonly metadata: Bytes;
+}
+
+/** @name StorageBucketId */
+export interface StorageBucketId extends u64 {}
+
+/** @name StorageBucketIdSet */
+export interface StorageBucketIdSet extends BTreeSet<StorageBucketId> {}
+
+/** @name StorageBucketOperatorStatus */
+export interface StorageBucketOperatorStatus extends Enum {
+  readonly isMissing: boolean;
+  readonly isInvitedStorageWorker: boolean;
+  readonly asInvitedStorageWorker: WorkerId;
+  readonly isStorageWorker: boolean;
+  readonly asStorageWorker: WorkerId;
+}
+
+/** @name StorageBucketsPerBagValueConstraint */
+export interface StorageBucketsPerBagValueConstraint extends Struct {
+  readonly min: u64;
+  readonly max_min_diff: u64;
+}
 
 /** @name StorageProviderId */
 export interface StorageProviderId extends u64 {}
@@ -1290,6 +1397,15 @@ export interface UpdatePropertyValuesOperation extends Struct {
   readonly new_parametrized_property_values: Vec<ParametrizedClassPropertyValue>;
 }
 
+/** @name UploadParameters */
+export interface UploadParameters extends Struct {
+  readonly authenticationKey: Bytes;
+  readonly bagId: BagId;
+  readonly objectCreationList: Vec<DataObjectCreationParameters>;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly expectedDataSizeFee: u128;
+}
+
 /** @name Url */
 export interface Url extends Text {}
 
@@ -1364,6 +1480,14 @@ export interface VotingResults extends Struct {
   readonly approvals: u32;
   readonly rejections: u32;
   readonly slashes: u32;
+}
+
+/** @name Voucher */
+export interface Voucher extends Struct {
+  readonly sizeLimit: u64;
+  readonly objectsLimit: u64;
+  readonly sizeUsed: u64;
+  readonly objectsUsed: u64;
 }
 
 /** @name WaitingToBeingOpeningStageVariant */
