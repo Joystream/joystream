@@ -5,7 +5,7 @@ class ValidationError extends Error {
   public readonly errors: string[]
 
   public constructor(message: string, errors: string[]) {
-    super(message)
+    super(`${message}\n\n${errors.join('\n')}`)
     this.errors = errors
   }
 }
@@ -22,7 +22,7 @@ export class ValidationService {
     if (!valid) {
       throw new ValidationError(
         `${schemaKey} is not valid`,
-        this.ajv.errors?.map((e) => `${e.instancePath}: ${e.message} (${JSON.stringify(e.params)})`) || []
+        this.ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${JSON.stringify(e.params)})`) || []
       )
     }
     return input as TypeBySchemaKey<SK>

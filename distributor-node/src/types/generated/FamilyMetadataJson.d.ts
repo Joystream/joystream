@@ -9,7 +9,7 @@ export interface FamilyMetadataJson {
   region?: string
   description?: string
   boundary?: {
-    latitude: number
-    longitude: number
+    latitude?: number
+    longitude?: number
   }[]
 }

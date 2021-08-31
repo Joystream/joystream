@@ -1,5 +1,4 @@
 import { JSONSchema4 } from 'json-schema'
-import { strictObject } from './utils'
 
 export const operatorMetadataSchema: JSONSchema4 = {
   type: 'object',
@@ -12,10 +11,14 @@ export const operatorMetadataSchema: JSONSchema4 = {
       properties: {
         countryCode: { type: 'string' },
         city: { type: 'string' },
-        coordinates: strictObject({
-          latitude: { type: 'number' },
-          longitude: { type: 'number' },
-        }),
+        coordinates: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            latitude: { type: 'number', minimum: -180, maximum: 180 },
+            longitude: { type: 'number', minimum: -180, maximum: 180 },
+          },
+        },
       },
     },
     extra: { type: 'string' },
