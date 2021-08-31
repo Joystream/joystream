@@ -40,6 +40,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 // used dependencies
 use codec::{Decode, Encode};

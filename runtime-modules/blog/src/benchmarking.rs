@@ -35,7 +35,7 @@ fn assert_in_events<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 fn member_funded_account<T: Config<I> + membership::Config + balances::Config, I: Instance>(

@@ -1,6 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::type_complexity)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};

@@ -7,6 +7,7 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::unnecessary_mut_passed)]
 #![allow(non_fmt_panic)]
+#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 // This is required only by the node build.

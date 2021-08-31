@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsEngine;
@@ -21,7 +23,7 @@ type ReferendumInstance = referendum::Instance1;
 const SEED: u32 = 0;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle

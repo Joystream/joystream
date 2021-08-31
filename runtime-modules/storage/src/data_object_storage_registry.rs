@@ -18,6 +18,8 @@
 //! storage provider-to-content relationship.
 //!
 
+#![allow(clippy::unused_unit)]
+
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};

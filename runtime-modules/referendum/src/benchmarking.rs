@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
@@ -202,7 +204,7 @@ fn move_to_block_before_initialize<T: Config<I>, I: Instance>(
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle

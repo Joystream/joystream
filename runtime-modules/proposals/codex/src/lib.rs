@@ -38,6 +38,7 @@
 // Disable this lint warning because Substrate generates function without an alias for
 // the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::unused_unit)]
 
 mod types;
 

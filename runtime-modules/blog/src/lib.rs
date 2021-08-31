@@ -34,6 +34,7 @@
 //! - [delete_replies](./struct.Module.html#method.delete_replies)
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 use codec::{Codec, Decode, Encode};
 use common::membership::MemberOriginValidator;

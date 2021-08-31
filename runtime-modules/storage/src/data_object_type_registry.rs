@@ -19,6 +19,8 @@
 //! Deactivates existing data object type.
 //!
 
+#![allow(clippy::unused_unit)]
+
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchError;
 use frame_support::weights::Weight;

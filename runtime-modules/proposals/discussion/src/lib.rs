@@ -45,9 +45,9 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
+#![allow(clippy::unused_unit)]
 
 mod benchmarking;
 #[cfg(test)]

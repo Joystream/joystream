@@ -6,6 +6,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 pub(crate) mod tests;

@@ -114,7 +114,7 @@ where
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -366,7 +366,7 @@ benchmarks! {
         let winners = candidates_id.iter().map(|candidate_id| {
             let option_id: T::MemberId = *candidate_id;
             OptionResult {
-                option_id: option_id.into(),
+                option_id,
                 vote_power: Zero::zero(),
             }
         }).collect::<Vec<_>>();

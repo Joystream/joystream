@@ -20,6 +20,8 @@
 //! root privileges.
 //!
 
+#![allow(clippy::unused_unit)]
+
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;

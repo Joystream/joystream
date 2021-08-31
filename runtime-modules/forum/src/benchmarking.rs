@@ -53,7 +53,7 @@ const MAX_POSTS: u32 = 500;
 const MAX_THREADS: u32 = 500;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
