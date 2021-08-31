@@ -35,7 +35,7 @@ export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair 
     })
   }
 
-  const keyring = new Keyring()
+  const keyring = configureKeyring()
   let account: KeyringPair
   try {
     // Try adding and retrieving the keys in order to validate that the backup file is correct
@@ -59,6 +59,25 @@ export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair 
  * @returns 'Alice' KeyPair instance.
  */
 export function getAlicePair(): KeyringPair {
-  const keyring = new Keyring({ type: 'sr25519' })
-  return keyring.addFromUri('//Alice')
+  return getAccountFromUri('//Alice')
+}
+
+/**
+ * Create KeyPair instance from the account URI.
+ *
+ * @param accountURI - account URI (//Alice)
+ * @returns KeyPair instance.
+ */
+export function getAccountFromUri(accountURI: string): KeyringPair {
+  const keyring = configureKeyring()
+  return keyring.addFromUri(accountURI)
+}
+
+/**
+ * Configures the Keyring with the proper account type.
+ *
+ * @returns configured Keyring.
+ */
+function configureKeyring(): Keyring {
+  return new Keyring({ type: 'sr25519' })
 }
