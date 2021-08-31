@@ -21,7 +21,7 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
     }),
     workerId: flags.integer({
       char: 'w',
-      description: 'ID of the invited operator (distribution group worker)',
+      description: 'ID of the operator (distribution group worker)',
       required: true,
     }),
     endpoint: flags.string({
