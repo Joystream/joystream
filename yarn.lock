@@ -13192,7 +13192,7 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diacritics@^1.3.0:
+diacritics@1.3.0, diacritics@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/diacritics/-/diacritics-1.3.0.tgz#3efa87323ebb863e6696cebb0082d48ff3d6f7a1"
   integrity "sha1-PvqHMj67hj5mls67AILUj/PW96E= sha512-wlwEkqcsaxvPJML+rDh/2iS824jbREk6DUMUKkEaSlxdYHeS43cClJtsWglvw2RfeXGm6ohKDqsXteJ5sP5enA=="
@@ -17870,6 +17870,13 @@ hyperquest@~2.0.0:
   dependencies:
     duplexer2 "~0.0.2"
     through2 "~0.6.3"
+
+i18n-iso-countries@^6.8.0:
+  version "6.8.0"
+  resolved "https://registry.yarnpkg.com/i18n-iso-countries/-/i18n-iso-countries-6.8.0.tgz#eebbc75594c6832aff86176c1bb38daa133d6dfd"
+  integrity sha512-jJs/+CA6+VUICFxqGcB0vFMERGfhfvyNk+8Vb9EagSZkl7kSpm/kT0VyhvzM/zixDWEV/+oN9L7v/GT9BwzoGg==
+  dependencies:
+    diacritics "1.3.0"
 
 i18next-browser-languagedetector@^4.3.1:
   version "4.3.1"

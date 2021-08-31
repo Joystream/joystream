@@ -4,10 +4,10 @@ import * as $protobuf from "protobufjs";
 export interface IGeoCoordiantes {
 
     /** GeoCoordiantes latitude */
-    latitude: number;
+    latitude?: (number|null);
 
     /** GeoCoordiantes longitude */
-    longitude: number;
+    longitude?: (number|null);
 }
 
 /** Represents a GeoCoordiantes. */

@@ -31,7 +31,7 @@ export interface components {
       'storageLimit': number
       'storageUsed': number
       'uptime': number
-      'downloadsInProgress'?: number
+      'downloadsInProgress': number
     }
     'BucketsResponse': number[]
   }
@@ -40,7 +40,7 @@ export interface components {
     'ObjectId': string
   }
   headers: {
-    /** Describes cache status of an object. Hit - object is already fully fetch in distributor node's cache. Pending - object is still beeing fetched from the storage node. Miss - object is neither in cache not currently beeing fetched. Fetching from storage node may be triggered. */
+    /** Describes cache status of an object. Hit - object is already fully fetched in distributor node's cache. Pending - object is still beeing fetched from the storage node. Miss - object is neither in cache not currently beeing fetched. Fetching from storage node may be triggered. */
     'X-Cache'?: 'hit' | 'pending' | 'miss'
     /** Describes the source of data stream. External - the request was proxied to a storage node. Local - the data is streamed from local file. */
     'X-Data-Source'?: 'external' | 'local'

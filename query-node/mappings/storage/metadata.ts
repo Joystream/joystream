@@ -14,7 +14,7 @@ import {
   DistributionBucketFamilyMetadata as DistributionBucketFamilyMetadataProto,
   INodeLocationMetadata,
 } from '@joystream/metadata-protobuf'
-import { isSet } from '@joystream/metadata-protobuf/utils'
+import { isSet, isEmptyObject, isValidCountryCode } from '@joystream/metadata-protobuf/utils'
 
 async function processNodeLocationMetadata(
   store: DatabaseManager,
@@ -26,15 +26,23 @@ async function processNodeLocationMetadata(
     nodeLocation.city = meta.city
   }
   if (isSet(meta.coordinates)) {
-    const coordinates = current?.coordinates || new GeoCoordinates()
-    coordinates.latitude = meta.coordinates.latitude
-    coordinates.longitude = meta.coordinates.longitude
-    await store.save<GeoCoordinates>(coordinates)
-    nodeLocation.coordinates = coordinates
+    if (isEmptyObject(meta.coordinates)) {
+      nodeLocation.coordinates = null as any
+    } else {
+      const coordinates = current?.coordinates || new GeoCoordinates()
+      coordinates.latitude = meta.coordinates.latitude || coordinates.latitude || 0
+      coordinates.longitude = meta.coordinates.longitude || coordinates.longitude || 0
+      await store.save<GeoCoordinates>(coordinates)
+      nodeLocation.coordinates = coordinates
+    }
   }
   if (isSet(meta.countryCode)) {
-    // TODO: Validate the code
-    nodeLocation.countryCode = meta.countryCode
+    if (isValidCountryCode(meta.countryCode)) {
+      nodeLocation.countryCode = meta.countryCode
+    } else {
+      console.warn(`Invalid country code: ${meta.countryCode}`)
+      nodeLocation.countryCode = null as any
+    }
   }
   await store.save<NodeLocationMetadata>(nodeLocation)
   return nodeLocation
@@ -54,7 +62,9 @@ export async function processDistributionOperatorMetadata(
     metadataEntity.nodeEndpoint = meta.endpoint
   }
   if (isSet(meta.location)) {
-    metadataEntity.nodeLocation = await processNodeLocationMetadata(store, metadataEntity.nodeLocation, meta.location)
+    metadataEntity.nodeLocation = isEmptyObject(meta.location)
+      ? (null as any)
+      : await processNodeLocationMetadata(store, metadataEntity.nodeLocation, meta.location)
   }
   if (isSet(meta.extra)) {
     metadataEntity.extra = meta.extra
@@ -76,13 +86,15 @@ export async function processStorageOperatorMetadata(
   }
   const metadataEntity = current || new StorageBucketOperatorMetadata()
   if (isSet(meta.endpoint)) {
-    metadataEntity.nodeEndpoint = meta.endpoint
+    metadataEntity.nodeEndpoint = meta.endpoint || (null as any)
   }
   if (isSet(meta.location)) {
-    metadataEntity.nodeLocation = await processNodeLocationMetadata(store, metadataEntity.nodeLocation, meta.location)
+    metadataEntity.nodeLocation = isEmptyObject(meta.location)
+      ? (null as any)
+      : await processNodeLocationMetadata(store, metadataEntity.nodeLocation, meta.location)
   }
   if (isSet(meta.extra)) {
-    metadataEntity.extra = meta.extra
+    metadataEntity.extra = meta.extra || (null as any)
   }
 
   await store.save<StorageBucketOperatorMetadata>(metadataEntity)
@@ -101,10 +113,10 @@ export async function processDistributionBucketFamilyMetadata(
   }
   const metadataEntity = current || new DistributionBucketFamilyMetadata()
   if (isSet(meta.region)) {
-    metadataEntity.region = meta.region
+    metadataEntity.region = meta.region || (null as any)
   }
   if (isSet(meta.description)) {
-    metadataEntity.description = meta.description
+    metadataEntity.description = meta.description || (null as any)
   }
 
   await store.save<DistributionBucketOperatorMetadata>(metadataEntity)
@@ -113,11 +125,17 @@ export async function processDistributionBucketFamilyMetadata(
   if (isSet(meta.boundary)) {
     await Promise.all((metadataEntity.boundary || []).map((coords) => store.remove<GeoCoordinates>(coords)))
     await Promise.all(
-      meta.boundary.map(({ latitude, longitude }) =>
-        store.save<GeoCoordinates>(
-          new GeoCoordinates({ latitude, longitude, boundarySourceBucketFamilyMeta: metadataEntity })
+      meta.boundary
+        .filter((c) => !isEmptyObject(c))
+        .map(({ latitude, longitude }) =>
+          store.save<GeoCoordinates>(
+            new GeoCoordinates({
+              latitude: latitude || 0,
+              longitude: longitude || 0,
+              boundarySourceBucketFamilyMeta: metadataEntity,
+            })
+          )
         )
-      )
     )
   }
 
