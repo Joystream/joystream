@@ -64,13 +64,9 @@ impl<
     /// Retrieve all involved `entity_id`'s, if current `StoredPropertyValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<EntityId>> {
         match self {
-            StoredPropertyValue::Single(single_property_value) => {
-                if let Some(entity_id) = single_property_value.get_involved_entity() {
-                    Some(vec![entity_id])
-                } else {
-                    None
-                }
-            }
+            StoredPropertyValue::Single(single_property_value) => single_property_value
+                .get_involved_entity()
+                .map(|entity_id| vec![entity_id]),
             StoredPropertyValue::Vector(vector_property_value) => vector_property_value
                 .get_vec_value_ref()
                 .get_involved_entities(),

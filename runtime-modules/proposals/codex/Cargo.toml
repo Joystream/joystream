@@ -49,7 +49,6 @@ std = [
     'sp-arithmetic/std',
     'sp-runtime/std',
     'frame-system/std',
-    'staking/std',
     'pallet-timestamp/std',
     'working-group/std',
     'common/std',

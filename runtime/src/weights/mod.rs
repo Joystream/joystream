@@ -15,6 +15,8 @@
 
 //! A list of the different weight modules for our runtime.
 
+#![allow(clippy::unnecessary_cast)]
+
 // FRAME pallets
 pub mod frame_system;
 pub mod pallet_balances;

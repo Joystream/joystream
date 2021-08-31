@@ -933,7 +933,6 @@ impl<T: Config> Module<T> {
             ProposalDecision::Canceled => T::CancellationFee::get(),
             ProposalDecision::Slashed => proposal_parameters
                 .required_stake
-                .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
     }

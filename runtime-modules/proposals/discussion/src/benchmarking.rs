@@ -114,10 +114,7 @@ fn member_account<T: common::membership::Config + balances::Config + membership:
         Membership::<T>::staking_account_id_member_status(account_id.clone()).member_id,
         member_id
     );
-    assert_eq!(
-        Membership::<T>::staking_account_id_member_status(account_id.clone()).confirmed,
-        true
-    );
+    assert!(Membership::<T>::staking_account_id_member_status(account_id.clone()).confirmed,);
 
     (account_id, member_id)
 }
@@ -184,7 +181,7 @@ fn elect_council<
         Referendum::<T, ReferendumInstance>::reveal_vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
             vec![0u8],
-            candidates[i].1.clone(),
+            candidates[i].1,
         )
         .unwrap();
     }
@@ -367,7 +364,7 @@ benchmarks! {
     verify {
         assert_eq!(
             ProposalsDiscussion::<T>::thread_by_id(thread_id).mode,
-            mode.clone(),
+            mode,
             "Thread not correctly updated"
         );
 

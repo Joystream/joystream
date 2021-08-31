@@ -63,12 +63,12 @@ fn member_funded_account<T: Config<I> + membership::Config + balances::Config, I
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -105,7 +105,7 @@ fn generate_post<T: Config<I>, I: Instance>(seq_num: u64) -> PostId {
 
     assert_eq!(
         Blog::<T, I>::post_by_id(post_id),
-        Post::<T, I>::new(&vec![0u8], &vec![0u8])
+        Post::<T, I>::new(&[0u8], &[0u8])
     );
 
     post_id
@@ -118,7 +118,7 @@ fn generate_reply<T: Config<I>, I: Instance>(
 ) -> T::ReplyId {
     let creator_origin = RawOrigin::Signed(creator_id);
     Blog::<T, I>::create_reply(
-        creator_origin.clone().into(),
+        creator_origin.into(),
         participant_id,
         post_id,
         None,
@@ -210,7 +210,7 @@ benchmarks_instance! {
         let text = vec![0u8; t.try_into().unwrap()];
     }: create_reply(origin.clone(), participant_id, post_id, None, text.clone(), true)
     verify {
-        let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
+        let mut expected_post = Post::<T, I>::new(&[0u8], &[0u8]);
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
         assert_eq!(
@@ -239,9 +239,9 @@ benchmarks_instance! {
 
         let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id);
         let origin = RawOrigin::Signed(account_id);
-        let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
+        let mut expected_post = Post::<T, I>::new(&[0u8], &[0u8]);
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
         let text = vec![0u8; t.try_into().unwrap()];
@@ -276,7 +276,7 @@ benchmarks_instance! {
 
         let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id);
         let origin = RawOrigin::Signed(account_id);
         let updated_text = vec![1u8; t.try_into().unwrap()];
     }: _(origin.clone(), participant_id, post_id, reply_id, updated_text.clone())
@@ -312,7 +312,7 @@ benchmarks_instance! {
         for seq_num in 0..i {
             let post_id = generate_post::<T, I>(seq_num.into());
             let reply_id =
-                generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+                generate_reply::<T, I>(account_id.clone(), participant_id, post_id);
             replies.push(ReplyToDelete {post_id, reply_id, hide});
         }
 

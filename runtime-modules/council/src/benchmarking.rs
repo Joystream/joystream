@@ -383,7 +383,7 @@ benchmarks! {
             CouncilMember{
                 staking_account_id: accounts_id[idx].clone(),
                 reward_account_id: accounts_id[idx].clone(),
-                membership_id: member_id.clone(),
+                membership_id: *member_id,
                 stake: T::MinCandidateStake::get(),
                 last_payment_block: Zero::zero(),
                 unpaid_reward: Zero::zero(),
@@ -659,7 +659,7 @@ benchmarks! {
             RawEvent::NewCandidate(
                 member_id,
                 account_id.clone(),
-                account_id.clone(),
+                account_id,
                 T::MinCandidateStake::get()
             ).into()
         );

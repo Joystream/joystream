@@ -122,7 +122,7 @@ benchmarks! {
         // Ensure membership for given member_id is successfully bought
         assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one());
 
-        assert_eq!(Balances::<T>::free_balance(&account_id.clone()), free_balance - fee);
+        assert_eq!(Balances::<T>::free_balance(&account_id), free_balance - fee);
 
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
@@ -163,7 +163,7 @@ benchmarks! {
         let mut params = BuyMembershipParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            handle: Some(handle.clone()),
+            handle: Some(handle),
             metadata,
             referrer_id: None,
         };
@@ -192,7 +192,7 @@ benchmarks! {
         // Same account id gets reward for being referral.
         let referral_cut_balance = Perbill::from_percent(referral_cut.into()) * fee;
         assert_eq!(
-            Balances::<T>::free_balance(&account_id.clone()),
+            Balances::<T>::free_balance(&account_id),
             free_balance - fee + referral_cut_balance
         );
 
@@ -201,7 +201,7 @@ benchmarks! {
         let membership: Membership<T> = MembershipObject {
             handle_hash: second_handle_hash.clone(),
             root_account: account_id.clone(),
-            controller_account: account_id.clone(),
+            controller_account: account_id,
             verified: false,
             // Save the updated profile.
             invites: 5,
@@ -238,7 +238,7 @@ benchmarks! {
             referrer_id: None,
         };
 
-        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params.clone()).unwrap();
+        Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
         let handle_updated = handle_from_id::<T>(i + 1);
 
@@ -286,7 +286,7 @@ benchmarks! {
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: new_root_account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
@@ -322,7 +322,7 @@ benchmarks! {
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: new_controller_account_id.clone(),
             verified: false,
@@ -360,7 +360,7 @@ benchmarks! {
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: new_root_account_id.clone(),
             controller_account: new_controller_account_id.clone(),
             verified: false,
@@ -515,12 +515,12 @@ benchmarks! {
 
         Module::<T>::add_staking_account_candidate(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id.clone(),
+            member_id,
         )
         .unwrap();
         Module::<T>::confirm_staking_account(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id.clone(),
+            member_id,
             account_id.clone(),
         )
         .unwrap();
@@ -539,7 +539,7 @@ benchmarks! {
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: is_verified,
@@ -565,12 +565,12 @@ benchmarks! {
 
         Module::<T>::add_staking_account_candidate(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id.clone(),
+            member_id,
         )
         .unwrap();
         Module::<T>::confirm_staking_account(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id.clone(),
+            member_id,
             account_id.clone(),
         )
         .unwrap();
@@ -638,7 +638,7 @@ benchmarks! {
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
         Module::<T>::add_staking_account_candidate(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id.clone(),
+            member_id,
         ).unwrap();
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, account_id.clone())
@@ -662,7 +662,7 @@ benchmarks! {
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
         Module::<T>::add_staking_account_candidate(
             RawOrigin::Signed(account_id.clone()).into(),
-            member_id.clone(),
+            member_id,
         ).unwrap();
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id)

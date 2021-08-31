@@ -42,13 +42,9 @@ impl<T: Config> InputPropertyValue<T> {
     /// Retrieve all involved `entity_id`'s, if current `InputPropertyValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
-            InputPropertyValue::Single(single_property_value) => {
-                if let Some(entity_id) = single_property_value.get_involved_entity() {
-                    Some(vec![entity_id])
-                } else {
-                    None
-                }
-            }
+            InputPropertyValue::Single(single_property_value) => single_property_value
+                .get_involved_entity()
+                .map(|entity_id| vec![entity_id]),
             InputPropertyValue::Vector(vector_property_value) => {
                 vector_property_value.get_involved_entities()
             }

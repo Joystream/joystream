@@ -71,7 +71,7 @@ fn make_multiple_votes_for_multiple_options<
     for option in 0..number_of_options {
         let (account_id, option, commitment) = create_account_and_vote::<T, I>(
             "voter",
-            option.into(),
+            option,
             number_of_options + option,
             cycle_id,
             Zero::zero(),
@@ -82,7 +82,7 @@ fn make_multiple_votes_for_multiple_options<
             option_id: option,
             vote_power: T::calculate_vote_power(&account_id, &stake),
         });
-        votes.push((account_id, commitment, salt, option.into()));
+        votes.push((account_id, commitment, salt, option));
     }
 
     (votes, intermediate_winners)
@@ -154,7 +154,7 @@ fn create_account_and_vote<
     cycle_id: u32,
     extra_stake: BalanceOf<T>,
 ) -> (T::AccountId, T::MemberId, T::Hash) {
-    let (account_option, member_option) = member_funded_account::<T, I>(option.into());
+    let (account_option, member_option) = member_funded_account::<T, I>(option);
     T::create_option(account_option, member_option);
 
     vote_for::<T, I>(name, voter_id, member_option, cycle_id, extra_stake)
@@ -281,7 +281,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     let (account_id, option_id, commitment) = if extra_vote_option >= number_of_voters {
         create_account_and_vote::<T, I>(
             "caller",
-            (2 * number_of_voters + 1).into(),
+            2 * number_of_voters + 1,
             extra_vote_option,
             cycle_id,
             extra_stake,
@@ -289,7 +289,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     } else {
         vote_for::<T, I>(
             "caller",
-            (2 * number_of_voters + 1).into(),
+            2 * number_of_voters + 1,
             intermediate_winners[extra_vote_option as usize].option_id,
             cycle_id,
             extra_stake,
@@ -312,7 +312,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     );
 
     votes.into_iter().for_each(|(account_id, _, salt, option)| {
-        Referendum::<T, I>::reveal_vote(RawOrigin::Signed(account_id).into(), salt, option.into())
+        Referendum::<T, I>::reveal_vote(RawOrigin::Signed(account_id).into(), salt, option)
             .unwrap();
     });
 
@@ -474,7 +474,7 @@ benchmarks_instance! {
         intermediate_winners.insert(
             0,
             OptionResult{
-                option_id: option_id,
+                option_id,
                 vote_power: T::calculate_vote_power(&account_id.clone(), &stake),
             }
         );
@@ -539,7 +539,7 @@ benchmarks_instance! {
             CastVote {
                 commitment,
                 stake,
-                cycle_id: cycle_id,
+                cycle_id,
                 vote_for: Some(option_id),
             },
             "Vote not revealed",
@@ -570,7 +570,7 @@ benchmarks_instance! {
         intermediate_winners.pop();
 
         intermediate_winners.insert(0, OptionResult{
-            option_id: option_id,
+            option_id,
             vote_power: T::calculate_vote_power(&account_id.clone(), &stake),
         });
 
@@ -622,7 +622,7 @@ benchmarks_instance! {
         let cycle_id = 0;
 
         intermediate_winners[i as usize] = OptionResult {
-            option_id: option_id,
+            option_id,
             vote_power: new_vote_power,
         };
 

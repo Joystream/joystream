@@ -46,7 +46,7 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Config>::Event = generic_event.into();
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
     let EventRecord { event, .. } = &events[events.len() - 1];
@@ -58,7 +58,7 @@ fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
     let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
 
@@ -149,7 +149,7 @@ fn create_proposal<T: Config + membership::Config>(
 
     let proposal_creation_parameters = ProposalCreationParameters {
         account_id: account_id.clone(),
-        proposer_id: member_id.clone(),
+        proposer_id: member_id,
         proposal_parameters,
         title: vec![0u8],
         description: vec![0u8],
@@ -283,7 +283,7 @@ fn elect_council<
         Referendum::<T, ReferendumInstance>::reveal_vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
             vec![0u8],
-            candidates[i].1.clone(),
+            candidates[i].1,
         )
         .unwrap();
     }
@@ -468,7 +468,7 @@ benchmarks! {
             0,
         );
 
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
@@ -499,7 +499,7 @@ benchmarks! {
         for proposal_id in proposals.iter() {
             assert_in_events::<T>(
                 RawEvent::ProposalExecuted(
-                    proposal_id.clone(),
+                    *proposal_id,
                     ExecutionStatus::failed_execution("Decoding error")).into()
             );
         }
@@ -565,7 +565,7 @@ benchmarks! {
         for proposal_id in proposals.iter() {
             assert_in_events::<T>(
                 RawEvent::ProposalExecuted(
-                    proposal_id.clone(),
+                    *proposal_id,
                     ExecutionStatus::failed_execution("Decoding error")).into()
             );
         }
@@ -582,7 +582,7 @@ benchmarks! {
             1,
         );
 
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposer_account_id in proposers {
             assert_ne!(
@@ -606,7 +606,7 @@ benchmarks! {
             assert_eq!(proposal.status, status);
             assert_eq!(proposal.nr_of_council_confirmations, 1);
             assert_in_events::<T>(
-                RawEvent::ProposalStatusUpdated(proposal_id.clone(), status).into()
+                RawEvent::ProposalStatusUpdated(*proposal_id, status).into()
             );
         }
     }
@@ -621,7 +621,7 @@ benchmarks! {
             max(T::CouncilSize::get().try_into().unwrap(), 1),
             0,
         );
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposal_id in proposals.iter() {
             assert!(
@@ -635,7 +635,7 @@ benchmarks! {
             );
 
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::Rejected)
+                RawEvent::ProposalDecisionMade(*proposal_id, ProposalDecision::Rejected)
                     .into()
             );
         }
@@ -665,7 +665,7 @@ benchmarks! {
             max(T::CouncilSize::get().try_into().unwrap(), 1),
             0,
         );
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
@@ -694,7 +694,7 @@ benchmarks! {
 
             assert_in_events::<T>(
                 RawEvent::ProposalDecisionMade(
-                    proposal_id.clone(),
+                    *proposal_id,
                     ProposalDecision::Slashed
                 ).into()
             );
@@ -731,7 +731,7 @@ benchmarks! {
             );
 
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::CanceledByRuntime)
+                RawEvent::ProposalDecisionMade(*proposal_id, ProposalDecision::CanceledByRuntime)
                     .into()
             );
         }
