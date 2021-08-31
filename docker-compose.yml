@@ -38,14 +38,18 @@ services:
     image: joystream/apps
     restart: on-failure
     depends_on:
-      - "joystream-node"
       - "ipfs"
     build:
       context: .
       dockerfile: apps.Dockerfile
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     ports:
       - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ws://joystream-node:9944 --ipfs-host ipfs
+    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
     environment:
       - DEBUG=*
 
@@ -80,7 +84,7 @@ services:
       - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on:
       - db
-    command: ["workspace", "query-node-root", "server:start:prod"]
+    command: ["workspace", "query-node-root", "query-node:start:prod"]
 
   processor:
     image: joystream/apps
@@ -92,36 +96,41 @@ services:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
-      - POLL_INTERVAL_MS=300
-      - DEBUG=hydra-processor:*
-      - DB_HOST=db
-      - INDEXER_ENDPOINT_URL=http://indexer-api-gateway:4002/graphql
+      - INDEXER_ENDPOINT_URL=http://hydra-indexer-gateway:${WARTHOG_APP_PORT}/graphql
+      - TYPEORM_HOST=db
+      - TYPEORM_DATABASE=${DB_NAME}
+      - DEBUG=index-builder:*
+      - PROCESSOR_POLL_INTERVAL=1000 # refresh every second
+    volumes:
+      - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
-      - indexer-api-gateway
+      - graphql-server
+      - hydra-indexer-gateway
     command: ["workspace", "query-node-root", "processor:start"]
 
   indexer:
-    image: joystream/hydra-indexer:2.1.0-beta.5
+    image: joystream/hydra-indexer:2.1.0-beta.9
     restart: unless-stopped
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
+      - DB_HOST=db
+      - DB_NAME=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
+      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - TYPES_JSON=types.json
-      - DB_NAME=${INDEXER_DB_NAME}
-      - DB_HOST=db
     depends_on:
       - db
+      - redis
     volumes:
       - ./types/augment/all/defs.json:/home/hydra/packages/hydra-indexer/types.json
     command: >
-      sh -c 'yarn db:bootstrap && yarn start:prod'
+      sh -c "yarn db:bootstrap && yarn start:prod"
 
-  indexer-api-gateway:
+  hydra-indexer-gateway:
     image: joystream/hydra-indexer-gateway:2.1.0-beta.5
     restart: unless-stopped
     env_file:

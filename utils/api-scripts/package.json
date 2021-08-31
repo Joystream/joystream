@@ -5,11 +5,13 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "status": "ts-node src/status",
+    "initialize-content-lead": "ts-node src/initialize-content-lead",
+    "set-sudo-as-screening-auth": "yarn script set-sudo-as-screening-auth",
     "script": "ts-node src/script",
     "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict"
   },
   "dependencies": {
-    "@joystream/types": "^0.15.0",
+    "@joystream/types": "^0.16.1",
     "@polkadot/api": "4.2.1",
     "@polkadot/types": "4.2.1",
     "@polkadot/keyring": "^6.0.5",

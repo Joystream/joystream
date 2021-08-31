@@ -1,10 +1,12 @@
 import { css } from 'styled-components';
 
 export default css`
-  padding-top: 1.5rem;
-
   .ui.segment {
     background-color: #fff;
+  }
+
+  .ui.breadcrumb {
+    margin-top: 2rem;
   }
 
   .ForumPageTitle {

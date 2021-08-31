@@ -1,0 +1,88 @@
+syntax = "proto2";
+
+// Publication status before joystream
+message PublishedBeforeJoystream {
+    // Was video published before joystream platform
+    optional bool is_published = 1;
+    // Date of publication: 'YYYY-MM-DD' [ISO-8601](https://www.iso.org/iso-8601-date-and-time-format.html)
+    optional string date = 2;
+}
+
+// License types defined by Joystream
+message License {
+    // License code defined by Joystream. [reference](../src/KnownLicenses.json)
+    optional uint32 code = 1;
+    // Text for licenses that require an attribution
+    optional string attribution = 2;
+    // Text for custom license type
+    optional string custom_text = 3;
+}
+
+// Codec, Container, MIME media-type information
+message MediaType {
+    // Codec corresponding to `name` field from [FFmpeg](https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/codec_desc.c)
+    optional string codec_name = 1;
+
+    // Video container format, eg. 'MP4', 'WebM', 'Ogg' [ref](https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs)
+    optional string container = 2;
+
+    // MIME Media Type, eg. 'video/mp4' [ref](https://www.iana.org/assignments/media-types/media-types.xhtml#video)
+    optional string mime_media_type = 3;
+}
+
+message VideoMetadata {
+    // Video Title
+    optional string title = 1;
+
+    // Video Description
+    optional string description = 2;
+
+    // Assets
+    
+    // index into external [assets array](#.Assets)
+    optional uint32 video = 3;
+
+    // index into external [assets array](#.Assets)
+    optional uint32 thumbnail_photo = 4;
+
+    // Lengths of video in seconds
+    optional uint32 duration = 5;
+
+    // Resolution of the video (Height)
+    optional uint32 media_pixel_height = 6;
+    
+    // Resolution of the video (Width)
+    optional uint32 media_pixel_width = 7;
+
+    // Encoding and Container format used
+    optional MediaType media_type = 8;
+
+    // ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+    optional string language = 9;
+
+    // License type for the media
+    optional License license = 10;
+
+    // Date of publication
+    optional PublishedBeforeJoystream published_before_joystream = 11;
+
+    // Does video have marketing or advertising in the stream
+    optional bool has_marketing = 12;
+
+    // Should video be publicy visible yet
+    optional bool is_public = 13;
+
+    // Does Video have explicit language or scenes
+    optional bool is_explicit = 14;
+
+    // Person(s) referenced by PersonId involved in this video
+    repeated uint64 persons = 15 [packed=true];
+
+    // Video Category Id
+    optional uint64 category = 16;
+}
+
+message VideoCategoryMetadata {
+    // Category name
+    optional string name = 1;
+}

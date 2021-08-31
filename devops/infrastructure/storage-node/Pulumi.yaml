@@ -1,0 +1,33 @@
+name: eks-cluster
+runtime: nodejs
+description: A Pulumi program to deploy storage node to cloud environment
+template:
+  config:
+    aws:profile:
+      default: joystream-user
+    aws:region:
+      default: us-east-1
+    wsProviderEndpointURI:
+      description: Chain RPC endpoint
+      default: 'wss://rome-rpc-endpoint.joystream.org:9944/'
+    isAnonymous:
+      description: Whether you are deploying an anonymous storage node
+      default: true
+    isLoadBalancerReady:
+      description: Whether the load balancer service is ready and has been assigned an IP
+      default: false
+    colossusPort:
+      description: Port that is exposed for the colossus container
+      default: 3000
+    storage:
+      description: Amount of storage in gigabytes for ipfs volume
+      default: 40
+    providerId:
+      description: StorageProviderId assigned to you in working group
+    keyFile:
+      description: Path to JSON key export file to use as the storage provider (role account)
+    publicURL:
+      description: API Public URL to announce
+    passphrase:
+      description: Optional passphrase to use to decrypt the key-file
+      secret: true

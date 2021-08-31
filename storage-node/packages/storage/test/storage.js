@@ -34,7 +34,7 @@ function write(store, contentId, contents, callback) {
   store
     .open(contentId, 'w')
     .then((stream) => {
-      stream.on('finish', () => {
+      stream.on('end', () => {
         stream.commit()
       })
       stream.on('committed', callback)
@@ -90,39 +90,44 @@ describe('storage/storage', () => {
       })
     })
 
-    // it('detects the MIME type of a write stream', (done) => {
-    // 	const contents = fs.readFileSync('../../storage-node_new.svg')
-    // 	storage
-    // 		.open('mime-test', 'w')
-    // 		.then((stream) => {
-    // 			let fileInfo
-    // 			stream.on('fileInfo', (info) => {
-    // 				// Could filter & abort here now, but we're just going to set this,
-    // 				// and expect it to be set later...
-    // 				fileInfo = info
-    // 			})
-    //
-    // 			stream.on('finish', () => {
-    // 				stream.commit()
-    // 			})
-    //
-    // 			stream.on('committed', () => {
-    // 				// ... if fileInfo is not set here, there's an issue.
-    // 				expect(fileInfo).to.have.property('mimeType', 'application/xml')
-    // 				expect(fileInfo).to.have.property('ext', 'xml')
-    // 				done()
-    // 			})
-    //
-    // 			if (!stream.write(contents)) {
-    // 				stream.once('drain', () => stream.end())
-    // 			} else {
-    // 				process.nextTick(() => stream.end())
-    // 			}
-    // 		})
-    // 		.catch((err) => {
-    // 			expect.fail(err)
-    // 		})
-    // })
+    it('detects the MIME type of a write stream', (done) => {
+      const contents = fs.readFileSync('../../storage-node_new.svg')
+      storage
+        .open('mime-test', 'w')
+        .then((stream) => {
+          let fileInfo
+          stream.on('fileInfo', (info) => {
+            // Could filter & abort here now, but we're just going to set this,
+            // and expect it to be set later...
+            fileInfo = info
+          })
+
+          stream.on('end', () => {
+            stream.info()
+          })
+
+          stream.once('info', async (info) => {
+            fileInfo = info
+            stream.commit()
+          })
+
+          stream.on('committed', () => {
+            // ... if fileInfo is not set here, there's an issue.
+            expect(fileInfo).to.have.property('mimeType', 'application/xml')
+            expect(fileInfo).to.have.property('ext', 'xml')
+            done()
+          })
+
+          if (!stream.write(contents)) {
+            stream.once('drain', () => stream.end())
+          } else {
+            process.nextTick(() => stream.end())
+          }
+        })
+        .catch((err) => {
+          expect.fail(err)
+        })
+    })
 
     it('can read a stream', (done) => {
       const contents = 'test-for-reading'

@@ -11,6 +11,7 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
+
 use crate::{
     AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
@@ -52,10 +53,6 @@ pub type BlockId = generic::BlockId<Block>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
-
-// Default Executive type without the RuntimeUpgrade
-// pub type Executive =
-//     frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
 
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;

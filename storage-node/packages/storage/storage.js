@@ -25,6 +25,8 @@ const debug = require('debug')('joystream:storage:storage')
 
 const Promise = require('bluebird')
 
+const Hash = require('ipfs-only-hash')
+
 Promise.config({
   cancellation: true,
 })
@@ -88,6 +90,10 @@ class StorageWriteStream extends Transform {
 
     // Create temp target.
     this.temp = temp.createWriteStream()
+    this.temp.on('error', (err) => this.emit('error', err))
+
+    // Small temporary buffer storing first fileType.minimumBytes of stream
+    // used for early file type detection
     this.buf = Buffer.alloc(0)
   }
 
@@ -97,17 +103,13 @@ class StorageWriteStream extends Transform {
       chunk = Buffer.from(chunk)
     }
 
-    // Logging this all the time is too verbose
-    // debug('Writing temporary chunk', chunk.length, chunk);
-    this.temp.write(chunk)
-
     // Try to detect file type during streaming.
-    if (!this.fileInfo && this.buf < fileType.minimumBytes) {
+    if (!this.fileInfo && this.buf.byteLength <= fileType.minimumBytes) {
       this.buf = Buffer.concat([this.buf, chunk])
 
-      if (this.buf >= fileType.minimumBytes) {
+      if (this.buf.byteLength >= fileType.minimumBytes) {
         const info = fileType(this.buf)
-        // No info? We can try again at the end of the stream.
+        // No info? We will try again at the end of the stream.
         if (info) {
           this.fileInfo = fixFileInfo(info)
           this.emit('fileInfo', this.fileInfo)
@@ -115,35 +117,62 @@ class StorageWriteStream extends Transform {
       }
     }
 
-    callback(null)
+    // Always waiting for write flush can be slow..
+    // this.temp.write(chunk, (err) => {
+    //   callback(err)
+    // })
+
+    // Respect backpressure and handle write error
+    if (!this.temp.write(chunk)) {
+      this.temp.once('drain', () => callback(null))
+    } else {
+      process.nextTick(() => callback(null))
+    }
   }
 
   _flush(callback) {
     debug('Flushing temporary stream:', this.temp.path)
-    this.temp.end()
+    this.temp.end(() => {
+      debug('flushed!')
+      callback(null)
+      this.emit('end')
+    })
+  }
 
-    // Since we're finished, we can try to detect the file type again.
-    if (!this.fileInfo) {
-      const read = fs.createReadStream(this.temp.path)
-      fileType
-        .stream(read)
-        .then((stream) => {
-          this.fileInfo = fixFileInfoOnStream(stream).fileInfo
-          this.emit('fileInfo', this.fileInfo)
-        })
-        .catch((err) => {
-          debug('Error trying to detect file type at end-of-stream:', err)
-        })
+  /*
+   * Get file info
+   */
+
+  async info() {
+    if (!this.temp) {
+      throw new Error('Cannot get info on temporary stream that does not exist. Did you call cleanup()?')
     }
 
-    callback(null)
+    if (!this.fileInfo) {
+      const read = fs.createReadStream(this.temp.path)
+
+      const stream = await fileType.stream(read)
+
+      this.fileInfo = fixFileInfoOnStream(stream).fileInfo
+    }
+
+    if (!this.hash) {
+      const read = fs.createReadStream(this.temp.path)
+      this.hash = await Hash.of(read)
+    }
+
+    this.emit('info', this.fileInfo, this.hash)
+
+    return {
+      info: this.fileInfo,
+      hash: this.hash,
+    }
   }
 
   /*
    * Commit this stream to the IPFS backend.
    */
   commit() {
-    // Create a read stream from the temp file.
     if (!this.temp) {
       throw new Error('Cannot commit a temporary stream that does not exist. Did you call cleanup()?')
     }
@@ -156,10 +185,12 @@ class StorageWriteStream extends Transform {
         debug('Stream committed as', hash)
         this.emit('committed', hash)
         await this.storage.ipfs.pin.add(hash)
+        this.cleanup()
       })
       .catch((err) => {
         debug('Error committing stream', err)
         this.emit('error', err)
+        this.cleanup()
       })
   }
 
@@ -167,6 +198,8 @@ class StorageWriteStream extends Transform {
    * Clean up temporary data.
    */
   cleanup() {
+    // Make it safe to call cleanup more than once
+    if (!this.temp) return
     debug('Cleaning up temporary file: ', this.temp.path)
     fs.unlink(this.temp.path, () => {
       /* Ignore errors. */
@@ -267,10 +300,17 @@ class Storage {
    * Stat a content ID.
    */
   async stat(contentId, timeout) {
-    const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
+    const ipfsHash = await this.resolveContentIdWithTimeout(timeout, contentId)
 
-    return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
-      this.ipfs.files.stat(`/ipfs/${resolved}`, { withLocal: true }, (err, res) => {
+    return this.ipfsStat(ipfsHash, timeout)
+  }
+
+  /*
+   * Stat IPFS hash
+   */
+  async ipfsStat(hash, timeout) {
+    return this.withSpecifiedTimeout(timeout, (resolve, reject) => {
+      this.ipfs.files.stat(`/ipfs/${hash}`, { withLocal: true }, (err, res) => {
         if (err) {
           reject(err)
           return
@@ -317,32 +357,25 @@ class Storage {
 
     // Write stream
     if (mode === 'w') {
-      return await this.createWriteStream(contentId, timeout)
+      return this.createWriteStream(contentId, timeout)
     }
 
     // Read stream - with file type detection
     return await this.createReadStream(contentId, timeout)
   }
 
-  async createWriteStream() {
-    // IPFS wants us to just dump a stream into its storage, then returns a
-    // content ID (of its own).
-    // We need to instead return a stream immediately, that we eventually
-    // decorate with the content ID when that's available.
-    return new Promise((resolve) => {
-      const stream = new StorageWriteStream(this)
-      resolve(stream)
-    })
+  createWriteStream() {
+    return new StorageWriteStream(this)
   }
 
   async createReadStream(contentId, timeout) {
-    const resolved = await this.resolveContentIdWithTimeout(timeout, contentId)
+    const ipfsHash = await this.resolveContentIdWithTimeout(timeout, contentId)
 
     let found = false
     return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
-      const ls = this.ipfs.getReadableStream(resolved)
+      const ls = this.ipfs.getReadableStream(ipfsHash)
       ls.on('data', async (result) => {
-        if (result.path === resolved) {
+        if (result.path === ipfsHash) {
           found = true
 
           const ftStream = await fileType.stream(result.content)
@@ -366,32 +399,28 @@ class Storage {
   }
 
   /*
-   * Synchronize the given content ID
+   * Pin the given IPFS CID
    */
-  async synchronize(contentId, callback) {
-    const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
-
-    // TODO: validate resolved id is proper ipfs_cid, not null or empty string
-
-    if (!this.pinning[resolved] && !this.pinned[resolved]) {
-      debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
-      this.pinning[resolved] = true
+  async pin(ipfsHash, callback) {
+    if (!this.pinning[ipfsHash] && !this.pinned[ipfsHash]) {
+      // debug(`Pinning hash: ${ipfsHash} content-id: ${contentId}`)
+      this.pinning[ipfsHash] = true
 
       // Callback passed to add() will be called on error or when the entire file
       // is retrieved. So on success we consider the content synced.
-      this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
-        delete this.pinning[resolved]
+      this.ipfs.pin.add(ipfsHash, { quiet: true, pin: true }, (err) => {
+        delete this.pinning[ipfsHash]
         if (err) {
-          debug(`Error Pinning: ${resolved}`)
+          debug(`Error Pinning: ${ipfsHash}`)
           callback && callback(err)
         } else {
-          debug(`Pinned ${resolved}`)
-          this.pinned[resolved] = true
-          callback && callback(null, this.syncStatus(resolved))
+          // debug(`Pinned ${ipfsHash}`)
+          this.pinned[ipfsHash] = true
+          callback && callback(null, this.syncStatus(ipfsHash))
         }
       })
     } else {
-      callback && callback(null, this.syncStatus(resolved))
+      callback && callback(null, this.syncStatus(ipfsHash))
     }
   }
 

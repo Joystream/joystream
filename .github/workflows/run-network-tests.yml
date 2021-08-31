@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '14.x'
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -79,7 +79,7 @@ jobs:
           path: joystream-node-docker-image.tar.gz
 
   basic_runtime_with_upgrade:
-    if: ${{ false }}  # Antioch will be a new chain
+    # if: ${{ false }}
     name: Integration Tests (Runtime Upgrade)
     needs: build_images
     runs-on: ubuntu-latest
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '14.x'
       - name: Get artifacts
         uses: actions/download-artifact@v2
         with:
@@ -99,11 +99,11 @@ jobs:
       - name: Install packages and dependencies
         run: |
           yarn install --frozen-lockfile
-          yarn build:packages
+          yarn workspace @joystream/types build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: RUNTIME=antioch tests/network-tests/run-tests.sh full
+        run: RUNTIME=sumer tests/network-tests/run-tests.sh full
 
   basic_runtime:
     name: Integration Tests (New Chain)
@@ -113,33 +113,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-      - name: Install packages and dependencies
-        run: |
-          yarn install --frozen-lockfile
-          yarn build:packages
-      - name: Ensure tests are runnable
-        run: yarn workspace network-tests build
-      - name: Execute network tests
-        run: tests/network-tests/run-tests.sh full
-
-  content_dir_init:
-    name: Content Directory Initialization
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
+          node-version: '14.x'
       - name: Get artifacts
         uses: actions/download-artifact@v2
         with:
@@ -152,14 +126,10 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
-          yarn workspace @joystream/cd-schemas generate:all
-          yarn workspace @joystream/cd-schemas build
       - name: Ensure tests are runnable
-        run: yarn workspace @joystream/cd-schemas checks --quiet
-      - name: Start chain
-        run: docker-compose up -d joystream-node
-      - name: Initialize the content directory
-        run: yarn workspace @joystream/cd-schemas initialize:dev
+        run: yarn workspace network-tests build
+      - name: Execute network tests
+        run: tests/network-tests/run-tests.sh full
 
   query_node:
     name: Query Node Integration Tests
@@ -169,7 +139,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '14.x'
       - name: Get artifacts
         uses: actions/download-artifact@v2
         with:
@@ -182,15 +152,17 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
-          yarn workspace @joystream/cd-schemas generate:all
-          yarn workspace @joystream/cd-schemas build
-          yarn workspace query-node-root build
+          yarn workspace @joystream/content-metadata-protobuf build:ts
+      - name: Ensure query-node builds
+        run: yarn workspace query-node-root build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       # Bring up hydra query-node development instance, then run content directory
       # integration tests
       - name: Execute Tests
-        run: query-node/run-tests.sh
+        run: |
+          docker-compose up -d joystream-node
+          query-node/run-tests.sh
 
   storage_node:
     name: Storage Node Tests
@@ -200,7 +172,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '14.x'
       - name: Get artifacts
         uses: actions/download-artifact@v2
         with:
@@ -221,19 +193,16 @@ jobs:
           docker-compose up -d joystream-node
       - name: Configure and start development storage node
         run: |
-          DEBUG=* yarn storage-cli dev-init
+          DEBUG=joystream:* yarn storage-cli dev-init
           docker-compose up -d colossus
       - name: Test uploading
         run: |
-          WAIT_TIME=90
+          sleep 6
           export DEBUG=joystream:*
-          for i in {1..4}; do
-            [ "$i" == "4" ] && exit -1
-            echo "Waiting for ipfs name registration"
-            sleep ${WAIT_TIME}
-            if yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0; then
-              break
-            else
-              echo "Upload test failed, will retry"
-            fi
-          done
+          yarn storage-cli upload ./tests/network-tests/assets/joystream.MOV 1 0
+          # Wait for storage-node to set status Accepted on uploaded content
+          sleep 6
+          cd utils/api-scripts/
+          # Assume only one accepted data object was created
+          CONTENT_ID=`yarn --silent script get-first-content-id | tail -n2 | head -n1`
+          yarn storage-cli download ${CONTENT_ID} ./joystream.mov

@@ -1,18 +1,13 @@
 import axios, { AxiosRequestConfig } from 'axios'
 import fs from 'fs'
 import ipfsHash from 'ipfs-only-hash'
-import { ContentId, DataObject } from '@joystream/types/media'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import BN from 'bn.js'
-import { Option } from '@polkadot/types/codec'
 import { BaseCommand } from './base'
-import { DiscoveryClient } from '@joystream/service-discovery'
 import Debug from 'debug'
 import chalk from 'chalk'
 import { aliceKeyPair } from './dev'
 const debug = Debug('joystream:storage-cli:upload')
-
-// Defines maximum content length for the assets (files). Limits the upload.
-const MAX_CONTENT_LENGTH = 500 * 1024 * 1024 // 500Mb
 
 // Defines the necessary parameters for the AddContent runtime tx.
 interface AddContentParams {
@@ -26,13 +21,11 @@ interface AddContentParams {
 
 // Upload command class. Validates input parameters and uploads the asset to the storage node and runtime.
 export class UploadCommand extends BaseCommand {
-  private readonly api: any
   private readonly mediaSourceFilePath: string
   private readonly dataObjectTypeId: string
   private readonly keyFile: string
   private readonly passPhrase: string
   private readonly memberId: string
-  private readonly discoveryClient: DiscoveryClient
 
   constructor(
     api: any,
@@ -42,10 +35,8 @@ export class UploadCommand extends BaseCommand {
     keyFile: string,
     passPhrase: string
   ) {
-    super()
+    super(api)
 
-    this.api = api
-    this.discoveryClient = new DiscoveryClient({ api })
     this.mediaSourceFilePath = mediaSourceFilePath
     this.dataObjectTypeId = dataObjectTypeId
     this.memberId = memberId
@@ -108,7 +99,7 @@ export class UploadCommand extends BaseCommand {
   // Creates the DataObject in the runtime.
   private async createContent(p: AddContentParams): Promise<DataObject> {
     try {
-      const dataObject: Option<DataObject> = await this.api.assets.createDataObject(
+      const dataObject: DataObject = await this.api.assets.createDataObject(
         p.accountId,
         p.memberId,
         p.contentId,
@@ -117,13 +108,20 @@ export class UploadCommand extends BaseCommand {
         p.ipfsCid
       )
 
-      if (dataObject.isNone) {
-        this.fail('Cannot create data object: got None object')
-      }
-
-      return dataObject.unwrap()
+      return dataObject
     } catch (err) {
-      this.fail(`Cannot create data object: ${err}`)
+      if (err.dispatchError) {
+        if (err.dispatchError.isModule) {
+          const error = err.dispatchError.asModule
+          const { name, documentation } = this.api.api.registry.findMetaError(error)
+          this.fail(`Cannot create data object: ${name} ${documentation}`)
+        } else {
+          const error = err.dispatchError.toString()
+          this.fail(`Cannot create data object: ${error}`)
+        }
+      } else {
+        this.fail(`Cannot create data object: ${err}`)
+      }
     }
   }
 
@@ -142,32 +140,14 @@ export class UploadCommand extends BaseCommand {
           'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
           'Content-Length': fileSize.toString(),
         },
-        maxContentLength: MAX_CONTENT_LENGTH,
+        // max length of body in PUT request
+        maxBodyLength: this.maxContentSize(),
       }
       await axios.put(assetUrl, file, config)
 
       console.log('File uploaded.')
     } catch (err) {
       this.fail(err.toString())
-    }
-  }
-
-  // Requests the runtime and obtains the storage node endpoint URL.
-  private async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
-    try {
-      const serviceInfo = await this.discoveryClient.discover(storageProviderId)
-
-      if (serviceInfo === null) {
-        this.fail('Storage node discovery failed.')
-      }
-      debug(`Discovered service info object: ${serviceInfo}`)
-
-      const dataWrapper = JSON.parse(serviceInfo)
-      const assetWrapper = JSON.parse(dataWrapper.serialized)
-
-      return assetWrapper.asset.endpoint
-    } catch (err) {
-      this.fail(`Could not get asset endpoint: ${err}`)
     }
   }
 
@@ -213,7 +193,7 @@ export class UploadCommand extends BaseCommand {
     const dataObject = await this.createContent(addContentParams)
     debug(`Received data object: ${dataObject.toString()}`)
 
-    const colossusEndpoint = await this.discoverStorageProviderEndpoint(dataObject.liaison.toString())
+    const colossusEndpoint = await this.getAnyProviderEndpoint()
     debug(`Discovered storage node endpoint: ${colossusEndpoint}`)
 
     const assetUrl = this.createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId)

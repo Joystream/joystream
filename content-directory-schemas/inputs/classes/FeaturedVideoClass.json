@@ -1,6 +1,0 @@
-{
-  "name": "FeaturedVideo",
-  "description": "Featured video references",
-  "maximum_entities_count": 10,
-  "default_entity_creation_voucher_upper_bound": 10
-}

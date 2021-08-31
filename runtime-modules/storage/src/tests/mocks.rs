@@ -182,12 +182,17 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     }
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 5000;
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
+    type ScreenedMemberMaxInitialBalance = ();
 }
 
 impl pallet_timestamp::Trait for Test {

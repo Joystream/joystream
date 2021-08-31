@@ -9,21 +9,14 @@ set -a
 . ../.env
 set +a
 
-yarn clean
+# only use this when new Hydra releases and contents of `generated/` folder needs to be refreshed
+#yarn clean
+#yarn codegen:noinstall
+#yarn codegen:typegen # if this fails try to run this command outside of yarn workspaces
 
-# Build graphql-server customizing DB name
-yarn codegen
-yarn typegen
+yarn query-node:build
+yarn mappings:build
 
-echo "Building mappings..."
-(cd mappings && yarn build)
-echo "Done."
-
-# Copy joy types
-cp ./mappings/generated/types/typedefs.json ./mappings/lib/mappings/generated/types/typedefs.json
-
-# We run yarn again to ensure processor and indexer dependencies are installed
+# We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
-
-ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
