@@ -7,7 +7,9 @@ import {
   DistributionBucket,
   DistributionBucketFamily,
   DistributionBucketOperator,
+  DistributionBucketOperatorMetadata,
   DistributionBucketOperatorStatus,
+  NodeLocationMetadata,
   StorageBag,
   StorageBagOwner,
   StorageBagOwnerChannel,
@@ -20,6 +22,7 @@ import {
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
   StorageSystemParameters,
+  GeoCoordinates,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, getWorkingGroupModuleName, bytesToString } from '../common'
@@ -29,7 +32,11 @@ import { registry } from '@joystream/types'
 import { In } from 'typeorm'
 import _ from 'lodash'
 import { DataObjectId, BagId, DynamicBagId, StaticBagId } from '@joystream/types/augment/all'
-import { processDistributionOperatorMetadata, processStorageOperatorMetadata } from './metadata'
+import {
+  processDistributionBucketFamilyMetadata,
+  processDistributionOperatorMetadata,
+  processStorageOperatorMetadata,
+} from './metadata'
 
 async function getDataObjectsInBag(
   store: DatabaseManager,
@@ -140,7 +147,10 @@ async function getBag(
     : getDynamicBag(store, bagId.asDynamic, relations)
 }
 
-async function getDistributionBucketOperatorWithMetadata(store: DatabaseManager, id: string) {
+async function getDistributionBucketOperatorWithMetadata(
+  store: DatabaseManager,
+  id: string
+): Promise<DistributionBucketOperator> {
   const operator = await store.get(DistributionBucketOperator, {
     where: { id },
     relations: ['metadata', 'metadata.nodeLocation', 'metadata.nodeLocation.coordinates'],
@@ -151,7 +161,7 @@ async function getDistributionBucketOperatorWithMetadata(store: DatabaseManager,
   return operator
 }
 
-async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string) {
+async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string): Promise<StorageBucket> {
   const bucket = await store.get(StorageBucket, {
     where: { id },
     relations: ['operatorMetadata', 'operatorMetadata.nodeLocation', 'operatorMetadata.nodeLocation.coordinates'],
@@ -162,7 +172,10 @@ async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: 
   return bucket
 }
 
-async function getDistributionBucketFamilyWithMetadata(store: DatabaseManager, id: string) {
+async function getDistributionBucketFamilyWithMetadata(
+  store: DatabaseManager,
+  id: string
+): Promise<DistributionBucketFamily> {
   const family = await store.get(DistributionBucketFamily, {
     where: { id },
     relations: ['metadata', 'metadata.boundary'],
@@ -508,6 +521,39 @@ export async function storage_DistributionBucketMetadataSet({
   operator.metadata = await processDistributionOperatorMetadata(store, operator.metadata, metadataBytes)
 
   await store.save<DistributionBucketOperator>(operator)
+}
+
+export async function storage_DistributionBucketOperatorRemoved({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [, bucketId, workerId] = new Storage.DistributionBucketOperatorRemovedEvent(event).params
+
+  // TODO: Cascade remove
+
+  const operator = await getDistributionBucketOperatorWithMetadata(store, `${bucketId}-${workerId}`)
+  await store.remove<DistributionBucketOperator>(operator)
+  if (operator.metadata) {
+    await store.remove<DistributionBucketOperatorMetadata>(operator.metadata)
+    if (operator.metadata.nodeLocation) {
+      await store.remove<NodeLocationMetadata>(operator.metadata.nodeLocation)
+      if (operator.metadata.nodeLocation.coordinates) {
+        await store.remove<GeoCoordinates>(operator.metadata.nodeLocation.coordinates)
+      }
+    }
+  }
+}
+
+export async function storage_DistributionBucketFamilyMetadataSet({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [familyId, metadataBytes] = new Storage.DistributionBucketFamilyMetadataSetEvent(event).params
+
+  const family = await getDistributionBucketFamilyWithMetadata(store, familyId.toString())
+  family.metadata = await processDistributionBucketFamilyMetadata(store, family.metadata, metadataBytes)
+
+  await store.save<DistributionBucketFamily>(family)
 }
 
 export async function storage_DistributionBucketsPerBagLimitUpdated({

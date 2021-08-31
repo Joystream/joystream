@@ -47,6 +47,8 @@ typegen:
     - storage.DistributionBucketInvitationCancelled
     - storage.DistributionBucketInvitationAccepted
     - storage.DistributionBucketMetadataSet
+    - storage.DistributionBucketOperatorRemoved
+    - storage.DistributionBucketFamilyMetadataSet
   calls:
     # - members.updateProfile
   outDir: ./mappings/generated/types
@@ -133,6 +135,10 @@ mappings:
       handler: storage_DistributionBucketInvitationAccepted
     - event: storage.DistributionBucketMetadataSet
       handler: storage_DistributionBucketMetadataSet
+    - event: storage.DistributionBucketOperatorRemoved
+      handler: storage_DistributionBucketOperatorRemoved
+    - event: storage.DistributionBucketFamilyMetadataSet
+      handler: storage_DistributionBucketFamilyMetadataSet
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
