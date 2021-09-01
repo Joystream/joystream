@@ -114,6 +114,7 @@ cli = [
 	"structopt",
 	"substrate-build-script-utils",
 	"sc-finality-grandpa-warp-sync",
+	"sc-sync-state-rpc",
 ]
 runtime-benchmarks = [
 	"node-runtime/runtime-benchmarks",

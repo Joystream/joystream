@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#![allow(clippy::type_complexity)]
+
 #![warn(unused_extern_crates)]
 
 //! Service implementation. Specialized wrapper over substrate service.
@@ -254,7 +256,7 @@ pub fn new_full_base(
     let (_rpc_handlers, telemetry_connection_notifier) =
         sc_service::spawn_tasks(sc_service::SpawnTasksParams {
             config,
-            backend: backend.clone(),
+            backend,
             client: client.clone(),
             keystore: keystore_container.sync_keystore(),
             network: network.clone(),
@@ -441,8 +443,8 @@ pub fn new_light_base(
         babe_block_import,
         Some(Box::new(justification_import)),
         client.clone(),
-        select_chain.clone(),
-        inherent_data_providers.clone(),
+        select_chain,
+        inherent_data_providers,
         &task_manager.spawn_handle(),
         config.prometheus_registry(),
         sp_consensus::NeverCanAuthor,
