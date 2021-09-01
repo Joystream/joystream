@@ -194,6 +194,10 @@ declare module '@polkadot/api/types/consts' {
        **/
       distributionBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint & AugmentedConst<ApiType>;
       /**
+       * Exports const - max data object size in bytes.
+       **/
+      maxDataObjectSize: u64 & AugmentedConst<ApiType>;
+      /**
        * Exports const - max allowed distribution bucket family number.
        **/
       maxDistributionBucketFamilyNumber: u64 & AugmentedConst<ApiType>;

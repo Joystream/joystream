@@ -2316,6 +2316,10 @@ declare module '@polkadot/api/types/errors' {
        **/
       InvitedStorageProvider: AugmentedError<ApiType>;
       /**
+       * Max data object size exceeded.
+       **/
+      MaxDataObjectSizeExceeded: AugmentedError<ApiType>;
+      /**
        * Max distribution bucket family number limit exceeded.
        **/
       MaxDistributionBucketFamilyNumberLimitExceeded: AugmentedError<ApiType>;
