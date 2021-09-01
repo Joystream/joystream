@@ -24,7 +24,7 @@ use crate::{
 use mocks::{
     build_test_externalities, Balances, DataObjectDeletionPrize,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
-    InitialStorageBucketsNumberForDynamicBag, MaxDistributionBucketFamilyNumber,
+    InitialStorageBucketsNumberForDynamicBag, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
     MaxDistributionBucketNumberPerFamily, MaxNumberOfDataObjectsPerBag, MaxRandomIterationNumber,
     Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
@@ -360,7 +360,6 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -424,7 +423,6 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -470,7 +468,6 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -671,7 +668,6 @@ fn upload_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -695,6 +691,9 @@ fn upload_succeeded() {
             Storage::data_object_by_id(&bag_id, &data_object_id),
             DataObject {
                 size: upload_params.object_creation_list[0].size,
+                ipfs_content_id: upload_params.object_creation_list[0]
+                    .ipfs_content_id
+                    .clone(),
                 deletion_prize: DataObjectDeletionPrize::get(),
                 accepted: false,
             }
@@ -718,6 +717,28 @@ fn upload_succeeded() {
 }
 
 #[test]
+fn upload_failed_with_exceeding_the_data_object_max_size() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let mut data_object_list = create_single_data_object();
+        data_object_list[0].size = MaxDataObjectSize::get() + 1;
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: data_object_list,
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Err(Error::<Test>::MaxDataObjectSizeExceeded.into()));
+    });
+}
+
+#[test]
 fn upload_succeeded_with_data_size_fee() {
     build_test_externalities().execute_with(|| {
         let initial_balance = 1000;
@@ -732,7 +753,6 @@ fn upload_succeeded_with_data_size_fee() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -768,7 +788,6 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id,
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -803,7 +822,6 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
 
         let upload_params = UploadParameters::<Test> {
             bag_id,
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -838,7 +856,6 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
 
         let upload_params = UploadParameters::<Test> {
             bag_id,
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -864,7 +881,6 @@ fn upload_succeeded_with_dynamic_bag() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -888,6 +904,9 @@ fn upload_succeeded_with_dynamic_bag() {
             Storage::data_object_by_id(&bag_id, &data_object_id),
             DataObject {
                 size: upload_params.object_creation_list[0].size,
+                ipfs_content_id: upload_params.object_creation_list[0]
+                    .ipfs_content_id
+                    .clone(),
                 deletion_prize: DataObjectDeletionPrize::get(),
                 accepted: false,
             }
@@ -902,7 +921,6 @@ fn upload_fails_with_non_existent_dynamic_bag() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -921,7 +939,6 @@ fn upload_succeeded_with_non_empty_bag() {
 
         let upload_params1 = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, 2),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -933,7 +950,6 @@ fn upload_succeeded_with_non_empty_bag() {
 
         let upload_params2 = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(3, 2),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -964,7 +980,6 @@ fn upload_fails_with_zero_object_size() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
                 ipfs_content_id: vec![1],
@@ -984,7 +999,6 @@ fn upload_fails_with_empty_object_cid() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
                 ipfs_content_id: Vec::new(),
@@ -1007,7 +1021,6 @@ fn upload_fails_with_max_data_object_size_exceeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, invalid_object_number),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1024,7 +1037,6 @@ fn upload_fails_with_insufficient_balance_for_deletion_prize() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1043,7 +1055,6 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1078,7 +1089,6 @@ fn upload_fails_with_data_size_fee_changed() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1105,7 +1115,6 @@ fn upload_failed_with_blocked_uploading() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1140,7 +1149,6 @@ fn upload_failed_with_blacklisted_data_object() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1283,7 +1291,6 @@ fn accept_pending_data_objects_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1348,7 +1355,6 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1443,7 +1449,6 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1773,7 +1778,6 @@ fn move_data_objects_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1873,7 +1877,6 @@ fn move_data_objects_succeeded_having_voucher() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1948,7 +1951,6 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -2007,7 +2009,6 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -2086,7 +2087,6 @@ fn delete_data_objects_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -2186,7 +2186,6 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
         let council_bag_id = BagId::<Test>::Static(StaticBagId::Council);
         let upload_params = UploadParameters::<Test> {
             bag_id: council_bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -2231,7 +2230,6 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -2657,7 +2655,6 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -2844,7 +2841,6 @@ fn storage_bucket_voucher_changed_event_fired() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            authentication_key: Vec::new(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
