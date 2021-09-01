@@ -1,0 +1,119 @@
+name: Create node-network using Pulumi
+
+on:
+  workflow_dispatch:
+    inputs:
+      pulumiToken:
+        description: 'Pulumi Access Token'
+        required: false
+      encryptionKey:
+        description: 'Encryption Key (will be used to password protect secrets 7z file)'
+        required: true
+        default: 'password'
+      stackName:
+        description: 'Pulumi Stack Name'
+        required: false
+        default: 'dev'
+      numberOfValidators:
+        description: 'Number of Validator nodes'
+        required: false
+        default: 2
+      networkSuffix:
+        description: 'Network Suffix'
+        required: false
+        default: 8122
+      nodeImage:
+        description: 'Joystream Docker image to be deployed (joystream/node:latest)'
+        required: false
+        default: 'joystream/node:latest'
+
+defaults:
+  run:
+    working-directory: devops/infrastructure/node-network
+
+jobs:
+  up:
+    name: Create Pulumi stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Mask input key
+        id: add_mask
+        run: |
+          ENCRYPTION_KEY=$(jq -r '.inputs.encryptionKey' $GITHUB_EVENT_PATH)
+          ACCESS_TOKEN=$(jq -r '.inputs.pulumiToken' $GITHUB_EVENT_PATH)
+          echo "::add-mask::$ENCRYPTION_KEY"
+          echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >> $GITHUB_ENV
+          if [[ -z "${ACCESS_TOKEN}" ]] || [[ "$ACCESS_TOKEN" == "null" ]]
+          then
+            echo "No access token provided"
+            echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "Found token"
+            echo "::add-mask::$ACCESS_TOKEN"
+            echo "PULUMI_ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          fi
+
+      - name: Create local stack
+        run: |
+          npm install
+          pulumi login
+          pulumi stack select ${{ github.event.inputs.stackName }} --non-interactive --create
+          pulumi config set-all --plaintext numberOfValidators=${{ github.event.inputs.numberOfValidators }} --plaintext isMinikube=false \
+            --plaintext networkSuffix=${{ github.event.inputs.networkSuffix }} \
+            --plaintext nodeImage=${{ github.event.inputs.nodeImage }} --plaintext encryptionKey=$ENCRYPTION_KEY
+
+      - uses: pulumi/actions@v3
+        name: Run pulumi up without load balancer
+        with:
+          work-dir: devops/infrastructure/node-network
+          command: up
+          refresh: true
+          stack-name: ${{ github.event.inputs.stackName }}
+
+      - name: Mark load balancer as active
+        run: |
+          sleep 30
+          pulumi config set isLoadBalancerReady true
+
+      - uses: pulumi/actions@v3
+        id: pulumi
+        name: Run pulumi up with load balancer
+        with:
+          work-dir: devops/infrastructure/node-network
+          command: up
+          stack-name: ${{ github.event.inputs.stackName }}
+
+      - name: Set KUBECONFIG
+        run: |
+          pulumi stack output kubeconfig > kubeconfig.yml
+          echo "KUBECONFIG=$PWD/kubeconfig.yml" >> $GITHUB_ENV
+
+      - name: Get chain-data from the pod
+        run: |
+          kubectl config set-context --current --namespace=${{ steps.pulumi.outputs.namespaceName }}
+          kubectl cp $(kubectl get pods | grep rpc-node | awk '{print $1}'):/chain-data/chain-data.7z ./chain-data.7z
+
+      - name: Get kubectl events for debugging
+        if: always()
+        run: |
+          kubectl get events
+
+      - name: Upload chain-spec files and other secrets as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: chain-data.7z
+          path: devops/infrastructure/node-network/chain-data.7z
+          retention-days: 1
