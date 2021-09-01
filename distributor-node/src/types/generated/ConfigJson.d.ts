@@ -25,5 +25,6 @@ export interface ConfigJson {
   storageLimit: string
   port: number
   keys: [string, ...string[]]
-  buckets: [number, ...number[]]
+  buckets: [number, ...number[]] | 'all'
+  workerId: number
 }

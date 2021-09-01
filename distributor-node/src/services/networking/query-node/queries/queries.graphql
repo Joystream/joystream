@@ -15,6 +15,9 @@ fragment DataObjectDetails on StorageDataObject {
     }
     distributedBy {
       id
+      operators {
+        workerId
+      }
     }
   }
 }
@@ -36,8 +39,14 @@ fragment DistirubtionBucketsWithObjects on DistributionBucket {
   }
 }
 
-query getDistributionBucketsWithObjects($ids: [ID!]) {
+query getDistributionBucketsWithObjectsByIds($ids: [ID!]) {
   distributionBuckets(where: { id_in: $ids }) {
+    ...DistirubtionBucketsWithObjects
+  }
+}
+
+query getDistributionBucketsWithObjectsByWorkerId($workerId: Int!) {
+  distributionBuckets(where: { operators_some: { workerId_eq: $workerId } }) {
     ...DistirubtionBucketsWithObjects
   }
 }

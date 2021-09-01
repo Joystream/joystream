@@ -6,9 +6,12 @@ import {
   GetDataObjectDetailsQuery,
   GetDataObjectDetailsQueryVariables,
   DistirubtionBucketsWithObjectsFragment,
-  GetDistributionBucketsWithObjectsQuery,
-  GetDistributionBucketsWithObjectsQueryVariables,
-  GetDistributionBucketsWithObjects,
+  GetDistributionBucketsWithObjectsByIdsQuery,
+  GetDistributionBucketsWithObjectsByIdsQueryVariables,
+  GetDistributionBucketsWithObjectsByIds,
+  GetDistributionBucketsWithObjectsByWorkerIdQuery,
+  GetDistributionBucketsWithObjectsByWorkerIdQueryVariables,
+  GetDistributionBucketsWithObjectsByWorkerId,
   StorageBucketOperatorFieldsFragment,
   GetActiveStorageBucketOperatorsDataQuery,
   GetActiveStorageBucketOperatorsDataQueryVariables,
@@ -63,11 +66,20 @@ export class QueryNodeApi {
     )
   }
 
-  public getDistributionBucketsWithObjects(ids: string[]): Promise<DistirubtionBucketsWithObjectsFragment[]> {
+  public getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<DistirubtionBucketsWithObjectsFragment[]> {
     return this.multipleEntitiesQuery<
-      GetDistributionBucketsWithObjectsQuery,
-      GetDistributionBucketsWithObjectsQueryVariables
-    >(GetDistributionBucketsWithObjects, { ids }, 'distributionBuckets')
+      GetDistributionBucketsWithObjectsByIdsQuery,
+      GetDistributionBucketsWithObjectsByIdsQueryVariables
+    >(GetDistributionBucketsWithObjectsByIds, { ids }, 'distributionBuckets')
+  }
+
+  public getDistributionBucketsWithObjectsByWorkerId(
+    workerId: number
+  ): Promise<DistirubtionBucketsWithObjectsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionBucketsWithObjectsByWorkerIdQuery,
+      GetDistributionBucketsWithObjectsByWorkerIdQueryVariables
+    >(GetDistributionBucketsWithObjectsByWorkerId, { workerId }, 'distributionBuckets')
   }
 
   public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {

@@ -251,6 +251,12 @@ export class PublicApiController {
   }
 
   public async buckets(req: express.Request, res: express.Response<BucketsResponse>): Promise<void> {
-    res.status(200).json([...this.config.buckets])
+    res
+      .status(200)
+      .json(
+        this.config.buckets === 'all'
+          ? { allByWorkerId: this.config.workerId }
+          : { bucketIds: [...this.config.buckets] }
+      )
   }
 }
