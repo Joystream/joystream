@@ -19,6 +19,7 @@ import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
 import send from 'send'
+import BN from 'bn.js'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
 const fsPromises = fs.promises
@@ -336,7 +337,11 @@ async function verifyDataObjectInfo(
     throw new WebApiError(`Data object had been already accepted ID = ${dataObjectId}`, 400)
   }
 
-  if (dataObject.get('size').toNumber() !== fileSize) {
+  // Cannot get 'size' as a regular property.
+  const probablyDataObjectSize = dataObject.get('size') as unknown
+  const dataObjectSize = probablyDataObjectSize as BN
+
+  if (dataObjectSize?.toNumber() !== fileSize) {
     throw new WebApiError(`File size doesn't match the data object's size for data object ID = ${dataObjectId}`, 400)
   }
 
