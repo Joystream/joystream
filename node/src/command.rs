@@ -17,7 +17,7 @@
 
 use crate::cli::{Cli, Subcommand};
 use crate::{chain_spec, service};
-use node_runtime::Block;
+use node_runtime::{Block, RuntimeApi};
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 
@@ -48,8 +48,10 @@ impl SubstrateCli for Cli {
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         Ok(match id {
+            "" => return Err("Please specify which chain you want to run, e.g. --dev or --chain=local".into()),
             "dev" => Box::new(chain_spec::Alternative::Development.load()?),
             "local" => Box::new(chain_spec::Alternative::LocalTestnet.load()?),
+            "staging" => Box::new(chain_spec::staging_testnet_config()),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),
@@ -67,6 +69,9 @@ pub fn run() -> sc_cli::Result<()> {
 
     match &cli.subcommand {
         Some(Subcommand::Key(cmd)) => cmd.run(&cli),
+        Some(Subcommand::Sign(cmd)) => cmd.run(),
+		Some(Subcommand::Verify(cmd)) => cmd.run(),
+		Some(Subcommand::Vanity(cmd)) => cmd.run(),
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
@@ -144,6 +149,11 @@ pub fn run() -> sc_cli::Result<()> {
                     .into())
             }
         }
+        Some(Subcommand::Inspect(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+
+			runner.sync_run(|config| cmd.run::<Block, RuntimeApi, service::Executor>(config))
+		}
         None => {
             let runner = cli.create_runner(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
