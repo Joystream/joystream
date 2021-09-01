@@ -229,7 +229,7 @@ fn genesis_constructor(
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
-        endowed_accounts.to_vec(),
+        Some(endowed_accounts.to_vec()),
         members,
         forum_cfg,
         initial_account_balances,
@@ -286,7 +286,7 @@ fn generate_chain_spec(
         Some(telemetry_endpoints),
         Some(&*"/joy/testnet/0"),
         Some(chain_spec_properties()),
-        None,
+        Default::default(),
     );
 
     chain_spec.as_json(false).map_err(|err| err)

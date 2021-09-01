@@ -16,12 +16,13 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 # third-party dependencies
 serde = { version = "1.0.102", features = ["derive"] }
-futures = { version = "0.3.1", features = ["compat"] }
+futures = { version = "0.3.9", features = ["compat"] }
 jsonrpc-core = "15.0.0"
 structopt = { version = "0.3.8", optional = true}
 serde_json = '1.0'
 codec = { package = "parity-scale-codec", version = "2.1.1" }
 hex = { package = "hex", version = "0.4.2" }
+hex-literal = "0.3.1"
 
 # primitives
 sp-authority-discovery = { package = 'sp-authority-discovery', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
@@ -36,6 +37,7 @@ sp-api = { package = 'sp-api', git = 'https://github.com/paritytech/substrate.gi
 sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 sp-block-builder = { package = 'sp-block-builder', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 sp-keystore = { package = 'sp-keystore', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+node-primitives = { package = 'node-primitives', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 
 # client dependencies
 sc-client-api = { package = 'sc-client-api', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
@@ -57,6 +59,8 @@ sc-rpc = { package = 'sc-rpc', git = 'https://github.com/paritytech/substrate.gi
 sc-executor = { package = 'sc-executor', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 sc-telemetry = { package = 'sc-telemetry', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
 sc-consensus-slots = { package = 'sc-consensus-slots', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
+sc-finality-grandpa-warp-sync = { package = 'sc-finality-grandpa-warp-sync', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353', optional = true }
+sc-sync-state-rpc  = { package = 'sc-sync-state-rpc', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353', optional = true }
 
 # frame dependencies
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353' }
@@ -74,7 +78,7 @@ node-inspect = { package = 'node-inspect', git = 'https://github.com/paritytech/
 
 # WASM-specific dependencies
 wasm-bindgen = { version = "0.2.57", optional = true }
-wasm-bindgen-futures = { version = "0.4.7", optional = true }
+wasm-bindgen-futures = { version = "0.4.18", optional = true }
 browser-utils = { package = 'substrate-browser-utils', git = 'https://github.com/paritytech/substrate.git', rev = '49a4103f4bfef55be20a5c6d26e18ff3003c3353', optional = true}
 
 [dev-dependencies]
@@ -109,6 +113,7 @@ cli = [
 	"sc-service/db",
 	"structopt",
 	"substrate-build-script-utils",
+	"sc-finality-grandpa-warp-sync",
 ]
 runtime-benchmarks = [
 	"node-runtime/runtime-benchmarks",
