@@ -107,9 +107,15 @@ export class NetworkingService {
     }
     return {
       exists: !!details,
-      isSupported: this.config.buckets.some((bucketId) =>
-        details?.storageBag.distributedBy.map((b) => b.id).includes(bucketId.toString())
-      ),
+      isSupported:
+        (this.config.buckets === 'all' &&
+          details?.storageBag.distributedBy.some((d) =>
+            d.operators.some((o) => o.workerId === this.config.workerId)
+          )) ||
+        (Array.isArray(this.config.buckets) &&
+          this.config.buckets.some((bucketId) =>
+            details?.storageBag.distributedBy.map((b) => b.id).includes(bucketId.toString())
+          )),
       data: details
         ? {
             objectId,
@@ -251,9 +257,10 @@ export class NetworkingService {
   }
 
   async fetchSupportedDataObjects(): Promise<DataObjectData[]> {
-    const data = await this.queryNodeApi.getDistributionBucketsWithObjects(
-      this.config.buckets.map((id) => id.toString())
-    )
+    const data =
+      this.config.buckets === 'all'
+        ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
+        : await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
     const objectsData: DataObjectData[] = []
     data.forEach((bucket) => {
       bucket.distributedBags.forEach((bag) => {

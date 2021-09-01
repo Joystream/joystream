@@ -195,7 +195,22 @@ components:
           type: integer
           minimum: 0
     BucketsResponse:
-      type: array
-      items:
-        type: integer
-        minimum: 0
+      oneOf:
+        - type: object
+          required:
+            - "bucketIds"
+          properties:
+            bucketIds:
+              type: array
+              minItems: 1
+              items:
+                type: integer
+                minimum: 0
+        - type: object
+          required:
+            - "allByWorkerId"
+          properties:
+            allByWorkerId:
+              type: integer
+              minimum: 0
+

@@ -11,8 +11,8 @@ export interface OperatorMetadataJson {
     countryCode?: string
     city?: string
     coordinates?: {
-      latitude: number
-      longitude: number
+      latitude?: number
+      longitude?: number
     }
   }
   extra?: string

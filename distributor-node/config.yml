@@ -14,4 +14,5 @@ log:
 storageLimit: 100G
 port: 3334
 keys: [//Alice]
-buckets: [0]
+buckets: 'all'
+workerId: 0

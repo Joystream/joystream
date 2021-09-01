@@ -33,7 +33,13 @@ export interface components {
       'uptime': number
       'downloadsInProgress': number
     }
-    'BucketsResponse': number[]
+    'BucketsResponse':
+      | {
+          'bucketIds': number[]
+        }
+      | {
+          'allByWorkerId': number
+        }
   }
   parameters: {
     /** Data Object ID */

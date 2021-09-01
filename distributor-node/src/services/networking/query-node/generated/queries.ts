@@ -1,7 +1,7 @@
 import * as Types from './schema';
 
 import gql from 'graphql-tag';
-export type DataObjectDetailsFragment = { id: string, size: any, ipfsHash: string, isAccepted: boolean, storageBag: { storedBy: Array<{ id: string, operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>, operatorStatus: { __typename: 'StorageBucketOperatorStatusMissing' } | { __typename: 'StorageBucketOperatorStatusInvited' } | { __typename: 'StorageBucketOperatorStatusActive' } }>, distributedBy: Array<{ id: string }> } };
+export type DataObjectDetailsFragment = { id: string, size: any, ipfsHash: string, isAccepted: boolean, storageBag: { storedBy: Array<{ id: string, operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>, operatorStatus: { __typename: 'StorageBucketOperatorStatusMissing' } | { __typename: 'StorageBucketOperatorStatusInvited' } | { __typename: 'StorageBucketOperatorStatusActive' } }>, distributedBy: Array<{ id: string, operators: Array<{ workerId: number }> }> } };
 
 export type GetDataObjectDetailsQueryVariables = Types.Exact<{
   id: Types.Scalars['ID'];
@@ -12,12 +12,19 @@ export type GetDataObjectDetailsQuery = { storageDataObjectByUniqueInput?: Types
 
 export type DistirubtionBucketsWithObjectsFragment = { id: string, distributedBags: Array<{ objects: Array<{ id: string, size: any, ipfsHash: string }> }> };
 
-export type GetDistributionBucketsWithObjectsQueryVariables = Types.Exact<{
+export type GetDistributionBucketsWithObjectsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>;
 }>;
 
 
-export type GetDistributionBucketsWithObjectsQuery = { distributionBuckets: Array<DistirubtionBucketsWithObjectsFragment> };
+export type GetDistributionBucketsWithObjectsByIdsQuery = { distributionBuckets: Array<DistirubtionBucketsWithObjectsFragment> };
+
+export type GetDistributionBucketsWithObjectsByWorkerIdQueryVariables = Types.Exact<{
+  workerId: Types.Scalars['Int'];
+}>;
+
+
+export type GetDistributionBucketsWithObjectsByWorkerIdQuery = { distributionBuckets: Array<DistirubtionBucketsWithObjectsFragment> };
 
 export type StorageBucketOperatorFieldsFragment = { id: string, operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }> };
 
@@ -44,6 +51,9 @@ export const DataObjectDetails = gql`
     }
     distributedBy {
       id
+      operators {
+        workerId
+      }
     }
   }
 }
@@ -75,9 +85,16 @@ export const GetDataObjectDetails = gql`
   }
 }
     ${DataObjectDetails}`;
-export const GetDistributionBucketsWithObjects = gql`
-    query getDistributionBucketsWithObjects($ids: [ID!]) {
+export const GetDistributionBucketsWithObjectsByIds = gql`
+    query getDistributionBucketsWithObjectsByIds($ids: [ID!]) {
   distributionBuckets(where: {id_in: $ids}) {
+    ...DistirubtionBucketsWithObjects
+  }
+}
+    ${DistirubtionBucketsWithObjects}`;
+export const GetDistributionBucketsWithObjectsByWorkerId = gql`
+    query getDistributionBucketsWithObjectsByWorkerId($workerId: Int!) {
+  distributionBuckets(where: {operators_some: {workerId_eq: $workerId}}) {
     ...DistirubtionBucketsWithObjects
   }
 }
