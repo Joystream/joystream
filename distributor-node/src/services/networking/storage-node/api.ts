@@ -20,14 +20,9 @@ export class StorageNodeApi {
   }
 
   public async isObjectAvailable(contentHash: string): Promise<boolean> {
-    const options: AxiosRequestConfig = {
-      headers: {
-        Range: 'bytes=0-0',
-      },
-    }
     this.logger.debug('Checking object availibility', { contentHash })
     try {
-      await this.publicApi.publicApiFiles(contentHash, options)
+      await this.publicApi.publicApiGetFileHeaders(contentHash)
       this.logger.debug('Data object available', { contentHash })
       return true
     } catch (err) {
@@ -48,6 +43,6 @@ export class StorageNodeApi {
     if (startAt) {
       options.headers.Range = `bytes=${startAt}-`
     }
-    return this.publicApi.publicApiFiles(contentHash, options)
+    return this.publicApi.publicApiGetFile(contentHash, options)
   }
 }
