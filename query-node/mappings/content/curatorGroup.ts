@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { FindConditions } from 'typeorm'
 import { CuratorGroup } from 'query-node/dist/model'
 import { Content } from '../generated/types'

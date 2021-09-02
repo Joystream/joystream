@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@dzlzv/hydra-common'
+import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { ProposalDetails as RuntimeProposalDetails, ProposalId } from '@joystream/types/augment/all'
 import BN from 'bn.js'
 import {

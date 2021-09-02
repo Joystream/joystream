@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@dzlzv/hydra-common'
+import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
 import { FindConditions, In, Raw } from 'typeorm'
 import {
   createDataObject,

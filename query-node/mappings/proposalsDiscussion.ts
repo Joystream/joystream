@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager } from '@dzlzv/hydra-common'
+import { SubstrateEvent, DatabaseManager } from '@joystream/hydra-common'
 
 export async function proposalsDiscussion_ThreadCreated(db: DatabaseManager, event_: SubstrateEvent): Promise<void> {
   // TODO

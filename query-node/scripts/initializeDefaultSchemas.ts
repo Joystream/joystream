@@ -6,7 +6,7 @@ loadConfig()
 
 import BN from 'bn.js'
 import { nanoid } from 'nanoid'
-import { SnakeNamingStrategy } from '@dzlzv/hydra-db-utils'
+import { SnakeNamingStrategy } from '@joystream/hydra-db-utils'
 import { createConnection, ConnectionOptions, getConnection, EntityManager } from 'typeorm'
 
 import { Video } from '../generated/graphql-server/src/modules/video/video.model'

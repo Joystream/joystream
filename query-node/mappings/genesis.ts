@@ -1,4 +1,4 @@
-import { StoreContext } from '@dzlzv/hydra-common'
+import { StoreContext } from '@joystream/hydra-common'
 import BN from 'bn.js'
 import { MembershipSystemSnapshot, WorkingGroup } from 'query-node/dist/model'
 import { membershipSystem, workingGroups } from './genesis-data'
