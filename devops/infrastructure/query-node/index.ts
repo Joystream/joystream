@@ -352,30 +352,6 @@ const deployment = new k8s.apps.v1.Deployment(
               ports: [{ containerPort: 4002 }],
             },
             {
-              name: 'processor',
-              image: joystreamAppsImage,
-              imagePullPolicy: 'IfNotPresent',
-              env: [
-                {
-                  name: 'INDEXER_ENDPOINT_URL',
-                  value: `http://localhost:${process.env.WARTHOG_APP_PORT}/graphql`,
-                },
-                { name: 'TYPEORM_HOST', value: 'postgres-db' },
-                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
-                { name: 'DEBUG', value: 'index-builder:*' },
-                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
-              ],
-              volumeMounts: [
-                {
-                  mountPath: '/joystream/query-node/mappings/lib/generated/types/typedefs.json',
-                  name: 'processor-volume',
-                  subPath: 'fileData',
-                },
-              ],
-              command: ['/bin/sh', '-c'],
-              args: ['cd query-node && yarn hydra-processor run -e ../.env'],
-            },
-            {
               name: 'graphql-server',
               image: joystreamAppsImage,
               imagePullPolicy: 'IfNotPresent',
@@ -393,12 +369,6 @@ const deployment = new k8s.apps.v1.Deployment(
             },
           ],
           volumes: [
-            {
-              name: 'processor-volume',
-              configMap: {
-                name: defsConfig,
-              },
-            },
             {
               name: 'indexer-volume',
               configMap: {
@@ -436,8 +406,66 @@ const service = new k8s.core.v1.Service(
   resourceOptions
 )
 
-// Export the Service name and public LoadBalancer Endpoint
+// Export the Service name
 export const serviceName = service.metadata.name
+
+const indexerURL = config.get('indexerURL') || `http://query-node:4000/graphql`
+
+const processorDeployment = new k8s.apps.v1.Deployment(
+  `processor`,
+  {
+    metadata: {
+      namespace: namespaceName,
+      labels: appLabels,
+    },
+    spec: {
+      replicas: 1,
+      selector: { matchLabels: appLabels },
+      template: {
+        metadata: {
+          labels: appLabels,
+        },
+        spec: {
+          containers: [
+            {
+              name: 'processor',
+              image: joystreamAppsImage,
+              imagePullPolicy: 'IfNotPresent',
+              env: [
+                {
+                  name: 'INDEXER_ENDPOINT_URL',
+                  value: indexerURL,
+                },
+                { name: 'TYPEORM_HOST', value: 'postgres-db' },
+                { name: 'TYPEORM_DATABASE', value: process.env.DB_NAME! },
+                { name: 'DEBUG', value: 'index-builder:*' },
+                { name: 'PROCESSOR_POLL_INTERVAL', value: '1000' },
+              ],
+              volumeMounts: [
+                {
+                  mountPath: '/joystream/query-node/mappings/lib/generated/types/typedefs.json',
+                  name: 'processor-volume',
+                  subPath: 'fileData',
+                },
+              ],
+              command: ['/bin/sh', '-c'],
+              args: ['cd query-node && yarn hydra-processor run -e ../.env'],
+            },
+          ],
+          volumes: [
+            {
+              name: 'processor-volume',
+              configMap: {
+                name: defsConfig,
+              },
+            },
+          ],
+        },
+      },
+    },
+  },
+  { ...resourceOptions, dependsOn: deployment }
+)
 
 const caddyEndpoints = [
   `/indexer/* {
