@@ -5,7 +5,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@dzlzv/hydra-cli": "3.1.0-alpha.0",
-    "@dzlzv/hydra-typegen": "3.1.0-alpha.0"
+    "@joystream/hydra-cli": "https://github.com/ondratra/hydra/releases/download/relation-selection-and-filtering/joystream-hydra-cli-v3.1.0-alpha.9_relationSelectionAndFiltering.tgz",
+    "@joystream/hydra-typegen": "^3.1.0-alpha.9"
   }
 }

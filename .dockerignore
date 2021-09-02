@@ -4,6 +4,5 @@ target/
 .vscode/
 query-node/**/dist
 query-node/lib
-cli/
 tests/
 !tests/integration-tests/proposal-parameters.json
