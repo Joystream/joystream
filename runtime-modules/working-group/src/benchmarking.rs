@@ -575,7 +575,7 @@ benchmarks_instance! {
     }
 
     fill_opening_worker {
-        let i in 1 .. T::MaxWorkerNumberLimit::get() - 1;
+        let i in 2 .. T::MaxWorkerNumberLimit::get();
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             OpeningType::Leader,
             0,
