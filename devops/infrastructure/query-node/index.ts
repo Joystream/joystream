@@ -63,7 +63,6 @@ const resourceOptions = { provider: provider }
 const name = 'query-node'
 
 // Create a Kubernetes Namespace
-// const ns = new k8s.core.v1.Namespace(name, {}, { provider: cluster.provider })
 const ns = new k8s.core.v1.Namespace(name, {}, resourceOptions)
 
 // Export the Namespace name
@@ -289,6 +288,38 @@ const defsConfig = new configMapFromFile(
   resourceOptions
 ).configName
 
+const indexerContainer = []
+
+const existingIndexer = config.get('indexerURL')
+
+if (!existingIndexer) {
+  indexerContainer.push({
+    name: 'indexer',
+    image: 'joystream/hydra-indexer:2.1.0-beta.9',
+    env: [
+      { name: 'DB_HOST', value: 'postgres-db' },
+      { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
+      { name: 'DB_PASS', value: process.env.DB_PASS! },
+      { name: 'INDEXER_WORKERS', value: '5' },
+      { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
+      { name: 'DEBUG', value: 'index-builder:*' },
+      { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
+      { name: 'TYPES_JSON', value: 'types.json' },
+      { name: 'PGUSER', value: process.env.DB_USER! },
+      { name: 'BLOCK_HEIGHT', value: process.env.BLOCK_HEIGHT! },
+    ],
+    volumeMounts: [
+      {
+        mountPath: '/home/hydra/packages/hydra-indexer/types.json',
+        name: 'indexer-volume',
+        subPath: 'fileData',
+      },
+    ],
+    command: ['/bin/sh', '-c'],
+    args: ['yarn db:bootstrap && yarn start:prod'],
+  })
+}
+
 const deployment = new k8s.apps.v1.Deployment(
   name,
   {
@@ -310,31 +341,7 @@ const deployment = new k8s.apps.v1.Deployment(
               image: 'redis:6.0-alpine',
               ports: [{ containerPort: 6379 }],
             },
-            {
-              name: 'indexer',
-              image: 'joystream/hydra-indexer:2.1.0-beta.9',
-              env: [
-                { name: 'DB_HOST', value: 'postgres-db' },
-                { name: 'DB_NAME', value: process.env.INDEXER_DB_NAME! },
-                { name: 'DB_PASS', value: process.env.DB_PASS! },
-                { name: 'INDEXER_WORKERS', value: '5' },
-                { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
-                { name: 'DEBUG', value: 'index-builder:*' },
-                { name: 'WS_PROVIDER_ENDPOINT_URI', value: process.env.WS_PROVIDER_ENDPOINT_URI! },
-                { name: 'TYPES_JSON', value: 'types.json' },
-                { name: 'PGUSER', value: process.env.DB_USER! },
-                { name: 'BLOCK_HEIGHT', value: process.env.BLOCK_HEIGHT! },
-              ],
-              volumeMounts: [
-                {
-                  mountPath: '/home/hydra/packages/hydra-indexer/types.json',
-                  name: 'indexer-volume',
-                  subPath: 'fileData',
-                },
-              ],
-              command: ['/bin/sh', '-c'],
-              args: ['yarn db:bootstrap && yarn start:prod'],
-            },
+            ...indexerContainer,
             {
               name: 'hydra-indexer-gateway',
               image: 'joystream/hydra-indexer-gateway:2.1.0-beta.5',
