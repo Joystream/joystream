@@ -10,7 +10,7 @@ use sp_std::marker::PhantomData;
 use common::{ActorId, MemberId};
 
 /// Working group job application type alias.
-pub type Application<T> = JobApplication<<T as frame_system::Trait>::AccountId, MemberId<T>>;
+pub type Application<T> = JobApplication<<T as frame_system::Config>::AccountId, MemberId<T>>;
 
 /// Type identifier for a worker role, which must be same as membership actor identifier.
 pub type WorkerId<T> = ActorId<T>;
@@ -22,19 +22,21 @@ pub type ApplicationId = u64;
 pub type OpeningId = u64;
 
 // ApplicationId - Application - helper struct.
-pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
+pub(crate) struct ApplicationInfo<T: crate::Config<I>, I: crate::Instance> {
     pub application_id: ApplicationId,
     pub application: Application<T>,
     pub marker: PhantomData<I>,
 }
 
 // WorkerId - Worker - helper struct.
-pub(crate) struct WorkerInfo<T: common::membership::Trait + frame_system::Trait + balances::Trait> {
+pub(crate) struct WorkerInfo<
+    T: common::membership::Config + frame_system::Config + balances::Config,
+> {
     pub worker_id: WorkerId<T>,
     pub worker: Worker<T>,
 }
 
-impl<T: common::membership::Trait + frame_system::Trait + balances::Trait>
+impl<T: common::membership::Config + frame_system::Config + balances::Config>
     From<(WorkerId<T>, Worker<T>)> for WorkerInfo<T>
 {
     fn from((worker_id, worker): (WorkerId<T>, Worker<T>)) -> Self {
@@ -44,14 +46,14 @@ impl<T: common::membership::Trait + frame_system::Trait + balances::Trait>
 
 /// Group worker type alias.
 pub type Worker<T> = GroupWorker<
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     MemberId<T>,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     BalanceOf<T>,
 >;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.
@@ -255,7 +257,7 @@ pub struct StakeParameters<AccountId, Balance> {
 pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
     MemberId<T>,
     OpeningId,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
 >;
 

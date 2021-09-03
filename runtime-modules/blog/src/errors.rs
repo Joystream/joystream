@@ -1,9 +1,9 @@
-use crate::{Instance, Module, Trait};
+use crate::{Config, Instance, Module};
 use frame_support::decl_error;
 
 decl_error! {
     /// Blog module predefined errors
-    pub enum Error for Module<T: Trait<I>, I: Instance> {
+    pub enum Error for Module<T: Config<I>, I: Instance> {
         /// A non-owner is trying to do a privilegeded action.
         BlogOwnershipError,
 

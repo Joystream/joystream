@@ -18,6 +18,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 mod mock;
 mod tests;
@@ -71,13 +72,15 @@ pub struct ServiceProviderRecord<BlockNumber> {
 }
 
 /// The _Service discovery_ main _Trait_.
-pub trait Trait: frame_system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
+pub trait Config:
+    frame_system::Config + working_group::Config<StorageWorkingGroupInstance>
+{
     /// _Service discovery_ event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Discovery {
+    trait Store for Module<T: Config> as Discovery {
         /// Bootstrap endpoints maintained by root
         pub BootstrapEndpoints get(fn bootstrap_endpoints): Vec<Url>;
 
@@ -111,7 +114,7 @@ decl_event! {
 
 decl_module! {
     /// _Service discovery_ substrate module.
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -179,7 +182,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Verifies that account info for the storage provider is still valid.
     pub fn is_account_info_expired(storage_provider_id: &StorageProviderId<T>) -> bool {
         !<AccountInfoByStorageProviderId<T>>::contains_key(storage_provider_id)

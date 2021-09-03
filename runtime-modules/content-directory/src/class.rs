@@ -155,7 +155,7 @@ impl<
     }
 
     /// Ensure `Class` `Schema` under given index exist, return corresponding `Schema`
-    pub fn ensure_schema_exists<T: Trait>(
+    pub fn ensure_schema_exists<T: Config>(
         &self,
         schema_index: SchemaId,
     ) -> Result<&Schema, Error<T>> {
@@ -165,7 +165,7 @@ impl<
     }
 
     /// Ensure `schema_id` is a valid index of `Class` schemas vector
-    pub fn ensure_schema_id_exists<T: Trait>(&self, schema_id: SchemaId) -> Result<(), Error<T>> {
+    pub fn ensure_schema_id_exists<T: Config>(&self, schema_id: SchemaId) -> Result<(), Error<T>> {
         ensure!(
             schema_id < self.schemas.len() as SchemaId,
             Error::<T>::UnknownClassSchemaId
@@ -174,7 +174,7 @@ impl<
     }
 
     /// Ensure `Schema`s limit per `Class` not reached
-    pub fn ensure_schemas_limit_not_reached<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_schemas_limit_not_reached<T: Config>(&self) -> Result<(), Error<T>> {
         ensure!(
             (self.schemas.len() as MaxNumber) < T::MaxNumberOfSchemasPerClass::get(),
             Error::<T>::ClassSchemasLimitReached
@@ -183,7 +183,7 @@ impl<
     }
 
     /// Ensure properties limit per `Schema` not reached
-    pub fn ensure_properties_limit_not_reached<T: Trait>(
+    pub fn ensure_properties_limit_not_reached<T: Config>(
         &self,
         new_properties: &[Property<ClassId>],
     ) -> Result<(), Error<T>> {
@@ -196,7 +196,7 @@ impl<
     }
 
     /// Ensure `Class` specific entities limit not reached
-    pub fn ensure_maximum_entities_count_limit_not_reached<T: Trait>(
+    pub fn ensure_maximum_entities_count_limit_not_reached<T: Config>(
         &self,
     ) -> Result<(), Error<T>> {
         ensure!(
@@ -208,7 +208,7 @@ impl<
 
     /// Ensure `Property` under given `PropertyId` is unlocked from actor with given `EntityAccessLevel`
     /// return corresponding `Property` by value
-    pub fn ensure_class_property_type_unlocked_from<T: Trait>(
+    pub fn ensure_class_property_type_unlocked_from<T: Config>(
         self,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
@@ -231,7 +231,7 @@ impl<
     }
 
     /// Ensure property values were not locked on `Class` level
-    pub fn ensure_property_values_unlocked<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_property_values_unlocked<T: Config>(&self) -> Result<(), Error<T>> {
         ensure!(
             !self
                 .get_permissions_ref()

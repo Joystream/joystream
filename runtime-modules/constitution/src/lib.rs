@@ -6,6 +6,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -28,10 +29,10 @@ pub trait WeightInfo {
     fn amend_constitution(i: u32) -> Weight;
 }
 
-type WeightInfoConstitution<T> = <T as Trait>::WeightInfo;
+type WeightInfoConstitution<T> = <T as Config>::WeightInfo;
 
-pub trait Trait: frame_system::Trait {
-    type Event: From<Event> + Into<<Self as frame_system::Trait>::Event>;
+pub trait Config: frame_system::Config {
+    type Event: From<Event> + Into<<Self as frame_system::Config>::Event>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -46,7 +47,7 @@ pub struct ConstitutionInfo {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Memo {
+    trait Store for Module<T: Config> as Memo {
         Constitution get(fn constitution) : ConstitutionInfo;
     }
 }
@@ -62,7 +63,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
         /// Sets the current constitution hash. Requires root origin.

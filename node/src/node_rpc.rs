@@ -1,6 +1,6 @@
 // This file is part of Substrate.
 
-// Copyright (C) 2019-2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2019-2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,10 @@
 
 #![warn(missing_docs)]
 
-use node_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index};
+use std::sync::Arc;
+
+use node_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
+use sc_client_api::AuxStore;
 use sc_consensus_babe::{Config, Epoch};
 use sc_consensus_babe_rpc::BabeRpcHandler;
 use sc_consensus_epochs::SharedEpochChanges;
@@ -38,7 +41,6 @@ use sc_finality_grandpa::{
     FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
 };
 use sc_finality_grandpa_rpc::GrandpaRpcHandler;
-use sc_keystore::KeyStorePtr;
 use sc_rpc::SubscriptionTaskExecutor;
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
@@ -46,8 +48,8 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_consensus::SelectChain;
 use sp_consensus_babe::BabeApi;
+use sp_keystore::SyncCryptoStorePtr;
 use sp_transaction_pool::TransactionPool;
-use std::sync::Arc;
 
 /// Light client extra dependencies.
 pub struct LightDeps<C, F, P> {
@@ -68,7 +70,7 @@ pub struct BabeDeps {
     /// BABE pending epoch changes.
     pub shared_epoch_changes: SharedEpochChanges<Block, Epoch>,
     /// The keystore that manages the keys of the node.
-    pub keystore: KeyStorePtr,
+    pub keystore: SyncCryptoStorePtr,
 }
 
 /// Extra dependencies for GRANDPA
@@ -93,6 +95,8 @@ pub struct FullDeps<C, P, SC, B> {
     pub pool: Arc<P>,
     /// The SelectChain Strategy
     pub select_chain: SC,
+    /// A copy of the chain spec.
+    pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
     /// BABE specific dependencies.
@@ -109,9 +113,13 @@ pub fn create_full<C, P, SC, B>(
     deps: FullDeps<C, P, SC, B>,
 ) -> jsonrpc_core::IoHandler<sc_rpc_api::Metadata>
 where
-    C: ProvideRuntimeApi<Block>,
-    C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
-    C: Send + Sync + 'static,
+    C: ProvideRuntimeApi<Block>
+        + HeaderBackend<Block>
+        + AuxStore
+        + HeaderMetadata<Block, Error = BlockChainError>
+        + Sync
+        + Send
+        + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: BabeApi<Block>,
@@ -129,6 +137,7 @@ where
         client,
         pool,
         select_chain,
+        chain_spec,
         deny_unsafe,
         babe,
         grandpa,
@@ -157,8 +166,8 @@ where
     )));
     io.extend_with(sc_consensus_babe_rpc::BabeApi::to_delegate(
         BabeRpcHandler::new(
-            client,
-            shared_epoch_changes,
+            client.clone(),
+            shared_epoch_changes.clone(),
             keystore,
             babe_config,
             select_chain,
@@ -167,11 +176,21 @@ where
     ));
     io.extend_with(sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
         GrandpaRpcHandler::new(
-            shared_authority_set,
+            shared_authority_set.clone(),
             shared_voter_state,
             justification_stream,
             subscription_executor,
             finality_provider,
+        ),
+    ));
+
+    io.extend_with(sc_sync_state_rpc::SyncStateRpcApi::to_delegate(
+        sc_sync_state_rpc::SyncStateRpcHandler::new(
+            chain_spec,
+            client,
+            shared_authority_set,
+            shared_epoch_changes,
+            deny_unsafe,
         ),
     ));
 

@@ -12,7 +12,7 @@ use common::FundingRequestParameters;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
-pub trait ProposalEncoder<T: crate::Trait> {
+pub trait ProposalEncoder<T: crate::Config> {
     /// Encodes proposal using its details information.
     fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
 }
@@ -20,12 +20,12 @@ pub trait ProposalEncoder<T: crate::Trait> {
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::BlockNumber,
+    <T as frame_system::Config>::AccountId,
     working_group::WorkerId<T>,
     working_group::OpeningId,
     blog::PostId,
-    <T as proposals_engine::Trait>::ProposalId,
+    <T as proposals_engine::Config>::ProposalId,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.

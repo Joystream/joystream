@@ -27,14 +27,15 @@ use joystream_node::chain_spec::{
     self, chain_spec_properties, forum_config, initial_balances, initial_members, AccountId,
 };
 
+use futures_util::TryFutureExt;
 use sc_chain_spec::ChainType;
-use sc_keystore::Store as Keystore;
+use sc_keystore::LocalKeystore as Keystore;
 use sc_telemetry::TelemetryEndpoints;
 use sp_core::{
     crypto::{Public, Ss58Codec},
     sr25519,
-    traits::BareCryptoStore,
 };
+use sp_keystore::CryptoStore;
 
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
@@ -47,6 +48,7 @@ enum ChainDeployment {
     live,
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<ChainType> for ChainDeployment {
     fn into(self) -> ChainType {
         match self {
@@ -227,7 +229,7 @@ fn genesis_constructor(
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
-        endowed_accounts.to_vec(),
+        Some(endowed_accounts.to_vec()),
         members,
         forum_cfg,
         initial_account_balances,
@@ -284,13 +286,16 @@ fn generate_chain_spec(
         Some(telemetry_endpoints),
         Some(&*"/joy/testnet/0"),
         Some(chain_spec_properties()),
-        None,
+        Default::default(),
     );
 
     chain_spec.as_json(false).map_err(|err| err)
 }
 
-fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> Result<(), String> {
+async fn generate_authority_keys_and_store(
+    seeds: &[String],
+    keystore_path: &Path,
+) -> Result<(), String> {
     for (n, seed) in seeds.iter().enumerate() {
         let keystore = Keystore::open(keystore_path.join(format!("auth-{}", n)), None)
             .map_err(|err| err.to_string())?;
@@ -298,23 +303,25 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
         let (_, _, grandpa, babe, im_online, authority_discovery) =
             chain_spec::get_authority_keys_from_seed(seed);
 
+        let suri = format!("//{}", seed);
+
         let insert_key = |key_type, public| {
             keystore
-                .write()
-                .insert_unknown(key_type, &format!("//{}", seed), public)
-                .map_err(|_| format!("Failed to insert key: {}", grandpa))
+                .insert_unknown(key_type, &suri, public)
+                .map_err(move |_| format!("Failed to insert key: {:?} {:?}", key_type, public))
         };
 
-        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice())?;
+        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice()).await?;
 
-        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice())?;
+        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice()).await?;
 
-        insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice())?;
+        insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice()).await?;
 
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
-        )?;
+        )
+        .await?;
     }
 
     Ok(())
@@ -345,7 +352,8 @@ fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: 
     println!("//{}", sudo_seed);
 }
 
-fn main() -> Result<(), String> {
+#[async_std::main]
+async fn main() -> Result<(), String> {
     #[cfg(build_type = "debug")]
     println!(
 		"The chain spec builder builds a chain specification that includes a Substrate runtime compiled as WASM. To \
@@ -377,7 +385,7 @@ fn main() -> Result<(), String> {
             print_seeds(&authority_seeds, &endowed_seeds, &sudo_seed);
 
             if let Some(keystore_path) = keystore_path {
-                generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
+                generate_authority_keys_and_store(&authority_seeds, &keystore_path).await?;
             }
 
             let endowed_accounts = endowed_seeds

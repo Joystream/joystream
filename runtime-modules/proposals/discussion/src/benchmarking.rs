@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsDiscussion;
@@ -20,12 +22,12 @@ type ReferendumInstance = referendum::Instance1;
 const SEED: u32 = 0;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -41,7 +43,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance>>(
+fn run_to_block<T: Config + council::Config + referendum::Config<ReferendumInstance>>(
     n: T::BlockNumber,
 ) {
     while System::<T>::block_number() < n {
@@ -52,7 +54,7 @@ fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance
         Council::<T>::on_finalize(current_block_number);
         Referendum::<T, ReferendumInstance>::on_finalize(current_block_number);
 
-        current_block_number += 1.into();
+        current_block_number += 1u32.into();
         System::<T>::set_block_number(current_block_number);
 
         System::<T>::on_initialize(current_block_number);
@@ -62,15 +64,15 @@ fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance
     }
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: common::membership::Trait + balances::Trait + membership::Trait>(
+fn member_account<T: common::membership::Config + balances::Config + membership::Config>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -114,23 +116,20 @@ fn member_account<T: common::membership::Trait + balances::Trait + membership::T
         Membership::<T>::staking_account_id_member_status(account_id.clone()).member_id,
         member_id
     );
-    assert_eq!(
-        Membership::<T>::staking_account_id_member_status(account_id.clone()).confirmed,
-        true
-    );
+    assert!(Membership::<T>::staking_account_id_member_status(account_id.clone()).confirmed,);
 
     (account_id, member_id)
 }
 
 fn elect_council<
-    T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
+    T: Config + membership::Config + council::Config + referendum::Config<ReferendumInstance>,
 >(
     start_id: u32,
 ) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
-    let council_size = <T as council::Trait>::CouncilSize::get();
-    let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
+    let council_size = <T as council::Config>::CouncilSize::get();
+    let number_of_extra_candidates = <T as council::Config>::MinNumberOfExtraCandidates::get();
 
-    let councilor_stake = <T as council::Trait>::MinCandidateStake::get();
+    let councilor_stake = <T as council::Config>::MinCandidateStake::get();
 
     let mut voters = Vec::new();
     let mut candidates = Vec::new();
@@ -155,9 +154,9 @@ fn elect_council<
     }
 
     let current_block = System::<T>::block_number();
-    run_to_block::<T>(current_block + <T as council::Trait>::AnnouncingPeriodDuration::get());
+    run_to_block::<T>(current_block + <T as council::Config>::AnnouncingPeriodDuration::get());
 
-    let voter_stake = <T as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+    let voter_stake = <T as referendum::Config<ReferendumInstance>>::MinimumStake::get();
     let mut council = Vec::new();
     for i in 0..council_size as usize {
         council.push(candidates[i].clone());
@@ -177,21 +176,21 @@ fn elect_council<
 
     let current_block = System::<T>::block_number();
     run_to_block::<T>(
-        current_block + <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+        current_block + <T as referendum::Config<ReferendumInstance>>::VoteStageDuration::get(),
     );
 
     for i in 0..council_size as usize {
         Referendum::<T, ReferendumInstance>::reveal_vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
             vec![0u8],
-            candidates[i].1.clone(),
+            candidates[i].1,
         )
         .unwrap();
     }
 
     let current_block = System::<T>::block_number();
     run_to_block::<T>(
-        current_block + <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+        current_block + <T as referendum::Config<ReferendumInstance>>::RevealStageDuration::get(),
     );
 
     let council_members = Council::<T>::council_members();
@@ -215,10 +214,9 @@ const MAX_BYTES: u32 = 16384;
 
 benchmarks! {
     where_clause {
-        where T: balances::Trait, T: membership::Trait, T: council::Trait,
-              T: referendum::Trait<ReferendumInstance>
+        where T: balances::Config, T: membership::Config, T: council::Config,
+              T: referendum::Config<ReferendumInstance>
     }
-    _ { }
 
     add_post {
         let i in 1 .. T::MaxWhiteListSize::get();
@@ -368,7 +366,7 @@ benchmarks! {
     verify {
         assert_eq!(
             ProposalsDiscussion::<T>::thread_by_id(thread_id).mode,
-            mode.clone(),
+            mode,
             "Thread not correctly updated"
         );
 

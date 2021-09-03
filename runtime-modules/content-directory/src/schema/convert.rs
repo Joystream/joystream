@@ -1,7 +1,7 @@
 use super::*;
 use sp_runtime::traits::Hash;
 
-impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValueOf<T> {
+impl<T: Config> From<InputPropertyValue<T>> for StoredPropertyValueOf<T> {
     fn from(input_property_value: InputPropertyValue<T>) -> Self {
         match input_property_value {
             InputPropertyValue::Single(input_value) => {
@@ -16,7 +16,7 @@ impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValueOf<T> {
     }
 }
 
-impl<T: Trait> From<InputValue<T>> for StoredValue<T::Hash, T::EntityId> {
+impl<T: Config> From<InputValue<T>> for StoredValue<T::Hash, T::EntityId> {
     fn from(input_value: InputValue<T>) -> Self {
         match input_value {
             InputValue::Bool(value) => StoredValue::Bool(value),
@@ -29,7 +29,7 @@ impl<T: Trait> From<InputValue<T>> for StoredValue<T::Hash, T::EntityId> {
             InputValue::Text(value) => StoredValue::Text(value),
 
             InputValue::TextToHash(value) => {
-                let hash_value = value.using_encoded(<T as frame_system::Trait>::Hashing::hash);
+                let hash_value = value.using_encoded(<T as frame_system::Config>::Hashing::hash);
                 StoredValue::Hash(hash_value)
             }
             InputValue::Reference(value) => StoredValue::Reference(value),
@@ -37,7 +37,7 @@ impl<T: Trait> From<InputValue<T>> for StoredValue<T::Hash, T::EntityId> {
     }
 }
 
-impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T::Hash, T::EntityId> {
+impl<T: Config> From<VecInputValue<T>> for VecStoredValue<T::Hash, T::EntityId> {
     fn from(vec_input_value: VecInputValue<T>) -> Self {
         match vec_input_value {
             VecInputValue::Bool(vec_value) => VecStoredValue::Bool(vec_value),
@@ -52,7 +52,7 @@ impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T::Hash, T::EntityId> {
             VecInputValue::TextToHash(vec_value) => {
                 let hash_vec_value: Vec<_> = vec_value
                     .into_iter()
-                    .map(|value| value.using_encoded(<T as frame_system::Trait>::Hashing::hash))
+                    .map(|value| value.using_encoded(<T as frame_system::Config>::Hashing::hash))
                     .collect();
                 VecStoredValue::Hash(hash_vec_value)
             }

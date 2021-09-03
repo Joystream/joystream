@@ -40,7 +40,7 @@ fn execute_runtime_upgrade_proposal_fails() {
                 RawOrigin::Signed(0).into(),
                 vec![0]
             ),
-            Err(DispatchError::BadOrigin)
+            Err(DispatchError::BadOrigin.into())
         );
     });
 }
@@ -97,7 +97,7 @@ fn update_working_group_budget_fails_negative() {
 
 fn run_update_working_group_budget_fails_negative(wg: WorkingGroup) {
     initial_test_ext().execute_with(|| {
-        assert_eq!(<Test as Trait>::get_working_group_budget(wg), 0);
+        assert_eq!(<Test as Config>::get_working_group_budget(wg), 0);
         assert_eq!(
             Utilities::<Test>::update_working_group_budget(
                 RawOrigin::Root.into(),
@@ -123,7 +123,7 @@ fn run_update_working_group_budget_succeeds_positive(wg: WorkingGroup) {
         let funding_amount = 1;
         council::Module::<Test>::set_budget(RawOrigin::Root.into(), budget).unwrap();
         assert_eq!(council::Module::<Test>::budget(), budget);
-        assert_eq!(<Test as Trait>::get_working_group_budget(wg), 0);
+        assert_eq!(<Test as Config>::get_working_group_budget(wg), 0);
         assert_eq!(
             Utilities::<Test>::update_working_group_budget(
                 RawOrigin::Root.into(),
@@ -136,7 +136,7 @@ fn run_update_working_group_budget_succeeds_positive(wg: WorkingGroup) {
 
         assert_eq!(council::Module::<Test>::budget(), budget - funding_amount);
         assert_eq!(
-            <Test as Trait>::get_working_group_budget(wg),
+            <Test as Config>::get_working_group_budget(wg),
             funding_amount
         );
         assert_last_event(
@@ -156,9 +156,9 @@ fn run_update_working_group_budget_succeeds_negative(wg: WorkingGroup) {
     initial_test_ext().execute_with(|| {
         let budget = 100000;
         let funding_amount = 1;
-        <Test as Trait>::set_working_group_budget(wg, budget);
+        <Test as Config>::set_working_group_budget(wg, budget);
         assert_eq!(council::Module::<Test>::budget(), 0);
-        assert_eq!(<Test as Trait>::get_working_group_budget(wg), budget);
+        assert_eq!(<Test as Config>::get_working_group_budget(wg), budget);
 
         assert_eq!(
             Utilities::<Test>::update_working_group_budget(
@@ -172,7 +172,7 @@ fn run_update_working_group_budget_succeeds_negative(wg: WorkingGroup) {
 
         assert_eq!(council::Module::<Test>::budget(), funding_amount);
         assert_eq!(
-            <Test as Trait>::get_working_group_budget(wg),
+            <Test as Config>::get_working_group_budget(wg),
             budget - funding_amount
         );
         assert_last_event(

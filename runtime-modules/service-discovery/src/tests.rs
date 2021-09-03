@@ -13,7 +13,7 @@ fn set_ipns_id() {
         let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
 
         let identity = "alice".as_bytes().to_vec();
-        let ttl = <Test as frame_system::Trait>::BlockNumber::from(DEFAULT_LIFETIME);
+        let ttl = <Test as frame_system::Config>::BlockNumber::from(DEFAULT_LIFETIME);
         assert!(Discovery::set_ipns_id(
             Origin::signed(storage_provider_account_id),
             storage_provider_id,
@@ -37,7 +37,7 @@ fn set_ipns_id() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::discovery(RawEvent::AccountInfoUpdated(
+                event: Event::discovery(RawEvent::AccountInfoUpdated(
                     storage_provider_id,
                     identity.clone()
                 )),
@@ -93,7 +93,7 @@ fn unset_ipns_id() {
             *System::events().last().unwrap(),
             EventRecord {
                 phase: Phase::Initialization,
-                event: MetaEvent::discovery(RawEvent::AccountInfoRemoved(storage_provider_id)),
+                event: Event::discovery(RawEvent::AccountInfoRemoved(storage_provider_id)),
                 topics: vec![]
             }
         );
@@ -137,7 +137,7 @@ fn is_account_info_expired() {
 #[test]
 fn set_default_lifetime() {
     initial_test_ext().execute_with(|| {
-        let lifetime = <Test as frame_system::Trait>::BlockNumber::from(MINIMUM_LIFETIME + 2000);
+        let lifetime = <Test as frame_system::Config>::BlockNumber::from(MINIMUM_LIFETIME + 2000);
         // privileged method should fail if not from root origin
         assert!(
             Discovery::set_default_lifetime(Origin::signed(1), lifetime).is_err(),
@@ -151,7 +151,7 @@ fn set_default_lifetime() {
 
         // cannot set default lifetime to less than minimum
         let less_than_min_lifetime =
-            <Test as frame_system::Trait>::BlockNumber::from(MINIMUM_LIFETIME - 1);
+            <Test as frame_system::Config>::BlockNumber::from(MINIMUM_LIFETIME - 1);
         assert!(
             Discovery::set_default_lifetime(RawOrigin::Root.into(), less_than_min_lifetime)
                 .is_err(),

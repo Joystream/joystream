@@ -1,15 +1,16 @@
 #![cfg(test)]
 
+use crate as blog;
 use crate::*;
+use frame_support::parameter_types;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_io::TestExternalities;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, Perbill,
+    DispatchResult,
 };
 
 pub(crate) const FIRST_OWNER_ORIGIN: u128 = 0;
@@ -18,21 +19,30 @@ pub(crate) const SECOND_OWNER_ORIGIN: u128 = 2;
 pub(crate) const SECOND_OWNER_PARTICIPANT_ID: u64 = 2;
 pub(crate) const BAD_MEMBER_ID: u64 = 100000;
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
-#[derive(Clone, Default, PartialEq, Eq, Debug)]
-pub struct Runtime;
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        TestBlogModule: blog::{Module, Call, Storage, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+    }
+);
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
@@ -41,16 +51,14 @@ impl balances::Trait for Runtime {
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-// First, implement the system pallet's configuration trait for `Runtime`
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -58,30 +66,16 @@ impl frame_system::Trait for Runtime {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        crate DefaultInstance <T>,
-        frame_system<T>,
-        balances<T>,
-        membership<T>,
-    }
+    type SS58Prefix = ();
 }
 
 parameter_types! {
@@ -94,8 +88,8 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl membership::Trait for Runtime {
-    type Event = TestEvent;
+impl membership::Config for Runtime {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = ();
@@ -107,7 +101,7 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -135,27 +129,27 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_: &<Runtime as frame_system::Config>::AccountId) -> bool {
         unimplemented!();
     }
 
     fn is_worker_account_id(
-        _: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _: &<Runtime as frame_system::Config>::AccountId,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!();
     }
@@ -224,11 +218,11 @@ parameter_types! {
     pub const RepliesMaxNumber: u64 = 100;
     pub const ReplyDeposit: u64 = 500;
     pub const BlogModuleId: ModuleId = ModuleId(*b"m00:blog"); // module : blog
-    pub const ReplyLifetime: <Runtime as frame_system::Trait>::BlockNumber = 10;
+    pub const ReplyLifetime: <Runtime as frame_system::Config>::BlockNumber = 10;
 }
 
-impl Trait for Runtime {
-    type Event = TestEvent;
+impl Config for Runtime {
+    type Event = Event;
 
     type PostsMaxNumber = PostsMaxNumber;
     type ParticipantEnsureOrigin = MockEnsureParticipant;
@@ -272,12 +266,12 @@ impl
     MemberOriginValidator<
         Origin,
         ParticipantId<Runtime>,
-        <Runtime as frame_system::Trait>::AccountId,
+        <Runtime as frame_system::Config>::AccountId,
     > for MockEnsureParticipant
 {
     fn is_member_controller_account(
         member_id: &ParticipantId<Runtime>,
-        _: &<Runtime as frame_system::Trait>::AccountId,
+        _: &<Runtime as frame_system::Config>::AccountId,
     ) -> bool {
         *member_id != BAD_MEMBER_ID
     }
@@ -285,12 +279,12 @@ impl
     fn ensure_member_controller_account_origin(
         _: Origin,
         _: ParticipantId<Runtime>,
-    ) -> Result<<Runtime as frame_system::Trait>::AccountId, DispatchError> {
+    ) -> Result<<Runtime as frame_system::Config>::AccountId, DispatchError> {
         unimplemented!();
     }
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -323,18 +317,14 @@ impl ExtBuilder {
     }
 }
 
-// Assign back to type variables so we can make dispatched calls of these modules later.
-pub type System = frame_system::Module<Runtime>;
-pub type TestBlogModule = Module<Runtime>;
-
 pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
 
-type RawTestEvent = RawEvent<
+type RawEvent = blog::RawEvent<
     ParticipantId<Runtime>,
     PostId,
-    <Runtime as Trait>::ReplyId,
+    <Runtime as Config>::ReplyId,
     Vec<u8>,
     Vec<u8>,
     Option<Vec<u8>>,
@@ -342,8 +332,8 @@ type RawTestEvent = RawEvent<
     DefaultInstance,
 >;
 
-pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
-    TestEvent::crate_DefaultInstance(raw_event)
+pub fn get_test_event(raw_event: RawEvent) -> Event {
+    Event::blog(raw_event)
 }
 
 // Posts
@@ -393,7 +383,7 @@ pub fn edit_post(origin: Origin, post_id: PostId) -> DispatchResult {
 // Replies
 pub fn reply_by_id(
     post_id: PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
+    reply_id: <Runtime as Config>::ReplyId,
 ) -> Option<Reply<Runtime, DefaultInstance>> {
     match TestBlogModule::reply_by_id(post_id, reply_id) {
         reply if reply != Reply::<Runtime, DefaultInstance>::default() => Some(reply),
@@ -407,14 +397,14 @@ pub fn get_reply_text() -> Vec<u8> {
 
 pub fn get_reply(
     owner: ParticipantId<Runtime>,
-    parent_id: ParentId<<Runtime as Trait>::ReplyId, PostId>,
+    parent_id: ParentId<<Runtime as Config>::ReplyId, PostId>,
 ) -> Reply<Runtime, DefaultInstance> {
     let reply_text = get_reply_text();
     Reply::new(
         reply_text,
         owner,
         parent_id,
-        <Runtime as Trait>::ReplyDeposit::get(),
+        <Runtime as Config>::ReplyDeposit::get(),
     )
 }
 
@@ -422,7 +412,7 @@ pub fn create_reply(
     origin_id: u128,
     participant_id: u64,
     post_id: PostId,
-    reply_id: Option<<Runtime as Trait>::ReplyId>,
+    reply_id: Option<<Runtime as Config>::ReplyId>,
     editable: bool,
 ) -> DispatchResult {
     let reply = get_reply_text();
@@ -440,7 +430,7 @@ pub fn delete_reply(
     origin_id: u128,
     participant_id: u64,
     post_id: PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
+    reply_id: <Runtime as Config>::ReplyId,
 ) -> DispatchResult {
     TestBlogModule::delete_replies(
         Origin::signed(origin_id),
@@ -457,7 +447,7 @@ pub fn edit_reply(
     origin_id: u128,
     participant_id: u64,
     post_id: PostId,
-    reply_id: <Runtime as Trait>::ReplyId,
+    reply_id: <Runtime as Config>::ReplyId,
 ) -> DispatchResult {
     let reply = get_reply_text();
     TestBlogModule::edit_reply(

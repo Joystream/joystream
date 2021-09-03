@@ -3,7 +3,7 @@
 //! The content directory is an on-chain index of all content and metadata,
 //! and related concepts - such as channels and playlists.
 //!
-//! - [`substrate_content_directory_module::Trait`](./trait.Trait.html)
+//! - [`substrate_content_directory_module::Config`](./trait.Config.html)
 //! - [`Call`](./enum.Call.html)
 //! - [`Module`](./struct.Module.html)
 //!
@@ -97,10 +97,10 @@
 //! use frame_support::{decl_module, assert_ok};
 //! use frame_system::{self as system, ensure_signed};
 //!
-//! pub trait Trait: pallet_content_directory::Trait {}
+//! pub trait Config: pallet_content_directory::Config {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         pub fn add_curator_group(origin) -> Result<(), &'static str> {
 //!             <pallet_content_directory::Module<T>>::add_curator_group(origin)?;
@@ -114,6 +114,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
@@ -169,31 +170,31 @@ pub type MaxNumber = u32;
 
 /// Type simplification
 pub type EntityOf<T> = Entity<
-    <T as Trait>::ClassId,
-    <T as common::membership::Trait>::MemberId,
-    <T as frame_system::Trait>::Hash,
-    <T as Trait>::EntityId,
-    <T as Trait>::Nonce,
+    <T as Config>::ClassId,
+    <T as common::membership::Config>::MemberId,
+    <T as frame_system::Config>::Hash,
+    <T as Config>::EntityId,
+    <T as Config>::Nonce,
 >;
 
 /// Type simplification
 pub type ClassOf<T> =
-    Class<<T as Trait>::EntityId, <T as Trait>::ClassId, <T as Trait>::CuratorGroupId>;
+    Class<<T as Config>::EntityId, <T as Config>::ClassId, <T as Config>::CuratorGroupId>;
 
 /// Type simplification
 pub type StoredPropertyValueOf<T> = StoredPropertyValue<
-    <T as frame_system::Trait>::Hash,
-    <T as Trait>::EntityId,
-    <T as Trait>::Nonce,
+    <T as frame_system::Config>::Hash,
+    <T as Config>::EntityId,
+    <T as Config>::Nonce,
 >;
 
 /// Curator ID alias for the actor of the system.
 pub type CuratorId<T> = common::ActorId<T>;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: frame_system::Trait + common::membership::Trait {
+pub trait Config: frame_system::Config + common::membership::Config {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Nonce type is used to avoid data race update conditions, when performing property value vector operations
     type Nonce: Parameter
@@ -309,7 +310,7 @@ pub trait Trait: frame_system::Trait + common::membership::Trait {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as ContentDirectory {
+    trait Store for Module<T: Config> as ContentDirectory {
 
         /// Map, representing ClassId -> Class relation
         pub ClassById get(fn class_by_id) config(): map hasher(blake2_128_concat) T::ClassId => ClassOf<T>;
@@ -340,7 +341,7 @@ decl_storage! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1805,7 +1806,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Deposits an `TransactionFailed` event if an error during `transaction` extrinsic execution occured
     fn ensure_transaction_failed_event<R, E: Into<DispatchError>>(
         result: Result<R, E>,
@@ -2943,7 +2944,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     pub fn set_initial_ids_to_one() {
         <NextEntityId<T>>::put(T::EntityId::one());
         <NextClassId<T>>::put(T::ClassId::one());
@@ -2954,24 +2955,24 @@ impl<T: Trait> Module<T> {
 decl_event!(
     pub enum Event<T>
     where
-        CuratorGroupId = <T as Trait>::CuratorGroupId,
+        CuratorGroupId = <T as Config>::CuratorGroupId,
         CuratorId = CuratorId<T>,
-        ClassId = <T as Trait>::ClassId,
-        EntityId = <T as Trait>::EntityId,
-        EntityController = EntityController<<T as common::membership::Trait>::MemberId>,
+        ClassId = <T as Config>::ClassId,
+        EntityId = <T as Config>::EntityId,
+        EntityController = EntityController<<T as common::membership::Config>::MemberId>,
         EntityCreationVoucher = EntityCreationVoucher<T>,
         Status = bool,
         Actor = Actor<
-            <T as Trait>::CuratorGroupId,
+            <T as Config>::CuratorGroupId,
             CuratorId<T>,
-            <T as common::membership::Trait>::MemberId,
+            <T as common::membership::Config>::MemberId,
         >,
-        Nonce = <T as Trait>::Nonce,
+        Nonce = <T as Config>::Nonce,
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
-        SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,
+        SideEffect = Option<(<T as Config>::EntityId, EntityReferenceCounterSideEffect)>,
         FailedAt = u32,
-        ClassPermissions = ClassPermissions<<T as Trait>::CuratorGroupId>,
-        Property = Property<<T as Trait>::ClassId>,
+        ClassPermissions = ClassPermissions<<T as Config>::CuratorGroupId>,
+        Property = Property<<T as Config>::ClassId>,
         InputPropertyValue = InputPropertyValue<T>,
         InputValue = InputValue<T>,
         OperationType = OperationType<T>,

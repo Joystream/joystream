@@ -169,7 +169,7 @@ fn create_category_depth() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
-        let max_depth = <Runtime as Trait>::MaxCategoryDepth::get();
+        let max_depth = <Runtime as Config>::MaxCategoryDepth::get();
         for i in 0..(max_depth + 1) {
             let parent_category_id = match i {
                 0 => None,
@@ -936,10 +936,10 @@ fn create_thread_balance() {
             Ok(()),
         );
 
-        let first_state_cleanup_treasury_account: <Runtime as frame_system::Trait>::AccountId =
-            <Runtime as Trait>::ModuleId::get().into_sub_account(first_thread_id);
-        let second_state_cleanup_treasury_account: <Runtime as frame_system::Trait>::AccountId =
-            <Runtime as Trait>::ModuleId::get().into_sub_account(second_thread_id);
+        let first_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
+            <Runtime as Config>::ModuleId::get().into_sub_account(first_thread_id);
+        let second_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
+            <Runtime as Config>::ModuleId::get().into_sub_account(second_thread_id);
 
         assert_ne!(
             first_state_cleanup_treasury_account,
@@ -1092,8 +1092,8 @@ fn delete_thread() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::ThreadDeposit::get();
-        current_balance -= <Runtime as Trait>::PostDeposit::get();
+        current_balance -= <Runtime as Config>::ThreadDeposit::get();
+        current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -1120,7 +1120,7 @@ fn delete_thread() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::PostDeposit::get();
+        current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -1206,7 +1206,7 @@ fn delete_thread() {
 
         // check poll voting data was deleted
         assert!(!<PollVotes<Runtime>>::contains_key(thread_id, forum_lead));
-        current_balance += <Runtime as Trait>::ThreadDeposit::get();
+        current_balance += <Runtime as Config>::ThreadDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -1683,9 +1683,9 @@ fn add_post_balance() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
-        let initial_balance = <Runtime as Trait>::PostDeposit::get()
-            + <Runtime as Trait>::ThreadDeposit::get()
-            + <Runtime as balances::Trait>::ExistentialDeposit::get();
+        let initial_balance = <Runtime as Config>::PostDeposit::get()
+            + <Runtime as Config>::ThreadDeposit::get()
+            + <Runtime as balances::Config>::ExistentialDeposit::get();
 
         balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
         let category_id = create_category_mock(
@@ -1714,12 +1714,12 @@ fn add_post_balance() {
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&forum_lead),
-            <Runtime as balances::Trait>::ExistentialDeposit::get()
+            <Runtime as balances::Config>::ExistentialDeposit::get()
         );
 
         balances::Module::<Runtime>::make_free_balance_be(
             &forum_lead,
-            <Runtime as Trait>::PostDeposit::get() - 1,
+            <Runtime as Config>::PostDeposit::get() - 1,
         );
 
         // Can't create an editable post without enough balance
@@ -2049,8 +2049,8 @@ fn delete_post_creator() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::ThreadDeposit::get();
-        current_balance -= <Runtime as Trait>::PostDeposit::get();
+        current_balance -= <Runtime as Config>::ThreadDeposit::get();
+        current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -2068,7 +2068,7 @@ fn delete_post_creator() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::PostDeposit::get();
+        current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -2155,7 +2155,7 @@ fn delete_post_creator() {
             true,
         );
 
-        current_balance += <Runtime as Trait>::PostDeposit::get();
+        current_balance += <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -2203,8 +2203,8 @@ fn delete_post_not_creator() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::ThreadDeposit::get();
-        current_balance -= <Runtime as Trait>::PostDeposit::get();
+        current_balance -= <Runtime as Config>::ThreadDeposit::get();
+        current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -2222,7 +2222,7 @@ fn delete_post_not_creator() {
             Ok(()),
         );
 
-        current_balance -= <Runtime as Trait>::PostDeposit::get();
+        current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -2258,7 +2258,7 @@ fn delete_post_not_creator() {
             false,
         );
 
-        current_balance += <Runtime as Trait>::ThreadDeposit::get();
+        current_balance += <Runtime as Config>::ThreadDeposit::get();
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
@@ -2266,7 +2266,7 @@ fn delete_post_not_creator() {
         );
 
         let current_block = System::block_number();
-        run_to_block(current_block + <Runtime as Trait>::PostLifeTime::get());
+        run_to_block(current_block + <Runtime as Config>::PostLifeTime::get());
 
         let not_creator_balance =
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID);
@@ -2302,7 +2302,7 @@ fn delete_post_not_creator() {
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID),
-            not_creator_balance + <Runtime as Trait>::PostDeposit::get()
+            not_creator_balance + <Runtime as Config>::PostDeposit::get()
         );
     });
 }
@@ -2593,7 +2593,7 @@ fn storage_limit_checks() {
         );
 
         // test max subcategories limit
-        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxSubcategories>::get();
+        let max = <<<Runtime as Config>::MapLimits as StorageLimits>::MaxSubcategories>::get();
         for i in 0..max {
             create_category_mock(
                 origin.clone(),
@@ -2619,7 +2619,7 @@ fn storage_limit_checks() {
         );
 
         let max: usize =
-            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxModeratorsForCategory>::get()
+            <<<Runtime as Config>::MapLimits as StorageLimits>::MaxModeratorsForCategory>::get()
                 as usize;
         for i in 0..max {
             let moderator_id = EXTRA_MODERATORS[i];
@@ -2639,7 +2639,7 @@ fn storage_limit_checks() {
     // test MaxCategories
     with_test_externalities(|| {
         let max: usize =
-            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxCategories>::get() as usize;
+            <<<Runtime as Config>::MapLimits as StorageLimits>::MaxCategories>::get() as usize;
         for i in 0..max {
             create_category_mock(
                 origin.clone(),

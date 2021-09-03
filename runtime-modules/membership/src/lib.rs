@@ -43,6 +43,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 pub mod benchmarking;
 
@@ -51,7 +52,7 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, WithdrawReason, WithdrawReasons};
+use frame_support::traits::{Currency, Get, WithdrawReasons};
 pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
@@ -69,9 +70,9 @@ use staking_handler::StakingHandler;
 pub use benchmarking::MembershipWorkingGroupHelper;
 
 // Balance type alias
-type BalanceOf<T> = <T as balances::Trait>::Balance;
+type BalanceOf<T> = <T as balances::Config>::Balance;
 
-type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
+type WeightInfoMembership<T> = <T as Config>::WeightInfo;
 
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -96,11 +97,11 @@ pub trait WeightInfo {
     fn remove_staking_account() -> Weight;
 }
 
-pub trait Trait:
-    frame_system::Trait + balances::Trait + pallet_timestamp::Trait + common::membership::Trait
+pub trait Config:
+    frame_system::Config + balances::Config + pallet_timestamp::Config + common::membership::Config
 {
     /// Membership module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Defines the default membership fee.
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
@@ -139,7 +140,7 @@ pub trait Trait:
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
-pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
+pub type Membership<T> = MembershipObject<<T as frame_system::Config>::AccountId>;
 
 #[derive(Encode, PartialEq, Decode, Debug, Default)]
 /// Stored information about a registered user.
@@ -216,7 +217,7 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
 
 decl_error! {
     /// Membership module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
@@ -278,7 +279,7 @@ decl_error! {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Membership {
+    trait Store for Module<T: Config> as Membership {
         /// MemberId to assign to next member that is added to the registry, and is also the
         /// total number of members created. MemberIds start at Zero.
         pub NextMemberId get(fn members_created) : T::MemberId;
@@ -335,17 +336,17 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as common::membership::Trait>::MemberId,
+      <T as common::membership::Config>::MemberId,
       Balance = BalanceOf<T>,
-      <T as frame_system::Trait>::AccountId,
+      <T as frame_system::Config>::AccountId,
       BuyMembershipParameters = BuyMembershipParameters<
-          <T as frame_system::Trait>::AccountId,
-          <T as common::membership::Trait>::MemberId,
+          <T as frame_system::Config>::AccountId,
+          <T as common::membership::Config>::MemberId,
         >,
-      <T as common::membership::Trait>::ActorId,
+      <T as common::membership::Config>::ActorId,
       InviteMembershipParameters = InviteMembershipParameters<
-          <T as frame_system::Trait>::AccountId,
-          <T as common::membership::Trait>::MemberId,
+          <T as frame_system::Config>::AccountId,
+          <T as common::membership::Config>::MemberId,
         >,
     {
         MemberInvited(MemberId, InviteMembershipParameters),
@@ -370,7 +371,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -746,7 +747,7 @@ decl_module! {
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
                 default_invitation_balance,
-                WithdrawReasons::except(WithdrawReason::TransactionPayment)
+                WithdrawReasons::FEE,
             );
 
             // Fire the event.
@@ -980,7 +981,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Helper for update_account extrinsic weight calculation
     fn calculate_weight_for_update_account(
         new_root_account: &Option<T::AccountId>,
@@ -1163,7 +1164,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
+impl<T: Config> common::StakingAccountValidator<T> for Module<T> {
     fn is_member_staking_account(
         member_id: &common::MemberId<T>,
         account_id: &T::AccountId,
@@ -1172,7 +1173,7 @@ impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
     }
 }
 
-impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
+impl<T: Config> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
     fn ensure_member_controller_account_origin(
         origin: T::Origin,
         actor_id: T::MemberId,
@@ -1189,7 +1190,7 @@ impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for M
     }
 }
 
-impl<T: Trait> MembershipInfoProvider<T> for Module<T> {
+impl<T: Config> MembershipInfoProvider<T> for Module<T> {
     fn controller_account_id(
         member_id: common::MemberId<T>,
     ) -> Result<T::AccountId, DispatchError> {

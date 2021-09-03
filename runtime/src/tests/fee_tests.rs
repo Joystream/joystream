@@ -1,7 +1,7 @@
 use super::initial_test_ext;
 use crate::constants::currency::{CENTS, DOLLARS};
-use crate::MaximumBlockWeight;
 use crate::Runtime;
+use crate::MAXIMUM_BLOCK_WEIGHT;
 use pallet_transaction_payment::Module as TransactionPayment;
 
 #[test]
@@ -12,7 +12,7 @@ fn runtime_upgrade_total_fee_is_correct() {
     // byte fee + 1/10 CENT from base weight fee
     initial_test_ext().execute_with(|| {
         let dispatch_info = frame_support::weights::DispatchInfo {
-            weight: MaximumBlockWeight::get(),
+            weight: MAXIMUM_BLOCK_WEIGHT,
             class: frame_support::weights::DispatchClass::Operational,
             pays_fee: frame_support::weights::Pays::Yes,
         };

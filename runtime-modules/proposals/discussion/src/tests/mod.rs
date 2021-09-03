@@ -15,7 +15,7 @@ impl EventFixture {
             .iter()
             .map(|ev| EventRecord {
                 phase: Phase::Initialization,
-                event: TestEvent::discussion(ev.clone()),
+                event: mock::Event::proposals_discussion(ev.clone()),
                 topics: vec![],
             })
             .collect::<Vec<EventRecord<_, _>>>();
@@ -23,7 +23,7 @@ impl EventFixture {
         let actual_events: Vec<_> = System::events()
             .into_iter()
             .filter(|e| match e.event {
-                TestEvent::discussion(..) => true,
+                mock::Event::proposals_discussion(..) => true,
                 _ => false,
             })
             .collect();
@@ -58,7 +58,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
             author_id: 1,
-            cleanup_pay_off: <Test as Trait>::PostDeposit::get(),
+            cleanup_pay_off: <Test as Config>::PostDeposit::get(),
             last_edited: frame_system::Module::<Test>::block_number(),
         };
 
@@ -118,7 +118,7 @@ impl PostFixture {
             thread_id,
             origin: RawOrigin::Signed(1),
             post_id: None,
-            initial_balance: <Test as Trait>::PostDeposit::get(),
+            initial_balance: <Test as Config>::PostDeposit::get(),
             account_id: 1,
             editable: true,
         }
@@ -181,7 +181,7 @@ impl PostFixture {
                 ));
                 assert_eq!(
                     balances::Module::<Test>::usable_balance(&self.account_id),
-                    initial_balance - <Test as Trait>::PostDeposit::get()
+                    initial_balance - <Test as Config>::PostDeposit::get()
                 );
             } else {
                 assert!(!<PostThreadIdByPostId<Test>>::contains_key(
@@ -209,7 +209,7 @@ impl PostFixture {
         if result.is_ok() {
             assert_eq!(
                 balances::Module::<Test>::usable_balance(&self.account_id),
-                initial_balance + <Test as Trait>::PostDeposit::get()
+                initial_balance + <Test as Config>::PostDeposit::get()
             );
             assert!(!<PostThreadIdByPostId<Test>>::contains_key(
                 self.thread_id,
@@ -331,7 +331,7 @@ fn delete_post_call_fails_with_any_user_before_post_lifetime() {
 
         let current_block = frame_system::Module::<Test>::block_number();
 
-        run_to_block(current_block + <Test as Trait>::PostLifeTime::get());
+        run_to_block(current_block + <Test as Config>::PostLifeTime::get());
 
         post_fixture
             .with_origin(RawOrigin::Signed(10))
@@ -359,7 +359,7 @@ fn delete_post_call_succeds_with_any_user_after_post_lifetime() {
 
         let current_block = frame_system::Module::<Test>::block_number();
 
-        run_to_block(current_block + <Test as Trait>::PostLifeTime::get());
+        run_to_block(current_block + <Test as Config>::PostLifeTime::get());
 
         post_fixture
             .with_origin(RawOrigin::Signed(10))
@@ -380,7 +380,7 @@ fn create_post_call_fails_editable_insufficient_funds() {
 
         let mut post_fixture = PostFixture::default_for_thread(thread_id)
             .with_editable(true)
-            .with_initial_balance(<Test as Trait>::PostDeposit::get() - 1);
+            .with_initial_balance(<Test as Config>::PostDeposit::get() - 1);
 
         post_fixture.add_post_and_assert(Err(Error::<Test>::InsufficientBalanceForPost.into()));
     });

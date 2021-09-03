@@ -13,9 +13,9 @@ use Module as Blog;
 const MAX_BYTES: u32 = 16384;
 const SEED: u32 = 0;
 
-fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -24,9 +24,9 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_in_events<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -35,10 +35,10 @@ fn assert_in_events<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Ev
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: Instance>(
+fn member_funded_account<T: Config<I> + membership::Config + balances::Config, I: Instance>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -47,7 +47,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: I
 
     let _ = Balances::<T>::make_free_balance_be(
         &account_id,
-        <T as balances::Trait>::Balance::max_value(),
+        <T as balances::Config>::Balance::max_value(),
     );
 
     let params = membership::BuyMembershipParameters {
@@ -63,12 +63,12 @@ fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: I
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -78,7 +78,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait + balances::Trait, I: I
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -94,7 +94,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn generate_post<T: Trait<I>, I: Instance>(seq_num: u64) -> PostId {
+fn generate_post<T: Config<I>, I: Instance>(seq_num: u64) -> PostId {
     assert_eq!(Blog::<T, I>::post_count(), seq_num);
 
     Blog::<T, I>::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
@@ -105,20 +105,20 @@ fn generate_post<T: Trait<I>, I: Instance>(seq_num: u64) -> PostId {
 
     assert_eq!(
         Blog::<T, I>::post_by_id(post_id),
-        Post::<T, I>::new(&vec![0u8], &vec![0u8])
+        Post::<T, I>::new(&[0u8], &[0u8])
     );
 
     post_id
 }
 
-fn generate_reply<T: Trait<I>, I: Instance>(
+fn generate_reply<T: Config<I>, I: Instance>(
     creator_id: T::AccountId,
     participant_id: ParticipantId<T>,
     post_id: PostId,
 ) -> T::ReplyId {
     let creator_origin = RawOrigin::Signed(creator_id);
     Blog::<T, I>::create_reply(
-        creator_origin.clone().into(),
+        creator_origin.into(),
         participant_id,
         post_id,
         None,
@@ -141,9 +141,7 @@ fn generate_reply<T: Trait<I>, I: Instance>(
 }
 
 benchmarks_instance! {
-    where_clause { where T: balances::Trait, T: membership::Trait }
-
-    _ {}
+    where_clause { where T: balances::Config, T: membership::Config }
 
     create_post {
         let t in 0 .. MAX_BYTES;
@@ -212,7 +210,7 @@ benchmarks_instance! {
         let text = vec![0u8; t.try_into().unwrap()];
     }: create_reply(origin.clone(), participant_id, post_id, None, text.clone(), true)
     verify {
-        let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
+        let mut expected_post = Post::<T, I>::new(&[0u8], &[0u8]);
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
         assert_eq!(
@@ -241,9 +239,9 @@ benchmarks_instance! {
 
         let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id);
         let origin = RawOrigin::Signed(account_id);
-        let mut expected_post = Post::<T, I>::new(&vec![0u8], &vec![0u8]);
+        let mut expected_post = Post::<T, I>::new(&[0u8], &[0u8]);
         expected_post.increment_replies_counter();
         assert_eq!(Blog::<T, I>::post_by_id(post_id), expected_post);
         let text = vec![0u8; t.try_into().unwrap()];
@@ -278,7 +276,7 @@ benchmarks_instance! {
 
         let post_id = generate_post::<T, I>(0);
         let (account_id, participant_id) = member_funded_account::<T, I>("caller", 0);
-        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+        let reply_id = generate_reply::<T, I>(account_id.clone(), participant_id, post_id);
         let origin = RawOrigin::Signed(account_id);
         let updated_text = vec![1u8; t.try_into().unwrap()];
     }: _(origin.clone(), participant_id, post_id, reply_id, updated_text.clone())
@@ -314,7 +312,7 @@ benchmarks_instance! {
         for seq_num in 0..i {
             let post_id = generate_post::<T, I>(seq_num.into());
             let reply_id =
-                generate_reply::<T, I>(account_id.clone(), participant_id, post_id.clone());
+                generate_reply::<T, I>(account_id.clone(), participant_id, post_id);
             replies.push(ReplyToDelete {post_id, reply_id, hide});
         }
 

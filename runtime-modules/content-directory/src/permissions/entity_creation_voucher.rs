@@ -2,7 +2,7 @@ use super::*;
 
 /// A voucher for `Entity` creation
 #[derive(Encode, Decode, Clone, Copy, Debug, PartialEq, Eq)]
-pub struct EntityCreationVoucher<T: Trait> {
+pub struct EntityCreationVoucher<T: Config> {
     /// How many are allowed in total
     pub maximum_entities_count: T::EntityId,
 
@@ -10,7 +10,7 @@ pub struct EntityCreationVoucher<T: Trait> {
     pub entities_created: T::EntityId,
 }
 
-impl<T: Trait> Default for EntityCreationVoucher<T> {
+impl<T: Config> Default for EntityCreationVoucher<T> {
     fn default() -> Self {
         Self {
             maximum_entities_count: T::EntityId::zero(),
@@ -19,7 +19,7 @@ impl<T: Trait> Default for EntityCreationVoucher<T> {
     }
 }
 
-impl<T: Trait> EntityCreationVoucher<T> {
+impl<T: Config> EntityCreationVoucher<T> {
     /// Create a new instance of `EntityCreationVoucher` with specified limit
     pub fn new(maximum_entities_count: T::EntityId) -> Self {
         Self {

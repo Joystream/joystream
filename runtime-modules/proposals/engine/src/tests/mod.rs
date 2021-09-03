@@ -2,7 +2,7 @@ pub(crate) mod mock;
 
 use crate::types::ProposalStatusResolution;
 use crate::*;
-use mock::*;
+use mock::{Event, *};
 
 use codec::Encode;
 use frame_support::dispatch::DispatchResult;
@@ -278,7 +278,7 @@ impl EventFixture {
             .iter()
             .map(|ev| EventRecord {
                 phase: Phase::Initialization,
-                event: TestEvent::engine(ev.clone()),
+                event: Event::engine(ev.clone()),
                 topics: vec![],
             })
             .collect::<Vec<EventRecord<_, _>>>();
@@ -286,7 +286,7 @@ impl EventFixture {
         assert_eq!(System::events(), expected_events);
     }
 
-    fn assert_global_events(expected_raw_events: Vec<TestEvent>) {
+    fn assert_global_events(expected_raw_events: Vec<Event>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -300,12 +300,12 @@ impl EventFixture {
     }
 
     pub fn assert_last_crate_event(expected_raw_event: RawEvent<u32, u64, u64>) {
-        let converted_event = TestEvent::engine(expected_raw_event);
+        let converted_event = Event::engine(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -1691,7 +1691,7 @@ fn slash_balance_is_calculated_correctly() {
 
         assert_eq!(approved_slash_balance, 0);
 
-        let rejection_fee = <Test as crate::Trait>::RejectionFee::get();
+        let rejection_fee = <Test as crate::Config>::RejectionFee::get();
 
         let rejected_slash_balance = ProposalsEngine::calculate_slash_balance(
             &ProposalDecision::Rejected,
@@ -1707,7 +1707,7 @@ fn slash_balance_is_calculated_correctly() {
 
         assert_eq!(expired_slash_balance, rejection_fee);
 
-        let cancellation_fee = <Test as crate::Trait>::CancellationFee::get();
+        let cancellation_fee = <Test as crate::Config>::CancellationFee::get();
 
         let cancellation_slash_balance = ProposalsEngine::calculate_slash_balance(
             &ProposalDecision::Canceled,
@@ -2008,38 +2008,38 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         // first chain of event from the creation to the approval
         EventFixture::assert_global_events(vec![
-            TestEvent::frame_system(frame_system::RawEvent::NewAccount(1)), // because of token transfer
-            TestEvent::balances(balances::RawEvent::Endowed(1, total_balance)), // because of token transfer
-            TestEvent::engine(RawEvent::ProposalCreated(1, proposal_id)),
-            TestEvent::engine(RawEvent::Voted(
+            Event::frame_system(frame_system::Event::NewAccount(1)), // because of token transfer
+            Event::balances(balances::Event::Endowed(1, total_balance)), // because of token transfer
+            Event::engine(RawEvent::ProposalCreated(1, proposal_id)),
+            Event::engine(RawEvent::Voted(
                 1,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 2,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 3,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 4,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::ProposalDecisionMade(
+            Event::engine(RawEvent::ProposalDecisionMade(
                 proposal_id,
                 ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
             )),
-            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+            Event::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
                 ProposalStatus::PendingConstitutionality,
             )),
@@ -2107,81 +2107,81 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         EventFixture::assert_global_events(vec![
             // first chain of event from the creation to the approval
-            TestEvent::frame_system(frame_system::RawEvent::NewAccount(1)), // because of token transfer
-            TestEvent::balances(balances::RawEvent::Endowed(1, total_balance)), // because of token transfer
-            TestEvent::engine(RawEvent::ProposalCreated(1, proposal_id)),
-            TestEvent::engine(RawEvent::Voted(
+            Event::frame_system(frame_system::Event::NewAccount(1)), // because of token transfer
+            Event::balances(balances::Event::Endowed(1, total_balance)), // because of token transfer
+            Event::engine(RawEvent::ProposalCreated(1, proposal_id)),
+            Event::engine(RawEvent::Voted(
                 1,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 2,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 3,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 4,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::ProposalDecisionMade(
+            Event::engine(RawEvent::ProposalDecisionMade(
                 proposal_id,
                 ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
             )),
-            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+            Event::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
                 ProposalStatus::PendingConstitutionality,
             )),
             // reactivation of the proposal
-            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+            Event::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
                 ProposalStatus::Active,
             )),
             // second proposal approval chain
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 1,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 2,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 3,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::Voted(
+            Event::engine(RawEvent::Voted(
                 4,
                 proposal_id,
                 VoteKind::Approve,
                 Vec::new(),
             )),
-            TestEvent::engine(RawEvent::ProposalDecisionMade(
+            Event::engine(RawEvent::ProposalDecisionMade(
                 proposal_id,
                 ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
             )),
-            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+            Event::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
                 ProposalStatus::PendingExecution(reactivation_block + 1),
             )),
             // execution
-            TestEvent::engine(RawEvent::ProposalExecuted(
+            Event::engine(RawEvent::ProposalExecuted(
                 proposal_id,
                 ExecutionStatus::Executed,
             )),

@@ -6,6 +6,8 @@
 //Substrate internal issues.
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::unnecessary_mut_passed)]
+#![allow(non_fmt_panic)]
+#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -13,7 +15,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-mod constants;
+pub mod constants;
 mod integration;
 pub mod primitives;
 mod proposals_configuration;
@@ -26,14 +28,13 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::traits::{
-    Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced,
-};
+use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
-    constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-    Weight,
+    constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+    DispatchClass, Weight,
 };
 use frame_support::{construct_runtime, parameter_types};
+use frame_system::limits::{BlockLength, BlockWeights};
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -42,7 +43,7 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
+use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, OpaqueKeys};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
@@ -111,52 +112,94 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
+/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
+/// This is used to limit the maximal weight of a single extrinsic.
+const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
+/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
+/// by  Operational  extrinsics.
+const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+/// We allow for 2 seconds of compute with a 12 second average block time.
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND * 2;
+
 parameter_types! {
-    pub const BlockHashCount: BlockNumber = 250;
-    /// We allow for 2 seconds of compute with a 6 second average block time.
-    pub const MaximumBlockWeight: Weight = 2 * frame_support::weights::constants::WEIGHT_PER_SECOND;
-    pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
-    pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
+    pub const BlockHashCount: BlockNumber = 900; // mortal tx can be valid up to 1 hour after signing
     pub const Version: RuntimeVersion = VERSION;
-    /// Assume 10% of weight for average on_initialize calls.
-    pub MaximumExtrinsicWeight: Weight =
-        AvailableBlockRatio::get().saturating_sub(AVERAGE_ON_INITIALIZE_WEIGHT)
-        * MaximumBlockWeight::get();
+    pub RuntimeBlockLength: BlockLength =
+        BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+    pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
+        .base_block(BlockExecutionWeight::get())
+        .for_class(DispatchClass::all(), |weights| {
+            weights.base_extrinsic = ExtrinsicBaseWeight::get();
+        })
+        .for_class(DispatchClass::Normal, |weights| {
+            weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+        })
+        .for_class(DispatchClass::Operational, |weights| {
+            weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+            // Operational transactions have some extra reserved space, so that they
+            // are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
+            weights.reserved = Some(
+                MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+            );
+        })
+        .avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
+        .build_or_panic();
+    pub const SS58Prefix: u8 = 42; // Ss58AddressFormat::SubstrateAccount
 }
-const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
 // TODO: We need to adjust weight of this pallet
 // once we move to a newer version of substrate where parameters
 // are not discarded. See the comment in 'scripts/generate-weights.sh'
-impl frame_system::Trait for Runtime {
+impl frame_system::Config for Runtime {
+    /// The basic call filter to use in dispatchable.
     type BaseCallFilter = ();
-    type Origin = Origin;
-    type Call = Call;
-    type Index = Index;
-    type BlockNumber = BlockNumber;
-    type Hash = Hash;
-    type Hashing = BlakeTwo256;
+    /// Block & extrinsics weights: base values and limits.
+    type BlockWeights = RuntimeBlockWeights;
+    /// The maximum length of a block (in bytes).
+    type BlockLength = RuntimeBlockLength;
+    /// The identifier used to distinguish between accounts.
     type AccountId = AccountId;
-    type Lookup = IdentityLookup<AccountId>;
+    /// The aggregated dispatch type that is available for extrinsics.
+    type Call = Call;
+    /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+    type Lookup = AccountIdLookup<AccountId, ()>;
+    /// The index type for storing how many extrinsics an account has signed.
+    type Index = Index;
+    /// The index type for blocks.
+    type BlockNumber = BlockNumber;
+    /// The type for hashing blocks and tries.
+    type Hash = Hash;
+    /// The hashing algorithm used.
+    type Hashing = BlakeTwo256;
+    /// The header type.
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
+    /// The ubiquitous event type.
     type Event = Event;
+    /// The ubiquitous origin type.
+    type Origin = Origin;
+    /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
+    /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
-    type BlockExecutionWeight = BlockExecutionWeight;
-    type ExtrinsicBaseWeight = ExtrinsicBaseWeight;
-    type MaximumExtrinsicWeight = MaximumExtrinsicWeight;
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    /// Version of the runtime.
     type Version = Version;
+    /// Converts a Pallet to the index of the Pallet in `construct_runtime!`.
+    ///
+    /// This type is being generated by `construct_runtime!`.
     type PalletInfo = PalletInfo;
-    type AccountData = pallet_balances::AccountData<Balance>;
+    /// What to do if a new account is created.
     type OnNewAccount = ();
+    /// What to do if an account is fully reaped from the system.
     type OnKilledAccount = ();
-    type SystemWeightInfo = weights::frame_system::WeightInfo;
+    /// The data to be stored in an account.
+    type AccountData = pallet_balances::AccountData<Balance>;
+    /// Weight information for the extrinsics of this pallet.
+    type SystemWeightInfo = ();
+    /// This is used as an identifier of the chain. 42 is the generic substrate prefix.
+    type SS58Prefix = SS58Prefix;
 }
 
-impl substrate_utility::Trait for Runtime {
+impl substrate_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type WeightInfo = weights::substrate_utility::WeightInfo;
@@ -164,10 +207,13 @@ impl substrate_utility::Trait for Runtime {
 
 parameter_types! {
     pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS as u64;
+    pub const ReportLongevity: u64 =
+            BondingDuration::get() as u64 * SessionsPerEra::get() as u64 *
+    EpochDuration::get();
     pub const ExpectedBlockTime: Moment = MILLISECS_PER_BLOCK;
 }
 
-impl pallet_babe::Trait for Runtime {
+impl pallet_babe::Config for Runtime {
     type EpochDuration = EpochDuration;
     type ExpectedBlockTime = ExpectedBlockTime;
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
@@ -184,12 +230,12 @@ impl pallet_babe::Trait for Runtime {
     )>>::IdentificationTuple;
 
     type HandleEquivocation =
-        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
     type WeightInfo = ();
 }
 
-impl pallet_grandpa::Trait for Runtime {
+impl pallet_grandpa::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type KeyOwnerProof =
@@ -202,8 +248,11 @@ impl pallet_grandpa::Trait for Runtime {
 
     type KeyOwnerProofSystem = Historical;
 
-    type HandleEquivocation =
-        pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+    type HandleEquivocation = pallet_grandpa::EquivocationHandler<
+        Self::KeyOwnerIdentification,
+        Offences,
+        ReportLongevity,
+    >;
     type WeightInfo = ();
 }
 
@@ -241,7 +290,7 @@ parameter_types! {
     pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
@@ -252,7 +301,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl pallet_balances::Trait for Runtime {
+impl pallet_balances::Config for Runtime {
     type Balance = Balance;
     type DustRemoval = ();
     type Event = Event;
@@ -275,30 +324,14 @@ impl OnUnbalanced<NegativeImbalance> for Author {
     }
 }
 
-pub struct DealWithFees;
-impl OnUnbalanced<NegativeImbalance> for DealWithFees {
-    fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
-        if let Some(fees) = fees_then_tips.next() {
-            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
-            let mut split = fees.ration(80, 20);
-            if let Some(tips) = fees_then_tips.next() {
-                // For tips %100 are for the author
-                tips.ration_merge_into(0, 100, &mut split);
-            }
-            Author::on_unbalanced(split.1);
-        }
-    }
-}
-
-impl pallet_transaction_payment::Trait for Runtime {
-    type Currency = Balances;
-    type OnTransactionPayment = DealWithFees;
+impl pallet_transaction_payment::Config for Runtime {
+    type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
     type TransactionByteFee = TransactionByteFee;
     type WeightToFee = constants::fees::WeightToFee;
     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
-impl pallet_sudo::Trait for Runtime {
+impl pallet_sudo::Config for Runtime {
     type Event = Event;
     type Call = Call;
 }
@@ -307,7 +340,7 @@ parameter_types! {
     pub const UncleGenerations: BlockNumber = 0;
 }
 
-impl pallet_authorship::Trait for Runtime {
+impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
     type UncleGenerations = UncleGenerations;
     type FilterUncle = ();
@@ -331,7 +364,7 @@ parameter_types! {
     pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 }
 
-impl pallet_session::Trait for Runtime {
+impl pallet_session::Config for Runtime {
     type Event = Event;
     type ValidatorId = AccountId;
     type ValidatorIdOf = pallet_staking::StashOf<Self>;
@@ -344,7 +377,7 @@ impl pallet_session::Trait for Runtime {
     type WeightInfo = weights::pallet_session::WeightInfo;
 }
 
-impl pallet_session::historical::Trait for Runtime {
+impl pallet_session::historical::Config for Runtime {
     type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
     type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
 }
@@ -379,10 +412,10 @@ parameter_types! {
     pub MinSolutionScoreBump: Perbill = Perbill::from_rational_approximation(5u32, 10_000);
 }
 
-impl pallet_staking::Trait for Runtime {
+impl pallet_staking::Config for Runtime {
     type Currency = Balances;
     type UnixTime = Timestamp;
-    type CurrencyToVote = CurrencyToVoteHandler;
+    type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote;
     type RewardRemainder = (); // Could be Treasury.
     type Event = Event;
     type Slash = (); // Where to send the slashed funds. Could be Treasury.
@@ -401,11 +434,13 @@ impl pallet_staking::Trait for Runtime {
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type UnsignedPriority = StakingUnsignedPriority;
     type WeightInfo = weights::pallet_staking::WeightInfo;
+    type OffchainSolutionWeightLimit = ();
 }
 
-impl pallet_im_online::Trait for Runtime {
+impl pallet_im_online::Config for Runtime {
     type AuthorityId = ImOnlineId;
     type Event = Event;
+    type ValidatorSet = Historical;
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
     // Using the default weights until we check if we can run the benchmarks for this pallet in
@@ -415,30 +450,24 @@ impl pallet_im_online::Trait for Runtime {
 }
 
 parameter_types! {
-    pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MaximumBlockWeight::get();
+    pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MAXIMUM_BLOCK_WEIGHT;
 }
 
-impl pallet_offences::Trait for Runtime {
+impl pallet_offences::Config for Runtime {
     type Event = Event;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
     type OnOffenceHandler = Staking;
     type WeightSoftLimit = OffencesWeightSoftLimit;
 }
 
-impl pallet_authority_discovery::Trait for Runtime {}
+impl pallet_authority_discovery::Config for Runtime {}
 
 parameter_types! {
     pub const WindowSize: BlockNumber = 101;
     pub const ReportLatency: BlockNumber = 1000;
 }
 
-impl pallet_finality_tracker::Trait for Runtime {
-    type OnFinalizationStalled = ();
-    type WindowSize = WindowSize;
-    type ReportLatency = ReportLatency;
-}
-
-type EntityId = <Runtime as content_directory::Trait>::EntityId;
+type EntityId = <Runtime as content_directory::Config>::EntityId;
 
 parameter_types! {
     pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
@@ -458,7 +487,7 @@ parameter_types! {
     pub const IndividualEntitiesCreationLimit: EntityId = 500;
 }
 
-impl content_directory::Trait for Runtime {
+impl content_directory::Config for Runtime {
     type Event = Event;
     type Nonce = u64;
     type ClassId = u64;
@@ -507,7 +536,7 @@ parameter_types! {
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
-impl referendum::Trait<ReferendumInstance> for Runtime {
+impl referendum::Config<ReferendumInstance> for Runtime {
     type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
@@ -528,7 +557,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        _account_id: &<Self as frame_system::Trait>::AccountId,
+        _account_id: &<Self as frame_system::Config>::AccountId,
         stake: &Balance,
     ) -> Self::VotePower {
         *stake
@@ -564,7 +593,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 }
 
-impl council::Trait for Runtime {
+impl council::Config for Runtime {
     type Event = Event;
 
     type Referendum = ReferendumModule;
@@ -594,7 +623,7 @@ impl council::Trait for Runtime {
     type MemberOriginValidator = Members;
 }
 
-impl memo::Trait for Runtime {
+impl memo::Config for Runtime {
     type Event = Event;
 }
 
@@ -602,13 +631,13 @@ parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 100;
 }
 
-impl storage::data_object_type_registry::Trait for Runtime {
+impl storage::data_object_type_registry::Config for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
     type WorkingGroup = StorageWorkingGroup;
 }
 
-impl storage::data_directory::Trait for Runtime {
+impl storage::data_directory::Config for Runtime {
     type Event = Event;
     type ContentId = ContentId;
     type StorageProviderHelper = integration::storage::StorageProviderHelper;
@@ -617,13 +646,13 @@ impl storage::data_directory::Trait for Runtime {
     type MaxObjectsPerInjection = MaxObjectsPerInjection;
 }
 
-impl storage::data_object_storage_registry::Trait for Runtime {
+impl storage::data_object_storage_registry::Config for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = DataDirectory;
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = MemberId;
     type ActorId = ActorId;
 }
@@ -636,7 +665,7 @@ parameter_types! {
     pub const CandidateStake: Balance = 200;
 }
 
-impl membership::Trait for Runtime {
+impl membership::Config for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
@@ -671,7 +700,7 @@ impl forum::StorageLimits for MapLimits {
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
-impl forum::Trait for Runtime {
+impl forum::Config for Runtime {
     type Event = Event;
     type ThreadId = ThreadId;
     type PostId = PostId;
@@ -695,7 +724,7 @@ impl forum::Trait for Runtime {
     type PostLifeTime = PostLifeTime;
 }
 
-impl LockComparator<<Runtime as pallet_balances::Trait>::Balance> for Runtime {
+impl LockComparator<<Runtime as pallet_balances::Config>::Balance> for Runtime {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         existing_locks
             .iter()
@@ -746,7 +775,7 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance4;
 
-impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
@@ -759,7 +788,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
+impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
@@ -772,7 +801,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ContentDirectoryWorkingGroupStakingManager;
@@ -785,7 +814,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
+impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
@@ -798,7 +827,7 @@ impl working_group::Trait<MembershipWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl service_discovery::Trait for Runtime {
+impl service_discovery::Config for Runtime {
     type Event = Event;
 }
 
@@ -810,7 +839,7 @@ parameter_types! {
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
 }
 
-impl proposals_engine::Trait for Runtime {
+impl proposals_engine::Config for Runtime {
     type Event = Event;
     type ProposerOriginValidator = Members;
     type CouncilOriginValidator = Council;
@@ -853,7 +882,7 @@ macro_rules! call_wg {
     }};
 }
 
-impl proposals_discussion::Trait for Runtime {
+impl proposals_discussion::Config for Runtime {
     type Event = Event;
     type AuthorOriginValidator = Members;
     type CouncilOriginValidator = Council;
@@ -866,7 +895,7 @@ impl proposals_discussion::Trait for Runtime {
     type PostLifeTime = ForumPostLifeTime;
 }
 
-impl joystream_utility::Trait for Runtime {
+impl joystream_utility::Config for Runtime {
     type Event = Event;
 
     type WeightInfo = weights::joystream_utility::WeightInfo;
@@ -883,7 +912,7 @@ parameter_types! {
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
-impl proposals_codex::Trait for Runtime {
+impl proposals_codex::Config for Runtime {
     type Event = Event;
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
@@ -921,7 +950,7 @@ impl proposals_codex::Trait for Runtime {
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 
-impl pallet_constitution::Trait for Runtime {
+impl pallet_constitution::Config for Runtime {
     type Event = Event;
     type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
@@ -934,7 +963,7 @@ parameter_types! {
     pub const MinWorkEntrantStake: Balance = 100;
 }
 
-impl bounty::Trait for Runtime {
+impl bounty::Config for Runtime {
     type Event = Event;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
@@ -958,7 +987,7 @@ parameter_types! {
 }
 
 pub type BlogInstance = blog::Instance1;
-impl blog::Trait<BlogInstance> for Runtime {
+impl blog::Config<BlogInstance> for Runtime {
     type Event = Event;
 
     type PostsMaxNumber = PostsMaxNumber;
@@ -995,7 +1024,7 @@ construct_runtime!(
     pub enum Runtime where
         Block = Block,
         NodeBlock = opaque::Block,
-        UncheckedExtrinsic = UncheckedExtrinsic
+        UncheckedExtrinsic = UncheckedExtrinsic,
     {
         // Substrate
         System: frame_system::{Module, Call, Storage, Config, Event<T>},
@@ -1008,10 +1037,9 @@ construct_runtime!(
         Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
         Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
         Historical: pallet_session_historical::{Module},
-        FinalityTracker: pallet_finality_tracker::{Module, Call, Inherent},
         Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-        ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
         AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
+        ImOnline: pallet_im_online::{Module, Call, Event<T>, Storage, ValidateUnsigned, Config<T>},
         Offences: pallet_offences::{Module, Call, Storage, Event},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},

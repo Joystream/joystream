@@ -3,13 +3,13 @@
 pub use frame_system;
 
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
+use frame_support::{parameter_types, weights::Weight};
 use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, ModuleId, Perbill,
+    DispatchResult, ModuleId,
 };
 
 use crate::CouncilOriginValidator;
@@ -19,52 +19,35 @@ use frame_support::dispatch::DispatchError;
 
 use staking_handler::{LockComparator, StakingManager};
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+use crate as proposals_discussion;
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+        Council: council::{Module, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>},
+        Discussions: proposals_discussion::{Module, Call, Storage, Event<T>},
+    }
+);
+
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
 
 parameter_types! {
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
-}
-
-mod discussion {
-    pub use crate::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-mod referendum_mod {
-    pub use referendum::Event;
-    pub use referendum::Instance1;
-}
-
-mod council_mod {
-    pub use council::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        discussion<T>,
-        balances<T>,
-        membership_mod<T>,
-        frame_system<T>,
-        referendum_mod Instance1 <T>,
-        council_mod<T>,
-    }
 }
 
 parameter_types! {
@@ -142,23 +125,23 @@ impl membership::WeightInfo for Weights {
     }
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Test {
+impl common::membership::Config for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl membership::Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -170,7 +153,7 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -191,34 +174,34 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _origin: <Test as frame_system::Config>::Origin,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
         unimplemented!();
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
-        _worker_id: &<Test as common::membership::Trait>::ActorId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
+        _worker_id: &<Test as common::membership::Config>::ActorId,
     ) -> bool {
         unimplemented!()
     }
 }
 
-impl crate::Trait for Test {
-    type Event = TestEvent;
+impl crate::Config for Test {
+    type Event = Event;
     type AuthorOriginValidator = ();
     type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
@@ -293,8 +276,8 @@ parameter_types! {
 
 type ReferendumInstance = referendum::Instance1;
 
-impl council::Trait for Test {
-    type Event = TestEvent;
+impl council::Config for Test {
+    type Event = Event;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 
@@ -373,10 +356,12 @@ impl CouncilOriginValidator<Origin, u64, u128> for CouncilMock {
     }
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -384,21 +369,16 @@ impl frame_system::Trait for Test {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
 parameter_types! {
@@ -410,8 +390,8 @@ parameter_types! {
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
-impl referendum::Trait<ReferendumInstance> for Test {
-    type Event = TestEvent;
+impl referendum::Config<ReferendumInstance> for Test {
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -431,7 +411,7 @@ impl referendum::Trait<ReferendumInstance> for Test {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        _: &<Self as frame_system::Trait>::AccountId,
+        _: &<Self as frame_system::Config>::AccountId,
         _: &Self::Balance,
     ) -> Self::VotePower {
         1
@@ -495,7 +475,7 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
     }
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -509,9 +489,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 
     t.into()
 }
-
-pub type Discussions = crate::Module<Test>;
-pub type System = frame_system::Module<Test>;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests

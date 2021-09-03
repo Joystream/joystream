@@ -1,58 +1,55 @@
 #![cfg(test)]
 
+use crate as forum;
 use crate::*;
 
 pub use frame_support::assert_err;
 use sp_core::H256;
 
-use crate::{GenesisConfig, Module, Trait};
+use crate::Config;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
 
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::parameter_types;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Hash, IdentityLookup},
-    DispatchError, Perbill,
+    DispatchError,
 };
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
-
-mod forum_mod {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        forum_mod<T>,
-        frame_system<T>,
-        balances<T>,
-        membership<T>,
-        working_group Instance1 <T>,
-    }
-}
-
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Runtime;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u64 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
-impl frame_system::Trait for Runtime {
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
+
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Config, Storage, Event<T>},
+        Membership: membership::{Module, Call, Storage, Event<T>},
+        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+        TestForumModule: forum::{Module, Call, Storage, Event<T>, Config<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+    }
+);
+
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -60,41 +57,36 @@ impl frame_system::Trait for Runtime {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u128;
     type ActorId = u128;
 }
@@ -112,8 +104,8 @@ parameter_types! {
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
-impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
-    type Event = TestEvent;
+impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Runtime>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
@@ -125,7 +117,7 @@ impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+impl LockComparator<<Runtime as balances::Config>::Balance> for Runtime {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -301,8 +293,8 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
     }
 }
 
-impl membership::Trait for Runtime {
-    type Event = TestEvent;
+impl membership::Config for Runtime {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = ();
@@ -336,8 +328,8 @@ impl StorageLimits for MapLimits {
     type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
-impl Trait for Runtime {
-    type Event = TestEvent;
+impl Config for Runtime {
+    type Event = Event;
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
@@ -382,7 +374,7 @@ impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
 
         // Test accounts for benchmarks.
         let max_worker_number =
-            <Runtime as working_group::Trait<ForumWorkingGroupInstance>>::MaxWorkerNumberLimit::get(
+            <Runtime as working_group::Config<ForumWorkingGroupInstance>>::MaxWorkerNumberLimit::get(
             ) as u128;
         let mut benchmarks_accounts: Vec<u128> = (1..max_worker_number).collect::<Vec<_>>();
         allowed_accounts.append(&mut benchmarks_accounts);
@@ -393,27 +385,27 @@ impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!()
     }
 
-    fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
     }
 
     fn is_worker_account_id(
-        account_id: &<Runtime as frame_system::Trait>::AccountId,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        account_id: &<Runtime as frame_system::Config>::AccountId,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
     }
@@ -505,7 +497,7 @@ impl WeightInfo for () {
 
 #[derive(Clone)]
 pub enum OriginType {
-    Signed(<Runtime as frame_system::Trait>::AccountId),
+    Signed(<Runtime as frame_system::Config>::AccountId),
 }
 
 pub fn mock_origin(origin: OriginType) -> mock::Origin {
@@ -514,34 +506,34 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
     }
 }
 
-pub const FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 0;
+pub const FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 0;
 
 pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
 
-pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 111;
+pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 111;
 
 pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ORIGIN_ID);
 
-pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 112;
+pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 112;
 
 pub const NOT_FORUM_LEAD_2_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_2_ORIGIN_ID);
 
-pub const NOT_FORUM_MODERATOR_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 113;
+pub const NOT_FORUM_MODERATOR_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 113;
 
 pub const NOT_FORUM_MODERATOR_ORIGIN: OriginType =
     OriginType::Signed(NOT_FORUM_MODERATOR_ORIGIN_ID);
 
-pub const NOT_FORUM_MEMBER_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 114;
+pub const NOT_FORUM_MEMBER_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 114;
 
 pub const NOT_FORUM_MEMBER_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_MEMBER_ORIGIN_ID);
 
-pub const INVLAID_CATEGORY_ID: <Runtime as Trait>::CategoryId = 333;
+pub const INVLAID_CATEGORY_ID: <Runtime as Config>::CategoryId = 333;
 
-pub const FORUM_MODERATOR_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 123;
+pub const FORUM_MODERATOR_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 123;
 
 pub const FORUM_MODERATOR_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_ORIGIN_ID);
 
-pub const FORUM_MODERATOR_2_ORIGIN_ID: <Runtime as frame_system::Trait>::AccountId = 124;
+pub const FORUM_MODERATOR_2_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 124;
 
 pub const FORUM_MODERATOR_2_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_2_ORIGIN_ID);
 
@@ -598,7 +590,7 @@ pub fn good_poll_alternative_text() -> Vec<u8> {
 
 pub fn generate_poll(
     expiration_diff: u64,
-) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash> {
+) -> Poll<<Runtime as pallet_timestamp::Config>::Moment, <Runtime as frame_system::Config>::Hash> {
     Poll {
         description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
         end_time: Timestamp::now() + expiration_diff,
@@ -620,18 +612,18 @@ pub fn generate_poll(
 pub fn generate_poll_timestamp_cases(
     index: usize,
     expiration_diff: u64,
-) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash> {
+) -> Poll<<Runtime as pallet_timestamp::Config>::Moment, <Runtime as frame_system::Config>::Hash> {
     let test_cases = vec![generate_poll(expiration_diff), generate_poll(1)];
     test_cases[index].clone()
 }
 
 pub fn create_category_mock(
     origin: OriginType,
-    parent: Option<<Runtime as Trait>::CategoryId>,
+    parent: Option<<Runtime as Config>::CategoryId>,
     title: Vec<u8>,
     description: Vec<u8>,
     result: DispatchResult,
-) -> <Runtime as Trait>::CategoryId {
+) -> <Runtime as Config>::CategoryId {
     let category_id = TestForumModule::next_category_id();
     assert_eq!(
         TestForumModule::create_category(
@@ -646,7 +638,7 @@ pub fn create_category_mock(
         assert_eq!(TestForumModule::next_category_id(), category_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryCreated(
+            Event::forum(RawEvent::CategoryCreated(
                 category_id,
                 parent,
                 title.clone(),
@@ -659,16 +651,19 @@ pub fn create_category_mock(
 
 pub fn create_thread_mock(
     origin: OriginType,
-    account_id: <Runtime as frame_system::Trait>::AccountId,
+    account_id: <Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
     poll_data: Option<
-        Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as frame_system::Trait>::Hash>,
+        Poll<
+            <Runtime as pallet_timestamp::Config>::Moment,
+            <Runtime as frame_system::Config>::Hash,
+        >,
     >,
     result: DispatchResult,
-) -> <Runtime as Trait>::ThreadId {
+) -> <Runtime as Config>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
     let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
 
@@ -687,7 +682,7 @@ pub fn create_thread_mock(
         assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadCreated(
+            Event::forum(RawEvent::ThreadCreated(
                 thread_id,
                 forum_user_id,
                 category_id,
@@ -700,8 +695,8 @@ pub fn create_thread_mock(
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&account_id),
             initial_balance
-                - <Runtime as Trait>::ThreadDeposit::get()
-                - <Runtime as Trait>::PostDeposit::get()
+                - <Runtime as Config>::ThreadDeposit::get()
+                - <Runtime as Config>::PostDeposit::get()
         );
     } else {
         assert_eq!(
@@ -715,11 +710,11 @@ pub fn create_thread_mock(
 pub fn edit_thread_title_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::PostId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::PostId,
     new_title: Vec<u8>,
     result: DispatchResult,
-) -> <Runtime as Trait>::PostId {
+) -> <Runtime as Config>::PostId {
     assert_eq!(
         TestForumModule::edit_thread_title(
             mock_origin(origin),
@@ -737,7 +732,7 @@ pub fn edit_thread_title_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadTitleUpdated(
+            Event::forum(RawEvent::ThreadTitleUpdated(
                 thread_id,
                 forum_user_id,
                 category_id,
@@ -750,10 +745,10 @@ pub fn edit_thread_title_mock(
 
 pub fn delete_thread_mock(
     origin: OriginType,
-    account_id: <Runtime as frame_system::Trait>::AccountId,
+    account_id: <Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
     result: DispatchResult,
 ) {
     let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
@@ -782,7 +777,7 @@ pub fn delete_thread_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadDeleted(
+            Event::forum(RawEvent::ThreadDeleted(
                 thread_id,
                 forum_user_id,
                 category_id,
@@ -804,11 +799,11 @@ pub fn delete_thread_mock(
 
 pub fn delete_post_mock(
     origin: OriginType,
-    account_id: <Runtime as frame_system::Trait>::AccountId,
+    account_id: <Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    post_id: <Runtime as Trait>::PostId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
+    post_id: <Runtime as Config>::PostId,
     result: DispatchResult,
     hide: bool,
 ) {
@@ -836,7 +831,7 @@ pub fn delete_post_mock(
         }
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostDeleted(
+            Event::forum(RawEvent::PostDeleted(
                 vec![0u8],
                 forum_user_id,
                 deleted_posts.clone()
@@ -845,7 +840,7 @@ pub fn delete_post_mock(
 
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&account_id),
-            initial_balance + <Runtime as Trait>::PostDeposit::get()
+            initial_balance + <Runtime as Config>::PostDeposit::get()
         );
     } else {
         assert_eq!(
@@ -858,9 +853,9 @@ pub fn delete_post_mock(
 pub fn move_thread_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::PostId,
-    new_category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::PostId,
+    new_category_id: <Runtime as Config>::CategoryId,
     result: DispatchResult,
 ) {
     assert_eq!(
@@ -880,7 +875,7 @@ pub fn move_thread_mock(
         ),);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadMoved(
+            Event::forum(RawEvent::ThreadMoved(
                 thread_id,
                 new_category_id,
                 PrivilegedActor::Moderator(moderator_id),
@@ -892,14 +887,14 @@ pub fn move_thread_mock(
 
 pub fn create_post_mock(
     origin: OriginType,
-    account_id: <Runtime as frame_system::Trait>::AccountId,
+    account_id: <Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
     text: Vec<u8>,
     editable: bool,
     result: DispatchResult,
-) -> <Runtime as Trait>::PostId {
+) -> <Runtime as Config>::PostId {
     let post_id = TestForumModule::next_post_id();
     let initial_balance = balances::Module::<Runtime>::free_balance(account_id);
     assert_eq!(
@@ -918,7 +913,7 @@ pub fn create_post_mock(
         assert_eq!(TestForumModule::next_post_id(), post_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostAdded(
+            Event::forum(RawEvent::PostAdded(
                 post_id,
                 forum_user_id,
                 category_id,
@@ -931,7 +926,7 @@ pub fn create_post_mock(
         if editable {
             assert_eq!(
                 balances::Module::<Runtime>::free_balance(&account_id),
-                initial_balance - <Runtime as Trait>::PostDeposit::get()
+                initial_balance - <Runtime as Config>::PostDeposit::get()
             );
 
             assert!(<PostById<Runtime>>::contains_key(thread_id, post_id));
@@ -955,12 +950,12 @@ pub fn create_post_mock(
 pub fn edit_post_text_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    post_id: <Runtime as Trait>::PostId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
+    post_id: <Runtime as Config>::PostId,
     new_text: Vec<u8>,
     result: DispatchResult,
-) -> <Runtime as Trait>::PostId {
+) -> <Runtime as Config>::PostId {
     assert_eq!(
         TestForumModule::edit_post_text(
             mock_origin(origin),
@@ -978,7 +973,7 @@ pub fn edit_post_text_mock(
         assert_eq!(post.text_hash, Runtime::calculate_hash(new_text.as_slice()),);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostTextUpdated(
+            Event::forum(RawEvent::PostTextUpdated(
                 post_id,
                 forum_user_id,
                 category_id,
@@ -997,10 +992,10 @@ pub fn change_current_time(diff: u64) -> () {
 pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
     new_value: bool,
     result: DispatchResult,
-) -> <Runtime as Trait>::CategoryId {
+) -> <Runtime as Config>::CategoryId {
     assert_eq!(
         TestForumModule::update_category_membership_of_moderator(
             mock_origin(origin),
@@ -1018,7 +1013,7 @@ pub fn update_category_membership_of_moderator_mock(
 
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryMembershipOfModeratorUpdated(
+            Event::forum(RawEvent::CategoryMembershipOfModeratorUpdated(
                 moderator_id,
                 category_id,
                 new_value
@@ -1031,11 +1026,11 @@ pub fn update_category_membership_of_moderator_mock(
 pub fn vote_on_poll_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
     index: u32,
     result: DispatchResult,
-) -> <Runtime as Trait>::ThreadId {
+) -> <Runtime as Config>::ThreadId {
     let thread = TestForumModule::thread_by_id(category_id, thread_id);
     assert_eq!(
         TestForumModule::vote_on_poll(
@@ -1058,7 +1053,7 @@ pub fn vote_on_poll_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::VoteOnPoll(
+            Event::forum(RawEvent::VoteOnPoll(
                 thread_id,
                 index,
                 forum_user_id,
@@ -1076,7 +1071,7 @@ pub fn vote_on_poll_mock(
 pub fn update_category_archival_status_mock(
     origin: OriginType,
     actor: PrivilegedActor<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
     new_archival_status: bool,
     result: DispatchResult,
 ) {
@@ -1092,7 +1087,7 @@ pub fn update_category_archival_status_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryArchivalStatusUpdated(
+            Event::forum(RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
                 new_archival_status,
                 actor
@@ -1104,7 +1099,7 @@ pub fn update_category_archival_status_mock(
 pub fn update_category_title_mock(
     origin: OriginType,
     actor: PrivilegedActor<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
     new_title: Vec<u8>,
     result: DispatchResult,
 ) {
@@ -1121,7 +1116,7 @@ pub fn update_category_title_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryTitleUpdated(
+            Event::forum(RawEvent::CategoryTitleUpdated(
                 category_id,
                 new_title_hash,
                 actor
@@ -1133,7 +1128,7 @@ pub fn update_category_title_mock(
 pub fn update_category_description_mock(
     origin: OriginType,
     actor: PrivilegedActor<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
     new_description: Vec<u8>,
     result: DispatchResult,
 ) {
@@ -1150,7 +1145,7 @@ pub fn update_category_description_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryDescriptionUpdated(
+            Event::forum(RawEvent::CategoryDescriptionUpdated(
                 category_id,
                 new_description_hash,
                 actor
@@ -1162,7 +1157,7 @@ pub fn update_category_description_mock(
 pub fn delete_category_mock(
     origin: OriginType,
     moderator_id: PrivilegedActor<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
+    category_id: <Runtime as Config>::CategoryId,
     result: DispatchResult,
 ) {
     assert_eq!(
@@ -1173,7 +1168,7 @@ pub fn delete_category_mock(
         assert!(!<CategoryById<Runtime>>::contains_key(category_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id, moderator_id))
+            Event::forum(RawEvent::CategoryDeleted(category_id, moderator_id))
         );
     }
 }
@@ -1181,12 +1176,12 @@ pub fn delete_category_mock(
 pub fn moderate_thread_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
     rationale: Vec<u8>,
     result: DispatchResult,
-) -> <Runtime as Trait>::ThreadId {
-    let thread_account_id = <Runtime as Trait>::ModuleId::get().into_sub_account(thread_id);
+) -> <Runtime as Config>::ThreadId {
+    let thread_account_id = <Runtime as Config>::ModuleId::get().into_sub_account(thread_id);
     assert_eq!(
         TestForumModule::moderate_thread(
             mock_origin(origin),
@@ -1201,7 +1196,7 @@ pub fn moderate_thread_mock(
         assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadModerated(
+            Event::forum(RawEvent::ThreadModerated(
                 thread_id,
                 rationale,
                 PrivilegedActor::Moderator(moderator_id),
@@ -1213,7 +1208,7 @@ pub fn moderate_thread_mock(
         // should remain
         assert_eq!(
             balances::Module::<Runtime>::free_balance(&thread_account_id),
-            <Runtime as Trait>::PostDeposit::get()
+            <Runtime as Config>::PostDeposit::get()
         );
     }
     thread_id
@@ -1222,12 +1217,12 @@ pub fn moderate_thread_mock(
 pub fn moderate_post_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    post_id: <Runtime as Trait>::PostId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
+    post_id: <Runtime as Config>::PostId,
     rationale: Vec<u8>,
     result: DispatchResult,
-) -> <Runtime as Trait>::PostId {
+) -> <Runtime as Config>::PostId {
     let initial_balance = balances::Module::<Runtime>::free_balance(moderator_id);
     assert_eq!(
         TestForumModule::moderate_post(
@@ -1244,7 +1239,7 @@ pub fn moderate_post_mock(
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostModerated(
+            Event::forum(RawEvent::PostModerated(
                 post_id,
                 rationale,
                 PrivilegedActor::Moderator(moderator_id),
@@ -1270,10 +1265,10 @@ pub fn moderate_post_mock(
 pub fn set_stickied_threads_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    stickied_ids: Vec<<Runtime as Trait>::ThreadId>,
+    category_id: <Runtime as Config>::CategoryId,
+    stickied_ids: Vec<<Runtime as Config>::ThreadId>,
     result: DispatchResult,
-) -> <Runtime as Trait>::CategoryId {
+) -> <Runtime as Config>::CategoryId {
     assert_eq!(
         TestForumModule::set_stickied_threads(
             mock_origin(origin),
@@ -1290,7 +1285,7 @@ pub fn set_stickied_threads_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::CategoryStickyThreadUpdate(
+            Event::forum(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
                 stickied_ids.clone(),
                 PrivilegedActor::Moderator(moderator_id)
@@ -1303,10 +1298,10 @@ pub fn set_stickied_threads_mock(
 pub fn react_post_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Trait>::CategoryId,
-    thread_id: <Runtime as Trait>::ThreadId,
-    post_id: <Runtime as Trait>::PostId,
-    post_reaction_id: <Runtime as Trait>::PostReactionId,
+    category_id: <Runtime as Config>::CategoryId,
+    thread_id: <Runtime as Config>::ThreadId,
+    post_id: <Runtime as Config>::PostId,
+    post_reaction_id: <Runtime as Config>::PostReactionId,
     result: DispatchResult,
 ) {
     assert_eq!(
@@ -1323,7 +1318,7 @@ pub fn react_post_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostReacted(
+            Event::forum(RawEvent::PostReacted(
                 forum_user_id,
                 post_id,
                 post_reaction_id,
@@ -1334,16 +1329,16 @@ pub fn react_post_mock(
     };
 }
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime> {
+pub fn default_genesis_config() -> forum::GenesisConfig<Runtime> {
     create_genesis_config(true)
 }
 
-pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
+pub fn migration_not_done_config() -> forum::GenesisConfig<Runtime> {
     create_genesis_config(false)
 }
 
-pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn create_genesis_config(data_migration_done: bool) -> forum::GenesisConfig<Runtime> {
+    forum::GenesisConfig::<Runtime> {
         category_by_id: vec![],
         next_category_id: 1,
         category_counter: 0,
@@ -1362,7 +1357,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities(config: forum::GenesisConfig<Runtime>) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -1398,10 +1393,3 @@ pub fn run_to_block(n: u64) {
         <TestForumModule as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
-
-pub type System = frame_system::Module<Runtime>;
-
-pub type Timestamp = pallet_timestamp::Module<Runtime>;
-
-/// Export forum module on a test runtime
-pub type TestForumModule = Module<Runtime>;

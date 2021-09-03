@@ -492,11 +492,11 @@ fn invite_member_succeeds() {
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, BOB_ACCOUNT_ID);
 
-        let initial_invitation_balance = <Test as Trait>::DefaultInitialInvitationBalance::get();
+        let initial_invitation_balance = <Test as Config>::DefaultInitialInvitationBalance::get();
         // Working group budget reduced.
         assert_eq!(
             WORKING_GROUP_BUDGET - initial_invitation_balance,
-            <Test as Trait>::WorkingGroup::get_budget()
+            <Test as Config>::WorkingGroup::get_budget()
         );
 
         // Invited member account filled.
@@ -525,7 +525,7 @@ fn invite_member_fails_with_existing_invitation_lock() {
 
         InviteMembershipFixture::default().call_and_assert(Ok(()));
 
-        <Test as Trait>::WorkingGroup::set_budget(initial_balance);
+        <Test as Config>::WorkingGroup::set_budget(initial_balance);
 
         InviteMembershipFixture::default()
             .with_handle(b"bob2".to_vec())
@@ -811,7 +811,7 @@ fn add_staking_account_candidate_fails_with_insufficient_balance() {
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         AddStakingAccountFixture::default()
-            .with_initial_balance(<Test as Trait>::CandidateStake::get() - 1)
+            .with_initial_balance(<Test as Config>::CandidateStake::get() - 1)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceToCoverStake.into()));
     });
 }

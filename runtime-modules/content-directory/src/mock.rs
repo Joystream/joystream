@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use crate as content_directory;
 use crate::InputValidationLengthConstraint;
 use crate::*;
 use core::iter::FromIterator;
@@ -11,20 +12,19 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use std::cell::RefCell;
 
 /// Runtime Types
 
-pub type ClassId = <Runtime as Trait>::ClassId;
-pub type EntityId = <Runtime as Trait>::EntityId;
-pub type Nonce = <Runtime as Trait>::Nonce;
-pub type Hashed = <Runtime as frame_system::Trait>::Hash;
+pub type ClassId = <Runtime as Config>::ClassId;
+pub type EntityId = <Runtime as Config>::EntityId;
+pub type Nonce = <Runtime as Config>::Nonce;
+pub type Hashed = <Runtime as frame_system::Config>::Hash;
 
 pub type TestCuratorId = CuratorId<Runtime>;
-pub type CuratorGroupId = <Runtime as Trait>::CuratorGroupId;
-pub type MemberId = <Runtime as common::membership::Trait>::MemberId;
+pub type CuratorGroupId = <Runtime as Config>::CuratorGroupId;
+pub type MemberId = <Runtime as common::membership::Config>::MemberId;
 
 /// Origins
 
@@ -69,21 +69,6 @@ pub const SECOND_SCHEMA_ID: SchemaId = 1;
 
 pub const FIRST_PROPERTY_ID: SchemaId = 0;
 pub const SECOND_PROPERTY_ID: SchemaId = 1;
-
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
-
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, Default, PartialEq, Eq, Debug)]
-pub struct Runtime;
-parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
-}
 
 thread_local! {
     static PROPERTY_NAME_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
@@ -208,10 +193,30 @@ impl Get<EntityId> for IndividualEntitiesCreationLimit {
     }
 }
 
-impl frame_system::Trait for Runtime {
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
+
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Module, Call, Config, Storage, Event<T>},
+        TestModule: content_directory::{Module, Call, Storage, Event<T>},
+    }
+);
+
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+}
+
+impl frame_system::Config for Runtime {
     type BaseCallFilter = ();
+    type BlockWeights = ();
+    type BlockLength = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -219,36 +224,20 @@ impl frame_system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = Event;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type PalletInfo = ();
     type AccountData = ();
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
+    type SS58Prefix = ();
 }
 
-mod test_events {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        test_events<T>,
-        frame_system<T>,
-    }
-}
-
-impl Trait for Runtime {
-    type Event = TestEvent;
+impl Config for Runtime {
+    type Event = Event;
     type Nonce = u64;
     type ClassId = u64;
     type EntityId = u64;
@@ -274,29 +263,29 @@ impl Trait for Runtime {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
-        _worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        _origin: <Runtime as frame_system::Config>::Origin,
+        _worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Trait>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
         unimplemented!()
     }
 
-    fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         let lead_account_id = ensure_signed(Origin::signed(LEAD_ORIGIN)).unwrap();
 
         *account_id == lead_account_id
     }
 
     fn is_worker_account_id(
-        account_id: &<Runtime as frame_system::Trait>::AccountId,
-        worker_id: &<Runtime as common::membership::Trait>::ActorId,
+        account_id: &<Runtime as frame_system::Config>::AccountId,
+        worker_id: &<Runtime as common::membership::Config>::ActorId,
     ) -> bool {
         let first_curator_account_id = ensure_signed(Origin::signed(FIRST_CURATOR_ORIGIN)).unwrap();
         let second_curator_account_id =
@@ -306,7 +295,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     }
 }
 
-impl common::membership::Trait for Runtime {
+impl common::membership::Config for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -393,7 +382,10 @@ impl ExtBuilder {
             .with(|v| *v.borrow_mut() = self.individual_entities_creation_limit);
     }
 
-    pub fn build(self, config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+    pub fn build(
+        self,
+        config: content_directory::GenesisConfig<Runtime>,
+    ) -> sp_io::TestExternalities {
         self.set_associated_consts();
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
@@ -406,8 +398,8 @@ impl ExtBuilder {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 
-fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig {
+fn default_content_directory_genesis_config() -> content_directory::GenesisConfig<Runtime> {
+    content_directory::GenesisConfig {
         class_by_id: vec![],
         entity_by_id: vec![],
         curator_group_by_id: vec![],
@@ -452,7 +444,7 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
 
 // Events
 
-type RawTestEvent = RawEvent<
+type RawEvent = content_directory::RawEvent<
     CuratorGroupId,
     TestCuratorId,
     ClassId,
@@ -472,11 +464,11 @@ type RawTestEvent = RawEvent<
     OperationType<Runtime>,
 >;
 
-pub fn get_test_event(raw_event: RawTestEvent) -> TestEvent {
-    TestEvent::test_events(raw_event)
+pub fn get_test_event(raw_event: RawEvent) -> Event {
+    Event::content_directory(raw_event)
 }
 
-pub fn assert_event(tested_event: TestEvent, number_of_events_after_call: usize) {
+pub fn assert_event(tested_event: Event, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
 
@@ -1010,7 +1002,7 @@ impl PropertyType<ClassId> {
     }
 }
 
-impl<T: Trait> InputPropertyValue<T> {
+impl<T: Config> InputPropertyValue<T> {
     pub fn vec_reference(entity_ids: Vec<EntityId>) -> InputPropertyValue<Runtime> {
         let vec_value = VecInputValue::<Runtime>::Reference(entity_ids);
         InputPropertyValue::<Runtime>::Vector(vec_value)
@@ -1060,10 +1052,6 @@ impl PropertyLockingPolicy {
         }
     }
 }
-
-// Assign back to type variables so we can make dispatched calls of these modules later.
-pub type System = frame_system::Module<Runtime>;
-pub type TestModule = Module<Runtime>;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests

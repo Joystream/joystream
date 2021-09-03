@@ -25,6 +25,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
@@ -61,7 +62,7 @@ use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 
-type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
+type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
 
 /// Working group WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -91,11 +92,11 @@ pub trait WeightInfo {
 }
 
 /// The _Group_ main _Trait_
-pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + balances::Trait + common::membership::Trait
+pub trait Config<I: Instance = DefaultInstance>:
+    frame_system::Config + balances::Config + common::membership::Config
 {
     /// _Administration_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Defines max workers number in the group.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -133,10 +134,10 @@ decl_event!(
        ApplicationId = ApplicationId,
        ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
        WorkerId = WorkerId<T>,
-       <T as frame_system::Trait>::AccountId,
+       <T as frame_system::Config>::AccountId,
        Balance = BalanceOf<T>,
        OpeningType = OpeningType,
-       StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
+       StakePolicy = StakePolicy<<T as frame_system::Config>::BlockNumber, BalanceOf<T>>,
        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
     {
         /// Emits on adding new job opening.
@@ -278,7 +279,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance=DefaultInstance> as WorkingGroup {
+    trait Store for Module<T: Config<I>, I: Instance=DefaultInstance> as WorkingGroup {
         /// Next identifier value for new job opening.
         pub NextOpeningId get(fn next_opening_id): OpeningId;
 
@@ -316,7 +317,7 @@ decl_storage! {
 
 decl_module! {
     /// _Working group_ substrate module.
-    pub struct Module<T: Trait<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -1107,7 +1108,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait<I>, I: Instance> Module<T, I> {
+impl<T: Config<I>, I: Instance> Module<T, I> {
     // Calculate weight for on_initialize
     // We assume worst case scenario in a safe manner
     // We take the most number of workers that will be processed and use it as input of the most costly function
@@ -1471,7 +1472,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
+impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
     for Module<T, I>
 {
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
@@ -1500,7 +1501,7 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
+impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
     for Module<T, I>
 {
     fn get_budget() -> BalanceOf<T> {

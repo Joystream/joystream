@@ -2,12 +2,12 @@ use crate::*;
 use core::ops::{Deref, DerefMut};
 
 /// Wrapper for existing `InputPropertyValue` and its respective `Class` `Property`
-pub struct InputValueForExistingProperty<'a, T: Trait>(
+pub struct InputValueForExistingProperty<'a, T: Config>(
     &'a Property<T::ClassId>,
     &'a InputPropertyValue<T>,
 );
 
-impl<'a, T: Trait> InputValueForExistingProperty<'a, T> {
+impl<'a, T: Config> InputValueForExistingProperty<'a, T> {
     /// Create single instance of `InputValueForExistingProperty` from provided `property` and `value`
     fn new(property: &'a Property<T::ClassId>, value: &'a InputPropertyValue<T>) -> Self {
         Self(property, value)
@@ -30,17 +30,17 @@ impl<'a, T: Trait> InputValueForExistingProperty<'a, T> {
 }
 
 /// Mapping, used to represent `PropertyId` relation to its respective `InputValueForExistingProperty` structure
-pub struct InputValuesForExistingProperties<'a, T: Trait>(
+pub struct InputValuesForExistingProperties<'a, T: Config>(
     BTreeMap<PropertyId, InputValueForExistingProperty<'a, T>>,
 );
 
-impl<'a, T: Trait> Default for InputValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> Default for InputValuesForExistingProperties<'a, T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 
-impl<'a, T: Trait> Deref for InputValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> Deref for InputValuesForExistingProperties<'a, T> {
     type Target = BTreeMap<PropertyId, InputValueForExistingProperty<'a, T>>;
 
     fn deref(&self) -> &Self::Target {
@@ -48,13 +48,13 @@ impl<'a, T: Trait> Deref for InputValuesForExistingProperties<'a, T> {
     }
 }
 
-impl<'a, T: Trait> DerefMut for InputValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> DerefMut for InputValuesForExistingProperties<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> InputValuesForExistingProperties<'a, T> {
     /// Create `InputValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
@@ -76,12 +76,12 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
 }
 
 /// Wrapper for existing `StoredPropertyValue` and its respective `Class` `Property`
-pub struct StoredValueForExistingProperty<'a, T: Trait>(
+pub struct StoredValueForExistingProperty<'a, T: Config>(
     &'a Property<T::ClassId>,
     &'a StoredPropertyValueOf<T>,
 );
 
-impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
+impl<'a, T: Config> StoredValueForExistingProperty<'a, T> {
     /// Create single instance of `StoredValueForExistingProperty` from provided `property` and `value`
     pub fn new(property: &'a Property<T::ClassId>, value: &'a StoredPropertyValueOf<T>) -> Self {
         Self(property, value)
@@ -111,17 +111,17 @@ impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
 }
 
 /// Mapping, used to represent `PropertyId` relation to its respective `StoredValuesForExistingProperties` structure
-pub struct StoredValuesForExistingProperties<'a, T: Trait>(
+pub struct StoredValuesForExistingProperties<'a, T: Config>(
     BTreeMap<PropertyId, StoredValueForExistingProperty<'a, T>>,
 );
 
-impl<'a, T: Trait> Default for StoredValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> Default for StoredValuesForExistingProperties<'a, T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 
-impl<'a, T: Trait> Deref for StoredValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> Deref for StoredValuesForExistingProperties<'a, T> {
     type Target = BTreeMap<PropertyId, StoredValueForExistingProperty<'a, T>>;
 
     fn deref(&self) -> &Self::Target {
@@ -129,13 +129,13 @@ impl<'a, T: Trait> Deref for StoredValuesForExistingProperties<'a, T> {
     }
 }
 
-impl<'a, T: Trait> DerefMut for StoredValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> DerefMut for StoredValuesForExistingProperties<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
+impl<'a, T: Config> StoredValuesForExistingProperties<'a, T> {
     /// Create `StoredValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     pub fn from(
         properties: &'a [Property<T::ClassId>],
@@ -206,7 +206,7 @@ impl InputValidationLengthConstraint {
     }
 
     /// Ensure length is valid
-    pub fn ensure_valid<T: Trait>(
+    pub fn ensure_valid<T: Config>(
         self,
         len: usize,
         too_short_msg: Error<T>,
@@ -289,11 +289,11 @@ impl AddAssign for EntityReferenceCounterSideEffect {
 /// The net side effect on a set of entities from some operations.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub struct ReferenceCounterSideEffects<T: Trait>(
+pub struct ReferenceCounterSideEffects<T: Config>(
     BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>,
 );
 
-impl<T: Trait> Deref for ReferenceCounterSideEffects<T> {
+impl<T: Config> Deref for ReferenceCounterSideEffects<T> {
     type Target = BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>;
 
     fn deref(&self) -> &Self::Target {
@@ -301,19 +301,19 @@ impl<T: Trait> Deref for ReferenceCounterSideEffects<T> {
     }
 }
 
-impl<T: Trait> DerefMut for ReferenceCounterSideEffects<T> {
+impl<T: Config> DerefMut for ReferenceCounterSideEffects<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T: Trait> Default for ReferenceCounterSideEffects<T> {
+impl<T: Config> Default for ReferenceCounterSideEffects<T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 
-impl<T: Trait> ReferenceCounterSideEffects<T> {
+impl<T: Config> ReferenceCounterSideEffects<T> {
     /// Updates all the elements of `other` with `Self`
     pub fn update(mut self, other: Self) -> Self {
         // Make a set, that includes both self and other entity_id keys

@@ -8,7 +8,7 @@ use frame_support::assert_ok;
 const FIRST_ID: u64 = 0;
 const SECOND_ID: u64 = 1;
 
-fn assert_event_success(tested_event: TestEvent, number_of_events_after_call: usize) {
+fn assert_event_success(tested_event: mock::Event, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
 
@@ -39,7 +39,7 @@ fn assert_failure(
 fn ensure_replies_equality(
     reply: Option<Reply<Runtime, DefaultInstance>>,
     reply_owner_id: ParticipantId<Runtime>,
-    parent: ParentId<<Runtime as Trait>::ReplyId, PostId>,
+    parent: ParentId<<Runtime as Config>::ReplyId, PostId>,
 ) {
     // Ensure  stored reply is equal to expected one
     assert!(matches!(
@@ -320,7 +320,7 @@ fn post_editing_success() {
 
         ensure_posts_equality(post_after_editing, false);
 
-        let post_edited_event = TestEvent::crate_DefaultInstance(RawEvent::PostEdited(
+        let post_edited_event = mock::Event::blog(RawEvent::PostEdited(
             FIRST_ID,
             Some(generate_post().0),
             Some(generate_post().1),
@@ -411,12 +411,12 @@ fn editable_reply_creation_success() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_eq!(
             Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN),
-            <Runtime as Trait>::ReplyDeposit::get()
+            <Runtime as Config>::ReplyDeposit::get()
         );
 
         // Events number before tested call
@@ -464,7 +464,7 @@ fn editable_reply_creation_fails_without_enough_funds() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get() - 1,
+            <Runtime as Config>::ReplyDeposit::get() - 1,
         );
 
         assert_eq!(
@@ -526,12 +526,12 @@ fn editable_direct_reply_creation_success() {
 
         Balances::<Runtime>::make_free_balance_be(
             &FIRST_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_ok!(create_reply(
@@ -586,7 +586,7 @@ fn non_editable_direct_reply_creation_success() {
 
         Balances::<Runtime>::make_free_balance_be(
             &FIRST_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_ok!(create_reply(
@@ -640,7 +640,7 @@ fn editable_direct_reply_to_non_editable_reply_creation_success() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_ok!(create_reply(
@@ -752,7 +752,7 @@ fn direct_reply_creation_reply_not_found() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         // Events number before tested call
@@ -787,7 +787,7 @@ fn reply_editing_success() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         create_reply(
@@ -834,7 +834,7 @@ fn reply_editing_post_locked_error() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         create_reply(
@@ -907,7 +907,7 @@ fn reply_editing_ownership_error() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         create_reply(
@@ -971,7 +971,7 @@ fn reply_editing_participant_error() {
 
         Balances::<Runtime>::make_free_balance_be(
             &SECOND_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         create_reply(
@@ -1012,12 +1012,12 @@ fn reply_delete_success() {
 
         Balances::<Runtime>::make_free_balance_be(
             &FIRST_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_eq!(
             Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN),
-            <Runtime as Trait>::ReplyDeposit::get()
+            <Runtime as Config>::ReplyDeposit::get()
         );
 
         assert_ok!(create_reply(
@@ -1056,7 +1056,7 @@ fn reply_delete_success() {
 
         assert_eq!(
             Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN),
-            <Runtime as Trait>::ReplyDeposit::get()
+            <Runtime as Config>::ReplyDeposit::get()
         );
 
         // Overall post replies count
@@ -1074,7 +1074,7 @@ fn reply_delete_success() {
             false,
         ));
 
-        assert_event_success(reply_created_event, number_of_events_before_call + 2)
+        assert_event_success(reply_created_event, number_of_events_before_call + 3)
     })
 }
 
@@ -1086,7 +1086,7 @@ fn reply_delete_fails_with_non_existant_post() {
 
         Balances::<Runtime>::make_free_balance_be(
             &FIRST_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_eq!(
@@ -1109,7 +1109,7 @@ fn reply_delete_fails_invalid_participant() {
 
         Balances::<Runtime>::make_free_balance_be(
             &FIRST_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_ok!(create_reply(
@@ -1153,12 +1153,12 @@ fn reply_delete_success_with_other_participant() {
 
         Balances::<Runtime>::make_free_balance_be(
             &FIRST_OWNER_ORIGIN,
-            <Runtime as Trait>::ReplyDeposit::get(),
+            <Runtime as Config>::ReplyDeposit::get(),
         );
 
         assert_eq!(
             Balances::<Runtime>::usable_balance(&FIRST_OWNER_ORIGIN),
-            <Runtime as Trait>::ReplyDeposit::get()
+            <Runtime as Config>::ReplyDeposit::get()
         );
 
         assert_ok!(create_reply(
@@ -1190,7 +1190,7 @@ fn reply_delete_success_with_other_participant() {
 
         run_to_block(
             frame_system::Module::<Runtime>::block_number()
-                + <Runtime as Trait>::ReplyLifetime::get(),
+                + <Runtime as Config>::ReplyLifetime::get(),
         );
 
         assert_eq!(Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN), 0);
@@ -1204,7 +1204,7 @@ fn reply_delete_success_with_other_participant() {
 
         assert_eq!(
             Balances::<Runtime>::usable_balance(&SECOND_OWNER_ORIGIN),
-            <Runtime as Trait>::ReplyDeposit::get()
+            <Runtime as Config>::ReplyDeposit::get()
         );
 
         // Overall post replies count
@@ -1226,7 +1226,7 @@ fn reply_delete_success_with_other_participant() {
     })
 }
 
-fn replies_storage_unchanged(post_id: PostId, reply_id: <Runtime as Trait>::ReplyId) -> bool {
+fn replies_storage_unchanged(post_id: PostId, reply_id: <Runtime as Config>::ReplyId) -> bool {
     match post_by_id(post_id) {
         Some(post) if post.replies_count() == 0 && reply_by_id(post_id, reply_id).is_none() => true,
         Some(_) => false,

@@ -112,7 +112,7 @@ impl<
     }
 
     /// Ensure `Schema` under given id is not added to given `Entity` yet
-    pub fn ensure_schema_id_is_not_added<T: Trait>(
+    pub fn ensure_schema_id_is_not_added<T: Config>(
         &self,
         schema_id: SchemaId,
     ) -> Result<(), Error<T>> {
@@ -122,7 +122,7 @@ impl<
     }
 
     /// Ensure provided `property_values` are not added to the `Entity` `values` map yet
-    pub fn ensure_property_values_are_not_added<T: Trait>(
+    pub fn ensure_property_values_are_not_added<T: Config>(
         &self,
         property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> Result<(), Error<T>> {
@@ -136,7 +136,7 @@ impl<
     }
 
     /// Ensure InputPropertyValue under given `in_class_schema_property_id` is Vector
-    pub fn ensure_property_value_is_vec<T: Trait>(
+    pub fn ensure_property_value_is_vec<T: Config>(
         &self,
         in_class_schema_property_id: PropertyId,
     ) -> Result<VecStoredPropertyValue<Hashed, EntityId, Nonce>, Error<T>> {
@@ -152,7 +152,7 @@ impl<
     }
 
     /// Ensure any `InputPropertyValue` from external entity does not point to the given `Entity`
-    pub fn ensure_rc_is_zero<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_rc_is_zero<T: Config>(&self) -> Result<(), Error<T>> {
         ensure!(
             self.reference_counter.is_total_equal_to_zero(),
             Error::<T>::EntityRcDoesNotEqualToZero
@@ -161,7 +161,7 @@ impl<
     }
 
     /// Ensure any inbound `InputPropertyValue` with `same_owner` flag set points to the given `Entity`
-    pub fn ensure_inbound_same_owner_rc_is_zero<T: Trait>(&self) -> Result<(), Error<T>> {
+    pub fn ensure_inbound_same_owner_rc_is_zero<T: Config>(&self) -> Result<(), Error<T>> {
         ensure!(
             self.reference_counter.is_same_owner_equal_to_zero(),
             Error::<T>::EntityInboundSameOwnerRcDoesNotEqualToZero

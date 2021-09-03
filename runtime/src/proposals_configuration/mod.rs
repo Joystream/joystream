@@ -9,6 +9,8 @@
 //! partial object definition - default values are returned as missing fields.
 //!
 
+#![allow(clippy::field_reassign_with_default)]
+
 use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::dispatch::Vec;
 use frame_support::parameter_types;
