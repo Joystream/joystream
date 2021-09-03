@@ -79,7 +79,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   createTxParams(wgOpeningJson: WGOpeningJson, hrtJson: HRTJson) {
     return [
       wgOpeningJson.activateAt,
-      createType('WorkingGroupOpeningPolicyCommitment', {
+      createType('OpeningPolicyCommitment', {
         max_review_period_length: wgOpeningJson.maxReviewPeriodLength,
         application_rationing_policy: wgOpeningJson.maxActiveApplicants
           ? { max_active_applicants: wgOpeningJson.maxActiveApplicants }
@@ -198,7 +198,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       if (output) {
         try {
           saveOutputJsonToFile(output, rememberedInput)
-          this.log(chalk.green(`Output succesfully saved in: ${chalk.white(output)}!`))
+          this.log(chalk.green(`Output successfully saved in: ${chalk.magentaBright(output)}!`))
         } catch (e) {
           this.warn(`Could not save output to ${output}!`)
         }
@@ -209,7 +209,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
 
       // Send the tx
-      this.log(chalk.white('Sending the extrinsic...'))
+      this.log(chalk.magentaBright('Sending the extrinsic...'))
       const txSuccess = await this.sendAndFollowTx(
         account,
         this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams),
@@ -218,7 +218,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
 
       // Display a success message on success or ask to try again on error
       if (txSuccess) {
-        this.log(chalk.green('Opening succesfully created!'))
+        this.log(chalk.green('Opening successfully created!'))
         tryAgain = false
       } else {
         tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })

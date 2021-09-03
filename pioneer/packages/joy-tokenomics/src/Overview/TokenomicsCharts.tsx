@@ -4,6 +4,7 @@ import PieChart from '../../../react-components/src/Chart/PieChart';
 import styled from 'styled-components';
 
 import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics';
+import { COLORS } from './index';
 
 const StyledPieChart = styled(PieChart)`
   width:15rem;
@@ -31,29 +32,37 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
       {data ? <ChartContainer>
         <StyledPieChart
           values={[{
-            colors: ['rgb(246, 109, 68)'],
+            colors: [COLORS.VALIDATOR],
             label: 'Validators',
             value: data.validators.rewardsShare * 100
           }, {
-            colors: ['rgb(254, 174, 101)'],
+            colors: [COLORS.COUNCIL_MEMBER],
             label: 'Council',
             value: data.council.rewardsShare * 100
           }, {
-            colors: ['rgb(230, 246, 157)'],
+            colors: [COLORS.STORAGE_PROVIDER],
             label: 'Storage Providers',
             value: data.storageProviders.rewardsShare * 100
           }, {
-            colors: ['rgb(170, 222, 167)'],
+            colors: [COLORS.STORAGE_LEAD],
             label: 'Storage Lead',
             value: data.storageProviders.lead.rewardsShare * 100
           }, {
-            colors: ['rgb(100, 194, 166)'],
+            colors: [COLORS.CONTENT_CURATOR],
             label: 'Content Curators',
             value: data.contentCurators.rewardsShare * 100
           }, {
-            colors: ['rgb(100, 160, 190)'],
+            colors: [COLORS.CURATOR_LEAD],
             label: 'Content Curators Lead',
             value: data.contentCurators.lead.rewardsShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS],
+            label: 'Operations',
+            value: data.operations.rewardsShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_LEAD],
+            label: 'Operations Lead',
+            value: data.operations.lead.rewardsShare * 100
           }
           ]} />
         <Label as='div'>
@@ -64,30 +73,37 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
       {data ? <ChartContainer>
         <StyledPieChart
           values={[{
-            colors: ['rgb(246, 109, 68)'],
+            colors: [COLORS.VALIDATOR],
             label: 'Validators',
             value: data.validators.stakeShare * 100
           }, {
-            colors: ['rgb(254, 174, 101)'],
+            colors: [COLORS.COUNCIL_MEMBER],
             label: 'Council',
             value: data.council.stakeShare * 100
           }, {
-            colors: ['rgb(230, 246, 157)'],
+            colors: [COLORS.STORAGE_PROVIDER],
             label: 'Storage Providers',
             value: data.storageProviders.stakeShare * 100
           }, {
-            colors: ['rgb(170, 222, 167)'],
+            colors: [COLORS.STORAGE_LEAD],
             label: 'Storage Lead',
             value: data.storageProviders.lead.stakeShare * 100
           }, {
-            colors: ['rgb(100, 194, 166)'],
+            colors: [COLORS.CONTENT_CURATOR],
             label: 'Content Curators',
             value: data.contentCurators.stakeShare * 100
-          },
-          {
-            colors: ['rgb(100, 160, 190)'],
+          }, {
+            colors: [COLORS.CURATOR_LEAD],
             label: 'Content Curators Lead',
             value: data.contentCurators.lead.stakeShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS],
+            label: 'Operations',
+            value: data.operations.stakeShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_LEAD],
+            label: 'Operations Lead',
+            value: data.operations.lead.stakeShare * 100
           }
           ]} />
         <Label as='div'>

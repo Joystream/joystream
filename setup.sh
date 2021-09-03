@@ -17,6 +17,8 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew update
     brew install coreutils gnu-tar jq curl
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
+    echo "It is also recommended to install qemu emulators with following command:"
+    echo "docker run --privileged --rm tonistiigi/binfmt --install all"
 fi
 
 # If OS is supported will install build tools for rust and substrate.
@@ -38,7 +40,7 @@ curl https://get.volta.sh | bash
 # source env variables added by Volta
 source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
 
-volta install node@12
+volta install node@14
 volta install yarn
 volta install npx
 

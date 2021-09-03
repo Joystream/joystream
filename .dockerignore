@@ -2,8 +2,8 @@ target/
 **node_modules*
 .tmp/
 .vscode/
-query-node/generated
 query-node/**/dist
 query-node/lib
 cli/
 tests/
+devops/

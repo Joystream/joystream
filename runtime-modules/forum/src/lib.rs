@@ -2,7 +2,8 @@
 #![allow(clippy::type_complexity)]
 // disable it because of possible frontend API break
 // TODO: remove post-Constaninople
-
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 

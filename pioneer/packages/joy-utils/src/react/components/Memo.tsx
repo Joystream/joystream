@@ -19,7 +19,7 @@ export function MemoForm () {
     if (storedMemo) {
       setMemo(storedMemo.toString());
     }
-  }, [storedMemo?.toString()]);
+  }, [storedMemo]);
 
   return memo !== undefined
     ? (

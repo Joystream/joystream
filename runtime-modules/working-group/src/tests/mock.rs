@@ -97,12 +97,17 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -173,6 +178,7 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
             WORKING_GROUP_CONSTRAINT_MIN,
             WORKING_GROUP_CONSTRAINT_DIFF,
         ),
+        worker_storage_size_constraint: crate::default_storage_size_constraint(),
     }
     .assimilate_storage(&mut t)
     .unwrap();

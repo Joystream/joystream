@@ -30,8 +30,8 @@ mod integration;
 pub mod primitives;
 mod runtime_api;
 #[cfg(test)]
-mod tests;
-mod weights; // Runtime integration tests
+mod tests; // Runtime integration tests
+mod weights;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, KeyOwnerProofSystem, OnUnbalanced};
@@ -66,11 +66,6 @@ use governance::{council, election};
 
 // Node dependencies
 pub use common;
-pub use content_directory;
-pub use content_directory::{
-    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
-};
-pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
 pub use membership;
@@ -78,16 +73,18 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
-pub use versioned_store;
-pub use versioned_store_permissions;
 pub use working_group;
+
+use common::storage::{ContentParameters, StorageObjectOwner};
+pub use content;
+pub use content::MaxNumber;
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 9,
-    spec_version: 3,
+    spec_version: 9,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -242,6 +239,7 @@ parameter_types! {
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
     pub const MaxLocks: u32 = 50;
+    pub const InitialMembersBalance: u32 = 2000;
 }
 
 impl pallet_balances::Trait for Runtime {
@@ -429,60 +427,54 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-impl versioned_store::Trait for Runtime {
-    type Event = Event;
-}
-
-impl versioned_store_permissions::Trait for Runtime {
-    type Credential = Credential;
-    type CredentialChecker = (
-        integration::content_working_group::ContentWorkingGroupCredentials,
-        integration::versioned_store_permissions::SudoKeyHasAllCredentials,
-    );
-    type CreateClassPermissionsChecker =
-        integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
-}
-
-type EntityId = <Runtime as content_directory::Trait>::EntityId;
-
 parameter_types! {
-    pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
-    pub const PropertyDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
-    pub const ClassNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
-    pub const ClassDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
-    pub const MaxNumberOfClasses: MaxNumber = 100;
-    pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
-    pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
-    pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
-    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 5000;
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
-    pub const VecMaxLengthConstraint: VecMaxLength = 200;
-    pub const TextMaxLengthConstraint: TextMaxLength = 5000;
-    pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
-    pub const IndividualEntitiesCreationLimit: EntityId = 500;
+    pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
 }
 
-impl content_directory::Trait for Runtime {
+impl content::Trait for Runtime {
     type Event = Event;
-    type Nonce = u64;
-    type ClassId = u64;
-    type EntityId = u64;
-    type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
-    type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
-    type ClassNameLengthConstraint = ClassNameLengthConstraint;
-    type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
-    type MaxNumberOfClasses = MaxNumberOfClasses;
-    type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
-    type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
-    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
-    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
+    type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
+    type ChannelCategoryId = ChannelCategoryId;
+    type VideoId = VideoId;
+    type VideoCategoryId = VideoCategoryId;
+    type PlaylistId = PlaylistId;
+    type PersonId = PersonId;
+    type SeriesId = SeriesId;
+    type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
-    type VecMaxLengthConstraint = VecMaxLengthConstraint;
-    type TextMaxLengthConstraint = TextMaxLengthConstraint;
-    type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
-    type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+    type StorageSystem = (); // TODO: Add storage integration
+}
+
+// TODO: Remove after the integration with the Content pallet.
+impl common::storage::StorageSystem<Runtime> for () {
+    fn atomically_add_content(
+        _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,
+    ) -> sp_runtime::DispatchResult {
+        todo!()
+    }
+
+    fn can_add_content(
+        _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,
+    ) -> sp_runtime::DispatchResult {
+        todo!()
+    }
+
+    fn atomically_remove_content(
+        _: &StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: &[ContentId],
+    ) -> sp_runtime::DispatchResult {
+        todo!()
+    }
+
+    fn can_remove_content(
+        _: &StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: &[ContentId],
+    ) -> sp_runtime::DispatchResult {
+        todo!()
+    }
 }
 
 impl hiring::Trait for Runtime {
@@ -507,26 +499,41 @@ parameter_types! {
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
+#[allow(clippy::type_complexity)]
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
         crate::integration::proposals::StakingEventsHandler<Self>,
         (
-            crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
-            crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
+            (
+                crate::integration::working_group::ContentDirectoryWgStakingEventsHandler<Self>,
+                crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
+            ),
+            (
+                crate::integration::working_group::OperationsWgStakingEventsHandler<Self>,
+                crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
+            ),
         ),
     );
     type StakeId = u64;
     type SlashId = u64;
 }
 
-impl content_wg::Trait for Runtime {
-    type Event = Event;
-}
-
 impl common::currency::GovernanceCurrency for Runtime {
     type Currency = pallet_balances::Module<Self>;
+}
+
+impl common::MembershipTypes for Runtime {
+    type MemberId = MemberId;
+    type ActorId = ActorId;
+}
+
+impl common::StorageOwnership for Runtime {
+    type ChannelId = ChannelId;
+    type DAOId = DAOId;
+    type ContentId = ContentId;
+    type DataObjectTypeId = DataObjectTypeId;
 }
 
 impl governance::election::Trait for Runtime {
@@ -543,12 +550,17 @@ impl memo::Trait for Runtime {
     type Event = Event;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u128 = 5000;
+}
+
 impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = MemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = ActorId;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 impl forum::Trait for Runtime {
@@ -561,11 +573,17 @@ impl forum::Trait for Runtime {
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+// The content working group instance alias.
+pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 // The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance4;
+pub type DistributionWorkingGroupInstance = working_group::Instance6;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstance = working_group::Instance4;
+
+// The gateway working group instance alias.
+pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -576,12 +594,22 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
+impl working_group::Trait<ContentWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl working_group::Trait<DistributionWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -773,23 +801,22 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
-        ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
-        ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
+        Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
         // --- Working groups
-        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
-        DistributionWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
+        ContentWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
+        GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
         //
         Storage: storage::{Module, Call, Storage, Event<T>},
     }

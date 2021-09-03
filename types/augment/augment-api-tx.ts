@@ -2,8 +2,8 @@
 /* eslint-disable */
 
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u16, u32, u64 } from '@polkadot/types';
-import type { AnyNumber, ITuple } from '@polkadot/types/types';
-import type { ActivateOpeningAt, Actor, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelContentType, ChannelCurationStatus, ChannelId, ChannelPublicationStatus, Cid, ClassId, ClassPermissions, ClassPermissionsType, ClassPropertyValue, Credential, CredentialSet, CurationActor, CuratorApplicationId, CuratorApplicationIdSet, CuratorGroupId, CuratorId, CuratorOpeningId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, ElectionParameters, EntityController, EntityId, EntityPermissions, FillOpeningParameters, InputPropertyValue, InputValue, MemberId, MemoText, Nonce, OpeningId, OpeningPolicyCommitment, OpeningType, Operation, OperationType, OptionalText, PaidTermId, PostId, Property, PropertyId, ProposalId, ReferenceConstraint, RewardPolicy, SchemaId, StorageBucketId, TerminateRoleParameters, ThreadId, UploadParameters, VecMaxLength, VoteKind, WorkerId, WorkingGroup } from './all';
+import type { AnyNumber } from '@polkadot/types/types';
+import type { ActivateOpeningAt, AddOpeningParameters, ApplicationId, ApplicationIdSet, BagId, BalanceOfMint, CategoryId, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, Cid, ContentActor, ContentId, CuratorGroupId, CuratorId, DataObjectId, DistributionBucketFamilyId, DistributionBucketId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, ElectionParameters, FillOpeningParameters, MemberId, MemoText, OpeningId, OpeningPolicyCommitment, OpeningType, PaidTermId, PersonActor, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PostId, ProposalId, RewardPolicy, SeriesId, SeriesParameters, StorageBucketId, TerminateRoleParameters, ThreadId, UploadParameters, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, WorkerId, WorkingGroup } from './all';
 import type { BabeEquivocationProof } from '@polkadot/types/interfaces/babe';
 import type { Extrinsic, Signature } from '@polkadot/types/interfaces/extrinsics';
 import type { GrandpaEquivocationProof, KeyOwnerProof } from '@polkadot/types/interfaces/grandpa';
@@ -118,102 +118,57 @@ declare module '@polkadot/api/types/submittable' {
        **/
       transferKeepAlive: AugmentedSubmittable<(dest: LookupSource | string | Uint8Array, value: Compact<Balance> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, Compact<Balance>]>;
     };
-    contentDirectory: {
-      /**
-       * Create new class schema from existing property ids and new properties
-       **/
-      addClassSchema: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, existingProperties: BTreeSet<PropertyId>, newProperties: Vec<Property> | (Property | { property_type?: any; required?: any; unique?: any; name?: any; description?: any; locking_policy?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ClassId, BTreeSet<PropertyId>, Vec<Property>]>;
-      /**
-       * Add new curator group to runtime storage
-       **/
-      addCuratorGroup: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+    content: {
+      acceptChannelTransfer: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, requestId: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelOwnershipTransferRequestId]>;
       /**
        * Add curator to curator group under given `curator_group_id`
        **/
       addCuratorToGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId, CuratorId]>;
+      addPersonToVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, person: PersonId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, PersonId]>;
+      cancelChannelTransferRequest: AugmentedSubmittable<(requestId: ChannelOwnershipTransferRequestId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ChannelOwnershipTransferRequestId]>;
+      createChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: ChannelCreationParameters | { assets?: any; meta?: any; reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCreationParameters]>;
+      createChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: ChannelCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryCreationParameters]>;
       /**
-       * Add curator group under given `curator_group_id` as `Class` maintainer
+       * Add new curator group to runtime storage
        **/
-      addMaintainerToClass: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ClassId, CuratorGroupId]>;
+      createCuratorGroup: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+      createPerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, params: PersonCreationParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PersonActor, PersonCreationParameters]>;
+      createPlaylist: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: PlaylistCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, PlaylistCreationParameters]>;
+      createSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: SeriesParameters | { assets?: any; seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, SeriesParameters]>;
+      createVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: VideoCreationParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, VideoCreationParameters]>;
+      createVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, params: VideoCategoryCreationParameters | { meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryCreationParameters]>;
+      deleteChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: ChannelCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryId]>;
+      deletePerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, person: PersonId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PersonActor, PersonId]>;
+      deletePlaylist: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, playlist: PlaylistId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, PlaylistId]>;
+      deleteSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, series: SeriesId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, SeriesId]>;
+      deleteVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId]>;
+      deleteVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: VideoCategoryId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryId]>;
       /**
-       * Add schema support to entity under given `schema_id` and provided `property_values`
+       * Remove assets of a channel from storage
        **/
-      addSchemaSupportToEntity: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, schemaId: SchemaId | AnyNumber | Uint8Array, newPropertyValues: BTreeMap<PropertyId, InputPropertyValue>) => SubmittableExtrinsic<ApiType>, [Actor, EntityId, SchemaId, BTreeMap<PropertyId, InputPropertyValue>]>;
-      /**
-       * Clear `PropertyValueVec` under given `entity_id` & `in_class_schema_property_id`
-       **/
-      clearEntityPropertyVector: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, inClassSchemaPropertyId: PropertyId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Actor, EntityId, PropertyId]>;
-      /**
-       * Create new `Class` with provided parameters
-       **/
-      createClass: AugmentedSubmittable<(name: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, classPermissions: ClassPermissions | { any_member?: any; entity_creation_blocked?: any; all_entity_property_values_locked?: any; maintainers?: any } | string | Uint8Array, maximumEntitiesCount: EntityId | AnyNumber | Uint8Array, defaultEntityCreationVoucherUpperBound: EntityId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes, Bytes, ClassPermissions, EntityId, EntityId]>;
-      /**
-       * Create entity.
-       * If someone is making an entity of this class for first time,
-       * then a voucher is also added with the class limit as the default limit value.
-       **/
-      createEntity: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ClassId, Actor]>;
-      /**
-       * Insert `SingleInputPropertyValue` at given `index_in_property_vector`
-       * into `PropertyValueVec` under `in_class_schema_property_id`
-       **/
-      insertAtEntityPropertyVector: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, inClassSchemaPropertyId: PropertyId | AnyNumber | Uint8Array, indexInPropertyVector: VecMaxLength | AnyNumber | Uint8Array, value: InputValue | { Bool: any } | { Uint16: any } | { Uint32: any } | { Uint64: any } | { Int16: any } | { Int32: any } | { Int64: any } | { Text: any } | { TextToHash: any } | { Reference: any } | string | Uint8Array, nonce: Nonce | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Actor, EntityId, PropertyId, VecMaxLength, InputValue, Nonce]>;
-      /**
-       * Remove value at given `index_in_property_vector`
-       * from `PropertyValueVec` under `in_class_schema_property_id`
-       **/
-      removeAtEntityPropertyVector: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, inClassSchemaPropertyId: PropertyId | AnyNumber | Uint8Array, indexInPropertyVector: VecMaxLength | AnyNumber | Uint8Array, nonce: Nonce | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Actor, EntityId, PropertyId, VecMaxLength, Nonce]>;
+      removeChannelAssets: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, assets: Vec<ContentId> | (ContentId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, Vec<ContentId>]>;
       /**
        * Remove curator from a given curator group
        **/
       removeCuratorFromGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId, CuratorId]>;
-      /**
-       * Remove curator group under given `curator_group_id` from runtime storage
-       **/
-      removeCuratorGroup: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId]>;
-      /**
-       * Remove `Entity` under provided `entity_id`
-       **/
-      removeEntity: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Actor, EntityId]>;
-      /**
-       * Remove curator group under given `curator_group_id` from `Class` maintainers set
-       **/
-      removeMaintainerFromClass: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ClassId, CuratorGroupId]>;
+      removePersonFromVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId]>;
+      requestChannelTransfer: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, request: ChannelOwnershipTransferRequest | { channel_id?: any; new_owner?: any; payment?: any; new_reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelOwnershipTransferRequest]>;
       /**
        * Set `is_active` status for curator group under given `curator_group_id`
        **/
       setCuratorGroupStatus: AugmentedSubmittable<(curatorGroupId: CuratorGroupId | AnyNumber | Uint8Array, isActive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorGroupId, bool]>;
-      /**
-       * Batch transaction
-       **/
-      transaction: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, operations: Vec<OperationType> | (OperationType | { CreateEntity: any } | { UpdatePropertyValues: any } | { AddSchemaSupportToEntity: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Actor, Vec<OperationType>]>;
-      /**
-       * Transfer ownership to new `EntityController` for `Entity` under given `entity_id`
-       * `new_property_value_references_with_same_owner_flag_set` should be provided manually
-       **/
-      transferEntityOwnership: AugmentedSubmittable<(entityId: EntityId | AnyNumber | Uint8Array, newController: EntityController | { Maintainers: any } | { Member: any } | { Lead: any } | string | Uint8Array, newPropertyValueReferencesWithSameOwnerFlagSet: BTreeMap<PropertyId, InputPropertyValue>) => SubmittableExtrinsic<ApiType>, [EntityId, EntityController, BTreeMap<PropertyId, InputPropertyValue>]>;
-      /**
-       * Update `ClassPermissions` under specific `class_id`
-       **/
-      updateClassPermissions: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, updatedAnyMember: Option<bool> | null | object | string | Uint8Array, updatedEntityCreationBlocked: Option<bool> | null | object | string | Uint8Array, updatedAllEntityPropertyValuesLocked: Option<bool> | null | object | string | Uint8Array, updatedMaintainers: Option<BTreeSet<CuratorGroupId>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ClassId, Option<bool>, Option<bool>, Option<bool>, Option<BTreeSet<CuratorGroupId>>]>;
-      /**
-       * Update `schema_status` under specific `schema_id` in `Class`
-       **/
-      updateClassSchemaStatus: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, schemaId: SchemaId | AnyNumber | Uint8Array, schemaStatus: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [ClassId, SchemaId, bool]>;
-      /**
-       * Updates or creates new `EntityCreationVoucher` for given `EntityController` with individual limit
-       **/
-      updateEntityCreationVoucher: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, controller: EntityController | { Maintainers: any } | { Member: any } | { Lead: any } | string | Uint8Array, maximumEntitiesCount: EntityId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ClassId, EntityController, EntityId]>;
-      /**
-       * Update entity permissions
-       **/
-      updateEntityPermissions: AugmentedSubmittable<(entityId: EntityId | AnyNumber | Uint8Array, updatedFrozen: Option<bool> | null | object | string | Uint8Array, updatedReferenceable: Option<bool> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [EntityId, Option<bool>, Option<bool>]>;
-      /**
-       * Update `Entity` `InputPropertyValue`'s with provided ones
-       **/
-      updateEntityPropertyValues: AugmentedSubmittable<(actor: Actor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, newPropertyValues: BTreeMap<PropertyId, InputPropertyValue>) => SubmittableExtrinsic<ApiType>, [Actor, EntityId, BTreeMap<PropertyId, InputPropertyValue>]>;
+      setFeaturedVideos: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, list: Vec<VideoId> | (VideoId | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [ContentActor, Vec<VideoId>]>;
+      updateChannel: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: ChannelUpdateParameters | { assets?: any; new_meta?: any; reward_account?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, ChannelUpdateParameters]>;
+      updateChannelCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: ChannelCategoryId | AnyNumber | Uint8Array, params: ChannelCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelCategoryId, ChannelCategoryUpdateParameters]>;
+      updateChannelCensorshipStatus: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, isCensored: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, bool, Bytes]>;
+      updatePerson: AugmentedSubmittable<(actor: PersonActor | { Member: any } | { Curator: any } | string | Uint8Array, person: PersonId | AnyNumber | Uint8Array, params: PersonUpdateParameters | { assets?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PersonActor, PersonId, PersonUpdateParameters]>;
+      updatePlaylist: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, playlist: PlaylistId | AnyNumber | Uint8Array, params: PlaylistUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, PlaylistId, PlaylistUpdateParameters]>;
+      updateSeries: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, params: SeriesParameters | { assets?: any; seasons?: any; meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, ChannelId, SeriesParameters]>;
+      updateVideo: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, params: VideoUpdateParameters | { assets?: any; new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, VideoUpdateParameters]>;
+      updateVideoCategory: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, categoryId: VideoCategoryId | AnyNumber | Uint8Array, params: VideoCategoryUpdateParameters | { new_meta?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoCategoryId, VideoCategoryUpdateParameters]>;
+      updateVideoCensorshipStatus: AugmentedSubmittable<(actor: ContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: VideoId | AnyNumber | Uint8Array, isCensored: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ContentActor, VideoId, bool, Bytes]>;
     };
-    contentDirectoryWorkingGroup: {
+    contentWorkingGroup: {
       /**
        * Begin accepting worker applications to an opening that is active.
        * Require signed leader origin or the root (to accept applications for the leader position).
@@ -223,7 +178,7 @@ declare module '@polkadot/api/types/submittable' {
        * Add an opening for a worker role.
        * Require signed leader origin or the root (to add opening for the leader position).
        **/
-      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
+      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_application_stake_unstaking_period?: any; terminate_role_stake_unstaking_period?: any; exit_role_application_stake_unstaking_period?: any; exit_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
       /**
        * Apply on a worker opening.
        **/
@@ -286,96 +241,13 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
       /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
+      /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
       withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
-    };
-    contentWorkingGroup: {
-      /**
-       * Begin accepting curator applications to an opening that is active.
-       **/
-      acceptCuratorApplications: AugmentedSubmittable<(curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorOpeningId]>;
-      /**
-       * Add an opening for a curator role.
-       **/
-      addCuratorOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes]>;
-      /**
-       * Apply on a curator opening.
-       **/
-      applyOnCuratorOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array, roleAccount: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, CuratorOpeningId, AccountId, Option<BalanceOf>, Option<BalanceOf>, Bytes]>;
-      /**
-       * Begin reviewing, and therefore not accepting new applications.
-       **/
-      beginCuratorApplicantReview: AugmentedSubmittable<(curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorOpeningId]>;
-      /**
-       * Create a new channel.
-       **/
-      createChannel: AugmentedSubmittable<(owner: MemberId | AnyNumber | Uint8Array, roleAccount: AccountId | string | Uint8Array, content: ChannelContentType | 'Video' | 'Music' | 'Ebook' | number | Uint8Array, handle: Bytes | string | Uint8Array, title: OptionalText | null | object | string | Uint8Array, description: OptionalText | null | object | string | Uint8Array, avatar: OptionalText | null | object | string | Uint8Array, banner: OptionalText | null | object | string | Uint8Array, publicationStatus: ChannelPublicationStatus | 'Public' | 'Unlisted' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, AccountId, ChannelContentType, Bytes, OptionalText, OptionalText, OptionalText, OptionalText, ChannelPublicationStatus]>;
-      /**
-       * Fill opening for curator
-       **/
-      fillCuratorOpening: AugmentedSubmittable<(curatorOpeningId: CuratorOpeningId | AnyNumber | Uint8Array, successfulCuratorApplicationIds: CuratorApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorOpeningId, CuratorApplicationIdSet, Option<RewardPolicy>]>;
-      /**
-       * Add to capacity of current acive mint.
-       * This may be deprecated in the future, since set_mint_capacity is sufficient to
-       * both increase and decrease capacity. Although when considering that it may be executed
-       * by a proposal, given the temporal delay in approving a proposal, it might be more suitable
-       * than set_mint_capacity?
-       **/
-      increaseMintCapacity: AugmentedSubmittable<(additionalCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BalanceOf]>;
-      /**
-       * An active curator leaves role
-       **/
-      leaveCuratorRole: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorId, Bytes]>;
-      /**
-       * Replace the current lead. First unsets the active lead if there is one.
-       * If a value is provided for new_lead it will then set that new lead.
-       * It is responsibility of the caller to ensure the new lead can be set
-       * to avoid the lead role being vacant at the end of the call.
-       **/
-      replaceLead: AugmentedSubmittable<(newLead: Option<ITuple<[MemberId, AccountId]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<ITuple<[MemberId, AccountId]>>]>;
-      /**
-       * Add an opening for a curator role.
-       **/
-      setChannelCreationEnabled: AugmentedSubmittable<(enabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
-      /**
-       * Sets the capacity of the current active mint
-       **/
-      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BalanceOf]>;
-      /**
-       * Lead terminate curator application
-       **/
-      terminateCuratorApplication: AugmentedSubmittable<(curatorApplicationId: CuratorApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorApplicationId]>;
-      /**
-       * Lead can terminate and active curator
-       **/
-      terminateCuratorRole: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorId, Bytes]>;
-      /**
-       * An owner transfers channel ownership to a new owner.
-       * 
-       * Notice that working group participants cannot do this.
-       * Notice that censored or unlisted channel may still be transferred.
-       * Notice that transfers are unilateral, so new owner cannot block. This may be problematic: https://github.com/Joystream/substrate-runtime-joystream/issues/95
-       **/
-      transferChannelOwnership: AugmentedSubmittable<(channelId: ChannelId | AnyNumber | Uint8Array, newOwner: MemberId | AnyNumber | Uint8Array, newRoleAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ChannelId, MemberId, AccountId]>;
-      /**
-       * Update channel as a curation actor
-       **/
-      updateChannelAsCurationActor: AugmentedSubmittable<(curationActor: CurationActor | { Lead: any } | { Curator: any } | string | Uint8Array, channelId: ChannelId | AnyNumber | Uint8Array, newVerified: Option<bool> | null | object | string | Uint8Array, newCurationStatus: Option<ChannelCurationStatus> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [CurationActor, ChannelId, Option<bool>, Option<ChannelCurationStatus>]>;
-      /**
-       * Channel owner updates some channel properties
-       **/
-      updateChannelAsOwner: AugmentedSubmittable<(channelId: ChannelId | AnyNumber | Uint8Array, newHandle: Option<Bytes> | null | object | string | Uint8Array, newTitle: Option<OptionalText> | null | object | string | Uint8Array, newDescription: Option<OptionalText> | null | object | string | Uint8Array, newAvatar: Option<OptionalText> | null | object | string | Uint8Array, newBanner: Option<OptionalText> | null | object | string | Uint8Array, newPublicationStatus: Option<ChannelPublicationStatus> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ChannelId, Option<Bytes>, Option<OptionalText>, Option<OptionalText>, Option<OptionalText>, Option<OptionalText>, Option<ChannelPublicationStatus>]>;
-      /**
-       * An active curator can update the reward account associated
-       * with a set reward relationship.
-       **/
-      updateCuratorRewardAccount: AugmentedSubmittable<(curatorId: CuratorId | AnyNumber | Uint8Array, newRewardAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorId, AccountId]>;
-      /**
-       * An active curator can update the associated role account.
-       **/
-      updateCuratorRoleAccount: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, curatorId: CuratorId | AnyNumber | Uint8Array, newRoleAccount: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, CuratorId, AccountId]>;
-      withdrawCuratorApplication: AugmentedSubmittable<(curatorApplicationId: CuratorApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [CuratorApplicationId]>;
     };
     council: {
       /**
@@ -440,7 +312,7 @@ declare module '@polkadot/api/types/submittable' {
        * Add an opening for a worker role.
        * Require signed leader origin or the root (to add opening for the leader position).
        **/
-      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
+      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_application_stake_unstaking_period?: any; terminate_role_stake_unstaking_period?: any; exit_role_application_stake_unstaking_period?: any; exit_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
       /**
        * Apply on a worker opening.
        **/
@@ -503,6 +375,10 @@ declare module '@polkadot/api/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
       /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
+      /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
       withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
@@ -547,6 +423,87 @@ declare module '@polkadot/api/types/submittable' {
        * Update category
        **/
       updateCategory: AugmentedSubmittable<(categoryId: CategoryId | AnyNumber | Uint8Array, newArchivalStatus: Option<bool> | null | object | string | Uint8Array, newDeletionStatus: Option<bool> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [CategoryId, Option<bool>, Option<bool>]>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Begin accepting worker applications to an opening that is active.
+       * Require signed leader origin or the root (to accept applications for the leader position).
+       **/
+      acceptApplications: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId]>;
+      /**
+       * Add an opening for a worker role.
+       * Require signed leader origin or the root (to add opening for the leader position).
+       **/
+      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_application_stake_unstaking_period?: any; terminate_role_stake_unstaking_period?: any; exit_role_application_stake_unstaking_period?: any; exit_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
+      /**
+       * Apply on a worker opening.
+       **/
+      applyOnOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, roleAccountId: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, OpeningId, AccountId, Option<BalanceOf>, Option<BalanceOf>, Bytes]>;
+      /**
+       * Begin reviewing, and therefore not accepting new applications.
+       * Require signed leader origin or the root (to begin review applications for the leader position).
+       **/
+      beginApplicantReview: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId]>;
+      /**
+       * Decreases the worker/lead stake and returns the remainder to the worker role_account_id.
+       * Can be decreased to zero, no actions on zero stake.
+       * Require signed leader origin or the root (to decrease the leader stake).
+       **/
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
+      /**
+       * Fill opening for worker/lead.
+       * Require signed leader origin or the root (to fill opening for the leader position).
+       **/
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: ApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId, ApplicationIdSet, Option<RewardPolicy>]>;
+      /**
+       * Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
+       * role_account_id to the stake. No limits on the stake.
+       **/
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
+      /**
+       * Leave the role by the active worker.
+       **/
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
+      /**
+       * Sets the capacity to enable working group budget. Requires root origin.
+       **/
+      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BalanceOf]>;
+      /**
+       * Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * If slashing balance greater than the existing stake - stake is slashed to zero.
+       * Require signed leader origin or the root (to slash the leader stake).
+       **/
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
+      /**
+       * Terminate the worker application. Can be done by the lead only.
+       **/
+      terminateApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
+      /**
+       * Terminate the active worker by the lead.
+       * Require signed leader origin or the root (to terminate the leader role).
+       **/
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array, slashStake: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes, bool]>;
+      /**
+       * Update the reward account associated with a set reward relationship for the active worker.
+       **/
+      updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
+      /**
+       * Update the reward amount associated with a set reward relationship for the active worker.
+       * Require signed leader origin or the root (to update leader reward amount).
+       **/
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newAmount: BalanceOfMint | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOfMint]>;
+      /**
+       * Update the associated role account of the active worker/lead.
+       **/
+      updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
+      /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
+      /**
+       * Withdraw the worker application. Can be done by the worker itself only.
+       **/
+      withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
     };
     grandpa: {
       /**
@@ -594,7 +551,13 @@ declare module '@polkadot/api/types/submittable' {
       heartbeat: AugmentedSubmittable<(heartbeat: Heartbeat | { blockNumber?: any; networkState?: any; sessionIndex?: any; authorityIndex?: any; validatorsLen?: any } | string | Uint8Array, signature: Signature | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Heartbeat, Signature]>;
     };
     members: {
-      addScreenedMember: AugmentedSubmittable<(newMemberAccount: AccountId | string | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId, Option<Bytes>, Option<Bytes>, Option<Bytes>]>;
+      /**
+       * Screened members are awarded a initial locked balance that can only be slashed or used
+       * for fees, and is not transferable. The screening authority must ensure that the provided
+       * new_member_account was verified to avoid applying locks arbitrarily to accounts not controlled
+       * by the member.
+       **/
+      addScreenedMember: AugmentedSubmittable<(newMemberAccount: AccountId | string | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, avatarUri: Option<Bytes> | null | object | string | Uint8Array, about: Option<Bytes> | null | object | string | Uint8Array, initialBalance: Option<BalanceOf> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId, Option<Bytes>, Option<Bytes>, Option<Bytes>, Option<BalanceOf>]>;
       /**
        * Non-members can buy membership
        **/
@@ -623,6 +586,87 @@ declare module '@polkadot/api/types/submittable' {
     memo: {
       updateMemo: AugmentedSubmittable<(memo: MemoText | string) => SubmittableExtrinsic<ApiType>, [MemoText]>;
     };
+    operationsWorkingGroup: {
+      /**
+       * Begin accepting worker applications to an opening that is active.
+       * Require signed leader origin or the root (to accept applications for the leader position).
+       **/
+      acceptApplications: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId]>;
+      /**
+       * Add an opening for a worker role.
+       * Require signed leader origin or the root (to add opening for the leader position).
+       **/
+      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_application_stake_unstaking_period?: any; terminate_role_stake_unstaking_period?: any; exit_role_application_stake_unstaking_period?: any; exit_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
+      /**
+       * Apply on a worker opening.
+       **/
+      applyOnOpening: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, roleAccountId: AccountId | string | Uint8Array, optRoleStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, optApplicationStakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, OpeningId, AccountId, Option<BalanceOf>, Option<BalanceOf>, Bytes]>;
+      /**
+       * Begin reviewing, and therefore not accepting new applications.
+       * Require signed leader origin or the root (to begin review applications for the leader position).
+       **/
+      beginApplicantReview: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId]>;
+      /**
+       * Decreases the worker/lead stake and returns the remainder to the worker role_account_id.
+       * Can be decreased to zero, no actions on zero stake.
+       * Require signed leader origin or the root (to decrease the leader stake).
+       **/
+      decreaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
+      /**
+       * Fill opening for worker/lead.
+       * Require signed leader origin or the root (to fill opening for the leader position).
+       **/
+      fillOpening: AugmentedSubmittable<(openingId: OpeningId | AnyNumber | Uint8Array, successfulApplicationIds: ApplicationIdSet, rewardPolicy: Option<RewardPolicy> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [OpeningId, ApplicationIdSet, Option<RewardPolicy>]>;
+      /**
+       * Increases the worker/lead stake, demands a worker origin. Transfers tokens from the worker
+       * role_account_id to the stake. No limits on the stake.
+       **/
+      increaseStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
+      /**
+       * Leave the role by the active worker.
+       **/
+      leaveRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
+      /**
+       * Sets the capacity to enable working group budget. Requires root origin.
+       **/
+      setMintCapacity: AugmentedSubmittable<(newCapacity: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [BalanceOf]>;
+      /**
+       * Slashes the worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * If slashing balance greater than the existing stake - stake is slashed to zero.
+       * Require signed leader origin or the root (to slash the leader stake).
+       **/
+      slashStake: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, balance: BalanceOf | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOf]>;
+      /**
+       * Terminate the worker application. Can be done by the lead only.
+       **/
+      terminateApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
+      /**
+       * Terminate the active worker by the lead.
+       * Require signed leader origin or the root (to terminate the leader role).
+       **/
+      terminateRole: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, rationaleText: Bytes | string | Uint8Array, slashStake: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes, bool]>;
+      /**
+       * Update the reward account associated with a set reward relationship for the active worker.
+       **/
+      updateRewardAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRewardAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
+      /**
+       * Update the reward amount associated with a set reward relationship for the active worker.
+       * Require signed leader origin or the root (to update leader reward amount).
+       **/
+      updateRewardAmount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newAmount: BalanceOfMint | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, BalanceOfMint]>;
+      /**
+       * Update the associated role account of the active worker/lead.
+       **/
+      updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
+      /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
+      /**
+       * Withdraw the worker application. Can be done by the worker itself only.
+       **/
+      withdrawApplication: AugmentedSubmittable<(applicationId: ApplicationId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [ApplicationId]>;
+    };
     proposalsCodex: {
       /**
        * Create 'Add working group leader opening' proposal type.
@@ -633,12 +677,12 @@ declare module '@polkadot/api/types/submittable' {
        * Create 'Begin review working group leader applications' proposal type.
        * This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
        **/
-      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, OpeningId, WorkingGroup]>;
+      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, OpeningId, WorkingGroup]>;
       /**
        * Create 'decrease working group leader stake' proposal type.
        * This proposal uses `decrease_stake()` extrinsic from the `working-group`  module.
        **/
-      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
+      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
       /**
        * Create 'Fill working group leader opening' proposal type.
        * This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
@@ -663,17 +707,17 @@ declare module '@polkadot/api/types/submittable' {
        * Create 'set working group leader reward' proposal type.
        * This proposal uses `update_reward_amount()` extrinsic from the `working-group`  module.
        **/
-      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOfMint, WorkingGroup]>;
+      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOfMint, WorkingGroup]>;
       /**
        * Create 'Set working group mint capacity' proposal type.
        * This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
        **/
-      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, BalanceOfMint, WorkingGroup]>;
+      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, BalanceOfMint, WorkingGroup]>;
       /**
        * Create 'slash working group leader stake' proposal type.
        * This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
        **/
-      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
+      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
       /**
        * Create 'Spending' proposal type.
        * This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.
@@ -1385,7 +1429,7 @@ declare module '@polkadot/api/types/submittable' {
        * Add an opening for a worker role.
        * Require signed leader origin or the root (to add opening for the leader position).
        **/
-      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_curator_application_stake_unstaking_period?: any; terminate_curator_role_stake_unstaking_period?: any; exit_curator_role_application_stake_unstaking_period?: any; exit_curator_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
+      addOpening: AugmentedSubmittable<(activateAt: ActivateOpeningAt | { CurrentBlock: any } | { ExactBlock: any } | string | Uint8Array, commitment: OpeningPolicyCommitment | { application_rationing_policy?: any; max_review_period_length?: any; application_staking_policy?: any; role_staking_policy?: any; role_slashing_terms?: any; fill_opening_successful_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_application_stake_unstaking_period?: any; fill_opening_failed_applicant_role_stake_unstaking_period?: any; terminate_application_stake_unstaking_period?: any; terminate_role_stake_unstaking_period?: any; exit_role_application_stake_unstaking_period?: any; exit_role_stake_unstaking_period?: any } | string | Uint8Array, humanReadableText: Bytes | string | Uint8Array, openingType: OpeningType | 'Leader' | 'Worker' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [ActivateOpeningAt, OpeningPolicyCommitment, Bytes, OpeningType]>;
       /**
        * Apply on a worker opening.
        **/
@@ -1447,6 +1491,10 @@ declare module '@polkadot/api/types/submittable' {
        * Update the associated role account of the active worker/lead.
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, newRoleAccountId: AccountId | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, AccountId]>;
+      /**
+       * Update the associated role storage.
+       **/
+      updateRoleStorage: AugmentedSubmittable<(workerId: WorkerId | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [WorkerId, Bytes]>;
       /**
        * Withdraw the worker application. Can be done by the worker itself only.
        **/
@@ -1679,28 +1727,6 @@ declare module '@polkadot/api/types/submittable' {
        * event is deposited.
        **/
       batch: AugmentedSubmittable<(calls: Vec<Call> | (Call | { callIndex?: any; args?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<Call>]>;
-    };
-    versionedStorePermissions: {
-      addClassSchema: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, existingProperties: Vec<u16> | (u16 | AnyNumber | Uint8Array)[], newProperties: Vec<Property> | (Property | { property_type?: any; required?: any; unique?: any; name?: any; description?: any; locking_policy?: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId, Vec<u16>, Vec<Property>]>;
-      addSchemaSupportToEntity: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, asEntityMaintainer: bool | boolean | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, schemaId: u16 | AnyNumber | Uint8Array, propertyValues: Vec<ClassPropertyValue> | (ClassPropertyValue | null)[]) => SubmittableExtrinsic<ApiType>, [Option<Credential>, bool, EntityId, u16, Vec<ClassPropertyValue>]>;
-      createClass: AugmentedSubmittable<(name: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, classPermissions: ClassPermissionsType | null) => SubmittableExtrinsic<ApiType>, [Bytes, Bytes, ClassPermissionsType]>;
-      createClassWithDefaultPermissions: AugmentedSubmittable<(name: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes, Bytes]>;
-      /**
-       * Creates a new entity of type class_id. The maintainer is set to be either None if the origin is root, or the provided credential
-       * associated with signer.
-       **/
-      createEntity: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId]>;
-      setClassAddSchemasSet: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, credentialSet: CredentialSet) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId, CredentialSet]>;
-      /**
-       * Sets the admins for a class
-       **/
-      setClassAdmins: AugmentedSubmittable<(classId: ClassId | AnyNumber | Uint8Array, admins: CredentialSet) => SubmittableExtrinsic<ApiType>, [ClassId, CredentialSet]>;
-      setClassCreateEntitiesSet: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, credentialSet: CredentialSet) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId, CredentialSet]>;
-      setClassEntitiesCanBeCreated: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, canBeCreated: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId, bool]>;
-      setClassEntityPermissions: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, entityPermissions: EntityPermissions | { controller?: any; frozen?: any; referenceable?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId, EntityPermissions]>;
-      setClassReferenceConstraint: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, classId: ClassId | AnyNumber | Uint8Array, constraint: ReferenceConstraint | null) => SubmittableExtrinsic<ApiType>, [Option<Credential>, ClassId, ReferenceConstraint]>;
-      transaction: AugmentedSubmittable<(operations: Vec<Operation> | (Operation | null)[]) => SubmittableExtrinsic<ApiType>, [Vec<Operation>]>;
-      updateEntityPropertyValues: AugmentedSubmittable<(withCredential: Option<Credential> | null | object | string | Uint8Array, asEntityMaintainer: bool | boolean | Uint8Array, entityId: EntityId | AnyNumber | Uint8Array, propertyValues: Vec<ClassPropertyValue> | (ClassPropertyValue | null)[]) => SubmittableExtrinsic<ApiType>, [Option<Credential>, bool, EntityId, Vec<ClassPropertyValue>]>;
     };
   }
 

@@ -1,0 +1,50 @@
+---
+# Setup joystream code, build docker image
+
+- name: Build image and push to docker hub
+  hosts: all
+
+  tasks:
+    - block:
+        - name: Get code from git repo
+          include_role:
+            name: common
+            tasks_from: get-code-git
+
+        - name: Install Docker Module for Python
+          pip:
+            name: docker
+
+        - name: Log into DockerHub
+          community.docker.docker_login:
+            username: '{{ docker_username }}'
+            password: '{{ docker_password }}'
+
+        - name: Build an image and push it to a private repo
+          community.docker.docker_image:
+            build:
+              path: ./joystream
+              dockerfile: '{{ dockerfile }}'
+              platform: '{{ platform }}'
+            name: '{{ repository }}'
+            tag: '{{ tag_name }}'
+            push: yes
+            source: build
+          async: 7200
+          poll: 0
+          register: build_result
+
+        - name: Check on build async task
+          async_status:
+            jid: '{{ build_result.ansible_job_id }}'
+          register: job_result
+          until: job_result.finished
+          retries: 72
+          delay: 100
+
+      always:
+        - name: Delete the stack
+          amazon.aws.cloudformation:
+            stack_name: '{{ stack_name }}'
+            state: 'absent'
+          delegate_to: localhost

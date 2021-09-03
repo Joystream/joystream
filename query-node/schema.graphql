@@ -4,21 +4,19 @@ enum Network {
   ROME
 }
 
-type Block @entity {
-  "Block number as a string"
-  id: ID!
-  block: Int!
-  timestamp: BigInt!
-  network: Network!
+enum MembershipEntryMethod {
+  PAID
+  SCREENING
+  GENESIS
 }
 
 "Stored information about a registered user"
-type Member @entity {
+type Membership @entity {
   "MemberId: runtime identifier for a user"
   id: ID!
 
   "The unique handle chosen by member"
-  handle: String @unique @fulltext(query: "membersByHandle")
+  handle: String! @unique @fulltext(query: "membersByHandle")
 
   "A Url to member's Avatar image"
   avatarUri: String
@@ -26,41 +24,132 @@ type Member @entity {
   "Short text chosen by member to share information about themselves"
   about: String
 
-  "Blocknumber when member was registered"
-  registeredAtBlock: Int!
-
   "Member's controller account id"
-  controllerAccount: Bytes!
+  controllerAccount: String!
 
   "Member's root account id"
-  rootAccount: Bytes!
+  rootAccount: String!
 
-  happenedIn: Block!
+  "Blocknumber when member was registered"
+  createdInBlock: Int!
+
+  "How the member was registered"
+  entry: MembershipEntryMethod!
+
+  "The type of subscription the member has purchased if any."
+  subscription: Int
+
+  channels: [Channel!]! @derivedFrom(field: "ownerMember")
 }
 
-"""
-This type is to keep which entity belongs to which class. This type will be used
-by EntityCreated event. When a new schema support added to an Entity we will get the
-class name from this table.
-We need this because we can't create a database row (Channel, Video etc) without
-with empty fields.
-"""
-type ClassEntity @entity {
-  "Runtime entity identifier (EntityId)"
+"Category of media channel"
+type ChannelCategory @entity {
   id: ID!
 
-  "The class id of this entity"
-  classId: Int!
+  "The name of the category"
+  name: String @fulltext(query: "channelCategoriesByName")
 
-  happenedIn: Block!
+  channels: [Channel!]! @derivedFrom(field: "category")
+
+  createdInBlock: Int!
 }
 
-"Keep track of the next entity id"
-type NextEntityId @entity {
-  "Constant field is set to '1'"
-  id: ID!
+"Asset availability representation"
+enum AssetAvailability {
+  "Asset is available in storage"
+  ACCEPTED,
 
-  nextId: Int!
+  "Asset is being uploaded to storage"
+  PENDING,
+
+  "Invalid storage (meta)data used"
+  INVALID,
+}
+
+"The decision of the storage provider when it acts as liaison"
+enum LiaisonJudgement {
+  "Content awaits for a judgment"
+  PENDING,
+
+  "Content accepted"
+  ACCEPTED,
+}
+
+"Manages content ids, type and storage provider decision about it"
+type DataObject @entity {
+  "Content owner"
+  owner: DataObjectOwner!
+
+  "Content added at"
+  createdInBlock: Int!
+
+  "Content type id"
+  typeId: Int!
+
+  "Content size in bytes"
+  size: Int!
+
+  "Storage provider id of the liaison"
+  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
+
+  "Storage provider as liaison judgment"
+  liaisonJudgement: LiaisonJudgement!
+
+  "IPFS content id"
+  ipfsContentId: String!
+
+  "Joystream runtime content"
+  joystreamContentId: String!
+}
+
+"Owner type for storage object"
+union DataObjectOwner = DataObjectOwnerMember
+  | DataObjectOwnerChannel
+  | DataObjectOwnerDao
+  | DataObjectOwnerCouncil
+  | DataObjectOwnerWorkingGroup
+
+"Asset owned by a member"
+type DataObjectOwnerMember @variant {
+  # use `Int` instead of `Membership` before variant relations are featured in Hydra
+  # TODO: setup proper relations
+  #"Member identifier"
+  #memberId: Membership!
+  "Member identifier"
+  member: Int!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a channel"
+type DataObjectOwnerChannel @variant {
+  # use `Int` instead of `Channel` before variant relations are featured in Hydra
+  #"Channel identifier"
+  #channel: Channel!
+  "Channel identifier"
+  channel: Int!
+
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a DAO"
+type DataObjectOwnerDao @variant {
+  "DAO identifier"
+  dao: Int!
+}
+
+"Asset owned by the Council"
+type DataObjectOwnerCouncil @variant {
+  "Variant needs to have at least one property. This value is not used."
+  dummy: Int
+}
+
+"Asset owned by a WorkingGroup"
+type DataObjectOwnerWorkingGroup @variant {
+  "Working group identifier"
+  workingGroup: Int!
 }
 
 #### High Level Derivative Entities ####
@@ -69,274 +158,253 @@ type Language @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  name: String!
-  code: String!
+  "Language identifier ISO 639-1"
+  iso: String!
 
-  happenedIn: Block!
+  createdInBlock: Int!
 }
 
 type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  # "Owner of the channel" Commenting out this field: 'owner' can be curator_group, lead
-  # or a member. We are not handling events related to curator group so we will not set this field
-  # owner: Member!
+  "Member owning the channel (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the channel (if any)"
+  ownerCuratorGroup: CuratorGroup
+
+  category: ChannelCategory
+
+  "Reward account where revenue is sent if set."
+  rewardAccount: String
 
   "The title of the Channel"
-  handle: String! @fulltext(query: "search")
+  title: String @fulltext(query: "search")
 
   "The description of a Channel"
-  description: String!
+  description: String
 
-  "Url for Channel's cover (background) photo. Recommended ratio: 16:9."
-  coverPhotoUrl: String
+  ### Cover photo asset ###
 
-  "Channel's avatar photo."
-  avatarPhotoUrl: String
+  # Channel's cover (background) photo. Recommended ratio: 16:9.
+
+  "Asset's data object"
+  coverPhotoDataObject: DataObject
+
+  "URLs where the asset content can be accessed (if any)"
+  coverPhotoUrls: [String!]
+
+  "Availability meta information"
+  coverPhotoAvailability: AssetAvailability!
+
+  ### Avatar photo asset ###
+
+  # Channel's avatar photo.
+
+  "Asset's data object"
+  avatarPhotoDataObject: DataObject
+
+  "URLs where the asset content can be accessed (if any)"
+  avatarPhotoUrls: [String!]
+
+  "Availability meta information"
+  avatarPhotoAvailability: AssetAvailability!
+
+  ##########################
 
   "Flag signaling whether a channel is public."
-  isPublic: Boolean!
+  isPublic: Boolean
 
-  "Flag signaling whether a channel is curated/verified."
-  isCurated: Boolean!
+  "Flag signaling whether a channel is censored."
+  isCensored: Boolean!
 
   "The primary langauge of the channel's content"
   language: Language
 
-  videos: [Video!] @derivedFrom(field: "channel")
+  videos: [Video!]! @derivedFrom(field: "channel")
 
-  happenedIn: Block!
+  createdInBlock: Int!
 }
 
-type Category @entity {
-  "Runtime entity identifier (EntityId)"
+type CuratorGroup @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Curators belonging to this group"
+  curatorIds: [Int!]!
+
+  "Is group active or not"
+  isActive: Boolean!
+
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+}
+
+type VideoCategory @entity {
+  "Runtime identifier"
   id: ID!
 
   "The name of the category"
-  name: String! @unique @fulltext(query: "categoriesByName")
+  name: String @fulltext(query: "videoCategoriesByName")
 
-  "The description of the category"
-  description: String
+  videos: [Video!]! @derivedFrom(field: "category")
 
-  videos: [Video!] @derivedFrom(field: "category")
-
-  happenedIn: Block!
-}
-
-"Encoding and containers"
-type VideoMediaEncoding @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  name: String!
-
-  happenedIn: Block!
-}
-
-type KnownLicenseEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
-  code: String! @unique
-
-  "Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
-  name: String
-
-  "Short description of the license conditions"
-  description: String
-
-  "An url pointing to full license content"
-  url: String
-
-  happenedIn: Block!
-}
-
-type UserDefinedLicenseEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Custom license content"
-  content: String!
-
-  happenedIn: Block!
-}
-
-type MediaLocationEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  # One of the following field will be non-null
-
-  "A reference to HttpMediaLocation"
-  httpMediaLocation: HttpMediaLocationEntity
-
-  "A reference to JoystreamMediaLocation"
-  joystreamMediaLocation: JoystreamMediaLocationEntity
-
-  videoMedia: VideoMedia @derivedFrom(field: "locationEntity")
-
-  happenedIn: Block!
-}
-
-type JoystreamMediaLocationEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Id of the data object in the Joystream runtime dataDirectory module"
-  dataObjectId: String!
-
-  happenedIn: Block!
-}
-
-type HttpMediaLocationEntity @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "The http url pointing to the media"
-  url: String!
-
-  "The port to use when connecting to the http url (defaults to 80)"
-  port: Int
-
-  happenedIn: Block!
-}
-
-type VideoMedia @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-
-  "Encoding of the video media object"
-  encoding: VideoMediaEncoding!
-
-  "Video media width in pixels"
-  pixelWidth: Int!
-
-  "Video media height in pixels"
-  pixelHeight: Int!
-
-  "Video media size in bytes"
-  size: Int
-
-  video: Video @derivedFrom(field: "media")
-
-  "Location of the video media object"
-  location: MediaLocation!
-
-  locationEntity: MediaLocationEntity
-
-  happenedIn: Block!
+  createdInBlock: Int!
 }
 
 type Video @entity {
-  "Runtime entity identifier (EntityId)"
+  "Runtime identifier"
   id: ID!
 
   "Reference to member's channel"
-  channel: Channel!
+  channel: Channel
 
   "Reference to a video category"
-  category: Category!
+  category: VideoCategory
 
   "The title of the video"
-  title: String! @fulltext(query: "search")
+  title: String @fulltext(query: "search")
 
   "The description of the Video"
-  description: String!
+  description: String
 
   "Video duration in seconds"
-  duration: Int!
+  duration: Int
 
-  "Video's skippable intro duration in seconds"
-  skippableIntroDuration: Int
+  ### Thumbnail asset ###
 
-  "Video thumbnail url (recommended ratio: 16:9)"
-  thumbnailUrl: String!
+  # Video thumbnail (recommended ratio: 16:9)
+
+  "Asset's data object"
+  thumbnailPhotoDataObject: DataObject
+
+  "URLs where the asset content can be accessed (if any)"
+  thumbnailPhotoUrls: [String!]
+
+  "Availability meta information"
+  thumbnailPhotoAvailability: AssetAvailability!
+
+  ##########################
 
   "Video's main langauge"
   language: Language
-
-  "Reference to VideoMedia"
-  media: VideoMedia
 
   "Whether or not Video contains marketing"
   hasMarketing: Boolean
 
   "If the Video was published on other platform before beeing published on Joystream - the original publication date"
-  publishedBeforeJoystream: Int
+  publishedBeforeJoystream: DateTime
 
   "Whether the Video is supposed to be publically displayed"
-  isPublic: Boolean!
+  isPublic: Boolean
 
-  "Video curation status set by the Curator"
-  isCurated: Boolean!
+  "Flag signaling whether a video is censored."
+  isCensored: Boolean!
 
   "Whether the Video contains explicit material."
-  isExplicit: Boolean!
+  isExplicit: Boolean
 
-  license: LicenseEntity!
+  "License under the video is published"
+  license: License
 
-  happenedIn: Block!
+  ### Media asset ###
+
+  # Reference to video asset
+
+  "Asset's data object"
+  mediaDataObject: DataObject
+
+  "URLs where the asset content can be accessed (if any)"
+  mediaUrls: [String!]
+
+  "Availability meta information"
+  mediaAvailability: AssetAvailability!
+
+  ##########################
+
+  "Video file metadata"
+  mediaMetadata: VideoMediaMetadata
+
+  createdInBlock: Int!
 
   "Is video featured or not"
   isFeatured: Boolean!
-
-  featured: FeaturedVideo @derivedFrom(field: "video")
 }
 
-type JoystreamMediaLocation @variant {
-  "Id of the data object in the Joystream runtime dataDirectory module"
-  dataObjectId: String!
-}
-
-type HttpMediaLocation @variant {
-  "The http url pointing to the media"
-  url: String!
-
-  "The port to use when connecting to the http url (defaults to 80)"
-  port: Int
-}
-
-union MediaLocation = HttpMediaLocation | JoystreamMediaLocation
-
-type KnownLicense @variant {
-  "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
-  code: String!
-
-  "Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
-  name: String
-
-  "Short description of the license conditions"
-  description: String
-
-  "An url pointing to full license content"
-  url: String
-}
-
-type UserDefinedLicense @variant {
-  "Custom license content"
-  content: String!
-}
-
-union License = KnownLicense | UserDefinedLicense
-
-type LicenseEntity @entity {
-  "Runtime entity identifier (EntityId)"
+type VideoMediaMetadata @entity {
+  "Unique identifier"
   id: ID!
 
-  type: License!
+  "Encoding of the video media object"
+  encoding: VideoMediaEncoding
+
+  "Video media width in pixels"
+  pixelWidth: Int
+
+  "Video media height in pixels"
+  pixelHeight: Int
+
+  "Video media size in bytes"
+  size: Int
+
+  video: Video @derivedFrom(field: "mediaMetadata")
+
+  createdInBlock: Int!
+}
+
+type VideoMediaEncoding @entity {
+  "Encoding of the video media object"
+  codecName: String
+
+  "Media container format"
+  container: String
+
+  "Content MIME type"
+  mimeMediaType: String
+}
+
+type License @entity {
+  "Unique identifier"
+  id: ID!
+
+  "License code defined by Joystream"
+  code: Int
 
   "Attribution (if required by the license)"
   attribution: String
 
-  happenedIn: Block!
+  "Custom license content"
+  custom_text: String
 }
 
-type FeaturedVideo @entity {
-  "Runtime entity identifier (EntityId)"
+enum WorkerType {
+  GATEWAY
+  STORAGE
+}
+
+type Worker @entity {
+  "Unique identifier"
   id: ID!
 
-  "Reference to a video"
-  video: Video!
+  "Sign of worker still being active"
+  isActive: Boolean!
+
+  "Runtime identifier"
+  workerId: String!
+
+  "Associated working group"
+  type: WorkerType!
+
+  "Custom metadata set by provider"
+  metadata: String
+
+  dataObjects: [DataObject!]! @derivedFrom(field: "liaison")
+}
+
+type NextEntityId @entity {
+  "Unique identifier"
+  id: ID!
+
+  "Next deterministic id for entities without custom id"
+  nextId: Int!
 }

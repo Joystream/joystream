@@ -9,7 +9,7 @@ import {
   ApplicationIdToWorkerIdMap,
   Worker,
   WorkerId,
-  WorkingGroupOpeningPolicyCommitment,
+  OpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
@@ -30,11 +30,7 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
-import { OperationType } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
+import { ContentId, DataObject } from '@joystream/types/storage'
 import { extendDebug } from './Debugger'
 import { InvertedPromise } from './InvertedPromise'
 
@@ -90,9 +86,9 @@ export class ApiFactory {
     return new Api(this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  public close(): void {
-    this.api.disconnect()
-  }
+  // public close(): void {
+  //   this.api.disconnect()
+  // }
 }
 
 export class Api {
@@ -275,7 +271,7 @@ export class Api {
   }
 
   public estimateAddOpeningFee(module: WorkingGroups): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
@@ -319,11 +315,7 @@ export class Api {
   }
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)))
   }
 
   public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
@@ -354,19 +346,11 @@ export class Api {
   }
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
@@ -392,11 +376,7 @@ export class Api {
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >
-    )
+    return this.estimateTxFee(this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0))
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
@@ -410,7 +390,7 @@ export class Api {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
@@ -945,7 +925,7 @@ export class Api {
         : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
     )
 
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: openingParameters.maxActiveApplicants as u32,
       }),
@@ -1037,7 +1017,7 @@ export class Api {
         : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
     )
 
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: openingParameters.maxActiveApplicants as u32,
       }),
@@ -1122,7 +1102,7 @@ export class Api {
     text: string
     workingGroup: string
   }): Promise<ISubmittableResult> {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+    const commitment: OpeningPolicyCommitment = this.api.createType('OpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: leaderOpening.maxActiveApplicants as u32,
       }),
@@ -1355,7 +1335,7 @@ export class Api {
 
   private createAddOpeningTransaction(
     actiavteAt: ActivateOpeningAt,
-    commitment: WorkingGroupOpeningPolicyCommitment,
+    commitment: OpeningPolicyCommitment,
     text: string,
     type: string,
     module: WorkingGroups
@@ -1625,9 +1605,9 @@ export class Api {
   }
 
   public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
-      Application
-    >()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[
+      module
+    ].applicationById.entries<Application>()
     return applicationsAndIds
       .map((applicationWithId) => {
         const application: Application = applicationWithId[1]
@@ -1719,78 +1699,8 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
-    const transaction = this.api.tx.contentDirectory.transaction(
-      { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
-      operations // We provide parsed operations as second argument
-    )
-    const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    return this.sender.signAndSend(transaction, lead.role_account_id)
-  }
-
-  public async createChannelEntity(channel: ChannelEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Channel',
-          entries: [channel], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async createVideoEntity(video: VideoEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Video',
-          entries: [video], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async updateChannelEntity(
-    channelUpdateInput: Record<string, any>,
-    uniquePropValue: Record<string, any>
-  ): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(this.api)
-
-    // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
-    // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
-    const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel') // Use getEntityUpdateOperations to parse the update input
-    const updateOperations = await parser.getEntityUpdateOperations(
-      channelUpdateInput,
-      'Channel', // Class name
-      CHANNEL_ID // Id of the entity we want to update
-    )
-    return this.sendContentDirectoryTransaction(updateOperations)
-  }
-
-  async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+  async getDataByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this.api.query.dataDirectory.dataByContentId<Option<DataObject>>(contentId)
     return dataObject.unwrapOr(null)
-  }
-
-  public async initializeContentDirectory(): Promise<void> {
-    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
-    if (!lead) {
-      throw new Error('No Lead is set for storage wokring group')
-    }
-    const leadKeyPair = this.keyring.getPair(lead.role_account_id.toString())
-    return initializeContentDir(this.api, leadKeyPair)
   }
 }

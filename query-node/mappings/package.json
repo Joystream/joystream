@@ -1,20 +1,29 @@
 {
   "name": "query-node-mappings",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Mappings for hydra-processor",
-  "main": "lib/mappings/index.js",
+  "main": "lib/mappings/src/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf lib && tsc --build tsconfig.json",
-    "lint": "echo \"Skippinng\"",
-    "clean": "rm -rf lib"
+    "build": "rm -rf lib && tsc --build tsconfig.json && yarn copy-types",
+    "copy-types": "cp ../../types/augment/all/defs.json lib/generated/types/typedefs.json",
+    "clean": "rm -rf lib",
+    "lint": "eslint . --quiet --ext .ts",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "format": "prettier ./ --write "
   },
   "dependencies": {
-    "@dzlzv/hydra-common": "2.0.1-beta.9",
     "@polkadot/types": "4.2.1",
+    "@dzlzv/hydra-common": "2.1.0-beta.7",
+    "@dzlzv/hydra-db-utils": "2.1.0-beta.7",
+    "@joystream/content-metadata-protobuf": "^1.1.0",
+    "@joystream/types": "^0.16.1",
+    "iso-639-1": "^2.1.8",
+    "query-node": "^0.1.0",
     "warthog": "https://github.com/metmirr/warthog/releases/download/v2.23.0/warthog-v2.23.0.tgz"
   },
   "devDependencies": {
+    "prettier": "^2.2.1",
     "ts-node": "^9.0.0",
     "typescript": "^3.8"
   }

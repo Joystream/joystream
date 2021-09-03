@@ -116,6 +116,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // #![warn(missing_docs)] // Cannot be enabled by default because of the Substrate issue.
 
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
+
 #[cfg(test)]
 mod tests;
 

@@ -58,5 +58,9 @@ export async function scenario(scene: (props: ScenarioProps) => Promise<void>): 
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!
-  apiFactory.close()
+  // Disconnecting is causing error to be thrown:
+  // RPC-CORE: getStorage(key: StorageKey, at?: BlockHash): StorageData:: disconnected from ws://127.0.0.1:9944: 1000:: Normal connection closure
+  // Are there subsciptions somewhere?
+  // apiFactory.close()
+  process.exit()
 }

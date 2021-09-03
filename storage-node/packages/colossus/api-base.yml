@@ -1,7 +1,7 @@
 openapi: '3.0.0'
 info:
-  title: 'Joystream Storage Node API.'
-  version: '1.0.0'
+  title: 'Colossus - Joystream Storage Node'
+  version: '1.1.0'
 paths: {} # Will be populated by express-openapi
 
 components:

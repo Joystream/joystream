@@ -1,6 +1,0 @@
-{
-  "name": "KnownLicense",
-  "description": "A commonly recognized license (ie. CC_BY_SA)",
-  "maximum_entities_count": 500,
-  "default_entity_creation_voucher_upper_bound": 500
-}

@@ -41,8 +41,7 @@ const usage = `
     upload            Upload a file to the Joystream Network. Requires a
                       source file path to upload, data object ID, member ID and account key file with
                       pass phrase to unlock it.
-    download          Retrieve a file. Requires a storage node URL and a content
-                      ID, as well as an output filename.
+    download          Retrieve a file. Requires a content and an output filename.
     head              Send a HEAD request for a file, and print headers.
                       Requires a storage node URL and a content ID.
 
@@ -88,11 +87,8 @@ const commands = {
 
     await uploadCmd.run()
   },
-  // needs to be updated to take a content id and resolve it a potential set
-  // of providers that has it, and select one (possibly try more than one provider)
-  // to fetch it from the get api url of a provider..
-  download: async (api: any, url: string, contentId: string, filePath: string) => {
-    const downloadCmd = new DownloadCommand(api, url, contentId, filePath)
+  download: async (api: any, contentId: string, filePath: string) => {
+    const downloadCmd = new DownloadCommand(api, contentId, filePath)
 
     await downloadCmd.run()
   },

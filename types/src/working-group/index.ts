@@ -73,7 +73,7 @@ export class Worker
   }
 }
 
-export type IWorkingGroupOpeningPolicyCommitment = {
+export type IOpeningPolicyCommitment = {
   application_rationing_policy: Option<ApplicationRationingPolicy>
   max_review_period_length: BlockNumber
   application_staking_policy: Option<StakingPolicy>
@@ -88,18 +88,7 @@ export type IWorkingGroupOpeningPolicyCommitment = {
   exit_role_stake_unstaking_period: Option<BlockNumber>
 }
 
-// This type represents OpeningPolicyCommitment defined inside the runtime's working-grpup module.
-// The only difference between this and the one defined in /content-working-group is in the names of some fields.
-//
-// There is also a minor issue here:
-// Because api metadata still says that ie. the "commitment" argument of "storageWorkingGroup.addOpening" extrinsic
-// is of type "OpeningPolicyCommitment" (not the "WorkingGroupOpeningPolicyCommitment" defined here), the CWG's OpeningPolicyCommitment
-// type is used when sending this extrinsic (it has "terminate_curator_role_stake_unstaking_period" field insted
-// of "terminate_role_stake_unstaking_period" etc.).
-// Since both those types are basically the same structs (only filed names are different) nothing seems to break, but it's
-// very fragile atm and any change to this type in working-group module could result in "unsolvable" inconsistencies
-// (this won't be an issue after CWG gets refactored to use the working-grpup module too)
-export class WorkingGroupOpeningPolicyCommitment
+export class OpeningPolicyCommitment
   extends JoyStructDecorated({
     application_rationing_policy: Option.with(ApplicationRationingPolicy),
     max_review_period_length: u32, // BlockNumber
@@ -114,7 +103,7 @@ export class WorkingGroupOpeningPolicyCommitment
     exit_role_application_stake_unstaking_period: Option.with(u32),
     exit_role_stake_unstaking_period: Option.with(u32),
   })
-  implements IWorkingGroupOpeningPolicyCommitment {}
+  implements IOpeningPolicyCommitment {}
 
 export class OpeningType_Leader extends Null {}
 export class OpeningType_Worker extends Null {}
@@ -128,7 +117,7 @@ export class OpeningType extends JoyEnum(OpeningTypeDef) {}
 export type IOpening = {
   hiring_opening_id: OpeningId
   applications: BTreeSet<ApplicationId>
-  policy_commitment: WorkingGroupOpeningPolicyCommitment
+  policy_commitment: OpeningPolicyCommitment
   opening_type: OpeningType
 }
 
@@ -139,7 +128,7 @@ export class Opening
   extends JoyStructDecorated({
     hiring_opening_id: OpeningId,
     applications: JoyBTreeSet(ApplicationId),
-    policy_commitment: WorkingGroupOpeningPolicyCommitment,
+    policy_commitment: OpeningPolicyCommitment,
     opening_type: OpeningType,
   })
   implements IOpening {}
@@ -176,7 +165,7 @@ export const workingGroupTypes: RegistryTypes = {
   HiringApplicationId: ApplicationId,
   RewardPolicy,
   // Expose in registry for api.createType purposes:
-  WorkingGroupOpeningPolicyCommitment,
+  OpeningPolicyCommitment,
   RoleStakeProfile,
 }
 
