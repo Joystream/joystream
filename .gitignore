@@ -39,3 +39,7 @@ yarn*
 # test data for local node tests
 test-data/
 tmp.*
+
+.my_setup
+
+devops/infrastructure
