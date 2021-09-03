@@ -2,12 +2,17 @@ import { flags } from '@oclif/command'
 import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger, { initElasticLogger } from '../services/logger'
+import { ApiPromise } from '@polkadot/api'
 import { performSync } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
 import rimraf from 'rimraf'
 import _ from 'lodash'
 import path from 'path'
 import { promisify } from 'util'
+import { KeyringPair } from '@polkadot/keyring/types'
+import ExitCodes from './../command-base/ExitCodes'
+import { CLIError } from '@oclif/errors'
+import { Worker } from '@joystream/types/working-group'
 
 /**
  * CLI command:
@@ -108,6 +113,8 @@ export default class Server extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
+    await verifyWorkerId(api, flags.worker, account)
+
     try {
       const port = flags.port
       const workerId = flags.worker ?? 0
@@ -139,6 +146,18 @@ export default class Server extends ApiCommandBase {
   async finally(): Promise<void> {}
 }
 
+/**
+ * Run the data syncronization process.
+ *
+ * @param workerId - worker ID
+ * @param workerId - worker ID
+ * @param queryNodeUrl - Query Node for data fetching
+ * @param uploadsDir - data uploading directory
+ * @param syncWorkersNumber - defines a number of the async processes for sync
+ * @param syncIntervalMinutes - defines an interval between sync runs
+ *
+ * @returns void promise.
+ */
 function runSyncWithInterval(
   workerId: number,
   queryNodeUrl: string,
@@ -175,7 +194,18 @@ function runSyncWithInterval(
   }, 0)
 }
 
-async function removeTempDirectory(uploadsDir: string, tempDirName: string) {
+/**
+ * Removes the temporary directory from the uploading directory.
+ * All files in the temp directory are deleted.
+ *
+ * @param uploadsDir - data uploading directory
+ * @param tempDirName - temporary directory name within the uploading directory
+ * @returns void promise.
+ */
+async function removeTempDirectory(
+  uploadsDir: string,
+  tempDirName: string
+): Promise<void> {
   try {
     logger.info(`Removing temp directory ...`)
     const tempFileUploadingDir = path.join(uploadsDir, tempDirName)
@@ -184,5 +214,35 @@ async function removeTempDirectory(uploadsDir: string, tempDirName: string) {
     await rimrafAsync(tempFileUploadingDir)
   } catch (err) {
     logger.error(`Removing temp directory error: ${err}`)
+  }
+}
+
+/**
+ * Verifies the worker ID from the command line argument and provided Joystream account.
+ * It throws an error when not matched.
+ *
+ * @param api - runtime API promise
+ * @param workerId - worker ID from the command line arguments
+ * @param account - Joystream account KeyringPair
+ * @returns void promise.
+ */
+async function verifyWorkerId(
+  api: ApiPromise,
+  workerId: number,
+  account: KeyringPair
+): Promise<void> {
+  // Cast Codec type to Worker type
+  const workerObj = (await api.query.storageWorkingGroup.workerById(
+    workerId
+  )) as unknown
+  const worker = workerObj as Worker
+
+  if (worker.role_account_id.toString() !== account.address) {
+    throw new CLIError(
+      `Provided worker ID doesn't match the Joystream account.`,
+      {
+        exit: ExitCodes.InvalidWorkerId,
+      }
+    )
   }
 }
