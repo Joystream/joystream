@@ -62,6 +62,39 @@ decl_error! {
         VideoInSeason,
 
         /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels
+        CannotCensoreCuratorGroupOwnedChannels,
+
+        /// Post does not exists
+        PostDoesNotExist,
+
+        /// Partecipant is not a member
+        ReplyDoesNotExist,
+
+        /// mismatch between channel id and video channel id in a post
+        VideoAndPostChannelMismatch,
+
+        /// comments disabled
+        CommentsDisabled,
+
+        /// moderators limit reached
+        ModeratorsLimitReached,
+
+        /// moderator does not exist
+        ModeratorDoesNotExist,
+
+        /// cannot comment to non existing video post
+        CannotCommentToNonExistingVideoPost,
+
+        /// cannot edit video post
+        CannotEditVideoPost,
+
+        /// failed witness verification
+        WitnessVerificationFailed,
+
+        /// witness not provided
+        WitnessNotProvided,
+
+        /// rationale not provided
+        RationaleNotProvidedByModerator,
     }
 }

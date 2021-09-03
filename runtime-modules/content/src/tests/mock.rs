@@ -7,7 +7,7 @@ use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, Hash, IdentityLookup},
     Perbill,
 };
 
@@ -31,8 +31,10 @@ pub const SECOND_CURATOR_ORIGIN: u64 = 3;
 
 pub const FIRST_MEMBER_ORIGIN: u64 = 4;
 pub const SECOND_MEMBER_ORIGIN: u64 = 5;
+pub const THIRD_MEMBER_ORIGIN: u64 = 6;
 pub const UNKNOWN_ORIGIN: u64 = 7777;
 
+pub const INITIAL_BALANCE: u64 = 1000;
 // Members range from MemberId 1 to 10
 pub const MEMBERS_COUNT: MemberId = 10;
 
@@ -42,10 +44,11 @@ pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
 
 pub const FIRST_CURATOR_GROUP_ID: CuratorGroupId = 1;
-// pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
+pub const SECOND_CURATOR_GROUP_ID: CuratorGroupId = 2;
 
 pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
+pub const THIRD_MEMBER_ID: MemberId = 3;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -158,7 +161,11 @@ impl ContentActorAuthenticator for Test {
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let unknown_member_account_id = ensure_signed(Origin::signed(UNKNOWN_ORIGIN)).unwrap();
-        *member_id < MEMBERS_COUNT && unknown_member_account_id != *account_id
+        Self::is_valid_member_id(member_id) && unknown_member_account_id != *account_id
+    }
+
+    fn is_valid_member_id(member_id: &Self::MemberId) -> bool {
+        *member_id < MEMBERS_COUNT
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
@@ -202,6 +209,11 @@ impl StorageSystem<Test> for MockStorageSystem {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
+    pub const MaxModerators: u64 = 5;
+    pub const CleanupMargin: u32 = 3;
+    pub const PricePerByte: usize = 2;
+    pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+    pub const BloatBondCap: u32 = 1000;
 }
 
 impl Trait for Test {
@@ -237,6 +249,32 @@ impl Trait for Test {
 
     // Type that handles asset uploads to storage frame_system
     type StorageSystem = MockStorageSystem;
+
+    /// PostId Type
+    type PostId = u64;
+
+    /// Post Reaction Type
+    type ReactionId = u64;
+
+    /// moderators limit
+    type MaxModerators = MaxModerators;
+
+    /// price per byte
+    type PricePerByte = PricePerByte;
+
+    /// cleanup margin
+    type CleanupMargin = CleanupMargin;
+
+    /// module id
+    type VideoCommentsModuleId = VideoCommentsModuleId;
+
+    /// bloat bond cap
+    type BloatBondCap = BloatBondCap;
+
+    //  hashing
+    fn hash_of<E: Encode>(e: &E) -> Self::Hash {
+        Self::Hashing::hash(&e.encode())
+    }
 }
 
 pub type System = frame_system::Module<Test>;

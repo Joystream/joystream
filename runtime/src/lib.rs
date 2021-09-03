@@ -45,10 +45,10 @@ use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthority
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_core::crypto::KeyTypeId;
+use sp_core::{crypto::KeyTypeId, Hasher};
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -65,6 +65,7 @@ use governance::{council, election};
 use storage::data_object_storage_registry;
 
 // Node dependencies
+pub use codec::Encode;
 pub use common;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
@@ -431,6 +432,12 @@ impl pallet_finality_tracker::Trait for Runtime {
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"chescrow";
+    pub const MaxModerators: u64 = 5;    // TODO: update
+    pub const CleanupMargin: u32 = 3;    // TODO: update
+    pub const PricePerByte: usize = 2;   // TODO: update
+    pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+    pub const BloatBondCap: u32 = 1000;  // TODO: update
+
 }
 
 impl content::Trait for Runtime {
@@ -445,6 +452,17 @@ impl content::Trait for Runtime {
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type StorageSystem = data_directory::Module<Self>;
+    type PostId = PostId;
+    type ReactionId = ReactionId;
+    type MaxModerators = MaxModerators;
+    type PricePerByte = PricePerByte;
+    type BloatBondCap = BloatBondCap;
+    type CleanupMargin = CleanupMargin;
+    type VideoCommentsModuleId = VideoCommentsModuleId;
+
+    fn hash_of<E: Encode>(e: &E) -> Self::Hash {
+        Self::Hashing::hash(&e.encode())
+    }
 }
 
 impl hiring::Trait for Runtime {

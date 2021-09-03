@@ -12,10 +12,11 @@ fn create_member_channel() -> ChannelId {
     assert_ok!(Content::create_channel(
         Origin::signed(FIRST_MEMBER_ORIGIN),
         ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParameters {
+        ChannelCreationParameters::<Test> {
             assets: vec![],
             meta: vec![],
             reward_account: None,
+            moderator_set: None,
         }
     ));
 
@@ -37,6 +38,7 @@ fn member_can_create_videos() {
             VideoCreationParameters {
                 assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
                 meta: b"metablob".to_vec(),
+                enable_comments: true,
             }
         ));
 
@@ -49,6 +51,7 @@ fn member_can_create_videos() {
                 VideoCreationParameters {
                     assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
                     meta: b"metablob".to_vec(),
+                    enable_comments: true,
                 }
             ))
         );
@@ -67,6 +70,7 @@ fn member_can_create_videos() {
                     b"https://somewhere-else.com/".to_vec()
                 ])]),
                 new_meta: Some(b"newmetablob".to_vec()),
+                enable_comments: None,
             }
         ));
 
@@ -80,6 +84,7 @@ fn member_can_create_videos() {
                         b"https://somewhere-else.com/".to_vec()
                     ])]),
                     new_meta: Some(b"newmetablob".to_vec()),
+                    enable_comments: None,
                 }
             ))
         );
@@ -93,6 +98,7 @@ fn member_can_create_videos() {
                 VideoCreationParameters {
                     assets: vec![],
                     meta: vec![],
+                    enable_comments: true,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -107,6 +113,7 @@ fn member_can_create_videos() {
                 VideoUpdateParameters {
                     assets: None,
                     new_meta: None,
+                    enable_comments: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
@@ -154,6 +161,7 @@ fn curators_can_censor_videos() {
             VideoCreationParameters {
                 assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
                 meta: b"metablob".to_vec(),
+                enable_comments: true,
             }
         ));
 
