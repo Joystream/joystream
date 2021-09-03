@@ -82,8 +82,7 @@ export type IActiveStake = {
   stake_id: StakeId
   source_account_id: AccountId
 }
-export class ActiveStake
-  extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
+export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_account_id: AccountId })
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({
