@@ -53,9 +53,6 @@ pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
 
     /// Authorize actor as member
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool;
-
-    /// verify that member_id is valid
-    fn is_valid_member_id(member_id: &Self::MemberId) -> bool;
 }
 
 pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
@@ -364,15 +361,6 @@ pub fn ensure_actor_authorized_to_create_post<T: Trait>(
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     ensure_actor_authorized_to_update_channel::<T>(origin, actor, owner)
-}
-
-// Ensure member is valid
-pub fn ensure_valid_member<T: Trait>(member_id: &T::MemberId) -> DispatchResult {
-    ensure!(
-        T::is_valid_member_id(member_id),
-        Error::<T>::MemberAuthFailed
-    );
-    Ok(())
 }
 
 // Enure actor can edit post
