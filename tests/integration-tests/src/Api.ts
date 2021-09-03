@@ -32,6 +32,8 @@ import {
   PostAddedEventDetails,
   ThreadCreatedEventDetails,
   ProposalsCodexEventName,
+  ProposalDiscussionPostCreatedEventDetails,
+  ProposalsDiscussionEventName,
 } from './types'
 import {
   ApplicationId,
@@ -467,6 +469,27 @@ export class Api {
     return {
       ...details,
       proposalId: details.event.data[0] as ProposalId,
+    }
+  }
+
+  public async retrieveProposalsDiscussionEventDetails(
+    result: ISubmittableResult,
+    eventName: ProposalsDiscussionEventName
+  ): Promise<EventDetails> {
+    const details = await this.retrieveEventDetails(result, 'proposalsDiscussion', eventName)
+    if (!details) {
+      throw new Error(`${eventName} event details not found in result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return details
+  }
+
+  public async retrieveProposalDiscussionPostCreatedEventDetails(
+    result: ISubmittableResult
+  ): Promise<ProposalDiscussionPostCreatedEventDetails> {
+    const details = await this.retrieveProposalsDiscussionEventDetails(result, 'PostCreated')
+    return {
+      ...details,
+      postId: details.event.data[0] as PostId,
     }
   }
 

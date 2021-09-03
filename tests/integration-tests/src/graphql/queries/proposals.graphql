@@ -270,6 +270,12 @@ fragment ProposalFields on Proposal {
     inBlock
     inExtrinsic
   }
+  discussionThread {
+    id
+    mode {
+      ...ProposalDiscussionThreadModeFields
+    }
+  }
 }
 
 query getProposalsByIds($ids: [ID!]) {

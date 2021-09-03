@@ -2913,7 +2913,6 @@ export enum EventTypeOptions {
   ProposalDiscussionPostCreatedEvent = 'ProposalDiscussionPostCreatedEvent',
   ProposalDiscussionPostDeletedEvent = 'ProposalDiscussionPostDeletedEvent',
   ProposalDiscussionPostUpdatedEvent = 'ProposalDiscussionPostUpdatedEvent',
-  ProposalDiscussionThreadCreatedEvent = 'ProposalDiscussionThreadCreatedEvent',
   ProposalDiscussionThreadModeChangedEvent = 'ProposalDiscussionThreadModeChangedEvent',
   ProposalExecutedEvent = 'ProposalExecutedEvent',
   ProposalStatusUpdatedEvent = 'ProposalStatusUpdatedEvent',
@@ -8750,6 +8749,8 @@ export type ProposalDiscussionPost = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
+  discussionThread: ProposalDiscussionThread
+  discussionThreadId: Scalars['String']
   author: Membership
   authorId: Scalars['String']
   /** Current post status */
@@ -8907,6 +8908,7 @@ export type ProposalDiscussionPostCreatedEventWhereUniqueInput = {
 }
 
 export type ProposalDiscussionPostCreateInput = {
+  discussionThread: Scalars['ID']
   author: Scalars['ID']
   status: Scalars['JSONObject']
   text: Scalars['String']
@@ -9059,6 +9061,8 @@ export enum ProposalDiscussionPostOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  DiscussionThreadAsc = 'discussionThread_ASC',
+  DiscussionThreadDesc = 'discussionThread_DESC',
   AuthorAsc = 'author_ASC',
   AuthorDesc = 'author_DESC',
   TextAsc = 'text_ASC',
@@ -9270,6 +9274,7 @@ export type ProposalDiscussionPostUpdatedEventWhereUniqueInput = {
 }
 
 export type ProposalDiscussionPostUpdateInput = {
+  discussionThread?: Maybe<Scalars['ID']>
   author?: Maybe<Scalars['ID']>
   status?: Maybe<Scalars['JSONObject']>
   text?: Maybe<Scalars['String']>
@@ -9301,6 +9306,8 @@ export type ProposalDiscussionPostWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  discussionThread_eq?: Maybe<Scalars['ID']>
+  discussionThread_in?: Maybe<Array<Scalars['ID']>>
   author_eq?: Maybe<Scalars['ID']>
   author_in?: Maybe<Array<Scalars['ID']>>
   status_json?: Maybe<Scalars['JSONObject']>
@@ -9311,6 +9318,7 @@ export type ProposalDiscussionPostWhereInput = {
   text_in?: Maybe<Array<Scalars['String']>>
   repliesTo_eq?: Maybe<Scalars['ID']>
   repliesTo_in?: Maybe<Array<Scalars['ID']>>
+  discussionThread?: Maybe<ProposalDiscussionThreadWhereInput>
   author?: Maybe<MembershipWhereInput>
   repliesTo?: Maybe<ProposalDiscussionPostWhereInput>
   updates_none?: Maybe<ProposalDiscussionPostUpdatedEventWhereInput>
@@ -9342,141 +9350,16 @@ export type ProposalDiscussionThread = BaseGraphQlObject & {
   version: Scalars['Int']
   proposal: Proposal
   proposalId: Scalars['String']
+  posts: Array<ProposalDiscussionPost>
   /** Current thread mode */
   mode: ProposalDiscussionThreadMode
-  proposaldiscussionthreadcreatedeventthread?: Maybe<Array<ProposalDiscussionThreadCreatedEvent>>
-  proposaldiscussionthreadmodechangedeventthread?: Maybe<Array<ProposalDiscussionThreadModeChangedEvent>>
+  modeChanges: Array<ProposalDiscussionThreadModeChangedEvent>
 }
 
 export type ProposalDiscussionThreadConnection = {
   totalCount: Scalars['Int']
   edges: Array<ProposalDiscussionThreadEdge>
   pageInfo: PageInfo
-}
-
-export type ProposalDiscussionThreadCreatedEvent = Event &
-  BaseGraphQlObject & {
-    /** Hash of the extrinsic which caused the event to be emitted */
-    inExtrinsic?: Maybe<Scalars['String']>
-    /** Blocknumber of the block in which the event was emitted. */
-    inBlock: Scalars['Int']
-    /** Network the block was produced in */
-    network: Network
-    /** Index of event in block from which it was emitted. */
-    indexInBlock: Scalars['Int']
-    /** Filtering options for interface implementers */
-    type?: Maybe<EventTypeOptions>
-    id: Scalars['ID']
-    createdAt: Scalars['DateTime']
-    createdById: Scalars['String']
-    updatedAt?: Maybe<Scalars['DateTime']>
-    updatedById?: Maybe<Scalars['String']>
-    deletedAt?: Maybe<Scalars['DateTime']>
-    deletedById?: Maybe<Scalars['String']>
-    version: Scalars['Int']
-    thread: ProposalDiscussionThread
-    threadId: Scalars['String']
-  }
-
-export type ProposalDiscussionThreadCreatedEventConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ProposalDiscussionThreadCreatedEventEdge>
-  pageInfo: PageInfo
-}
-
-export type ProposalDiscussionThreadCreatedEventCreateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock: Scalars['Float']
-  network: Network
-  indexInBlock: Scalars['Float']
-  thread: Scalars['ID']
-}
-
-export type ProposalDiscussionThreadCreatedEventEdge = {
-  node: ProposalDiscussionThreadCreatedEvent
-  cursor: Scalars['String']
-}
-
-export enum ProposalDiscussionThreadCreatedEventOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  InExtrinsicAsc = 'inExtrinsic_ASC',
-  InExtrinsicDesc = 'inExtrinsic_DESC',
-  InBlockAsc = 'inBlock_ASC',
-  InBlockDesc = 'inBlock_DESC',
-  NetworkAsc = 'network_ASC',
-  NetworkDesc = 'network_DESC',
-  IndexInBlockAsc = 'indexInBlock_ASC',
-  IndexInBlockDesc = 'indexInBlock_DESC',
-  ThreadAsc = 'thread_ASC',
-  ThreadDesc = 'thread_DESC',
-}
-
-export type ProposalDiscussionThreadCreatedEventUpdateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock?: Maybe<Scalars['Float']>
-  network?: Maybe<Network>
-  indexInBlock?: Maybe<Scalars['Float']>
-  thread?: Maybe<Scalars['ID']>
-}
-
-export type ProposalDiscussionThreadCreatedEventWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  inExtrinsic_eq?: Maybe<Scalars['String']>
-  inExtrinsic_contains?: Maybe<Scalars['String']>
-  inExtrinsic_startsWith?: Maybe<Scalars['String']>
-  inExtrinsic_endsWith?: Maybe<Scalars['String']>
-  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
-  inBlock_eq?: Maybe<Scalars['Int']>
-  inBlock_gt?: Maybe<Scalars['Int']>
-  inBlock_gte?: Maybe<Scalars['Int']>
-  inBlock_lt?: Maybe<Scalars['Int']>
-  inBlock_lte?: Maybe<Scalars['Int']>
-  inBlock_in?: Maybe<Array<Scalars['Int']>>
-  network_eq?: Maybe<Network>
-  network_in?: Maybe<Array<Network>>
-  indexInBlock_eq?: Maybe<Scalars['Int']>
-  indexInBlock_gt?: Maybe<Scalars['Int']>
-  indexInBlock_gte?: Maybe<Scalars['Int']>
-  indexInBlock_lt?: Maybe<Scalars['Int']>
-  indexInBlock_lte?: Maybe<Scalars['Int']>
-  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  thread_eq?: Maybe<Scalars['ID']>
-  thread_in?: Maybe<Array<Scalars['ID']>>
-  thread?: Maybe<ProposalDiscussionThreadWhereInput>
-  AND?: Maybe<Array<ProposalDiscussionThreadCreatedEventWhereInput>>
-  OR?: Maybe<Array<ProposalDiscussionThreadCreatedEventWhereInput>>
-}
-
-export type ProposalDiscussionThreadCreatedEventWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type ProposalDiscussionThreadCreateInput = {
@@ -9731,12 +9614,12 @@ export type ProposalDiscussionThreadWhereInput = {
   proposal_in?: Maybe<Array<Scalars['ID']>>
   mode_json?: Maybe<Scalars['JSONObject']>
   proposal?: Maybe<ProposalWhereInput>
-  proposaldiscussionthreadcreatedeventthread_none?: Maybe<ProposalDiscussionThreadCreatedEventWhereInput>
-  proposaldiscussionthreadcreatedeventthread_some?: Maybe<ProposalDiscussionThreadCreatedEventWhereInput>
-  proposaldiscussionthreadcreatedeventthread_every?: Maybe<ProposalDiscussionThreadCreatedEventWhereInput>
-  proposaldiscussionthreadmodechangedeventthread_none?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
-  proposaldiscussionthreadmodechangedeventthread_some?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
-  proposaldiscussionthreadmodechangedeventthread_every?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
+  posts_none?: Maybe<ProposalDiscussionPostWhereInput>
+  posts_some?: Maybe<ProposalDiscussionPostWhereInput>
+  posts_every?: Maybe<ProposalDiscussionPostWhereInput>
+  modeChanges_none?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
+  modeChanges_some?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
+  modeChanges_every?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
   AND?: Maybe<Array<ProposalDiscussionThreadWhereInput>>
   OR?: Maybe<Array<ProposalDiscussionThreadWhereInput>>
 }
@@ -10718,9 +10601,6 @@ export type Query = {
   proposalDiscussionPosts: Array<ProposalDiscussionPost>
   proposalDiscussionPostByUniqueInput?: Maybe<ProposalDiscussionPost>
   proposalDiscussionPostsConnection: ProposalDiscussionPostConnection
-  proposalDiscussionThreadCreatedEvents: Array<ProposalDiscussionThreadCreatedEvent>
-  proposalDiscussionThreadCreatedEventByUniqueInput?: Maybe<ProposalDiscussionThreadCreatedEvent>
-  proposalDiscussionThreadCreatedEventsConnection: ProposalDiscussionThreadCreatedEventConnection
   proposalDiscussionThreadModeChangedEvents: Array<ProposalDiscussionThreadModeChangedEvent>
   proposalDiscussionThreadModeChangedEventByUniqueInput?: Maybe<ProposalDiscussionThreadModeChangedEvent>
   proposalDiscussionThreadModeChangedEventsConnection: ProposalDiscussionThreadModeChangedEventConnection
@@ -11999,26 +11879,6 @@ export type QueryProposalDiscussionPostsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionPostWhereInput>
   orderBy?: Maybe<Array<ProposalDiscussionPostOrderByInput>>
-}
-
-export type QueryProposalDiscussionThreadCreatedEventsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ProposalDiscussionThreadCreatedEventWhereInput>
-  orderBy?: Maybe<Array<ProposalDiscussionThreadCreatedEventOrderByInput>>
-}
-
-export type QueryProposalDiscussionThreadCreatedEventByUniqueInputArgs = {
-  where: ProposalDiscussionThreadCreatedEventWhereUniqueInput
-}
-
-export type QueryProposalDiscussionThreadCreatedEventsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ProposalDiscussionThreadCreatedEventWhereInput>
-  orderBy?: Maybe<Array<ProposalDiscussionThreadCreatedEventOrderByInput>>
 }
 
 export type QueryProposalDiscussionThreadModeChangedEventsArgs = {

@@ -141,6 +141,8 @@ typegen:
     - data_directory.remove_content
     - data_directory.accept_content
     - data_directory.update_content_uploading_status
+    # Proposals discussion
+    - proposalsDiscussion.addPost
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'

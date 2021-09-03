@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@dzlzv/hydra-common'
-import { ProposalDetails as RuntimeProposalDetails, ProposalId } from '@joystream/types/augment/all'
+import { ProposalDetails as RuntimeProposalDetails } from '@joystream/types/augment/all'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -57,8 +57,10 @@ import {
   ProposalCancelledEvent,
   ProposalCreatedEvent,
   RuntimeWasmBytecode,
+  ProposalDiscussionThread,
+  ProposalDiscussionThreadModeOpen,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, perpareString } from './common'
+import { bytesToString, genericEventFields, getWorkingGroupModuleName, MemoryCache, perpareString } from './common'
 import { ProposalsEngine, ProposalsCodex } from './generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -320,6 +322,10 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
+  if (!MemoryCache.lastCreatedProposalThreadId) {
+    throw new Error('Unexpected state: MemoryCache.lastCreatedProposalThreadId is empty')
+  }
+
   const proposal = new Proposal({
     id: proposalId.toString(),
     createdAt: eventTime,
@@ -337,6 +343,16 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     statusSetAtTime: eventTime,
   })
   await store.save<Proposal>(proposal)
+
+  // Thread is always created along with the proposal
+  const proposalThread = new ProposalDiscussionThread({
+    id: MemoryCache.lastCreatedProposalThreadId.toString(),
+    createdAt: eventTime,
+    updatedAt: eventTime,
+    mode: new ProposalDiscussionThreadModeOpen(),
+    proposal,
+  })
+  await store.save<ProposalDiscussionThread>(proposalThread)
 
   const proposalCreatedEvent = new ProposalCreatedEvent({
     ...genericEventFields(event),

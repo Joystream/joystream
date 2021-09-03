@@ -89,7 +89,7 @@ services:
 
   graphql-server-mnt:
     <<: *graphql-server
-    image: node:12
+    image: node:14
     build: .
     volumes:
       - type: bind
@@ -121,7 +121,7 @@ services:
 
   processor-mnt:
     <<: *processor
-    image: node:12
+    image: node:14
     build: .
     volumes:
       - type: bind

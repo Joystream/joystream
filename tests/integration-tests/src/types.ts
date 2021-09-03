@@ -116,6 +116,16 @@ export type ProposalsEngineEventName =
   | 'ProposalCancelled'
 
 export type ProposalsCodexEventName = 'ProposalCreated'
+export type ProposalsDiscussionEventName =
+  | 'ThreadCreated'
+  | 'PostCreated'
+  | 'PostUpdated'
+  | 'ThreadModeChanged'
+  | 'PostDeleted'
+
+export interface ProposalDiscussionPostCreatedEventDetails extends EventDetails {
+  postId: PostId
+}
 
 export type ProposalType = keyof typeof ProposalDetails.typeDefinitions
 export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<

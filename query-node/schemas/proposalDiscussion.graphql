@@ -26,10 +26,13 @@ type ProposalDiscussionThread @entity {
   proposal: Proposal!
 
   "List of posts in the the thread"
-  posts: [ProposalDiscussionPost!] @derivedFrom(field: "thread")
+  posts: [ProposalDiscussionPost!] @derivedFrom(field: "discussionThread")
 
   "Current thread mode"
   mode: ProposalDiscussionThreadMode!
+
+  "List of related thread mode change events"
+  modeChanges: [ProposalDiscussionThreadModeChangedEvent!] @derivedFrom(field: "thread")
 }
 
 "The post is visible and editable"
@@ -59,7 +62,7 @@ type ProposalDiscussionPost @entity {
   id: ID!
 
   "Proposal discussion thread the post was created in"
-  thread: ProposalDiscussionThread!
+  discussionThread: ProposalDiscussionThread!
 
   "The author of the post"
   author: Membership!
