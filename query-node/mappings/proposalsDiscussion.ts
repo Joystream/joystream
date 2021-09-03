@@ -46,7 +46,32 @@ export async function proposalsDiscussion_ThreadCreated({ event }: EventContext 
 }
 
 export async function proposalsDiscussion_PostCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const { editable } = new ProposalsDiscussion.AddPostCall(event).args // FIXME: batch and sudo extrinsics handling
+  // FIXME: extremely ugly and insecure workaround for `batch` and `sudo` calls support.
+  // Ideally this data would be part of the event data
+  let editable: boolean
+
+  if (!event.extrinsic) {
+    throw new Error('Missing extrinsic for proposalsDiscussion.PostCreated event!')
+  } else if (event.extrinsic.section === 'utility' && event.extrinsic.method === 'batch') {
+    // We cannot use new Utility.BatchCall(event).args, because createTypeUnsafe fails on Call
+    // First (and only) argument of utility.batch is "calls"
+    const calls = event.extrinsic.args[0].value as any[]
+    // proposalsDiscussion.addPost call index is currently 0x1f00
+    const call = calls.find((c) => c.callIndex === '0x1f00')
+    if (!call) {
+      throw new Error('Could not find proposalsDiscussion.addPostCall in a batch!')
+    }
+    editable = call.args.editable
+  } else if (
+    event.extrinsic.section === 'sudo' &&
+    (event.extrinsic.method === 'sudo' || event.extrinsic.method === 'sudoAs')
+  ) {
+    // Extract call arg
+    editable = (event.extrinsic.args[0].value as any).args.editable
+  } else {
+    editable = new ProposalsDiscussion.AddPostCall(event).args.editable.valueOf()
+  }
+
   const [postId, memberId, threadId, metadataBytes] = new ProposalsDiscussion.PostCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
 
@@ -64,7 +89,7 @@ export async function proposalsDiscussion_PostCreated({ event, store }: EventCon
     createdAt: eventTime,
     updatedAt: eventTime,
     author: new Membership({ id: memberId.toString() }),
-    status: editable.isTrue ? new ProposalDiscussionPostStatusActive() : new ProposalDiscussionPostStatusLocked(),
+    status: editable ? new ProposalDiscussionPostStatusActive() : new ProposalDiscussionPostStatusLocked(),
     text,
     repliesTo,
     discussionThread: new ProposalDiscussionThread({ id: threadId.toString() }),
