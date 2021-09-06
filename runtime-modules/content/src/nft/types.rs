@@ -227,6 +227,7 @@ impl<
         // Always allow to buy now
         match &self.buy_now_price {
             Some(buy_now_price) if new_bid >= *buy_now_price => (),
+            
             // Ensure new bid is greater then last bid + minimal bid step
             _ => {
                 if let Some(last_bid) = &self.last_bid {
@@ -235,11 +236,12 @@ impl<
                             .amount
                             .checked_add(&self.minimal_bid_step)
                             .ok_or(Error::<T>::OverflowOrUnderflowHappened)?
-                            < new_bid,
-                        Error::<T>::InvalidBid
+                            <= new_bid,
+                        Error::<T>::BidStepConstraintViolated
                     );
                 } else {
-                    ensure!(self.minimal_bid_step < new_bid, Error::<T>::InvalidBid);
+                    ensure!(self.minimal_bid_step <= new_bid, Error::<T>::BidStepConstraintViolated);
+                    ensure!(self.starting_price <= new_bid, Error::<T>::StartingPriceConstraintViolated);
                 }
             }
         }

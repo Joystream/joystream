@@ -127,8 +127,11 @@ decl_error! {
         /// Insufficient balance
         InsufficientBalance,
 
-        /// Invalid bid
-        InvalidBid,
+        /// Minimal auction bid step constraint violated.
+        BidStepConstraintViolated,
+
+        /// Auction starting price constraint violated.
+        StartingPriceConstraintViolated,
 
         /// Already active auction cannot be cancelled
         ActionIsAlreadyActive,
