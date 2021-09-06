@@ -98,7 +98,8 @@ export type InputValidationLengthConstraintType = {
   max_min_diff: u16
 }
 
-export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
+export class InputValidationLengthConstraint
+  extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
   implements InputValidationLengthConstraintType {
   get max(): u16 {
     return this.registry.createType('u16', this.min.add(this.max_min_diff))
@@ -106,11 +107,12 @@ export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u
 }
 
 export const WorkingGroupDef = {
-  Forum: Null,
+  // TODO: Forum: Null,
   Storage: Null,
   Content: Null,
   Operations: Null,
   Gateway: Null,
+  // TODO: Distribution
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
