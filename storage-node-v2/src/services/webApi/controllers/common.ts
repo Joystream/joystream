@@ -16,6 +16,21 @@ export function getUploadsDir(res: express.Response): string {
 }
 
 /**
+ * Returns a directory for temporary file uploading from the response.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failure.
+ */
+export function getTempFileUploadingDir(res: express.Response): string {
+  if (res.locals.tempFileUploadingDir) {
+    return res.locals.tempFileUploadingDir
+  }
+
+  throw new Error('No temporary uploading directory path loaded.')
+}
+
+/**
  * Returns worker ID from the response.
  *
  * @remarks

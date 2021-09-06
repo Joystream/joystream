@@ -34,6 +34,7 @@
     "express": "4.17.1",
     "express-openapi-validator": "^4.12.4",
     "express-winston": "^4.1.0",
+    "fast-folder-size": "^1.4.0",
     "file-type": "^16.5.0",
     "lodash": "^4.17.21",
     "multihashes": "^4.0.2",
@@ -114,7 +115,7 @@
       },
       "leader": {
         "description": "Storage working group leader commands."
-      },      
+      },
       "operator": {
         "description": "Storage provider(operator) commands."
       }

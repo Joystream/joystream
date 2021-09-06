@@ -7,10 +7,10 @@ import { Client, ClientConfig,QueryResult } from 'pg'
 import { exit } from 'process'
 
 async function doJob(): Promise<void> {
-  const uploadDirectory = '/Users/shamix/uploads2'
-  const fileSize = 100000000
+  const uploadDirectory = '/Users/shamix/uploads5'
+  const fileSize = 1000
 
-  const objectNumber = 100
+  const objectNumber = 10000
   const bagNumber = 10
   const bucketNumber = 10
 
@@ -20,8 +20,8 @@ async function doJob(): Promise<void> {
     `http://localhost:3335/`,
   ]
 
-  const updateDb = true
-  const generateFiles = false
+  const updateDb = false
+  const generateFiles = true
 
   if (updateDb) {
     const config : ClientConfig = {

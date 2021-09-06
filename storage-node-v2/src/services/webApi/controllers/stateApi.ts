@@ -2,9 +2,13 @@ import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import { getUploadsDir } from './common'
+import { getUploadsDir, getTempFileUploadingDir } from './common'
+import fastFolderSize from 'fast-folder-size'
+import { promisify } from 'util'
+import fs from 'fs'
 
 import NodeCache from 'node-cache'
+const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
 const ExpirationPeriod = 30 // minutes
@@ -14,9 +18,6 @@ const dataCache = new NodeCache({
   stdTTL: ExpirationPeriod,
   deleteOnExpire: true,
 })
-
-/**
- * A public endpoint: serves files by CID.
 
 /**
  * A public endpoint: return all local data objects.
@@ -34,6 +35,60 @@ export async function getAllLocalDataObjects(
   } catch (err) {
     res.status(500).json({
       type: 'all_data_objects',
+      message: err.toString(),
+    })
+  }
+}
+
+/**
+ * A public endpoint: serves local data uploading directory stats.
+ *
+ *  @return total size and count of the data objects.
+ */
+export async function getLocalDataStats(
+  req: express.Request,
+  res: express.Response
+): Promise<void> {
+  try {
+    const uploadsDir = getUploadsDir(res)
+    const tempFileDir = getTempFileUploadingDir(res)
+    const fastFolderSizeAsync = promisify(fastFolderSize)
+
+    const tempFolderExists = fs.existsSync(tempFileDir)
+    const statsPromise = fsPromises.readdir(uploadsDir)
+    const sizePromise = fastFolderSizeAsync(uploadsDir)
+
+    const [stats, totalSize] = await Promise.all([statsPromise, sizePromise])
+
+    let objectNumber = stats.length
+    let tempDownloads = 0
+    let tempDirSize = 0
+    if (tempFolderExists) {
+      if (objectNumber > 0) {
+        objectNumber--
+      }
+
+      const tempDirStatsPromise = fsPromises.readdir(tempFileDir)
+      const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
+
+      const [tempDirStats, tempSize] = await Promise.all([
+        tempDirStatsPromise,
+        tempDirSizePromise,
+      ])
+
+      tempDirSize = tempSize ?? 0
+      tempDownloads = tempDirStats.length
+    }
+
+    res.status(200).json({
+      objectNumber,
+      totalSize,
+      tempDownloads,
+      tempDirSize,
+    })
+  } catch (err) {
+    res.status(500).json({
+      type: 'local_data_stats',
       message: err.toString(),
     })
   }
