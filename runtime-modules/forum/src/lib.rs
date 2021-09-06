@@ -990,14 +990,14 @@ decl_module! {
             Ok(())
         }
 
-        /// Edit thread title
+        /// Edit thread metadata
         ///
         /// <weight>
         ///
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the thread title.
+        /// - `V` is the length of the thread metadata.
         /// - DB:
         ///    - O(W)
         /// # </weight>
