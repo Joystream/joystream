@@ -1692,20 +1692,21 @@ benchmarks! {
             text.clone(), text.clone(), poll
         );
         let hide = false;
-        let mut posts = Vec::new();
+        let mut posts = BTreeMap::new();
         for _ in 0 .. k {
-            posts.push((
+            posts.insert(
+                ExtendedPostIdObject {
                     category_id,
                     thread_id,
-                    add_thread_post::<T>(
+                    post_id: add_thread_post::<T>(
                         caller_id.clone(),
                         forum_user_id.saturated_into(),
                         category_id,
                         thread_id,
                         vec![0u8],
                     ),
-                    hide
-                )
+                },
+                hide
             );
         }
 
@@ -1732,8 +1733,8 @@ benchmarks! {
         thread.number_of_posts -= k as u64;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        for post in posts.clone() {
-            assert!(!<PostById<T>>::contains_key(post.1, post.2));
+        for (extended_post, _) in &posts {
+            assert!(!<PostById<T>>::contains_key(extended_post.thread_id, extended_post.post_id));
         }
 
         assert_last_event::<T>(

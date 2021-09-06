@@ -17,6 +17,7 @@ use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_runtime::{ModuleId, SaturatedConversion};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::fmt::Debug;
 use sp_std::prelude::*;
@@ -50,6 +51,19 @@ pub type ThreadOf<T> = Thread<
     <T as frame_system::Trait>::Hash,
     BalanceOf<T>,
 >;
+
+/// Type alias for `ExtendedPostIdObject`
+pub type ExtendedPostId<T> =
+    ExtendedPostIdObject<<T as Trait>::CategoryId, <T as Trait>::ThreadId, <T as Trait>::PostId>;
+
+/// Extended post id representation
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
+    pub category_id: CategoryId,
+    pub thread_id: ThreadId,
+    pub post_id: PostId,
+}
 
 type Balances<T> = balances::Module<T>;
 
@@ -491,6 +505,7 @@ decl_event!(
         ForumUserId = ForumUserId<T>,
         <T as Trait>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
+        ExtendedPostId = ExtendedPostId<T>,
         PollInput = PollInput<<T as pallet_timestamp::Trait>::Moment>,
     {
         /// A category was introduced
@@ -538,7 +553,7 @@ decl_event!(
         PostModerated(PostId, Vec<u8>, PrivilegedActor, CategoryId, ThreadId),
 
         /// Post with givne id was deleted.
-        PostDeleted(Vec<u8>, ForumUserId, Vec<(CategoryId, ThreadId, PostId, bool)>),
+        PostDeleted(Vec<u8>, ForumUserId, BTreeMap<ExtendedPostId, bool>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -1469,20 +1484,17 @@ decl_module! {
         fn delete_posts(
             origin,
             forum_user_id: ForumUserId<T>,
-            posts: Vec<(T::CategoryId, T::ThreadId, T::PostId, bool)>,
+            posts: BTreeMap<ExtendedPostId<T>, bool>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
-
-            // Check only unique post instances.
-            let unique_posts: BTreeSet<_> = posts.into_iter().collect();
 
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
-            let mut deleting_posts = BTreeSet::new();
-            for (category_id, thread_id, post_id, hide) in &unique_posts {
+            let mut deleting_posts = Vec::new();
+            for (ExtendedPostIdObject {category_id, thread_id, post_id}, hide) in &posts {
                 // Ensure actor is allowed to moderate post and post is editable
                 let post = Self::ensure_can_delete_post(
                     &account_id,
@@ -1493,7 +1505,7 @@ decl_module! {
                     *hide,
                 )?;
 
-                deleting_posts.insert((category_id, thread_id, post_id, post));
+                deleting_posts.push((category_id, thread_id, post_id, post));
             }
 
             //
@@ -1509,7 +1521,7 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(
-                RawEvent::PostDeleted(rationale, forum_user_id, unique_posts.into_iter().collect())
+                RawEvent::PostDeleted(rationale, forum_user_id, posts)
             );
 
             Ok(())
