@@ -1009,7 +1009,7 @@ benchmarks! {
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
             vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), None
         );
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+        let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let new_metadata = vec![0u8].repeat(j as usize);
 

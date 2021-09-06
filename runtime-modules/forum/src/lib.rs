@@ -1002,7 +1002,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            let thread = Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
+            Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
