@@ -1,4 +1,15 @@
-import { Null, u64, Bytes, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap, Option } from '@polkadot/types'
+import {
+  Null,
+  u64,
+  Bytes,
+  Vec,
+  bool,
+  GenericAccountId as AccountId,
+  BTreeSet,
+  BTreeMap,
+  Option,
+  u32,
+} from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
 import { MemberId } from './members'
@@ -34,10 +45,11 @@ export class DataObject
   implements IDataObject {}
 
 export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
 export class DistributionBucketId extends u64 {}
 export class DistributionBucketFamilyId extends u64 {}
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
-export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
+export class DistributionBucketIdSet extends JoyBTreeSet(DistributionBucketId) {}
 
 export type IDynamicBagDeletionPrize = {
   account_id: AccountId
@@ -56,7 +68,7 @@ export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
 export type IBag = {
   objects: BTreeMap<DataObjectId, DataObject>
   stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketSet
+  distributed_by: DistributionBucketIdSet
   deletion_prize: Option<BalanceOf>
 }
 
@@ -64,7 +76,7 @@ export class Bag
   extends JoyStructDecorated({
     objects: BTreeMap.with(DataObjectId, DataObject),
     stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketSet,
+    distributed_by: DistributionBucketIdSet,
     deletion_prize: Option.with(BalanceOf),
   })
   implements IBag {}
@@ -87,16 +99,6 @@ export const DynamicBagTypeDef = {
 } as const
 export type DynamicBagTypeKey = keyof typeof DynamicBagTypeDef
 export class DynamicBagType extends JoyEnum(DynamicBagTypeDef) {}
-
-export const DynamicBagIdDef = {
-  Member: MemberId,
-  Channel: ChannelId,
-}
-export type DynamicBagIdKey = keyof typeof DynamicBagIdDef
-export class DynamicBagIdType extends JoyEnum(DynamicBagIdDef) {}
-
-// Runtime alias
-export class DynamicBagId extends DynamicBagIdType {}
 
 export const StaticBagIdDef = {
   Council: Null,
@@ -224,24 +226,12 @@ export class DistributionBucketFamily
   })
   implements IDistributionBucketFamily {}
 
-export class DistributionBucket extends JoyStructDecorated({
-  acceptingNewBags: bool,
-  distributing: bool,
-  pendingInvitations: JoyBTreeSet(WorkerId),
-  operators: JoyBTreeSet(WorkerId),
-}) {}
-
-export class DistributionBucketFamily extends JoyStructDecorated({
-  distributionBuckets: BTreeMap.with(DistributionBucketId, DistributionBucket),
-}) {}
-
 export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
 
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
   DataObjectId,
-  DynamicBagIdType,
   DynamicBagId,
   Voucher,
   DynamicBagType,
@@ -267,5 +257,9 @@ export const storageTypes: RegistryTypes = {
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
+  // Utility types:
+  DataObjectIdMap,
+  DistributionBucketIdSet,
+  DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes

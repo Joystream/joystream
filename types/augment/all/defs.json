@@ -507,7 +507,8 @@
         ]
     },
     "DynamicBagCreationPolicy": {
-        "numberOfStorageBuckets": "u64"
+        "numberOfStorageBuckets": "u64",
+        "families": "BTreeMap<DistributionBucketFamilyId,u32>"
     },
     "DynamicBagDeletionPrize": {
         "account_id": "GenericAccountId",
@@ -520,7 +521,7 @@
     "Bag": {
         "objects": "BTreeMap<DataObjectId,DataObject>",
         "stored_by": "StorageBucketIdSet",
-        "distributed_by": "Vec<DistributionBucketId>",
+        "distributed_by": "DistributionBucketIdSet",
         "deletion_prize": "Option<u128>"
     },
     "StorageBucket": {
@@ -598,6 +599,9 @@
     "DistributionBucketFamily": {
         "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
     },
+    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
+    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
+    "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
