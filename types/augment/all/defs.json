@@ -82,6 +82,8 @@
     },
     "WorkingGroup": {
         "_enum": [
+            "Reserved",
+            "Forum",
             "Storage",
             "Content",
             "Operations",
