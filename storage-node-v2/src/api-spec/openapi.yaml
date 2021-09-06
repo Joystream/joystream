@@ -224,6 +224,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VersionResponse'
+  /state/data:
+    get:
+      operationId: stateApi.getLocalDataStats
+      description: Returns local uploading directory stats.
+      tags:
+        - state
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataStatsResponse'
 
 components:
   securitySchemes:
@@ -271,6 +284,24 @@ components:
           type: string
         message:
           type: string
+    DataStatsResponse:
+      type: object
+      required:
+        - totalSize
+        - objectNumber
+      properties:
+        totalSize:
+          type: integer
+          format: int64
+        objectNumber:
+          type: integer
+          format: int64
+        tempDirSize:
+          type: integer
+          format: int64
+        tempDownloads:
+          type: integer
+          format: int64
     VersionResponse:
       type: object
       required:

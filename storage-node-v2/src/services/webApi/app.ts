@@ -87,6 +87,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
     // Set parameters for each request.
     (req: express.Request, res: express.Response, next: NextFunction) => {
       res.locals.uploadsDir = config.uploadsDir
+      res.locals.tempFileUploadingDir = tempFileUploadingDir
       res.locals.storageProviderAccount = config.account
       res.locals.workerId = config.workerId
       res.locals.api = config.api
