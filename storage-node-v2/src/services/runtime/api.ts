@@ -31,7 +31,9 @@ export async function createApi(apiUrl: string): Promise<ApiPromise> {
     logger.error(`Api provider error: ${err.target?._url}`)
   )
 
-  const api = await ApiPromise.create({ provider, types })
+  const api = new ApiPromise({ provider, types })
+  await api.isReadyOrError
+  
   api.on('error', (err) =>
     logger.error(`Api promise error: ${err.target?._url}`)
   )
