@@ -30,6 +30,7 @@
             tag: '{{ tag_name }}'
             push: yes
             source: build
+          # Run in async fashion for max duration of 2 hours
           async: 7200
           poll: 0
           register: build_result
@@ -39,7 +40,9 @@
             jid: '{{ build_result.ansible_job_id }}'
           register: job_result
           until: job_result.finished
+          # Max number of times to check for status
           retries: 72
+          # Check for the status every 100s
           delay: 100
 
       always:
