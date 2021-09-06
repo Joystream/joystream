@@ -23,6 +23,8 @@ import {
   StorageDataObject,
   StorageSystemParameters,
   GeoCoordinates,
+  StorageBagDistributionAssignment,
+  StorageBagStorageAssignment,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, getWorkingGroupModuleName, bytesToString } from '../common'
@@ -113,16 +115,12 @@ function getBagId(bagId: BagId) {
 async function getDynamicBag(
   store: DatabaseManager,
   bagId: DynamicBagId,
-  relations?: ('storedBy' | 'distributedBy' | 'objects')[]
+  relations?: 'objects'[]
 ): Promise<StorageBag> {
   return getById(store, StorageBag, getDynamicBagId(bagId), relations)
 }
 
-async function getStaticBag(
-  store: DatabaseManager,
-  bagId: StaticBagId,
-  relations?: ('storedBy' | 'distributedBy' | 'objects')[]
-): Promise<StorageBag> {
+async function getStaticBag(store: DatabaseManager, bagId: StaticBagId, relations?: 'objects'[]): Promise<StorageBag> {
   const id = getStaticBagId(bagId)
   const bag = await store.get(StorageBag, { where: { id }, relations })
   if (!bag) {
@@ -137,11 +135,7 @@ async function getStaticBag(
   return bag
 }
 
-async function getBag(
-  store: DatabaseManager,
-  bagId: BagId,
-  relations?: ('storedBy' | 'distributedBy' | 'objects')[]
-): Promise<StorageBag> {
+async function getBag(store: DatabaseManager, bagId: BagId, relations?: 'objects'[]): Promise<StorageBag> {
   return bagId.isStatic
     ? getStaticBag(store, bagId.asStatic, relations)
     : getDynamicBag(store, bagId.asDynamic, relations)
@@ -283,22 +277,35 @@ export async function storage_StorageBucketsUpdatedForBag({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bagId, addedBucketsIds, removedBucketsIds] = new Storage.StorageBucketsUpdatedForBagEvent(event).params
-  const storageBag = await getBag(store, bagId, ['storedBy'])
-  storageBag.storedBy = (storageBag.storedBy || [])
-    .filter((b) => !Array.from(removedBucketsIds).some((id) => id.eq(b.id)))
-    .concat(Array.from(addedBucketsIds).map((id) => new StorageBucket({ id: id.toString() })))
-
-  await store.save<StorageBag>(storageBag)
+  // Get or create bag
+  const storageBag = await getBag(store, bagId)
+  const assignmentsToRemove = await store.getMany(StorageBagStorageAssignment, {
+    where: {
+      storageBag,
+      storageBucket: { id: In(Array.from(removedBucketsIds).map((bucketId) => bucketId.toString())) },
+    },
+  })
+  const assignmentsToAdd = Array.from(addedBucketsIds).map(
+    (bucketId) =>
+      new StorageBagStorageAssignment({
+        id: `${storageBag.id}-${bucketId.toString()}`,
+        storageBag,
+        storageBucket: new StorageBucket({ id: bucketId.toString() }),
+      })
+  )
+  await Promise.all(assignmentsToRemove.map((a) => store.remove<StorageBagStorageAssignment>(a)))
+  await Promise.all(assignmentsToAdd.map((a) => store.save<StorageBagStorageAssignment>(a)))
 }
 
 export async function storage_StorageBucketDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new Storage.StorageBucketDeletedEvent(event).params
   // TODO: Delete or just change status?
   // TODO: Cascade remove on db level?
-  // We shouldn't have to worry about deleting DataObjects, since this is already enforced by the runtime
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString(), ['storedBags'])
-  await Promise.all((storageBucket.storedBags || []).map((b) => store.remove<StorageBag>(b)))
-  await store.remove<StorageBucket>(storageBucket)
+  const assignments = await store.getMany(StorageBagStorageAssignment, {
+    where: { storageBucket: { id: bucketId.toString() } },
+  })
+  await Promise.all(assignments.map((a) => store.remove<StorageBagStorageAssignment>(a)))
+  await store.remove<StorageBucket>(new StorageBucket({ id: bucketId.toString() }))
 }
 
 // DYNAMIC BAGS
@@ -440,10 +447,13 @@ export async function storage_DistributionBucketStatusUpdated({
 
 export async function storage_DistributionBucketDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bucketId] = new Storage.DistributionBucketDeletedEvent(event).params
-
-  const bucket = await getById(store, DistributionBucket, bucketId.toString())
-
-  await store.remove<DistributionBucket>(bucket)
+  // TODO: Delete or just change status?
+  // TODO: Cascade remove on db level?
+  const assignments = await store.getMany(StorageBagDistributionAssignment, {
+    where: { distributionBucket: { id: bucketId.toString() } },
+  })
+  await Promise.all(assignments.map((a) => store.remove<StorageBagDistributionAssignment>(a)))
+  await store.remove<DistributionBucket>(new DistributionBucket({ id: bucketId.toString() }))
 }
 
 export async function storage_DistributionBucketsUpdatedForBag({
@@ -451,12 +461,24 @@ export async function storage_DistributionBucketsUpdatedForBag({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bagId, , addedBucketsIds, removedBucketsIds] = new Storage.DistributionBucketsUpdatedForBagEvent(event).params
-  const storageBag = await getBag(store, bagId, ['distributedBy'])
-  storageBag.distributedBy = (storageBag.distributedBy || [])
-    .filter((b) => !Array.from(removedBucketsIds).some((id) => id.eq(b.id)))
-    .concat(Array.from(addedBucketsIds).map((id) => new DistributionBucket({ id: id.toString() })))
-
-  await store.save<StorageBag>(storageBag)
+  // Get or create bag
+  const storageBag = await getBag(store, bagId)
+  const assignmentsToRemove = await store.getMany(StorageBagDistributionAssignment, {
+    where: {
+      storageBag,
+      distributionBucket: { id: In(Array.from(removedBucketsIds).map((bucketId) => bucketId.toString())) },
+    },
+  })
+  const assignmentsToAdd = Array.from(addedBucketsIds).map(
+    (bucketId) =>
+      new StorageBagDistributionAssignment({
+        id: `${storageBag.id}-${bucketId.toString()}`,
+        storageBag,
+        distributionBucket: new DistributionBucket({ id: bucketId.toString() }),
+      })
+  )
+  await Promise.all(assignmentsToRemove.map((a) => store.remove<StorageBagDistributionAssignment>(a)))
+  await Promise.all(assignmentsToAdd.map((a) => store.save<StorageBagDistributionAssignment>(a)))
 }
 
 export async function storage_DistributionBucketModeUpdated({
