@@ -252,9 +252,6 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
-    /// Metadata hash
-    pub metadata_hash: Hash,
-
     /// Category in which this thread lives
     pub category_id: CategoryId,
 
@@ -936,7 +933,6 @@ decl_module! {
             // Build a new thread
             let new_thread = Thread {
                 category_id,
-                metadata_hash: T::calculate_hash(&metadata),
                 author_id: forum_user_id,
                 poll,
                 cleanup_pay_off: T::ThreadDeposit::get(),
@@ -1011,10 +1007,6 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-
-            // Update thread metadata
-            let metadata_hash = T::calculate_hash(&new_metadata);
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.metadata_hash = metadata_hash);
 
             // Store the event
             Self::deposit_event(

@@ -961,7 +961,6 @@ benchmarks! {
         // Ensure new thread created successfully
         let new_thread = Thread {
             category_id,
-            metadata_hash: T::calculate_hash(&metadata),
             author_id: forum_user_id.saturated_into(),
             poll: poll_input.clone().map(<Module<T>>::from_poll_input),
             cleanup_pay_off: T::ThreadDeposit::get(),
@@ -1016,7 +1015,6 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, new_metadata.clone())
     verify {
-        thread.metadata_hash = T::calculate_hash(&new_metadata);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         assert_last_event::<T>(

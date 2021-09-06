@@ -750,10 +750,6 @@ pub fn edit_thread_metadata_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::thread_by_id(category_id, thread_id).metadata_hash,
-            Runtime::calculate_hash(new_metadata.as_slice()),
-        );
-        assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadMetadataUpdated(
                 thread_id,
