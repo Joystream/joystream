@@ -920,7 +920,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
         let mut category = Module::<T>::category_by_id(category_id);
 
-        let title = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat(j as usize);
 
         let text = vec![0u8].repeat(k as usize);
 
@@ -937,7 +937,7 @@ benchmarks! {
         let next_post_id = Module::<T>::next_post_id();
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
 
-    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, title.clone(), text.clone(), poll_input.clone())
+    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, metadata.clone(), text.clone(), poll_input.clone())
     verify {
 
         assert_eq!(
@@ -961,7 +961,6 @@ benchmarks! {
         // Ensure new thread created successfully
         let new_thread = Thread {
             category_id,
-            title_hash: T::calculate_hash(&title),
             author_id: forum_user_id.saturated_into(),
             poll: poll_input.clone().map(<Module<T>>::from_poll_input),
             cleanup_pay_off: T::ThreadDeposit::get(),
@@ -985,14 +984,14 @@ benchmarks! {
                 next_thread_id,
                 next_post_id,
                 forum_user_id.saturated_into(),
-                title,
+                metadata,
                 text,
                 poll_input,
             ).into()
         );
     }
 
-    edit_thread_title {
+    edit_thread_metadata {
         let forum_user_id = 0;
 
         let caller_id =
@@ -1010,21 +1009,20 @@ benchmarks! {
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
             vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), None
         );
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+        let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-        let text = vec![0u8].repeat(j as usize);
+        let new_metadata = vec![0u8].repeat(j as usize);
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, text.clone())
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, new_metadata.clone())
     verify {
-        thread.title_hash = T::calculate_hash(&text);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         assert_last_event::<T>(
-            RawEvent::ThreadTitleUpdated(
+            RawEvent::ThreadMetadataUpdated(
                 thread_id,
                 forum_user_id.saturated_into(),
                 category_id,
-                text
+                new_metadata
             ).into()
         );
     }
@@ -1907,9 +1905,9 @@ mod tests {
     }
 
     #[test]
-    fn test_edit_thread_title() {
+    fn test_edit_thread_metadata() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_edit_thread_title::<Runtime>());
+            assert_ok!(test_benchmark_edit_thread_metadata::<Runtime>());
         });
     }
 

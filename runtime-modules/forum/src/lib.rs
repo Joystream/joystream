@@ -82,7 +82,7 @@ pub trait WeightInfo {
     fn delete_category_lead(i: u32) -> Weight;
     fn delete_category_moderator(i: u32) -> Weight;
     fn create_thread(j: u32, k: u32, i: u32) -> Weight;
-    fn edit_thread_title(i: u32, j: u32) -> Weight;
+    fn edit_thread_metadata(i: u32, j: u32) -> Weight;
     fn delete_thread(i: u32) -> Weight;
     fn move_thread_to_category_lead(i: u32) -> Weight;
     fn move_thread_to_category_moderator(i: u32) -> Weight;
@@ -266,9 +266,6 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
-    /// Title hash
-    pub title_hash: Hash,
-
     /// Category in which this thread lives
     pub category_id: CategoryId,
 
@@ -540,8 +537,8 @@ decl_event!(
         /// The second argument reflects the new archival status of the thread.
         ThreadUpdated(ThreadId, bool, PrivilegedActor, CategoryId),
 
-        /// A thread with given id was moderated.
-        ThreadTitleUpdated(ThreadId, ForumUserId, CategoryId, Vec<u8>),
+        /// A thread metadata given id was updated.
+        ThreadMetadataUpdated(ThreadId, ForumUserId, CategoryId, Vec<u8>),
 
         /// A thread was deleted.
         ThreadDeleted(ThreadId, ForumUserId, CategoryId, bool),
@@ -902,7 +899,7 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_thread(
-            title.len().saturated_into(),
+            metadata.len().saturated_into(),
             text.len().saturated_into(),
             T::MaxCategoryDepth::get() as u32,
         )]
@@ -910,7 +907,7 @@ decl_module! {
             origin,
             forum_user_id: ForumUserId<T>,
             category_id: T::CategoryId,
-            title: Vec<u8>,
+            metadata: Vec<u8>,
             text: Vec<u8>,
             poll_input: Option<PollInput<T::Moment>>,
         ) -> DispatchResult {
@@ -951,7 +948,6 @@ decl_module! {
             // Build a new thread
             let new_thread = Thread {
                 category_id,
-                title_hash: T::calculate_hash(&title),
                 author_id: forum_user_id,
                 poll,
                 cleanup_pay_off: T::ThreadDeposit::get(),
@@ -985,7 +981,7 @@ decl_module! {
                     new_thread_id,
                     initial_post_id,
                     forum_user_id,
-                    title,
+                    metadata,
                     text,
                     poll_input,
                 )
@@ -994,44 +990,46 @@ decl_module! {
             Ok(())
         }
 
-        /// Edit thread title
+        /// Edit thread metadata
         ///
         /// <weight>
         ///
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the thread title.
+        /// - `V` is the length of the thread metadata.
         /// - DB:
         ///    - O(W)
         /// # </weight>
-        #[weight = WeightInfoForum::<T>::edit_thread_title(
+        #[weight = WeightInfoForum::<T>::edit_thread_metadata(
             T::MaxCategoryDepth::get() as u32,
-            new_title.len().saturated_into(),
+            new_metadata.len().saturated_into(),
         )]
-        fn edit_thread_title(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_title: Vec<u8>) -> DispatchResult {
+        fn edit_thread_metadata(
+            origin,
+            forum_user_id: ForumUserId<T>,
+            category_id: T::CategoryId,
+            thread_id: T::ThreadId,
+            new_metadata: Vec<u8>
+        ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
-            let thread = Self::ensure_can_edit_thread_title(account_id, &category_id, &thread_id, &forum_user_id)?;
+            Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Update thread title
-            let title_hash = T::calculate_hash(&new_title);
-            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
-
             // Store the event
             Self::deposit_event(
-                RawEvent::ThreadTitleUpdated(
+                RawEvent::ThreadMetadataUpdated(
                     thread_id,
                     forum_user_id,
                     category_id,
-                    new_title,
+                    new_metadata,
                 )
             );
 
@@ -1824,7 +1822,7 @@ impl<T: Trait> Module<T> {
         Ok(<ThreadById<T>>::get(category_id, thread_id))
     }
 
-    fn ensure_can_edit_thread_title(
+    fn ensure_can_edit_thread_metadata(
         account_id: T::AccountId,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
