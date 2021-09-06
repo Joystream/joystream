@@ -102,7 +102,7 @@ export default abstract class ApiCommandBase extends Command {
     try {
       this.api = await createApi(apiUrl)
     } catch (err) {
-      logger.error(`Creating runtime API error: ${err}`)
+      logger.error(`Creating runtime API error: ${err.target?._url}`)
     }
 
     await this.getApi()
