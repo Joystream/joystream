@@ -15,8 +15,8 @@ $root.GeoCoordiantes = (function() {
      * Properties of a GeoCoordiantes.
      * @exports IGeoCoordiantes
      * @interface IGeoCoordiantes
-     * @property {number} latitude GeoCoordiantes latitude
-     * @property {number} longitude GeoCoordiantes longitude
+     * @property {number|null} [latitude] GeoCoordiantes latitude
+     * @property {number|null} [longitude] GeoCoordiantes longitude
      */
 
     /**
@@ -74,8 +74,10 @@ $root.GeoCoordiantes = (function() {
     GeoCoordiantes.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        writer.uint32(/* id 3, wireType 5 =*/29).float(message.latitude);
-        writer.uint32(/* id 4, wireType 5 =*/37).float(message.longitude);
+        if (message.latitude != null && Object.hasOwnProperty.call(message, "latitude"))
+            writer.uint32(/* id 3, wireType 5 =*/29).float(message.latitude);
+        if (message.longitude != null && Object.hasOwnProperty.call(message, "longitude"))
+            writer.uint32(/* id 4, wireType 5 =*/37).float(message.longitude);
         return writer;
     };
 
@@ -121,10 +123,6 @@ $root.GeoCoordiantes = (function() {
                 break;
             }
         }
-        if (!message.hasOwnProperty("latitude"))
-            throw $util.ProtocolError("missing required 'latitude'", { instance: message });
-        if (!message.hasOwnProperty("longitude"))
-            throw $util.ProtocolError("missing required 'longitude'", { instance: message });
         return message;
     };
 
@@ -155,10 +153,12 @@ $root.GeoCoordiantes = (function() {
     GeoCoordiantes.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (typeof message.latitude !== "number")
-            return "latitude: number expected";
-        if (typeof message.longitude !== "number")
-            return "longitude: number expected";
+        if (message.latitude != null && message.hasOwnProperty("latitude"))
+            if (typeof message.latitude !== "number")
+                return "latitude: number expected";
+        if (message.longitude != null && message.hasOwnProperty("longitude"))
+            if (typeof message.longitude !== "number")
+                return "longitude: number expected";
         return null;
     };
 

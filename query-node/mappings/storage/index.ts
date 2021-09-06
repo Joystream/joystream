@@ -7,7 +7,9 @@ import {
   DistributionBucket,
   DistributionBucketFamily,
   DistributionBucketOperator,
+  DistributionBucketOperatorMetadata,
   DistributionBucketOperatorStatus,
+  NodeLocationMetadata,
   StorageBag,
   StorageBagOwner,
   StorageBagOwnerChannel,
@@ -20,16 +22,21 @@ import {
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
   StorageSystemParameters,
+  GeoCoordinates,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, getWorkingGroupModuleName } from '../common'
+import { getById, getWorkingGroupModuleName, bytesToString } from '../common'
 import { BTreeSet } from '@polkadot/types'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
 import { In } from 'typeorm'
 import _ from 'lodash'
 import { DataObjectId, BagId, DynamicBagId, StaticBagId } from '@joystream/types/augment/all'
-import { processDistributionOperatorMetadata, processStorageOperatorMetadata } from './metadata'
+import {
+  processDistributionBucketFamilyMetadata,
+  processDistributionOperatorMetadata,
+  processStorageOperatorMetadata,
+} from './metadata'
 
 async function getDataObjectsInBag(
   store: DatabaseManager,
@@ -140,7 +147,10 @@ async function getBag(
     : getDynamicBag(store, bagId.asDynamic, relations)
 }
 
-async function getDistributionBucketOperatorWithMetadata(store: DatabaseManager, id: string) {
+async function getDistributionBucketOperatorWithMetadata(
+  store: DatabaseManager,
+  id: string
+): Promise<DistributionBucketOperator> {
   const operator = await store.get(DistributionBucketOperator, {
     where: { id },
     relations: ['metadata', 'metadata.nodeLocation', 'metadata.nodeLocation.coordinates'],
@@ -151,7 +161,7 @@ async function getDistributionBucketOperatorWithMetadata(store: DatabaseManager,
   return operator
 }
 
-async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string) {
+async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string): Promise<StorageBucket> {
   const bucket = await store.get(StorageBucket, {
     where: { id },
     relations: ['operatorMetadata', 'operatorMetadata.nodeLocation', 'operatorMetadata.nodeLocation.coordinates'],
@@ -162,7 +172,10 @@ async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: 
   return bucket
 }
 
-async function getDistributionBucketFamilyWithMetadata(store: DatabaseManager, id: string) {
+async function getDistributionBucketFamilyWithMetadata(
+  store: DatabaseManager,
+  id: string
+): Promise<DistributionBucketFamily> {
   const family = await store.get(DistributionBucketFamily, {
     where: { id },
     relations: ['metadata', 'metadata.boundary'],
@@ -212,7 +225,7 @@ export async function storage_StorageOperatorMetadataSet({ event, store }: Event
 }
 
 export async function storage_StorageBucketStatusUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bucketId, , acceptingNewBags] = new Storage.StorageBucketStatusUpdatedEvent(event).params
+  const [bucketId, acceptingNewBags] = new Storage.StorageBucketStatusUpdatedEvent(event).params
 
   const storageBucket = await getById(store, StorageBucket, bucketId.toString())
   storageBucket.acceptingNewBags = acceptingNewBags.isTrue
@@ -310,17 +323,17 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 // DATA OBJECTS
 
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
-export async function storage_DataObjectdUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [dataObjectIds, uploadParams] = new Storage.DataObjectdUploadedEvent(event).params
+export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [dataObjectIds, uploadParams] = new Storage.DataObjectsUploadedEvent(event).params
   const { bagId, authenticationKey, objectCreationList } = uploadParams
   const storageBag = await getBag(store, bagId)
   const dataObjects = dataObjectIds.map((objectId, i) => {
     const objectParams = new DataObjectCreationParameters(registry, objectCreationList[i].toJSON() as any)
     return new StorageDataObject({
       id: objectId.toString(),
-      authenticationKey: authenticationKey.toString(),
+      authenticationKey: bytesToString(authenticationKey),
       isAccepted: false,
-      ipfsHash: objectParams.ipfsContentId.toString(),
+      ipfsHash: bytesToString(objectParams.ipfsContentId),
       size: new BN(objectParams.getField('size').toString()),
       storageBag,
     })
@@ -510,6 +523,39 @@ export async function storage_DistributionBucketMetadataSet({
   await store.save<DistributionBucketOperator>(operator)
 }
 
+export async function storage_DistributionBucketOperatorRemoved({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [, bucketId, workerId] = new Storage.DistributionBucketOperatorRemovedEvent(event).params
+
+  // TODO: Cascade remove
+
+  const operator = await getDistributionBucketOperatorWithMetadata(store, `${bucketId}-${workerId}`)
+  await store.remove<DistributionBucketOperator>(operator)
+  if (operator.metadata) {
+    await store.remove<DistributionBucketOperatorMetadata>(operator.metadata)
+    if (operator.metadata.nodeLocation) {
+      await store.remove<NodeLocationMetadata>(operator.metadata.nodeLocation)
+      if (operator.metadata.nodeLocation.coordinates) {
+        await store.remove<GeoCoordinates>(operator.metadata.nodeLocation.coordinates)
+      }
+    }
+  }
+}
+
+export async function storage_DistributionBucketFamilyMetadataSet({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [familyId, metadataBytes] = new Storage.DistributionBucketFamilyMetadataSetEvent(event).params
+
+  const family = await getDistributionBucketFamilyWithMetadata(store, familyId.toString())
+  family.metadata = await processDistributionBucketFamilyMetadata(store, family.metadata, metadataBytes)
+
+  await store.save<DistributionBucketFamily>(family)
+}
+
 export async function storage_DistributionBucketsPerBagLimitUpdated({
   event,
   store,
@@ -556,10 +602,6 @@ export async function storage_StorageBucketsVoucherMaxLimitsUpdated({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  // To be implemented
-}
-
-export async function storage_DeletionPrizeChanged({ event, store }: EventContext & StoreContext): Promise<void> {
   // To be implemented
 }
 
