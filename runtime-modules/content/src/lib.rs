@@ -25,9 +25,8 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
 use sp_std::collections::btree_set::BTreeSet;
-use sp_std::vec;
 use sp_std::vec::Vec;
 
 pub use common::storage::{
@@ -191,16 +190,11 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
-{
+pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
-    pub videos: Vec<VideoId>,
-    /// The playlists under this channel
-    playlists: Vec<PlaylistId>,
-    /// The series under this channel
-    series: Vec<SeriesId>,
+    num_videos: VideoId,
     /// If curators have censored this channel or not
     is_censored: bool,
     /// Reward account where revenue is sent if set.
@@ -214,8 +208,6 @@ pub type Channel<T> = ChannelRecord<
     <T as StorageOwnership>::DAOId,
     <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
-    <T as Trait>::PlaylistId,
-    <T as Trait>::SeriesId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -671,9 +663,8 @@ decl_module! {
 
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
-                videos: vec![],
-                playlists: vec![],
-                series: vec![],
+                // a newly create channel has zero videos ?
+                num_videos: <T as Trait>::VideoId::zero(),
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
             };
@@ -946,7 +937,7 @@ decl_module! {
 
             // Add recently added video id to the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.videos.push(video_id);
+                channel.num_videos.saturating_add(<T as Trait>::VideoId::one())
             });
 
             Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
@@ -1034,9 +1025,7 @@ decl_module! {
             // Update corresponding channel
             // Remove recently deleted video from the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
-                if let Some(index) = channel.videos.iter().position(|x| *x == video_id) {
-                    channel.videos.remove(index);
-                }
+                channel.num_videos.saturating_sub(<T as Trait>::VideoId::one())
             });
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
