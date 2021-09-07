@@ -31,7 +31,6 @@ use frame_system::ensure_signed;
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member, Saturating};
-use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -42,8 +41,6 @@ pub use common::{
     working_group::WorkingGroup,
     MembershipTypes, StorageOwnership, Url,
 };
-
-use sp_runtime::traits::AccountIdConversion;
 
 type Storage<T> = storage::Module<T>;
 
@@ -130,12 +127,6 @@ pub trait Trait:
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
-
-    // Type that handles asset uploads to storage frame_system
-//    type StorageSystem: StorageSystem<Self>;
-
-    // in order to get treasury accounts
-    type ModuleId: Get<ModuleId>;
 }
 
 /// Specifies characteristics of an asset
@@ -316,13 +307,15 @@ pub struct VideoCategoryUpdateParameters {
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParameters {
+pub struct VideoCreationParameters<AccountId> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset>,
     /// Metadata for the video.
     meta: Vec<u8>,
     /// liason authorization keys
     liason_auth_key: Vec<u8>,
+    /// deletion prize account
+    deletion_prize_account: AccountId,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -374,9 +367,9 @@ pub struct Playlist<ChannelId> {
 /// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoId> {
+pub enum EpisodeParameters<VideoId, AccountId> {
     /// A new video is being added as the episode.
-    NewVideo(VideoCreationParameters),
+    NewVideo(VideoCreationParameters<AccountId>),
     /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
@@ -384,7 +377,7 @@ pub enum EpisodeParameters<VideoId> {
 /// Information about the season being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoId> {
+pub struct SeasonParameters<VideoId, AccountId> {
     /// Season assets referenced by metadata
     assets: Option<Vec<NewAsset>>,
     // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
@@ -392,7 +385,7 @@ pub struct SeasonParameters<VideoId> {
     /// when length of new_episodes is greater than previously set. Last elements must all be
     /// 'Some' in that case.
     /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoId>>>>,
+    episodes: Option<Vec<Option<EpisodeParameters<VideoId, AccountId>>>>,
 
     meta: Option<Vec<u8>>,
 }
@@ -400,14 +393,14 @@ pub struct SeasonParameters<VideoId> {
 /// Information about the series being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoId> {
+pub struct SeriesParameters<VideoId, AccountId> {
     /// Series assets referenced by metadata
     assets: Option<Vec<NewAsset>>,
     // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
     /// If set, updates the seasons of a series. Extend a series when length of seasons is
     /// greater than previoulsy set. Last elements must all be 'Some' in that case.
     /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoId>>>>,
+    seasons: Option<Vec<Option<SeasonParameters<VideoId, AccountId>>>>,
     meta: Option<Vec<u8>>,
 }
 
@@ -922,7 +915,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: VideoCreationParameters,
+            params: VideoCreationParameters<T::AccountId>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -942,7 +935,6 @@ decl_module! {
             let upload_parameters = Self::pick_content_parameters_from_assets(
                 &params,
                 &channel_id,
-                &video_id,
             );
 
             // try adding assets to storage
@@ -1258,7 +1250,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId>
+            _params: SeriesParameters<T::VideoId, T::AccountId>
         ) {
             Self::not_implemented()?;
         }
@@ -1268,7 +1260,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId>
+            _params: SeriesParameters<T::VideoId, T::AccountId>
         ) {
             Self::not_implemented()?;
         }
@@ -1367,12 +1359,9 @@ impl<T: Trait> Module<T> {
     //     }
     // }
     fn pick_content_parameters_from_assets(
-        params: &VideoCreationParameters,
+        params: &VideoCreationParameters<T::AccountId>,
         channel_id: &T::ChannelId,
-        video_id: &T::VideoId,
     ) -> UploadParameters<T> {
-        let treasury_account = <T as Trait>::ModuleId::get().into_sub_account(video_id);
-
         // price per megabyte of storage
         let fee = Storage::<T>::data_object_per_mega_byte_fee();
 
@@ -1402,7 +1391,7 @@ impl<T: Trait> Module<T> {
             authentication_key: params.liason_auth_key.clone(),
             bag_id: bag_id,
             object_creation_list: object_creation_list,
-            deletion_prize_source_account_id: treasury_account,
+            deletion_prize_source_account_id: params.deletion_prize_account.clone(),
             expected_data_size_fee: fee,
         }
     }
@@ -1516,7 +1505,12 @@ decl_event!(
         VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(ContentActor, VideoCategoryId),
 
-        VideoCreated(ContentActor, ChannelId, VideoId, VideoCreationParameters),
+        VideoCreated(
+            ContentActor,
+            ChannelId,
+            VideoId,
+            VideoCreationParameters<AccountId>,
+        ),
         VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
 
@@ -1540,14 +1534,14 @@ decl_event!(
             ContentActor,
             SeriesId,
             Vec<NewAsset>,
-            SeriesParameters<VideoId>,
+            SeriesParameters<VideoId, AccountId>,
             Series,
         ),
         SeriesUpdated(
             ContentActor,
             SeriesId,
             Vec<NewAsset>,
-            SeriesParameters<VideoId>,
+            SeriesParameters<VideoId, AccountId>,
             Series,
         ),
         SeriesDeleted(ContentActor, SeriesId),
