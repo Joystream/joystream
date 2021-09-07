@@ -17,13 +17,15 @@ import { httpLogger, errorLogger } from '../../services/logger'
  * @param account - KeyringPair instance
  * @param workerId - storage provider ID (worker ID)
  * @param uploadsDir - directory for the file uploading
+ * @param maxFileSize - max allowed file size
  * @returns Express promise.
  */
 export async function createApp(
   api: ApiPromise,
   account: KeyringPair,
   workerId: number,
-  uploadsDir: string
+  uploadsDir: string,
+  maxFileSize: number
 ): Promise<Express> {
   const spec = path.join(__dirname, './../../api-spec/openapi.yaml')
 
@@ -52,7 +54,16 @@ export async function createApp(
         basePath: path.join(__dirname, './controllers'),
         resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
-      fileUploader: { dest: uploadsDir },
+      fileUploader: {
+        dest: uploadsDir,
+        // Busboy library settings
+        limits: {
+          // For multipart forms, the max number of file fields (Default: Infinity)
+          files: 1,
+          // For multipart forms, the max file size (in bytes) (Default: Infinity)
+          fileSize: maxFileSize,
+        },
+      },
       validateSecurity: {
         handlers: {
           UploadAuth: validateUpload(api, account),
@@ -103,6 +114,8 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
   return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
+    return true
+
     const tokenString = req.headers['x-api-key'] as string
     const token = parseUploadToken(tokenString)
 

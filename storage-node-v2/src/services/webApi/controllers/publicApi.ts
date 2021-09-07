@@ -19,7 +19,6 @@ import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
 import send from 'send'
-import BN from 'bn.js'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
 const fsPromises = fs.promises
@@ -111,13 +110,12 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     cleanupFileName = fileObj.path
 
     const api = getApi(res)
-    await verifyFileSize(api, fileObj.size)
     await verifyFileMimeType(fileObj.path)
 
     const hash = await hashFile(fileObj.path)
     const bagId = parseBagId(api, uploadRequest.bagId)
 
-    await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
+    const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
     const newPath = fileObj.path.replace(fileObj.filename, hash)
@@ -126,9 +124,16 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    await acceptPendingDataObjects(api, bagId, getAccount(res), getWorkerId(res), uploadRequest.storageBucketId, [
-      uploadRequest.dataObjectId,
-    ])
+    const workerId = getWorkerId(res)
+    if (!accepted) {
+      await acceptPendingDataObjects(api, bagId, getAccount(res), workerId, uploadRequest.storageBucketId, [
+        uploadRequest.dataObjectId,
+      ])
+    } else {
+      logger.warn(
+        `Received already accepted data object. DataObjectId = ${uploadRequest.dataObjectId} WorkerId = ${workerId}`
+      )
+    }
     res.status(201).json({
       id: hash,
     })
@@ -299,21 +304,6 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
 }
 
 /**
- * Validates file size. It throws an error when file size exceeds the limit
- *
- * @param api - runtime API promise
- * @param fileSize - file size to validate
- * @returns void promise.
- */
-async function verifyFileSize(api: ApiPromise, fileSize: number) {
-  const maxRuntimeFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
-
-  if (fileSize > maxRuntimeFileSize) {
-    throw new WebApiError('Max file size exceeded.', 400)
-  }
-}
-
-/**
  * Validates the runtime info for the data object. It verifies contentID,
  * file size, and 'accepted' status.
  *
@@ -322,7 +312,7 @@ async function verifyFileSize(api: ApiPromise, fileSize: number) {
  * @param dataObjectId - data object ID to validate in runtime
  * @param fileSize - file size to validate
  * @param hash - file multihash
- * @returns void promise.
+ * @returns promise with the 'data object accepted' flag.
  */
 async function verifyDataObjectInfo(
   api: ApiPromise,
@@ -330,16 +320,11 @@ async function verifyDataObjectInfo(
   dataObjectId: number,
   fileSize: number,
   hash: string
-) {
+): Promise<boolean> {
   const dataObject = await api.query.storage.dataObjectsById(bagId, dataObjectId)
 
-  if (dataObject.accepted.valueOf()) {
-    throw new WebApiError(`Data object had been already accepted ID = ${dataObjectId}`, 400)
-  }
-
   // Cannot get 'size' as a regular property.
-  const probablyDataObjectSize = dataObject.get('size') as unknown
-  const dataObjectSize = probablyDataObjectSize as BN
+  const dataObjectSize = dataObject.getField('size')
 
   if (dataObjectSize?.toNumber() !== fileSize) {
     throw new WebApiError(`File size doesn't match the data object's size for data object ID = ${dataObjectId}`, 400)
@@ -352,6 +337,8 @@ async function verifyDataObjectInfo(
       400
     )
   }
+
+  return dataObject.accepted.valueOf()
 }
 
 /**
