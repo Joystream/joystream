@@ -260,8 +260,8 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCreationParameters<AccountId> {
-    /// Assets referenced by metadata
-    assets: Vec<NewAsset>,
+    /// content parameters for the storage
+    content_params: ContentCreationParameters<AccountId>,
     /// Metadata about the channel.
     meta: Vec<u8>,
     /// optional reward account
@@ -307,15 +307,24 @@ pub struct VideoCategoryUpdateParameters {
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParameters<AccountId> {
+/// Information regarding the content being created
+pub struct ContentCreationParameters<AccountId> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset>,
-    /// Metadata for the video.
-    meta: Vec<u8>,
     /// liason authorization keys
     liason_auth_key: Vec<u8>,
     /// deletion prize account
     deletion_prize_account: AccountId,
+}
+
+/// Information about the video being created.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct VideoCreationParameters<AccountId> {
+    /// Content creation parameters
+    content_params: ContentCreationParameters<AccountId>,
+    /// Metadata for the video.
+    meta: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -656,30 +665,29 @@ decl_module! {
             params: ChannelCreationParameters<T::AccountId>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
-                origin,
+                origin.clone(),
                 &actor,
             )?;
 
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
-            // Pick out the assets to be uploaded to storage frame_system
-            // let content_parameters: Vec<ContentParameters> = Self::pick_content_parameters_from_assets(&params.assets);
 
+        // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-//            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+            // Pick out the assets to be uploaded to storage frame_system
+            let upload_parameters: UploadParameters<T> = Self::pick_content_parameters_from_assets(
+                &params.content_params,
+                &channel_id
+            );
+
+            // adding content to storage
+            Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            // This should be first mutation
-            // Try add assets to storage
-            // T::StorageSystem::atomically_add_content(
-            //     object_owner,
-            //     content_parameters,
-            // )?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -829,7 +837,7 @@ decl_module! {
             params: ChannelCategoryCreationParameters,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
+                origin.clone(),
                 &actor
             )?;
 
@@ -933,7 +941,7 @@ decl_module! {
 
             // Pick out the assets to be uploaded to storage frame_system
             let upload_parameters = Self::pick_content_parameters_from_assets(
-                &params,
+                &params.content_params,
                 &channel_id,
             );
 
@@ -1339,27 +1347,9 @@ impl<T: Trait> Module<T> {
         );
         Ok(VideoCategoryById::<T>::get(video_category_id))
     }
-    // fn build_upload_parameters(asset: &NewAsset, channel_id: &T::ChannelId) -> UploadParameters<T> {
-    //     match asset {
-    //         NewAsset::Upload(content_parameters) => UploadParametersRecord {
-    //             authentication_key: content_parameters.liason_auth_key.clone(),
-    //             bag_id: BagIdType::<T::MemberId, T::ChannelId>::DynamicBagIdType::<
-    //                 T::MemberId,
-    //                 T::ChannelId,
-    //             >::Channel(channel_id.clone()),
-    //             object_creation_list: vec![DataObjectCreationParameters {
-    //                 size: content_parameters.size,
-    //                 ipfs_content_id: content_parameters.ipfs_content_id.clone(),
-    //             }],
-    //             // leaving default for now
-    //             deletion_prize_source_account_id: AccountId::default(),
-    //             expected_data_size_fee: BalanceOf::<T>::zero(),
-    //         },
-    //         _ => None,
-    //     }
-    // }
+
     fn pick_content_parameters_from_assets(
-        params: &VideoCreationParameters<T::AccountId>,
+        content_params: &ContentCreationParameters<T::AccountId>,
         channel_id: &T::ChannelId,
     ) -> UploadParameters<T> {
         // price per megabyte of storage
@@ -1369,7 +1359,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
         let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
 
-        let object_creation_list: Vec<DataObjectCreationParameters> = params
+        let object_creation_list: Vec<DataObjectCreationParameters> = content_params
             .assets
             .iter()
             .filter_map(|asset| {
@@ -1388,10 +1378,10 @@ impl<T: Trait> Module<T> {
             .collect();
         // the parameters record
         UploadParametersRecord {
-            authentication_key: params.liason_auth_key.clone(),
+            authentication_key: content_params.liason_auth_key.clone(),
             bag_id: bag_id,
             object_creation_list: object_creation_list,
-            deletion_prize_source_account_id: params.deletion_prize_account.clone(),
+            deletion_prize_source_account_id: content_params.deletion_prize_account.clone(),
             expected_data_size_fee: fee,
         }
     }
