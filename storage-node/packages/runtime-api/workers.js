@@ -20,7 +20,7 @@
 
 const debug = require('debug')('joystream:runtime:roles')
 const BN = require('bn.js')
-const { Worker } = require('@joystream/types/working-group')
+const { Text } = require('@polkadot/types')
 
 /*
  * Finds assigned worker id corresponding to the application id from the resulting
@@ -99,6 +99,24 @@ class WorkersApi {
     const id = new BN(storageProviderId)
     const { providers } = await this.getAllProviders()
     return providers[id.toNumber()] || null
+  }
+
+  /*
+   * Returns storage provider's general purpose storage value from chain
+   */
+  async getWorkerStorageValue(id) {
+    const value = await this.base.api.query.storageWorkingGroup.workerStorage(id)
+    return new Text(this.base.api.registry, value).toString()
+  }
+
+  /*
+   * Set storage provider's general purpose storage value on chain
+   */
+  async setWorkerStorageValue(value) {
+    const id = this.base.storageProviderId
+    const tx = this.base.api.tx.storageWorkingGroup.updateRoleStorage(id, value)
+    const senderAccount = await this.storageProviderRoleAccount(id)
+    return this.base.signAndSend(senderAccount, tx)
   }
 
   /*

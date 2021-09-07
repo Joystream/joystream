@@ -732,12 +732,33 @@ export class VoteForProposalFixture extends BaseFixture {
     const councilAccounts = await this.api.getCouncilAccounts()
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, proposalVoteFee)
 
-    // Approving the proposal
+    // Catch the proposal execution result
     const proposalExecutionResult = await this.api.subscribeToProposalExecutionResult(this.proposalNumber)
-    const approvals = await this.api.batchApproveProposal(this.proposalNumber)
-    approvals.map((result) => this.expectDispatchSuccess(result, 'Proposal Approval Vote Expected To Be Successful'))
+
+    // Approve proposal
+    // const approvals =
+    await this.api.batchApproveProposal(this.proposalNumber)
+
+    // Depending on the "approval_threshold_percentage" paramater for the proposal type, it might happen
+    // that the proposal can pass before all votes are cast, and this can result in an approval vote
+    // failing with a 'ProposalFinalized' Dispatch error. Important to note that depending on how many
+    // votes make it into a block, it may not always manifest becasuse the check for proposal finalization
+    // happens in on_finalize. So we no longer assert that all vote dispatches are successful.
+    // "Not taking this into account has resulted in tests failing undeterminisctly in the past.."
+    // approvals.map((result) => this.expectDispatchSuccess(result, 'Proposal Approval Vote Expected To Be Successful'))
+
+    // Wait for the proposal to finalize
     const proposalOutcome = await proposalExecutionResult.promise
     this._proposalExecuted = proposalOutcome[0]
     this._events = proposalOutcome[1]
+  }
+}
+
+export class VoteForProposalAndExpectExecutionFixture extends VoteForProposalFixture {
+  public async execute(): Promise<void> {
+    await super.execute()
+    if (!this.proposalExecuted) {
+      this.error(new Error('Proposal Expected to be executed'))
+    }
   }
 }

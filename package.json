@@ -25,30 +25,33 @@
     "pioneer",
     "pioneer/packages/*",
     "utils/api-scripts",
-    "content-directory-schemas",
     "query-node",
     "query-node/mappings",
     "query-node/generated/*",
+    "content-metadata-protobuf",
     "metadata-protobuf"
   ],
   "resolutions": {
     "@polkadot/api": "4.2.1",
     "@polkadot/api-contract": "4.2.1",
-    "@polkadot/keyring": "^6.0.5",
+    "@polkadot/keyring": "6.0.5",
+    "@polkadot/metadata": "4.2.1",
     "@polkadot/types": "4.2.1",
-    "@polkadot/util": "^6.0.5",
-    "@polkadot/util-crypto": "^6.0.5",
+    "@polkadot/util": "6.0.5",
+    "@polkadot/util-crypto": "6.0.5",
     "@polkadot/wasm-crypto": "^4.0.2",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
     "rxjs": "^6.6.2",
-    "typeorm": "^0.2.31"
+    "typeorm": "^0.2.31",
+    "pg": "^8.4.0",
+    "chalk": "^4.0.0"
   },
   "devDependencies": {
-    "eslint": "^7.6.0",
+    "eslint": "^7.25.0",
     "husky": "^4.2.5",
-    "prettier": "2.0.2"
+    "prettier": "^2.2.1"
   },
   "husky": {
     "hooks": {
@@ -57,7 +60,7 @@
     }
   },
   "engines": {
-    "node": ">=14.16.1",
+    "node": ">=14.0.0",
     "yarn": "^1.22.0"
   },
   "volta": {

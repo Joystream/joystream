@@ -1,0 +1,48 @@
+---
+# Configure chain spec file, copy joystream-node binary and run the service
+
+- name: Create and copy the chain-spec file
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Download chain spec file using link
+      get_url:
+        url: "{{ chain_spec_file }}"
+        dest: ~/chain-spec.json
+      when: chain_spec_file is search("http")
+
+    - name: Copy chain spec file from local
+      copy:
+        src: "{{ chain_spec_file }}"
+        dest: ~/chain-spec.json
+      when: chain_spec_file is not search("http")
+
+    - name: Download and unarchive binary using link
+      unarchive:
+        src: "{{ binary_file }}"
+        dest: ~/
+        remote_src: yes
+      when: binary_file is search("http")
+
+    - name: Copy binary from local
+      copy:
+        src: "{{ binary_file }}"
+        dest: ~/joystream-node
+        mode: "0775"
+      when: binary_file is not search("http")
+
+    - name: Create a service file
+      template:
+        src: roles/node/templates/joystream-node.service.j2
+        dest: /etc/systemd/system/joystream-node.service
+      vars:
+        template_remote_chain_spec_path: "/home/ubuntu/chain-spec.json"
+        template_binary_path: "/home/ubuntu/joystream-node"
+      become: yes
+
+    - name: Start service joystream-node, if not started
+      service:
+        name: joystream-node
+        state: started
+      become: yes

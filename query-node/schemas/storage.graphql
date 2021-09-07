@@ -68,8 +68,8 @@ type StorageBucket @entity {
   "Whether the bucket is accepting any new storage bags"
   acceptingNewBags: Boolean!
 
-  "Bags assigned to be stored by the bucket"
-  storedBags: [StorageBag!] @derivedFrom(field: "storedBy")
+  "Assignments to store a bag"
+  bagAssignments: [StorageBagStorageAssignment!] @derivedFrom(field: "storageBucket")
 
   "Bucket's data object size limit in bytes"
   dataObjectsSizeLimit: BigInt!
@@ -115,14 +115,36 @@ type StorageBag @entity {
   "Data objects in the bag"
   objects: [StorageDataObject!] @derivedFrom(field: "storageBag")
 
-  "Storage buckets assigned to store the bag"
-  storedBy: [StorageBucket!]
+  "Assignments to a storage bucket"
+  storageAssignments: [StorageBagStorageAssignment!] @derivedFrom(field: "storageBag")
 
-  "Distribution buckets assigned to distribute the bag"
-  distributedBy: [DistributionBucket!]
+  "Assignments to a distribution bucket"
+  distirbutionAssignments: [StorageBagDistributionAssignment!] @derivedFrom(field: "storageBag")
 
   "Owner of the storage bag"
   owner: StorageBagOwner!
+}
+
+type StorageBagStorageAssignment @entity {
+  "{storageBagId-storageBucketId}"
+  id: ID!
+
+  "Storage bag to be stored"
+  storageBag: StorageBag!
+
+  "Storage bucket that should store the bag"
+  storageBucket: StorageBucket!
+}
+
+type StorageBagDistributionAssignment @entity {
+  "{storageBagId-distributionBucketId}"
+  id: ID!
+
+  "Storage bag to be distributed"
+  storageBag: StorageBag!
+
+  "Distribution bucket that should distribute the bag"
+  distributionBucket: DistributionBucket!
 }
 
 type StorageDataObject @entity {
@@ -211,8 +233,8 @@ type DistributionBucket @entity {
   "Whether the bucket is currently distributing content"
   distributing: Boolean!
 
-  "Bags assigned to be distributed by the bucket"
-  distributedBags: [StorageBag!] @derivedFrom(field: "distributedBy")
+  "Assignments to distribute a bag"
+  bagAssignments: [StorageBagDistributionAssignment!] @derivedFrom(field: "distributionBucket")
 }
 
 type DistributionBucketFamily @entity {

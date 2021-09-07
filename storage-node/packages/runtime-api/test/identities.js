@@ -72,14 +72,14 @@ describe('Identities', () => {
 
     expect(exported).to.have.property('encoding')
 
-    expect(exported.encoding).to.have.property('version', '2')
+    expect(exported.encoding).to.have.property('version', '3')
 
     expect(exported.encoding).to.have.property('content')
     expect(exported.encoding.content).to.include('pkcs8')
     expect(exported.encoding.content).to.include('ed25519')
 
     expect(exported.encoding).to.have.property('type')
-    expect(exported.encoding.type).to.include('salsa20')
+    expect(exported.encoding.type).to.include('xsalsa20-poly1305')
   })
 
   it('writes key export files', async () => {

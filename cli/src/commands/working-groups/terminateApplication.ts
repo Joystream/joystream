@@ -32,6 +32,6 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
 
     await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'terminateApplication', [applicationId])
 
-    this.log(chalk.green(`Application ${chalk.white(applicationId)} has been succesfully terminated!`))
+    this.log(chalk.green(`Application ${chalk.magentaBright(applicationId)} has been successfully terminated!`))
   }
 }

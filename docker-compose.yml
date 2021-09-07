@@ -38,14 +38,18 @@ services:
     image: joystream/apps
     restart: on-failure
     depends_on:
-      - "joystream-node"
       - "ipfs"
     build:
       context: .
       dockerfile: apps.Dockerfile
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
     ports:
       - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ws://joystream-node:9944 --ipfs-host ipfs
+    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
     environment:
       - DEBUG=*
 
@@ -151,13 +155,13 @@ services:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
+      - DB_HOST=db
+      - DB_NAME=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
-      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944
+      - WS_PROVIDER_ENDPOINT_URI=${WS_PROVIDER_ENDPOINT_URI}
       - TYPES_JSON=types.json
-      - DB_NAME=${INDEXER_DB_NAME}
-      - DB_HOST=db
     depends_on:
       - db
       - redis

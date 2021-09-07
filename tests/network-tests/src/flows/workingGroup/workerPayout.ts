@@ -8,7 +8,10 @@ import {
   FillOpeningFixture,
 } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
-import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../../fixtures/proposalsModule'
+import {
+  VoteForProposalAndExpectExecutionFixture,
+  WorkingGroupMintCapacityProposalFixture,
+} from '../../fixtures/proposalsModule'
 import { PaidTermId } from '@joystream/types/members'
 import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
@@ -61,7 +64,7 @@ async function workerPayouts(api: Api, env: NodeJS.ProcessEnv, group: WorkingGro
   await new FixtureRunner(workingGroupMintCapacityProposalFixture).run()
 
   // Approve mint capacity
-  const voteForProposalFixture = new VoteForProposalFixture(
+  const voteForProposalFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
   )

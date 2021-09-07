@@ -45,6 +45,7 @@ fn setup_members(count: u8) {
             Some(account_id.to_vec()),
             None,
             None,
+            None,
         )
         .unwrap();
     }
@@ -288,19 +289,22 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_stake(stake_amount)
             .with_proposer(member_id);
 
-        let account_balance = 500000;
+        let account_top_up = 500000;
+        let account_starting_balance =
+            <Runtime as stake::Trait>::Currency::total_balance(&account_id);
+
         let _imbalance =
-            <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+            <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_top_up);
 
         assert_eq!(
             <Runtime as stake::Trait>::Currency::total_balance(&account_id),
-            account_balance
+            account_starting_balance + account_top_up
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
             <Runtime as stake::Trait>::Currency::total_balance(&account_id),
-            account_balance - stake_amount
+            account_starting_balance + account_top_up - stake_amount
         );
 
         let mut proposal = ProposalsEngine::proposals(proposal_id);
@@ -339,7 +343,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let cancellation_fee = ProposalCancellationFee::get() as u128;
         assert_eq!(
             <Runtime as stake::Trait>::Currency::total_balance(&account_id),
-            account_balance - cancellation_fee
+            account_starting_balance + account_top_up - cancellation_fee
         );
     });
 }
@@ -496,6 +500,8 @@ where
     }
 }
 
+const NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE: u8 = 15;
+
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
 where
     SuccessfulCall: Fn() -> DispatchResult,
@@ -504,7 +510,7 @@ where
         let account_id: [u8; 32] = [self.member_id as u8; 32];
 
         if self.setup_environment {
-            setup_members(15);
+            setup_members(NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE);
             setup_council();
 
             increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1000000);
@@ -573,7 +579,10 @@ fn spending_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
         let new_balance = <BalanceOf<Runtime>>::from(5555u32);
 
-        let target_account_id: [u8; 32] = [12; 32];
+        // account id outside range of generated member accounts when environement is setup
+        // to ensure it doesn't get any endowed balance
+        let target_account_id: [u8; 32] =
+            [NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE + 1; 32];
 
         assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
 
@@ -591,6 +600,7 @@ fn spending_proposal_execution_succeeds() {
         .with_member_id(member_id as u64);
 
         let converted_account_id: AccountId32 = target_account_id.clone().into();
+
         assert_eq!(Balances::free_balance(converted_account_id.clone()), 0);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();

@@ -82,12 +82,17 @@ impl GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl Trait for Test {
     type Event = ();
     type MemberId = u64;
     type PaidTermId = u32;
     type SubscriptionId = u32;
     type ActorId = u32;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
 pub struct TestExternalitiesBuilder<T: Trait> {

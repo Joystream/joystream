@@ -46,7 +46,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       this.error('There is no reward relationship associated with this worker!', { exit: ExitCodes.InvalidInput })
     }
 
-    console.log(chalk.white(`Current worker reward: ${this.formatReward(reward)}`))
+    console.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
 
     const newRewardValue = await this.promptForParam(
       'BalanceOfMint',
@@ -61,7 +61,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     ])
 
     const updatedGroupMember = await this.getApi().groupMember(this.group, workerId)
-    this.log(chalk.green(`Worker ${chalk.white(workerId)} reward has been updated!`))
-    this.log(chalk.green(`New worker reward: ${chalk.white(this.formatReward(updatedGroupMember.reward))}`))
+    this.log(chalk.green(`Worker ${chalk.magentaBright(workerId)} reward has been updated!`))
+    this.log(chalk.green(`New worker reward: ${chalk.magentaBright(this.formatReward(updatedGroupMember.reward))}`))
   }
 }

@@ -1,4 +1,4 @@
-FROM node:14 as builder
+FROM --platform=linux/x86-64 node:14 as builder
 
 WORKDIR /joystream
 COPY . /joystream
@@ -9,6 +9,7 @@ RUN  rm -fr /joystream/pioneer
 RUN yarn --forzen-lockfile
 
 RUN yarn workspace @joystream/types build
+RUN yarn workspace @joystream/content-metadata-protobuf build:ts
 RUN yarn workspace query-node-root build
 RUN yarn workspace storage-node build
 

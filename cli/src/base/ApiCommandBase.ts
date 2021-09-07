@@ -6,7 +6,7 @@ import { getTypeDef, Option, Tuple, TypeRegistry } from '@polkadot/types'
 import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo } from '@polkadot/types/types'
 
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { ApiPromise, WsProvider } from '@polkadot/api'
+import { ApiPromise, SubmittableResult, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
@@ -16,6 +16,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
+import { Event } from '@polkadot/types/interfaces'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -125,7 +126,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return (
       '{\n' +
       Object.keys(obj)
-        .map((prop) => `  ${prop}${chalk.white(':' + obj[prop])}`)
+        .map((prop) => `  ${prop}${chalk.magentaBright(':' + obj[prop])}`)
         .join('\n') +
       '\n}'
     )
@@ -351,7 +352,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>) {
+  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(account, {}, (result) => {
@@ -401,11 +402,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,
     warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
-  ): Promise<boolean> {
+  ): Promise<SubmittableResult | false> {
     try {
-      await this.sendExtrinsic(account, tx)
+      const res = await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
-      return true
+      return res
     } catch (e) {
       if (e instanceof ExtrinsicFailedError && warnOnly) {
         this.warn(`Extrinsic failed! ${e.message}`)
@@ -424,10 +425,19 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: string,
     params: CodecArg[],
     warnOnly = false
-  ): Promise<boolean> {
-    this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+  ): Promise<SubmittableResult | false> {
+    this.log(chalk.magentaBright(`\nSending ${module}.${method} extrinsic...`))
     const tx = await this.getOriginalApi().tx[module][method](...params)
     return await this.sendAndFollowTx(account, tx, warnOnly)
+  }
+
+  // TODO:
+  // Switch to:
+  // public findEvent<S extends keyof AugmentedEvents<'promise'> & string, M extends keyof AugmentedEvents<'promise'>[S] & string>
+  //          (result: SubmittableResult, section: S, method: M): Event | undefined {
+  // Once augment-api is supported
+  public findEvent(result: SubmittableResult, section: string, method: string): Event | undefined {
+    return result.findRecord(section, method)?.event
   }
 
   async buildAndSendExtrinsic(

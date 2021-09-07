@@ -5,7 +5,7 @@
   "scripts": {
     "build": "./build.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
-    "lint": "echo \"Skippinng\"",
+    "lint": "yarn workspace query-node-mappings lint",
     "clean": "rm -rf ./generated",
     "clean:query-node": "rm -rf ./generated/graphql-server",
     "processor:start": "DEBUG=${DEBUG} hydra-processor run -e ../.env",

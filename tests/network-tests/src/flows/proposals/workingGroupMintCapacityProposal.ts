@@ -1,7 +1,10 @@
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
 import { FlowProps } from '../../Flow'
-import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../../fixtures/proposalsModule'
+import {
+  VoteForProposalAndExpectExecutionFixture,
+  WorkingGroupMintCapacityProposalFixture,
+} from '../../fixtures/proposalsModule'
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
 import { FixtureRunner } from '../../Fixture'
@@ -40,7 +43,7 @@ async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, group:
   // Propose mint capacity
   await new FixtureRunner(workingGroupMintCapacityProposalFixture).run()
 
-  const voteForProposalFixture: VoteForProposalFixture = new VoteForProposalFixture(
+  const voteForProposalFixture = new VoteForProposalAndExpectExecutionFixture(
     api,
     workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
   )

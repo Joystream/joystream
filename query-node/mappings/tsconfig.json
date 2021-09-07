@@ -18,5 +18,5 @@
       "@polkadot/types/augment": ["../../types/augment/augment-types.ts"]
     }
   },
-  "include": ["./**/*"]
+  "include": ["./giza/**/*"]
 }
