@@ -216,6 +216,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Storage event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
+    /// Content id representation.
+    type ContentId: Parameter + Member + Codec + Default + Copy + MaybeSerialize + Ord + PartialEq;
+
     /// Data object ID type.
     type DataObjectId: Parameter
         + Member
@@ -932,7 +935,7 @@ decl_storage! {
         /// "Max objects size for a storage bucket voucher" number limit.
         pub VoucherMaxObjectsSizeLimit get (fn voucher_max_objects_size_limit): u64;
 
-        /// "Max objects number for a storage bucket voucher" number limit.
+        /// "Max objects number for a storage  bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
         /// DynamicBagCreationPolicy by bag type storage map.
