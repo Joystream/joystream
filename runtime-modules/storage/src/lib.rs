@@ -462,7 +462,7 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct DataObject<Balance> {
-    /// Defines whether the data object was accepted by a liaison.
+    /// Defines whether the data object was accepted by a liason.
     pub accepted: bool,
 
     /// A reward for the data object deletion.
@@ -655,7 +655,7 @@ pub type UploadParameters<T> = UploadParametersRecord<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct UploadParametersRecord<MemberId, ChannelId, AccountId, Balance> {
-    /// Public key used authentication in upload to liaison.
+    /// Public key used authentication in upload to liason.
     pub authentication_key: Vec<u8>,
 
     /// Static or dynamic bag to upload data.
