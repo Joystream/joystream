@@ -16,6 +16,7 @@ import {
 } from '../../types'
 import queue from 'queue'
 import _ from 'lodash'
+import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
 
 // TODO: Adjust limits and intervals
 const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
@@ -82,13 +83,15 @@ export class NetworkingService {
   }
 
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
-    const endpointsData = details.storageBag.storedBy
+    const endpointsData = details.storageBag.storageAssignments
       .filter(
-        (b) => b.operatorStatus.__typename === 'StorageBucketOperatorStatusActive' && b.operatorMetadata?.nodeEndpoint
+        (a) =>
+          a.storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive' &&
+          a.storageBucket.operatorMetadata?.nodeEndpoint
       )
-      .map((b) => ({
-        bucketId: b.id,
-        endpoint: b.operatorMetadata!.nodeEndpoint!,
+      .map((a) => ({
+        bucketId: a.storageBucket.id,
+        endpoint: a.storageBucket.operatorMetadata!.nodeEndpoint!,
       }))
 
     return this.filterStorageNodeEndpoints(endpointsData)
@@ -109,12 +112,16 @@ export class NetworkingService {
       exists: !!details,
       isSupported:
         (this.config.buckets === 'all' &&
-          details?.storageBag.distributedBy.some((d) =>
-            d.operators.some((o) => o.workerId === this.config.workerId)
+          details?.storageBag.distirbutionAssignments.some((d) =>
+            d.distributionBucket.operators.some(
+              (o) => o.workerId === this.config.workerId && o.status === DistributionBucketOperatorStatus.Active
+            )
           )) ||
         (Array.isArray(this.config.buckets) &&
           this.config.buckets.some((bucketId) =>
-            details?.storageBag.distributedBy.map((b) => b.id).includes(bucketId.toString())
+            details?.storageBag.distirbutionAssignments
+              .map((a) => a.distributionBucket.id)
+              .includes(bucketId.toString())
           )),
       data: details
         ? {
@@ -263,8 +270,8 @@ export class NetworkingService {
         : await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
     const objectsData: DataObjectData[] = []
     data.forEach((bucket) => {
-      bucket.distributedBags.forEach((bag) => {
-        bag.objects.forEach((object) => {
+      bucket.bagAssignments.forEach((a) => {
+        a.storageBag.objects.forEach((object) => {
           const { ipfsHash, id, size } = object
           objectsData.push({ contentHash: ipfsHash, objectId: id, size: parseInt(size) })
         })

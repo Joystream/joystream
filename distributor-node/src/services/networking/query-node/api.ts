@@ -5,7 +5,7 @@ import {
   GetDataObjectDetails,
   GetDataObjectDetailsQuery,
   GetDataObjectDetailsQueryVariables,
-  DistirubtionBucketsWithObjectsFragment,
+  DistirubtionBucketWithObjectsFragment,
   GetDistributionBucketsWithObjectsByIdsQuery,
   GetDistributionBucketsWithObjectsByIdsQueryVariables,
   GetDistributionBucketsWithObjectsByIds,
@@ -66,7 +66,7 @@ export class QueryNodeApi {
     )
   }
 
-  public getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<DistirubtionBucketsWithObjectsFragment[]> {
+  public getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<DistirubtionBucketWithObjectsFragment[]> {
     return this.multipleEntitiesQuery<
       GetDistributionBucketsWithObjectsByIdsQuery,
       GetDistributionBucketsWithObjectsByIdsQueryVariables
@@ -75,7 +75,7 @@ export class QueryNodeApi {
 
   public getDistributionBucketsWithObjectsByWorkerId(
     workerId: number
-  ): Promise<DistirubtionBucketsWithObjectsFragment[]> {
+  ): Promise<DistirubtionBucketWithObjectsFragment[]> {
     return this.multipleEntitiesQuery<
       GetDistributionBucketsWithObjectsByWorkerIdQuery,
       GetDistributionBucketsWithObjectsByWorkerIdQueryVariables
