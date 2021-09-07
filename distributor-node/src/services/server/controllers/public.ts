@@ -87,7 +87,6 @@ export class PublicApiController {
     const { promise, objectSize } = pendingDownload
     const response = await promise
     const source = new URL(response.config.url!)
-    // TODO: FIXME: This may not be available soon! (may be removed from storage node)
     const contentType = response.headers['content-type'] || DEFAULT_CONTENT_TYPE
     res.setHeader('content-type', contentType)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
@@ -211,13 +210,12 @@ export class PublicApiController {
           message: 'Data object does not exist',
         }
         res.status(404).json(errorRes)
-        // TODO: FIXME: UNCOMMENT!
-        // } else if (!objectInfo.isSupported) {
-        //   const errorRes: ErrorResponse = {
-        //     message: 'Data object not served by this node',
-        //   }
-        //   res.status(421).json(errorRes)
-        //   // TODO: Redirect to other node that supports it?
+      } else if (!objectInfo.isSupported) {
+        const errorRes: ErrorResponse = {
+          message: 'Data object not served by this node',
+        }
+        res.status(421).json(errorRes)
+        // TODO: Try to direct to a node that supports it?
       } else {
         const { data: objectData } = objectInfo
         if (!objectData) {

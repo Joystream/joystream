@@ -1,8 +1,7 @@
 # Paths are relative to root distribution-node directory
 overwrite: true
 
-# schema: '../../../../../query-node/generated/graphql-server/generated/schema.graphql'
-schema: 'src/services/networking/query-node/mock.graphql'
+schema: '../query-node/generated/graphql-server/generated/schema.graphql'
 
 documents:
   - 'src/services/networking/query-node/queries/*.graphql'

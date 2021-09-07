@@ -4,19 +4,24 @@ fragment DataObjectDetails on StorageDataObject {
   ipfsHash
   isAccepted
   storageBag {
-    storedBy {
-      id
-      operatorMetadata {
-        nodeEndpoint
-      }
-      operatorStatus {
-        __typename
+    storageAssignments {
+      storageBucket {
+        id
+        operatorMetadata {
+          nodeEndpoint
+        }
+        operatorStatus {
+          __typename
+        }
       }
     }
-    distributedBy {
-      id
-      operators {
-        workerId
+    distirbutionAssignments {
+      distributionBucket {
+        id
+        operators {
+          workerId
+          status
+        }
       }
     }
   }
@@ -28,26 +33,28 @@ query getDataObjectDetails($id: ID!) {
   }
 }
 
-fragment DistirubtionBucketsWithObjects on DistributionBucket {
+fragment DistirubtionBucketWithObjects on DistributionBucket {
   id
-  distributedBags {
-    objects {
-      id
-      size
-      ipfsHash
+  bagAssignments {
+    storageBag {
+      objects {
+        id
+        size
+        ipfsHash
+      }
     }
   }
 }
 
 query getDistributionBucketsWithObjectsByIds($ids: [ID!]) {
   distributionBuckets(where: { id_in: $ids }) {
-    ...DistirubtionBucketsWithObjects
+    ...DistirubtionBucketWithObjects
   }
 }
 
 query getDistributionBucketsWithObjectsByWorkerId($workerId: Int!) {
-  distributionBuckets(where: { operators_some: { workerId_eq: $workerId } }) {
-    ...DistirubtionBucketsWithObjects
+  distributionBuckets(where: { operators_some: { workerId_eq: $workerId, status_eq: ACTIVE } }) {
+    ...DistirubtionBucketWithObjects
   }
 }
 
