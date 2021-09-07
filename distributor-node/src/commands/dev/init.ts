@@ -38,7 +38,7 @@ export default class DevInit extends AccountsCommandBase {
       return
     }
 
-    this.log(`Making member id: ${memberId} the content lead.`)
+    this.log(`Making member id: ${memberId} the distribution lead.`)
 
     // Create curator lead opening
     const addOpeningRes = await this.api.sendExtrinsic(
