@@ -150,7 +150,6 @@ export default class Server extends ApiCommandBase {
  * Run the data syncronization process.
  *
  * @param workerId - worker ID
- * @param workerId - worker ID
  * @param queryNodeUrl - Query Node for data fetching
  * @param uploadsDir - data uploading directory
  * @param syncWorkersNumber - defines a number of the async processes for sync

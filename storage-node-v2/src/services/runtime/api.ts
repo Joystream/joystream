@@ -33,7 +33,7 @@ export async function createApi(apiUrl: string): Promise<ApiPromise> {
 
   const api = new ApiPromise({ provider, types })
   await api.isReadyOrError
-  
+
   api.on('error', (err) =>
     logger.error(`Api promise error: ${err.target?._url}`)
   )

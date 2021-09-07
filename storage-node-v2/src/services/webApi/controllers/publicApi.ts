@@ -25,7 +25,8 @@ import send from 'send'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
 import { timeout } from 'promise-timeout'
-import { getUploadsDir, getWorkerId } from './common'
+import { getUploadsDir, getWorkerId, getQueryNodeUrl } from './common'
+import { getStorageBucketIdsByWorkerId } from '../../../services/sync/storageObligations'
 const fsPromises = fs.promises
 
 /**
@@ -116,8 +117,13 @@ export async function uploadFile(req: express.Request, res: express.Response): P
 
     verifyFileSize(fileObj.size)
 
-    const hash = await hashFile(fileObj.path)
-    const bagId = parseBagId(api, uploadRequest.bagId)
+    const queryNodeUrl = getQueryNodeUrl(res)
+    const workerId = getWorkerId(res)
+
+    const [, hash] = await Promise.all([
+      verifyBucketId(queryNodeUrl, workerId, uploadRequest.storageBucketId),
+      hashFile(fileObj.path),
+    ])
 
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
@@ -543,4 +549,25 @@ function getCommandConfig(res: express.Response): {
   }
 
   throw new Error('No Query Node URL loaded.')
+}
+
+/**
+ * Validates the storage bucket ID obligations for the worker (storage provider).
+ * It throws an error when storage bucket doesn't belong to the worker.
+ *
+ * @param queryNodeUrl - Query Node URL
+ * @param workerId - worker(storage provider) ID
+ * @param bucketId - storage bucket ID
+ * @returns void promise.
+ */
+async function verifyBucketId(
+  queryNodeUrl: string,
+  workerId: number,
+  bucketId: number
+): Promise<void> {
+  const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
+
+  if (!bucketIds.includes(bucketId.toString())) {
+    throw new Error('Incorrect storage bucket ID.')
+  }
 }
