@@ -142,7 +142,6 @@ pub trait Trait:
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub struct ContentParameters {
-    pub liason_auth_key: Vec<u8>,
     pub size: u64,
     pub ipfs_content_id: Vec<u8>,
 }
