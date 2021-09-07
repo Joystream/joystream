@@ -18,7 +18,7 @@ use core::hash::Hash;
 use codec::Codec;
 use codec::{Decode, Encode};
 
-use storage::{
+pub use storage::{
     BagIdType, DataObjectCreationParameters, DynamicBagIdType, UploadParameters,
     UploadParametersRecord,
 };
@@ -30,7 +30,8 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::ModuleId;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -42,17 +43,19 @@ pub use common::{
     MembershipTypes, StorageOwnership, Url,
 };
 
+use sp_runtime::traits::AccountIdConversion;
+
 type Storage<T> = storage::Module<T>;
 
-pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
+pub(crate) type ContentId<T> = <T as storage::Trait>::ContentId;
 
-pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
+// pub(crate) type DataObjectTypeId<T> = <T as storage::Trait>::DataObjectTypeId;
 
-pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
-    <T as MembershipTypes>::MemberId,
-    <T as StorageOwnership>::ChannelId,
-    <T as StorageOwnership>::DAOId,
->;
+// pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
+//     <T as MembershipTypes>::MemberId,
+//     <T as StorageOwnership>::ChannelId,
+//     <T as StorageOwnership>::DAOId,
+// >;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -82,12 +85,24 @@ pub trait Trait:
     frame_system::Trait
     + ContentActorAuthenticator
     + Clone
-    + StorageOwnership
-    + MembershipTypes
-    + GovernanceCurrency //    + storage::Trait
+//    + StorageOwnership
+//    + MembershipTypes
+    + GovernanceCurrency
+    + storage::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+
+    /// DAO id representation.
+    type DAOId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + Ord
+        + PartialEq;
 
     /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
@@ -117,7 +132,10 @@ pub trait Trait:
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
     // Type that handles asset uploads to storage frame_system
-    type StorageSystem: StorageSystem<Self>;
+//    type StorageSystem: StorageSystem<Self>;
+
+    // in order to get treasury accounts
+    type ModuleId: Get<ModuleId>;
 }
 
 /// Specifies characteristics of an asset
@@ -156,9 +174,9 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
 // simplification type
 pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
-        <T as MembershipTypes>::MemberId,
+        <T as membership::Trait>::MemberId,
         <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as StorageOwnership>::DAOId,
+        <T as Trait>::DAOId,
     >,
     Error<T>,
 >;
@@ -214,9 +232,9 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId> {
 
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
-    <T as MembershipTypes>::MemberId,
+    <T as membership::Trait>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
+    <T as Trait>::DAOId,
     <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
 >;
@@ -240,10 +258,10 @@ pub struct ChannelOwnershipTransferRequestRecord<
 
 // ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
-    <T as StorageOwnership>::ChannelId,
-    <T as MembershipTypes>::MemberId,
+    <T as storage::Trait>::ChannelId,
+    <T as membership::Trait>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
+    <T as Trait>::DAOId,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
@@ -304,6 +322,8 @@ pub struct VideoCreationParameters {
     assets: Vec<NewAsset>,
     /// Metadata for the video.
     meta: Vec<u8>,
+    /// liason authorization keys
+    liason_auth_key: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -762,7 +782,7 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+//            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
 
             //
             // == MUTATION SAFE ==
@@ -909,7 +929,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+                origin.clone(),
                 &actor,
                 &channel.owner,
             )?;
@@ -920,16 +940,14 @@ decl_module! {
             // ADDING CONTENT TO STORAGE NODE
 
             // Pick out the assets to be uploaded to storage frame_system
-            // let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets, &channel_id);
+            let upload_parameters = Self::pick_content_parameters_from_assets(
+                &params,
+                &channel_id,
+                &video_id,
+            );
 
-            // let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-
-            // This should be first mutation
-            // Try add assets to storage
-            // T::StorageSystem::atomically_add_content(
-            //     object_owner,
-            //     content_parameters,
-            // )?;
+            // try adding assets to storage
+            Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
 
             //
             // == MUTATION SAFE ==
@@ -1349,15 +1367,46 @@ impl<T: Trait> Module<T> {
     //         _ => None,
     //     }
     // }
-    // fn pick_content_parameters_from_assets(
-    //     assets: &[NewAsset],
-    //     channel_id: &T::ChannelId,
-    // ) -> Vec<ContentParameters> {
-    //     assets
-    //         .iter()
-    //         .filter_map(|asset| Self::build_upload_parameters(asset, channel_id))
-    //         .collect()
-    // }
+    fn pick_content_parameters_from_assets(
+        params: &VideoCreationParameters,
+        channel_id: &T::ChannelId,
+        video_id: &T::VideoId,
+    ) -> UploadParameters<T> {
+        let treasury_account = <T as Trait>::ModuleId::get().into_sub_account(video_id);
+
+        // price per megabyte of storage
+        let fee = Storage::<T>::data_object_per_mega_byte_fee();
+
+        // dynamic bag for a media object
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+        let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
+
+        let object_creation_list: Vec<DataObjectCreationParameters> = params
+            .assets
+            .iter()
+            .filter_map(|asset| {
+                // treasury account for storing the reward
+                match asset {
+                    NewAsset::Upload(creation_parameters) => {
+                        // list holding creation parameters
+                        Some(DataObjectCreationParameters {
+                            size: creation_parameters.size,
+                            ipfs_content_id: creation_parameters.ipfs_content_id.clone(),
+                        })
+                    }
+                    _ => None,
+                }
+            })
+            .collect();
+        // the parameters record
+        UploadParametersRecord {
+            authentication_key: params.liason_auth_key.clone(),
+            bag_id: bag_id,
+            object_creation_list: object_creation_list,
+            deletion_prize_source_account_id: treasury_account,
+            expected_data_size_fee: fee,
+        }
+    }
 
     fn actor_to_channel_owner(
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1390,20 +1439,20 @@ decl_event!(
         ContentActor = ContentActor<
             <T as ContentActorAuthenticator>::CuratorGroupId,
             <T as ContentActorAuthenticator>::CuratorId,
-            <T as MembershipTypes>::MemberId,
+            <T as membership::Trait>::MemberId,
         >,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
         VideoCategoryId = <T as Trait>::VideoCategoryId,
-        ChannelId = <T as StorageOwnership>::ChannelId,
+        ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
         PlaylistId = <T as Trait>::PlaylistId,
         SeriesId = <T as Trait>::SeriesId,
         PersonId = <T as Trait>::PersonId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
-        Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
+        Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,

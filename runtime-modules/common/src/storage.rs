@@ -3,7 +3,6 @@ use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::DispatchResult;
-use sp_std::vec::Vec;
 
 // New owner type for storage object struct
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
