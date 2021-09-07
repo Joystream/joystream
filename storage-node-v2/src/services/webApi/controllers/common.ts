@@ -44,3 +44,18 @@ export function getWorkerId(res: express.Response): number {
 
   throw new Error('No Joystream worker ID loaded.')
 }
+
+/**
+ * Returns the QueryNode URL from the starting parameters.
+ *
+ * @remarks
+ * This is a helper function. It parses the response object for a variable and
+ * throws an error on failure.
+ */
+export function getQueryNodeUrl(res: express.Response): string {
+  if (res.locals.queryNodeUrl) {
+    return res.locals.queryNodeUrl
+  }
+
+  throw new Error('No Query Node URL loaded.')
+}

@@ -2,7 +2,11 @@ import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import { getUploadsDir, getTempFileUploadingDir } from './common'
+import {
+  getUploadsDir,
+  getTempFileUploadingDir,
+  getQueryNodeUrl,
+} from './common'
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
@@ -107,7 +111,6 @@ export async function getLocalDataObjectsByBagId(
     const queryNodeUrl = getQueryNodeUrl(res)
     const bagId = getBagId(req)
 
-    // TODO: Introduce dedicated QueryNode method.
     const [cids, requiredCids] = await Promise.all([
       getCachedLocalDataObjects(uploadsDir),
       getCachedDataObjectsObligations(queryNodeUrl, bagId),
@@ -179,21 +182,6 @@ function getBagId(req: express.Request): string {
   }
 
   throw new Error('No bagId provided.')
-}
-
-/**
- * Returns the QueryNode URL from the starting parameters.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getQueryNodeUrl(res: express.Response): string {
-  if (res.locals.queryNodeUrl) {
-    return res.locals.queryNodeUrl
-  }
-
-  throw new Error('No Query Node URL loaded.')
 }
 
 /**

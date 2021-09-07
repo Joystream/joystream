@@ -64,6 +64,20 @@ export async function getStorageObligationsFromRuntime(
   return model
 }
 
+export async function getStorageBucketIdsByWorkerId(
+  queryNodeUrl: string,
+  workerId: number
+): Promise<string[]> {
+  const api = new QueryNodeApi(queryNodeUrl)
+  const allBuckets = await getAllBuckets(api)
+
+  const bucketIds = allBuckets
+    .filter((bucket) => bucket.operatorStatus?.workerId === workerId)
+    .map((bucket) => bucket.id)
+
+  return bucketIds
+}
+
 export async function getDataObjectIDsByBagId(
   queryNodeUrl: string,
   bagId: string
