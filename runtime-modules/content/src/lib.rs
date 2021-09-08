@@ -352,7 +352,7 @@ pub struct Video_<ChannelId, SeriesId, StorageParameters> {
     pub is_censored: bool,
 
     /// storage parameters used during deletion
-    pub storage_parameters: Option<StorageParameters>,
+    pub maybe_storage_parameters: Option<StorageParameters>,
 }
 
 type Video<T> =
@@ -983,7 +983,7 @@ decl_module! {
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
                 /// storage parameters for later storage deletion
-                storage_parameters: storage_params,
+                maybe_storage_parameters: storage_params,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1053,12 +1053,24 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
-            Self::ensure_video_can_be_removed(video)?;
+            Self::ensure_video_can_be_removed(&video)?;
 
-           // DELETE VIDEO FROM STORAGE:
-           // bag id
-           // deletion prize account id
-           // objects id
+            // MAYBE DELETE VIDEO FROM STORAGE:
+            if let Some(params) = video.maybe_storage_parameters {
+                // retrieve bag id from channel id
+                let dyn_bag = DynamicBagIdType::
+                <T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+                let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
+
+                let mut object_ids = BTreeSet::new();
+                object_ids.insert(params.data_object_id);
+
+                Storage::<T>::delete_data_objects(
+                    params.deletion_prize_source_account_id.clone(),
+                    bag_id,
+                    object_ids.clone(),
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -1334,7 +1346,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: Video<T>) -> DispatchResult {
+    fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
         ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
         Ok(())
     }
