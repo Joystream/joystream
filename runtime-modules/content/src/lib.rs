@@ -697,16 +697,15 @@ decl_module! {
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
 
-        // next channel id
+            // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // Pick out the assets to be uploaded to storage frame_system
+            // adding content to storage node if uploading is needed
             let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                 &params.assets,
                 &channel_id
             );
 
-            // adding content to storage
             if let Some(upload_parameters) = maybe_upload_parameters{
                 Storage::<T>::upload_data_objects(upload_parameters)?;
             }
@@ -747,17 +746,15 @@ decl_module! {
                 &channel.owner,
             )?;
 
-
             // Pick out the assets to be uploaded to storage frame_system
             if let Some(assets) = &params.assets {
 
-               // construct upload parameters
+              // adding content to storage if needed
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
                    &channel_id
                );
 
-              // adding content to storage
               if let Some(upload_parameters) = maybe_upload_parameters{
                  Storage::<T>::upload_data_objects(upload_parameters)?;
               }
@@ -952,13 +949,12 @@ decl_module! {
             // next video id
             let video_id = NextVideoId::<T>::get();
 
-            // ADDING CONTENT TO STORAGE NODE
+            // adding the content to storage node if uploading is needed
             let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                 &params.assets,
                 &channel_id
             );
 
-            // adding content to storage
             let storage_params = if let Some(upload_parameters) = maybe_upload_parameters{
                 let params = StorageParameters_ {
                     data_object_id: Storage::<T>::next_data_object_id(),
@@ -1018,14 +1014,12 @@ decl_module! {
 
             // Pick out the assets to be uploaded to storage frame_system
             if let Some(assets) = &params.assets {
-
-               // construct upload parameters
+               // adding content to storage if needed
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
                    &channel_id
                );
 
-              // adding content to storage
               if let Some(upload_parameters) = maybe_upload_parameters{
                  Storage::<T>::upload_data_objects(upload_parameters)?;
               }
@@ -1062,6 +1056,7 @@ decl_module! {
                 <T::MemberId, T::ChannelId>::Channel(channel_id.clone());
                 let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
 
+        // objects id
                 let mut object_ids = BTreeSet::new();
                 object_ids.insert(params.data_object_id);
 
