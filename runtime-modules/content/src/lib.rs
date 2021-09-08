@@ -965,8 +965,8 @@ decl_module! {
             // Ensure there nft transactional status is set to idle.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
 
-            // Authorize auctioneer
-            Self::authorize_auctioneer(
+            // Authorize nft owner
+            Self::authorize_nft_owner(
                 origin,
                 &auctioneer,
                 &video
@@ -1001,8 +1001,8 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Authorize auctioneer
-            Self::authorize_auctioneer(
+            // Authorize nft owner
+            Self::authorize_nft_owner(
                 origin,
                 &auctioneer,
                 &video
@@ -1222,8 +1222,8 @@ decl_module! {
             // Ensure there is a bid to accept
             let last_bid = auction.ensure_last_bid_exists::<T>()?;
 
-            // Ensure actor authorized to complete auction
-            Self::authorize_auctioneer(origin, &actor, &video)?;
+            // Ensure actor is authorized to accept open auction bid
+            Self::authorize_nft_owner(origin, &actor, &video)?;
 
             if let NFTStatus::Owned(owned_nft) = &video.nft_status {
 

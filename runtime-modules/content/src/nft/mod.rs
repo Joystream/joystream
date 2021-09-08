@@ -4,20 +4,18 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Authorize auctioneer
-    pub(crate) fn authorize_auctioneer(
+    /// Authorize nft owner
+    pub(crate) fn authorize_nft_owner(
         origin: T::Origin,
         actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
         video: &Video<T>,
-    ) -> Result<ContentOwner<T::MemberId, T::CuratorGroupId, T::DAOId>, DispatchError> {
+    ) -> DispatchResult {
         ensure_signed(origin)?;
 
         // The content owner will be..
         let content_owner = Self::actor_to_content_owner(&actor)?;
 
-        video.ensure_nft_ownership::<T>(&content_owner)?;
-
-        Ok(content_owner)
+        video.ensure_nft_ownership::<T>(&content_owner)
     }
 
     /// Check whether nft auction expired
