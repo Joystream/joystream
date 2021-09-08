@@ -10,42 +10,22 @@ pub type MemberId<T> = <T as membership::Trait>::MemberId;
 /// Owner royalty
 pub type Royalty = Perbill;
 
-/// Order details
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OrderDetails<AccountId: Default, Balance: Default> {
-    pub account_id: AccountId,
-    pub price: Balance,
-}
-
-impl<AccountId: Default, Balance: Default> OrderDetails<AccountId, Balance> {
-    /// Creates new `OrderDetails` instance
-    pub fn new(account_id: AccountId, price: Balance) -> Self {
-        Self { account_id, price }
-    }
-}
-
 /// NFT transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum TransactionalStatus<
-    AccountId: Default + Ord,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     Balance: Default,
 > {
     Idle,
-    InitiatedOfferToMember(MemberId, Option<OrderDetails<AccountId, Balance>>),
+    InitiatedOfferToMember(MemberId, Option<Balance>),
     Auction(AuctionRecord<BlockNumber, Balance, MemberId>),
-    BuyNow(OrderDetails<AccountId, Balance>),
+    BuyNow(Balance),
 }
 
-impl<
-        AccountId: Default + Ord,
-        BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy + Ord,
-        Balance: Default,
-    > Default for TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>
+impl<BlockNumber: BaseArithmetic + Copy, MemberId: Default + Copy + Ord, Balance: Default> Default
+    for TransactionalStatus<BlockNumber, MemberId, Balance>
 {
     fn default() -> Self {
         Self::Idle
@@ -56,7 +36,6 @@ impl<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct OwnedNFT<
-    AccountId: Default + Ord,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
@@ -64,18 +43,17 @@ pub struct OwnedNFT<
     Balance: Default,
 > {
     pub owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
-    pub transactional_status: TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>,
+    pub transactional_status: TransactionalStatus<BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
 
 impl<
-        AccountId: Default + Ord,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq + Ord,
         CuratorGroupId: Default + Copy + PartialEq,
         DAOId: Default + Copy + PartialEq,
         Balance: Default,
-    > OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
+    > OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     /// Whether provided owner is nft owner
     pub fn is_owner(&self, owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>) -> bool {
@@ -99,7 +77,6 @@ impl<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum NFTStatus<
-    AccountId: Default + Ord,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
     CuratorGroupId: Default + Copy,
@@ -107,17 +84,16 @@ pub enum NFTStatus<
     Balance: Default,
 > {
     NoneIssued,
-    Owned(OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>),
+    Owned(OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>),
 }
 
 impl<
-        AccountId: Default + Ord,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + Ord,
         CuratorGroupId: Default + Copy,
         DAOId: Default + Copy,
         Balance: Default,
-    > Default for NFTStatus<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
+    > Default for NFTStatus<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     fn default() -> Self {
         Self::NoneIssued
@@ -333,7 +309,6 @@ pub type Auction<T> =
 
 /// OwnedNFT alias type for simplification.
 pub type NFT<T> = OwnedNFT<
-    <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     CuratorGroupId<T>,

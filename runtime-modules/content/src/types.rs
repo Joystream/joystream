@@ -205,7 +205,6 @@ pub struct VideoUpdateParameters<ContentParameters> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoRecord<
-    AccountId: Default + Ord,
     ChannelId,
     SeriesId,
     BlockNumber: BaseArithmetic + Copy,
@@ -221,11 +220,10 @@ pub struct VideoRecord<
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// Whether nft for this video have been issued.
-    pub nft_status: NFTStatus<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>,
+    pub nft_status: NFTStatus<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>,
 }
 
 impl<
-        AccountId: Default + Ord,
         ChannelId: Clone,
         SeriesId: Clone,
         BlockNumber: BaseArithmetic + Copy,
@@ -233,17 +231,7 @@ impl<
         CuratorGroupId: Default + Copy + PartialEq,
         DAOId: Default + Copy + PartialEq,
         Balance: Clone + Default,
-    >
-    VideoRecord<
-        AccountId,
-        ChannelId,
-        SeriesId,
-        BlockNumber,
-        MemberId,
-        CuratorGroupId,
-        DAOId,
-        Balance,
-    >
+    > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     /// Ensure nft status is set to NoneIssued
     pub fn ensure_none_issued<T: Trait>(&self) -> DispatchResult {
@@ -346,14 +334,9 @@ impl<
     }
 
     /// Sets nft transactional status to `BuyNow`
-    pub fn set_buy_now_transactionl_status(
-        mut self,
-        participant_account_id: AccountId,
-        buy_now_price: Balance,
-    ) -> Self {
+    pub fn set_buy_now_transactionl_status(mut self, buy_now_price: Balance) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
-            let order_details = OrderDetails::new(participant_account_id, buy_now_price);
-            owned_nft.transactional_status = TransactionalStatus::BuyNow(order_details);
+            owned_nft.transactional_status = TransactionalStatus::BuyNow(buy_now_price);
         }
         self
     }
@@ -381,11 +364,11 @@ impl<
     pub fn set_pending_offer_transactional_status(
         mut self,
         to: MemberId,
-        offer_details: Option<OrderDetails<AccountId, Balance>>,
+        balance: Option<Balance>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status =
-                TransactionalStatus::InitiatedOfferToMember(to, offer_details);
+                TransactionalStatus::InitiatedOfferToMember(to, balance);
         }
         self
     }
@@ -413,7 +396,6 @@ impl<
 
 /// Video alias type for simplification.
 pub type Video<T> = VideoRecord<
-    <T as frame_system::Trait>::AccountId,
     <T as StorageOwnership>::ChannelId,
     <T as Trait>::SeriesId,
     <T as frame_system::Trait>::BlockNumber,

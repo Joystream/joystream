@@ -231,11 +231,11 @@ impl<T: Trait> Module<T> {
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
         if let NFTStatus::Owned(OwnedNFT {
-            transactional_status: TransactionalStatus::BuyNow(order_details),
+            transactional_status: TransactionalStatus::BuyNow(price),
             ..
         }) = &video.nft_status
         {
-            Self::ensure_sufficient_free_balance(participant_account_id, order_details.price)
+            Self::ensure_sufficient_free_balance(participant_account_id, *price)
         } else {
             Err(Error::<T>::NFTNotInBuyNowState.into())
         }
@@ -249,14 +249,11 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         match &video.nft_status {
             NFTStatus::Owned(OwnedNFT {
-                transactional_status: TransactionalStatus::InitiatedOfferToMember(to, order_details),
+                transactional_status: TransactionalStatus::InitiatedOfferToMember(to, price),
                 ..
             }) if participant == *to => {
-                if let Some(order_details) = order_details {
-                    Self::ensure_sufficient_free_balance(
-                        participant_account_id,
-                        order_details.price,
-                    )?;
+                if let Some(price) = price {
+                    Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
                 }
             }
             _ => return Err(Error::<T>::NoIncomingTransfers.into()),
@@ -267,18 +264,19 @@ impl<T: Trait> Module<T> {
     /// Buy nft
     pub fn buy_now(
         mut video: Video<T>,
+        owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Video<T> {
         if let NFTStatus::Owned(OwnedNFT {
-            transactional_status: TransactionalStatus::BuyNow(order_details),
+            transactional_status: TransactionalStatus::BuyNow(price),
             ref mut owner,
             ..
         }) = &mut video.nft_status
         {
-            T::Currency::slash(&new_owner_account_id, order_details.price);
+            T::Currency::slash(&new_owner_account_id, *price);
 
-            T::Currency::deposit_creating(&order_details.account_id, order_details.price);
+            T::Currency::deposit_creating(&owner_account_id, *price);
 
             *owner = ContentOwner::Member(new_owner);
         }
@@ -287,17 +285,21 @@ impl<T: Trait> Module<T> {
     }
 
     /// Completes nft offer
-    pub fn complete_nft_offer(mut video: Video<T>, new_owner_account_id: T::AccountId) -> Video<T> {
+    pub fn complete_nft_offer(
+        mut video: Video<T>,
+        owner_account_id: T::AccountId,
+        new_owner_account_id: T::AccountId,
+    ) -> Video<T> {
         if let NFTStatus::Owned(OwnedNFT {
-            transactional_status: TransactionalStatus::InitiatedOfferToMember(to, order_details),
+            transactional_status: TransactionalStatus::InitiatedOfferToMember(to, price),
             ref mut owner,
             ..
         }) = &mut video.nft_status
         {
-            if let Some(order_details) = order_details {
-                T::Currency::slash(&new_owner_account_id, order_details.price);
+            if let Some(price) = price {
+                T::Currency::slash(&new_owner_account_id, *price);
 
-                T::Currency::deposit_creating(&order_details.account_id, order_details.price);
+                T::Currency::deposit_creating(&owner_account_id, *price);
             }
 
             *owner = ContentOwner::Member(*to);
