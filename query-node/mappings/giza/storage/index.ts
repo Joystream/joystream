@@ -332,13 +332,12 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
   const [dataObjectIds, uploadParams] = new Storage.DataObjectsUploadedEvent(event).params
-  const { bagId, authenticationKey, objectCreationList } = uploadParams
+  const { bagId, objectCreationList } = uploadParams
   const storageBag = await getBag(store, bagId)
   const dataObjects = dataObjectIds.map((objectId, i) => {
     const objectParams = new DataObjectCreationParameters(registry, objectCreationList[i].toJSON() as any)
     return new StorageDataObject({
       id: objectId.toString(),
-      authenticationKey: bytesToString(authenticationKey),
       isAccepted: false,
       ipfsHash: bytesToString(objectParams.ipfsContentId),
       size: new BN(objectParams.getField('size').toString()),
@@ -354,8 +353,6 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
   await Promise.all(
     dataObjects.map(async (dataObject) => {
       dataObject.isAccepted = true
-      // TODO: Do we still want other storage providers to accept it? How long should the key be valid?
-      // dataObject.authenticationKey = null as any
       await store.save<StorageDataObject>(dataObject)
     })
   )

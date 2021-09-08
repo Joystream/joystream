@@ -167,10 +167,6 @@ type StorageDataObject @entity {
   # TODO: Use "Bytes" for better optimalization?
   "IPFS content hash"
   ipfsHash: String!
-
-  # TODO: Use "Bytes" for better optimalization?
-  "Public key used to authenticate the uploader by the storage provider"
-  authenticationKey: String
 }
 
 type DistributionBucketFamilyMetadata @entity {
