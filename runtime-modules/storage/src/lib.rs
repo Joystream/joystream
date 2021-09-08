@@ -319,6 +319,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
     /// Max number of pending invitations per distribution bucket.
     type MaxNumberOfPendingInvitationsPerDistributionBucket: Get<u64>;
 
+    /// Max data object size in bytes.
+    type MaxDataObjectSize: Get<u64>;
+
     /// Demand the storage working group leader authorization.
     /// TODO: Refactor after merging with the Olympia release.
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult;
@@ -467,6 +470,9 @@ pub struct DataObject<Balance> {
 
     /// Object size in bytes.
     pub size: u64,
+
+    /// Content identifier presented as IPFS hash.
+    pub ipfs_content_id: Vec<u8>,
 }
 
 /// Type alias for the BagRecord.
@@ -652,9 +658,6 @@ pub type UploadParameters<T> = UploadParametersRecord<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct UploadParametersRecord<MemberId, ChannelId, AccountId, Balance> {
-    /// Public key used authentication in upload to liaison.
-    pub authentication_key: Vec<u8>,
-
     /// Static or dynamic bag to upload data.
     pub bag_id: BagIdType<MemberId, ChannelId>,
 
@@ -1427,6 +1430,9 @@ decl_error! {
 
         /// Distribution family bound to a bag creation policy.
         DistributionFamilyBoundToBagCreationPolicy,
+
+        /// Max data object size exceeded.
+        MaxDataObjectSizeExceeded,
     }
 }
 
@@ -1476,6 +1482,9 @@ decl_module! {
         /// Exports const - max number of pending invitations per distribution bucket.
         const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 =
             T::MaxNumberOfPendingInvitationsPerDistributionBucket::get();
+
+        /// Exports const - max data object size in bytes.
+        const MaxDataObjectSize: u64 = T::MaxDataObjectSize::get();
 
         // ===== Storage Lead actions =====
 
@@ -2900,6 +2909,7 @@ impl<T: Trait> Module<T> {
             accepted: false,
             deletion_prize,
             size: obj.size,
+            ipfs_content_id: obj.ipfs_content_id,
         });
 
         let mut next_data_object_id = Self::next_data_object_id();
@@ -3182,6 +3192,15 @@ impl<T: Trait> Module<T> {
         ensure!(
             !params.object_creation_list.is_empty(),
             Error::<T>::NoObjectsOnUpload
+        );
+
+        // Check data objects' max size.
+        ensure!(
+            params
+                .object_creation_list
+                .iter()
+                .all(|obj| obj.size <= T::MaxDataObjectSize::get()),
+            Error::<T>::MaxDataObjectSizeExceeded
         );
 
         let bag = Self::ensure_bag_exists(&params.bag_id)?;

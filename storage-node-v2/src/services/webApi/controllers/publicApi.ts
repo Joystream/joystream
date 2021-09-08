@@ -11,6 +11,7 @@ import { hashFile } from '../../../services/helpers/hashing'
 import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
 import { parseBagId } from '../../helpers/bagTypes'
+import { BagId } from '@joystream/types/storage'
 import logger from '../../../services/logger'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
@@ -19,6 +20,7 @@ import fs from 'fs'
 import path from 'path'
 import send from 'send'
 import { CLIError } from '@oclif/errors'
+import { hexToString } from '@polkadot/util'
 const fsPromises = fs.promises
 
 /**
@@ -107,10 +109,13 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
-    verifyFileSize(fileObj.size)
+    const api = getApi(res)
     await verifyFileMimeType(fileObj.path)
 
     const hash = await hashFile(fileObj.path)
+    const bagId = parseBagId(api, uploadRequest.bagId)
+
+    const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
     const newPath = fileObj.path.replace(fileObj.filename, hash)
@@ -119,11 +124,16 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    const api = getApi(res)
-    const bagId = parseBagId(api, uploadRequest.bagId)
-    await acceptPendingDataObjects(api, bagId, getAccount(res), getWorkerId(res), uploadRequest.storageBucketId, [
-      uploadRequest.dataObjectId,
-    ])
+    const workerId = getWorkerId(res)
+    if (!accepted) {
+      await acceptPendingDataObjects(api, bagId, getAccount(res), workerId, uploadRequest.storageBucketId, [
+        uploadRequest.dataObjectId,
+      ])
+    } else {
+      logger.warn(
+        `Received already accepted data object. DataObjectId = ${uploadRequest.dataObjectId} WorkerId = ${workerId}`
+      )
+    }
     res.status(201).json({
       id: hash,
     })
@@ -294,17 +304,41 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
 }
 
 /**
- * Validates file size. It throws an error when file size exceeds the limit
+ * Validates the runtime info for the data object. It verifies contentID,
+ * file size, and 'accepted' status.
  *
- * @param fileSize - runtime API promise
- * @returns void promise.
+ * @param api - runtime API promise
+ * @param bagId - bag ID
+ * @param dataObjectId - data object ID to validate in runtime
+ * @param fileSize - file size to validate
+ * @param hash - file multihash
+ * @returns promise with the 'data object accepted' flag.
  */
-function verifyFileSize(fileSize: number) {
-  const MAX_FILE_SIZE = 1000000 // TODO: Get this const from the runtime
+async function verifyDataObjectInfo(
+  api: ApiPromise,
+  bagId: BagId,
+  dataObjectId: number,
+  fileSize: number,
+  hash: string
+): Promise<boolean> {
+  const dataObject = await api.query.storage.dataObjectsById(bagId, dataObjectId)
 
-  if (fileSize > MAX_FILE_SIZE) {
-    throw new WebApiError('Max file size exceeded.', 400)
+  // Cannot get 'size' as a regular property.
+  const dataObjectSize = dataObject.getField('size')
+
+  if (dataObjectSize?.toNumber() !== fileSize) {
+    throw new WebApiError(`File size doesn't match the data object's size for data object ID = ${dataObjectId}`, 400)
   }
+
+  const runtimeHash = hexToString(dataObject.ipfsContentId.toString())
+  if (runtimeHash !== hash) {
+    throw new WebApiError(
+      `File multihash doesn't match the data object's ipfsContentId for data object ID = ${dataObjectId}`,
+      400
+    )
+  }
+
+  return dataObject.accepted.valueOf()
 }
 
 /**

@@ -563,7 +563,6 @@
         }
     },
     "UploadParameters": {
-        "authenticationKey": "Bytes",
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
         "deletionPrizeSourceAccountId": "GenericAccountId",
@@ -583,7 +582,8 @@
     "DataObject": {
         "accepted": "bool",
         "deletion_prize": "u128",
-        "size": "u64"
+        "size": "u64",
+        "ipfsContentId": "Bytes"
     },
     "DistributionBucketId": "u64",
     "DistributionBucketFamilyId": "u64",
