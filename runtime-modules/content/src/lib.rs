@@ -1282,24 +1282,11 @@ decl_module! {
 
             // Issue vNFT
             let mut video = video;
-            let creator_royalty = if let NFTStatus::Owned(OwnedNFT {
-                transactional_status,
-                creator_royalty,
-                ..
-            }) = &mut video.nft_status
-            {
-                *transactional_status = TransactionalStatus::Idle;
-
-                creator_royalty.to_owned()
-            } else {
-                video.nft_status = NFTStatus::Owned(OwnedNFT {
-                    transactional_status: TransactionalStatus::Idle,
-                    owner: content_owner,
-                    creator_royalty: royalty,
-                });
-
-                royalty
-            };
+            video.nft_status = NFTStatus::Owned(OwnedNFT {
+                transactional_status: TransactionalStatus::Idle,
+                owner: content_owner,
+                creator_royalty: royalty,
+            });
 
             // Update the video
             VideoById::<T>::insert(video_id, video.clone());
@@ -1307,7 +1294,7 @@ decl_module! {
             Self::deposit_event(RawEvent::NftIssued(
                 auctioneer,
                 video_id,
-                creator_royalty,
+                royalty,
                 metadata,
                 to,
             ));
