@@ -19,7 +19,7 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 pub use storage::{
-    BagIdType, DataObjectCreationParameters, DynamicBagIdType, UploadParameters,
+    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, UploadParameters,
     UploadParametersRecord,
 };
 
@@ -665,7 +665,7 @@ decl_module! {
             params: ChannelCreationParameters<T::AccountId>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
-                origin.clone(),
+                origin,
                 &actor,
             )?;
 
@@ -683,7 +683,7 @@ decl_module! {
             );
 
             // adding content to storage
-            Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
+            Storage::<T>::upload_data_objects(upload_parameters)?;
 
             //
             // == MUTATION SAFE ==
@@ -716,7 +716,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
-                origin.clone(),
+                origin,
                 &actor,
                 &channel.owner,
             )?;
@@ -748,7 +748,7 @@ decl_module! {
             // add assets to storage
             // This should not fail because of prior can_add_content() check!
             if let Some(upload_parameters) = maybe_upload_params {
-                Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
+                Storage::<T>::upload_data_objects(upload_parameters)?;
             }
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
@@ -918,7 +918,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
-                origin.clone(),
+                origin,
                 &actor,
                 &channel.owner,
             )?;
@@ -935,7 +935,7 @@ decl_module! {
             );
 
             // try adding assets to storage
-            Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
+            Storage::<T>::upload_data_objects(upload_parameters)?;
 
             //
             // == MUTATION SAFE ==
@@ -975,7 +975,7 @@ decl_module! {
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
 
             ensure_actor_authorized_to_update_channel::<T>(
-                origin.clone(),
+                origin,
                 &actor,
                 &Self::channel_by_id(channel_id).owner,
             )?;
@@ -992,7 +992,7 @@ decl_module! {
             };
 
             if let Some(upload_parameters) = maybe_upload_params {
-                Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
+                Storage::<T>::upload_data_objects(upload_parameters)?;
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
