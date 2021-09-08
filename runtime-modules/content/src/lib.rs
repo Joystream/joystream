@@ -343,14 +343,34 @@ type VideoUpdateParameters<T> = VideoUpdateParameters_<NewAsset<T>>;
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Video<ChannelId, SeriesId> {
+pub struct Video_<ChannelId, SeriesId, StorageParameters> {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
+
+    /// storage parameters used during deletion
+    pub storage_parameters: Option<StorageParameters>,
 }
+
+type Video<T> =
+    Video_<<T as storage::Trait>::ChannelId, <T as Trait>::SeriesId, StorageParameters<T>>;
+
+/// Record of the parameters used for accessing storage info
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct StorageParameters_<AccountId, DataObjectId> {
+    /// Account for the data object deletion prize.
+    pub deletion_prize_source_account_id: AccountId,
+
+    /// Data Object Id for the content
+    pub data_object_id: DataObjectId,
+}
+
+type StorageParameters<T> =
+    StorageParameters_<<T as frame_system::Trait>::AccountId, <T as storage::Trait>::DataObjectId>;
 
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -492,7 +512,7 @@ decl_storage! {
 
         pub ChannelCategoryById get(fn channel_category_by_id): map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
 
-        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T::ChannelId, T::SeriesId>;
+        pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
@@ -939,21 +959,31 @@ decl_module! {
             );
 
             // adding content to storage
-            if let Some(upload_parameters) = maybe_upload_parameters{
+            let storage_params = if let Some(upload_parameters) = maybe_upload_parameters{
+                let params = StorageParameters_ {
+                    data_object_id: Storage::<T>::next_data_object_id(),
+                        deletion_prize_source_account_id: upload_parameters
+                            .deletion_prize_source_account_id.clone(),
+                    };
                 Storage::<T>::upload_data_objects(upload_parameters)?;
-            }
+                Some(params)
+            } else {
+                None
+            };
 
             //
             // == MUTATION SAFE ==
             //
 
-            let video: Video<T::ChannelId, T::SeriesId> = Video {
+            let video: Video<T> = Video_ {
                 in_channel: channel_id,
                 // keep track of which season the video is in if it is an 'episode'
                 // - prevent removing a video if it is in a season (because order is important)
                 in_series: None,
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
+                /// storage parameters for later storage deletion
+                storage_parameters: storage_params,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1025,11 +1055,10 @@ decl_module! {
 
             Self::ensure_video_can_be_removed(video)?;
 
-        // DELETE VIDEO FROM STORAGE:
-        // bag id
-        // deletion prize account id
-        // objects id
-
+           // DELETE VIDEO FROM STORAGE:
+           // bag id
+           // deletion prize account id
+           // objects id
 
             //
             // == MUTATION SAFE ==
@@ -1296,9 +1325,7 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
-    fn ensure_video_exists(
-        video_id: &T::VideoId,
-    ) -> Result<Video<T::ChannelId, T::SeriesId>, Error<T>> {
+    fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         ensure!(
             VideoById::<T>::contains_key(video_id),
             Error::<T>::VideoDoesNotExist
@@ -1307,7 +1334,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: Video<T::ChannelId, T::SeriesId>) -> DispatchResult {
+    fn ensure_video_can_be_removed(video: Video<T>) -> DispatchResult {
         ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
         Ok(())
     }
@@ -1342,11 +1369,12 @@ impl<T: Trait> Module<T> {
 
         if let NewAsset::<T>::Upload(creation_upload_params) = assets {
             Some(UploadParametersRecord {
-                authentication_key: creation_upload_params.athentication_key,
+                authentication_key: creation_upload_params.authentication_key.clone(),
                 bag_id: bag_id,
-                object_creation_list: creation_upload_params.object_creation_list,
+                object_creation_list: creation_upload_params.object_creation_list.clone(),
                 deletion_prize_source_account_id: creation_upload_params
-                    .deletion_prize_source_account_id,
+                    .deletion_prize_source_account_id
+                    .clone(),
                 expected_data_size_fee: creation_upload_params.expected_data_size_fee,
             })
         } else {
