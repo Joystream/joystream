@@ -331,7 +331,7 @@ decl_module! {
             )?;
 
             // The channel owner will be..
-            let channel_owner = Self::actor_to_channel_owner(&actor)?;
+            let channel_owner = Self::actor_to_content_owner(&actor)?;
 
             // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
@@ -962,27 +962,26 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Authorize auctioneer, retrieve nft owner
-            let nft_owner = Self::authorize_auctioneer(
+            // Ensure there nft transactional status is set to idle.
+            video.ensure_nft_transactional_status_is_idle::<T>()?;
+
+            // Authorize auctioneer
+            Self::authorize_auctioneer(
                 origin,
                 &auctioneer,
                 &video
             )?;
 
             // Validate round_duration & starting_price
-            Self::validate_auction_params(&auction_params, &video)?;
-
-            // Ensure nft transactional status is idle
-            video.ensure_nft_transactional_status_is_idle::<T>()?;
+            Self::validate_auction_params(&auction_params)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Create new auction
-            let creator_royalty = auction_params.creator_royalty.clone();
             let auction = AuctionRecord::new(auction_params.clone());
-            let video = video.set_auction_transactional_status(auction, nft_owner, creator_royalty);
+            let video = video.set_auction_transactional_status(auction);
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1161,13 +1160,12 @@ decl_module! {
             }
         }
 
-        /// Complete video auction
+        /// Complete auction
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn complete_video_auction(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            member_id: T::MemberId,
             video_id: T::VideoId,
-            auction_mode: AuctionMode
         ) {
 
             // Ensure given video exists
@@ -1176,13 +1174,10 @@ decl_module! {
             // Ensure auction for given video id exists, retrieve corresponding one
             let auction = video.ensure_nft_auction_state::<T>()?;
 
-            // Ensure chosen auction mode is correct
-            video.ensure_correct_auction_mode::<T>(&auction_mode)?;
-
             let last_bid = auction.ensure_last_bid_exists::<T>()?;
 
             // Ensure actor authorized to complete auction.
-            Self::ensure_actor_authorized_to_complete_auction(origin, &actor, &auction, &video)?;
+            Self::ensure_actor_is_last_bidder(origin, member_id, &auction)?;
 
             // Ensure auction can be completed
             Self::ensure_auction_can_be_completed(&auction)?;
@@ -1197,15 +1192,56 @@ decl_module! {
                 // == MUTATION SAFE ==
                 //
 
-                let video = Self::complete_auction(
-                    actor.clone(), video, video_id, last_bidder_account_id, owner_account_id, auction_mode.clone()
-                );
+                let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
 
                 // Update the video
                 VideoById::<T>::insert(video_id, video.clone());
 
                 // Trigger event
-                Self::deposit_event(RawEvent::AuctionCompleted(actor, video_id, auction_mode));
+                Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id));
+            }
+        }
+
+        /// Accept open auction bid
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn settle_open_auction(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+        ) {
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure auction for given video id exists, retrieve corresponding one
+            let auction = video.ensure_nft_auction_state::<T>()?;
+
+            // Ensure open type auction
+            auction.ensure_is_open_auction::<T>()?;
+
+            // Ensure there is a bid to accept
+            let last_bid = auction.ensure_last_bid_exists::<T>()?;
+
+            // Ensure actor authorized to complete auction
+            Self::authorize_auctioneer(origin, &actor, &video)?;
+
+            if let NFTStatus::Owned(owned_nft) = &video.nft_status {
+
+                let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
+
+                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
+
+                // Update the video
+                VideoById::<T>::insert(video_id, video.clone());
+
+                // Trigger event
+                Self::deposit_event(RawEvent::OpenAuctionBidAccepted(actor, video_id));
             }
         }
 
@@ -1226,15 +1262,17 @@ decl_module! {
             // Ensure have not been issued yet
             video.ensure_none_issued::<T>()?;
 
-            // Authorize auctioneer
-            Self::authorize_auctioneer(
-                origin,
-                &auctioneer,
-                &video
-            )?;
+            // Ensure channel exists, retrieve channel owner
+            let channel_owner = Self::ensure_channel_exists(&video.in_channel)?.owner;
+
+            ensure_actor_authorized_to_update_channel::<T>(origin, &auctioneer, &channel_owner)?;
+
+            // The content owner will be..
+            let content_owner = Self::actor_to_content_owner(&auctioneer)?;
 
             // Enure royalty bounds satisfied, if provided
             if let Some(royalty) = royalty {
+                Self::ensure_reward_account_is_set(video.in_channel)?;
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
 
@@ -1243,9 +1281,33 @@ decl_module! {
             //
 
             // Issue vNFT
-
             let mut video = video;
-            Self::issue_vnft(auctioneer, &mut video, video_id, royalty, metadata, to);
+            let creator_royalty = if let NFTStatus::Owned(OwnedNFT {
+                transactional_status,
+                creator_royalty,
+                ..
+            }) = &mut video.nft_status
+            {
+                *transactional_status = TransactionalStatus::Idle;
+
+                creator_royalty.to_owned()
+            } else {
+                video.nft_status = NFTStatus::Owned(OwnedNFT {
+                    transactional_status: TransactionalStatus::Idle,
+                    owner: content_owner,
+                    creator_royalty: royalty,
+                });
+
+                royalty
+            };
+
+            Self::deposit_event(RawEvent::NftIssued(
+                auctioneer,
+                video_id,
+                creator_royalty,
+                metadata,
+                to,
+            ));
         }
 
         /// Offer vNFT
@@ -1269,7 +1331,7 @@ decl_module! {
             video.ensure_nft_transactional_status_is_idle::<T>()?;
 
             // Ensure from is vnft owner
-            video.ensure_vnft_ownership::<T>(&NFTOwner::Member(from))?;
+            video.ensure_vnft_ownership::<T>(&ContentOwner::Member(from))?;
 
             //
             // == MUTATION SAFE ==
@@ -1309,7 +1371,7 @@ decl_module! {
             video.ensure_pending_offer_exists::<T>()?;
 
             // Ensure provided participant owns vnft
-            video.ensure_vnft_ownership::<T>(&NFTOwner::Member(participant_id))?;
+            video.ensure_vnft_ownership::<T>(&ContentOwner::Member(participant_id))?;
 
             //
             // == MUTATION SAFE ==
@@ -1372,7 +1434,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure participant_id is vnft owner
-            video.ensure_vnft_ownership::<T>(&NFTOwner::Member(participant_id))?;
+            video.ensure_vnft_ownership::<T>(&ContentOwner::Member(participant_id))?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1497,9 +1559,9 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    fn actor_to_channel_owner(
+    fn actor_to_content_owner(
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> ActorToChannelOwnerResult<T> {
+    ) -> ActorToContentOwnerResult<T> {
         match actor {
             // Lead should use their member or curator role to authorize
             ContentActor::Lead => Err(Error::<T>::ActorCannotBeLead),
@@ -1507,13 +1569,13 @@ impl<T: Trait> Module<T> {
                 curator_group_id,
                 _curator_id
             ) => {
-                Ok(ChannelOwner::CuratorGroup(*curator_group_id))
+                Ok(ContentOwner::CuratorGroup(*curator_group_id))
             }
             ContentActor::Member(member_id) => {
-                Ok(ChannelOwner::Member(*member_id))
+                Ok(ContentOwner::Member(*member_id))
             }
             // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+            // ContentActor::Dao(id) => Ok(ContentOwner::Dao(id)),
         }
     }
 
@@ -1530,10 +1592,7 @@ impl<T: Trait> Module<T> {
         >,
     ) -> Result<T::AccountId, Error<T>> {
         match owned_nft.owner {
-            NFTOwner::Member(member_id)
-            | NFTOwner::ChannelOwner(ChannelOwner::Member(member_id)) => {
-                Self::ensure_member_controller_account_id(member_id)
-            }
+            ContentOwner::Member(member_id) => Self::ensure_member_controller_account_id(member_id),
             _ => {
                 if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
                     Ok(reward_account)
@@ -1732,7 +1791,8 @@ decl_event!(
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
-        AuctionCompleted(ContentActor, VideoId, AuctionMode),
+        AuctionCompleted(MemberId, VideoId),
+        OpenAuctionBidAccepted(ContentActor, VideoId),
         OfferStarted(VideoId, MemberId, MemberId, Option<Balance>),
         OfferCancelled(VideoId, MemberId),
         OfferAccepted(VideoId, MemberId),

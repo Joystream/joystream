@@ -30,7 +30,7 @@ pub enum NewAsset<ContentParameters> {
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
+pub enum ContentOwner<MemberId, CuratorGroupId, DAOId> {
     /// A Member owns the channel
     Member(MemberId),
     /// A specific curation group owns the channel
@@ -40,8 +40,8 @@ pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
 }
 
 // simplification type
-pub(crate) type ActorToChannelOwnerResult<T> = Result<
-    ChannelOwner<
+pub(crate) type ActorToContentOwnerResult<T> = Result<
+    ContentOwner<
         MemberId<T>,
         <T as ContentActorAuthenticator>::CuratorGroupId,
         <T as StorageOwnership>::DAOId,
@@ -52,10 +52,10 @@ pub(crate) type ActorToChannelOwnerResult<T> = Result<
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
 impl<MemberId: Default, CuratorGroupId, DAOId> Default
-    for ChannelOwner<MemberId, CuratorGroupId, DAOId>
+    for ContentOwner<MemberId, CuratorGroupId, DAOId>
 {
     fn default() -> Self {
-        ChannelOwner::Member(MemberId::default())
+        ContentOwner::Member(MemberId::default())
     }
 }
 
@@ -90,7 +90,7 @@ pub struct ChannelCategoryUpdateParameters {
 pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
 {
     /// The owner of a channel
-    pub owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    pub owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
     pub videos: Vec<VideoId>,
     /// The playlists under this channel
@@ -114,7 +114,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::SeriesId,
 >;
 
-/// A request to buy a channel by a new ChannelOwner.
+/// A request to buy a channel by a new ContentOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelOwnershipTransferRequestRecord<
@@ -126,7 +126,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
     AccountId,
 > {
     pub channel_id: ChannelId,
-    pub new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    pub new_owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
     pub payment: Balance,
     pub new_reward_account: Option<AccountId>,
 }
@@ -261,46 +261,10 @@ impl<
         }
     }
 
-    /// Whether vnft have been issued
-    pub fn is_vnft_issued(&self) -> bool {
-        match self.nft_status {
-            NFTStatus::Owned(OwnedNFT { is_issued, .. }) => is_issued,
-            _ => false,
-        }
-    }
-
-    /// Ensure vnft is not issued
-    pub fn ensure_vnft_is_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_vnft_issued(), Error::<T>::VNFTIsNotIssued);
-        Ok(())
-    }
-
-    /// Ensure vnft is already issued
-    pub fn ensure_vnft_is_not_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_vnft_issued(), Error::<T>::VNFTIsAlreadyIssued);
-        Ok(())
-    }
-
-    /// Ensure chosen auction mode is correct
-    pub fn ensure_correct_auction_mode<T: Trait>(
-        &self,
-        auction_mode: &AuctionMode,
-    ) -> DispatchResult {
-        match auction_mode {
-            AuctionMode::WithIssuance(_) => {
-                self.ensure_vnft_is_not_issued::<T>()?;
-            }
-            AuctionMode::WithoutIsuance => {
-                self.ensure_vnft_is_issued::<T>()?;
-            }
-        }
-        Ok(())
-    }
-
     /// Ensure given NFTOwner is vnft owner
     pub fn ensure_vnft_ownership<T: Trait>(
         &self,
-        owner: &NFTOwner<MemberId, CuratorGroupId, DAOId>,
+        owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>,
     ) -> DispatchResult {
         if let NFTStatus::Owned(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
@@ -405,18 +369,9 @@ impl<
     pub fn set_auction_transactional_status(
         mut self,
         auction: AuctionRecord<BlockNumber, Balance, MemberId>,
-        owner: NFTOwner<MemberId, CuratorGroupId, DAOId>,
-        creator_royalty: Option<Royalty>,
     ) -> Self {
         if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Auction(auction);
-        } else {
-            self.nft_status = NFTStatus::Owned(OwnedNFT {
-                owner,
-                transactional_status: TransactionalStatus::Auction(auction),
-                creator_royalty,
-                is_issued: false,
-            });
         }
         self
     }

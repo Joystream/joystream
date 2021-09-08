@@ -33,14 +33,14 @@ export class ContentActor extends JoyEnum({
   Lead: Null,
 }) {}
 
-export class ChannelOwner extends JoyEnum({
+export class ContentOwner extends JoyEnum({
   Member: MemberId,
   Curators: CuratorGroupId,
   Dao: DAOId,
 }) {}
 
 export class Channel extends JoyStructDecorated({
-  owner: ChannelOwner,
+  owner: ContentOwner,
   videos: Vec.with(VideoId),
   playlists: Vec.with(PlaylistId),
   series: Vec.with(SeriesId),
@@ -62,7 +62,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
   channel_id: ChannelId,
-  new_owner: ChannelOwner,
+  new_owner: ContentOwner,
   payment: u128,
   new_reward_account: Option.with(AccountId),
 }) {}
@@ -176,7 +176,7 @@ export const contentTypes = {
   ContentActor,
   NewAsset,
   Channel,
-  ChannelOwner,
+  ContentOwner,
   ChannelCategoryId,
   ChannelCategory,
   ChannelCategoryCreationParameters,

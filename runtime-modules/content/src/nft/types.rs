@@ -52,22 +52,6 @@ impl<
     }
 }
 
-/// enum, representing NFT owner
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NFTOwner<MemberId: Default + Copy, CuratorGroupId: Default + Copy, DAOId: Default + Copy> {
-    ChannelOwner(ChannelOwner<MemberId, CuratorGroupId, DAOId>),
-    Member(MemberId),
-}
-
-impl<MemberId: Default + Copy, CuratorGroupId: Default + Copy, DAOId: Default + Copy> Default
-    for NFTOwner<MemberId, CuratorGroupId, DAOId>
-{
-    fn default() -> Self {
-        Self::Member(MemberId::default())
-    }
-}
-
 /// Owned vNFT representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -79,11 +63,9 @@ pub struct OwnedNFT<
     DAOId: Default + Copy,
     Balance: Default,
 > {
-    pub owner: NFTOwner<MemberId, CuratorGroupId, DAOId>,
+    pub owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
     pub transactional_status: TransactionalStatus<AccountId, BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
-    // whether nft is issued
-    pub is_issued: bool,
 }
 
 impl<
@@ -96,20 +78,19 @@ impl<
     > OwnedNFT<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     /// Whether provided owner is nft owner
-    pub fn is_owner(&self, owner: &NFTOwner<MemberId, CuratorGroupId, DAOId>) -> bool {
+    pub fn is_owner(&self, owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>) -> bool {
         self.owner.eq(owner)
     }
 
     /// Create new vNFT
     pub fn new(
-        owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+        owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
         creator_royalty: Option<Royalty>,
     ) -> Self {
         Self {
-            owner: NFTOwner::ChannelOwner(owner),
+            owner,
             transactional_status: TransactionalStatus::Idle,
             creator_royalty,
-            is_issued: false,
         }
     }
 }
@@ -140,22 +121,6 @@ impl<
 {
     fn default() -> Self {
         Self::NoneIssued
-    }
-}
-
-/// Either new auction, which requires vNFT issance or auction for already existing nft.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum AuctionMode {
-    // Auction, where nft issued at the end
-    WithIssuance(Metadata),
-    // Auction for already existing nft
-    WithoutIsuance,
-}
-
-impl Default for AuctionMode {
-    fn default() -> Self {
-        Self::WithoutIsuance
     }
 }
 
@@ -227,7 +192,7 @@ impl<
         // Always allow to buy now
         match &self.buy_now_price {
             Some(buy_now_price) if new_bid >= *buy_now_price => (),
-            
+
             // Ensure new bid is greater then last bid + minimal bid step
             _ => {
                 if let Some(last_bid) = &self.last_bid {
@@ -240,8 +205,14 @@ impl<
                         Error::<T>::BidStepConstraintViolated
                     );
                 } else {
-                    ensure!(self.minimal_bid_step <= new_bid, Error::<T>::BidStepConstraintViolated);
-                    ensure!(self.starting_price <= new_bid, Error::<T>::StartingPriceConstraintViolated);
+                    ensure!(
+                        self.minimal_bid_step <= new_bid,
+                        Error::<T>::BidStepConstraintViolated
+                    );
+                    ensure!(
+                        self.starting_price <= new_bid,
+                        Error::<T>::StartingPriceConstraintViolated
+                    );
                 }
             }
         }
@@ -365,8 +336,6 @@ pub type Auction<T> =
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
     pub video_id: VideoId,
-    /// Should only be provided if nft is not issued yet
-    pub creator_royalty: Option<Royalty>,
     /// Auction type (either english or open)
     pub auction_type: AuctionType<BlockNumber>,
     pub starting_price: Balance,

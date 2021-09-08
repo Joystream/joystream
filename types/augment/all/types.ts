@@ -177,7 +177,7 @@ export interface CategoryId extends u64 {}
 
 /** @name Channel */
 export interface Channel extends Struct {
-  readonly owner: ChannelOwner;
+  readonly owner: ContentOwner;
   readonly videos: Vec<VideoId>;
   readonly playlists: Vec<PlaylistId>;
   readonly series: Vec<SeriesId>;
@@ -217,8 +217,8 @@ export interface ChannelCurationStatus extends Null {}
 /** @name ChannelId */
 export interface ChannelId extends u64 {}
 
-/** @name ChannelOwner */
-export interface ChannelOwner extends Enum {
+/** @name ContentOwner */
+export interface ContentOwner extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
   readonly isCurators: boolean;
@@ -230,7 +230,7 @@ export interface ChannelOwner extends Enum {
 /** @name ChannelOwnershipTransferRequest */
 export interface ChannelOwnershipTransferRequest extends Struct {
   readonly channel_id: ChannelId;
-  readonly new_owner: ChannelOwner;
+  readonly new_owner: ContentOwner;
   readonly payment: u128;
   readonly new_reward_account: Option<GenericAccountId>;
 }

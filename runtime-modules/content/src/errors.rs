@@ -163,12 +163,6 @@ decl_error! {
         // Auction does not have bids
         LastBidDoesNotExist,
 
-        // Vnft is not issued
-        VNFTIsNotIssued,
-
-        // Vnft is already issued
-        VNFTIsAlreadyIssued,
-
         // Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
 

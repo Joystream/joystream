@@ -708,14 +708,14 @@
         }
     },
     "Channel": {
-        "owner": "ChannelOwner",
+        "owner": "ContentOwner",
         "videos": "Vec<VideoId>",
         "playlists": "Vec<PlaylistId>",
         "series": "Vec<SeriesId>",
         "is_censored": "bool",
         "reward_account": "Option<GenericAccountId>"
     },
-    "ChannelOwner": {
+    "ContentOwner": {
         "_enum": {
             "Member": "MemberId",
             "Curators": "CuratorGroupId",
@@ -743,7 +743,7 @@
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {
         "channel_id": "ChannelId",
-        "new_owner": "ChannelOwner",
+        "new_owner": "ContentOwner",
         "payment": "u128",
         "new_reward_account": "Option<GenericAccountId>"
     },
