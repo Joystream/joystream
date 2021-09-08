@@ -76,6 +76,9 @@ decl_error! {
         /// NFT for given video id already exists
         NFTAlreadyExists,
 
+        /// NFT for given video id does not exist
+        NFTDoesNotExist,
+
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
 

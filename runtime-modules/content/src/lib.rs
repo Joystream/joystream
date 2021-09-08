@@ -959,6 +959,9 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Ensure nft is already issued
+            video.ensure_nft_is_issued::<T>()?;
+
             // Ensure there nft transactional status is set to idle.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
 
@@ -1257,7 +1260,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure have not been issued yet
-            video.ensure_none_issued::<T>()?;
+            video.ensure_nft_is_not_issued::<T>()?;
 
             // Ensure channel exists, retrieve channel owner
             let channel_owner = Self::ensure_channel_exists(&video.in_channel)?.owner;

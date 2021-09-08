@@ -233,13 +233,24 @@ impl<
         Balance: Clone + Default,
     > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
-    /// Ensure nft status is set to NoneIssued
-    pub fn ensure_none_issued<T: Trait>(&self) -> DispatchResult {
+    fn is_issued(&self) -> bool {
         if let NFTStatus::NoneIssued = self.nft_status {
-            Ok(())
+            false
         } else {
-            Err(Error::<T>::NFTAlreadyExists.into())
+            true
         }
+    }
+
+    /// Ensure nft status is set to `NoneIssued`
+    pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
+        ensure!(!self.is_issued(), Error::<T>::NFTAlreadyExists);
+        Ok(())
+    }
+
+    /// Ensure nft status is set to `Owned`
+    pub fn ensure_nft_is_issued<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.is_issued(), Error::<T>::NFTDoesNotExist);
+        Ok(())
     }
 
     /// Ensure given NFTOwner is nft owner
