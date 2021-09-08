@@ -73,23 +73,11 @@ decl_error! {
         /// Auction for given video did not start
         AuctionDidNotStart,
 
-        /// NFT auction for given video_id have been started already
-        AuctionAlreadyStarted,
-
-        /// NFT does not exist
-        NFTDoesNotExist,
-
         /// NFT for given video id already exists
         NFTAlreadyExists,
 
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
-
-        /// Actor origin authorization error happened
-        ActorOriginAuthError,
-
-        /// Actor not authorized to manage auction
-        ActorNotAuthorizedToManageAuction,
 
         /// Given origin does not own nft
         DoesNotOwnNFT,
@@ -142,9 +130,6 @@ decl_error! {
         /// No pending transfers for given NFT
         PendingTransferDoesNotExist,
 
-        /// Pending transfer for given NFT already exists
-        PendingAlreadyExists,
-
         // No incoming transfers for given nft origin
         NoIncomingTransfers,
 
@@ -153,9 +138,6 @@ decl_error! {
 
         // Actor, which makes an attempt to finish auction is not a winner
         CallerIsNotAWinner,
-
-        // Actor is not authorized to complete auction.
-        ActorIsNotAuthorizedToCompleteAuction,
 
         // Auction cannot be completed
         AuctionCannotBeCompleted,
