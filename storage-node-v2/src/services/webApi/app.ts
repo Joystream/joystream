@@ -114,8 +114,6 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
   return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
-    return true
-
     const tokenString = req.headers['x-api-key'] as string
     const token = parseUploadToken(tokenString)
 
