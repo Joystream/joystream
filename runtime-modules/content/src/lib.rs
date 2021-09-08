@@ -329,9 +329,9 @@ pub struct VideoCreationParameters<AccountId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParameters {
+pub struct VideoUpdateParameters<AccountId> {
     /// Assets referenced by metadata
-    assets: Option<Vec<NewAsset>>,
+    creation_parameters: Option<ContentCreationParameters<AccountId>>,
     /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
 }
@@ -969,47 +969,31 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            params: VideoUpdateParameters,
+            params: VideoUpdateParameters<T::AccountId>,
         ) {
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
 
             ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+                origin.clone(),
                 &actor,
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
+
             // Pick out the assets to be uploaded to storage frame_system
-            // let new_assets = if let Some(assets) = &params.assets {
-            //     let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
+            let maybe_upload_params = if let Some(creation_params) =
+                &params.creation_parameters {
+                let upload_parameters: UploadParameters<T> =
+                    Self::pick_content_parameters_from_assets(creation_params, &channel_id);
+                Some(upload_parameters)
+            } else {
+                None
+            };
 
-            //     let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-
-            //     // check assets can be uploaded to storage.
-            //     // update can_add_content() to only take &refrences
-            //     T::StorageSystem::can_add_content(
-            //         object_owner.clone(),
-            //         upload_parameters.clone(),
-            //     )?;
-
-            //     Some((upload_parameters, object_owner))
-            // } else {
-            //     None
-            // };
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // add assets to storage
-            // This should not fail because of prior can_add_content() check!
-            // if let Some((upload_parameters, object_owner)) = new_assets {
-            //     T::StorageSystem::atomically_add_content(
-            //         object_owner,
-            //         upload_parameters,
-            //     )?;
-            // }
+            if let Some(upload_parameters) = maybe_upload_params {
+                Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
+            }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
@@ -1490,7 +1474,7 @@ decl_event!(
             VideoId,
             VideoCreationParameters<AccountId>,
         ),
-        VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
+        VideoUpdated(ContentActor, VideoId, VideoUpdateParameters<AccountId>),
         VideoDeleted(ContentActor, VideoId),
 
         VideoCensorshipStatusUpdated(
