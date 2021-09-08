@@ -1301,6 +1301,9 @@ decl_module! {
                 royalty
             };
 
+            // Update the video
+            VideoById::<T>::insert(video_id, video.clone());
+
             Self::deposit_event(RawEvent::NftIssued(
                 auctioneer,
                 video_id,
