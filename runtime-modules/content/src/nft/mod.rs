@@ -15,7 +15,7 @@ impl<T: Trait> Module<T> {
         // The content owner will be..
         let content_owner = Self::actor_to_content_owner(&actor)?;
 
-        video.ensure_vnft_ownership::<T>(&content_owner)?;
+        video.ensure_nft_ownership::<T>(&content_owner)?;
 
         Ok(content_owner)
     }
@@ -227,7 +227,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure given participant can buy vnft now
+    /// Ensure given participant can buy nft now
     pub fn ensure_can_buy_now(
         video: &Video<T>,
         participant_account_id: &T::AccountId,
@@ -239,7 +239,7 @@ impl<T: Trait> Module<T> {
         {
             Self::ensure_sufficient_free_balance(participant_account_id, order_details.price)
         } else {
-            Err(Error::<T>::VNFTNotInBuyNowState.into())
+            Err(Error::<T>::NFTNotInBuyNowState.into())
         }
     }
 
@@ -266,7 +266,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Buy vnft
+    /// Buy nft
     pub fn buy_now(
         mut video: Video<T>,
         new_owner_account_id: T::AccountId,
@@ -288,11 +288,8 @@ impl<T: Trait> Module<T> {
         video.set_idle_transactional_status()
     }
 
-    /// Completes vnft offer
-    pub fn complete_vnft_offer(
-        mut video: Video<T>,
-        new_owner_account_id: T::AccountId,
-    ) -> Video<T> {
+    /// Completes nft offer
+    pub fn complete_nft_offer(mut video: Video<T>, new_owner_account_id: T::AccountId) -> Video<T> {
         if let NFTStatus::Owned(OwnedNFT {
             transactional_status: TransactionalStatus::InitiatedOfferToMember(to, order_details),
             ref mut owner,
@@ -311,8 +308,8 @@ impl<T: Trait> Module<T> {
         video.set_idle_transactional_status()
     }
 
-    /// Complete vnft transfer
-    pub(crate) fn complete_vnft_auction_transfer(
+    /// Complete nft transfer
+    pub(crate) fn complete_nft_auction_transfer(
         video: &mut Video<T>,
         auction_fee: BalanceOf<T>,
         last_bidder_account_id: T::AccountId,
@@ -380,7 +377,7 @@ impl<T: Trait> Module<T> {
                 let last_bidder = last_bid.bidder;
                 let auction_fee = Self::auction_fee_percentage() * bid;
 
-                Self::complete_vnft_auction_transfer(
+                Self::complete_nft_auction_transfer(
                     &mut video,
                     auction_fee,
                     last_bidder_account_id,

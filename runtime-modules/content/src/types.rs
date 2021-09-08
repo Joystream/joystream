@@ -257,17 +257,17 @@ impl<
         if let NFTStatus::NoneIssued = self.nft_status {
             Ok(())
         } else {
-            Err(Error::<T>::VNFTAlreadyExists.into())
+            Err(Error::<T>::NFTAlreadyExists.into())
         }
     }
 
-    /// Ensure given NFTOwner is vnft owner
-    pub fn ensure_vnft_ownership<T: Trait>(
+    /// Ensure given NFTOwner is nft owner
+    pub fn ensure_nft_ownership<T: Trait>(
         &self,
         owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>,
     ) -> DispatchResult {
         if let NFTStatus::Owned(owned_nft) = &self.nft_status {
-            ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnVNFT);
+            ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnNFT);
         }
         Ok(())
     }
@@ -408,7 +408,7 @@ impl<
         )
     }
 
-    /// Ensure vNFT has pending offer
+    /// Ensure NFT has pending offer
     pub fn ensure_pending_offer_exists<T: Trait>(&self) -> DispatchResult {
         ensure!(
             self.is_pending_offer_transactional_status(),

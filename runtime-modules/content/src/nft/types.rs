@@ -1,6 +1,6 @@
 use super::*;
 
-/// Metadata for vNFT issuance
+/// Metadata for NFT issuance
 pub type Metadata = Vec<u8>;
 
 pub type CuratorGroupId<T> = <T as ContentActorAuthenticator>::CuratorGroupId;
@@ -52,7 +52,7 @@ impl<
     }
 }
 
-/// Owned vNFT representation
+/// Owned NFT representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct OwnedNFT<
@@ -82,7 +82,7 @@ impl<
         self.owner.eq(owner)
     }
 
-    /// Create new vNFT
+    /// Create new NFT
     pub fn new(
         owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
         creator_royalty: Option<Royalty>,

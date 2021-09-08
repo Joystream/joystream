@@ -949,9 +949,9 @@ decl_module! {
             Self::not_implemented()?;
         }
 
-        /// Start video auction
+        /// Start video nft auction
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn start_video_auction(
+        pub fn start_nft_auction(
             origin,
             auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
@@ -1245,9 +1245,9 @@ decl_module! {
             }
         }
 
-        /// Issue vNFT
+        /// Issue NFT
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn issue(
+        pub fn issue_nft(
             origin,
             actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             video_id: T::VideoId,
@@ -1285,7 +1285,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Issue vNFT
+            // Issue NFT
             let mut video = video;
             video.nft_status = NFTStatus::Owned(OwnedNFT {
                 transactional_status: TransactionalStatus::Idle,
@@ -1305,9 +1305,9 @@ decl_module! {
             ));
         }
 
-        /// Offer vNFT
+        /// Offer NFT
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn offer_vnft(
+        pub fn offer_nft(
             origin,
             video_id: T::VideoId,
             from: MemberId<T>,
@@ -1325,8 +1325,8 @@ decl_module! {
             // Ensure there is no pending offer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
 
-            // Ensure from is vnft owner
-            video.ensure_vnft_ownership::<T>(&ContentOwner::Member(from))?;
+            // Ensure from is nft owner
+            video.ensure_nft_ownership::<T>(&ContentOwner::Member(from))?;
 
             //
             // == MUTATION SAFE ==
@@ -1347,7 +1347,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferStarted(video_id, from, to, price));
         }
 
-        /// Cancel vNFT offer
+        /// Cancel NFT offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_offer(
             origin,
@@ -1365,8 +1365,8 @@ decl_module! {
             // Ensure given pending offer exists
             video.ensure_pending_offer_exists::<T>()?;
 
-            // Ensure provided participant owns vnft
-            video.ensure_vnft_ownership::<T>(&ContentOwner::Member(participant_id))?;
+            // Ensure provided participant owns nft
+            video.ensure_nft_ownership::<T>(&ContentOwner::Member(participant_id))?;
 
             //
             // == MUTATION SAFE ==
@@ -1381,7 +1381,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferCancelled(video_id, participant_id));
         }
 
-        /// Accept incoming vNFT offer
+        /// Accept incoming NFT offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_incoming_offer(
             origin,
@@ -1403,8 +1403,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Complete vnft offer
-            let video = Self::complete_vnft_offer(video, receiver_account_id);
+            // Complete nft offer
+            let video = Self::complete_nft_offer(video, receiver_account_id);
 
             VideoById::<T>::insert(video_id, video);
 
@@ -1412,9 +1412,9 @@ decl_module! {
             Self::deposit_event(RawEvent::OfferAccepted(video_id, participant_id));
         }
 
-        /// Sell vNFT
+        /// Sell NFT
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn sell_vnft(
+        pub fn sell_nft(
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
@@ -1428,8 +1428,8 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure participant_id is vnft owner
-            video.ensure_vnft_ownership::<T>(&ContentOwner::Member(participant_id))?;
+            // Ensure participant_id is nft owner
+            video.ensure_nft_ownership::<T>(&ContentOwner::Member(participant_id))?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1438,18 +1438,18 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Place vnft sell order
+            // Place nft sell order
             let video = video.set_buy_now_transactionl_status(participant_account_id, price);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::VNFTSellOrderMade(video_id, participant_id, price));
+            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, participant_id, price));
         }
 
-        /// Buy vNFT
+        /// Buy NFT
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn buy_vnft(
+        pub fn buy_nft(
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
@@ -1462,20 +1462,20 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure given participant can buy vnft now
+            // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&video, &participant_account_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Buy vnft
+            // Buy nft
             let video = Self::buy_now(video, participant_account_id, participant_id);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::VNFTBought(video_id, participant_id));
+            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
         }
     }
 }
@@ -1785,7 +1785,7 @@ decl_event!(
         ),
         PersonDeleted(ContentActor, PersonId),
 
-        // vNFT auction
+        // NFT auction
         AuctionStarted(ContentActor, AuctionParams),
         NftIssued(
             ContentActor,
@@ -1802,7 +1802,7 @@ decl_event!(
         OfferStarted(VideoId, MemberId, MemberId, Option<Balance>),
         OfferCancelled(VideoId, MemberId),
         OfferAccepted(VideoId, MemberId),
-        VNFTSellOrderMade(VideoId, MemberId, Balance),
-        VNFTBought(VideoId, MemberId),
+        NFTSellOrderMade(VideoId, MemberId, Balance),
+        NFTBought(VideoId, MemberId),
     }
 );

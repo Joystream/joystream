@@ -73,14 +73,14 @@ decl_error! {
         /// Auction for given video did not start
         AuctionDidNotStart,
 
-        /// Vnft auction for given video_id have been started already
+        /// NFT auction for given video_id have been started already
         AuctionAlreadyStarted,
 
-        /// vNFT does not exist
-        VNFTDoesNotExist,
+        /// NFT does not exist
+        NFTDoesNotExist,
 
-        /// vNFT for given video id already exists
-        VNFTAlreadyExists,
+        /// NFT for given video id already exists
+        NFTAlreadyExists,
 
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
@@ -91,8 +91,8 @@ decl_error! {
         /// Actor not authorized to manage auction
         ActorNotAuthorizedToManageAuction,
 
-        /// Given origin does not own vnft
-        DoesNotOwnVNFT,
+        /// Given origin does not own nft
+        DoesNotOwnNFT,
 
         /// Royalty Upper Bound Exceeded
         RoyaltyUpperBoundExceeded,
@@ -136,16 +136,16 @@ decl_error! {
         /// Already active auction cannot be cancelled
         ActionIsAlreadyActive,
 
-        /// Can not create auction for vNFT, if auction have been already started or nft is locked for the transfer
+        /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// No pending transfers for given vNFT
+        /// No pending transfers for given NFT
         PendingTransferDoesNotExist,
 
-        /// Pending transfer for given vNFT already exists
+        /// Pending transfer for given NFT already exists
         PendingAlreadyExists,
 
-        // No incoming transfers for given vnft origin
+        // No incoming transfers for given nft origin
         NoIncomingTransfers,
 
         // Creator royalty requires reward account to be set.
@@ -179,7 +179,7 @@ decl_error! {
         MemberProfileNotFound,
 
         // Given video nft is not in buy now state
-        VNFTNotInBuyNowState,
+        NFTNotInBuyNowState,
 
         // Auction type is not `Open`
         IsNotOpenAuctionType,
