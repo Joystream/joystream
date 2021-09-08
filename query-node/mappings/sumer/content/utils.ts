@@ -24,7 +24,7 @@ import {
   MediaType as MediaTypeMetadata,
   VideoMetadata,
   VideoCategoryMetadata,
-} from '@joystream/content-metadata-protobuf'
+} from '@joystream/metadata-protobuf'
 
 import { Content } from '../../../generated/types'
 

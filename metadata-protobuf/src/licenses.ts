@@ -2,7 +2,7 @@
 // This should be factored out into a separate package
 
 import LICENSES from './KnownLicenses.json'
-import { License } from '../compiled/proto/Video_pb'
+import { License } from '../compiled/index'
 
 export type LicenseCode = number
 export const CUSTOM_LICENSE_CODE: LicenseCode = 1000
@@ -39,26 +39,20 @@ export function createKnownLicenseFromCode(code: LicenseCode, attribution?: stri
     throw new Error('Unknown License Code')
   }
 
-  const license = new License()
-
-  license.setCode(code)
+  const license = new License({ code })
 
   if (knownLicense.attributionRequired) {
     if (attribution === undefined) {
       throw new Error('Attribution required for selected license')
     }
-    license.setAttribution(attribution)
+    license.attribution = attribution
   }
 
   return license
 }
 
 export function createCustomKnownLicense(customText: string): License {
-  const license = new License()
-
-  license.setCode(CUSTOM_LICENSE_CODE)
-  license.setCustomText(customText)
-  return license
+  return new License({ code: CUSTOM_LICENSE_CODE, customText })
 }
 
 export default {
