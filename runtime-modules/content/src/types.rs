@@ -227,7 +227,7 @@ pub struct VideoRecord<
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
-    /// Whether nft for this video was issued.
+    /// Whether nft for this video have been issued.
     pub nft_status: NFTStatus<AccountId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>,
 }
 

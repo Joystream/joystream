@@ -1249,11 +1249,11 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn issue(
             origin,
-            auctioneer: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             video_id: T::VideoId,
             royalty: Option<Royalty>,
             metadata: Metadata,
-            to: MemberId<T>
+            to: Option<ContentOwner<T::MemberId, T::CuratorGroupId, T::DAOId>>,
         ) {
 
             // Ensure given video exists
@@ -1265,10 +1265,15 @@ decl_module! {
             // Ensure channel exists, retrieve channel owner
             let channel_owner = Self::ensure_channel_exists(&video.in_channel)?.owner;
 
-            ensure_actor_authorized_to_update_channel::<T>(origin, &auctioneer, &channel_owner)?;
+            ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
 
             // The content owner will be..
-            let content_owner = Self::actor_to_content_owner(&auctioneer)?;
+            let content_owner = if let Some(to) = to {
+                to
+            } else {
+                // if `to` set to None, actor issues to himself
+                Self::actor_to_content_owner(&actor)?
+            };
 
             // Enure royalty bounds satisfied, if provided
             if let Some(royalty) = royalty {
@@ -1284,19 +1289,19 @@ decl_module! {
             let mut video = video;
             video.nft_status = NFTStatus::Owned(OwnedNFT {
                 transactional_status: TransactionalStatus::Idle,
-                owner: content_owner,
+                owner: content_owner.clone(),
                 creator_royalty: royalty,
             });
 
             // Update the video
-            VideoById::<T>::insert(video_id, video.clone());
+            VideoById::<T>::insert(video_id, video);
 
             Self::deposit_event(RawEvent::NftIssued(
-                auctioneer,
+                actor,
                 video_id,
                 royalty,
                 metadata,
-                to,
+                content_owner,
             ));
         }
 
@@ -1629,6 +1634,11 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             MemberId<T>,
         >,
+        ContentOwner = ContentOwner<
+            MemberId<T>,
+            <T as ContentActorAuthenticator>::CuratorGroupId,
+            <T as StorageOwnership>::DAOId,
+        >,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
@@ -1777,7 +1787,13 @@ decl_event!(
 
         // vNFT auction
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(ContentActor, VideoId, Option<Royalty>, Metadata, MemberId),
+        NftIssued(
+            ContentActor,
+            VideoId,
+            Option<Royalty>,
+            Metadata,
+            ContentOwner,
+        ),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
