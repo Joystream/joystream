@@ -79,13 +79,7 @@ impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    frame_system::Trait
-    + ContentActorAuthenticator
-    + Clone
-//    + StorageOwnership
-//    + MembershipTypes
-    + GovernanceCurrency
-    + storage::Trait
+    frame_system::Trait + ContentActorAuthenticator + Clone + GovernanceCurrency + storage::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -129,24 +123,19 @@ pub trait Trait:
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 }
 
-/// Specifies characteristics of an asset
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub struct ContentParameters {
-    pub size: u64,
-    pub ipfs_content_id: Vec<u8>,
-}
-
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NewAsset {
+pub enum NewAsset_<AccountId, Balance> {
     /// Upload to the storage frame_system
-    Upload(ContentParameters),
+    Upload(CreationUploadParameters<AccountId, Balance>),
     /// Multiple url strings pointing at an asset
     Urls(Vec<Url>),
 }
+
+type NewAsset<T> =
+    NewAsset_<<T as frame_system::Trait>::AccountId, <T as balances::Trait>::Balance>;
 
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
@@ -259,26 +248,32 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<AccountId> {
-    /// content parameters for the storage
-    content_params: ContentCreationParameters<AccountId>,
+pub struct ChannelCreationParameters_<NewAsset, AccountId> {
+    /// Assets referenced by metadata
+    assets: NewAsset,
     /// Metadata about the channel.
     meta: Vec<u8>,
     /// optional reward account
     reward_account: Option<AccountId>,
 }
 
+type ChannelCreationParameters<T> =
+    ChannelCreationParameters_<NewAsset<T>, <T as frame_system::Trait>::AccountId>;
+
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters<AccountId> {
+pub struct ChannelUpdateParameters_<NewAsset, AccountId> {
     /// Assets referenced by metadata
-    content_parameters: Option<ContentCreationParameters<AccountId>>,
+    assets: Option<NewAsset>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
 }
+
+type ChannelUpdateParameters<T> =
+    ChannelUpdateParameters_<NewAsset<T>, <T as frame_system::Trait>::AccountId>;
 
 /// A category that videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -308,33 +303,42 @@ pub struct VideoCategoryUpdateParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 /// Information regarding the content being created
-pub struct ContentCreationParameters<AccountId> {
-    /// Assets referenced by metadata
-    assets: Vec<NewAsset>,
-    /// liason authorization keys
-    liason_auth_key: Vec<u8>,
-    /// deletion prize account
-    deletion_prize_account: AccountId,
+pub struct CreationUploadParameters<AccountId, Balance> {
+    /// Public key used authentication in upload to liason.
+    pub authentication_key: Vec<u8>,
+
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    /// Account for the data object deletion prize.
+    pub deletion_prize_source_account_id: AccountId,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
 }
 
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParameters<AccountId> {
+pub struct VideoCreationParameters_<NewAsset> {
     /// Content creation parameters
-    content_params: ContentCreationParameters<AccountId>,
+    assets: NewAsset,
     /// Metadata for the video.
     meta: Vec<u8>,
 }
 
+type VideoCreationParameters<T> = VideoCreationParameters_<NewAsset<T>>;
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParameters<AccountId> {
+pub struct VideoUpdateParameters_<NewAsset> {
     /// Assets referenced by metadata
-    creation_parameters: Option<ContentCreationParameters<AccountId>>,
+    assets: Option<NewAsset>,
     /// If set, metadata update for the video.
     new_meta: Option<Vec<u8>>,
 }
+
+type VideoUpdateParameters<T> = VideoUpdateParameters_<NewAsset<T>>;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -376,9 +380,9 @@ pub struct Playlist<ChannelId> {
 /// Information about the episode being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoId, AccountId> {
+pub enum EpisodeParameters<VideoId, NewAsset> {
     /// A new video is being added as the episode.
-    NewVideo(VideoCreationParameters<AccountId>),
+    NewVideo(VideoCreationParameters_<NewAsset>),
     /// An existing video is being made into an episode.
     ExistingVideo(VideoId),
 }
@@ -386,7 +390,7 @@ pub enum EpisodeParameters<VideoId, AccountId> {
 /// Information about the season being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoId, AccountId> {
+pub struct SeasonParameters<VideoId, NewAsset> {
     /// Season assets referenced by metadata
     assets: Option<Vec<NewAsset>>,
     // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
@@ -394,7 +398,7 @@ pub struct SeasonParameters<VideoId, AccountId> {
     /// when length of new_episodes is greater than previously set. Last elements must all be
     /// 'Some' in that case.
     /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoId, AccountId>>>>,
+    episodes: Option<Vec<Option<EpisodeParameters<VideoId, NewAsset>>>>,
 
     meta: Option<Vec<u8>>,
 }
@@ -402,14 +406,14 @@ pub struct SeasonParameters<VideoId, AccountId> {
 /// Information about the series being created or updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoId, AccountId> {
+pub struct SeriesParameters<VideoId, NewAsset> {
     /// Series assets referenced by metadata
     assets: Option<Vec<NewAsset>>,
     // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
     /// If set, updates the seasons of a series. Extend a series when length of seasons is
     /// greater than previoulsy set. Last elements must all be 'Some' in that case.
     /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoId, AccountId>>>>,
+    seasons: Option<Vec<Option<SeasonParameters<VideoId, NewAsset>>>>,
     meta: Option<Vec<u8>>,
 }
 
@@ -457,7 +461,7 @@ impl<MemberId: Default> Default for PersonController<MemberId> {
 /// Information for Person being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct PersonCreationParameters {
+pub struct PersonCreationParameters<NewAsset> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset>,
     /// Metadata for person.
@@ -467,7 +471,7 @@ pub struct PersonCreationParameters {
 /// Information for Persion being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct PersonUpdateParameters {
+pub struct PersonUpdateParameters<NewAsset> {
     /// Assets referenced by metadata
     assets: Option<Vec<NewAsset>>,
     /// Metadata to update person.
@@ -662,7 +666,7 @@ decl_module! {
         pub fn create_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCreationParameters<T::AccountId>,
+            params: ChannelCreationParameters<T>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
                 origin,
@@ -677,13 +681,15 @@ decl_module! {
             let channel_id = NextChannelId::<T>::get();
 
             // Pick out the assets to be uploaded to storage frame_system
-            let upload_parameters: UploadParameters<T> = Self::pick_content_parameters_from_assets(
-                &params.content_params,
+            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                &params.assets,
                 &channel_id
             );
 
             // adding content to storage
-            Storage::<T>::upload_data_objects(upload_parameters)?;
+            if let Some(upload_parameters) = maybe_upload_parameters{
+                Storage::<T>::upload_data_objects(upload_parameters)?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -710,7 +716,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: ChannelUpdateParameters<T::AccountId>,
+            params: ChannelUpdateParameters<T>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -721,15 +727,21 @@ decl_module! {
                 &channel.owner,
             )?;
 
+
             // Pick out the assets to be uploaded to storage frame_system
-            let maybe_upload_params = if let Some(creation_params) =
-                &params.content_parameters {
-                let upload_parameters: UploadParameters<T> =
-                    Self::pick_content_parameters_from_assets(creation_params, &channel_id);
-                Some(upload_parameters)
-            } else {
-                None
-            };
+            if let Some(assets) = &params.assets {
+
+               // construct upload parameters
+               let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                   assets,
+                   &channel_id
+               );
+
+              // adding content to storage
+              if let Some(upload_parameters) = maybe_upload_parameters{
+                 Storage::<T>::upload_data_objects(upload_parameters)?;
+              }
+            }
 
             //
             // == MUTATION SAFE ==
@@ -744,12 +756,6 @@ decl_module! {
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
-
-            // add assets to storage
-            // This should not fail because of prior can_add_content() check!
-            if let Some(upload_parameters) = maybe_upload_params {
-                Storage::<T>::upload_data_objects(upload_parameters)?;
-            }
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
@@ -912,7 +918,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: VideoCreationParameters<T::AccountId>,
+            params: VideoCreationParameters<T>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -927,15 +933,15 @@ decl_module! {
             let video_id = NextVideoId::<T>::get();
 
             // ADDING CONTENT TO STORAGE NODE
-
-            // Pick out the assets to be uploaded to storage frame_system
-            let upload_parameters = Self::pick_content_parameters_from_assets(
-                &params.content_params,
-                &channel_id,
+            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                &params.assets,
+                &channel_id
             );
 
-            // try adding assets to storage
-            Storage::<T>::upload_data_objects(upload_parameters)?;
+            // adding content to storage
+            if let Some(upload_parameters) = maybe_upload_parameters{
+                Storage::<T>::upload_data_objects(upload_parameters)?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -969,7 +975,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            params: VideoUpdateParameters<T::AccountId>,
+            params: VideoUpdateParameters<T>,
         ) {
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
@@ -980,19 +986,19 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
-
             // Pick out the assets to be uploaded to storage frame_system
-            let maybe_upload_params = if let Some(creation_params) =
-                &params.creation_parameters {
-                let upload_parameters: UploadParameters<T> =
-                    Self::pick_content_parameters_from_assets(creation_params, &channel_id);
-                Some(upload_parameters)
-            } else {
-                None
-            };
+            if let Some(assets) = &params.assets {
 
-            if let Some(upload_parameters) = maybe_upload_params {
-                Storage::<T>::upload_data_objects(upload_parameters)?;
+               // construct upload parameters
+               let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                   assets,
+                   &channel_id
+               );
+
+              // adding content to storage
+              if let Some(upload_parameters) = maybe_upload_parameters{
+                 Storage::<T>::upload_data_objects(upload_parameters)?;
+              }
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
@@ -1019,6 +1025,12 @@ decl_module! {
 
             Self::ensure_video_can_be_removed(video)?;
 
+        // DELETE VIDEO FROM STORAGE:
+        // bag id
+        // deletion prize account id
+        // objects id
+
+
             //
             // == MUTATION SAFE ==
             //
@@ -1026,8 +1038,7 @@ decl_module! {
             // Remove video
             VideoById::<T>::remove(video_id);
 
-            // Update corresponding channel
-            // Remove recently deleted video from the channel
+            // Decrease video count for the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.num_videos.saturating_sub(<T as Trait>::VideoId::one())
             });
@@ -1147,7 +1158,7 @@ decl_module! {
         pub fn create_person(
             _origin,
             _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _params: PersonCreationParameters,
+            _params: PersonCreationParameters<NewAsset<T>>,
         ) {
             Self::not_implemented()?;
         }
@@ -1157,7 +1168,7 @@ decl_module! {
             _origin,
             _actor: PersonActor<T::MemberId, T::CuratorId>,
             _person: T::PersonId,
-            _params: PersonUpdateParameters,
+            _params: PersonUpdateParameters<NewAsset<T>>,
         ) {
             Self::not_implemented()?;
         }
@@ -1231,7 +1242,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, T::AccountId>
+            _params: SeriesParameters<T::VideoId, NewAsset<T>>
         ) {
             Self::not_implemented()?;
         }
@@ -1241,7 +1252,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, T::AccountId>
+            _params: SeriesParameters<T::VideoId, NewAsset<T>>
         ) {
             Self::not_implemented()?;
         }
@@ -1321,41 +1332,25 @@ impl<T: Trait> Module<T> {
         Ok(VideoCategoryById::<T>::get(video_category_id))
     }
 
-    fn pick_content_parameters_from_assets(
-        content_params: &ContentCreationParameters<T::AccountId>,
+    fn pick_upload_parameters_from_assets(
+        assets: &NewAsset<T>,
         channel_id: &T::ChannelId,
-    ) -> UploadParameters<T> {
-        // price per megabyte of storage
-        let fee = Storage::<T>::data_object_per_mega_byte_fee();
-
+    ) -> Option<UploadParameters<T>> {
         // dynamic bag for a media object
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
         let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
 
-        let object_creation_list: Vec<DataObjectCreationParameters> = content_params
-            .assets
-            .iter()
-            .filter_map(|asset| {
-                // treasury account for storing the reward
-                match asset {
-                    NewAsset::Upload(creation_parameters) => {
-                        // list holding creation parameters
-                        Some(DataObjectCreationParameters {
-                            size: creation_parameters.size,
-                            ipfs_content_id: creation_parameters.ipfs_content_id.clone(),
-                        })
-                    }
-                    _ => None,
-                }
+        if let NewAsset::<T>::Upload(creation_upload_params) = assets {
+            Some(UploadParametersRecord {
+                authentication_key: creation_upload_params.athentication_key,
+                bag_id: bag_id,
+                object_creation_list: creation_upload_params.object_creation_list,
+                deletion_prize_source_account_id: creation_upload_params
+                    .deletion_prize_source_account_id,
+                expected_data_size_fee: creation_upload_params.expected_data_size_fee,
             })
-            .collect();
-        // the parameters record
-        UploadParametersRecord {
-            authentication_key: content_params.liason_auth_key.clone(),
-            bag_id: bag_id,
-            object_creation_list: object_creation_list,
-            deletion_prize_source_account_id: content_params.deletion_prize_account.clone(),
-            expected_data_size_fee: fee,
+        } else {
+            None
         }
     }
 
@@ -1405,9 +1400,13 @@ decl_event!(
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
-        AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
+        ChannelCreationParameters = ChannelCreationParameters<T>,
+        ChannelUpdateParameters = ChannelUpdateParameters<T>,
+        VideoCreationParameters = VideoCreationParameters<T>,
+        VideoUpdateParameters = VideoUpdateParameters<T>,
+        NewAsset = NewAsset<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1416,18 +1415,8 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelCreationParameters<AccountId>,
-        ),
-        ChannelUpdated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelUpdateParameters<AccountId>,
-        ),
+        ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
+        ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
         ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
         ChannelCensorshipStatusUpdated(
@@ -1468,13 +1457,8 @@ decl_event!(
         VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(ContentActor, VideoCategoryId),
 
-        VideoCreated(
-            ContentActor,
-            ChannelId,
-            VideoId,
-            VideoCreationParameters<AccountId>,
-        ),
-        VideoUpdated(ContentActor, VideoId, VideoUpdateParameters<AccountId>),
+        VideoCreated(ContentActor, ChannelId, VideoId, VideoCreationParameters),
+        VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
 
         VideoCensorshipStatusUpdated(
@@ -1497,14 +1481,14 @@ decl_event!(
             ContentActor,
             SeriesId,
             Vec<NewAsset>,
-            SeriesParameters<VideoId, AccountId>,
+            SeriesParameters<VideoId, NewAsset>,
             Series,
         ),
         SeriesUpdated(
             ContentActor,
             SeriesId,
             Vec<NewAsset>,
-            SeriesParameters<VideoId, AccountId>,
+            SeriesParameters<VideoId, NewAsset>,
             Series,
         ),
         SeriesDeleted(ContentActor, SeriesId),
@@ -1514,13 +1498,13 @@ decl_event!(
             ContentActor,
             PersonId,
             Vec<NewAsset>,
-            PersonCreationParameters,
+            PersonCreationParameters<NewAsset>,
         ),
         PersonUpdated(
             ContentActor,
             PersonId,
             Vec<NewAsset>,
-            PersonUpdateParameters,
+            PersonUpdateParameters<NewAsset>,
         ),
         PersonDeleted(ContentActor, PersonId),
     }
