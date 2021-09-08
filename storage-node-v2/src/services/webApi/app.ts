@@ -76,12 +76,17 @@ export async function createApp(
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
   app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // Request validation error handler.
+    // Express error handling recommendation:
+    // https://expressjs.com/en/guide/error-handling.html
+    if (res.headersSent) {
+      return next(err)
+    }
+
+    // Request error handler.
     if (err instanceof HttpError) {
-      res.status(err.status).json({
-        type: 'request_validation',
+      res.status(err.status || 500).json({
+        type: 'request_exception',
         message: err.message,
-        errors: err.errors,
       })
     } else {
       res.status(500).json({
