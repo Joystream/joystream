@@ -73,7 +73,7 @@ impl<T: Trait> Module<T> {
         member_id: MemberId<T>,
         auction: &Auction<T>,
     ) -> DispatchResult {
-        let account_id = ensure_signed(origin.clone())?;
+        let account_id = ensure_signed(origin)?;
 
         ensure_member_auth_success::<T>(&member_id, &account_id)?;
 

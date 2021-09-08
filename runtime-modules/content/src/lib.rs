@@ -1,6 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
@@ -21,11 +22,7 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 use frame_support::{
-    decl_event, decl_module, decl_storage,
-    dispatch::{DispatchError, DispatchResult},
-    ensure,
-    traits::Get,
-    Parameter,
+    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
@@ -1195,7 +1192,7 @@ decl_module! {
                 let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
 
                 // Update the video
-                VideoById::<T>::insert(video_id, video.clone());
+                VideoById::<T>::insert(video_id, video);
 
                 // Trigger event
                 Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id));
@@ -1238,7 +1235,7 @@ decl_module! {
                 let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
 
                 // Update the video
-                VideoById::<T>::insert(video_id, video.clone());
+                VideoById::<T>::insert(video_id, video);
 
                 // Trigger event
                 Self::deposit_event(RawEvent::OpenAuctionBidAccepted(actor, video_id));
@@ -1333,11 +1330,7 @@ decl_module! {
             //
 
             // Set nft transactional status to InitiatedOfferToMember
-            let offer_details = if let Some(price) = price {
-                Some(OrderDetails::new(from_account_id, price))
-            } else {
-                None
-            };
+            let offer_details = price.map(|price| OrderDetails::new(from_account_id, price));
 
             let video = video.set_pending_offer_transactional_status(to, offer_details);
 
@@ -1577,14 +1570,7 @@ impl<T: Trait> Module<T> {
     /// Ensure owner account id exists, retreive corresponding one.
     pub fn ensure_owner_account_id(
         video: &Video<T>,
-        owned_nft: &OwnedNFT<
-            T::AccountId,
-            T::BlockNumber,
-            T::MemberId,
-            T::CuratorGroupId,
-            T::DAOId,
-            BalanceOf<T>,
-        >,
+        owned_nft: &NFT<T>,
     ) -> Result<T::AccountId, Error<T>> {
         match owned_nft.owner {
             ContentOwner::Member(member_id) => Self::ensure_member_controller_account_id(member_id),
@@ -1634,11 +1620,8 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             MemberId<T>,
         >,
-        ContentOwner = ContentOwner<
-            MemberId<T>,
-            <T as ContentActorAuthenticator>::CuratorGroupId,
-            <T as StorageOwnership>::DAOId,
-        >,
+        ContentOwner =
+            ContentOwner<MemberId<T>, <T as ContentActorAuthenticator>::CuratorGroupId, DAOId<T>>,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,

@@ -4,13 +4,12 @@ pub(crate) type ContentId<T> = <T as StorageOwnership>::ContentId;
 
 pub(crate) type DataObjectTypeId<T> = <T as StorageOwnership>::DataObjectTypeId;
 
+pub(crate) type DAOId<T> = <T as StorageOwnership>::DAOId;
+
 pub(crate) type ContentParameters<T> = ContentParametersRecord<ContentId<T>, DataObjectTypeId<T>>;
 
-pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
-    MemberId<T>,
-    <T as StorageOwnership>::ChannelId,
-    <T as StorageOwnership>::DAOId,
->;
+pub(crate) type StorageObjectOwner<T> =
+    StorageObjectOwnerRecord<MemberId<T>, <T as StorageOwnership>::ChannelId, DAOId<T>>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
@@ -40,14 +39,8 @@ pub enum ContentOwner<MemberId, CuratorGroupId, DAOId> {
 }
 
 // simplification type
-pub(crate) type ActorToContentOwnerResult<T> = Result<
-    ContentOwner<
-        MemberId<T>,
-        <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as StorageOwnership>::DAOId,
-    >,
-    Error<T>,
->;
+pub(crate) type ActorToContentOwnerResult<T> =
+    Result<ContentOwner<MemberId<T>, CuratorGroupId<T>, DAOId<T>>, Error<T>>;
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
@@ -107,7 +100,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
 pub type Channel<T> = ChannelRecord<
     MemberId<T>,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
+    DAOId<T>,
     <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
@@ -136,7 +129,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as StorageOwnership>::ChannelId,
     MemberId<T>,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
+    DAOId<T>,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
@@ -294,7 +287,7 @@ impl<
         {
             Ok(auction.clone())
         } else {
-            Err(Error::<T>::NotInAuctionState.into())
+            Err(Error::<T>::NotInAuctionState)
         }
     }
 
@@ -426,7 +419,7 @@ pub type Video<T> = VideoRecord<
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     CuratorGroupId<T>,
-    <T as StorageOwnership>::DAOId,
+    DAOId<T>,
     BalanceOf<T>,
 >;
 

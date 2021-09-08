@@ -331,6 +331,16 @@ impl<
 pub type Auction<T> =
     AuctionRecord<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>, MemberId<T>>;
 
+/// OwnedNFT alias type for simplification.
+pub type NFT<T> = OwnedNFT<
+    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Trait>::BlockNumber,
+    MemberId<T>,
+    CuratorGroupId<T>,
+    DAOId<T>,
+    BalanceOf<T>,
+>;
+
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
