@@ -273,7 +273,7 @@ pub struct ChannelCreationParameters<AccountId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelUpdateParameters<AccountId> {
     /// Assets referenced by metadata
-    assets: Option<Vec<NewAsset>>,
+    content_parameters: Option<ContentCreationParameters<AccountId>>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
@@ -716,28 +716,20 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             ensure_actor_authorized_to_update_channel::<T>(
-                origin,
+                origin.clone(),
                 &actor,
                 &channel.owner,
             )?;
 
             // Pick out the assets to be uploaded to storage frame_system
-            // let new_assets = if let Some(assets) = &params.assets {
-            //     let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
-
-            //     let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-
-            //     // check assets can be uploaded to storage.
-            //     // update can_add_content() to only take &refrences
-            //     T::StorageSystem::can_add_content(
-            //         object_owner.clone(),
-            //         upload_parameters.clone(),
-            //     )?;
-
-            //     Some((upload_parameters, object_owner))
-            // } else {
-            //     None
-            // };
+            let maybe_upload_params = if let Some(creation_params) =
+                &params.content_parameters {
+                let upload_parameters: UploadParameters<T> =
+                    Self::pick_content_parameters_from_assets(creation_params, &channel_id);
+                Some(upload_parameters)
+            } else {
+                None
+            };
 
             //
             // == MUTATION SAFE ==
@@ -755,12 +747,9 @@ decl_module! {
 
             // add assets to storage
             // This should not fail because of prior can_add_content() check!
-            // if let Some((upload_parameters, object_owner)) = new_assets {
-            //     T::StorageSystem::atomically_add_content(
-            //         object_owner,
-            //         upload_parameters,
-            //     )?;
-            // }
+            if let Some(upload_parameters) = maybe_upload_params {
+                Storage::<T>::sudo_upload_data_objects(origin, upload_parameters)?;
+            }
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
