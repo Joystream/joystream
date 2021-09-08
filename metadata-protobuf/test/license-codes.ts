@@ -5,7 +5,7 @@ import {
   createKnownLicenseFromCode,
   createCustomKnownLicense,
 } from '../src/licenses'
-import { VideoMetadata } from '../src/index'
+import { License } from '../src/index'
 import { assert } from 'chai'
 
 describe('Known License Codes', () => {
@@ -16,7 +16,7 @@ describe('Known License Codes', () => {
   it('Pre-defined Joystream license codes', () => {
     // Make sure we have correct known custom license
     assert(KnownLicenses.has(CUSTOM_LICENSE_CODE))
-    assert.equal(KnownLicenses.get(CUSTOM_LICENSE_CODE)!.name, 'CUSTOM')
+    assert.equal(KnownLicenses.get(CUSTOM_LICENSE_CODE)?.name, 'CUSTOM')
 
     assert(KnownLicenses.has(1001))
     assert(KnownLicenses.has(1002))
@@ -29,14 +29,20 @@ describe('Known License Codes', () => {
   })
 
   it('createCustomKnownLicense(): uses correct code', () => {
-    const license = createCustomKnownLicense('custom text')
-    assert.equal(license.getCode(), CUSTOM_LICENSE_CODE)
+    const TEXT = 'custom text'
+    const license = createCustomKnownLicense(TEXT)
+    assert.equal(license.code, CUSTOM_LICENSE_CODE)
+    assert.equal(license.customText, TEXT)
+    License.verify(license)
   })
 
   it('createKnownLicenseFromCode(): License can be created by name', () => {
-    const licenseCode = getLicenseCodeByName('CC_BY') as number
-    const license = createKnownLicenseFromCode(licenseCode as number, 'Attribution: Joystream')
-    const videoMeta = new VideoMetadata()
-    videoMeta.setLicense(license)
+    const NAME = 'CC_BY'
+    const ATTRIBUTION = 'Attribution: Joystream'
+    const licenseCode = getLicenseCodeByName(NAME) as number
+    const license = createKnownLicenseFromCode(licenseCode, ATTRIBUTION)
+    assert.isDefined(license.code)
+    assert.equal(license.attribution, ATTRIBUTION)
+    License.verify(license)
   })
 })

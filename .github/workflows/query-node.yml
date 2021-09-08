@@ -18,7 +18,7 @@ jobs:
       run: |
         yarn install --frozen-lockfile
         yarn workspace @joystream/types build
-        yarn workspace @joystream/content-metadata-protobuf build:ts
+        yarn workspace @joystream/metadata-protobuf build
         ./query-node/build.sh
         yarn workspace query-node-mappings checks --quiet
 
@@ -38,6 +38,6 @@ jobs:
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace @joystream/types build
-        yarn workspace @joystream/content-metadata-protobuf build:ts
+        yarn workspace @joystream/metadata-protobuf build
         ./query-node/build.sh
         yarn workspace query-node-mappings checks --quiet

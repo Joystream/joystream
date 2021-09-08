@@ -26,7 +26,8 @@
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --inline-diffs -r ts-node/register 'test/**/*.ts'",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
-    "format": "prettier ./ --write"
+    "format": "prettier ./ --write",
+    "prepublish": "yarn build"
   },
   "files": [
     "lib/**/*",
