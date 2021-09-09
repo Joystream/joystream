@@ -9,7 +9,7 @@
     "copy-types": "cp ../../types/augment/all/defs.json lib/generated/types/typedefs.json",
     "clean": "rm -rf lib",
     "lint": "eslint . --quiet --ext .ts",
-    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "checks": "prettier ./ --check && yarn lint",
     "format": "prettier ./ --write "
   },
   "dependencies": {

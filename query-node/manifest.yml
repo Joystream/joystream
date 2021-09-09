@@ -34,7 +34,6 @@ typegen:
     - storage.DynamicBagCreated
     - storage.VoucherChanged
     - storage.StorageBucketDeleted
-    - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     - storage.DistributionBucketFamilyCreated
     - storage.DistributionBucketFamilyDeleted
     - storage.DistributionBucketCreated
@@ -43,13 +42,15 @@ typegen:
     - storage.DistributionBucketsUpdatedForBag
     - storage.DistributionBucketsPerBagLimitUpdated
     - storage.DistributionBucketModeUpdated
-    - storage.FamiliesInDynamicBagCreationPolicyUpdated
     - storage.DistributionBucketOperatorInvited
     - storage.DistributionBucketInvitationCancelled
     - storage.DistributionBucketInvitationAccepted
     - storage.DistributionBucketMetadataSet
     - storage.DistributionBucketOperatorRemoved
     - storage.DistributionBucketFamilyMetadataSet
+    # Not required:
+    # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
+    # - storage.FamiliesInDynamicBagCreationPolicyUpdated
 
     # membership
     - members.MemberRegistered
@@ -246,8 +247,6 @@ mappings:
       handler: storage_VoucherChanged
     - event: storage.StorageBucketDeleted
       handler: storage_StorageBucketDeleted
-    - event: storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
-      handler: storage_NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     - event: storage.DistributionBucketFamilyCreated
       handler: storage_DistributionBucketFamilyCreated
     - event: storage.DistributionBucketFamilyDeleted
@@ -264,8 +263,6 @@ mappings:
       handler: storage_DistributionBucketsPerBagLimitUpdated
     - event: storage.DistributionBucketModeUpdated
       handler: storage_DistributionBucketModeUpdated
-    - event: storage.FamiliesInDynamicBagCreationPolicyUpdated
-      handler: storage_FamiliesInDynamicBagCreationPolicyUpdated
     - event: storage.DistributionBucketOperatorInvited
       handler: storage_DistributionBucketOperatorInvited
     - event: storage.DistributionBucketInvitationCancelled

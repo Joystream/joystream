@@ -1,4 +1,5 @@
 import { StoreContext } from '@joystream/hydra-common'
+import BN from 'bn.js'
 import { Membership, MembershipEntryMethod, StorageSystemParameters } from 'query-node/dist/model'
 import { storageSystem, members } from './genesis-data'
 
@@ -7,6 +8,9 @@ export async function loadGenesisData({ store }: StoreContext): Promise<void> {
   await store.save<StorageSystemParameters>(
     new StorageSystemParameters({
       ...storageSystem,
+      storageBucketMaxObjectsCountLimit: new BN(storageSystem.storageBucketMaxObjectsCountLimit),
+      storageBucketMaxObjectsSizeLimit: new BN(storageSystem.storageBucketMaxObjectsSizeLimit),
+      dataObjectFeePerMb: new BN(storageSystem.dataObjectFeePerMb),
     })
   )
   // Members
