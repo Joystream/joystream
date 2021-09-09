@@ -1444,6 +1444,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: MemberId<T>,
+            metadata: Metadata,
         ) {
 
             // Authorize participant under given member id
@@ -1470,7 +1471,7 @@ decl_module! {
                 VideoById::<T>::insert(video_id, video);
 
                 // Trigger event
-                Self::deposit_event(RawEvent::NFTBought(video_id, participant_id));
+                Self::deposit_event(RawEvent::NFTBought(video_id, participant_id, metadata));
             }
         }
     }
@@ -1789,6 +1790,6 @@ decl_event!(
         OfferCancelled(VideoId, ContentActor),
         OfferAccepted(VideoId, MemberId),
         NFTSellOrderMade(VideoId, MemberId, Balance),
-        NFTBought(VideoId, MemberId),
+        NFTBought(VideoId, MemberId, Metadata),
     }
 );
