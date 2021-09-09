@@ -67,6 +67,13 @@ decl_error! {
         /// Actor cannot authorize as lead for given extrinsic
         ActorCannotBeLead,
 
+        /// Channel censorship status did not change
+        ChannelCensorshipStatusDidNotChange,
+
+        /// Video censorship status did not change
+        VideoCensorshipStatusDidNotChange,
+
+
         // Auction Errors
         // ---------------------
 

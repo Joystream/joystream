@@ -464,15 +464,14 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            if channel.is_censored == is_censored {
-                return Ok(())
-            }
-
             ensure_actor_authorized_to_censor::<T>(
                 origin,
                 &actor,
                 &channel.owner,
             )?;
+
+            // Ensure censorship status have been changed
+            channel.ensure_censorship_status_changed::<T>(is_censored)?;
 
             //
             // == MUTATION SAFE ==
@@ -892,16 +891,15 @@ decl_module! {
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            if video.is_censored == is_censored {
-                return Ok(())
-            }
-
             ensure_actor_authorized_to_censor::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
                 &Self::channel_by_id(video.in_channel).owner,
             )?;
+
+            // Ensure censorship status have been changed
+            video.ensure_censorship_status_changed::<T>(is_censored)?;
 
             //
             // == MUTATION SAFE ==
