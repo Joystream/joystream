@@ -262,7 +262,7 @@ type ChannelCreationParameters<T> =
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelUpdateParameters_<NewAsset, AccountId> {
-    /// Assets referenced by metadata
+    /// Assets referenced by metadata to add to the channel
     assets: Option<NewAsset>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
@@ -680,7 +680,8 @@ decl_module! {
                 &actor,
             )?;
 
-        let sender = ensure_signed(origin)?;
+        // channel creator account
+            let sender = ensure_signed(origin)?;
 
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
@@ -689,20 +690,20 @@ decl_module! {
             // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            // adding content to storage node if uploading is needed
+            // get uploading parameters if assets have to be saved on storage
             let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                 &params.assets,
                 &channel_id
             );
 
-            // getting the number of assets to be uploaded
+            // number of assets to be uploaded
             let num_assets: u64 = if let Some(upload_parameters) = maybe_upload_parameters{
                 Storage::<T>::upload_data_objects(upload_parameters.clone())?;
-                    upload_parameters
+                upload_parameters
                     .object_creation_list
                     .len()
                     .try_into()
-                    .unwrap_or_default()
+                    .map_err(|_| DispatchError::Other("Number of assets conversion error"))?
             } else {
                 0u64
             };
@@ -714,17 +715,20 @@ decl_module! {
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
+            // channel creation
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
-                // a newly create channel has zero videos ?
+                // a newly create channel has zero videos ??
                 num_videos: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                // number of assets uploaded
                 num_assets: num_assets,
                 // setting the channel owner account as the prize funds account
                 deletion_prize_source_account_id: sender.clone(),
             };
 
+            // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
@@ -747,19 +751,33 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage frame_system
-            if let Some(assets) = &params.assets {
+            // Maybe add specified assets and get the actual number assets added
+            let maybe_num_assets = if let Some(assets) = &params.assets {
 
-              // adding content to storage if needed
+               // get uploading parameters if assets have to be saved on storage
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
                    &channel_id
                );
 
-              if let Some(upload_parameters) = maybe_upload_parameters{
-                 Storage::<T>::upload_data_objects(upload_parameters)?;
-              }
-            }
+               // numeber of assets to be uploaded
+               let num_assets: u64 = if let Some(upload_parameters) =
+                   maybe_upload_parameters{
+                   Storage::<T>::upload_data_objects(upload_parameters.clone())?;
+                   upload_parameters
+                       .object_creation_list
+                       .len()
+                       .try_into()
+                       .map_err(|_|
+                            DispatchError::Other("Number of assets conversion error"))?
+
+                } else {
+                    0u64
+                };
+                Some(num_assets)
+            } else {
+                None
+            };
 
             //
             // == MUTATION SAFE ==
@@ -770,6 +788,11 @@ decl_module! {
             // Maybe update the reward account
             if let Some(reward_account) = &params.reward_account {
                 channel.reward_account = reward_account.clone();
+            }
+
+            // Maybe update asset num
+            if let Some(num_assets) = maybe_num_assets {
+                channel.num_assets = channel.num_assets.saturating_add(num_assets);
             }
 
             // Update the channel
@@ -819,6 +842,7 @@ decl_module! {
                 Error::<T>::InvalidAssetsProvided
             );
 
+            // remove assets from storage
             Storage::<T>::delete_data_objects(
                 channel.deletion_prize_source_account_id.clone(),
                 Self::bag_id_for_channel(&channel_id),
@@ -978,6 +1002,7 @@ decl_module! {
                 &channel_id
             );
 
+            // if storaged uploading is required save the object id for the video
             let maybe_data_object_id = if let Some(upload_parameters) =
                 maybe_upload_parameters {
                     let data_object_id = Storage::<T>::next_data_object_id();
@@ -991,6 +1016,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // create the video struct
             let video: Video<T> = Video_ {
                 in_channel: channel_id,
                 // keep track of which season the video is in if it is an 'episode'
@@ -1002,6 +1028,7 @@ decl_module! {
                 maybe_data_object_id: maybe_data_object_id,
             };
 
+            // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
 
             // Only increment next video id if adding content was successful
@@ -1045,6 +1072,15 @@ decl_module! {
               }
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // increase the number of video the selected channel by 1
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.num_videos = channel.num_videos.saturating_add(1);
+            });
+
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
 
@@ -1072,7 +1108,7 @@ decl_module! {
 
             Self::ensure_video_can_be_removed(&video)?;
 
-            // If video is uploaded on storage delete it
+            // If video is on storage, remove it
             if let Some(data_object_id) = video.maybe_data_object_id {
                 // list of object to delete : 1 video
                 let mut data_object_ids = BTreeSet::new();
@@ -1432,6 +1468,7 @@ impl<T: Trait> Module<T> {
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
         BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag)
     }
+
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
