@@ -44,16 +44,6 @@ pub use common::{
 
 type Storage<T> = storage::Module<T>;
 
-pub(crate) type ContentId<T> = <T as storage::Trait>::ContentId;
-
-// pub(crate) type DataObjectTypeId<T> = <T as storage::Trait>::DataObjectTypeId;
-
-// pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
-//     <T as MembershipTypes>::MemberId,
-//     <T as StorageOwnership>::ChannelId,
-//     <T as StorageOwnership>::DAOId,
-// >;
-
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
 
@@ -207,6 +197,8 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId> {
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
+    /// Account for withdrawing deletion prize funds
+    deletion_prize_source_account_id: AccountId,
 }
 
 // Channel alias type for simplification.
@@ -343,7 +335,7 @@ type VideoUpdateParameters<T> = VideoUpdateParameters_<NewAsset<T>>;
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Video_<ChannelId, SeriesId, StorageParameters> {
+pub struct Video_<ChannelId, SeriesId, DataObjectId> {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
@@ -352,25 +344,14 @@ pub struct Video_<ChannelId, SeriesId, StorageParameters> {
     pub is_censored: bool,
 
     /// storage parameters used during deletion
-    pub maybe_storage_parameters: Option<StorageParameters>,
+    pub maybe_data_object_id: Option<DataObjectId>,
 }
 
-type Video<T> =
-    Video_<<T as storage::Trait>::ChannelId, <T as Trait>::SeriesId, StorageParameters<T>>;
-
-/// Record of the parameters used for accessing storage info
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct StorageParameters_<AccountId, DataObjectId> {
-    /// Account for the data object deletion prize.
-    pub deletion_prize_source_account_id: AccountId,
-
-    /// Data Object Id for the content
-    pub data_object_id: DataObjectId,
-}
-
-type StorageParameters<T> =
-    StorageParameters_<<T as frame_system::Trait>::AccountId, <T as storage::Trait>::DataObjectId>;
+type Video<T> = Video_<
+    <T as storage::Trait>::ChannelId,
+    <T as Trait>::SeriesId,
+    <T as storage::Trait>::DataObjectId,
+>;
 
 /// Information about the plyalist being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -689,9 +670,11 @@ decl_module! {
             params: ChannelCreationParameters<T>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
-                origin,
+                origin.clone(),
                 &actor,
             )?;
+
+        let sender = ensure_signed(origin)?;
 
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
@@ -723,6 +706,9 @@ decl_module! {
                 num_videos: <T as Trait>::VideoId::zero(),
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+
+        // setting the channel owner account as the prize funds account
+        deletion_prize_source_account_id: sender.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -777,13 +763,23 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
+        // extrinsics for channel deletion
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel(
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+        ) {
+            Self::not_implemented()?;
+        }
+
         /// Remove assets of a channel from storage
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_channel_assets(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            assets: Vec<ContentId<T>>,
+            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -794,13 +790,10 @@ decl_module! {
                 &channel.owner,
             )?;
 
-//            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+            // ensure that the provided assets are not empty
+            ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
 
-            //
-            // == MUTATION SAFE ==
-            //
-
-//            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+            Self::delete_assets_inner(&channel_id, &channel, &assets)?;
 
             Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
@@ -955,14 +948,11 @@ decl_module! {
                 &channel_id
             );
 
-            let storage_params = if let Some(upload_parameters) = maybe_upload_parameters{
-                let params = StorageParameters_ {
-                    data_object_id: Storage::<T>::next_data_object_id(),
-                        deletion_prize_source_account_id: upload_parameters
-                            .deletion_prize_source_account_id.clone(),
-                    };
-                Storage::<T>::upload_data_objects(upload_parameters)?;
-                Some(params)
+            let maybe_data_object_id = if let Some(upload_parameters) =
+                maybe_upload_parameters{
+                    let data_object_id = Storage::<T>::next_data_object_id();
+                    Storage::<T>::upload_data_objects(upload_parameters)?;
+                    Some(data_object_id)
             } else {
                 None
             };
@@ -979,7 +969,7 @@ decl_module! {
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
                 /// storage parameters for later storage deletion
-                maybe_storage_parameters: storage_params,
+                maybe_data_object_id: maybe_data_object_id,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1038,33 +1028,28 @@ decl_module! {
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // get information regarding channel
             let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
-                &Self::channel_by_id(channel_id).owner,
+                &channel.owner,
             )?;
 
             Self::ensure_video_can_be_removed(&video)?;
 
             // MAYBE DELETE VIDEO FROM STORAGE:
-            if let Some(params) = video.maybe_storage_parameters {
-                // retrieve bag id from channel id
-                let dyn_bag = DynamicBagIdType::
-                <T::MemberId, T::ChannelId>::Channel(channel_id.clone());
-                let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
-
-        // objects id
+            if let Some(data_object_id) = video.maybe_data_object_id {
+                // list of object to delete : 1 video
                 let mut object_ids = BTreeSet::new();
-                object_ids.insert(params.data_object_id);
+                object_ids.insert(data_object_id);
 
-                Storage::<T>::delete_data_objects(
-                    params.deletion_prize_source_account_id.clone(),
-                    bag_id,
-                    object_ids.clone(),
-                )?;
+                // perform storage deletion
+                Self::delete_assets_inner(&channel_id, &channel, &object_ids)?;
             }
 
             //
@@ -1075,9 +1060,9 @@ decl_module! {
             VideoById::<T>::remove(video_id);
 
             // Decrease video count for the channel
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_videos.saturating_sub(<T as Trait>::VideoId::one())
-            });
+            let mut channel = channel;
+            channel.num_videos = channel.num_videos.saturating_sub(<T as Trait>::VideoId::one());
+            ChannelById::<T>::insert(channel_id, channel);
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
@@ -1409,6 +1394,24 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn delete_assets_inner(
+        channel_id: &T::ChannelId,
+        channel: &Channel<T>,
+        data_object_ids: &BTreeSet<<T as storage::Trait>::DataObjectId>,
+    ) -> DispatchResult {
+        // retrieve bag id from channel id
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+        let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
+
+        // objects id
+        Storage::<T>::delete_data_objects(
+            channel.deletion_prize_source_account_id.clone(),
+            bag_id,
+            data_object_ids.clone(),
+        )?;
+        Ok(())
+    }
+
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
@@ -1435,7 +1438,7 @@ decl_event!(
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
-        ContentId = ContentId<T>,
+        DataObjectId = <T as storage::Trait>::DataObjectId,
         IsCensored = bool,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
@@ -1452,7 +1455,7 @@ decl_event!(
         // Channels
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
-        ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
+        ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>),
 
         ChannelCensorshipStatusUpdated(
             ContentActor,
