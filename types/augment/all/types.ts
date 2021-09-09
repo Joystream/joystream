@@ -152,7 +152,7 @@ export interface Backers extends Vec<Backer> {}
 export interface Bag extends Struct {
   readonly objects: BTreeMap<DataObjectId, DataObject>;
   readonly stored_by: StorageBucketIdSet;
-  readonly distributed_by: Vec<DistributionBucketId>;
+  readonly distributed_by: DistributionBucketIdSet;
   readonly deletion_prize: Option<u128>;
 }
 
@@ -377,6 +377,9 @@ export interface DataObjectCreationParameters extends Struct {
 /** @name DataObjectId */
 export interface DataObjectId extends u64 {}
 
+/** @name DataObjectIdMap */
+export interface DataObjectIdMap extends BTreeMap<DataObjectId, DataObject> {}
+
 /** @name DataObjectIdSet */
 export interface DataObjectIdSet extends BTreeSet<DataObjectId> {}
 
@@ -425,6 +428,9 @@ export interface DistributionBucketFamilyId extends u64 {}
 /** @name DistributionBucketId */
 export interface DistributionBucketId extends u64 {}
 
+/** @name DistributionBucketIdSet */
+export interface DistributionBucketIdSet extends BTreeSet<DistributionBucketId> {}
+
 /** @name Dynamic */
 export interface Dynamic extends Enum {
   readonly isMember: boolean;
@@ -436,7 +442,11 @@ export interface Dynamic extends Enum {
 /** @name DynamicBagCreationPolicy */
 export interface DynamicBagCreationPolicy extends Struct {
   readonly numberOfStorageBuckets: u64;
+  readonly families: BTreeMap<DistributionBucketFamilyId, u32>;
 }
+
+/** @name DynamicBagCreationPolicyDistributorFamiliesMap */
+export interface DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap<DistributionBucketFamilyId, u32> {}
 
 /** @name DynamicBagDeletionPrize */
 export interface DynamicBagDeletionPrize extends Struct {

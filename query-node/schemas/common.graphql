@@ -1,0 +1,6 @@
+enum Network {
+  GIZA
+  BABYLON
+  ALEXANDRIA
+  ROME
+}

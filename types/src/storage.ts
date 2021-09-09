@@ -1,4 +1,15 @@
-import { Null, u64, Bytes, Vec, bool, GenericAccountId as AccountId, BTreeSet, BTreeMap, Option } from '@polkadot/types'
+import {
+  Null,
+  u64,
+  Bytes,
+  Vec,
+  bool,
+  GenericAccountId as AccountId,
+  BTreeSet,
+  BTreeMap,
+  Option,
+  u32,
+} from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyBTreeSet, JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
 import { MemberId } from './members'
@@ -36,10 +47,11 @@ export class DataObject
   implements IDataObject {}
 
 export class DataObjectIdSet extends JoyBTreeSet(DataObjectId) {}
+export class DataObjectIdMap extends BTreeMap.with(DataObjectId, DataObject) {}
 export class DistributionBucketId extends u64 {}
 export class DistributionBucketFamilyId extends u64 {}
 export class StorageBucketIdSet extends JoyBTreeSet(StorageBucketId) {}
-export class DistributionBucketSet extends JoyBTreeSet(DistributionBucketId) {}
+export class DistributionBucketIdSet extends JoyBTreeSet(DistributionBucketId) {}
 
 export type IDynamicBagDeletionPrize = {
   account_id: AccountId
@@ -58,7 +70,7 @@ export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
 export type IBag = {
   objects: BTreeMap<DataObjectId, DataObject>
   stored_by: StorageBucketIdSet
-  distributed_by: DistributionBucketSet
+  distributed_by: DistributionBucketIdSet
   deletion_prize: Option<BalanceOf>
 }
 
@@ -66,18 +78,20 @@ export class Bag
   extends JoyStructDecorated({
     objects: BTreeMap.with(DataObjectId, DataObject),
     stored_by: StorageBucketIdSet,
-    distributed_by: DistributionBucketSet,
+    distributed_by: DistributionBucketIdSet,
     deletion_prize: Option.with(BalanceOf),
   })
   implements IBag {}
 
 export type IDynamicBagCreationPolicy = {
   numberOfStorageBuckets: u64
+  families: BTreeMap<DistributionBucketFamilyId, u32>
 }
 
 export class DynamicBagCreationPolicy
   extends JoyStructDecorated({
     numberOfStorageBuckets: u64,
+    families: BTreeMap.with(DistributionBucketFamilyId, u32),
   })
   implements IDynamicBagCreationPolicy {}
 
@@ -212,6 +226,8 @@ export class DistributionBucketFamily
   })
   implements IDistributionBucketFamily {}
 
+export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
+
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
@@ -241,5 +257,9 @@ export const storageTypes: RegistryTypes = {
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
+  // Utility types:
+  DataObjectIdMap,
+  DistributionBucketIdSet,
+  DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes

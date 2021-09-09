@@ -16,10 +16,10 @@ export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 
-//TODO: Remove after the storage-content integration.
+// TODO: Remove after the storage-content integration.
 export class ContentId extends u64 {}
 
-//TODO: Remove after the storage-content integration.
+// TODO: Remove after the storage-content integration.
 export class ContentParameters extends u64 {}
 
 export class NewAsset extends JoyEnum({

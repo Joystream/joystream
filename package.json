@@ -27,18 +27,18 @@
     "query-node",
     "query-node/mappings",
     "query-node/generated/*",
-    "content-metadata-protobuf"
+    "content-metadata-protobuf",
+    "metadata-protobuf"
   ],
   "resolutions": {
     "@polkadot/api": "4.2.1",
     "@polkadot/api-contract": "4.2.1",
-    "@polkadot/keyring": "^6.0.5",
+    "@polkadot/keyring": "6.0.5",
     "@polkadot/metadata": "4.2.1",
     "@polkadot/types": "4.2.1",
-    "@polkadot/util": "^6.0.5",
-    "@polkadot/util-crypto": "^6.0.5",
+    "@polkadot/util": "6.0.5",
+    "@polkadot/util-crypto": "6.0.5",
     "@polkadot/wasm-crypto": "^4.0.2",
-    "warthog": "https://github.com/Joystream/warthog/releases/download/v2.37.2-sumer/joystream-warthog-v2.37.2-sumer.tgz",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
