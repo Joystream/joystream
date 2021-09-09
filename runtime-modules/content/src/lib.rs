@@ -25,7 +25,11 @@ pub use storage::{
 };
 
 use frame_support::{
-    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
+    decl_event, decl_module, decl_storage,
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+    traits::Get,
+    Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
@@ -803,6 +807,17 @@ decl_module! {
 
             // ensure that the provided assets are not empty
             ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
+
+            let num_assets_to_remove: u64 = assets
+                .len()
+                .try_into()
+                .map_err(|_| DispatchError::Other("Number of assets conversion error"))?;
+
+            // cannot remove more asset than those already present
+            ensure!(
+                num_assets_to_remove <= channel.num_assets,
+                Error::<T>::InfeasibleChannelAssets
+            );
 
             Storage::<T>::delete_data_objects(
                 channel.deletion_prize_source_account_id.clone(),
