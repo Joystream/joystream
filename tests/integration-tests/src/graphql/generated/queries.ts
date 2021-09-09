@@ -22,6 +22,7 @@ export type ForumPostFieldsFragment = {
   createdAt: any
   updatedAt?: Types.Maybe<any>
   text: string
+  isVisible: boolean
   author: { id: string }
   thread: { id: string }
   repliesTo?: Types.Maybe<{ id: string }>
@@ -43,6 +44,7 @@ export type ForumThreadWithInitialPostFragment = {
   updatedAt?: Types.Maybe<any>
   title: string
   isSticky: boolean
+  isVisible: boolean
   author: { id: string }
   category: { id: string }
   initialPost?: Types.Maybe<ForumPostFieldsFragment>
@@ -1104,6 +1106,7 @@ export type GetProposalDiscussionThreadsByIdsQuery = {
 
 export type ProposalDiscussionPostFieldsFragment = {
   id: string
+  isVisible: boolean
   text: string
   discussionThread: { id: string }
   author: { id: string }
@@ -1949,6 +1952,7 @@ export const ForumPostFields = gql`
         }
       }
     }
+    isVisible
     origin {
       __typename
       ... on PostOriginThreadInitial {
@@ -2026,6 +2030,7 @@ export const ForumThreadWithInitialPost = gql`
         }
       }
     }
+    isVisible
     metadataUpdates {
       id
     }
@@ -2886,6 +2891,7 @@ export const ProposalDiscussionPostFields = gql`
     status {
       ...ProposalDiscussionPostStatusFields
     }
+    isVisible
     text
     repliesTo {
       id

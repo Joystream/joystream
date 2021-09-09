@@ -73,6 +73,7 @@ export class DeleteThreadsFixture extends StandardizedFixture {
       Utils.assert(qThread.status.__typename === expectedStatus, `Invalid thread status. Expected: ${expectedStatus}`)
       Utils.assert(qThread.status.threadDeletedEvent, 'Query node: Missing ThreadDeletedEvent ref')
       assert.equal(qThread.status.threadDeletedEvent.id, qEvent.id)
+      assert.equal(qThread.isVisible, false)
     })
   }
 

@@ -90,6 +90,7 @@ export async function proposalsDiscussion_PostCreated({ event, store }: EventCon
     updatedAt: eventTime,
     author: new Membership({ id: memberId.toString() }),
     status: editable ? new ProposalDiscussionPostStatusActive() : new ProposalDiscussionPostStatusLocked(),
+    isVisible: true,
     text,
     repliesTo,
     discussionThread: new ProposalDiscussionThread({ id: threadId.toString() }),
@@ -178,6 +179,7 @@ export async function proposalsDiscussion_PostDeleted({ event, store }: EventCon
 
   const newStatus = hide.isTrue ? new ProposalDiscussionPostStatusRemoved() : new ProposalDiscussionPostStatusLocked()
   newStatus.deletedInEventId = postDeletedEvent.id
+  post.isVisible = hide.isFalse
   post.status = newStatus
   post.updatedAt = eventTime
   await store.save<ProposalDiscussionPost>(post)

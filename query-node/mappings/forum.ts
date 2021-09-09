@@ -296,6 +296,7 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
     title: title || '',
     isSticky: false,
     status: new ThreadStatusActive(),
+    isVisible: true,
     visiblePostsCount: 1,
     tags: tags ? await prepareThreadTagsToSet(ctx, tags) : [],
   })
@@ -344,6 +345,7 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
     thread,
     text: bytesToString(postTextBytes),
     status: new PostStatusActive(),
+    isVisible: true,
     origin: postOrigin,
   })
   await store.save<ForumPost>(initialPost)
@@ -373,6 +375,7 @@ export async function forum_ThreadModerated(ctx: EventContext & StoreContext): P
 
   thread.updatedAt = eventTime
   thread.status = newStatus
+  thread.isVisible = false
   thread.visiblePostsCount = 0
   await unsetThreadTags(ctx, thread.tags || [])
   await store.save<ForumThread>(thread)
@@ -428,11 +431,12 @@ export async function forum_ThreadDeleted(ctx: EventContext & StoreContext): Pro
 
   await store.save<ThreadDeletedEvent>(threadDeletedEvent)
 
-  const status = hide.valueOf() ? new ThreadStatusRemoved() : new ThreadStatusLocked()
+  const status = hide.isTrue ? new ThreadStatusRemoved() : new ThreadStatusLocked()
   status.threadDeletedEventId = threadDeletedEvent.id
   thread.status = status
   thread.updatedAt = eventTime
-  if (hide.valueOf()) {
+  if (hide.isTrue) {
+    thread.isVisible = false
     thread.visiblePostsCount = 0
     await unsetThreadTags(ctx, thread.tags || [])
   }
@@ -495,6 +499,7 @@ export async function forum_PostAdded({ event, store }: EventContext & StoreCont
     text: postText,
     thread,
     status: postStatus,
+    isVisible: true,
     author: new Membership({ id: forumUserId.toString() }),
     origin: postOrigin,
     repliesTo: repliesToPost || undefined,
@@ -602,6 +607,7 @@ export async function forum_PostModerated({ event, store }: EventContext & Store
 
   post.updatedAt = eventTime
   post.status = newStatus
+  post.isVisible = false
   await store.save<ForumPost>(post)
 
   const { thread } = post
@@ -682,14 +688,15 @@ export async function forum_PostDeleted({ event, store }: EventContext & StoreCo
   await Promise.all(
     Array.from(postsData.entries()).map(async ([{ post_id: postId }, hideFlag]) => {
       const post = await getPost(store, postId.toString(), ['thread'])
-      const newStatus = hideFlag.valueOf() ? new PostStatusRemoved() : new PostStatusLocked()
+      const newStatus = hideFlag.isTrue ? new PostStatusRemoved() : new PostStatusLocked()
       newStatus.postDeletedEventId = postDeletedEvent.id
       post.updatedAt = eventTime
       post.status = newStatus
       post.deletedInEvent = postDeletedEvent
+      post.isVisible = hideFlag.isFalse
       await store.save<ForumPost>(post)
 
-      if (hideFlag.valueOf()) {
+      if (hideFlag.isTrue) {
         const { thread } = post
         --thread.visiblePostsCount
         thread.updatedAt = eventTime

@@ -73,6 +73,7 @@ export class DeletePostsFixture extends StandardizedFixture {
         Utils.assert(qPost.status.__typename === expectedStatus, `Invalid post status. Expected: ${expectedStatus}`)
         Utils.assert(qPost.status.postDeletedEvent, 'Query node: Missing PostDeletedEvent ref')
         assert.equal(qPost.status.postDeletedEvent.id, qEvent.id)
+        assert.equal(qPost.isVisible, false)
       })
     })
   }

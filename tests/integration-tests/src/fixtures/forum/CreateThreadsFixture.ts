@@ -109,6 +109,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
       assert.equal(qThread.category.id, threadParams.categoryId.toString())
       assert.equal(qThread.author.id, threadParams.asMember.toString())
       assert.equal(qThread.status.__typename, 'ThreadStatusActive')
+      assert.equal(qThread.isVisible, true)
       assert.equal(qThread.isSticky, false)
       assert.equal(qThread.createdInEvent.id, qEvent.id)
       const { initialPost } = qThread

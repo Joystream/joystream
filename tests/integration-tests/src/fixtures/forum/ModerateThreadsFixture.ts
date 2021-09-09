@@ -59,6 +59,7 @@ export class ModerateThreadsFixture extends WithForumWorkersFixture {
       Utils.assert(qThread.status.__typename === 'ThreadStatusModerated', 'Invalid thread status')
       Utils.assert(qThread.status.threadModeratedEvent, 'Query node: Missing ThreadModeratedEvent ref')
       assert.equal(qThread.status.threadModeratedEvent.id, qEvent.id)
+      assert.equal(qThread.isVisible, false)
     })
   }
 

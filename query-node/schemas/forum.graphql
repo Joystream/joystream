@@ -101,6 +101,9 @@ type ForumThread @entity {
   "Current thread status"
   status: ThreadStatus!
 
+  "True if the thread is either Active or Locked"
+  isVisible: Boolean!
+
   "Theread metadata update events"
   metadataUpdates: [ThreadMetadataUpdatedEvent!] @derivedFrom(field: "thread")
 
@@ -231,6 +234,9 @@ type ForumPost @entity {
 
   "Current post status"
   status: PostStatus!
+
+  "True if the post is either Active or Locked"
+  isVisible: Boolean!
 
   "The origin of the post (either thread creation event or regular PostAdded event)"
   origin: PostOrigin!
