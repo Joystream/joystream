@@ -14,6 +14,7 @@ pub use errors::*;
 pub use permissions::*;
 
 use core::hash::Hash;
+use std::convert::TryInto;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -30,7 +31,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member, Saturating};
+use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -188,17 +189,19 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId> {
+pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId> {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
-    num_videos: VideoId,
+    num_videos: u64,
     /// If curators have censored this channel or not
     is_censored: bool,
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// Account for withdrawing deletion prize funds
     deletion_prize_source_account_id: AccountId,
+    /// Number of asset held in storage
+    num_assets: u64,
 }
 
 // Channel alias type for simplification.
@@ -207,7 +210,6 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as Trait>::DAOId,
     <T as frame_system::Trait>::AccountId,
-    <T as Trait>::VideoId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -689,9 +691,17 @@ decl_module! {
                 &channel_id
             );
 
-            if let Some(upload_parameters) = maybe_upload_parameters{
-                Storage::<T>::upload_data_objects(upload_parameters)?;
-            }
+            // getting the number of assets to be uploaded
+            let num_assets: u64 = if let Some(upload_parameters) = maybe_upload_parameters{
+                Storage::<T>::upload_data_objects(upload_parameters.clone())?;
+                    upload_parameters
+                    .object_creation_list
+                    .len()
+                    .try_into()
+                    .unwrap_or_default()
+            } else {
+                0u64
+            };
 
             //
             // == MUTATION SAFE ==
@@ -703,13 +713,14 @@ decl_module! {
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
                 // a newly create channel has zero videos ?
-                num_videos: <T as Trait>::VideoId::zero(),
+                num_videos: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-
-        // setting the channel owner account as the prize funds account
-        deletion_prize_source_account_id: sender.clone(),
+                num_assets: num_assets,
+                // setting the channel owner account as the prize funds account
+                deletion_prize_source_account_id: sender.clone(),
             };
+
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
@@ -793,7 +804,11 @@ decl_module! {
             // ensure that the provided assets are not empty
             ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
 
-            Self::delete_assets_inner(&channel_id, &channel, &assets)?;
+            Storage::<T>::delete_data_objects(
+                channel.deletion_prize_source_account_id.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                assets.clone(),
+            )?;
 
             Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
@@ -949,7 +964,7 @@ decl_module! {
             );
 
             let maybe_data_object_id = if let Some(upload_parameters) =
-                maybe_upload_parameters{
+                maybe_upload_parameters {
                     let data_object_id = Storage::<T>::next_data_object_id();
                     Storage::<T>::upload_data_objects(upload_parameters)?;
                     Some(data_object_id)
@@ -979,7 +994,7 @@ decl_module! {
 
             // Add recently added video id to the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_videos.saturating_add(<T as Trait>::VideoId::one())
+                channel.num_videos = channel.num_videos.saturating_add(1);
             });
 
             Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
@@ -1042,14 +1057,17 @@ decl_module! {
 
             Self::ensure_video_can_be_removed(&video)?;
 
-            // MAYBE DELETE VIDEO FROM STORAGE:
+            // If video is uploaded on storage delete it
             if let Some(data_object_id) = video.maybe_data_object_id {
                 // list of object to delete : 1 video
-                let mut object_ids = BTreeSet::new();
-                object_ids.insert(data_object_id);
+                let mut data_object_ids = BTreeSet::new();
+                data_object_ids.insert(data_object_id);
 
-                // perform storage deletion
-                Self::delete_assets_inner(&channel_id, &channel, &object_ids)?;
+                Storage::<T>::delete_data_objects(
+                    channel.deletion_prize_source_account_id.clone(),
+                    Self::bag_id_for_channel(&channel_id),
+                    data_object_ids.clone(),
+                )?;
             }
 
             //
@@ -1061,7 +1079,7 @@ decl_module! {
 
             // Decrease video count for the channel
             let mut channel = channel;
-            channel.num_videos = channel.num_videos.saturating_sub(<T as Trait>::VideoId::one());
+            channel.num_videos = channel.num_videos.saturating_sub(1);
             ChannelById::<T>::insert(channel_id, channel);
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
@@ -1394,24 +1412,11 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn delete_assets_inner(
-        channel_id: &T::ChannelId,
-        channel: &Channel<T>,
-        data_object_ids: &BTreeSet<<T as storage::Trait>::DataObjectId>,
-    ) -> DispatchResult {
+    fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
         // retrieve bag id from channel id
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
-        let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
-
-        // objects id
-        Storage::<T>::delete_data_objects(
-            channel.deletion_prize_source_account_id.clone(),
-            bag_id,
-            data_object_ids.clone(),
-        )?;
-        Ok(())
+        BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag)
     }
-
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }

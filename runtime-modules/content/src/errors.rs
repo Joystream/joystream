@@ -69,7 +69,5 @@ decl_error! {
 
         /// Channel assets feasibility
         InfeasibleChannelAssets,
-
-
     }
 }
