@@ -1,25 +1,16 @@
-import { fixBlockTimestamp } from './eventFix'
 import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { FindConditions } from 'typeorm'
+import { SubstrateEvent, EventContext, StoreContext } from '@joystream/hydra-common'
 
-import {
-  convertBytesToString,
-  inconsistentState,
-  logger,
-  extractExtrinsicArgs,
-  extractSudoCallParameters,
-} from './common'
-import { Members } from '../../generated/types'
-import { MembershipEntryMethod, Membership } from 'query-node'
+import { bytesToString, inconsistentState, logger, extractExtrinsicArgs, extractSudoCallParameters } from '../common'
+import { Members } from '../generated/types'
+import { MembershipEntryMethod, Membership } from 'query-node/dist/model'
 import { EntryMethod } from '@joystream/types/augment'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberRegistered(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function members_MemberRegistered({ event, store }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { accountId, memberId, entryMethod } = new Members.MemberRegisteredEvent(event).data
+  const [memberId, accountId, entryMethod] = new Members.MemberRegisteredEvent(event).params
   const { avatarUri, about, handle } = extractExtrinsicArgs(event, Members.BuyMembershipCall, {
     handle: 1,
     avatarUri: 2,
@@ -32,26 +23,27 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
     id: memberId.toString(),
     rootAccount: accountId.toString(),
     controllerAccount: accountId.toString(),
-    handle: convertBytesToString(handle.unwrapOr(null)),
-    about: convertBytesToString(about.unwrapOr(null)),
-    avatarUri: convertBytesToString(avatarUri.unwrapOr(null)),
+    // Handle is required by the runtime during registration. Lack of it will throw an error
+    handle: bytesToString(handle.unwrap()),
+    about: about.isSome ? bytesToString(about.unwrap()) : undefined,
+    avatarUri: avatarUri.isSome ? bytesToString(avatarUri.unwrap()) : undefined,
     createdInBlock: event.blockNumber,
     entry: convertEntryMethod(entryMethod),
 
     // fill in auto-generated fields
-    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
   })
 
   // save membership
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   // emit log event
   logger.info('Member has been registered', { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberUpdatedAboutText(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function members_MemberUpdatedAboutText({ event, store }: EventContext & StoreContext): Promise<void> {
   // read event data
   const { text, memberId } = isUpdateMembershipExtrinsic(event)
     ? unpackUpdateMembershipOptions(
@@ -60,7 +52,7 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
     : extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall, { memberId: 0, text: 1 })
 
   // load member
-  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+  const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
   // ensure member exists
   if (!member) {
@@ -68,20 +60,20 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
   }
 
   // update member
-  member.about = convertBytesToString(text)
+  member.about = bytesToString(text)
 
   // set last update time
-  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  member.updatedAt = new Date(event.blockTimestamp)
 
   // save member
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   // emit log event
   logger.info("Member's about text has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function members_MemberUpdatedAvatar({ event, store }: EventContext & StoreContext): Promise<void> {
   // read event data
   const { uri, memberId } = isUpdateMembershipExtrinsic(event)
     ? unpackUpdateMembershipOptions(
@@ -90,7 +82,7 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
     : extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall, { memberId: 0, uri: 1 })
 
   // load member
-  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+  const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
   // ensure member exists
   if (!member) {
@@ -98,20 +90,20 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
   }
 
   // update member
-  member.avatarUri = convertBytesToString(uri)
+  member.avatarUri = bytesToString(uri)
 
   // set last update time
-  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  member.updatedAt = new Date(event.blockTimestamp)
 
   // save member
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   // emit log event
   logger.info("Member's avatar has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberUpdatedHandle(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function members_MemberUpdatedHandle({ event, store }: EventContext & StoreContext): Promise<void> {
   // read event data
   const { handle, memberId } = isUpdateMembershipExtrinsic(event)
     ? unpackUpdateMembershipOptions(
@@ -120,7 +112,7 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
     : extractExtrinsicArgs(event, Members.ChangeMemberHandleCall, { memberId: 0, handle: 1 })
 
   // load member
-  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+  const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
   // ensure member exists
   if (!member) {
@@ -128,20 +120,20 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
   }
 
   // update member
-  member.handle = convertBytesToString(handle)
+  member.handle = bytesToString(handle)
 
   // set last update time
-  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  member.updatedAt = new Date(event.blockTimestamp)
 
   // save member
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   // emit log event
   logger.info("Member's avatar has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberSetRootAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function members_MemberSetRootAccount({ event, store }: EventContext & StoreContext): Promise<void> {
   // read event data
   const { newRootAccount, memberId } = extractExtrinsicArgs(event, Members.SetRootAccountCall, {
     memberId: 0,
@@ -149,7 +141,7 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
   })
 
   // load member
-  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+  const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
   // ensure member exists
   if (!member) {
@@ -160,17 +152,17 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
   member.rootAccount = newRootAccount.toString()
 
   // set last update time
-  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  member.updatedAt = new Date(event.blockTimestamp)
 
   // save member
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   // emit log event
   logger.info("Member's root has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function members_MemberSetControllerAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function members_MemberSetControllerAccount({ event, store }: EventContext & StoreContext): Promise<void> {
   // read event data
   const { newControllerAccount, memberId } = extractExtrinsicArgs(event, Members.SetControllerAccountCall, {
     memberId: 0,
@@ -178,7 +170,7 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   })
 
   // load member
-  const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+  const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
   // ensure member exists
   if (!member) {
@@ -189,10 +181,10 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   member.controllerAccount = newControllerAccount.toString()
 
   // set last update time
-  member.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  member.updatedAt = new Date(event.blockTimestamp)
 
   // save member
-  await db.save<Membership>(member)
+  await store.save<Membership>(member)
 
   // emit log event
   logger.info("Member's controller has been updated", { ids: memberId })

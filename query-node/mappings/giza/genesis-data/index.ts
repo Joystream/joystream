@@ -1,3 +1,8 @@
-import storageSystem from './storageSystem.json'
+import { MemberJson, StorageSystemJson } from './types'
+import storageSystemJson from './storageSystem.json'
+import membersJson from './members.json'
 
-export { storageSystem }
+const storageSystem: StorageSystemJson = storageSystemJson
+const members: MemberJson[] = membersJson
+
+export { storageSystem, members }

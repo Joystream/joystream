@@ -1,41 +1,21 @@
-import BN from 'bn.js'
-import { fixBlockTimestamp } from '../eventFix'
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import { FindConditions, In } from 'typeorm'
+/*
+eslint-disable @typescript-eslint/naming-convention
+*/
+import { EventContext, StoreContext } from '@joystream/hydra-common'
+import { In } from 'typeorm'
+import { Content } from '../../generated/types'
+import { deserializeMetadata, inconsistentState, logger } from '../../common'
+import { processVideoMetadata } from './utils'
+import { Channel, Video, VideoCategory, AssetNone } from 'query-node/dist/model'
+import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 
-import { Content } from '../../../generated/types'
-
-import { inconsistentState, logger, getNextId } from '../common'
-
-import { convertContentActorToDataObjectOwner, readProtobuf, readProtobufWithAssets, RawVideoMetadata } from './utils'
-
-import {
-  AssetAvailability,
-  Channel,
-  License,
-  Video,
-  VideoCategory,
-  VideoMediaEncoding,
-  VideoMediaMetadata,
-} from 'query-node'
-
-// Joystream types
-import { ChannelId } from '@joystream/types/augment'
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoCategoryCreated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { videoCategoryId, videoCategoryCreationParameters, contentActor } = new Content.VideoCategoryCreatedEvent(
-    event
-  ).data
+  const [, videoCategoryId, videoCategoryCreationParameters] = new Content.VideoCategoryCreatedEvent(event).params
 
   // read metadata
-  const protobufContent = await readProtobuf(new VideoCategory(), {
-    metadata: videoCategoryCreationParameters.meta,
-    db,
-    event,
-  })
+  const metadata = (await deserializeMetadata(VideoCategoryMetadata, videoCategoryCreationParameters.meta)) || {}
 
   // create new video category
   const videoCategory = new VideoCategory({
@@ -43,32 +23,26 @@ export async function content_VideoCategoryCreated(db: DatabaseManager, event: S
     id: videoCategoryId.toString(),
     videos: [],
     createdInBlock: event.blockNumber,
-
     // fill in auto-generated fields
-    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-
-    // integrate metadata
-    ...protobufContent,
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
   })
+  integrateMeta(videoCategory, metadata, ['name'])
 
   // save video category
-  await db.save<VideoCategory>(videoCategory)
+  await store.save<VideoCategory>(videoCategory)
 
   // emit log event
   logger.info('Video category has been created', { id: videoCategoryId })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoCategoryUpdated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoCategoryUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { videoCategoryId, videoCategoryUpdateParameters, contentActor } = new Content.VideoCategoryUpdatedEvent(
-    event
-  ).data
+  const [, videoCategoryId, videoCategoryUpdateParameters] = new Content.VideoCategoryUpdatedEvent(event).params
 
   // load video category
-  const videoCategory = await db.get(VideoCategory, {
-    where: { id: videoCategoryId.toString() } as FindConditions<VideoCategory>,
+  const videoCategory = await store.get(VideoCategory, {
+    where: { id: videoCategoryId.toString() },
   })
 
   // ensure video category exists
@@ -77,35 +51,26 @@ export async function content_VideoCategoryUpdated(db: DatabaseManager, event: S
   }
 
   // read metadata
-  const protobufContent = await readProtobuf(new VideoCategory(), {
-    metadata: videoCategoryUpdateParameters.new_meta,
-    db,
-    event,
-  })
-
-  // update all fields read from protobuf
-  for (const [key, value] of Object.entries(protobufContent)) {
-    videoCategory[key] = value
-  }
+  const newMeta = deserializeMetadata(VideoCategoryMetadata, videoCategoryUpdateParameters.new_meta) || {}
+  integrateMeta(videoCategory, newMeta, ['name'])
 
   // set last update time
-  videoCategory.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  videoCategory.updatedAt = new Date(event.blockTimestamp)
 
   // save video category
-  await db.save<VideoCategory>(videoCategory)
+  await store.save<VideoCategory>(videoCategory)
 
   // emit log event
   logger.info('Video category has been updated', { id: videoCategoryId })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoCategoryDeleted(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoCategoryDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { videoCategoryId } = new Content.VideoCategoryDeletedEvent(event).data
+  const [, videoCategoryId] = new Content.VideoCategoryDeletedEvent(event).params
 
   // load video category
-  const videoCategory = await db.get(VideoCategory, {
-    where: { id: videoCategoryId.toString() } as FindConditions<VideoCategory>,
+  const videoCategory = await store.get(VideoCategory, {
+    where: { id: videoCategoryId.toString() },
   })
 
   // ensure video category exists
@@ -114,83 +79,57 @@ export async function content_VideoCategoryDeleted(db: DatabaseManager, event: S
   }
 
   // remove video category
-  await db.remove<VideoCategory>(videoCategory)
+  await store.remove<VideoCategory>(videoCategory)
 
   // emit log event
   logger.info('Video category has been deleted', { id: videoCategoryId })
 }
 
-/// ///////////////// Video //////////////////////////////////////////////////////
+/// //////////////// Video //////////////////////////////////////////////////////
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoCreated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoCreated(ctx: EventContext & StoreContext): Promise<void> {
+  const { store, event } = ctx
   // read event data
-  const { channelId, videoId, videoCreationParameters, contentActor } = new Content.VideoCreatedEvent(event).data
-
-  // read metadata
-  const protobufContent = await readProtobufWithAssets(new Video(), {
-    metadata: videoCreationParameters.meta,
-    db,
-    event,
-    assets: videoCreationParameters.assets,
-    contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
-  })
+  const [, channelId, videoId, videoCreationParameters] = new Content.VideoCreatedEvent(event).params
 
   // load channel
-  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
 
   // ensure channel exists
   if (!channel) {
     return inconsistentState('Trying to add video to non-existing channel', channelId)
   }
 
-  // prepare video media metadata (if any)
-  const fixedProtobuf = await integrateVideoMediaMetadata(db, null, protobufContent, event)
-
-  const licenseIsEmpty = fixedProtobuf.license && !Object.keys(fixedProtobuf.license).length
-  if (licenseIsEmpty) {
-    // license deletion was requested - ignore it and consider it empty
-    delete fixedProtobuf.license
-  }
-
-  // create new video
   const video = new Video({
-    // main data
     id: videoId.toString(),
-    isCensored: false,
     channel,
-    createdInBlock: event.blockNumber,
+    isCensored: false,
     isFeatured: false,
-
-    // default values for properties that might or might not be filled by metadata
-    thumbnailPhotoUrls: [],
-    thumbnailPhotoAvailability: AssetAvailability.INVALID,
-    mediaUrls: [],
-    mediaAvailability: AssetAvailability.INVALID,
-
-    // fill in auto-generated fields
-    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-
-    // integrate metadata
-    ...fixedProtobuf,
+    createdInBlock: event.blockNumber,
+    thumbnailPhoto: new AssetNone(),
+    media: new AssetNone(),
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
   })
+  // deserialize & process metadata
+  const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta) || {}
+  await processVideoMetadata(ctx, channel, video, metadata, videoCreationParameters.assets)
 
   // save video
-  await db.save<Video>(video)
+  await store.save<Video>(video)
 
   // emit log event
   logger.info('Video has been created', { id: videoId })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoUpdated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
   // read event data
-  const { videoId, videoUpdateParameters, contentActor } = new Content.VideoUpdatedEvent(event).data
+  const [, videoId, videoUpdateParameters] = new Content.VideoUpdatedEvent(event).params
 
   // load video
-  const video = await db.get(Video, {
-    where: { id: videoId.toString() } as FindConditions<Video>,
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
     relations: ['channel', 'license'],
   })
 
@@ -200,63 +139,30 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
   }
 
   // prepare changed metadata
-  const newMetadata = videoUpdateParameters.new_meta.unwrapOr(null)
-
-  // license must be deleted AFTER video is saved - plan a license deletion by assigning it to this variable
-  let licenseToDelete: License | null = null
+  const newMetadataBytes = videoUpdateParameters.new_meta.unwrapOr(null)
 
   // update metadata if it was changed
-  if (newMetadata) {
-    const protobufContent = await readProtobufWithAssets(new Video(), {
-      metadata: newMetadata,
-      db,
-      event,
-      assets: videoUpdateParameters.assets.unwrapOr([]),
-      contentOwner: convertContentActorToDataObjectOwner(contentActor, new BN(video.channel.id).toNumber()),
-    })
-
-    // prepare video media metadata (if any)
-    const fixedProtobuf = await integrateVideoMediaMetadata(db, video, protobufContent, event)
-
-    // remember original license
-    const originalLicense = video.license
-
-    // update all fields read from protobuf
-    for (const [key, value] of Object.entries(fixedProtobuf)) {
-      video[key] = value
-    }
-
-    // license has changed - plan old license delete
-    if (originalLicense && video.license !== originalLicense) {
-      ;[video.license, licenseToDelete] = handleLicenseUpdate(originalLicense, video.license)
-    } else if (!Object.keys(video.license || {}).length) {
-      // license deletion was requested event no license exists?
-      delete video.license // ensure license is empty
-    }
+  if (newMetadataBytes) {
+    const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
+    await processVideoMetadata(ctx, video.channel, video, newMetadata, videoUpdateParameters.assets.unwrapOr([]))
   }
 
   // set last update time
-  video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  video.updatedAt = new Date(event.blockTimestamp)
 
   // save video
-  await db.save<Video>(video)
-
-  // delete old license if it's planned
-  if (licenseToDelete) {
-    await db.remove<License>(licenseToDelete)
-  }
+  await store.save<Video>(video)
 
   // emit log event
   logger.info('Video has been updated', { id: videoId })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoDeleted(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { videoId } = new Content.VideoDeletedEvent(event).data
+  const [, videoId] = new Content.VideoDeletedEvent(event).params
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
+  const video = await store.get(Video, { where: { id: videoId.toString() } })
 
   // ensure video exists
   if (!video) {
@@ -264,19 +170,21 @@ export async function content_VideoDeleted(db: DatabaseManager, event: Substrate
   }
 
   // remove video
-  await db.remove<Video>(video)
+  await store.remove<Video>(video)
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_VideoCensorshipStatusUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { videoId, isCensored } = new Content.VideoCensorshipStatusUpdatedEvent(event).data
+  const [, videoId, isCensored] = new Content.VideoCensorshipStatusUpdatedEvent(event).params
 
   // load video
-  const video = await db.get(Video, { where: { id: videoId.toString() } as FindConditions<Video> })
+  const video = await store.get(Video, { where: { id: videoId.toString() } })
 
   // ensure video exists
   if (!video) {
@@ -287,71 +195,56 @@ export async function content_VideoCensorshipStatusUpdated(db: DatabaseManager, 
   video.isCensored = isCensored.isTrue
 
   // set last update time
-  video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  video.updatedAt = new Date(event.blockTimestamp)
 
   // save video
-  await db.save<Video>(video)
+  await store.save<Video>(video)
 
   // emit log event
   logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_FeaturedVideosSet(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_FeaturedVideosSet({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { videoId: videoIds } = new Content.FeaturedVideosSetEvent(event).data
+  const [, videoIds] = new Content.FeaturedVideosSetEvent(event).params
 
   // load old featured videos
-  const existingFeaturedVideos = await db.getMany(Video, { where: { isFeatured: true } as FindConditions<Video> })
+  const existingFeaturedVideos = await store.getMany(Video, { where: { isFeatured: true } })
 
   // comparsion utility
   const isSame = (videoIdA: string) => (videoIdB: string) => videoIdA === videoIdB
 
   // calculate diff sets
-  const toRemove = existingFeaturedVideos.filter(
-    (existingFV) => !videoIds.map((item) => item.toString()).some(isSame(existingFV.id))
+  const videosToRemove = existingFeaturedVideos.filter(
+    (existingFV) => !videoIds.map((videoId) => videoId.toString()).some(isSame(existingFV.id))
   )
-  const toAdd = videoIds.filter(
-    (video) => !existingFeaturedVideos.map((item) => item.id).some(isSame(video.toString()))
+  const videoIdsToAdd = videoIds.filter(
+    (videoId) => !existingFeaturedVideos.map((existingFV) => existingFV.id).some(isSame(videoId.toString()))
   )
-
-  // escape if no featured video needs to be added or removed
-  if (!toRemove.length && !toAdd.length) {
-    // emit log event
-    logger.info('Featured videos unchanged')
-
-    return
-  }
 
   // mark previously featured videos as not-featured
   await Promise.all(
-    toRemove.map(async (video) => {
+    videosToRemove.map(async (video) => {
       video.isFeatured = false
-
       // set last update time
-      video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+      video.updatedAt = new Date(event.blockTimestamp)
 
-      await db.save<Video>(video)
+      await store.save<Video>(video)
     })
   )
 
-  // escape if no featured video needs to be added
-  if (!toAdd.length) {
-    // emit log event
-    logger.info('Some featured videos have been unset.', { videoIds: toRemove.map((item) => item.id.toString()) })
-
-    return
-  }
-
-  // read videos previously not-featured videos that are meant to be featured
-  const videosToAdd = await db.getMany(Video, {
+  // read previously not-featured videos that are meant to be featured
+  const videosToAdd = await store.getMany(Video, {
     where: {
-      id: In(toAdd.map((item) => item.toString())),
-    } as FindConditions<Video>,
+      id: In(videoIdsToAdd.map((item) => item.toString())),
+    },
   })
 
-  if (videosToAdd.length !== toAdd.length) {
-    return inconsistentState('At least one non-existing video featuring requested', toAdd)
+  if (videosToAdd.length !== videoIdsToAdd.length) {
+    return inconsistentState(
+      'At least one non-existing video featuring requested',
+      videosToAdd.map((v) => v.id)
+    )
   }
 
   // mark previously not-featured videos as featured
@@ -360,139 +253,14 @@ export async function content_FeaturedVideosSet(db: DatabaseManager, event: Subs
       video.isFeatured = true
 
       // set last update time
-      video.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+      video.updatedAt = new Date(event.blockTimestamp)
 
-      await db.save<Video>(video)
+      await store.save<Video>(video)
     })
   )
 
   // emit log event
-  logger.info('New featured videos have been set', { videoIds })
-}
-
-/// ///////////////// Helpers ////////////////////////////////////////////////////
-
-/*
-  Integrates video metadata-related data into existing data (if any) or creates a new record.
-
-  NOTE: type hack - `RawVideoMetadata` is accepted for `metadata` instead of `Partial<Video>`
-        see `prepareVideoMetadata()` in `utils.ts` for more info
-*/
-async function integrateVideoMediaMetadata(
-  db: DatabaseManager,
-  existingRecord: Video | null,
-  metadata: Partial<Video>,
-  event: SubstrateEvent
-): Promise<Partial<Video>> {
-  if (!metadata.mediaMetadata) {
-    return metadata
-  }
-
-  const now = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
-
-  // fix TS type
-  const rawMediaMetadata = (metadata.mediaMetadata as unknown) as RawVideoMetadata
-
-  // ensure encoding object
-  const encoding =
-    (existingRecord && existingRecord.mediaMetadata && existingRecord.mediaMetadata.encoding) ||
-    new VideoMediaEncoding({
-      createdAt: now,
-      updatedAt: now,
-
-      createdById: '1',
-      updatedById: '1',
-    })
-
-  // integrate media encoding-related data
-  rawMediaMetadata.encoding.codecName.integrateInto(encoding, 'codecName')
-  rawMediaMetadata.encoding.container.integrateInto(encoding, 'container')
-  rawMediaMetadata.encoding.mimeMediaType.integrateInto(encoding, 'mimeMediaType')
-
-  // ensure media metadata object
-  const mediaMetadata =
-    (existingRecord && existingRecord.mediaMetadata) ||
-    new VideoMediaMetadata({
-      createdInBlock: event.blockNumber,
-
-      createdAt: now,
-      updatedAt: now,
-
-      createdById: '1',
-      updatedById: '1',
-    })
-
-  // integrate media-related data
-  rawMediaMetadata.pixelWidth.integrateInto(mediaMetadata, 'pixelWidth')
-  rawMediaMetadata.pixelHeight.integrateInto(mediaMetadata, 'pixelHeight')
-  rawMediaMetadata.size.integrateInto(mediaMetadata, 'size')
-
-  // connect encoding to media metadata object
-  mediaMetadata.encoding = encoding
-
-  // ensure predictable ids
-  if (!mediaMetadata.encoding.id) {
-    mediaMetadata.encoding.id = await getNextId(db)
-  }
-  if (!mediaMetadata.id) {
-    mediaMetadata.id = await getNextId(db)
-  }
-
-  /// ///////////////// update updatedAt if needed ///////////////////////////////
-
-  const encodingNoChange =
-    true &&
-    rawMediaMetadata.encoding.codecName.isNoChange() &&
-    rawMediaMetadata.encoding.container.isNoChange() &&
-    rawMediaMetadata.encoding.mimeMediaType.isNoChange()
-  const mediaMetadataNoChange =
-    encodingNoChange &&
-    rawMediaMetadata.encoding.codecName.isNoChange() &&
-    rawMediaMetadata.encoding.container.isNoChange() &&
-    rawMediaMetadata.encoding.mimeMediaType.isNoChange()
-
-  if (!encodingNoChange) {
-    // encoding changed?
-    mediaMetadata.encoding.updatedAt = now
-  }
-  if (!mediaMetadataNoChange) {
-    // metadata changed?
-    mediaMetadata.updatedAt = now
-  }
-
-  /// ////////////////////////////////////////////////////////////////////////////
-
-  return {
-    ...metadata,
-    mediaMetadata,
-  }
-}
-
-// returns tuple `[newLicenseForVideo, oldLicenseToBeDeleted]`
-function handleLicenseUpdate(originalLicense, newLicense): [License | undefined, License | null] {
-  const isNewEmpty = !Object.keys(newLicense).length
-
-  if (!originalLicense && isNewEmpty) {
-    return [undefined, null]
-  }
-
-  if (!originalLicense) {
-    // && !isNewEmpty
-    return [newLicense, null]
-  }
-
-  if (!isNewEmpty) {
-    // && originalLicense
-    return [
-      new License({
-        ...originalLicense,
-        ...newLicense,
-      }),
-      null,
-    ]
-  }
-
-  // originalLicense && isNewEmpty
-
-  return [originalLicense, null]
+  const newFeaturedVideoIds = videoIds.map((id) => id.toString())
+  const removedFeaturedVideosIds = videosToRemove.map((v) => v.id)
+  logger.info('New featured videos have been set', { newFeaturedVideoIds, removedFeaturedVideosIds })
 }
