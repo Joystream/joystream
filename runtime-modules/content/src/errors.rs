@@ -178,5 +178,8 @@ decl_error! {
 
         // Bid lock duration is not expired
         BidLockDurationIsNotExpired,
+
+        // NFT auction is already expired
+        NFTAuctionIsAlreadyExpired
     }
 }

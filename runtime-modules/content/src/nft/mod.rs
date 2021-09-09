@@ -43,7 +43,7 @@ impl<T: Trait> Module<T> {
     /// Ensure nft auction not expired
     pub(crate) fn ensure_nft_auction_not_expired(auction: &Auction<T>) -> DispatchResult {
         ensure!(
-            !auction.is_nft_auction_expired(),
+            !Self::is_nft_auction_expired(auction),
             Error::<T>::NFTAuctionIsAlreadyExpired
         );
         Ok(())
