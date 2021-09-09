@@ -1007,20 +1007,29 @@ decl_module! {
             )?;
 
             // Ensure auction for given video id exists
-            video.ensure_nft_auction_state::<T>()?;
+            let auction = video.ensure_nft_auction_state::<T>()?;
 
-            if let Some(auction) = video.get_nft_auction_ref() {
+            // Ensure nft auction not expired
+            Self::ensure_nft_auction_not_expired(&auction)?;
 
-                // Ensure nft auction not expired
-                Self::ensure_nft_auction_not_expired(&auction)?;
+            // Ensure given auction can be canceled
+            auction.ensure_auction_can_be_canceled::<T>()?;
 
-                // Ensure auction is not active
-                auction.ensure_is_not_active::<T>()?;
-            }
+            let last_bid_data = if let Some(last_bid) = auction.last_bid {
+                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+                Some((last_bidder_account_id, last_bid.amount))
+            } else {
+                None
+            };
 
             //
             // == MUTATION SAFE ==
             //
+            
+            // Unreserve previous bidder balance
+            if let Some((last_bidder_account_id, last_bid_amount)) = last_bid_data {
+                T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
+            }
 
             // Cancel auction
             let video = video.set_idle_transactional_status();
