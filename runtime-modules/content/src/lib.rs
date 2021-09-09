@@ -341,16 +341,15 @@ type VideoUpdateParameters<T> = VideoUpdateParameters_<NewAsset<T>>;
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Video_<ChannelId, SeriesId, DataObjectId> {
+pub struct Video_<ChannelId, SeriesId, DataObjectId: Ord> {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
     // - prevent removing a video if it is in a season (because order is important)
     pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
-
     /// storage parameters used during deletion
-    pub maybe_data_object_id: Option<DataObjectId>,
+    pub maybe_data_objects_id_set: Option<BTreeSet<DataObjectId>>,
 }
 
 type Video<T> = Video_<
@@ -1012,14 +1011,20 @@ decl_module! {
             );
 
             // if storaged uploading is required save the object id for the video
-            let maybe_data_object_id = if let Some(upload_parameters) =
+            let maybe_data_object_ids = if let Some(upload_parameters) =
                 maybe_upload_parameters {
-                    let data_object_id = Storage::<T>::next_data_object_id();
+                    let beginning_id = Storage::<T>::next_data_object_id();
                     Storage::<T>::upload_data_objects(upload_parameters)?;
-                    Some(data_object_id)
-            } else {
-                None
-            };
+                    let ending_id = Storage::<T>::next_data_object_id();
+                    let mut data_objects_id_set:
+                        BTreeSet<<T as storage::Trait>::DataObjectId> = BTreeSet::new();
+                    for el in beginning_id..=ending_id {
+                        data_objects_id_set.insert(el);
+                    }
+                    Some(data_objects_id_set)
+                } else {
+                    None
+                };
 
             //
             // == MUTATION SAFE ==
@@ -1034,7 +1039,7 @@ decl_module! {
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
                 /// storage parameters for later storage deletion
-                maybe_data_object_id: maybe_data_object_id,
+                maybe_data_objects_id_set: maybe_data_object_ids,
             };
 
             // add it to the onchain state
@@ -1118,15 +1123,12 @@ decl_module! {
             Self::ensure_video_can_be_removed(&video)?;
 
             // If video is on storage, remove it
-            if let Some(data_object_id) = video.maybe_data_object_id {
-                // list of object to delete : 1 video
-                let mut data_object_ids = BTreeSet::new();
-                data_object_ids.insert(data_object_id);
+            if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
 
                 Storage::<T>::delete_data_objects(
                     channel.deletion_prize_source_account_id.clone(),
                     Self::bag_id_for_channel(&channel_id),
-                    data_object_ids.clone(),
+                    data_objects_id_set,
                 )?;
             }
 

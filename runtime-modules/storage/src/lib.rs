@@ -118,6 +118,8 @@
 
 // Internal Substrate warning (decl_event).
 #![allow(clippy::unused_unit)]
+// needed for step iteration over DataObjectId range
+#![feature(step_trait)]
 
 #[cfg(test)]
 mod tests;
@@ -227,7 +229,8 @@ pub trait Trait: frame_system::Trait + balances::Trait + membership::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + iter::Step; // needed for iteration
 
     /// Storage bucket ID type.
     type StorageBucketId: Parameter
