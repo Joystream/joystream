@@ -849,6 +849,15 @@ decl_module! {
                 assets.clone(),
             )?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update onchain channel status
+            let mut channel = channel;
+            channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove);
+            ChannelById::<T>::insert(channel_id, channel);
+
             Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
 
