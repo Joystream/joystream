@@ -79,7 +79,7 @@ export class DataObjectConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: DataObjectWhereInput;
 
   @Field(() => DataObjectOrderByEnum, { nullable: true })
-  orderBy?: DataObjectOrderByEnum;
+  orderBy?: [DataObjectOrderByEnum];
 }
 
 @Resolver(DataObject)

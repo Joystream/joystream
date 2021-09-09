@@ -77,7 +77,7 @@ export class WorkerConnectionWhereArgs extends ConnectionPageInputOptions {
   where?: WorkerWhereInput;
 
   @Field(() => WorkerOrderByEnum, { nullable: true })
-  orderBy?: WorkerOrderByEnum;
+  orderBy?: [WorkerOrderByEnum];
 }
 
 @Resolver(Worker)

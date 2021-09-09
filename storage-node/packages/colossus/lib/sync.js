@@ -21,39 +21,41 @@
 const debug = require('debug')('joystream:sync')
 const _ = require('lodash')
 const { ContentId } = require('@joystream/types/storage')
-// The number of concurrent sync sessions allowed. Must be greater than zero.
-const MAX_CONCURRENT_SYNC_ITEMS = 20
+const { nextTick } = require('@joystream/storage-utils/sleep')
 
-async function syncContent({ api, storage, contentBeingSynced, contentCompleteSynced }) {
-  const knownEncodedContentIds = (await api.assets.getAcceptedContentIds()).map((id) => id.encode())
+// Time to wait between sync runs. The lower the better chance to consume all
+// available sync sessions allowed.
+const INTERVAL_BETWEEN_SYNC_RUNS_MS = 3000
 
-  // Select ids which we have not yet fully synced
-  const needsSync = knownEncodedContentIds
-    .filter((id) => !contentCompleteSynced.has(id))
+async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags }) {
+  // The number of concurrent items to attemp to fetch.
+  const MAX_CONCURRENT_SYNC_ITEMS = Math.max(1, flags.maxSync)
+
+  const contentIds = api.assets.getAcceptedIpfsHashes()
+
+  // Select ids which may need to be synced
+  const idsNotSynced = contentIds
+    .filter((id) => !contentCompletedSync.has(id))
     .filter((id) => !contentBeingSynced.has(id))
 
-  // Since we are limiting concurrent content ids being synced, to ensure
+  // We are limiting how many content ids can be synced concurrently, so to ensure
   // better distribution of content across storage nodes during a potentially long
   // sync process we don't want all nodes to replicate items in the same order, so
   // we simply shuffle.
-  const candidatesForSync = _.shuffle(needsSync)
+  const idsToSync = _.shuffle(idsNotSynced)
 
-  // TODO: get the data object
-  // make sure the data object was Accepted by the liaison,
-  // don't just blindly attempt to fetch them
-  while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && candidatesForSync.length) {
-    const id = candidatesForSync.shift()
+  while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && idsToSync.length) {
+    const id = idsToSync.shift()
 
     try {
       contentBeingSynced.set(id)
-      const contentId = ContentId.decode(api.api.registry, id)
-      await storage.synchronize(contentId, (err, status) => {
+      await storage.pin(id, (err, status) => {
         if (err) {
           contentBeingSynced.delete(id)
           debug(`Error Syncing ${err}`)
         } else if (status.synced) {
           contentBeingSynced.delete(id)
-          contentCompleteSynced.set(id)
+          contentCompletedSync.set(id)
         }
       })
     } catch (err) {
@@ -61,121 +63,56 @@ async function syncContent({ api, storage, contentBeingSynced, contentCompleteSy
       debug(`Failed calling synchronize ${err}`)
       contentBeingSynced.delete(id)
     }
+
+    // Allow callbacks to call to storage.synchronize() to be invoked during this sync run
+    // This will happen if content is found to be local and will speed overall sync process.
+    await nextTick()
   }
 }
 
-async function createNewRelationships({ api, contentCompleteSynced }) {
-  const roleAddress = api.identities.key.address
-  const providerId = api.storageProviderId
-
-  // Create new relationships for synced content if required and
-  // compose list of relationship ids to be set to ready.
-  return (
-    await Promise.all(
-      [...contentCompleteSynced.keys()].map(async (id) => {
-        const contentId = ContentId.decode(api.api.registry, id)
-        const { relationship, relationshipId } = await api.assets.getStorageRelationshipAndId(providerId, contentId)
-
-        if (relationship) {
-          // maybe prior transaction to set ready failed for some reason..
-          if (!relationship.ready) {
-            return relationshipId
-          }
-        } else {
-          // create relationship
-          debug(`Creating new storage relationship for ${id}`)
-          try {
-            return await api.assets.createStorageRelationship(roleAddress, providerId, contentId)
-          } catch (err) {
-            debug(`Error creating new storage relationship ${id}: ${err.stack}`)
-          }
-        }
-
-        return null
-      })
-    )
-  ).filter((id) => id !== null)
-}
-
-async function setRelationshipsReady({ api, relationshipIds }) {
-  const roleAddress = api.identities.key.address
-  const providerId = api.storageProviderId
-
-  return Promise.all(
-    relationshipIds.map(async (relationshipId) => {
-      try {
-        await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
-      } catch (err) {
-        debug('Error setting relationship ready')
-      }
-    })
-  )
-}
-
-async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced }) {
+async function syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync }) {
   const retry = () => {
-    setTimeout(syncPeriodic, flags.syncPeriod, {
+    setTimeout(syncRunner, INTERVAL_BETWEEN_SYNC_RUNS_MS, {
       api,
       flags,
       storage,
       contentBeingSynced,
-      contentCompleteSynced,
+      contentCompletedSync,
     })
   }
 
   try {
-    debug('Sync run started.')
-
-    const chainIsSyncing = await api.chainIsSyncing()
-    if (chainIsSyncing) {
-      debug('Chain is syncing. Postponing sync run.')
-      return retry()
-    }
-
-    if (!flags.anonymous) {
-      // Retry later if provider is not active
-      if (!(await api.providerIsActiveWorker())) {
-        debug(
-          'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
-        )
-        return retry()
-      }
-
-      const recommendedBalance = await api.providerHasMinimumBalance(300)
-      if (!recommendedBalance) {
-        debug('Warning: Provider role account is running low on balance.')
-      }
-
-      const sufficientBalance = await api.providerHasMinimumBalance(100)
-      if (!sufficientBalance) {
-        debug('Provider role account does not have sufficient balance. Postponing sync run!')
-        return retry()
-      }
-    }
-
-    await syncContent({ api, storage, contentBeingSynced, contentCompleteSynced })
-
-    // Only update on-chain state if not in anonymous mode
-    if (!flags.anonymous) {
-      const relationshipIds = await createNewRelationships({ api, contentCompleteSynced })
-      await setRelationshipsReady({ api, relationshipIds })
-      debug(`Sync run completed, set ${relationshipIds.length} new relationships to ready`)
+    if (await api.chainIsSyncing()) {
+      debug('Chain is syncing. Postponing sync.')
+    } else {
+      await syncRun({
+        api,
+        storage,
+        contentBeingSynced,
+        contentCompletedSync,
+        flags,
+      })
     }
   } catch (err) {
-    debug(`Error in sync run ${err.stack}`)
+    debug(`Error during sync ${err.stack}`)
   }
 
-  // always try again
+  // schedule next sync run
   retry()
 }
 
 function startSyncing(api, flags, storage) {
   // ids of content currently being synced
   const contentBeingSynced = new Map()
-  // ids of content that completed sync and may require creating a new relationship
-  const contentCompleteSynced = new Map()
+  // ids of content that completed sync
+  const contentCompletedSync = new Map()
 
-  syncPeriodic({ api, flags, storage, contentBeingSynced, contentCompleteSynced })
+  syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync })
+
+  setInterval(() => {
+    debug(`objects syncing: ${contentBeingSynced.size}`)
+    debug(`objects local: ${contentCompletedSync.size}`)
+  }, 60000)
 }
 
 module.exports = {

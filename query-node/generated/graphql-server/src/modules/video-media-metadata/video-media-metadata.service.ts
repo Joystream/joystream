@@ -13,7 +13,7 @@ export class VideoMediaMetadataService extends BaseService<VideoMediaMetadata> {
 
   async find<W extends WhereInput>(
     where?: any,
-    orderBy?: string,
+    orderBy?: string | string[],
     limit?: number,
     offset?: number,
     fields?: string[]

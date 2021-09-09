@@ -1,5 +1,4 @@
 import { fixBlockTimestamp } from './eventFix'
-import BN from 'bn.js'
 import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
 import { SubstrateEvent } from '@dzlzv/hydra-common'
@@ -7,6 +6,7 @@ import { DatabaseManager } from '@dzlzv/hydra-db-utils'
 import { FindConditions } from 'typeorm'
 
 import {
+  convertBytesToString,
   inconsistentState,
   logger,
   extractExtrinsicArgs,
@@ -20,15 +20,11 @@ import { EntryMethod } from '@joystream/types/augment'
 export async function members_MemberRegistered(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
   const { accountId, memberId, entryMethod } = new Members.MemberRegisteredEvent(event).data
-  const { avatarUri, about, handle } = extractExtrinsicArgs(
-    event,
-    Members.BuyMembershipCall,
-    {
-      handle: 1,
-      avatarUri: 2,
-      about: 3,
-    },
-  )
+  const { avatarUri, about, handle } = extractExtrinsicArgs(event, Members.BuyMembershipCall, {
+    handle: 1,
+    avatarUri: 2,
+    about: 3,
+  })
 
   // create new membership
   const member = new Membership({
@@ -51,7 +47,7 @@ export async function members_MemberRegistered(db: DatabaseManager, event: Subst
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info('Member has been registered', {ids: memberId})
+  logger.info('Member has been registered', { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -59,9 +55,9 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
   // read event data
   const { text, memberId } = isUpdateMembershipExtrinsic(event)
     ? unpackUpdateMembershipOptions(
-        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, about: 3})
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, { memberId: 0, about: 3 })
       )
-    : extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall, {memberId: 0, text: 1})
+    : extractExtrinsicArgs(event, Members.ChangeMemberAboutTextCall, { memberId: 0, text: 1 })
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -81,7 +77,7 @@ export async function members_MemberUpdatedAboutText(db: DatabaseManager, event:
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's about text has been updated", {ids: memberId})
+  logger.info("Member's about text has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -89,9 +85,9 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
   // read event data
   const { uri, memberId } = isUpdateMembershipExtrinsic(event)
     ? unpackUpdateMembershipOptions(
-        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, avatarUri: 2})
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, { memberId: 0, avatarUri: 2 })
       )
-    : extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall, {memberId: 0, uri: 1})
+    : extractExtrinsicArgs(event, Members.ChangeMemberAvatarCall, { memberId: 0, uri: 1 })
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -111,7 +107,7 @@ export async function members_MemberUpdatedAvatar(db: DatabaseManager, event: Su
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's avatar has been updated", {ids: memberId})
+  logger.info("Member's avatar has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -119,9 +115,9 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
   // read event data
   const { handle, memberId } = isUpdateMembershipExtrinsic(event)
     ? unpackUpdateMembershipOptions(
-        extractExtrinsicArgs(event, Members.UpdateMembershipCall, {memberId: 0, handle: 1})
+        extractExtrinsicArgs(event, Members.UpdateMembershipCall, { memberId: 0, handle: 1 })
       )
-    : extractExtrinsicArgs(event, Members.ChangeMemberHandleCall, {memberId: 0, handle: 1})
+    : extractExtrinsicArgs(event, Members.ChangeMemberHandleCall, { memberId: 0, handle: 1 })
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -141,13 +137,16 @@ export async function members_MemberUpdatedHandle(db: DatabaseManager, event: Su
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's avatar has been updated", {ids: memberId})
+  logger.info("Member's avatar has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberSetRootAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newRootAccount, memberId } = extractExtrinsicArgs(event, Members.SetRootAccountCall, {memberId: 0, newRootAccount: 1})
+  const { newRootAccount, memberId } = extractExtrinsicArgs(event, Members.SetRootAccountCall, {
+    memberId: 0,
+    newRootAccount: 1,
+  })
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -167,17 +166,16 @@ export async function members_MemberSetRootAccount(db: DatabaseManager, event: S
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's root has been updated", {ids: memberId})
+  logger.info("Member's root has been updated", { ids: memberId })
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function members_MemberSetControllerAccount(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
   // read event data
-  const { newControllerAccount, memberId } = extractExtrinsicArgs(
-    event,
-    Members.SetControllerAccountCall,
-    {memberId: 0, newControllerAccount: 1},
-  )
+  const { newControllerAccount, memberId } = extractExtrinsicArgs(event, Members.SetControllerAccountCall, {
+    memberId: 0,
+    newControllerAccount: 1,
+  })
 
   // load member
   const member = await db.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
@@ -197,28 +195,10 @@ export async function members_MemberSetControllerAccount(db: DatabaseManager, ev
   await db.save<Membership>(member)
 
   // emit log event
-  logger.info("Member's controller has been updated", {ids: memberId})
+  logger.info("Member's controller has been updated", { ids: memberId })
 }
 
-/////////////////// Helpers ////////////////////////////////////////////////////
-
-/*
-  Helper for converting Bytes type to string
-*/
-function convertBytesToString(b: Bytes | null): string {
-  if (!b) {
-    return ''
-  }
-
-  const result = Buffer.from(b.toU8a(true)).toString()
-
-  // prevent utf-8 null character
-  if (result.match(/^\0$/)) {
-    return ''
-  }
-
-  return result
-}
+/// ///////////////// Helpers ////////////////////////////////////////////////////
 
 function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   // paid membership?
@@ -237,31 +217,32 @@ function convertEntryMethod(entryMethod: EntryMethod): MembershipEntryMethod {
   }
 
   // should never happen
-  logger.error('Not implemented entry method', {entryMethod: entryMethod.toString()})
-  throw 'Not implemented entry method'
+  logger.error('Not implemented entry method', { entryMethod: entryMethod.toString() })
+  throw new Error('Not implemented entry method')
 }
 
 /*
   Returns true if event is emitted inside of `update_membership` extrinsic.
 */
 function isUpdateMembershipExtrinsic(event: SubstrateEvent): boolean {
-  if (!event.extrinsic) { // this should never happen
+  if (!event.extrinsic) {
+    // this should never happen
     return false
   }
 
-  if (event.extrinsic.method == 'updateMembership') {
+  if (event.extrinsic.method === 'updateMembership') {
     return true
   }
 
   // no sudo was used to update membership -> this is not updateMembership
-  if (event.extrinsic.section != 'sudo') {
+  if (event.extrinsic.section !== 'sudo') {
     return false
   }
 
   const sudoCallParameters = extractSudoCallParameters<unknown[]>(event)
 
   // very trivial check if update_membership extrinsic was used
-  return sudoCallParameters.args.length == 4 // memberId, handle, avatarUri, about
+  return sudoCallParameters.args.length === 4 // memberId, handle, avatarUri, about
 }
 
 interface IUnpackedUpdateMembershipOptions {

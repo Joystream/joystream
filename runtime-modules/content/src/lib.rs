@@ -1613,20 +1613,6 @@ impl<T: Trait> Module<T> {
     }
 }
 
-// Some initial config for the module on runtime upgrade
-impl<T: Trait> Module<T> {
-    pub fn on_runtime_upgrade() {
-        <NextChannelCategoryId<T>>::put(T::ChannelCategoryId::one());
-        <NextVideoCategoryId<T>>::put(T::VideoCategoryId::one());
-        <NextVideoId<T>>::put(T::VideoId::one());
-        <NextChannelId<T>>::put(T::ChannelId::one());
-        <NextPlaylistId<T>>::put(T::PlaylistId::one());
-        <NextSeriesId<T>>::put(T::SeriesId::one());
-        <NextPersonId<T>>::put(T::PersonId::one());
-        <NextChannelOwnershipTransferRequestId<T>>::put(T::ChannelOwnershipTransferRequestId::one());
-    }
-}
-
 decl_event!(
     pub enum Event<T>
     where

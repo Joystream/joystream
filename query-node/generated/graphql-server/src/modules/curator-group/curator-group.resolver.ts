@@ -77,7 +77,7 @@ export class CuratorGroupConnectionWhereArgs extends ConnectionPageInputOptions 
   where?: CuratorGroupWhereInput;
 
   @Field(() => CuratorGroupOrderByEnum, { nullable: true })
-  orderBy?: CuratorGroupOrderByEnum;
+  orderBy?: [CuratorGroupOrderByEnum];
 }
 
 @Resolver(CuratorGroup)

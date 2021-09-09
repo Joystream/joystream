@@ -13,10 +13,20 @@ export class Language extends BaseModel {
   @IntField({})
   createdInBlock!: number;
 
-  @OneToMany(() => Channel, (param: Channel) => param.language, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => Channel, (param: Channel) => param.language, {
+    nullable: true, cascade: ["insert", "update"],
+    modelName: 'Language',
+    relModelName: 'Channel',
+    propertyName: 'channellanguage',
+  })
   channellanguage?: Channel[];
 
-  @OneToMany(() => Video, (param: Video) => param.language, { nullable: true, cascade: ["insert", "update"] })
+  @OneToMany(() => Video, (param: Video) => param.language, {
+    nullable: true, cascade: ["insert", "update"],
+    modelName: 'Language',
+    relModelName: 'Video',
+    propertyName: 'videolanguage',
+  })
   videolanguage?: Video[];
 
   constructor(init?: Partial<Language>) {

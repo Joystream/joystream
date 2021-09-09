@@ -1,13 +1,22 @@
 name: joystream-node-docker
+
 on: push
 
+env:
+  REPOSITORY: joystream/node
+  KEY_NAME: joystream-github-action-key
+
 jobs:
-  build:
-    name: Build joystream/node Docker image
-    if: github.repository == 'Joystream/joystream'
+  push-amd64:
+    name: Build joystream/node Docker image for amd64
     runs-on: ubuntu-latest
+    outputs:
+      tag_shasum: ${{ steps.compute_shasum.outputs.shasum }}
+      image_exists: ${{ steps.compute_main_image_exists.outputs.image_exists }}
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - uses: actions/setup-node@v1
         with:
           node-version: '14.x'
@@ -18,62 +27,160 @@ jobs:
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
-      - name: Setup cache directory
-        run: mkdir ~/docker-images
-
-      - name: Cache docker images
-        uses: actions/cache@v2
-        env:
-          cache-name: joystream-node-docker
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
         with:
-          path: ~/docker-images
-          key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Check if we have cached image
-        continue-on-error: true
+      - name: Check if we have already have the manifest on Dockerhub
+        id: compute_main_image_exists
+        # Will output 0 if image exists and 1 if does not exists
         run: |
-          if [ -f ~/docker-images/joystream-node-docker-image.tar.gz ]; then
-            docker load --input ~/docker-images/joystream-node-docker-image.tar.gz
-            cp ~/docker-images/joystream-node-docker-image.tar.gz .
-          fi
+          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }} > /dev/null ; echo $?)
+          echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
       - name: Check if we have pre-built image on Dockerhub
-        continue-on-error: true
+        id: compute_image_exists
+        # Will output 0 if image exists and 1 if does not exists
         run: |
-          if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:latest
-            docker save --output joystream-node-docker-image.tar joystream/node:latest
-            gzip joystream-node-docker-image.tar
-            cp joystream-node-docker-image.tar.gz ~/docker-images/
-          fi
+          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-amd64 > /dev/null ; echo $?)
+          echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
-      - name: Build new joystream/node image
-        run: |
-          if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            docker build . --file joystream-node.Dockerfile --tag joystream/node
-            docker save --output joystream-node-docker-image.tar joystream/node
-            gzip joystream-node-docker-image.tar
-            cp joystream-node-docker-image.tar.gz ~/docker-images/
-            echo "NEW_BUILD=true" >> $GITHUB_ENV
-          fi
-
-      - name: Save joystream/node image to Artifacts
-        uses: actions/upload-artifact@v2
+      - name: Build and push
+        uses: docker/build-push-action@v2
         with:
-          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
-          path: joystream-node-docker-image.tar.gz
+          context: .
+          file: joystream-node.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-amd64
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+  push-arm:
+    name: Build joystream/node Docker image for arm
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: ['linux/arm64', 'linux/arm/v7']
+        include:
+          - platform: 'linux/arm64'
+            platform_tag: 'arm64'
+            file: 'joystream-node.Dockerfile'
+          - platform: 'linux/arm/v7'
+            platform_tag: 'arm'
+            file: 'joystream-node-armv7.Dockerfile'
+    env:
+      STACK_NAME: joystream-ga-docker-${{ github.run_number }}-${{ matrix.platform_tag }}
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Install Ansible dependencies
+        run: pipx inject ansible-core boto3 botocore
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
+        run: |
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        if: env.NEW_BUILD
 
-      - name: Publish new image to DockerHub
+      - name: Check if we have pre-built image on Dockerhub
+        id: compute_image_exists
+        # Will output 0 if image exists and 1 if does not exists
         run: |
-          docker image tag joystream/node joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-          docker push joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-        if: env.NEW_BUILD
-  
+          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}-${{ matrix.platform_tag }} > /dev/null ; echo $?)
+          echo "::set-output name=image_exists::${IMAGE_EXISTS}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        id: deploy_stack
+        with:
+          name: ${{ env.STACK_NAME }}
+          template: devops/infrastructure/single-instance-docker.yml
+          no-fail-on-empty-changeset: '1'
+          parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=t4g.xlarge'
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: build-arm64-playbook.yml
+          directory: devops/infrastructure
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          inventory: |
+            [all]
+            ${{ steps.deploy_stack.outputs.PublicIp }}
+          options: |
+            --extra-vars "git_repo=https://github.com/${{ github.repository }} \
+                          branch_name=${{ steps.extract_branch.outputs.branch }} \
+                          docker_username=${{ secrets.DOCKERHUB_USERNAME }} \
+                          docker_password=${{ secrets.DOCKERHUB_PASSWORD }} \
+                          tag_name=${{ steps.compute_shasum.outputs.shasum }}-${{ matrix.platform_tag }} \
+                          repository=${{ env.REPOSITORY }} dockerfile=${{ matrix.file }} \
+                          stack_name=${{ env.STACK_NAME }} platform=${{ matrix.platform }}"
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+  push-manifest:
+    name: Create manifest using both the arch images
+    needs: [push-amd64, push-arm]
+    # Only run this job if the image does not exist with tag equal to the shasum
+    if: needs.push-amd64.outputs.image_exists == 1
+    runs-on: ubuntu-latest
+    env:
+      TAG_SHASUM: ${{ needs.push-amd64.outputs.tag_shasum }}
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Create manifest for multi-arch images
+        run: |
+          # get artifacts from previous steps
+          IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
+          echo $IMAGE
+          docker pull $IMAGE-amd64
+          docker pull $IMAGE-arm64
+          docker pull $IMAGE-arm
+          docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          docker manifest annotate $IMAGE $IMAGE-amd64 --arch amd64
+          docker manifest annotate $IMAGE $IMAGE-arm64 --arch arm64
+          docker manifest annotate $IMAGE $IMAGE-arm --arch arm
+          docker manifest push $IMAGE
+
+      - name: Create manifest with latest tag for master
+        if: github.ref == 'refs/heads/master'
+        run: |
+          IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
+          LATEST_TAG=${{ env.REPOSITORY }}:latest
+          docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          docker manifest annotate $LATEST_TAG $IMAGE-amd64 --arch amd64
+          docker manifest annotate $LATEST_TAG $IMAGE-arm64 --arch arm64
+          docker manifest annotate $LATEST_TAG $IMAGE-arm --arch arm
+          docker manifest push $LATEST_TAG
