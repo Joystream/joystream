@@ -3,12 +3,23 @@ type StorageSystemParameters @entity {
   "Blacklisted content hashes"
   blacklist: [String!]
 
-  # TODO: Consider if parameters like:
-  # dataObjectFeePerMB,
-  # storageBucketBagsLimit,
-  # storageBucketsVoucherMaxLimits,
-  # etc.
-  # are needed here (they can be easily queried from the node)
+  "How many buckets can be assigned to store a bag"
+  storageBucketsPerBagLimit: Int!
+
+  "How many buckets can be assigned to distribute a bag"
+  distributionBucketsPerBagLimit: Int!
+
+  "Whether the uploading is globally blocked"
+  uploadingBlocked: Boolean!
+
+  "Additional fee for storing 1 MB of data"
+  dataObjectFeePerMB: BigInt!
+
+  "Global max. number of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsCountLimit: BigInt!
+
+  "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
+  storageBucketMaxObjectsSizeLimit: BigInt!
 }
 
 type StorageBucketOperatorStatusMissing @variant {
@@ -77,12 +88,11 @@ type StorageBucket @entity {
   "Bucket's data object count limit"
   dataObjectCountLimit: BigInt!
 
-  # TODO: Are those useful for storage node?
-  # "Currently stored (assigned) data objects size"
-  # storedObjectsSize: BigInt!
+  "Number of assigned data objects"
+  dataObjectsCount: BigInt!
 
-  # "Currently stored (assigned) objects count"
-  # storedObjectsCount: BigInt!
+  "Total size of assigned data objects"
+  dataObjectsSize: BigInt!
 }
 
 type StorageBagOwnerCouncil @variant {
@@ -154,17 +164,12 @@ type StorageDataObject @entity {
   "Whether the data object was uploaded and accepted by the storage provider"
   isAccepted: Boolean!
 
-  # TODO: Is this useful for storage node?
-  # "A reward for the data object deletion"
-  # deletionPrize: BigInt!
-
   "Data object size in bytes"
   size: BigInt!
 
   "Storage bag the data object is part of"
   storageBag: StorageBag!
 
-  # TODO: Use "Bytes" for better optimalization?
   "IPFS content hash"
   ipfsHash: String!
 }
