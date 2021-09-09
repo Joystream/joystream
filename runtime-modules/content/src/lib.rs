@@ -816,7 +816,7 @@ decl_module! {
             // cannot remove more asset than those already present
             ensure!(
                 num_assets_to_remove <= channel.num_assets,
-                Error::<T>::InfeasibleChannelAssets
+                Error::<T>::InvalidAssetsProvided
             );
 
             Storage::<T>::delete_data_objects(

@@ -68,6 +68,6 @@ decl_error! {
         NoAssetsSpecified,
 
         /// Channel assets feasibility
-        InfeasibleChannelAssets,
+        InvalidAssetsProvided,
     }
 }
