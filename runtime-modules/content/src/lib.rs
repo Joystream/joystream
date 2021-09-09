@@ -1167,6 +1167,7 @@ decl_module! {
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
+            metadata: Metadata,
         ) {
 
             // Ensure given video exists
@@ -1197,10 +1198,10 @@ decl_module! {
 
                 // Update the video
                 VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id));
             }
+            
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id, metadata));
         }
 
         /// Accept open auction bid
@@ -1209,6 +1210,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            metadata: Metadata,
         ) {
 
             // Ensure given video exists
@@ -1240,10 +1242,10 @@ decl_module! {
 
                 // Update the video
                 VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::OpenAuctionBidAccepted(actor, video_id));
             }
+
+            // Trigger event
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(actor, video_id, metadata));
         }
 
         /// Issue NFT
@@ -1793,8 +1795,8 @@ decl_event!(
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
-        AuctionCompleted(MemberId, VideoId),
-        OpenAuctionBidAccepted(ContentActor, VideoId),
+        AuctionCompleted(MemberId, VideoId, Metadata),
+        OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
         OfferCancelled(VideoId, ContentActor),
         OfferAccepted(VideoId, MemberId),
