@@ -11,6 +11,7 @@ typegen:
   metadata:
     source: ws://localhost:9944
   events:
+    # storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
     - storage.StorageBucketsUpdatedForBag
@@ -60,217 +61,155 @@ typegen:
   #   - members.MemberSetRootAccount
   #   - members.MemberSetControllerAccount
 
-  #   # content directory
-  #   - content.CuratorGroupCreated
-  #   - content.CuratorGroupStatusSet
-  #   - content.CuratorAdded
-  #   - content.CuratorRemoved
-  #   - content.ChannelCreated
-  #   - content.ChannelUpdated
-  #   - content.ChannelAssetsRemoved
-  #   - content.ChannelCensorshipStatusUpdated
-  #   - content.ChannelOwnershipTransferRequested
-  #   - content.ChannelOwnershipTransferRequestWithdrawn
-  #   - content.ChannelOwnershipTransferred
-  #   - content.ChannelCategoryCreated
-  #   - content.ChannelCategoryUpdated
-  #   - content.ChannelCategoryDeleted
-  #   - content.VideoCategoryCreated
-  #   - content.VideoCategoryUpdated
-  #   - content.VideoCategoryDeleted
-  #   - content.VideoCreated
-  #   - content.VideoUpdated
-  #   - content.VideoDeleted
-  #   - content.VideoCensorshipStatusUpdated
-  #   - content.FeaturedVideosSet
+    # membership
+    - members.MemberRegistered
+    - members.MemberUpdatedAboutText
+    - members.MemberUpdatedAvatar
+    - members.MemberUpdatedHandle
+    - members.MemberSetRootAccount
+    - members.MemberSetControllerAccount
 
-  #   # storage
-  #   - data_directory.ContentAdded
-  #   - data_directory.ContentRemoved
-  #   - data_directory.ContentAccepted
-  #   - data_directory.ContentRejected
-  #   - data_directory.ContentUploadingStatusUpdated
+    # content directory
+    - content.CuratorGroupCreated
+    - content.CuratorGroupStatusSet
+    - content.CuratorAdded
+    - content.CuratorRemoved
+    - content.ChannelCreated
+    - content.ChannelUpdated
+    - content.ChannelAssetsRemoved
+    - content.ChannelCensorshipStatusUpdated
+    - content.ChannelOwnershipTransferRequested
+    - content.ChannelOwnershipTransferRequestWithdrawn
+    - content.ChannelOwnershipTransferred
+    - content.ChannelCategoryCreated
+    - content.ChannelCategoryUpdated
+    - content.ChannelCategoryDeleted
+    - content.VideoCategoryCreated
+    - content.VideoCategoryUpdated
+    - content.VideoCategoryDeleted
+    - content.VideoCreated
+    - content.VideoUpdated
+    - content.VideoDeleted
+    - content.VideoCensorshipStatusUpdated
+    - content.FeaturedVideosSet
 
-  #   # working groups
-  #   - storage_working_group.WorkerStorageUpdated
-  #   - storage_working_group.OpeningFilled
-  #   - storage_working_group.TerminatedWorker
-  #   - storage_working_group.WorkerExited
-  #   - storage_working_group.TerminatedLeader
-
-  #   - gateway_working_group.WorkerStorageUpdated
-  #   - gateway_working_group.OpeningFilled
-  #   - gateway_working_group.TerminatedWorker
-  #   - gateway_working_group.WorkerExited
-  #   - gateway_working_group.TerminatedLeader
-  # calls:
-  #   # members
-  #   - members.buyMembership
-  #   - members.addScreenedMember
-  #   - members.changeMemberAboutText
-  #   - members.changeMemberAvatar
-  #   - members.changeMemberHandle
-  #   - members.setRootAccount
-  #   - members.setControllerAccount
-  #   - members.updateMembership
-
-  #   # content directory
-  #   - content.create_curator_group
-  #   - content.set_curator_group_status
-  #   - content.add_curator_to_group
-  #   - content.remove_curator_from_group
-  #   - content.create_channel
-  #   - content.update_channel
-  #   - content.remove_channel_assets
-  #   - content.update_channel_censorship_status
-  #   - content.create_channel_category
-  #   - content.update_channel_category
-  #   - content.delete_channel_category
-  #   - content.request_channel_transfer
-  #   - content.cancel_channel_transfer_request
-  #   - content.accept_channel_transfer
-  #   - content.create_video
-  #   - content.update_video
-  #   - content.delete_video
-  #   - content.create_playlist
-  #   - content.update_playlist
-  #   - content.delete_playlist
-  #   - content.set_featured_videos
-  #   - content.create_video_category
-  #   - content.update_video_category
-  #   - content.delete_video_category
-  #   - content.remove_person_from_video
-  #   - content.update_video_censorship_status
-
-  #   # storage
-  #   - data_directory.add_content
-  #   - data_directory.remove_content
-  #   - data_directory.accept_content
-  #   - data_directory.update_content_uploading_status
-
-  #   # working groups
-  #   - storage_working_group.update_role_storage
-  #   - storage_working_group.fill_opening
-  #   - storage_working_group.leave_role
-  #   - storage_working_group.terminate_role
-
-  #   - gateway_working_group.update_role_storage
-  #   - gateway_working_group.fill_opening
-  #   - gateway_working_group.leave_role
-  #   - gateway_working_group.terminate_role
+    # working groups (we're using "storage_working_group" as a reference module)
+    - storage_working_group.WorkerStorageUpdated
+    - storage_working_group.OpeningFilled
+    - storage_working_group.TerminatedWorker
+    - storage_working_group.WorkerExited
+    - storage_working_group.TerminatedLeader
+  calls:
+    # members
+    - members.buyMembership
+    - members.addScreenedMember
+    - members.changeMemberAboutText
+    - members.changeMemberAvatar
+    - members.changeMemberHandle
+    - members.setRootAccount
+    - members.setControllerAccount
+    - members.updateMembership
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'
     typedefsLoc: '../types/augment/all/defs.json'
 mappings:
   # js module that exports the handler functions
-  mappingsModule: mappings/lib/giza
+  mappingsModule: mappings/lib
   # additinal libraries the processor loads
   # typically it is a module with event and extrinsic types generated by hydra-typegen
   imports:
     - mappings/lib/generated/types
   eventHandlers:
-    # TODO: Sumer mappings
-    # # membership
-    # - event: members.MemberRegistered
-    #   handler: members_MemberRegistered(DatabaseManager, SubstrateEvent)
-    # - event: members.MemberUpdatedAboutText
-    #   handler: members_MemberUpdatedAboutText(DatabaseManager, SubstrateEvent)
-    # - event: members.MemberUpdatedAvatar
-    #   handler: members_MemberUpdatedAvatar(DatabaseManager, SubstrateEvent)
-    # - event: members.MemberUpdatedHandle
-    #   handler: members_MemberUpdatedHandle(DatabaseManager, SubstrateEvent)
-    # - event: members.MemberSetRootAccount
-    #   handler: members_MemberSetRootAccount(DatabaseManager, SubstrateEvent)
-    # - event: members.MemberSetControllerAccount
-    #   handler: members_MemberSetControllerAccount(DatabaseManager, SubstrateEvent)
+    # membership
+    - event: members.MemberRegistered
+      handler: members_MemberRegistered
+    - event: members.MemberUpdatedAboutText
+      handler: members_MemberUpdatedAboutText
+    - event: members.MemberUpdatedAvatar
+      handler: members_MemberUpdatedAvatar
+    - event: members.MemberUpdatedHandle
+      handler: members_MemberUpdatedHandle
+    - event: members.MemberSetRootAccount
+      handler: members_MemberSetRootAccount
+    - event: members.MemberSetControllerAccount
+      handler: members_MemberSetControllerAccount
 
-    # # content directory
-    # - event: content.CuratorGroupCreated
-    #   handler: content_CuratorGroupCreated(DatabaseManager, SubstrateEvent)
-    # - event: content.CuratorGroupStatusSet
-    #   handler: content_CuratorGroupStatusSet(DatabaseManager, SubstrateEvent)
-    # - event: content.CuratorAdded
-    #   handler: content_CuratorAdded(DatabaseManager, SubstrateEvent)
-    # - event: content.CuratorRemoved
-    #   handler: content_CuratorRemoved(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelCreated
-    #   handler: content_ChannelCreated(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelUpdated
-    #   handler: content_ChannelUpdated(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelAssetsRemoved
-    #   handler: content_ChannelAssetsRemoved(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelCensorshipStatusUpdated
-    #   handler: content_ChannelCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
-    # # these events are defined in runtime but never calles (at the time of writing)
-    # #- event: content.ChannelOwnershipTransferRequested
-    # #  handler: content_ChannelOwnershipTransferRequested(DatabaseManager, SubstrateEvent)
-    # #- event: content.ChannelOwnershipTransferRequestWithdrawn
-    # #  handler: content_ChannelOwnershipTransferRequestWithdrawn(DatabaseManager, SubstrateEvent)
-    # #- event: content.ChannelOwnershipTransferred
-    # #  handler: content_ChannelOwnershipTransferred(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelCategoryCreated
-    #   handler: content_ChannelCategoryCreated(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelCategoryUpdated
-    #   handler: content_ChannelCategoryUpdated(DatabaseManager, SubstrateEvent)
-    # - event: content.ChannelCategoryDeleted
-    #   handler: content_ChannelCategoryDeleted(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoCategoryCreated
-    #   handler: content_VideoCategoryCreated(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoCategoryUpdated
-    #   handler: content_VideoCategoryUpdated(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoCategoryDeleted
-    #   handler: content_VideoCategoryDeleted(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoCreated
-    #   handler: content_VideoCreated(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoUpdated
-    #   handler: content_VideoUpdated(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoDeleted
-    #   handler: content_VideoDeleted(DatabaseManager, SubstrateEvent)
-    # - event: content.VideoCensorshipStatusUpdated
-    #   handler: content_VideoCensorshipStatusUpdated(DatabaseManager, SubstrateEvent)
-    # - event: content.FeaturedVideosSet
-    #   handler: content_FeaturedVideosSet(DatabaseManager, SubstrateEvent)
+    # content directory
+    - event: content.CuratorGroupCreated
+      handler: content_CuratorGroupCreated
+    - event: content.CuratorGroupStatusSet
+      handler: content_CuratorGroupStatusSet
+    - event: content.CuratorAdded
+      handler: content_CuratorAdded
+    - event: content.CuratorRemoved
+      handler: content_CuratorRemoved
+    - event: content.ChannelCreated
+      handler: content_ChannelCreated
+    - event: content.ChannelUpdated
+      handler: content_ChannelUpdated
+    - event: content.ChannelAssetsRemoved
+      handler: content_ChannelAssetsRemoved
+    - event: content.ChannelCensorshipStatusUpdated
+      handler: content_ChannelCensorshipStatusUpdated
+    # these events are defined in runtime but never emitted (at the time of writing)
+    #- event: content.ChannelOwnershipTransferRequested
+    #  handler: content_ChannelOwnershipTransferRequested
+    #- event: content.ChannelOwnershipTransferRequestWithdrawn
+    #  handler: content_ChannelOwnershipTransferRequestWithdrawn
+    #- event: content.ChannelOwnershipTransferred
+    #  handler: content_ChannelOwnershipTransferred
+    - event: content.ChannelCategoryCreated
+      handler: content_ChannelCategoryCreated
+    - event: content.ChannelCategoryUpdated
+      handler: content_ChannelCategoryUpdated
+    - event: content.ChannelCategoryDeleted
+      handler: content_ChannelCategoryDeleted
+    - event: content.VideoCategoryCreated
+      handler: content_VideoCategoryCreated
+    - event: content.VideoCategoryUpdated
+      handler: content_VideoCategoryUpdated
+    - event: content.VideoCategoryDeleted
+      handler: content_VideoCategoryDeleted
+    - event: content.VideoCreated
+      handler: content_VideoCreated
+    - event: content.VideoUpdated
+      handler: content_VideoUpdated
+    - event: content.VideoDeleted
+      handler: content_VideoDeleted
+    - event: content.VideoCensorshipStatusUpdated
+      handler: content_VideoCensorshipStatusUpdated
+    - event: content.FeaturedVideosSet
+      handler: content_FeaturedVideosSet
 
-    # # storage
-    # - event: dataDirectory.ContentAdded
-    #   handler: dataDirectory_ContentAdded(DatabaseManager, SubstrateEvent)
-    # - event: dataDirectory.ContentRemoved
-    #   handler: dataDirectory_ContentRemoved(DatabaseManager, SubstrateEvent)
-    # - event: dataDirectory.ContentAccepted
-    #   handler: dataDirectory_ContentAccepted(DatabaseManager, SubstrateEvent)
-    # # not handled at the moment
-    # #- event: dataDirectory.ContentUploadingStatusUpdated
-    # #  handler: data_directory_ContentUploadingStatusUpdated(DatabaseManager, SubstrateEvent)
+    # working groups
+    ## storage - workers
+    - event: storageWorkingGroup.WorkerStorageUpdated
+      handler: workingGroup_WorkerStorageUpdated
+    - event: storageWorkingGroup.OpeningFilled
+      handler: workingGroup_OpeningFilled
+    - event: storageWorkingGroup.TerminatedWorker
+      handler: workingGroup_TerminatedWorker
+    - event: storageWorkingGroup.WorkerExited
+      handler: workingGroup_WorkerExited
 
-    # # working groups
-    # ## storage - workers
-    # - event: storageWorkingGroup.WorkerStorageUpdated
-    #   handler: storageWorkingGroup_WorkerStorageUpdated(DatabaseManager, SubstrateEvent)
-    # - event: storageWorkingGroup.OpeningFilled
-    #   handler: storageWorkingGroup_OpeningFilled(DatabaseManager, SubstrateEvent)
-    # - event: storageWorkingGroup.TerminatedWorker
-    #   handler: storageWorkingGroup_TerminatedWorker(DatabaseManager, SubstrateEvent)
-    # - event: storageWorkingGroup.WorkerExited
-    #   handler: storageWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
+    ## storage - leader
+    - event: storageWorkingGroup.TerminatedLeader
+      handler: workingGroup_TerminatedLeader
 
-    # ## storage - leader
-    # - event: storageWorkingGroup.TerminatedLeader
-    #   handler: storageWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
+    ## gateway - workers
+    - event: gatewayWorkingGroup.WorkerStorageUpdated
+      handler: workingGroup_WorkerStorageUpdated
+    - event: gatewayWorkingGroup.OpeningFilled
+      handler: workingGroup_OpeningFilled
+    - event: gatewayWorkingGroup.TerminatedWorker
+      handler: workingGroup_TerminatedWorker
+    - event: gatewayWorkingGroup.WorkerExited
+      handler: workingGroup_WorkerExited
 
-    # ## gateway - workers
-    # - event: gatewayWorkingGroup.WorkerStorageUpdated
-    #   handler: gatewayWorkingGroup_WorkerStorageUpdated(DatabaseManager, SubstrateEvent)
-    # - event: gatewayWorkingGroup.OpeningFilled
-    #   handler: gatewayWorkingGroup_OpeningFilled(DatabaseManager, SubstrateEvent)
-    # - event: gatewayWorkingGroup.TerminatedWorker
-    #   handler: gatewayWorkingGroup_TerminatedWorker(DatabaseManager, SubstrateEvent)
-    # - event: gatewayWorkingGroup.WorkerExited
-    #   handler: gatewayWorkingGroup_WorkerExited(DatabaseManager, SubstrateEvent)
-
-    # ## gateway - leader
-    # - event: gatewayWorkingGroup.TerminatedLeader
-    #   handler: gatewayWorkingGroup_TerminatedLeader(DatabaseManager, SubstrateEvent)
+    ## gateway - leader
+    - event: gatewayWorkingGroup.TerminatedLeader
+      handler: workingGroup_TerminatedLeader
 
     # storage v2
     - event: storage.StorageBucketCreated

@@ -27,7 +27,7 @@ import {
   StorageBagStorageAssignment,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, getWorkingGroupModuleName, bytesToString } from '../common'
+import { getById, bytesToString } from '../../common'
 import { BTreeSet } from '@polkadot/types'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
@@ -67,7 +67,7 @@ function getStaticBagOwner(bagId: StaticBagId): typeof StorageBagOwner {
     return new StorageBagOwnerCouncil()
   } else if (bagId.isWorkingGroup) {
     const owner = new StorageBagOwnerWorkingGroup()
-    owner.workingGroupId = getWorkingGroupModuleName(bagId.asWorkingGroup)
+    owner.workingGroupId = bagId.asWorkingGroup.toString().toLowerCase()
     return owner
   } else {
     throw new Error(`Unexpected static bag type: ${bagId.type}`)

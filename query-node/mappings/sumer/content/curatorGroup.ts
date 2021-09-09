@@ -1,16 +1,15 @@
-import { fixBlockTimestamp } from '../eventFix'
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
+/*
+eslint-disable @typescript-eslint/naming-convention
+*/
+import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { FindConditions } from 'typeorm'
+import { CuratorGroup } from 'query-node/dist/model'
+import { Content } from '../../generated/types'
+import { inconsistentState, logger } from '../../common'
 
-import { CuratorGroup } from 'query-node'
-import { Content } from '../../../generated/types'
-
-import { inconsistentState, logger } from '../common'
-
-export async function content_CuratorGroupCreated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId } = new Content.CuratorGroupCreatedEvent(event).data
+  const [curatorGroupId] = new Content.CuratorGroupCreatedEvent(event).params
 
   // create new curator group
   const curatorGroup = new CuratorGroup({
@@ -20,23 +19,23 @@ export async function content_CuratorGroupCreated(db: DatabaseManager, event: Su
     isActive: false, // runtime creates inactive curator groups by default
 
     // fill in auto-generated fields
-    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
   })
 
   // save curator group
-  await db.save<CuratorGroup>(curatorGroup)
+  await store.save<CuratorGroup>(curatorGroup)
 
   // emit log event
   logger.info('Curator group has been created', { id: curatorGroupId })
 }
 
-export async function content_CuratorGroupStatusSet(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_CuratorGroupStatusSet({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId, bool: isActive } = new Content.CuratorGroupStatusSetEvent(event).data
+  const [curatorGroupId, isActive] = new Content.CuratorGroupStatusSetEvent(event).params
 
   // load curator group
-  const curatorGroup = await db.get(CuratorGroup, {
+  const curatorGroup = await store.get(CuratorGroup, {
     where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
   })
 
@@ -49,21 +48,21 @@ export async function content_CuratorGroupStatusSet(db: DatabaseManager, event: 
   curatorGroup.isActive = isActive.isTrue
 
   // set last update time
-  curatorGroup.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  curatorGroup.updatedAt = new Date(event.blockTimestamp)
 
   // save curator group
-  await db.save<CuratorGroup>(curatorGroup)
+  await store.save<CuratorGroup>(curatorGroup)
 
   // emit log event
   logger.info('Curator group status has been set', { id: curatorGroupId, isActive })
 }
 
-export async function content_CuratorAdded(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId, curatorId } = new Content.CuratorAddedEvent(event).data
+  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
 
   // load curator group
-  const curatorGroup = await db.get(CuratorGroup, {
+  const curatorGroup = await store.get(CuratorGroup, {
     where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
   })
 
@@ -76,21 +75,21 @@ export async function content_CuratorAdded(db: DatabaseManager, event: Substrate
   curatorGroup.curatorIds.push(curatorId.toNumber())
 
   // set last update time
-  curatorGroup.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  curatorGroup.updatedAt = new Date(event.blockTimestamp)
 
   // save curator group
-  await db.save<CuratorGroup>(curatorGroup)
+  await store.save<CuratorGroup>(curatorGroup)
 
   // emit log event
   logger.info('Curator has been added to curator group', { id: curatorGroupId, curatorId })
 }
 
-export async function content_CuratorRemoved(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_CuratorRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { curatorGroupId, curatorId } = new Content.CuratorAddedEvent(event).data
+  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
 
   // load curator group
-  const curatorGroup = await db.get(CuratorGroup, {
+  const curatorGroup = await store.get(CuratorGroup, {
     where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
   })
 
@@ -110,7 +109,7 @@ export async function content_CuratorRemoved(db: DatabaseManager, event: Substra
   curatorGroup.curatorIds.splice(curatorIndex, 1)
 
   // save curator group
-  await db.save<CuratorGroup>(curatorGroup)
+  await store.save<CuratorGroup>(curatorGroup)
 
   // emit log event
   logger.info('Curator has been removed from curator group', { id: curatorGroupId, curatorId })

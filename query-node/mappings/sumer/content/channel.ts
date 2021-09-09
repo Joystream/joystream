@@ -1,35 +1,20 @@
-import { fixBlockTimestamp } from '../eventFix'
-import { SubstrateEvent } from '@dzlzv/hydra-common'
-import { DatabaseManager } from '@dzlzv/hydra-db-utils'
-import ISO6391 from 'iso-639-1'
-import { FindConditions, In } from 'typeorm'
-
+/*
+eslint-disable @typescript-eslint/naming-convention
+*/
+import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { AccountId } from '@polkadot/types/interfaces'
 import { Option } from '@polkadot/types/codec'
-import { Content } from '../../../generated/types'
-import {
-  readProtobuf,
-  readProtobufWithAssets,
-  convertContentActorToChannelOwner,
-  convertContentActorToDataObjectOwner,
-} from './utils'
+import { Content } from '../../generated/types'
+import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
+import { AssetNone, Channel, ChannelCategory } from 'query-node/dist/model'
+import { deserializeMetadata, inconsistentState, logger } from '../../common'
+import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 
-import { Channel, ChannelCategory, DataObject, AssetAvailability } from 'query-node'
-import { inconsistentState, logger } from '../common'
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelCreated(db: DatabaseManager, event: SubstrateEvent): Promise<void> {
+export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
+  const { store, event } = ctx
   // read event data
-  const { channelId, channelCreationParameters, contentActor } = new Content.ChannelCreatedEvent(event).data
-
-  // read metadata
-  const protobufContent = await readProtobufWithAssets(new Channel(), {
-    metadata: channelCreationParameters.meta,
-    db,
-    event,
-    assets: channelCreationParameters.assets,
-    contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
-  })
+  const [contentActor, channelId, , channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
 
   // create entity
   const channel = new Channel({
@@ -38,38 +23,34 @@ export async function content_ChannelCreated(db: DatabaseManager, event: Substra
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
-
-    // default values for properties that might or might not be filled by metadata
-    coverPhotoUrls: [],
-    coverPhotoAvailability: AssetAvailability.INVALID,
-    avatarPhotoUrls: [],
-    avatarPhotoAvailability: AssetAvailability.INVALID,
-
+    // assets
+    coverPhoto: new AssetNone(),
+    avatarPhoto: new AssetNone(),
     // fill in auto-generated fields
-    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertContentActorToChannelOwner(db, contentActor)),
-
-    // integrate metadata
-    ...protobufContent,
+    ...(await convertContentActorToChannelOwner(store, contentActor)),
   })
 
+  // deserialize & process metadata
+  const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta) || {}
+  await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets)
+
   // save entity
-  await db.save<Channel>(channel)
+  await store.save<Channel>(channel)
 
   // emit log event
   logger.info('Channel has been created', { id: channel.id })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelUpdated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { store, event } = ctx
   // read event data
-  const { channelId, channelUpdateParameters, contentActor } = new Content.ChannelUpdatedEvent(event).data
+  const [, channelId, , channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
-  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
 
   // ensure channel exists
   if (!channel) {
@@ -77,22 +58,12 @@ export async function content_ChannelUpdated(db: DatabaseManager, event: Substra
   }
 
   // prepare changed metadata
-  const newMetadata = channelUpdateParameters.new_meta.unwrapOr(null)
+  const newMetadataBytes = channelUpdateParameters.new_meta.unwrapOr(null)
 
   //  update metadata if it was changed
-  if (newMetadata) {
-    const protobufContent = await readProtobufWithAssets(new Channel(), {
-      metadata: newMetadata,
-      db,
-      event,
-      assets: channelUpdateParameters.assets.unwrapOr([]),
-      contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
-    })
-
-    // update all fields read from protobuf
-    for (const [key, value] of Object.entries(protobufContent)) {
-      channel[key] = value
-    }
+  if (newMetadataBytes) {
+    const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
+    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assets.unwrapOr([]))
   }
 
   // prepare changed reward account
@@ -105,42 +76,39 @@ export async function content_ChannelUpdated(db: DatabaseManager, event: Substra
   }
 
   // set last update time
-  channel.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  channel.updatedAt = new Date(event.blockTimestamp)
 
   // save channel
-  await db.save<Channel>(channel)
+  await store.save<Channel>(channel)
 
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
 }
 
-export async function content_ChannelAssetsRemoved(db: DatabaseManager, event: SubstrateEvent) {
-  // read event data
-  const { contentId: contentIds } = new Content.ChannelAssetsRemovedEvent(event).data
-
-  // load channel
-  const assets = await db.getMany(DataObject, {
-    where: {
-      id: In(contentIds.toArray().map((item) => item.toString())),
-    } as FindConditions<DataObject>,
-  })
-
-  // delete assets
-  for (const asset of assets) {
-    await db.remove<DataObject>(asset)
-  }
-
-  // emit log event
-  logger.info('Channel assets have been removed', { ids: contentIds })
+export async function content_ChannelAssetsRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
+  // TODO: Storage v2 integration
+  // // read event data
+  // const [, , contentIds] = new Content.ChannelAssetsRemovedEvent(event).params
+  // const assets = await store.getMany(StorageDataObject, {
+  //   where: {
+  //     id: In(contentIds.toArray().map((item) => item.toString())),
+  //   },
+  // })
+  // // delete assets
+  // await Promise.all(assets.map((a) => store.remove<StorageDataObject>(a)))
+  // // emit log event
+  // logger.info('Channel assets have been removed', { ids: contentIds })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelCensorshipStatusUpdated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_ChannelCensorshipStatusUpdated({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelId, isCensored } = new Content.ChannelCensorshipStatusUpdatedEvent(event).data
+  const [, channelId, isCensored] = new Content.ChannelCensorshipStatusUpdatedEvent(event).params
 
   // load event
-  const channel = await db.get(Channel, { where: { id: channelId.toString() } as FindConditions<Channel> })
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
 
   // ensure channel exists
   if (!channel) {
@@ -151,28 +119,23 @@ export async function content_ChannelCensorshipStatusUpdated(db: DatabaseManager
   channel.isCensored = isCensored.isTrue
 
   // set last update time
-  channel.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  channel.updatedAt = new Date(event.blockTimestamp)
 
   // save channel
-  await db.save<Channel>(channel)
+  await store.save<Channel>(channel)
 
   // emit log event
   logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
 }
 
-/// ///////////////// ChannelCategory ////////////////////////////////////////////
+/// //////////////// ChannelCategory ////////////////////////////////////////////
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelCategoryCreated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_ChannelCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelCategoryCreationParameters, channelCategoryId } = new Content.ChannelCategoryCreatedEvent(event).data
+  const [channelCategoryId, , channelCategoryCreationParameters] = new Content.ChannelCategoryCreatedEvent(event).params
 
   // read metadata
-  const protobufContent = await readProtobuf(new ChannelCategory(), {
-    metadata: channelCategoryCreationParameters.meta,
-    db,
-    event,
-  })
+  const metadata = deserializeMetadata(ChannelCategoryMetadata, channelCategoryCreationParameters.meta) || {}
 
   // create new channel category
   const channelCategory = new ChannelCategory({
@@ -182,30 +145,27 @@ export async function content_ChannelCategoryCreated(db: DatabaseManager, event:
     createdInBlock: event.blockNumber,
 
     // fill in auto-generated fields
-    createdAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-    updatedAt: new Date(fixBlockTimestamp(event.blockTimestamp).toNumber()),
-
-    // integrate metadata
-    ...protobufContent,
+    createdAt: new Date(event.blockTimestamp),
+    updatedAt: new Date(event.blockTimestamp),
   })
+  integrateMeta(channelCategory, metadata, ['name'])
 
   // save channel
-  await db.save<ChannelCategory>(channelCategory)
+  await store.save<ChannelCategory>(channelCategory)
 
   // emit log event
   logger.info('Channel category has been created', { id: channelCategory.id })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelCategoryUpdated(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_ChannelCategoryUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelCategoryId, channelCategoryUpdateParameters } = new Content.ChannelCategoryUpdatedEvent(event).data
+  const [, channelCategoryId, channelCategoryUpdateParameters] = new Content.ChannelCategoryUpdatedEvent(event).params
 
   // load channel category
-  const channelCategory = await db.get(ChannelCategory, {
+  const channelCategory = await store.get(ChannelCategory, {
     where: {
       id: channelCategoryId.toString(),
-    } as FindConditions<ChannelCategory>,
+    },
   })
 
   // ensure channel exists
@@ -214,37 +174,28 @@ export async function content_ChannelCategoryUpdated(db: DatabaseManager, event:
   }
 
   // read metadata
-  const protobufContent = await readProtobuf(new ChannelCategory(), {
-    metadata: channelCategoryUpdateParameters.new_meta,
-    db,
-    event,
-  })
-
-  // update all fields read from protobuf
-  for (const [key, value] of Object.entries(protobufContent)) {
-    channelCategory[key] = value
-  }
+  const newMeta = deserializeMetadata(ChannelCategoryMetadata, channelCategoryUpdateParameters.new_meta) || {}
+  integrateMeta(channelCategory, newMeta, ['name'])
 
   // set last update time
-  channelCategory.updatedAt = new Date(fixBlockTimestamp(event.blockTimestamp).toNumber())
+  channelCategory.updatedAt = new Date(event.blockTimestamp)
 
   // save channel category
-  await db.save<ChannelCategory>(channelCategory)
+  await store.save<ChannelCategory>(channelCategory)
 
   // emit log event
   logger.info('Channel category has been updated', { id: channelCategory.id })
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export async function content_ChannelCategoryDeleted(db: DatabaseManager, event: SubstrateEvent) {
+export async function content_ChannelCategoryDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const { channelCategoryId } = new Content.ChannelCategoryDeletedEvent(event).data
+  const [, channelCategoryId] = new Content.ChannelCategoryDeletedEvent(event).params
 
   // load channel category
-  const channelCategory = await db.get(ChannelCategory, {
+  const channelCategory = await store.get(ChannelCategory, {
     where: {
       id: channelCategoryId.toString(),
-    } as FindConditions<ChannelCategory>,
+    },
   })
 
   // ensure channel category exists
@@ -253,13 +204,13 @@ export async function content_ChannelCategoryDeleted(db: DatabaseManager, event:
   }
 
   // delete channel category
-  await db.remove<ChannelCategory>(channelCategory)
+  await store.remove<ChannelCategory>(channelCategory)
 
   // emit log event
   logger.info('Channel category has been deleted', { id: channelCategory.id })
 }
 
-/// ///////////////// Helpers ////////////////////////////////////////////////////
+/// //////////////// Helpers ////////////////////////////////////////////////////
 
 function handleChannelRewardAccountChange(
   channel: Channel, // will be modified inside of the function!
