@@ -40,6 +40,15 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    /// Ensure nft auction not expired
+    pub(crate) fn ensure_nft_auction_not_expired(auction: &Auction<T>) -> DispatchResult {
+        ensure!(
+            !auction.is_nft_auction_expired(),
+            Error::<T>::NFTAuctionIsAlreadyExpired
+        );
+        Ok(())
+    }
+
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
         if let Some(last_bid) = &auction.last_bid {

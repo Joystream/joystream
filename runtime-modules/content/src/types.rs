@@ -96,10 +96,15 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
     pub reward_account: Option<AccountId>,
 }
 
-impl <MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId> ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId> {
+impl<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
+    ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
+{
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
-        ensure!(self.is_censored != is_censored, Error::<T>::ChannelCensorshipStatusDidNotChange);
+        ensure!(
+            self.is_censored != is_censored,
+            Error::<T>::ChannelCensorshipStatusDidNotChange
+        );
         Ok(())
     }
 }
@@ -414,7 +419,10 @@ impl<
 
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
-        ensure!(self.is_censored != is_censored, Error::<T>::VideoCensorshipStatusDidNotChange);
+        ensure!(
+            self.is_censored != is_censored,
+            Error::<T>::VideoCensorshipStatusDidNotChange
+        );
         Ok(())
     }
 }

@@ -1011,10 +1011,8 @@ decl_module! {
 
             if let Some(auction) = video.get_nft_auction_ref() {
 
-                // Return if auction expired
-                if Self::is_nft_auction_expired(&auction) {
-                    return Ok(())
-                }
+                // Ensure nft auction not expired
+                Self::ensure_nft_auction_not_expired(&auction)?;
 
                 // Ensure auction is not active
                 auction.ensure_is_not_active::<T>()?;
@@ -1055,10 +1053,8 @@ decl_module! {
             // Ensure auction for given video id exists
             let auction = video.ensure_nft_auction_state::<T>()?;
 
-            // Return if auction expired
-            if Self::is_nft_auction_expired(&auction) {
-                return Ok(())
-            }
+            // Ensure nft auction not expired
+            Self::ensure_nft_auction_not_expired(&auction)?;
 
             let current_block = <frame_system::Module<T>>::block_number();
 
@@ -1128,10 +1124,8 @@ decl_module! {
             // Ensure auction for given video id exists
             let auction = video.ensure_nft_auction_state::<T>()?;
 
-            // Return if auction expired
-            if Self::is_nft_auction_expired(&auction) {
-                return Ok(())
-            }
+            // Ensure nft auction not expired
+            Self::ensure_nft_auction_not_expired(&auction)?;
 
             let current_block = <frame_system::Module<T>>::block_number();
 
