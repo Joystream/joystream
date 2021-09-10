@@ -22,6 +22,7 @@ export type ForumPostFieldsFragment = {
   createdAt: any
   updatedAt?: Types.Maybe<any>
   text: string
+  isVisible: boolean
   author: { id: string }
   thread: { id: string }
   repliesTo?: Types.Maybe<{ id: string }>
@@ -37,28 +38,30 @@ export type ForumPostFieldsFragment = {
   reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
 }
 
-export type ForumThreadWithPostsFieldsFragment = {
+export type ForumThreadWithInitialPostFragment = {
   id: string
   createdAt: any
   updatedAt?: Types.Maybe<any>
   title: string
   isSticky: boolean
+  isVisible: boolean
   author: { id: string }
   category: { id: string }
-  posts: Array<ForumPostFieldsFragment>
+  initialPost?: Types.Maybe<ForumPostFieldsFragment>
   poll?: Types.Maybe<{
     description: string
     endTime: any
     pollAlternatives: Array<{ index: number; text: string; votes: Array<{ votingMember: { id: string } }> }>
   }>
-  createdInEvent: { id: string }
+  createdInEvent: { id: string; title: string; text: string }
   status:
     | { __typename: 'ThreadStatusActive' }
     | { __typename: 'ThreadStatusLocked'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'ThreadStatusModerated'; threadModeratedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'ThreadStatusRemoved'; threadDeletedEvent?: Types.Maybe<{ id: string }> }
-  titleUpdates: Array<{ id: string }>
+  metadataUpdates: Array<{ id: string }>
   movedInEvents: Array<{ id: string }>
+  tags: Array<{ id: string }>
 }
 
 export type GetCategoriesByIdsQueryVariables = Types.Exact<{
@@ -67,11 +70,11 @@ export type GetCategoriesByIdsQueryVariables = Types.Exact<{
 
 export type GetCategoriesByIdsQuery = { forumCategories: Array<ForumCategoryFieldsFragment> }
 
-export type GetThreadsWithPostsByIdsQueryVariables = Types.Exact<{
+export type GetThreadsWithInitialPostsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadsWithPostsByIdsQuery = { forumThreads: Array<ForumThreadWithPostsFieldsFragment> }
+export type GetThreadsWithInitialPostsByIdsQuery = { forumThreads: Array<ForumThreadWithInitialPostFragment> }
 
 export type GetPostsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -143,6 +146,8 @@ export type ThreadCreatedEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
+  title: string
+  text: string
   thread: { id: string }
 }
 
@@ -152,23 +157,23 @@ export type GetThreadCreatedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetThreadCreatedEventsByEventIdsQuery = { threadCreatedEvents: Array<ThreadCreatedEventFieldsFragment> }
 
-export type ThreadTitleUpdatedEventFieldsFragment = {
+export type ThreadMetadataUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
-  newTitle: string
+  newTitle?: Types.Maybe<string>
   thread: { id: string }
 }
 
-export type GetThreadTitleUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
+export type GetThreadMetadataUpdatedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetThreadTitleUpdatedEventsByEventIdsQuery = {
-  threadTitleUpdatedEvents: Array<ThreadTitleUpdatedEventFieldsFragment>
+export type GetThreadMetadataUpdatedEventsByEventIdsQuery = {
+  threadMetadataUpdatedEvents: Array<ThreadMetadataUpdatedEventFieldsFragment>
 }
 
 export type VoteOnPollEventFieldsFragment = {
@@ -985,6 +990,7 @@ export type ProposalFieldsFragment = {
   councilApprovals: number
   statusSetAtBlock: number
   statusSetAtTime: any
+  isFinalized?: Types.Maybe<boolean>
   details:
     | ProposalDetailsFields_SignalProposalDetails_Fragment
     | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
@@ -1034,6 +1040,12 @@ export type ProposalFieldsFragment = {
     | ProposalStatusFields_ProposalStatusCancelled_Fragment
     | ProposalStatusFields_ProposalStatusCanceledByRuntime_Fragment
   createdInEvent: { id: string; inBlock: number; inExtrinsic?: Types.Maybe<string> }
+  discussionThread: {
+    id: string
+    mode:
+      | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
+      | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+  }
 }
 
 export type GetProposalsByIdsQueryVariables = Types.Exact<{
@@ -1041,6 +1053,158 @@ export type GetProposalsByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetProposalsByIdsQuery = { proposals: Array<ProposalFieldsFragment> }
+
+type ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment = {
+  __typename: 'ProposalDiscussionThreadModeOpen'
+}
+
+type ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment = {
+  __typename: 'ProposalDiscussionThreadModeClosed'
+  whitelist?: Types.Maybe<{ members: Array<{ id: string }> }>
+}
+
+export type ProposalDiscussionThreadModeFieldsFragment =
+  | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
+  | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+
+type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusActive_Fragment = {
+  __typename: 'ProposalDiscussionPostStatusActive'
+}
+
+type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusLocked_Fragment = {
+  __typename: 'ProposalDiscussionPostStatusLocked'
+  deletedInEvent?: Types.Maybe<{ id: string }>
+}
+
+type ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusRemoved_Fragment = {
+  __typename: 'ProposalDiscussionPostStatusRemoved'
+  deletedInEvent?: Types.Maybe<{ id: string }>
+}
+
+export type ProposalDiscussionPostStatusFieldsFragment =
+  | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusActive_Fragment
+  | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusLocked_Fragment
+  | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusRemoved_Fragment
+
+export type ProposalDiscussionThreadFieldsFragment = {
+  id: string
+  proposal: { id: string }
+  posts: Array<{ id: string }>
+  mode:
+    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
+    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+  modeChanges: Array<{ id: string }>
+}
+
+export type GetProposalDiscussionThreadsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetProposalDiscussionThreadsByIdsQuery = {
+  proposalDiscussionThreads: Array<ProposalDiscussionThreadFieldsFragment>
+}
+
+export type ProposalDiscussionPostFieldsFragment = {
+  id: string
+  isVisible: boolean
+  text: string
+  discussionThread: { id: string }
+  author: { id: string }
+  status:
+    | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusActive_Fragment
+    | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusLocked_Fragment
+    | ProposalDiscussionPostStatusFields_ProposalDiscussionPostStatusRemoved_Fragment
+  repliesTo?: Types.Maybe<{ id: string }>
+  updates: Array<{ id: string }>
+  createdInEvent: { id: string }
+}
+
+export type GetProposalDiscussionPostsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetProposalDiscussionPostsByIdsQuery = {
+  proposalDiscussionPosts: Array<ProposalDiscussionPostFieldsFragment>
+}
+
+export type ProposalDiscussionPostCreatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inExtrinsic?: Types.Maybe<string>
+  inBlock: number
+  network: Types.Network
+  indexInBlock: number
+  text: string
+  post: { id: string }
+}
+
+export type GetProposalDiscussionPostCreatedEventsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetProposalDiscussionPostCreatedEventsQuery = {
+  proposalDiscussionPostCreatedEvents: Array<ProposalDiscussionPostCreatedEventFieldsFragment>
+}
+
+export type ProposalDiscussionPostUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inExtrinsic?: Types.Maybe<string>
+  inBlock: number
+  network: Types.Network
+  indexInBlock: number
+  text: string
+  post: { id: string }
+}
+
+export type GetProposalDiscussionPostUpdatedEventsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetProposalDiscussionPostUpdatedEventsQuery = {
+  proposalDiscussionPostUpdatedEvents: Array<ProposalDiscussionPostUpdatedEventFieldsFragment>
+}
+
+export type ProposalDiscussionThreadModeChangedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inExtrinsic?: Types.Maybe<string>
+  inBlock: number
+  network: Types.Network
+  indexInBlock: number
+  thread: { id: string }
+  newMode:
+    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeOpen_Fragment
+    | ProposalDiscussionThreadModeFields_ProposalDiscussionThreadModeClosed_Fragment
+  actor: { id: string }
+}
+
+export type GetProposalDiscussionThreadModeChangedEventsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetProposalDiscussionThreadModeChangedEventsQuery = {
+  proposalDiscussionThreadModeChangedEvents: Array<ProposalDiscussionThreadModeChangedEventFieldsFragment>
+}
+
+export type ProposalDiscussionPostDeletedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inExtrinsic?: Types.Maybe<string>
+  inBlock: number
+  network: Types.Network
+  indexInBlock: number
+  post: { id: string }
+  actor: { id: string }
+}
+
+export type GetProposalDiscussionPostDeletedEventsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetProposalDiscussionPostDeletedEventsQuery = {
+  proposalDiscussionPostDeletedEvents: Array<ProposalDiscussionPostDeletedEventFieldsFragment>
+}
 
 export type ProposalCreatedEventFieldsFragment = {
   id: string
@@ -1788,6 +1952,7 @@ export const ForumPostFields = gql`
         }
       }
     }
+    isVisible
     origin {
       __typename
       ... on PostOriginThreadInitial {
@@ -1813,8 +1978,8 @@ export const ForumPostFields = gql`
     }
   }
 `
-export const ForumThreadWithPostsFields = gql`
-  fragment ForumThreadWithPostsFields on ForumThread {
+export const ForumThreadWithInitialPost = gql`
+  fragment ForumThreadWithInitialPost on ForumThread {
     id
     createdAt
     updatedAt
@@ -1825,7 +1990,7 @@ export const ForumThreadWithPostsFields = gql`
       id
     }
     title
-    posts {
+    initialPost {
       ...ForumPostFields
     }
     poll {
@@ -1844,6 +2009,8 @@ export const ForumThreadWithPostsFields = gql`
     isSticky
     createdInEvent {
       id
+      title
+      text
     }
     status {
       __typename
@@ -1863,10 +2030,14 @@ export const ForumThreadWithPostsFields = gql`
         }
       }
     }
-    titleUpdates {
+    isVisible
+    metadataUpdates {
       id
     }
     movedInEvents {
+      id
+    }
+    tags {
       id
     }
   }
@@ -1926,13 +2097,15 @@ export const ThreadCreatedEventFields = gql`
     network
     inExtrinsic
     indexInBlock
+    title
+    text
     thread {
       id
     }
   }
 `
-export const ThreadTitleUpdatedEventFields = gql`
-  fragment ThreadTitleUpdatedEventFields on ThreadTitleUpdatedEvent {
+export const ThreadMetadataUpdatedEventFields = gql`
+  fragment ThreadMetadataUpdatedEventFields on ThreadMetadataUpdatedEvent {
     id
     createdAt
     inBlock
@@ -2615,6 +2788,18 @@ export const ProposalStatusFields = gql`
     }
   }
 `
+export const ProposalDiscussionThreadModeFields = gql`
+  fragment ProposalDiscussionThreadModeFields on ProposalDiscussionThreadMode {
+    __typename
+    ... on ProposalDiscussionThreadModeClosed {
+      whitelist {
+        members {
+          id
+        }
+      }
+    }
+  }
+`
 export const ProposalFields = gql`
   fragment ProposalFields on Proposal {
     id
@@ -2644,14 +2829,145 @@ export const ProposalFields = gql`
     }
     statusSetAtBlock
     statusSetAtTime
+    isFinalized
     createdInEvent {
       id
       inBlock
       inExtrinsic
     }
+    discussionThread {
+      id
+      mode {
+        ...ProposalDiscussionThreadModeFields
+      }
+    }
   }
   ${ProposalDetailsFields}
   ${ProposalStatusFields}
+  ${ProposalDiscussionThreadModeFields}
+`
+export const ProposalDiscussionThreadFields = gql`
+  fragment ProposalDiscussionThreadFields on ProposalDiscussionThread {
+    id
+    proposal {
+      id
+    }
+    posts {
+      id
+    }
+    mode {
+      ...ProposalDiscussionThreadModeFields
+    }
+    modeChanges {
+      id
+    }
+  }
+  ${ProposalDiscussionThreadModeFields}
+`
+export const ProposalDiscussionPostStatusFields = gql`
+  fragment ProposalDiscussionPostStatusFields on ProposalDiscussionPostStatus {
+    __typename
+    ... on ProposalDiscussionPostStatusLocked {
+      deletedInEvent {
+        id
+      }
+    }
+    ... on ProposalDiscussionPostStatusRemoved {
+      deletedInEvent {
+        id
+      }
+    }
+  }
+`
+export const ProposalDiscussionPostFields = gql`
+  fragment ProposalDiscussionPostFields on ProposalDiscussionPost {
+    id
+    discussionThread {
+      id
+    }
+    author {
+      id
+    }
+    status {
+      ...ProposalDiscussionPostStatusFields
+    }
+    isVisible
+    text
+    repliesTo {
+      id
+    }
+    updates {
+      id
+    }
+    createdInEvent {
+      id
+    }
+  }
+  ${ProposalDiscussionPostStatusFields}
+`
+export const ProposalDiscussionPostCreatedEventFields = gql`
+  fragment ProposalDiscussionPostCreatedEventFields on ProposalDiscussionPostCreatedEvent {
+    id
+    createdAt
+    inExtrinsic
+    inBlock
+    network
+    indexInBlock
+    post {
+      id
+    }
+    text
+  }
+`
+export const ProposalDiscussionPostUpdatedEventFields = gql`
+  fragment ProposalDiscussionPostUpdatedEventFields on ProposalDiscussionPostUpdatedEvent {
+    id
+    createdAt
+    inExtrinsic
+    inBlock
+    network
+    indexInBlock
+    post {
+      id
+    }
+    text
+  }
+`
+export const ProposalDiscussionThreadModeChangedEventFields = gql`
+  fragment ProposalDiscussionThreadModeChangedEventFields on ProposalDiscussionThreadModeChangedEvent {
+    id
+    createdAt
+    inExtrinsic
+    inBlock
+    network
+    indexInBlock
+    thread {
+      id
+    }
+    newMode {
+      ...ProposalDiscussionThreadModeFields
+    }
+    actor {
+      id
+    }
+  }
+  ${ProposalDiscussionThreadModeFields}
+`
+export const ProposalDiscussionPostDeletedEventFields = gql`
+  fragment ProposalDiscussionPostDeletedEventFields on ProposalDiscussionPostDeletedEvent {
+    id
+    createdAt
+    inExtrinsic
+    inBlock
+    network
+    indexInBlock
+    post {
+      id
+    }
+    actor {
+      id
+    }
+  }
 `
 export const ProposalCreatedEventFields = gql`
   fragment ProposalCreatedEventFields on ProposalCreatedEvent {
@@ -3308,13 +3624,13 @@ export const GetCategoriesByIds = gql`
   }
   ${ForumCategoryFields}
 `
-export const GetThreadsWithPostsByIds = gql`
-  query getThreadsWithPostsByIds($ids: [ID!]) {
+export const GetThreadsWithInitialPostsByIds = gql`
+  query getThreadsWithInitialPostsByIds($ids: [ID!]) {
     forumThreads(where: { id_in: $ids }) {
-      ...ForumThreadWithPostsFields
+      ...ForumThreadWithInitialPost
     }
   }
-  ${ForumThreadWithPostsFields}
+  ${ForumThreadWithInitialPost}
 `
 export const GetPostsByIds = gql`
   query getPostsByIds($ids: [ID!]) {
@@ -3356,13 +3672,13 @@ export const GetThreadCreatedEventsByEventIds = gql`
   }
   ${ThreadCreatedEventFields}
 `
-export const GetThreadTitleUpdatedEventsByEventIds = gql`
-  query getThreadTitleUpdatedEventsByEventIds($eventIds: [ID!]) {
-    threadTitleUpdatedEvents(where: { id_in: $eventIds }) {
-      ...ThreadTitleUpdatedEventFields
+export const GetThreadMetadataUpdatedEventsByEventIds = gql`
+  query getThreadMetadataUpdatedEventsByEventIds($eventIds: [ID!]) {
+    threadMetadataUpdatedEvents(where: { id_in: $eventIds }) {
+      ...ThreadMetadataUpdatedEventFields
     }
   }
-  ${ThreadTitleUpdatedEventFields}
+  ${ThreadMetadataUpdatedEventFields}
 `
 export const GetVoteOnPollEventsByEventIds = gql`
   query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
@@ -3587,6 +3903,54 @@ export const GetProposalsByIds = gql`
     }
   }
   ${ProposalFields}
+`
+export const GetProposalDiscussionThreadsByIds = gql`
+  query getProposalDiscussionThreadsByIds($ids: [ID!]) {
+    proposalDiscussionThreads(where: { id_in: $ids }) {
+      ...ProposalDiscussionThreadFields
+    }
+  }
+  ${ProposalDiscussionThreadFields}
+`
+export const GetProposalDiscussionPostsByIds = gql`
+  query getProposalDiscussionPostsByIds($ids: [ID!]) {
+    proposalDiscussionPosts(where: { id_in: $ids }) {
+      ...ProposalDiscussionPostFields
+    }
+  }
+  ${ProposalDiscussionPostFields}
+`
+export const GetProposalDiscussionPostCreatedEvents = gql`
+  query getProposalDiscussionPostCreatedEvents($eventIds: [ID!]) {
+    proposalDiscussionPostCreatedEvents(where: { id_in: $eventIds }) {
+      ...ProposalDiscussionPostCreatedEventFields
+    }
+  }
+  ${ProposalDiscussionPostCreatedEventFields}
+`
+export const GetProposalDiscussionPostUpdatedEvents = gql`
+  query getProposalDiscussionPostUpdatedEvents($eventIds: [ID!]) {
+    proposalDiscussionPostUpdatedEvents(where: { id_in: $eventIds }) {
+      ...ProposalDiscussionPostUpdatedEventFields
+    }
+  }
+  ${ProposalDiscussionPostUpdatedEventFields}
+`
+export const GetProposalDiscussionThreadModeChangedEvents = gql`
+  query getProposalDiscussionThreadModeChangedEvents($eventIds: [ID!]) {
+    proposalDiscussionThreadModeChangedEvents(where: { id_in: $eventIds }) {
+      ...ProposalDiscussionThreadModeChangedEventFields
+    }
+  }
+  ${ProposalDiscussionThreadModeChangedEventFields}
+`
+export const GetProposalDiscussionPostDeletedEvents = gql`
+  query getProposalDiscussionPostDeletedEvents($eventIds: [ID!]) {
+    proposalDiscussionPostDeletedEvents(where: { id_in: $eventIds }) {
+      ...ProposalDiscussionPostDeletedEventFields
+    }
+  }
+  ${ProposalDiscussionPostDeletedEventFields}
 `
 export const GetProposalCreatedEventsByEventIds = gql`
   query getProposalCreatedEventsByEventIds($eventIds: [ID!]) {

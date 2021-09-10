@@ -29,8 +29,8 @@ export default async function expireProposal({ api, query, lock }: FlowProps): P
   await new FixtureRunner(createProposalFixture).run()
   const [proposalId] = createProposalFixture.getCreatedProposalsIds()
 
-  const approveProposalFixture = new ExpireProposalsFixture(api, query, [proposalId])
-  await new FixtureRunner(approveProposalFixture).runWithQueryNodeChecks()
+  const expireProposalFixture = new ExpireProposalsFixture(api, query, [proposalId])
+  await new FixtureRunner(expireProposalFixture).runWithQueryNodeChecks()
 
   unlock()
 

@@ -66,6 +66,8 @@ fragment ThreadCreatedEventFields on ThreadCreatedEvent {
   network
   inExtrinsic
   indexInBlock
+  title
+  text
   thread {
     id
   }
@@ -77,7 +79,7 @@ query getThreadCreatedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment ThreadTitleUpdatedEventFields on ThreadTitleUpdatedEvent {
+fragment ThreadMetadataUpdatedEventFields on ThreadMetadataUpdatedEvent {
   id
   createdAt
   inBlock
@@ -90,9 +92,9 @@ fragment ThreadTitleUpdatedEventFields on ThreadTitleUpdatedEvent {
   newTitle
 }
 
-query getThreadTitleUpdatedEventsByEventIds($eventIds: [ID!]) {
-  threadTitleUpdatedEvents(where: { id_in: $eventIds }) {
-    ...ThreadTitleUpdatedEventFields
+query getThreadMetadataUpdatedEventsByEventIds($eventIds: [ID!]) {
+  threadMetadataUpdatedEvents(where: { id_in: $eventIds }) {
+    ...ThreadMetadataUpdatedEventFields
   }
 }
 

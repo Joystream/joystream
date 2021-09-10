@@ -177,7 +177,7 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
             Array.from({ length: threadsPerCategory }, (v, i) => ({
               categoryId,
               asMember: forumMemberIds[i % forumMemberIds.length],
-              title: `Thread ${i} in category ${categoryId.toString()}`,
+              metadata: { value: { title: `Thread ${i} in category ${categoryId.toString()}` } },
               text: `Initialize forum test thread ${i} in category ${categoryId.toString()}`,
             }))
           ))

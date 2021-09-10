@@ -4,7 +4,7 @@ import { EventDetails } from '../../types'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { ForumThreadWithPostsFieldsFragment, ThreadMovedEventFieldsFragment } from '../../graphql/generated/queries'
+import { ForumThreadWithInitialPostFragment, ThreadMovedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { CategoryId } from '@joystream/types/forum'
 import { ThreadId } from '@joystream/types/common'
@@ -47,7 +47,7 @@ export class MoveThreadsFixture extends WithForumWorkersFixture {
   }
 
   protected assertQueriedThreadsAreValid(
-    qThreads: ForumThreadWithPostsFieldsFragment[],
+    qThreads: ForumThreadWithInitialPostFragment[],
     qEvents: ThreadMovedEventFieldsFragment[]
   ): void {
     // Check movedInEvents array
@@ -87,7 +87,7 @@ export class MoveThreadsFixture extends WithForumWorkersFixture {
     )
 
     // Query the threads
-    const qThreads = await this.query.getThreadsWithPostsByIds(this.updates.map((u) => u.threadId))
+    const qThreads = await this.query.getThreadsWithInitialPostsByIds(this.updates.map((u) => u.threadId))
     this.assertQueriedThreadsAreValid(qThreads, qEvents)
   }
 }

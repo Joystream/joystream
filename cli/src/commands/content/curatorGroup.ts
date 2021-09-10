@@ -17,7 +17,7 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
     const { id } = this.parse(CuratorGroupCommand).args
     const group = await this.getCuratorGroup(id)
     const members = (await this.getApi().groupMembers(WorkingGroups.Curators)).filter((curator) =>
-      group.curators.toArray().some((groupCurator) => groupCurator.eq(curator.workerId))
+      Array.from(group.curators).some((groupCurator) => groupCurator.eq(curator.workerId))
     )
 
     displayCollapsedRow({

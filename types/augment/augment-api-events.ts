@@ -1,9 +1,8 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { BTreeSet, Bytes, Option, Text, Vec, bool, u32, u64, u8 } from '@polkadot/types';
-import type { ITuple } from '@polkadot/types/types';
-import type { ActorId, ApplicationId, ApplicationIdToWorkerIdMap, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ExecutionStatus, ForumUserId, GeneralProposalParameters, InviteMembershipParameters, IsCensored, MemberId, MemoText, ModeratorId, NewAsset, OpeningId, OpeningType, OptionResult, OracleJudgment, ParticipantId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, Poll, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetailsOf, ProposalId, ProposalStatus, ReplyId, RewardPaymentType, Series, SeriesId, SeriesParameters, StakePolicy, StorageObjectOwner, StorageProviderId, ThreadId, ThreadMode, Title, UpdatedBody, UpdatedTitle, UploadingStatus, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VoucherLimit, WorkerId, WorkingGroup } from './all';
+import type { BTreeMap, BTreeSet, Bytes, Option, Text, Vec, bool, u32, u64, u8 } from '@polkadot/types';
+import type { ActorId, ApplicationId, ApplicationIdToWorkerIdMap, ApplyOnOpeningParameters, BalanceKind, BountyActor, BountyCreationParameters, BountyId, BuyMembershipParameters, CategoryId, Channel, ChannelCategory, ChannelCategoryCreationParameters, ChannelCategoryId, ChannelCategoryUpdateParameters, ChannelCreationParameters, ChannelId, ChannelOwnershipTransferRequest, ChannelOwnershipTransferRequestId, ChannelUpdateParameters, ContentActor, ContentId, ContentParameters, CuratorGroupId, CuratorId, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, EntryId, ExecutionStatus, ExtendedPostId, ForumUserId, GeneralProposalParameters, InviteMembershipParameters, IsCensored, MemberId, MemoText, ModeratorId, NewAsset, OpeningId, OpeningType, OptionResult, OracleJudgment, ParticipantId, PersonCreationParameters, PersonId, PersonUpdateParameters, PlaylistCreationParameters, PlaylistId, PlaylistUpdateParameters, PollInput, PostId, PostReactionId, PrivilegedActor, ProposalDecision, ProposalDetailsOf, ProposalId, ProposalStatus, ReplyId, RewardPaymentType, Series, SeriesId, SeriesParameters, StakePolicy, StorageObjectOwner, StorageProviderId, ThreadId, ThreadMode, Title, UpdatedBody, UpdatedTitle, UploadingStatus, VideoCategoryCreationParameters, VideoCategoryId, VideoCategoryUpdateParameters, VideoCreationParameters, VideoId, VideoUpdateParameters, VoteKind, VoucherLimit, WorkerId, WorkingGroup } from './all';
 import type { BalanceStatus } from '@polkadot/types/interfaces/balances';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { AuthorityList } from '@polkadot/types/interfaces/grandpa';
@@ -622,7 +621,7 @@ declare module '@polkadot/api/types/events' {
       /**
        * Post with givne id was deleted.
        **/
-      PostDeleted: AugmentedEvent<ApiType, [Bytes, ForumUserId, Vec<ITuple<[CategoryId, ThreadId, PostId, bool]>>]>;
+      PostDeleted: AugmentedEvent<ApiType, [Bytes, ForumUserId, BTreeMap<ExtendedPostId, bool>]>;
       /**
        * Post with givne id was moderated.
        **/
@@ -638,12 +637,17 @@ declare module '@polkadot/api/types/events' {
       PostTextUpdated: AugmentedEvent<ApiType, [PostId, ForumUserId, CategoryId, ThreadId, Bytes]>;
       /**
        * A thread with given id was created.
+       * A third argument reflects the initial post id of the thread.
        **/
-      ThreadCreated: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, Bytes, Bytes, Option<Poll>]>;
+      ThreadCreated: AugmentedEvent<ApiType, [CategoryId, ThreadId, PostId, ForumUserId, Bytes, Bytes, Option<PollInput>]>;
       /**
        * A thread was deleted.
        **/
       ThreadDeleted: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, bool]>;
+      /**
+       * A thread metadata given id was updated.
+       **/
+      ThreadMetadataUpdated: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, Bytes]>;
       /**
        * A thread with given id was moderated.
        **/
@@ -652,10 +656,6 @@ declare module '@polkadot/api/types/events' {
        * A thread was moved to new category
        **/
       ThreadMoved: AugmentedEvent<ApiType, [ThreadId, CategoryId, PrivilegedActor, CategoryId]>;
-      /**
-       * A thread with given id was moderated.
-       **/
-      ThreadTitleUpdated: AugmentedEvent<ApiType, [ThreadId, ForumUserId, CategoryId, Bytes]>;
       /**
        * A thread with given id was updated.
        * The second argument reflects the new archival status of the thread.
@@ -1424,10 +1424,11 @@ declare module '@polkadot/api/types/events' {
       /**
        * A proposal was created
        * Params:
+       * - Id of a newly created proposal after it was saved in storage.
        * - General proposal parameter. Parameters shared by all proposals
        * - Proposal Details. Parameter of proposal with a variant for each kind of proposal
        **/
-      ProposalCreated: AugmentedEvent<ApiType, [GeneralProposalParameters, ProposalDetailsOf]>;
+      ProposalCreated: AugmentedEvent<ApiType, [ProposalId, GeneralProposalParameters, ProposalDetailsOf]>;
     };
     proposalsDiscussion: {
       /**
@@ -1459,13 +1460,6 @@ declare module '@polkadot/api/types/events' {
        * - Id of the proposal
        **/
       ProposalCancelled: AugmentedEvent<ApiType, [MemberId, ProposalId]>;
-      /**
-       * Emits on proposal creation.
-       * Params:
-       * - Member id of a proposer.
-       * - Id of a newly created proposal after it was saved in storage.
-       **/
-      ProposalCreated: AugmentedEvent<ApiType, [MemberId, ProposalId]>;
       /**
        * Emits on getting a proposal status decision.
        * Params:

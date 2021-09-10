@@ -124,12 +124,14 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       ) {
         Utils.assert(qProposal.status.proposalExecutedEvent?.id, 'Missing proposalExecutedEvent reference')
         assert.equal(qProposal.status.proposalExecutedEvent?.executionStatus.__typename, qProposal.status.__typename)
+        assert.equal(qProposal.isFinalized, true)
       } else if (
         qProposal.status.__typename === 'ProposalStatusDormant' ||
         qProposal.status.__typename === 'ProposalStatusGracing'
       ) {
         Utils.assert(qProposal.status.proposalStatusUpdatedEvent?.id, 'Missing proposalStatusUpdatedEvent reference')
         assert.equal(qProposal.status.proposalStatusUpdatedEvent?.newStatus.__typename, qProposal.status.__typename)
+        assert.equal(qProposal.isFinalized, false)
         assert.include(
           qProposal.proposalStatusUpdates.map((u) => u.id),
           qProposal.status.proposalStatusUpdatedEvent?.id
@@ -137,6 +139,7 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       } else {
         Utils.assert(qProposal.status.proposalDecisionMadeEvent?.id, 'Missing proposalDecisionMadeEvent reference')
         assert.equal(qProposal.status.proposalDecisionMadeEvent?.decisionStatus.__typename, qProposal.status.__typename)
+        assert.equal(qProposal.isFinalized, true)
       }
     })
   }
@@ -149,6 +152,7 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       qProposal.status.__typename,
       params.expectExecutionFailure ? 'ProposalStatusExecutionFailed' : 'ProposalStatusExecuted'
     )
+    assert.equal(qProposal.isFinalized, true)
     if (proposal.exactExecutionBlock.isSome) {
       assert.equal(qProposal.statusSetAtBlock, proposal.exactExecutionBlock.unwrap().toNumber())
     } else if (proposal.parameters.gracePeriod.toNumber()) {

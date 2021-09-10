@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import uuid from 'uuid/v4';
+import { randomAsHex } from '@polkadot/util-crypto';
 
 import React from 'react';
 import { Message, Table } from 'semantic-ui-react';
@@ -25,9 +25,8 @@ import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
 import { RouteProps } from 'react-router-dom';
 
-// TODO use a crypto-prooven generator instead of UUID 4.
 function randomSalt () {
-  return uuid().replace(/-/g, '');
+  return randomAsHex();
 }
 
 // AppsProps is needed to get a location from the route.

@@ -63,7 +63,7 @@ impl forum::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
             .saturating_add(DbWeight::get().writes(7 as Weight))
     }
-    fn edit_thread_title(i: u32, j: u32) -> Weight {
+    fn edit_thread_metadata(i: u32, j: u32) -> Weight {
         (249_076_000 as Weight)
             .saturating_add((65_112_000 as Weight).saturating_mul(i as Weight))
             .saturating_add((145_000 as Weight).saturating_mul(j as Weight))

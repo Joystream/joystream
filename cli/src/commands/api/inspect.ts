@@ -86,7 +86,7 @@ export default class ApiInspect extends ApiCommandBase {
   }
 
   getMethodDescription(apiType: ApiType, apiModule: string, apiMethod: string): string {
-    const description: string = this.getMethodMeta(apiType, apiModule, apiMethod).documentation.join(' ')
+    const description: string = this.getMethodMeta(apiType, apiModule, apiMethod).docs.join(' ')
     return description || 'No description available.'
   }
 

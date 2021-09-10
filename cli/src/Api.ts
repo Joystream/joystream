@@ -42,7 +42,7 @@ import {
   VideoCategory,
 } from '@joystream/types/content'
 import { ContentId, DataObject } from '@joystream/types/storage'
-import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client'
+import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client/core'
 import fetch from 'cross-fetch'
 import { Maybe } from './graphql/generated/schema'
 import {

@@ -316,6 +316,8 @@ export class CreateProposalsFixture extends StandardizedFixture {
       assert.equal(new Date(qProposal.statusSetAtTime).getTime(), e.blockTimestamp)
       assert.equal(qProposal.createdInEvent.inBlock, e.blockNumber)
       assert.equal(qProposal.createdInEvent.inExtrinsic, this.extrinsics[i].hash.toString())
+      assert.equal(qProposal.isFinalized, false)
+      assert.equal(qProposal.discussionThread.mode.__typename, 'ProposalDiscussionThreadModeOpen')
       this.assertProposalDetailsAreValid(proposalParams, qProposal)
     })
   }

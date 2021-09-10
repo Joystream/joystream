@@ -463,7 +463,7 @@ impl WeightInfo for () {
     fn create_thread(_: u32, _: u32, _: u32) -> Weight {
         0
     }
-    fn edit_thread_title(_: u32, _: u32) -> Weight {
+    fn edit_thread_metadata(_: u32, _: u32) -> Weight {
         0
     }
     fn delete_thread(_: u32) -> Weight {
@@ -585,9 +585,8 @@ pub fn good_thread_text() -> Vec<u8> {
     b"The first post in this thread".to_vec()
 }
 
-/// Get a new title ofr the  good  thread
-pub fn good_thread_new_title() -> Vec<u8> {
-    b"Brand new thread title".to_vec()
+pub fn good_thread_new_metadata() -> Vec<u8> {
+    b"Brand new thread metadata".to_vec()
 }
 
 /// Get a good post text
@@ -729,37 +728,36 @@ pub fn create_thread_mock(
     thread_id
 }
 
-/// Create edit thread title mock
-pub fn edit_thread_title_mock(
+pub fn edit_thread_metadata_mock(
     origin: OriginType,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
-    new_title: Vec<u8>,
+    new_metadata: Vec<u8>,
     result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
-        TestForumModule::edit_thread_title(
+        TestForumModule::edit_thread_metadata(
             mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
-            new_title.clone(),
+            new_metadata.clone(),
         ),
         result
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::thread_by_id(category_id, thread_id).title_hash,
-            Runtime::calculate_hash(new_title.as_slice()),
+            TestForumModule::thread_by_id(category_id, thread_id).metadata_hash,
+            Runtime::calculate_hash(new_metadata.as_slice()),
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadTitleUpdated(
+            TestEvent::forum_mod(RawEvent::ThreadMetadataUpdated(
                 thread_id,
                 forum_user_id,
                 category_id,
-                new_title.clone()
+                new_metadata
             ))
         );
     }

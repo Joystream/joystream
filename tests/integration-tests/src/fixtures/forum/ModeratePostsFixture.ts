@@ -61,6 +61,7 @@ export class ModeratePostsFixture extends WithForumWorkersFixture {
       Utils.assert(qPost.status.__typename === 'PostStatusModerated', 'Invalid post status')
       Utils.assert(qPost.status.postModeratedEvent, 'Query node: Missing PostModeratedEvent ref')
       assert.equal(qPost.status.postModeratedEvent.id, qEvent.id)
+      assert.equal(qPost.isVisible, false)
     })
   }
 

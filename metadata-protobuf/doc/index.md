@@ -13,6 +13,7 @@
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
     - [ForumPostReaction](#.ForumPostReaction)
+    - [ForumThreadMetadata](#.ForumThreadMetadata)
   
     - [ForumPostReaction.Reaction](#.ForumPostReaction.Reaction)
   
@@ -166,6 +167,22 @@
 
 ### ForumPostReaction
 The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
+
+
+
+
+
+
+<a name=".ForumThreadMetadata"></a>
+
+### ForumThreadMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Thread title |
+| tags | [string](#string) | repeated | Tags accociated with the thread. Any update overrides all current tags. Only the first {MAX_TAGS_PER_FORUM_THREAD} (const exposed via @joystream/metadata-protobuf/consts) tags are taken into account. In order to unset current tags, [&#39;&#39;] (array with empty string) must be provided as value. |
 
 
 

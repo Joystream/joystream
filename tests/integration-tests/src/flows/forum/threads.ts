@@ -9,8 +9,8 @@ import {
   SetStickyThreadsFixture,
   StickyThreadsParams,
   ThreadRemovalInput,
-  ThreadTitleUpdate,
-  UpdateThreadTitlesFixture,
+  ThreadMetadataUpdate,
+  UpdateThreadsMetadataFixture,
 } from '../../fixtures/forum'
 import { CategoryId } from '@joystream/types/forum'
 
@@ -43,17 +43,17 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   const setStickyThreadsRunner = new FixtureRunner(setStickyThreadsFixture)
   await setStickyThreadsRunner.run()
 
-  // Update titles
-  let titleUpdates: ThreadTitleUpdate[] = []
+  // Metadata updates
+  let metadataUpdates: ThreadMetadataUpdate[] = []
   initializeForumFixture.getThreadPaths().forEach(
     (threadPath, i) =>
-      (titleUpdates = titleUpdates.concat([
-        { ...threadPath, newTitle: '' },
-        { ...threadPath, newTitle: `Test updated title ${i}` },
+      (metadataUpdates = metadataUpdates.concat([
+        { ...threadPath, newMetadata: { value: { title: '', tags: [] } } },
+        { ...threadPath, newMetadata: { value: { title: `Test updated title ${i}`, tags: [] } } },
       ]))
   )
 
-  const updateThreadTitlesFixture = new UpdateThreadTitlesFixture(api, query, titleUpdates)
+  const updateThreadTitlesFixture = new UpdateThreadsMetadataFixture(api, query, metadataUpdates)
   const updateThreadTitlesRunner = new FixtureRunner(updateThreadTitlesFixture)
   await updateThreadTitlesRunner.run()
 

@@ -1,6 +1,6 @@
-import { Vec, Option, Tuple } from '@polkadot/types'
+import { Vec, Option, Tuple, BTreeSet } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
-import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url, MemberId, AccountId } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, DAOId, Url, MemberId, AccountId } from '../common'
 import { ContentParameters } from '../storage'
 
 export class CuratorId extends u64 {}
@@ -21,7 +21,7 @@ export class NewAsset extends JoyEnum({
 }) {}
 
 export class CuratorGroup extends JoyStructDecorated({
-  curators: JoyBTreeSet(CuratorId),
+  curators: BTreeSet.with(CuratorId),
   active: bool,
 }) {}
 
