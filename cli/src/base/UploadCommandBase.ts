@@ -1,18 +1,18 @@
 import ContentDirectoryCommandBase from './ContentDirectoryCommandBase'
-import { VideoFFProbeMetadata, VideoFileMetadata, AssetType, InputAsset, InputAssetDetails } from '../Types'
-import { ContentId, ContentParameters } from '@joystream/types/storage'
+import { InputAsset, InputAssetDetails, VideoFFProbeMetadata, VideoFileMetadata } from '../Types'
 import { MultiBar, Options, SingleBar } from 'cli-progress'
-import { Assets } from '../json-schemas/typings/Assets.schema'
 import ExitCodes from '../ExitCodes'
 import ipfsHash from 'ipfs-only-hash'
 import fs from 'fs'
 import _ from 'lodash'
-import axios, { AxiosRequestConfig } from 'axios'
+import axios from 'axios'
 import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
-import chalk from 'chalk'
 import mimeTypes from 'mime-types'
+import { ContentId } from '../../../types/content'
+import { Assets } from '../json-schemas/typings/Assets.schema'
+import chalk from 'chalk'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
@@ -132,9 +132,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   assetUrl(endpointRoot: string, contentId: ContentId): string {
-    // This will also make sure the resulting url is a valid url
-    return new URL(`asset/v0/${contentId.encode()}`, this.normalizeEndpoint(endpointRoot)).toString()
+    return ''
+    // TODO: Update for StorageV2
+    // // This will also make sure the resulting url is a valid url
+    // return new URL(`asset/v0/${contentId.encode()}`, this.normalizeEndpoint(endpointRoot)).toString()
   }
 
   async getRandomProviderEndpoint(): Promise<string | null> {
@@ -152,69 +155,74 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     return null
   }
 
-  async generateContentParameters(filePath: string, type: AssetType): Promise<ContentParameters> {
-    return this.createType('ContentParameters', {
-      content_id: ContentId.generate(this.getTypesRegistry()),
-      type_id: type,
-      size: this.getFileSize(filePath),
-      ipfs_content_id: await this.calculateFileIpfsHash(filePath),
-    })
-  }
+  // TODO: Update for StorageV2
+  // async generateContentParameters(filePath: string, type: AssetType): Promise<ContentParameters> {
+  //   return this.createType('ContentParameters', {
+  //     content_id: ContentId.generate(this.getTypesRegistry()),
+  //     type_id: type,
+  //     size: this.getFileSize(filePath),
+  //     ipfs_content_id: await this.calculateFileIpfsHash(filePath),
+  //   })
+  // }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async prepareInputAssets(paths: string[], basePath?: string): Promise<InputAssetDetails[]> {
-    // Resolve assets
-    if (basePath) {
-      paths = paths.map((p) => basePath && path.resolve(path.dirname(basePath), p))
-    }
-    // Validate assets
-    paths.forEach((p) => this.validateFile(p))
+    return []
+    // TODO: Update for StorageV2
+    // // Resolve assets
+    // if (basePath) {
+    //   paths = paths.map((p) => basePath && path.resolve(path.dirname(basePath), p))
+    // }
+    // // Validate assets
+    // paths.forEach((p) => this.validateFile(p))
 
-    // Return data
-    return await Promise.all(
-      paths.map(async (path) => {
-        const parameters = await this.generateContentParameters(path, AssetType.AnyAsset)
-        return {
-          path,
-          contentId: parameters.content_id,
-          parameters,
-        }
-      })
-    )
+    // // Return data
+    // return await Promise.all(
+    //   paths.map(async (path) => {
+    //     const parameters = await this.generateContentParameters(path, AssetType.AnyAsset)
+    //     return {
+    //       path,
+    //       contentId: parameters.content_id,
+    //       parameters,
+    //     }
+    //   })
+    // )
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async uploadAsset(contentId: ContentId, filePath: string, endpoint?: string, multiBar?: MultiBar): Promise<void> {
-    const providerEndpoint = endpoint || (await this.getRandomProviderEndpoint())
-    if (!providerEndpoint) {
-      this.error('No active provider found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
-    }
-    const uploadUrl = this.assetUrl(providerEndpoint, contentId)
-    const fileSize = this.getFileSize(filePath)
-    const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
-      filePath,
-      `Uploading ${contentId.encode()}`,
-      multiBar
-    )
-    fileStream.on('end', () => {
-      // Temporarly disable because with Promise.all it breaks the UI
-      // cli.action.start('Waiting for the file to be processed...')
-    })
-
-    try {
-      const config: AxiosRequestConfig = {
-        headers: {
-          'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
-          'Content-Length': fileSize.toString(),
-        },
-        maxBodyLength: fileSize,
-      }
-      await axios.put(uploadUrl, fileStream, config)
-    } catch (e) {
-      progressBar.stop()
-      const msg = (e.response && e.response.data && e.response.data.message) || e.message || e
-      this.error(`Unexpected error when trying to upload a file: ${msg}`, {
-        exit: ExitCodes.ExternalInfrastructureError,
-      })
-    }
+    // TODO: Update for StorageV2
+    // const providerEndpoint = endpoint || (await this.getRandomProviderEndpoint())
+    // if (!providerEndpoint) {
+    //   this.error('No active provider found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
+    // }
+    // const uploadUrl = this.assetUrl(providerEndpoint, contentId)
+    // const fileSize = this.getFileSize(filePath)
+    // const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
+    //   filePath,
+    //   `Uploading ${contentId.encode()}`,
+    //   multiBar
+    // )
+    // fileStream.on('end', () => {
+    //   // Temporarly disable because with Promise.all it breaks the UI
+    //   // cli.action.start('Waiting for the file to be processed...')
+    // })
+    // try {
+    //   const config: AxiosRequestConfig = {
+    //     headers: {
+    //       'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
+    //       'Content-Length': fileSize.toString(),
+    //     },
+    //     maxBodyLength: fileSize,
+    //   }
+    //   await axios.put(uploadUrl, fileStream, config)
+    // } catch (e) {
+    //   progressBar.stop()
+    //   const msg = (e.response && e.response.data && e.response.data.message) || e.message || e
+    //   this.error(`Unexpected error when trying to upload a file: ${msg}`, {
+    //     exit: ExitCodes.ExternalInfrastructureError,
+    //   })
+    // }
   }
 
   async uploadAssets(
@@ -249,6 +257,11 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     multiBar.stop()
   }
 
+  public assetsIndexes(originalPaths: (string | undefined)[], filteredPaths: string[]): (number | undefined)[] {
+    let lastIndex = -1
+    return originalPaths.map((path) => (filteredPaths.includes(path as string) ? ++lastIndex : undefined))
+  }
+
   private handleRejectedUploads(
     assets: InputAsset[],
     results: boolean[],
@@ -259,7 +272,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     const rejectedAssetsOutput: Assets = []
     results.forEach(
       (r, i) =>
-        r === false && rejectedAssetsOutput.push({ contentId: assets[i].contentId.encode(), path: assets[i].path })
+        r === false && rejectedAssetsOutput.push({ contentId: assets[i].contentId.toString(), path: assets[i].path })
     )
     if (rejectedAssetsOutput.length) {
       this.warn(

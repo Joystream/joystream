@@ -3,7 +3,7 @@ import { getInputJson } from '../../helpers/InputOutput'
 import AssetsSchema from '../../json-schemas/Assets.schema.json'
 import { Assets as AssetsInput } from '../../json-schemas/typings/Assets.schema'
 import { flags } from '@oclif/command'
-import { ContentId } from '@joystream/types/storage'
+import { ContentId } from '@joystream/types/content'
 
 export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
   static description = 'Allows reuploading assets that were not successfully uploaded during channel/video creation'
@@ -26,7 +26,7 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
     // Get input from file
     const inputData = await getInputJson<AssetsInput>(input, AssetsSchema)
     const inputAssets = inputData.map(({ contentId, path }) => ({
-      contentId: ContentId.decode(this.getTypesRegistry(), contentId),
+      contentId: new ContentId(this.getTypesRegistry(), contentId),
       path,
     }))
 

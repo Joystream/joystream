@@ -59,7 +59,6 @@ import {
   ChannelCategoryId,
   VideoCategoryId,
 } from '@joystream/types/content'
-import { ContentId, DataObject } from '@joystream/types/storage'
 import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
@@ -67,9 +66,10 @@ export const DEFAULT_API_URI = 'ws://localhost:9944/'
 // Mapping of working group to api module
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Operations]: 'operationsWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
+  [WorkingGroups.Distribution]: 'distributionWorkingGroup',
 }
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
@@ -571,15 +571,6 @@ export default class Api {
     return (await this.entriesByIds<VideoCategoryId, VideoCategory>(this._api.query.content.videoCategoryById)).map(
       ([id]) => id
     )
-  }
-
-  async dataObjectsByContentIds(contentIds: ContentId[]): Promise<DataObject[]> {
-    const dataObjects = await this._api.query.dataDirectory.dataByContentId.multi<DataObject>(contentIds)
-    const notFoundIndex = dataObjects.findIndex((o) => o.isEmpty)
-    if (notFoundIndex !== -1) {
-      throw new CLIError(`DataObject not found by id ${contentIds[notFoundIndex].toString()}`)
-    }
-    return dataObjects
   }
 
   async getRandomBootstrapEndpoint(): Promise<string | null> {

@@ -1,12 +1,13 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { ChannelCategoryInputParameters } from '../../Types'
-import { channelCategoryMetadataFromInput, metadataToBytes } from '../../helpers/serialization'
+import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { ChannelCategoryCreationParameters } from '@joystream/types/content'
 import { ChannelCategoryInputSchema } from '../../json-schemas/ContentDirectory'
 import chalk from 'chalk'
+import { ChannelCategoryMetadata } from '@joystream/metadata-protobuf'
 
 export default class CreateChannelCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create channel category inside content directory.'
@@ -28,11 +29,10 @@ export default class CreateChannelCategoryCommand extends ContentDirectoryComman
     const actor = context ? await this.getActor(context) : await this.getCategoryManagementActor()
 
     const channelCategoryInput = await getInputJson<ChannelCategoryInputParameters>(input, ChannelCategoryInputSchema)
-
-    const meta = channelCategoryMetadataFromInput(channelCategoryInput)
+    const meta = asValidatedMetadata(ChannelCategoryMetadata, channelCategoryInput)
 
     const channelCategoryCreationParameters: CreateInterface<ChannelCategoryCreationParameters> = {
-      meta: metadataToBytes(meta),
+      meta: metadataToBytes(ChannelCategoryMetadata, meta),
     }
 
     this.jsonPrettyPrint(JSON.stringify(channelCategoryInput))
