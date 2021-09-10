@@ -212,7 +212,7 @@ pub struct ChannelRecord<
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// collaborator set
-    collaborators: CollaboratorsSetType,
+    maybe_collaborators: Option<CollaboratorsSetType>,
 }
 
 // Channel alias type for simplification.
@@ -265,7 +265,7 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId, Collaborators
     /// optional reward account
     reward_account: Option<AccountId>,
     /// initial collaborator set
-    collaborators: CollaboratorsSetType,
+    maybe_collaborators: Option<CollaboratorsSetType>,
 }
 
 /// Information about channel being updated.
@@ -279,7 +279,7 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSe
     /// If set, updates the reward account of the channel
     reward_account: Option<Option<AccountId>>,
     /// collaborator set
-    collaborators: Option<CollaboratorsSetType>,
+    maybe_collaborators: Option<CollaboratorsSetType>,
 }
 
 /// A category that videos can belong to.
@@ -692,7 +692,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                collaborators: params.collaborators.clone(),
+                maybe_collaborators: params.maybe_collaborators.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -750,8 +750,8 @@ decl_module! {
 
 
             // maybe update collaborators set
-            if let Some(collabs) = &params.collaborators {
-                channel.collaborators = collabs.clone();
+            if let Some(collaborators) = &params.maybe_collaborators {
+                channel.maybe_collaborators = Some(collaborators.clone());
             }
 
             // Update the channel
@@ -1441,7 +1441,11 @@ impl<T: Trait> Module<T> {
             ContentActor::Member(member_id) => {
                 let is_owner =
                     ensure_member_is_channel_owner::<T>(origin, member_id, owner).is_ok();
-                let is_collab = channel.collaborators.contains(member_id);
+                let is_collab = if let Some(collaborators) = &channel.maybe_collaborators {
+                    collaborators.contains(member_id)
+                } else {
+                    false
+                };
                 ensure!(is_owner || is_collab, Error::<T>::ActorNotAuthorized);
                 Ok(())
             }
