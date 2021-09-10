@@ -560,7 +560,7 @@ fn member_owned_channels() {
         // Update channel
         assert_err!(
             Content::update_channel(
-                Origin::signed(FIRST_MEMBER_ORIGIN),
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
                 ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
                 channel_id_1,
                 ChannelUpdateParameters {
@@ -574,7 +574,7 @@ fn member_owned_channels() {
         );
 
         assert_ok!(Content::update_channel(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             channel_id_2,
             ChannelUpdateParameters {
@@ -591,7 +591,7 @@ fn member_owned_channels() {
                 ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
                 channel_id_2,
                 ChannelRecord {
-                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
+                    owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                     videos: vec![],
                     playlists: vec![],
                     series: vec![],
