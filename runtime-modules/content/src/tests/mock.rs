@@ -48,7 +48,8 @@ pub const FIRST_MEMBER_ID: MemberId = 1;
 pub const SECOND_MEMBER_ID: MemberId = 2;
 
 // members that act as collaborators
-pub const COLLABORATOR_MEMBER_ID: MemberId = 11;
+pub const COLLABORATOR_MEMBER_ORIGIN: MemberId = 20;
+pub const COLLABORATOR_MEMBER_ID: MemberId = 21;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
