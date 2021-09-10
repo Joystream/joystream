@@ -8,7 +8,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger } from '../../common'
+import { invalidMetadata, inconsistentState, logger } from '../common'
 import {
   // primary entities
   CuratorGroup,

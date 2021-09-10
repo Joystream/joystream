@@ -1,7 +1,7 @@
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { bytesToString, inconsistentState, logger } from '../common'
+import { bytesToString, inconsistentState, logger } from './common'
 import { Worker, WorkerType } from 'query-node/dist/model'
-import { StorageWorkingGroup } from '../generated/types'
+import { StorageWorkingGroup } from './generated/types'
 import { WorkerId } from '@joystream/types/augment'
 
 export async function workingGroup_OpeningFilled({ event, store }: EventContext & StoreContext): Promise<void> {

@@ -3,8 +3,8 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
-import { Content } from '../../generated/types'
-import { deserializeMetadata, inconsistentState, logger } from '../../common'
+import { Content } from '../generated/types'
+import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { processVideoMetadata } from './utils'
 import { Channel, Video, VideoCategory, AssetNone } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'

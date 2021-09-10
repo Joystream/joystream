@@ -4,10 +4,10 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { AccountId } from '@polkadot/types/interfaces'
 import { Option } from '@polkadot/types/codec'
-import { Content } from '../../generated/types'
+import { Content } from '../generated/types'
 import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
 import { AssetNone, Channel, ChannelCategory } from 'query-node/dist/model'
-import { deserializeMetadata, inconsistentState, logger } from '../../common'
+import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 

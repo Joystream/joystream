@@ -6,7 +6,7 @@ import {
   GeoCoordinates,
   NodeLocationMetadata,
 } from 'query-node/dist/model'
-import { deserializeMetadata } from '../../common'
+import { deserializeMetadata } from '../common'
 import { Bytes } from '@polkadot/types'
 import {
   DistributionBucketOperatorMetadata as DistributionBucketOperatorMetadataProto,
