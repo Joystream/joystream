@@ -203,6 +203,9 @@ fn member_owned_channels() {
 
         let channel_id_2 = Content::next_channel_id();
 
+        let mut collaborators = BTreeSet::new();
+        collaborators.insert(COLLABORATOR_MEMBER_ID);
+
         // Member can create the channel
         assert_ok!(Content::create_channel(
             Origin::signed(SECOND_MEMBER_ORIGIN),
@@ -211,7 +214,7 @@ fn member_owned_channels() {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
-                maybe_collaborators: None,
+                maybe_collaborators: Some(collaborators.clone()),
             }
         ));
 
@@ -227,13 +230,13 @@ fn member_owned_channels() {
                     series: vec![],
                     is_censored: false,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    maybe_collaborators: Some(collaborators.clone()),
                 },
                 ChannelCreationParameters {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
-                    maybe_collaborators: None,
+                    maybe_collaborators: Some(collaborators.clone()),
                 }
             ))
         );
@@ -248,7 +251,7 @@ fn member_owned_channels() {
                 new_meta: None,
                 reward_account: None,
                 maybe_collaborators: None,
-            }
+            },
         ));
 
         assert_eq!(
@@ -267,6 +270,60 @@ fn member_owned_channels() {
                 },
                 ChannelUpdateParameters {
                     assets: None,
+                    new_meta: None,
+                    reward_account: None,
+                    maybe_collaborators: None,
+                }
+            ))
+        );
+
+        // Valid collaborator should be able to update channel assets
+        let assets = Some(vec![NewAsset::Urls(vec![b"test".to_vec()])]);
+
+        // Update channel
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(FIRST_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_1,
+                ChannelUpdateParameters {
+                    assets: assets.clone(),
+                    new_meta: None,
+                    reward_account: None,
+                    maybe_collaborators: None,
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized
+        );
+
+        assert_ok!(Content::update_channel(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+            channel_id_2,
+            ChannelUpdateParameters {
+                assets: assets.clone(),
+                new_meta: None,
+                reward_account: None,
+                maybe_collaborators: None,
+            },
+        ));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelUpdated(
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelRecord {
+                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
+                    videos: vec![],
+                    playlists: vec![],
+                    series: vec![],
+                    is_censored: false,
+                    reward_account: None,
+                    maybe_collaborators: Some(collaborators.clone()),
+                },
+                ChannelUpdateParameters {
+                    assets: assets,
                     new_meta: None,
                     reward_account: None,
                     maybe_collaborators: None,
