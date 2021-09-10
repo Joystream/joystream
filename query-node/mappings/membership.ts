@@ -2,8 +2,8 @@ import { Bytes } from '@polkadot/types'
 import { MemberId } from '@joystream/types/members'
 import { SubstrateEvent, EventContext, StoreContext } from '@joystream/hydra-common'
 
-import { bytesToString, inconsistentState, logger, extractExtrinsicArgs, extractSudoCallParameters } from '../common'
-import { Members } from '../generated/types'
+import { bytesToString, inconsistentState, logger, extractExtrinsicArgs, extractSudoCallParameters } from './common'
+import { Members } from './generated/types'
 import { MembershipEntryMethod, Membership } from 'query-node/dist/model'
 import { EntryMethod } from '@joystream/types/augment'
 

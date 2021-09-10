@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { Storage } from '../../generated/types/storage'
+import { Storage } from '../generated/types/storage'
 import {
   DistributionBucket,
   DistributionBucketFamily,
@@ -27,7 +27,7 @@ import {
   StorageBagStorageAssignment,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, bytesToString } from '../../common'
+import { getById, bytesToString } from '../common'
 import { BTreeSet } from '@polkadot/types'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
 import { registry } from '@joystream/types'
