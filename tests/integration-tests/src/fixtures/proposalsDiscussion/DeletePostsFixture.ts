@@ -54,14 +54,12 @@ export class DeletePostsFixture extends StandardizedFixture {
       const params = this.deletePostsParams[i]
       const qPost = qPosts.find((p) => p.id === params.postId.toString())
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
-      const expectedStatus =
-        params.hide === undefined || params.hide
-          ? 'ProposalDiscussionPostStatusRemoved'
-          : 'ProposalDiscussionPostStatusLocked'
+      const hidden = params.hide === undefined || params.hide
+      const expectedStatus = hidden ? 'ProposalDiscussionPostStatusRemoved' : 'ProposalDiscussionPostStatusLocked'
       Utils.assert(qPost, 'Query node: Post not found')
       Utils.assert(qPost.status.__typename === expectedStatus, `Invalid post status (${qPost.status.__typename})`)
       assert.equal(qPost.status.deletedInEvent?.id, qEvent.id)
-      assert.equal(qPost.isVisible, false)
+      assert.equal(qPost.isVisible, !hidden)
     })
   }
 
