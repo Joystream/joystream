@@ -9,6 +9,7 @@ import { processVideoMetadata } from './utils'
 import { Channel, Video, VideoCategory, AssetNone } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import _ from 'lodash'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
@@ -241,9 +242,13 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
   })
 
   if (videosToAdd.length !== videoIdsToAdd.length) {
-    return inconsistentState(
-      'At least one non-existing video featuring requested',
-      videosToAdd.map((v) => v.id)
+    // Do not throw, as this is not validated by the runtime
+    console.warn(
+      'Non-existing video(s) in featuredVideos set:',
+      _.difference(
+        videoIdsToAdd.map((v) => v.toString()),
+        videosToAdd.map((v) => v.id)
+      )
     )
   }
 
@@ -260,7 +265,7 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
   )
 
   // emit log event
-  const newFeaturedVideoIds = videoIds.map((id) => id.toString())
-  const removedFeaturedVideosIds = videosToRemove.map((v) => v.id)
-  logger.info('New featured videos have been set', { newFeaturedVideoIds, removedFeaturedVideosIds })
+  const addedVideoIds = videosToAdd.map((v) => v.id)
+  const removedVideoIds = videosToRemove.map((v) => v.id)
+  logger.info('Featured videos have been updated', { addedVideoIds, removedVideoIds })
 }
