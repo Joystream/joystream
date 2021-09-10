@@ -716,7 +716,7 @@ decl_module! {
             Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
-                &channel.owner,
+                &channel,
             )?;
 
             // Pick out the assets to be uploaded to storage frame_system
@@ -783,7 +783,7 @@ decl_module! {
             Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
-                &channel.owner,
+                &channel,
             )?;
 
             let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
@@ -932,10 +932,9 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            Self::ensure_actor_can_update_channel_content(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
-                &channel.owner,
                 &channel,
             )?;
 
@@ -991,10 +990,9 @@ decl_module! {
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
 
-            Self::ensure_actor_can_update_channel_content(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
-                &Self::channel_by_id(channel_id).owner,
                 &channel,
             )?;
 
@@ -1045,11 +1043,10 @@ decl_module! {
             let channel_id = video.in_channel;
             let channel = ChannelById::<T>::get(channel_id);
 
-            Self::ensure_actor_can_update_channel_content(
+            Self::ensure_actor_authorized_to_update_channel(
                 origin,
                 &actor,
                 // The channel owner will be..
-                &Self::channel_by_id(channel_id).owner,
                 &channel,
             )?;
 
@@ -1375,19 +1372,12 @@ impl<T: Trait> Module<T> {
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> ActorToChannelOwnerResult<T> {
         match actor {
-            // Lead should use their member or curator role to create channels
-            ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
-            ContentActor::Curator(
-                curator_group_id,
-                _curator_id
-            ) => {
+            ContentActor::Curator(curator_group_id, _curator_id) => {
                 Ok(ChannelOwner::CuratorGroup(*curator_group_id))
             }
-            ContentActor::Member(member_id) => {
-                Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+            ContentActor::Member(member_id) => Ok(ChannelOwner::Member(*member_id)),
+            // Lead & collaborators should use their member or curator role to create channels
+            _ => Err(Error::<T>::ActorCannotOwnChannel),
         }
     }
 
@@ -1395,13 +1385,13 @@ impl<T: Trait> Module<T> {
     pub fn ensure_actor_authorized_to_update_channel(
         origin: T::Origin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+        channel: &Channel<T>,
     ) -> DispatchResult {
         // Only owner of a channel can update and delete channel assets.
         // Lead can update and delete curator group owned channel assets.
         match actor {
             ContentActor::Lead => {
-                ensure_lead_can_update_assets::<T>(origin, owner)?;
+                ensure_lead_can_update_assets::<T>(origin, &channel.owner)?;
                 Ok(())
             }
             ContentActor::Curator(curator_group_id, curator_id) => {
@@ -1409,47 +1399,31 @@ impl<T: Trait> Module<T> {
                     origin,
                     curator_group_id,
                     curator_id,
-                    owner,
-                )?;
-                Ok(())
+                    &channel.owner,
+                )
             }
             ContentActor::Member(member_id) => {
-                ensure_member_is_channel_owner::<T>(origin, member_id, owner)?;
+                ensure_member_is_channel_owner::<T>(origin, member_id, &channel.owner)?;
+                Ok(())
+            }
+            ContentActor::Collaborator(member_id) => {
+                Self::ensure_member_is_collaborator(member_id, channel)?;
                 Ok(())
             }
         }
     }
 
-    // Enure actor can update channels and videos in the channel
-    pub fn ensure_actor_can_update_channel_content(
-        origin: T::Origin,
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    fn ensure_member_is_collaborator(
+        member_id: &T::MemberId,
         channel: &Channel<T>,
     ) -> DispatchResult {
-        // Channel content can be updated by owner and collaborators only
-        match actor {
-            ContentActor::Lead => Err(Error::<T>::ActorNotAuthorized.into()),
-            ContentActor::Curator(curator_group_id, curator_id) => {
-                ensure_curator_group_is_channel_owner::<T>(
-                    origin,
-                    curator_group_id,
-                    curator_id,
-                    owner,
-                )
-            }
-            ContentActor::Member(member_id) => {
-                let is_owner =
-                    ensure_member_is_channel_owner::<T>(origin, member_id, owner).is_ok();
-                let is_collab = if let Some(collaborators) = &channel.maybe_collaborators {
-                    collaborators.contains(member_id)
-                } else {
-                    false
-                };
-                ensure!(is_owner || is_collab, Error::<T>::ActorNotAuthorized);
-                Ok(())
-            }
-        }
+        let is_collab = if let Some(collaborators) = &channel.maybe_collaborators {
+            collaborators.contains(member_id)
+        } else {
+            false
+        };
+        ensure!(is_collab, Error::<T>::ActorNotAuthorized);
+        Ok(())
     }
 
     fn not_implemented() -> DispatchResult {
