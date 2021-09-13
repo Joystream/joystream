@@ -211,7 +211,7 @@ export function getEvent<
   const event = result.findRecord(section, eventName)?.event as EventType | undefined
 
   if (!event) {
-    throw new Error(`Cannot find expected ${section}.${eventName} event in result: ${result.toHuman()}`)
+    throw new ExtrinsicFailedError(`Cannot find expected ${section}.${eventName} event in result: ${result.toHuman()}`)
   }
   return event as EventType
 }

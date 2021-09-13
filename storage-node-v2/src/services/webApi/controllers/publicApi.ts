@@ -1,5 +1,4 @@
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { ExtrinsicFailedError } from '../../runtime/api'
 import {
   RequestData,
   UploadTokenRequest,
@@ -18,11 +17,19 @@ import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
 import send from 'send'
-import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
 import { parseBagId } from '../../helpers/bagTypes'
 import { timeout } from 'promise-timeout'
-import { getUploadsDir, getWorkerId, getQueryNodeUrl, WebApiError, ServerError } from './common'
+import {
+  getUploadsDir,
+  getWorkerId,
+  getQueryNodeUrl,
+  WebApiError,
+  ServerError,
+  getCommandConfig,
+  sendResponseWithError,
+  getHttpStatusCodeByError,
+} from './common'
 import { getStorageBucketIdsByWorkerId } from '../../../services/sync/storageObligations'
 import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
@@ -260,7 +267,7 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
   const membership = (await timeout(membershipPromise, 5000)) as Membership
 
   if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
-    throw new Error(`Provided controller account and member id don't match.`)
+    throw new WebApiError(`Provided controller account and member id don't match.`, 401)
   }
 }
 
@@ -320,59 +327,6 @@ async function cleanupFileOnError(cleanupFileName: string, error: string): Promi
 }
 
 /**
- * Handles errors and sends a response.
- *
- * @param res - Response instance
- * @param err - error
- * @param errorType - defines request type
- * @returns void promise.
- */
-function sendResponseWithError(res: express.Response, err: Error, errorType: string): void {
-  const message = isNofileError(err) ? `File not found.` : err.toString()
-
-  res.status(getHttpStatusCodeByError(err)).json({
-    type: errorType,
-    message,
-  })
-}
-
-/**
- * Checks the error for 'no-file' error (ENOENT).
- *
- * @param err - error
- * @returns true when error code contains 'ENOENT'.
- */
-function isNofileError(err: Error): boolean {
-  return err.toString().includes('ENOENT')
-}
-
-/**
- * Get the status code by error.
- *
- * @param err - error
- * @returns HTTP status code
- */
-function getHttpStatusCodeByError(err: Error): number {
-  if (isNofileError(err)) {
-    return 404
-  }
-
-  if (err instanceof ExtrinsicFailedError) {
-    return 400
-  }
-
-  if (err instanceof WebApiError) {
-    return err.httpStatusCode
-  }
-
-  if (err instanceof CLIError) {
-    return 400
-  }
-
-  return 500
-}
-
-/**
  * A public endpoint: return the server version.
  */
 export async function getVersion(req: express.Request, res: express.Response): Promise<void> {
@@ -393,26 +347,6 @@ export async function getVersion(req: express.Request, res: express.Response): P
 }
 
 /**
- * Returns a command config.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getCommandConfig(
-  res: express.Response
-): {
-  version: string
-  userAgent: string
-} {
-  if (res.locals.config) {
-    return res.locals.config
-  }
-
-  throw new Error('No upload directory path loaded.')
-}
-
-/**
  * Validates the storage bucket ID obligations for the worker (storage provider).
  * It throws an error when storage bucket doesn't belong to the worker.
  *
@@ -425,7 +359,7 @@ async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: 
   const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
 
   if (!bucketIds.includes(bucketId.toString())) {
-    throw new Error('Incorrect storage bucket ID.')
+    throw new WebApiError('Incorrect storage bucket ID.', 400)
   }
 }
 

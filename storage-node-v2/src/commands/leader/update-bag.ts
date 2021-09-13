@@ -4,6 +4,7 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import _ from 'lodash'
+import { CLIError } from '@oclif/errors'
 
 // Custom 'integer array' oclif flag.
 const integerArrFlags = {
@@ -11,7 +12,9 @@ const integerArrFlags = {
     parse: (value: string) => {
       const arr: number[] = value.split(',').map((v) => {
         if (!/^-?\d+$/.test(v)) {
-          throw new Error(`Expected comma-separated integers, but received: ${value}`)
+          throw new CLIError(`Expected comma-separated integers, but received: ${value}`, {
+            exit: ExitCodes.InvalidIntegerArray,
+          })
         }
         return parseInt(v)
       })
