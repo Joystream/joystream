@@ -40,6 +40,20 @@ services:
       - WORKER_ID=0
       - ACCOUNT_URI=//Alice
 
+  distributor-node:
+    image: joystream/distributor-node
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: distributor-node.Dockerfile
+    volumes:
+      - /data
+      - /cache
+      - /logs
+    ports:
+      - 127.0.0.1:3334:3334
+    command: ["start"]
+
   db:
     image: postgres:12
     restart: always
