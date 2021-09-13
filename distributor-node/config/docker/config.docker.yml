@@ -1,13 +1,15 @@
-id: test-distributor-node
+id: distributor-node-docker
 endpoints:
   queryNode: http://graphql-server-mnt:4002/graphql
   substrateNode: ws://joystream-node:9944
+  # elasticSearch: http://elasticsearch:9200
 directories:
   data: /data
   cache: /cache
   logs: /logs
 log:
   console: info
+  # elastic: info
 storageLimit: 100G
 port: 3334
 keys: [//Alice]

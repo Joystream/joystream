@@ -62,9 +62,12 @@ services:
     volumes:
       - /data
       - /cache
-      - /logs
     ports:
       - 127.0.0.1:3334:3334
+    # environment:
+      # Configuration overrides can be defined here, for example:
+      # JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server-mnt:4002/graphql
+      # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: null
     command: ["start"]
 
   db:

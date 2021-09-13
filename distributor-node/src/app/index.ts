@@ -31,7 +31,11 @@ export class App {
     Object.entries(this.config.directories).forEach(([name, path]) => {
       const dirInfo = `${name} directory (${path})`
       if (!fs.existsSync(path)) {
-        throw new Error(`${dirInfo} doesn't exists!`)
+        try {
+          fs.mkdirSync(path, { recursive: true })
+        } catch (e) {
+          throw new Error(`${dirInfo} doesn't exist and cannot be created!`)
+        }
       }
       try {
         fs.accessSync(path, fs.constants.R_OK)

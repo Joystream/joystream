@@ -10,7 +10,7 @@ export interface ConfigJson {
   endpoints: {
     queryNode: string
     substrateNode: string
-    elasticSearch: string
+    elasticSearch?: string
   }
   directories: {
     data: string

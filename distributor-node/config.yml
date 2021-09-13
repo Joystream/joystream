@@ -2,7 +2,7 @@ id: test-node
 endpoints:
   queryNode: http://localhost:8081/graphql
   substrateNode: ws://localhost:9944
-  elasticSearch: http://localhost:9200
+  # elasticSearch: http://localhost:9200
 directories:
   data: ./local/data
   cache: ./local/cache
@@ -10,7 +10,7 @@ directories:
 log:
   file: debug
   console: info
-  elastic: info
+  # elastic: info
 storageLimit: 100G
 port: 3334
 keys: [//Alice]

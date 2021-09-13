@@ -59,19 +59,19 @@ export class LoggingService {
   public static withAppConfig(config: ReadonlyConfig): LoggingService {
     const transports: winston.LoggerOptions['transports'] = []
 
-    const esTransport =
-      config.log?.elastic &&
-      new ElasticsearchTransport({
-        level: config.log?.elastic || 'warn',
-        format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
-        flushInterval: 5000,
-        source: config.id,
-        clientOpts: {
-          node: {
-            url: new URL(config.endpoints.elasticSearch),
+    const esTransport = config.endpoints.elasticSearch
+      ? new ElasticsearchTransport({
+          level: config.log?.elastic || 'warn',
+          format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
+          flushInterval: 5000,
+          source: config.id,
+          clientOpts: {
+            node: {
+              url: new URL(config.endpoints.elasticSearch),
+            },
           },
-        },
-      })
+        })
+      : undefined
     if (esTransport) {
       transports.push(esTransport)
     }
