@@ -694,17 +694,18 @@ decl_module! {
                 &channel_id
             );
 
-            // number of assets to be uploaded
-            let num_assets: u64 = if let Some(upload_parameters) = maybe_upload_parameters{
-                Storage::<T>::upload_data_objects(upload_parameters.clone())?;
-                upload_parameters
-                    .object_creation_list
-                    .len()
-                    .try_into()
-                    .map_err(|_| DispatchError::Other("Number of assets conversion error"))?
-            } else {
-                0u64
-            };
+            // number of assets succesfully uploaded
+            let num_assets = maybe_upload_parameters
+                .map_or(Ok(0u64), |upload_parameters| {
+                Storage::<T>::upload_data_objects(upload_parameters.clone())
+                    .map(|_| {
+                        upload_parameters
+                        .object_creation_list
+                        .len()
+                        .try_into()
+                        .unwrap_or(0u64)
+                })
+            })?;
 
             //
             // == MUTATION SAFE ==
@@ -1011,16 +1012,17 @@ decl_module! {
 
             // if storaged uploading is required save t he object id for the video
             let maybe_data_objects_ids = maybe_upload_parameters
-            .map_or(Ok(None),
-                 |upload_parameters| {
-                 // beginning object id
-                 let beg = Storage::<T>::next_data_object_id();
+                .map_or(
+                    Ok(None),
+                    |upload_parameters| {
+                     // beginning object id
+                        let beg = Storage::<T>::next_data_object_id();
 
-                 // upload objects and return their indexes
-                 Storage::<T>::upload_data_objects(upload_parameters)
-                    .map(|_| Storage::<T>::next_data_object_id()) // ending index
-                    .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
-                 })?;
+                        // upload objects and return their indexes
+                        Storage::<T>::upload_data_objects(upload_parameters)
+                        .map(|_| Storage::<T>::next_data_object_id()) // ending index
+                        .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
+                })?;
 
             //
             // == MUTATION SAFE ==
