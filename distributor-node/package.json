@@ -105,7 +105,7 @@
     "generate:api:distributor-node": "yarn openapi-generator-cli generate -i ./src/api-spec/openapi.yml -g typescript-axios -o ./src/services/networking/distributor-node/generated",
     "generate:api:all": "yarn generate:api:storage-node && yarn generate:api:distributor-node",
     "generate:all": "yarn generate:types:all && yarn generate:api:all",
-    "build": "tsc --build tsconfig.json",
+    "build": "tsc --build tsconfig.json && cp -r ./src/api-spec ./lib/api-spec",
     "lint": "eslint ./src --ext .ts",
     "format": "prettier ./ --write",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
