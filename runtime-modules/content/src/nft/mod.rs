@@ -239,7 +239,7 @@ impl<T: Trait> Module<T> {
         video: &Video<T>,
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::BuyNow(price),
             ..
         }) = &video.nft_status
@@ -257,7 +257,7 @@ impl<T: Trait> Module<T> {
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
         match &video.nft_status {
-            NFTStatus::Owned(OwnedNFT {
+            Some(OwnedNFT {
                 transactional_status: TransactionalStatus::InitiatedOfferToMember(to, price),
                 ..
             }) if participant == *to => {
@@ -277,7 +277,7 @@ impl<T: Trait> Module<T> {
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Video<T> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::BuyNow(price),
             ref mut owner,
             ..
@@ -299,7 +299,7 @@ impl<T: Trait> Module<T> {
         owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
     ) -> Video<T> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::InitiatedOfferToMember(to, price),
             ref mut owner,
             ..
@@ -326,7 +326,7 @@ impl<T: Trait> Module<T> {
         owner_account_id: T::AccountId,
         last_bid_amount: BalanceOf<T>,
     ) {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             owner,
             transactional_status,
             creator_royalty,
@@ -375,7 +375,7 @@ impl<T: Trait> Module<T> {
         last_bidder_account_id: T::AccountId,
         owner_account_id: T::AccountId,
     ) -> Video<T> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(auction),
             ..
         }) = &video.nft_status

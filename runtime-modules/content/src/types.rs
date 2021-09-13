@@ -233,7 +233,7 @@ pub struct VideoRecord<
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// Whether nft for this video have been issued.
-    pub nft_status: NFTStatus<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>,
+    pub nft_status: Option<OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>>,
 }
 
 impl<
@@ -247,11 +247,7 @@ impl<
     > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     fn is_issued(&self) -> bool {
-        if let NFTStatus::NoneIssued = self.nft_status {
-            false
-        } else {
-            true
-        }
+        self.nft_status.is_some()
     }
 
     /// Ensure nft status is set to `NoneIssued`
@@ -271,7 +267,7 @@ impl<
         &self,
         owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>,
     ) -> DispatchResult {
-        if let NFTStatus::Owned(owned_nft) = &self.nft_status {
+        if let Some(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnNFT);
         }
         Ok(())
@@ -281,7 +277,7 @@ impl<
     pub fn is_nft_auction_started(&self) -> bool {
         matches!(
             self.nft_status,
-            NFTStatus::Owned(OwnedNFT {
+            Some(OwnedNFT {
                 transactional_status: TransactionalStatus::Auction(..),
                 ..
             })
@@ -292,7 +288,7 @@ impl<
     pub fn ensure_nft_auction_state<T: Trait>(
         &self,
     ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId>, Error<T>> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(auction),
             ..
         }) = &self.nft_status
@@ -305,7 +301,7 @@ impl<
 
     /// Get nft auction record
     pub fn get_nft_auction(&self) -> Option<AuctionRecord<BlockNumber, Balance, MemberId>> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
         }) = self.nft_status
@@ -318,7 +314,7 @@ impl<
 
     /// Get nft auction record by reference
     pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<BlockNumber, Balance, MemberId>> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref auction),
             ..
         }) = self.nft_status
@@ -333,7 +329,7 @@ impl<
     pub fn get_nft_auction_ref_mut(
         &mut self,
     ) -> Option<&mut AuctionRecord<BlockNumber, Balance, MemberId>> {
-        if let NFTStatus::Owned(OwnedNFT {
+        if let Some(OwnedNFT {
             transactional_status: TransactionalStatus::Auction(ref mut auction),
             ..
         }) = self.nft_status
@@ -348,7 +344,7 @@ impl<
     pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
         let is_idle = matches!(
             self.nft_status,
-            NFTStatus::Owned(OwnedNFT {
+            Some(OwnedNFT {
                 transactional_status: TransactionalStatus::Idle,
                 ..
             })
@@ -359,7 +355,7 @@ impl<
 
     /// Sets nft transactional status to `BuyNow`
     pub fn set_buy_now_transactionl_status(mut self, buy_now_price: Balance) -> Self {
-        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+        if let Some(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::BuyNow(buy_now_price);
         }
         self
@@ -370,7 +366,7 @@ impl<
         mut self,
         auction: AuctionRecord<BlockNumber, Balance, MemberId>,
     ) -> Self {
-        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+        if let Some(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Auction(auction);
         }
         self
@@ -378,7 +374,7 @@ impl<
 
     /// Set nft transactional status to `Idle`
     pub fn set_idle_transactional_status(mut self) -> Self {
-        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+        if let Some(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status = TransactionalStatus::Idle;
         }
         self
@@ -390,7 +386,7 @@ impl<
         to: MemberId,
         balance: Option<Balance>,
     ) -> Self {
-        if let NFTStatus::Owned(owned_nft) = &mut self.nft_status {
+        if let Some(owned_nft) = &mut self.nft_status {
             owned_nft.transactional_status =
                 TransactionalStatus::InitiatedOfferToMember(to, balance);
         }
@@ -401,7 +397,7 @@ impl<
     pub fn is_pending_offer_transactional_status(&self) -> bool {
         matches!(
             self.nft_status,
-            NFTStatus::Owned(OwnedNFT {
+            Some(OwnedNFT {
                 transactional_status: TransactionalStatus::InitiatedOfferToMember(..),
                 ..
             })

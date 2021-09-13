@@ -619,7 +619,7 @@ decl_module! {
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
                 /// Newly created video has no nft
-                nft_status: NFTStatus::NoneIssued,
+                nft_status: None,
             };
 
             VideoById::<T>::insert(video_id, video);
@@ -1025,7 +1025,7 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-            
+
             // Unreserve previous bidder balance
             if let Some((last_bidder_account_id, last_bid_amount)) = last_bid_data {
                 T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
@@ -1184,7 +1184,7 @@ decl_module! {
             // Ensure auction can be completed
             Self::ensure_auction_can_be_completed(&auction)?;
 
-            if let NFTStatus::Owned(owned_nft) = &video.nft_status {
+            if let Some(owned_nft) = &video.nft_status {
 
                 let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
 
@@ -1199,7 +1199,7 @@ decl_module! {
                 // Update the video
                 VideoById::<T>::insert(video_id, video);
             }
-            
+
             // Trigger event
             Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id, metadata));
         }
@@ -1228,7 +1228,7 @@ decl_module! {
             // Ensure actor is authorized to accept open auction bid
             Self::authorize_nft_owner(origin, &actor, &video)?;
 
-            if let NFTStatus::Owned(owned_nft) = &video.nft_status {
+            if let Some(owned_nft) = &video.nft_status {
 
                 let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
 
@@ -1290,7 +1290,7 @@ decl_module! {
 
             // Issue NFT
             let mut video = video;
-            video.nft_status = NFTStatus::Owned(OwnedNFT {
+            video.nft_status = Some(OwnedNFT {
                 transactional_status: TransactionalStatus::Idle,
                 owner: content_owner.clone(),
                 creator_royalty: royalty,
@@ -1396,7 +1396,7 @@ decl_module! {
             // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&video, participant_id, &receiver_account_id)?;
 
-            if let NFTStatus::Owned(owned_nft) = &video.nft_status {
+            if let Some(owned_nft) = &video.nft_status {
 
                 let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
 
@@ -1468,7 +1468,7 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&video, &participant_account_id)?;
 
-            if let NFTStatus::Owned(owned_nft) = &video.nft_status {
+            if let Some(owned_nft) = &video.nft_status {
 
                 let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
 
