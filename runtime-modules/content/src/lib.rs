@@ -14,7 +14,6 @@ pub use errors::*;
 pub use permissions::*;
 
 use core::hash::Hash;
-use std::convert::TryInto;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -697,9 +696,7 @@ decl_module! {
                     .map(|_| {
                         upload_parameters
                         .object_creation_list
-                        .len()
-                        .try_into()
-                        .unwrap_or(0u64)
+                        .len() as u64
                 })
             })?;
 
