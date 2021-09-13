@@ -397,7 +397,7 @@ pub enum EpisodeParameters<VideoId, NewAssets> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct SeasonParameters<VideoId, NewAssets> {
     /// Season assets referenced by metadata
-    assets: Option<Vec<NewAssets>>,
+    assets: Option<NewAssets>,
     // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
     /// If set, updates the episodes of a season. Extends the number of episodes in a season
     /// when length of new_episodes is greater than previously set. Last elements must all be
@@ -413,7 +413,7 @@ pub struct SeasonParameters<VideoId, NewAssets> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct SeriesParameters<VideoId, NewAssets> {
     /// Series assets referenced by metadata
-    assets: Option<Vec<NewAssets>>,
+    assets: Option<NewAssets>,
     // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
     /// If set, updates the seasons of a series. Extend a series when length of seasons is
     /// greater than previoulsy set. Last elements must all be 'Some' in that case.
@@ -468,7 +468,7 @@ impl<MemberId: Default> Default for PersonController<MemberId> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct PersonCreationParameters<NewAssets> {
     /// Assets referenced by metadata
-    assets: Vec<NewAssets>,
+    assets: NewAssets,
     /// Metadata for person.
     meta: Vec<u8>,
 }
@@ -478,7 +478,7 @@ pub struct PersonCreationParameters<NewAssets> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct PersonUpdateParameters<NewAssets> {
     /// Assets referenced by metadata
-    assets: Option<Vec<NewAssets>>,
+    assets: Option<NewAssets>,
     /// Metadata to update person.
     new_meta: Option<Vec<u8>>,
 }
@@ -1585,14 +1585,14 @@ decl_event!(
         SeriesCreated(
             ContentActor,
             SeriesId,
-            Vec<NewAssets>,
+            NewAssets,
             SeriesParameters<VideoId, NewAssets>,
             Series,
         ),
         SeriesUpdated(
             ContentActor,
             SeriesId,
-            Vec<NewAssets>,
+            NewAssets,
             SeriesParameters<VideoId, NewAssets>,
             Series,
         ),
@@ -1602,13 +1602,13 @@ decl_event!(
         PersonCreated(
             ContentActor,
             PersonId,
-            Vec<NewAssets>,
+            NewAssets,
             PersonCreationParameters<NewAssets>,
         ),
         PersonUpdated(
             ContentActor,
             PersonId,
-            Vec<NewAssets>,
+            NewAssets,
             PersonUpdateParameters<NewAssets>,
         ),
         PersonDeleted(ContentActor, PersonId),
