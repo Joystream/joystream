@@ -2,11 +2,7 @@ import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import {
-  getUploadsDir,
-  getTempFileUploadingDir,
-  getQueryNodeUrl,
-} from './common'
+import { getUploadsDir, getTempFileUploadingDir, getQueryNodeUrl, WebApiError } from './common'
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
@@ -26,10 +22,7 @@ const dataCache = new NodeCache({
 /**
  * A public endpoint: return all local data objects.
  */
-export async function getAllLocalDataObjects(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getAllLocalDataObjects(req: express.Request, res: express.Response): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
 
@@ -49,10 +42,7 @@ export async function getAllLocalDataObjects(
  *
  *  @return total size and count of the data objects.
  */
-export async function getLocalDataStats(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getLocalDataStats(req: express.Request, res: express.Response): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
     const tempFileDir = getTempFileUploadingDir(res)
@@ -75,10 +65,7 @@ export async function getLocalDataStats(
       const tempDirStatsPromise = fsPromises.readdir(tempFileDir)
       const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
 
-      const [tempDirStats, tempSize] = await Promise.all([
-        tempDirStatsPromise,
-        tempDirSizePromise,
-      ])
+      const [tempDirStats, tempSize] = await Promise.all([tempDirStatsPromise, tempDirSizePromise])
 
       tempDirSize = tempSize ?? 0
       tempDownloads = tempDirStats.length
@@ -101,10 +88,7 @@ export async function getLocalDataStats(
 /**
  * A public endpoint: return local data objects for the bag.
  */
-export async function getLocalDataObjectsByBagId(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getLocalDataObjectsByBagId(req: express.Request, res: express.Response): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
 
@@ -130,10 +114,7 @@ export async function getLocalDataObjectsByBagId(
 /**
  * A public endpoint: return the server version.
  */
-export async function getVersion(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getVersion(req: express.Request, res: express.Response): Promise<void> {
   try {
     const config = getCommandConfig(res)
 
@@ -157,7 +138,9 @@ export async function getVersion(
  * This is a helper function. It parses the response object for a variable and
  * throws an error on failure.
  */
-function getCommandConfig(res: express.Response): {
+function getCommandConfig(
+  res: express.Response
+): {
   version: string
   userAgent: string
 } {
@@ -181,7 +164,7 @@ function getBagId(req: express.Request): string {
     return bagId
   }
 
-  throw new Error('No bagId provided.')
+  throw new WebApiError('No bagId provided.', 400)
 }
 
 /**
@@ -189,9 +172,7 @@ function getBagId(req: express.Request): string {
  * obsolete until cache expiration.
  *
  */
-async function getCachedLocalDataObjects(
-  uploadsDir: string
-): Promise<string[]> {
+async function getCachedLocalDataObjects(uploadsDir: string): Promise<string[]> {
   const entryName = 'local_data_object'
 
   if (!dataCache.has(entryName)) {
@@ -207,10 +188,7 @@ async function getCachedLocalDataObjects(
  * obsolete until cache expiration.
  *
  */
-async function getCachedDataObjectsObligations(
-  queryNodeUrl: string,
-  bagId: string
-): Promise<string[]> {
+async function getCachedDataObjectsObligations(queryNodeUrl: string, bagId: string): Promise<string[]> {
   const entryName = 'data_object_obligations'
 
   if (!dataCache.has(entryName)) {

@@ -45,13 +45,12 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
 
     const api = await this.getApi()
     const dynamicBagType = parseDynamicBagType(flags.bagType)
-    const success =
-      await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
-        api,
-        account,
-        dynamicBagType,
-        newNumber
-      )
+    const success = await updateNumberOfStorageBucketsInDynamicBagCreationPolicy(
+      api,
+      account,
+      dynamicBagType,
+      newNumber
+    )
 
     this.exitAfterRuntimeCall(success)
   }

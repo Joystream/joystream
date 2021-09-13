@@ -68,8 +68,7 @@ export default class Server extends ApiCommandBase {
     }),
     disableUploadAuth: flags.boolean({
       char: 'a',
-      description:
-        'Disable uploading authentication (should be used in testing-context only).',
+      description: 'Disable uploading authentication (should be used in testing-context only).',
       default: false,
     }),
     ...ApiCommandBase.flags,
@@ -101,13 +100,7 @@ export default class Server extends ApiCommandBase {
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
 
-      runSyncWithInterval(
-        flags.worker,
-        queryNodeUrl,
-        flags.uploads,
-        flags.syncWorkersNumber,
-        flags.syncInterval
-      )
+      runSyncWithInterval(flags.worker, queryNodeUrl, flags.uploads, flags.syncWorkersNumber, flags.syncInterval)
     }
 
     const account = this.getAccount(flags)
@@ -125,8 +118,7 @@ export default class Server extends ApiCommandBase {
         api,
         account,
         workerId,
-		maxFileSize,
-        this.config,
+        maxFileSize,
         uploadsDir: flags.uploads,
         tempDirName,
         process: this.config,
@@ -173,23 +165,12 @@ function runSyncWithInterval(
     logger.info(`Resume syncing....`)
 
     try {
-      await performSync(
-        workerId,
-        syncWorkersNumber,
-        queryNodeUrl,
-        uploadsDirectory
-      )
+      await performSync(workerId, syncWorkersNumber, queryNodeUrl, uploadsDirectory)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
     }
 
-    runSyncWithInterval(
-      workerId,
-      queryNodeUrl,
-      uploadsDirectory,
-      syncWorkersNumber,
-      syncIntervalMinutes
-    )
+    runSyncWithInterval(workerId, queryNodeUrl, uploadsDirectory, syncWorkersNumber, syncIntervalMinutes)
   }, 0)
 }
 
@@ -201,10 +182,7 @@ function runSyncWithInterval(
  * @param tempDirName - temporary directory name within the uploading directory
  * @returns void promise.
  */
-async function removeTempDirectory(
-  uploadsDir: string,
-  tempDirName: string
-): Promise<void> {
+async function removeTempDirectory(uploadsDir: string, tempDirName: string): Promise<void> {
   try {
     logger.info(`Removing temp directory ...`)
     const tempFileUploadingDir = path.join(uploadsDir, tempDirName)
@@ -225,23 +203,14 @@ async function removeTempDirectory(
  * @param account - Joystream account KeyringPair
  * @returns void promise.
  */
-async function verifyWorkerId(
-  api: ApiPromise,
-  workerId: number,
-  account: KeyringPair
-): Promise<void> {
+async function verifyWorkerId(api: ApiPromise, workerId: number, account: KeyringPair): Promise<void> {
   // Cast Codec type to Worker type
-  const workerObj = (await api.query.storageWorkingGroup.workerById(
-    workerId
-  )) as unknown
+  const workerObj = (await api.query.storageWorkingGroup.workerById(workerId)) as unknown
   const worker = workerObj as Worker
 
   if (worker.role_account_id.toString() !== account.address) {
-    throw new CLIError(
-      `Provided worker ID doesn't match the Joystream account.`,
-      {
-        exit: ExitCodes.InvalidWorkerId,
-      }
-    )
+    throw new CLIError(`Provided worker ID doesn't match the Joystream account.`, {
+      exit: ExitCodes.InvalidWorkerId,
+    })
   }
 }

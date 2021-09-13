@@ -35,8 +35,7 @@ export default class DevSync extends Command {
     dataSourceOperatorHost: flags.string({
       char: 'o',
       required: false,
-      description:
-        'Storage node host and port (e.g.: some.com:8081) to get data from.',
+      description: 'Storage node host and port (e.g.: some.com:8081) to get data from.',
     }),
     uploads: flags.string({
       char: 'd',
@@ -53,18 +52,11 @@ export default class DevSync extends Command {
     const queryNodeHost = flags.queryNodeHost ?? 'localhost:8081'
     const queryNodeUrl = `http://${queryNodeHost}/graphql`
     const syncWorkersNumber = flags.syncWorkersNumber ?? 20
-    const dataSourceOperatorHost =
-      flags.dataSourceOperatorHost ?? 'localhost:3333'
+    const dataSourceOperatorHost = flags.dataSourceOperatorHost ?? 'localhost:3333'
     const operatorUrl = `http://${dataSourceOperatorHost}/`
 
     try {
-      await performSync(
-        flags.workerId,
-        syncWorkersNumber,
-        queryNodeUrl,
-        flags.uploads,
-        operatorUrl
-      )
+      await performSync(flags.workerId, syncWorkersNumber, queryNodeUrl, flags.uploads, operatorUrl)
     } catch (err) {
       logger.error(err)
       logger.error(JSON.stringify(err, null, 2))

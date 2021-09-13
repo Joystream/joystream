@@ -3,17 +3,12 @@ import path from 'path'
 import cors from 'cors'
 import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
-import {
-  HttpError,
-  OpenAPIV3,
-  ValidateSecurityOpts,
-} from 'express-openapi-validator/dist/framework/types'
+import { HttpError, OpenAPIV3, ValidateSecurityOpts } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../../services/helpers/tokenNonceKeeper'
 import { httpLogger, errorLogger } from '../../services/logger'
-import { getLocalDataObjects } from '../../services/sync/synchronizer'
 
 /**
  * Web application parameters.
@@ -62,9 +57,14 @@ export type AppConfig = {
   enableUploadingAuth: boolean
 
   /**
-   * Runtime API promise
+   * ElasticSearch logging endpoint URL
    */
   elasticSearchEndpoint?: string
+
+  /**
+   * Max file size for uploading limit.
+   */
+  maxFileSize: number
 }
 
 /**
@@ -112,14 +112,10 @@ export async function createApp(config: AppConfig): Promise<Express> {
           // For multipart forms, the max number of file fields (Default: Infinity)
           files: 1,
           // For multipart forms, the max file size (in bytes) (Default: Infinity)
-          fileSize: maxFileSize,
+          fileSize: config.maxFileSize,
         },
       },
-      validateSecurity: setupUploadingValidation(
-        config.enableUploadingAuth,
-        config.api,
-        config.account
-      ),
+      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.account),
     })
   ) // Required signature.
 
@@ -197,11 +193,7 @@ type ValidateUploadFunction = (
 function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFunction {
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  return (
-    req: express.Request,
-    scopes: string[],
-    schema: OpenAPIV3.SecuritySchemeObject
-  ) => {
+  return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
     const tokenString = req.headers['x-api-key'] as string
     const token = parseUploadToken(tokenString)
 

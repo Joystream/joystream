@@ -65,7 +65,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
     const account = this.getAccount(flags)
     const api = await this.getApi()
 
-    const success = await updateStorageBucketsForBag(api, bagId, account, flags.add, flags.remove)
+    const success = await updateStorageBucketsForBag(api, flags.bagId, account, flags.add, flags.remove)
 
     this.exitAfterRuntimeCall(success)
   }

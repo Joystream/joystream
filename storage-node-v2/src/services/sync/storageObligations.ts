@@ -127,10 +127,7 @@ export async function getStorageObligationsFromRuntime(
  * @param workerId - worker ID
  * @returns storage bucket IDs
  */
-export async function getStorageBucketIdsByWorkerId(
-  queryNodeUrl: string,
-  workerId: number
-): Promise<string[]> {
+export async function getStorageBucketIdsByWorkerId(queryNodeUrl: string, workerId: number): Promise<string[]> {
   const api = new QueryNodeApi(queryNodeUrl)
   const allBuckets = await getAllBuckets(api)
 
@@ -148,10 +145,7 @@ export async function getStorageBucketIdsByWorkerId(
  * @param bagId - bag ID
  * @returns data object IDs
  */
-export async function getDataObjectIDsByBagId(
-  queryNodeUrl: string,
-  bagId: string
-): Promise<string[]> {
+export async function getDataObjectIDsByBagId(queryNodeUrl: string, bagId: string): Promise<string[]> {
   const api = new QueryNodeApi(queryNodeUrl)
   const dataObjects = await getAllAssignedDataObjects(api, [bagId])
 
@@ -164,9 +158,7 @@ export async function getDataObjectIDsByBagId(
  * @param api - initialiazed QueryNodeApi instance
  * @returns storage buckets data
  */
-async function getAllBuckets(
-  api: QueryNodeApi
-): Promise<StorageBucketDetailsFragment[]> {
+async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFragment[]> {
   return await getAllObjectsWithPaging(
     'all storage buckets',
     async (offset, limit) => await api.getStorageBucketDetails(offset, limit)
@@ -180,14 +172,10 @@ async function getAllBuckets(
  * @param bagIds - assigned storage bags' IDs
  * @returns storage bag data
  */
-async function getAllAssignedDataObjects(
-  api: QueryNodeApi,
-  bagIds: string[]
-): Promise<DataObjectDetailsFragment[]> {
+async function getAllAssignedDataObjects(api: QueryNodeApi, bagIds: string[]): Promise<DataObjectDetailsFragment[]> {
   return await getAllObjectsWithPaging(
     'assigned data objects',
-    async (offset, limit) =>
-      await api.getDataObjectDetails(bagIds, offset, limit)
+    async (offset, limit) => await api.getDataObjectDetails(bagIds, offset, limit)
   )
 }
 
@@ -198,14 +186,10 @@ async function getAllAssignedDataObjects(
  * @param bucketIds - assigned storage provider buckets' IDs
  * @returns storage bag data
  */
-async function getAllAssignedBags(
-  api: QueryNodeApi,
-  bucketIds: string[]
-): Promise<StorageBagDetailsFragment[]> {
+async function getAllAssignedBags(api: QueryNodeApi, bucketIds: string[]): Promise<StorageBagDetailsFragment[]> {
   return await getAllObjectsWithPaging(
     'assigned bags',
-    async (offset, limit) =>
-      await api.getStorageBagsDetails(bucketIds, offset, limit)
+    async (offset, limit) => await api.getStorageBagsDetails(bucketIds, offset, limit)
   )
 }
 
@@ -227,9 +211,7 @@ async function getAllObjectsWithPaging<T>(
 
   let resultPart = []
   do {
-    logger.debug(
-      `Sync - getting ${objectName}: offset = ${offset}, limit = ${limit}`
-    )
+    logger.debug(`Sync - getting ${objectName}: offset = ${offset}, limit = ${limit}`)
     resultPart = await query(offset, limit)
     offset += limit
     result.push(...resultPart)

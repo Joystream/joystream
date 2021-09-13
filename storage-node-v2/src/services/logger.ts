@@ -147,6 +147,7 @@ export function createStdConsoleLogger(): winston.Logger {
     transports,
   })
 }
+/**
  * Creates Winston logger with Elastic search.
  *
  * @returns Winston logger
@@ -158,17 +159,13 @@ function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
   // Formats
   loggerOptions.format = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-    winston.format.printf(
-      (info) => `${info.timestamp} ${info.level}: ${info.message}`
-    )
+    winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
   )
 
   // Transports
   let transports: transport[] = []
   if (loggerOptions.transports !== undefined) {
-    transports = Array.isArray(loggerOptions.transports)
-      ? loggerOptions.transports
-      : [loggerOptions.transports]
+    transports = Array.isArray(loggerOptions.transports) ? loggerOptions.transports : [loggerOptions.transports]
   }
 
   const esTransport = createElasticTransport(elasticSearchEndpoint)
@@ -202,9 +199,7 @@ export function initElasticLogger(elasticSearchEndpoint: string): void {
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @returns elastic search winston transport
  */
-function createElasticTransport(
-  elasticSearchEndpoint: string
-): winston.transport {
+function createElasticTransport(elasticSearchEndpoint: string): winston.transport {
   const esTransportOpts = {
     level: 'debug', // TODO: consider changing to warn
     clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },

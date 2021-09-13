@@ -8,12 +8,8 @@ import {
   verifyTokenSignature,
 } from '../../helpers/auth'
 import { hashFile } from '../../../services/helpers/hashing'
-import {
-  createNonce,
-  getTokenExpirationTime,
-} from '../../../services/helpers/tokenNonceKeeper'
+import { createNonce, getTokenExpirationTime } from '../../../services/helpers/tokenNonceKeeper'
 import { getFileInfo } from '../../../services/helpers/fileInfo'
-import { parseBagId } from '../../helpers/bagTypes'
 import { BagId } from '@joystream/types/storage'
 import logger from '../../../services/logger'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -24,32 +20,12 @@ import path from 'path'
 import send from 'send'
 import { CLIError } from '@oclif/errors'
 import { hexToString } from '@polkadot/util'
+import { parseBagId } from '../../helpers/bagTypes'
 import { timeout } from 'promise-timeout'
-import { getUploadsDir, getWorkerId, getQueryNodeUrl } from './common'
+import { getUploadsDir, getWorkerId, getQueryNodeUrl, WebApiError, ServerError } from './common'
 import { getStorageBucketIdsByWorkerId } from '../../../services/sync/storageObligations'
+import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
-
-/**
- * Dedicated error for the web api requests.
- */
-export class WebApiError extends CLIError {
-  httpStatusCode: number
-
-  constructor(err: string, httpStatusCode: number) {
-    super(err)
-
-    this.httpStatusCode = httpStatusCode
-  }
-}
-
-/**
- * Dedicated server error for the web api requests.
- */
-export class ServerError extends WebApiError {
-  constructor(err: string) {
-    super(err, 500)
-  }
-}
 
 /**
  * A public endpoint: serves files by CID.
@@ -125,9 +101,11 @@ export async function uploadFile(req: express.Request, res: express.Response): P
       hashFile(fileObj.path),
     ])
 
+    const api = getApi(res)
+    const bagId = parseBagId(uploadRequest.bagId)
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
-    // Prepare new file name\
+    // Prepare new file name
     const uploadsDir = getUploadsDir(res)
     const newPath = path.join(uploadsDir, hash)
 
@@ -135,7 +113,6 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    const workerId = getWorkerId(res)
     if (!accepted) {
       await acceptPendingDataObjects(api, bagId, getAccount(res), workerId, uploadRequest.storageBucketId, [
         uploadRequest.dataObjectId,
@@ -199,36 +176,6 @@ function getFileObject(req: express.Request): Express.Multer.File {
   }
 
   throw new WebApiError('No file uploaded', 400)
-}
-
-/**
- * Returns worker ID from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getWorkerId(res: express.Response): number {
-  if (res.locals.workerId || res.locals.workerId === 0) {
-    return res.locals.workerId
-  }
-
-  throw new ServerError('No Joystream worker ID loaded.')
-}
-
-/**
- * Returns a directory for file uploading from the response.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getUploadsDir(res: express.Response): string {
-  if (res.locals.uploadsDir) {
-    return res.locals.uploadsDir
-  }
-
-  throw new ServerError('No upload directory path loaded.')
 }
 
 /**
@@ -308,15 +255,11 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
     throw new WebApiError('Invalid upload token request signature.', 401)
   }
 
-  const membershipPromise = api.query.members.membershipById(
-    tokenRequest.data.memberId
-  )
+  const membershipPromise = api.query.members.membershipById(tokenRequest.data.memberId)
 
   const membership = (await timeout(membershipPromise, 5000)) as Membership
 
-  if (
-    membership.controller_account.toString() !== tokenRequest.data.accountId
-  ) {
+  if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
     throw new Error(`Provided controller account and member id don't match.`)
   }
 }
@@ -402,6 +345,8 @@ function sendResponseWithError(res: express.Response, err: Error, errorType: str
 function isNofileError(err: Error): boolean {
   return err.toString().includes('ENOENT')
 }
+
+/**
  * Get the status code by error.
  *
  * @param err - error
@@ -426,66 +371,11 @@ function getHttpStatusCodeByError(err: Error): number {
 
   return 500
 }
-/**
- * A public endpoint: return all local data objects.
- */
-export async function getAllLocalDataObjects(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
-  try {
-    const uploadsDir = getUploadsDir(res)
-
-    const cids = await getLocalDataObjects(uploadsDir)
-
-    res.status(200).json(cids)
-  } catch (err) {
-    res.status(500).json({
-      type: 'all_data_objects',
-      message: err.toString(),
-    })
-  }
-}
-
-/**
- * A public endpoint: return local data objects for the bag.
- */
-export async function getLocalDataObjectsByBagId(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
-  try {
-    const uploadsDir = getUploadsDir(res)
-
-    const workerId = getWorkerId(res)
-    const queryNodeUrl = getQueryNodeUrl(res)
-    const bagId = getBagId(req)
-
-    // TODO: Introduce dedicated QueryNode method.
-    const [cids, obligations] = await Promise.all([
-      getLocalDataObjects(uploadsDir),
-      getStorageObligationsFromRuntime(queryNodeUrl, workerId)])
-
-    const requiredCids = obligations.dataObjects.filter((obj) => obj.bagId == bagId).map((obj) => obj.cid)
-
-    const localDataForBag = _.intersection(cids, requiredCids)
-
-    res.status(200).json(localDataForBag)
-  } catch (err) {
-    res.status(500).json({
-      type: 'data_objects_by_bag',
-      message: err.toString(),
-    })
-  }
-}
 
 /**
  * A public endpoint: return the server version.
  */
-export async function getVersion(
-  req: express.Request,
-  res: express.Response
-): Promise<void> {
+export async function getVersion(req: express.Request, res: express.Response): Promise<void> {
   try {
     const config = getCommandConfig(res)
 
@@ -509,7 +399,9 @@ export async function getVersion(
  * This is a helper function. It parses the response object for a variable and
  * throws an error on failure.
  */
-function getCommandConfig(res: express.Response): {
+function getCommandConfig(
+  res: express.Response
+): {
   version: string
   userAgent: string
 } {
@@ -521,37 +413,6 @@ function getCommandConfig(res: express.Response): {
 }
 
 /**
- * Returns Bag ID from the request.
- *
- * @remarks
- * This is a helper function. It parses the request object for a variable and
- * throws an error on failure.
- */
- function getBagId(req: express.Request): string {
-  const bagId = req.params.bagId || ''
-  if (bagId.length > 0) {
-    return bagId
-  }
-
-  throw new Error('No bagId provided.')
-}
-
-/**
- * Returns the QueryNode URL from the starting parameters.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
- function getQueryNodeUrl(res: express.Response): string {
-  if (res.locals.queryNodeUrl) {
-    return res.locals.queryNodeUrl
-  }
-
-  throw new Error('No Query Node URL loaded.')
-}
-
-/**
  * Validates the storage bucket ID obligations for the worker (storage provider).
  * It throws an error when storage bucket doesn't belong to the worker.
  *
@@ -560,14 +421,24 @@ function getCommandConfig(res: express.Response): {
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-async function verifyBucketId(
-  queryNodeUrl: string,
-  workerId: number,
-  bucketId: number
-): Promise<void> {
+async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: number): Promise<void> {
   const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
 
   if (!bucketIds.includes(bucketId.toString())) {
     throw new Error('Incorrect storage bucket ID.')
+  }
+}
+
+/**
+ * Validates file size. It throws an error when file size exceeds the limit
+ *
+ * @param fileSize - runtime API promise
+ * @returns void promise.
+ */
+function verifyFileSize(fileSize: number) {
+  const MAX_FILE_SIZE = 1000000 // TODO: Get this const from the runtime
+
+  if (fileSize > MAX_FILE_SIZE) {
+    throw new WebApiError('Max file size exceeded.', 400)
   }
 }

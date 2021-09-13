@@ -1,14 +1,6 @@
-import {
-  getStorageObligationsFromRuntime,
-  DataObligations,
-} from './storageObligations'
+import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
 import logger from '../../services/logger'
-import {
-  SyncTask,
-  DownloadFileTask,
-  DeleteLocalFileTask,
-  PrepareDownloadFileTask,
-} from './tasks'
+import { SyncTask, DownloadFileTask, DeleteLocalFileTask, PrepareDownloadFileTask } from './tasks'
 import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
 import _ from 'lodash'
 import fs from 'fs'
@@ -50,28 +42,18 @@ export async function performSync(
   logger.debug(`Sync - deleted objects: ${deleted.length}`)
 
   const workingStack = new WorkingStack()
-  const deletedTasks = deleted.map(
-    (fileName) => new DeleteLocalFileTask(uploadDirectory, fileName)
-  )
+  const deletedTasks = deleted.map((fileName) => new DeleteLocalFileTask(uploadDirectory, fileName))
 
   let addedTasks: SyncTask[]
   if (operatorUrl !== null) {
-    addedTasks = await getPrepareDownloadTasks(
-      model,
-      added,
-      uploadDirectory,
-      workingStack
-    )
+    addedTasks = await getPrepareDownloadTasks(model, added, uploadDirectory, workingStack)
   } else {
     addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory)
   }
 
   logger.debug(`Sync - started processing...`)
 
-  const processSpawner = new TaskProcessorSpawner(
-    workingStack,
-    asyncWorkersNumber
-  )
+  const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
   await workingStack.add(addedTasks)
   await workingStack.add(deletedTasks)
@@ -138,12 +120,7 @@ async function getPrepareDownloadTasks(
       }
     }
 
-    return new PrepareDownloadFileTask(
-      operatorUrls,
-      cid,
-      uploadDirectory,
-      taskSink
-    )
+    return new PrepareDownloadFileTask(operatorUrls, cid, uploadDirectory, taskSink)
   })
 
   return tasks
@@ -161,9 +138,7 @@ async function getDownloadTasks(
   addedCids: string[],
   uploadDirectory: string
 ): Promise<DownloadFileTask[]> {
-  const addedTasks = addedCids.map(
-    (fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory)
-  )
+  const addedTasks = addedCids.map((fileName) => new DownloadFileTask(operatorUrl, fileName, uploadDirectory))
 
   return addedTasks
 }
@@ -173,9 +148,7 @@ async function getDownloadTasks(
  *
  * @param uploadDirectory - local directory to get file names from
  */
-export async function getLocalDataObjects(
-  uploadDirectory: string
-): Promise<string[]> {
+export async function getLocalDataObjects(uploadDirectory: string): Promise<string[]> {
   const localCids = await getLocalFileNames(uploadDirectory)
 
   return localCids
