@@ -28,9 +28,7 @@ export class BagIdValidationError extends CLIError {
  * @param bagType - dynamic bag type string
  * @returns The DynamicBagType instance.
  */
-export function parseDynamicBagType(
-  bagType: DynamicBagTypeKey
-): DynamicBagType {
+export function parseDynamicBagType(bagType: DynamicBagTypeKey): DynamicBagType {
   return createJoystreamType('DynamicBagType', bagType)
 }
 
@@ -108,10 +106,7 @@ class BagIdParser {
 
         for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
-            const workingGroup: WorkingGroup = createJoystreamType(
-              'WorkingGroup',
-              group
-            )
+            const workingGroup: WorkingGroup = createJoystreamType('WorkingGroup', group)
             const staticBagId: Static = createJoystreamType('Static', {
               'WorkingGroup': workingGroup,
             })
@@ -147,10 +142,7 @@ class BagIdParser {
             const dynamic = {} as Record<DynamicBagTypeKey, number>
             dynamic[dynamicBagType as DynamicBagTypeKey] = parsedId
 
-            const dynamicBagId: Dynamic = createJoystreamType(
-              'Dynamic',
-              dynamic
-            )
+            const dynamicBagId: Dynamic = createJoystreamType('Dynamic', dynamic)
             const constructedBagId: BagId = createJoystreamType('BagId', {
               'Dynamic': dynamicBagId,
             })
@@ -168,9 +160,6 @@ class BagIdParser {
 /**
  * Creates Joystream type using type registry.
  */
-function createJoystreamType<T extends keyof InterfaceTypes>(
-  type: T,
-  value: unknown
-): InterfaceTypes[T] {
+function createJoystreamType<T extends keyof InterfaceTypes>(type: T, value: unknown): InterfaceTypes[T] {
   return createType(registry, type, value)
 }

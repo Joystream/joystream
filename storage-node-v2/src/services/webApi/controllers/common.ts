@@ -1,4 +1,27 @@
 import * as express from 'express'
+import { CLIError } from '@oclif/errors'
+
+/**
+ * Dedicated error for the web api requests.
+ */
+export class WebApiError extends CLIError {
+  httpStatusCode: number
+
+  constructor(err: string, httpStatusCode: number) {
+    super(err)
+
+    this.httpStatusCode = httpStatusCode
+  }
+}
+
+/**
+ * Dedicated server error for the web api requests.
+ */
+export class ServerError extends WebApiError {
+  constructor(err: string) {
+    super(err, 500)
+  }
+}
 
 /**
  * Returns a directory for file uploading from the response.
@@ -12,7 +35,7 @@ export function getUploadsDir(res: express.Response): string {
     return res.locals.uploadsDir
   }
 
-  throw new Error('No upload directory path loaded.')
+  throw new ServerError('No upload directory path loaded.')
 }
 
 /**
@@ -42,7 +65,7 @@ export function getWorkerId(res: express.Response): number {
     return res.locals.workerId
   }
 
-  throw new Error('No Joystream worker ID loaded.')
+  throw new ServerError('No Joystream worker ID loaded.')
 }
 
 /**

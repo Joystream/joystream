@@ -74,9 +74,7 @@ export class DownloadFileTask implements SyncTask {
       const timeoutMs = 30 * 60 * 1000 // 30 min for large files (~ 10 GB)
       // Casting because of:
       // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
-      const request = superagent
-        .get(this.url)
-        .timeout(timeoutMs) as unknown as NodeJS.ReadableStream
+      const request = (superagent.get(this.url).timeout(timeoutMs) as unknown) as NodeJS.ReadableStream
 
       // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
       // This partial downloads will be cleaned up during the next sync iteration.
@@ -106,12 +104,7 @@ export class PrepareDownloadFileTask implements SyncTask {
   taskSink: TaskSink
   uploadsDirectory: string
 
-  constructor(
-    operatorUrlCandidates: string[],
-    cid: string,
-    uploadsDirectory: string,
-    taskSink: TaskSink
-  ) {
+  constructor(operatorUrlCandidates: string[], cid: string, uploadsDirectory: string, taskSink: TaskSink) {
     this.cid = cid
     this.taskSink = taskSink
     this.operatorUrlCandidates = operatorUrlCandidates
@@ -126,9 +119,7 @@ export class PrepareDownloadFileTask implements SyncTask {
     // Create an array of operator URL indices to maintain a random URL choice
     // cannot use the original array because we shouldn't modify the original data.
     // And cloning it seems like a heavy operation.
-    const operatorUrlIndices: number[] = [
-      ...Array(this.operatorUrlCandidates.length).keys(),
-    ]
+    const operatorUrlIndices: number[] = [...Array(this.operatorUrlCandidates.length).keys()]
 
     while (!_.isEmpty(operatorUrlIndices)) {
       const randomUrlIndex = _.sample(operatorUrlIndices)
@@ -145,16 +136,10 @@ export class PrepareDownloadFileTask implements SyncTask {
 
       try {
         const chosenBaseUrl = randomUrl
-        const remoteOperatorCids: string[] = await getRemoteDataObjects(
-          chosenBaseUrl
-        )
+        const remoteOperatorCids: string[] = await getRemoteDataObjects(chosenBaseUrl)
 
         if (remoteOperatorCids.includes(this.cid)) {
-          const newTask = new DownloadFileTask(
-            chosenBaseUrl,
-            this.cid,
-            this.uploadsDirectory
-          )
+          const newTask = new DownloadFileTask(chosenBaseUrl, this.cid, this.uploadsDirectory)
 
           return this.taskSink.add([newTask])
         }

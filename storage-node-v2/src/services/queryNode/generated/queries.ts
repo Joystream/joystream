@@ -85,32 +85,16 @@ export const GetStorageBucketDetails = gql`
   ${StorageBucketDetails}
 `
 export const GetStorageBagDetails = gql`
-  query getStorageBagDetails(
-    $bucketIds: StorageBucketWhereInput
-    $offset: Int
-    $limit: Int
-  ) {
-    storageBags(
-      offset: $offset
-      limit: $limit
-      where: { storedBy_some: $bucketIds }
-    ) {
+  query getStorageBagDetails($bucketIds: StorageBucketWhereInput, $offset: Int, $limit: Int) {
+    storageBags(offset: $offset, limit: $limit, where: { storedBy_some: $bucketIds }) {
       ...StorageBagDetails
     }
   }
   ${StorageBagDetails}
 `
 export const GetDataObjectDetails = gql`
-  query getDataObjectDetails(
-    $bagIds: StorageBagWhereInput
-    $offset: Int
-    $limit: Int
-  ) {
-    storageDataObjects(
-      offset: $offset
-      limit: $limit
-      where: { storageBag: $bagIds, isAccepted_eq: true }
-    ) {
+  query getDataObjectDetails($bagIds: StorageBagWhereInput, $offset: Int, $limit: Int) {
+    storageDataObjects(offset: $offset, limit: $limit, where: { storageBag: $bagIds, isAccepted_eq: true }) {
       ...DataObjectDetails
     }
   }

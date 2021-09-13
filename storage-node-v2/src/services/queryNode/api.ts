@@ -1,10 +1,4 @@
-import {
-  ApolloClient,
-  NormalizedCacheObject,
-  HttpLink,
-  InMemoryCache,
-  DocumentNode,
-} from '@apollo/client'
+import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client'
 import fetch from 'cross-fetch'
 import {
   GetStorageBucketDetails,
@@ -20,11 +14,7 @@ import {
   GetDataObjectDetailsQueryVariables,
   GetDataObjectDetails,
 } from './generated/queries'
-import {
-  Maybe,
-  StorageBucketWhereInput,
-  StorageBagWhereInput,
-} from './generated/schema'
+import { Maybe, StorageBucketWhereInput, StorageBagWhereInput } from './generated/schema'
 
 /**
  * Query node class helper. Incapsulates custom queries.
@@ -74,11 +64,7 @@ export class QueryNodeApi {
   protected async firstEntityQuery<
     QueryT extends { [k: string]: unknown[] },
     VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof QueryT
-  ): Promise<QueryT[keyof QueryT][number] | null> {
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT][number] | null> {
     const result = await this.apolloClient.query<QueryT, VariablesT>({
       query,
       variables,
@@ -100,11 +86,7 @@ export class QueryNodeApi {
   protected async multipleEntitiesQuery<
     QueryT extends { [k: string]: unknown[] },
     VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof QueryT
-  ): Promise<QueryT[keyof QueryT] | null> {
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | null> {
     const result = await this.apolloClient.query<QueryT, VariablesT>({
       query,
       variables,
@@ -122,10 +104,7 @@ export class QueryNodeApi {
    * @param offset - starting record of the page
    * @param limit - page size
    */
-  public async getStorageBucketDetails(
-    offset: number,
-    limit: number
-  ): Promise<Array<StorageBucketDetailsFragment>> {
+  public async getStorageBucketDetails(offset: number, limit: number): Promise<Array<StorageBucketDetailsFragment>> {
     const result = await this.multipleEntitiesQuery<
       GetStorageBucketDetailsQuery,
       GetStorageBucketDetailsQueryVariables
@@ -151,10 +130,11 @@ export class QueryNodeApi {
     limit: number
   ): Promise<Array<StorageBagDetailsFragment>> {
     const input: StorageBucketWhereInput = { id_in: bucketIds }
-    const result = await this.multipleEntitiesQuery<
-      GetStorageBagDetailsQuery,
-      GetStorageBagDetailsQueryVariables
-    >(GetStorageBagDetails, { offset, limit, bucketIds: input }, 'storageBags')
+    const result = await this.multipleEntitiesQuery<GetStorageBagDetailsQuery, GetStorageBagDetailsQueryVariables>(
+      GetStorageBagDetails,
+      { offset, limit, bucketIds: input },
+      'storageBags'
+    )
 
     if (result === null) {
       return []
@@ -176,10 +156,7 @@ export class QueryNodeApi {
     limit: number
   ): Promise<Array<DataObjectDetailsFragment>> {
     const input: StorageBagWhereInput = { id_in: bagIds }
-    const result = await this.multipleEntitiesQuery<
-      GetDataObjectDetailsQuery,
-      GetDataObjectDetailsQueryVariables
-    >(
+    const result = await this.multipleEntitiesQuery<GetDataObjectDetailsQuery, GetDataObjectDetailsQueryVariables>(
       GetDataObjectDetails,
       { offset, limit, bagIds: input },
       'storageDataObjects'
