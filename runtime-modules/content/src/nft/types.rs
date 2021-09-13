@@ -73,33 +73,6 @@ impl<
     }
 }
 
-/// Enum, representing nft issuance status
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NFTStatus<
-    BlockNumber: BaseArithmetic + Copy,
-    MemberId: Default + Copy + Ord,
-    CuratorGroupId: Default + Copy,
-    DAOId: Default + Copy,
-    Balance: Default,
-> {
-    NoneIssued,
-    Owned(OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>),
-}
-
-impl<
-        BlockNumber: BaseArithmetic + Copy,
-        MemberId: Default + Copy + Ord,
-        CuratorGroupId: Default + Copy,
-        DAOId: Default + Copy,
-        Balance: Default,
-    > Default for NFTStatus<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
-{
-    fn default() -> Self {
-        Self::NoneIssued
-    }
-}
-
 /// Information on the auction being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
