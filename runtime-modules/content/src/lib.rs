@@ -25,11 +25,7 @@ pub use storage::{
 };
 
 use frame_support::{
-    decl_event, decl_module, decl_storage,
-    dispatch::{DispatchError, DispatchResult},
-    ensure,
-    traits::Get,
-    Parameter,
+    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
 use frame_system::ensure_signed;
 #[cfg(feature = "std")]
@@ -818,10 +814,7 @@ decl_module! {
             // ensure that the provided assets are not empty
             ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
 
-            let num_assets_to_remove: u64 = assets
-                .len()
-                .try_into()
-                .map_err(|_| DispatchError::Other("Number of assets conversion error"))?;
+            let num_assets_to_remove = assets.len() as u64;
 
             // cannot remove more asset than those already present
             ensure!(
@@ -841,9 +834,9 @@ decl_module! {
             //
 
             // update onchain channel status
-            let mut channel = channel;
-            channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove);
-            ChannelById::<T>::insert(channel_id, channel);
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove)
+            });
 
             Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
         }
@@ -873,14 +866,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let mut channel = channel;
-
-            channel.is_censored = is_censored;
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.is_censored = is_censored
+            });
 
             // TODO: unset the reward account ? so no revenue can be earned for censored channels?
-
-            // Update the channel
-            ChannelById::<T>::insert(channel_id, channel);
 
             Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
         }
@@ -1110,7 +1100,6 @@ decl_module! {
 
             // If video is on storage, remove it
             if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
-
                 Storage::<T>::delete_data_objects(
                     channel.deletion_prize_source_account_id.clone(),
                     Self::bag_id_for_channel(&channel_id),
@@ -1126,9 +1115,9 @@ decl_module! {
             VideoById::<T>::remove(video_id);
 
             // Decrease video count for the channel
-            let mut channel = channel;
-            channel.num_videos = channel.num_videos.saturating_sub(1);
-            ChannelById::<T>::insert(channel_id, channel);
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.num_videos = channel.num_videos.saturating_sub(1)
+            });
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
