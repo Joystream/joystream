@@ -80,6 +80,12 @@ export interface ErrorResponse {
 export interface StatusResponse {
     /**
      * 
+     * @type {string}
+     * @memberof StatusResponse
+     */
+    id: string;
+    /**
+     * 
      * @type {number}
      * @memberof StatusResponse
      */

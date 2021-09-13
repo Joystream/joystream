@@ -239,6 +239,7 @@ export class PublicApiController {
 
   public async status(req: express.Request, res: express.Response<StatusResponse>): Promise<void> {
     const data: StatusResponse = {
+      id: this.config.id,
       objectsInCache: this.stateCache.getCachedContentLength(),
       storageLimit: this.config.storageLimit,
       storageUsed: this.content.usedSpace,
