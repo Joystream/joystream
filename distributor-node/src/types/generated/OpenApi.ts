@@ -27,6 +27,7 @@ export interface components {
       'message': string
     }
     'StatusResponse': {
+      'id': string
       'objectsInCache': number
       'storageLimit': number
       'storageUsed': number

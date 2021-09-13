@@ -173,12 +173,15 @@ components:
     StatusResponse:
       type: object
       required:
+        - id
         - objectsInCache
         - storageLimit
         - storageUsed
         - uptime
         - downloadsInProgress
       properties:
+        id:
+          type: string
         objectsInCache:
           type: integer
           minimum: 0
