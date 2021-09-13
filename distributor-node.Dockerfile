@@ -4,7 +4,6 @@ WORKDIR /joystream
 COPY ./types types
 COPY ./metadata-protobuf metadata-protobuf
 COPY ./distributor-node distributor-node
-COPY ./distributor-node/config/docker/config.docker.yml config.yml
 COPY ./yarn.lock yarn.lock
 COPY ./package.json package.json
 
@@ -20,6 +19,8 @@ RUN \
   find . -name "node_modules" -type d -prune &&\
   yarn --frozen-lockfile --production &&\
   yarn cache clean
+
+ENV CONFIG_PATH ./distributor-node/config/docker/config.docker.yml
 
 ENTRYPOINT ["yarn", "joystream-distributor"]
 CMD ["start"]

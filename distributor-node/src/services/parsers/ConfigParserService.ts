@@ -26,19 +26,41 @@ export class ConfigParserService {
     return intValue * Math.pow(1024, bytesizeUnits.indexOf(unit))
   }
 
+  private mergeEnvConfigTo(config: any) {
+    Object.entries(process.env)
+      .filter(([k]) => k.startsWith('JOYSTREAM_DISTRIBUTOR__'))
+      .map(([k, v]) => {
+        console.log(k, v)
+        const path = k
+          .replace('JOYSTREAM_DISTRIBUTOR__', '')
+          .split('__')
+          .map((k) => _.camelCase(k))
+          .join('.')
+        _.set(config, path, v)
+      })
+  }
+
   public loadConfing(configPath: string): Config {
-    const fileContent = fs.readFileSync(configPath).toString()
-    let inputConfig: unknown
-    if (path.extname(configPath) === '.json') {
-      inputConfig = JSON.parse(fileContent)
-    } else if (path.extname(configPath) === '.yml' || path.extname(configPath) === '.yaml') {
-      inputConfig = YAML.parse(fileContent)
-    } else {
-      throw new Error('Unrecognized config format (use .yml or .json)')
+    let inputConfig = {}
+    // Try to load config from file if exists
+    if (fs.existsSync(configPath)) {
+      const fileContent = fs.readFileSync(configPath).toString()
+      if (path.extname(configPath) === '.json') {
+        inputConfig = JSON.parse(fileContent)
+      } else if (path.extname(configPath) === '.yml' || path.extname(configPath) === '.yaml') {
+        inputConfig = YAML.parse(fileContent)
+      } else {
+        throw new Error('Unrecognized config format (use .yml or .json)')
+      }
     }
 
+    // Override config with env variables
+    this.mergeEnvConfigTo(inputConfig)
+
+    // Validate the config
     const configJson = this.validator.validate('Config', inputConfig)
 
+    // Normalize values
     const directories = this.resolveConfigDirectoryPaths(configJson.directories, configPath)
     const storageLimit = this.parseBytesize(configJson.storageLimit)
 
