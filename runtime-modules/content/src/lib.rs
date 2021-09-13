@@ -1586,7 +1586,7 @@ impl<T: Trait> Module<T> {
     /// Ensure owner account id exists, retreive corresponding one.
     pub fn ensure_owner_account_id(
         video: &Video<T>,
-        owned_nft: &NFT<T>,
+        owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
         match owned_nft.owner {
             ChannelOwner::Member(member_id) => Self::ensure_member_controller_account_id(member_id),

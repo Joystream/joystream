@@ -290,7 +290,7 @@ pub type Auction<T> =
     AuctionRecord<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>, MemberId<T>>;
 
 /// OwnedNFT alias type for simplification.
-pub type NFT<T> = OwnedNFT<
+pub type Nft<T> = OwnedNFT<
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
     CuratorGroupId<T>,

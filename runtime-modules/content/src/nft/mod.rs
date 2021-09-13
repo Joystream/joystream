@@ -1,5 +1,6 @@
 mod types;
 pub use types::*;
+use sp_std::borrow::ToOwned;
 
 use crate::*;
 
