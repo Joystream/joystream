@@ -1,4 +1,4 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client'
+import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client/core'
 import fetch from 'cross-fetch'
 import {
   DataObjectDetailsFragment,

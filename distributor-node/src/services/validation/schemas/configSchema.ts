@@ -11,11 +11,16 @@ export const configSchema: JSONSchema4 = {
   additionalProperties: false,
   properties: {
     id: { type: 'string' },
-    endpoints: strictObject({
-      queryNode: { type: 'string' },
-      substrateNode: { type: 'string' },
-      elasticSearch: { type: 'string' },
-    }),
+    endpoints: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['queryNode', 'substrateNode'],
+      properties: {
+        queryNode: { type: 'string' },
+        substrateNode: { type: 'string' },
+        elasticSearch: { type: 'string' },
+      },
+    },
     directories: strictObject({
       data: { type: 'string' },
       cache: { type: 'string' },

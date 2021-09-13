@@ -1,3 +1,4 @@
+id: test-distributor-node
 endpoints:
   queryNode: http://graphql-server-mnt:4002/graphql
   substrateNode: ws://joystream-node:9944
@@ -6,8 +7,9 @@ directories:
   cache: /cache
   logs: /logs
 log:
-  file: debug
-  console: debug
+  console: info
+storageLimit: 100G
 port: 3334
 keys: [//Alice]
-buckets: [1]
+buckets: 'all'
+workerId: 0

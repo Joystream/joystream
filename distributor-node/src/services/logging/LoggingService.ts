@@ -57,33 +57,46 @@ export class LoggingService {
   }
 
   public static withAppConfig(config: ReadonlyConfig): LoggingService {
-    const esTransport = new ElasticsearchTransport({
-      level: config.log?.elastic || 'warn',
-      format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
-      flushInterval: 5000,
-      source: config.id,
-      clientOpts: {
-        node: {
-          url: new URL(config.endpoints.elasticSearch),
+    const transports: winston.LoggerOptions['transports'] = []
+
+    const esTransport =
+      config.log?.elastic &&
+      new ElasticsearchTransport({
+        level: config.log?.elastic || 'warn',
+        format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
+        flushInterval: 5000,
+        source: config.id,
+        clientOpts: {
+          node: {
+            url: new URL(config.endpoints.elasticSearch),
+          },
         },
-      },
-    })
+      })
+    if (esTransport) {
+      transports.push(esTransport)
+    }
 
-    const fileTransport = new winston.transports.File({
-      filename: `${config.directories.logs}/logs.json`,
-      level: config.log?.file || 'debug',
-      format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
-    })
+    const fileTransport =
+      config.log?.file &&
+      new winston.transports.File({
+        filename: `${config.directories.logs}/logs.json`,
+        level: config.log.file,
+        format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
+      })
+    if (fileTransport) {
+      transports.push(fileTransport)
+    }
 
-    const transports: winston.LoggerOptions['transports'] = [esTransport, fileTransport]
-
-    if (config.log?.console) {
-      const consoleTransport = new winston.transports.Console({
+    const consoleTransport =
+      config.log?.console &&
+      new winston.transports.Console({
         level: config.log.console,
         format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
       })
+    if (consoleTransport) {
       transports.push(consoleTransport)
     }
+
     return new LoggingService(
       {
         transports,
