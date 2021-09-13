@@ -10,16 +10,16 @@ COPY ./package.json package.json
 
 EXPOSE 3334
 
-RUN yarn --frozen-lockfile
-
-RUN yarn workspace @joystream/types build
-RUN yarn workspace @joystream/metadata-protobuf build
-RUN yarn workspace @joystream/distributor-cli build
-
-# Clean unneeded files
-RUN find . -name "node_modules" -type d -prune
-RUN yarn --frozen-lockfile --production
-RUN yarn cache clean
+# Build & cleanup
+# (must be inside a signle "RUN", see: https://stackoverflow.com/questions/40212836/docker-image-larger-than-its-filesystem)
+RUN \
+  yarn --frozen-lockfile &&\
+  yarn workspace @joystream/types build &&\
+  yarn workspace @joystream/metadata-protobuf build &&\
+  yarn workspace @joystream/distributor-cli build &&\
+  find . -name "node_modules" -type d -prune &&\
+  yarn --frozen-lockfile --production &&\
+  yarn cache clean
 
 ENTRYPOINT ["yarn", "joystream-distributor"]
 CMD ["start"]
