@@ -301,6 +301,9 @@ type Video @entity {
   "Flag signaling whether a video is censored."
   isCensored: Boolean!
 
+  "Video nft details"
+  nft: OwnedNFT!
+
   "Whether the Video contains explicit material."
   isExplicit: Boolean
 
