@@ -750,34 +750,22 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Maybe add specified assets and get the actual number assets added
-            let maybe_num_assets = if let Some(assets) = &params.assets {
-
-               // get uploading parameters if assets have to be saved on storage
-               let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
-                   assets,
+            let maybe_upload_parameters = params.assets.clone()
+                .map_or( None, |assets| {Self::pick_upload_parameters_from_assets(
+                   &assets,
                    &channel_id
-               );
+            )});
 
-               // numeber of assets to be uploaded
-               let num_assets: u64 = if let Some(upload_parameters) =
-                   maybe_upload_parameters{
-                   Storage::<T>::upload_data_objects(upload_parameters.clone())?;
-                   upload_parameters
-                       .object_creation_list
-                       .len()
-                       .try_into()
-                       .map_err(|_|
-                            DispatchError::Other("Number of assets conversion error"))?
-
-                } else {
-                    0u64
-                };
-                Some(num_assets)
-            } else {
-                None
-            };
-
+            // number of assets succesfully uploaded
+            let maybe_num_assets = maybe_upload_parameters.as_ref()
+                    .map_or(
+                        Ok(Some(0u64)),
+                        |upload_parameters| {
+                        Storage::<T>::upload_data_objects(upload_parameters.clone())
+                     .map(|_| {
+                        Some(upload_parameters.object_creation_list.len() as u64)
+             })
+            })?;
             //
             // == MUTATION SAFE ==
             //
