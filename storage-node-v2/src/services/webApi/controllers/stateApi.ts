@@ -13,7 +13,7 @@ import {
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
-
+import path from 'path'
 import NodeCache from 'node-cache'
 const fsPromises = fs.promises
 
@@ -32,8 +32,9 @@ const dataCache = new NodeCache({
 export async function getAllLocalDataObjects(req: express.Request, res: express.Response): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
+    const tempFileDir = getTempFileUploadingDir(res)
 
-    const cids = await getCachedLocalDataObjects(uploadsDir)
+    const cids = await getCachedLocalDataObjects(uploadsDir, tempFileDir)
 
     res.status(200).json(cids)
   } catch (err) {
@@ -92,12 +93,13 @@ export async function getLocalDataStats(req: express.Request, res: express.Respo
 export async function getLocalDataObjectsByBagId(req: express.Request, res: express.Response): Promise<void> {
   try {
     const uploadsDir = getUploadsDir(res)
+    const tempFileDir = getTempFileUploadingDir(res)
 
     const queryNodeUrl = getQueryNodeUrl(res)
     const bagId = getBagId(req)
 
     const [cids, requiredCids] = await Promise.all([
-      getCachedLocalDataObjects(uploadsDir),
+      getCachedLocalDataObjects(uploadsDir, tempFileDir),
       getCachedDataObjectsObligations(queryNodeUrl, bagId),
     ])
 
@@ -147,11 +149,15 @@ function getBagId(req: express.Request): string {
  * obsolete until cache expiration.
  *
  */
-async function getCachedLocalDataObjects(uploadsDir: string): Promise<string[]> {
+async function getCachedLocalDataObjects(uploadsDir: string, tempDirName: string): Promise<string[]> {
   const entryName = 'local_data_object'
 
   if (!dataCache.has(entryName)) {
-    const data = await getLocalDataObjects(uploadsDir)
+    let data = await getLocalDataObjects(uploadsDir)
+
+    // Filter temporary directory name.
+    const tempDirectoryName = path.parse(tempDirName).name
+    data = data.filter((cid) => cid !== tempDirectoryName)
 
     dataCache.set(entryName, data)
   }
