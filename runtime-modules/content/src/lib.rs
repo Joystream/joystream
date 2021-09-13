@@ -678,7 +678,7 @@ decl_module! {
                 &actor,
             )?;
 
-        // channel creator account
+            // channel creator account
             let sender = ensure_signed(origin)?;
 
             // The channel owner will be..
@@ -1009,21 +1009,18 @@ decl_module! {
                 &channel_id
             );
 
-            // if storaged uploading is required save the object id for the video
-            let maybe_data_object_ids = if let Some(upload_parameters) =
-                maybe_upload_parameters {
-                    let beginning_id = Storage::<T>::next_data_object_id();
-                    Storage::<T>::upload_data_objects(upload_parameters)?;
-                    let ending_id = Storage::<T>::next_data_object_id();
-                    let mut data_objects_id_set:
-                        BTreeSet<<T as storage::Trait>::DataObjectId> = BTreeSet::new();
-                    for el in beginning_id..=ending_id {
-                        data_objects_id_set.insert(el);
-                    }
-                    Some(data_objects_id_set)
-                } else {
-                    None
-                };
+            // if storaged uploading is required save t he object id for the video
+            let maybe_data_objects_ids = maybe_upload_parameters
+            .map_or(Ok(None),
+                 |upload_parameters| {
+                 // beginning object id
+                 let beg = Storage::<T>::next_data_object_id();
+
+                 // upload objects and return their indexes
+                 Storage::<T>::upload_data_objects(upload_parameters)
+                    .map(|_| Storage::<T>::next_data_object_id()) // ending index
+                    .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
+                 })?;
 
             //
             // == MUTATION SAFE ==
@@ -1038,7 +1035,7 @@ decl_module! {
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
                 /// storage parameters for later storage deletion
-                maybe_data_objects_id_set: maybe_data_object_ids,
+                maybe_data_objects_id_set: maybe_data_objects_ids,
             };
 
             // add it to the onchain state
@@ -1074,7 +1071,7 @@ decl_module! {
 
             // Pick out the assets to be uploaded to storage frame_system
             if let Some(assets) = &params.assets {
-               // adding content to storage if needed
+                // adding content to storage if needed
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
                    &channel_id
