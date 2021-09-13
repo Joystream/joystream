@@ -366,6 +366,7 @@ export interface DAOId extends u64 {}
 export interface DataObject extends Struct {
   readonly accepted: bool;
   readonly deletion_prize: u128;
+  readonly ipfsContentId: Bytes;
 }
 
 /** @name DataObjectCreationParameters */
@@ -1302,7 +1303,6 @@ export interface UpdatePropertyValuesOperation extends Null {}
 
 /** @name UploadParameters */
 export interface UploadParameters extends Struct {
-  readonly authenticationKey: Bytes;
   readonly bagId: BagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
   readonly deletionPrizeSourceAccountId: GenericAccountId;

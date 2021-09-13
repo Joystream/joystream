@@ -1,6 +1,6 @@
 {
   "name": "storage-node-v2",
-  "description": "Jostream storage subsystem.",
+  "description": "Joystream storage subsystem.",
   "version": "0.1.0",
   "author": "Joystream contributors",
   "bin": {

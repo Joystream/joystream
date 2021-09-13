@@ -1365,7 +1365,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Upload new data objects. Development mode.
        **/
-      sudoUploadDataObjects: AugmentedSubmittable<(params: UploadParameters | { authenticationKey?: any; bagId?: any; objectCreationList?: any; deletionPrizeSourceAccountId?: any; expectedDataSizeFee?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [UploadParameters]>;
+      sudoUploadDataObjects: AugmentedSubmittable<(params: UploadParameters | { bagId?: any; objectCreationList?: any; deletionPrizeSourceAccountId?: any; expectedDataSizeFee?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [UploadParameters]>;
       /**
        * Add and remove hashes to the current blacklist.
        **/

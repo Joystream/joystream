@@ -9,7 +9,7 @@ RUN  rm -fr /joystream/pioneer
 RUN yarn --forzen-lockfile
 
 RUN yarn workspace @joystream/types build
-RUN yarn workspace @joystream/content-metadata-protobuf build:ts
+RUN yarn workspace @joystream/metadata-protobuf build
 RUN yarn workspace query-node-root build
 RUN yarn workspace storage-node build
 

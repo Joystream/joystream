@@ -45,7 +45,10 @@ export default class Server extends ApiCommandBase {
     try {
       const port = flags.port
       const workerId = flags.worker ?? 0
-      const app = await createApp(api, account, workerId, flags.uploads)
+      const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
+      logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
+
+      const app = await createApp(api, account, workerId, flags.uploads, maxFileSize)
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
     } catch (err) {

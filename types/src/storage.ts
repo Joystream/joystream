@@ -34,6 +34,7 @@ export type IDataObject = {
   accepted: bool
   deletion_prize: BalanceOf
   size: u64
+  ipfsContentId: Bytes
 }
 
 export class DataObject
@@ -41,6 +42,7 @@ export class DataObject
     accepted: bool,
     deletion_prize: BalanceOf,
     size: u64,
+    ipfsContentId: Bytes,
   })
   implements IDataObject {}
 
@@ -178,7 +180,6 @@ export class DataObjectCreationParameters
   implements IDataObjectCreationParameters {}
 
 export type IUploadParameters = {
-  authenticationKey: Bytes
   bagId: BagId
   objectCreationList: Vec<DataObjectCreationParameters>
   deletionPrizeSourceAccountId: AccountId
@@ -187,7 +188,6 @@ export type IUploadParameters = {
 
 export class UploadParameters
   extends JoyStructDecorated({
-    authenticationKey: Bytes,
     bagId: BagId,
     objectCreationList: Vec.with(DataObjectCreationParameters),
     deletionPrizeSourceAccountId: AccountId,

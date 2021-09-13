@@ -65,6 +65,7 @@ parameter_types! {
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const MaxDataObjectSize: u64 = 400;
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -101,6 +102,7 @@ impl crate::Trait for Test {
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxDataObjectSize = MaxDataObjectSize;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
