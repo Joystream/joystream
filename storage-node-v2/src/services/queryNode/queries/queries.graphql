@@ -1,6 +1,9 @@
 fragment StorageBucketDetails on StorageBucket {
   id
-  operatorMetadata
+  operatorMetadata {
+    id
+    nodeEndpoint
+  }
   operatorStatus {
     ... on StorageBucketOperatorStatusActive {
       workerId
@@ -19,13 +22,13 @@ query getStorageBucketDetails($offset: Int, $limit: Int) {
 
 fragment StorageBagDetails on StorageBag {
   id
-  storedBy {
+  storageAssignments {
     id
   }
 }
 
-query getStorageBagDetails($bucketIds: StorageBucketWhereInput, $offset: Int, $limit: Int) {
-  storageBags(offset: $offset, limit: $limit, where: { storedBy_some: $bucketIds }) {
+query getStorageBagDetails($bucketIds: StorageBagStorageAssignmentWhereInput, $offset: Int, $limit: Int) {
+  storageBags(offset: $offset, limit: $limit, where: { storageAssignments_some: $bucketIds }) {
     ...StorageBagDetails
   }
 }

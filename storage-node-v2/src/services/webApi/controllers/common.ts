@@ -1,7 +1,7 @@
 import * as express from 'express'
 import { CLIError } from '@oclif/errors'
 import { ExtrinsicFailedError } from '../../runtime/api'
-import { BagIdValidationError } from 'src/services/helpers/bagTypes'
+import { BagIdValidationError } from '../../helpers/bagTypes'
 
 /**
  * Dedicated error for the web api requests.

@@ -3,7 +3,7 @@ import * as Types from './schema'
 import gql from 'graphql-tag'
 export type StorageBucketDetailsFragment = {
   id: string
-  operatorMetadata?: Types.Maybe<any>
+  operatorMetadata?: Types.Maybe<{ id: string; nodeEndpoint?: Types.Maybe<string> }>
   operatorStatus: { workerId: number } | { workerId: number }
 }
 
@@ -12,29 +12,19 @@ export type GetStorageBucketDetailsQueryVariables = Types.Exact<{
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
 
-export type GetStorageBucketDetailsQuery = {
-  storageBuckets: Array<StorageBucketDetailsFragment>
-}
+export type GetStorageBucketDetailsQuery = { storageBuckets: Array<StorageBucketDetailsFragment> }
 
-export type StorageBagDetailsFragment = {
-  id: string
-  storedBy: Array<{ id: string }>
-}
+export type StorageBagDetailsFragment = { id: string; storageAssignments: Array<{ id: string }> }
 
 export type GetStorageBagDetailsQueryVariables = Types.Exact<{
-  bucketIds?: Types.Maybe<Types.StorageBucketWhereInput>
+  bucketIds?: Types.Maybe<Types.StorageBagStorageAssignmentWhereInput>
   offset?: Types.Maybe<Types.Scalars['Int']>
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
 
-export type GetStorageBagDetailsQuery = {
-  storageBags: Array<StorageBagDetailsFragment>
-}
+export type GetStorageBagDetailsQuery = { storageBags: Array<StorageBagDetailsFragment> }
 
-export type DataObjectDetailsFragment = {
-  ipfsHash: string
-  storageBag: { id: string }
-}
+export type DataObjectDetailsFragment = { ipfsHash: string; storageBag: { id: string } }
 
 export type GetDataObjectDetailsQueryVariables = Types.Exact<{
   bagIds?: Types.Maybe<Types.StorageBagWhereInput>
@@ -42,14 +32,15 @@ export type GetDataObjectDetailsQueryVariables = Types.Exact<{
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
 
-export type GetDataObjectDetailsQuery = {
-  storageDataObjects: Array<DataObjectDetailsFragment>
-}
+export type GetDataObjectDetailsQuery = { storageDataObjects: Array<DataObjectDetailsFragment> }
 
 export const StorageBucketDetails = gql`
   fragment StorageBucketDetails on StorageBucket {
     id
-    operatorMetadata
+    operatorMetadata {
+      id
+      nodeEndpoint
+    }
     operatorStatus {
       ... on StorageBucketOperatorStatusActive {
         workerId
@@ -63,7 +54,7 @@ export const StorageBucketDetails = gql`
 export const StorageBagDetails = gql`
   fragment StorageBagDetails on StorageBag {
     id
-    storedBy {
+    storageAssignments {
       id
     }
   }
@@ -85,8 +76,8 @@ export const GetStorageBucketDetails = gql`
   ${StorageBucketDetails}
 `
 export const GetStorageBagDetails = gql`
-  query getStorageBagDetails($bucketIds: StorageBucketWhereInput, $offset: Int, $limit: Int) {
-    storageBags(offset: $offset, limit: $limit, where: { storedBy_some: $bucketIds }) {
+  query getStorageBagDetails($bucketIds: StorageBagStorageAssignmentWhereInput, $offset: Int, $limit: Int) {
+    storageBags(offset: $offset, limit: $limit, where: { storageAssignments_some: $bucketIds }) {
       ...StorageBagDetails
     }
   }
