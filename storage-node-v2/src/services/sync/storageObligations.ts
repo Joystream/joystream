@@ -104,12 +104,12 @@ export async function getStorageObligationsFromRuntime(
   const model: DataObligations = {
     storageBuckets: allBuckets.map((bucket) => ({
       id: bucket.id,
-      operatorUrl: extractOperatorUrl(bucket.operatorMetadata),
+      operatorUrl: extractOperatorUrl(bucket.operatorMetadata?.nodeEndpoint),
       workerId: bucket.operatorStatus?.workerId,
     })),
     bags: assignedBags.map((bag) => ({
       id: bag.id,
-      buckets: bag.storedBy.map((bucketInBag) => bucketInBag.id),
+      buckets: bag.storageAssignments.map((bucketInBag) => bucketInBag.id),
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
       cid: dataObject.ipfsHash,
@@ -228,9 +228,11 @@ async function getAllObjectsWithPaging<T>(
  * @param encodedString - encoded storage operator metadata
  * @returns storage operator URL
  */
-function extractOperatorUrl(encodedString: string): string {
+function extractOperatorUrl(encodedString: string | undefined | null): string {
   try {
-    return u8aToString(hexToU8a(encodedString))
+    if (encodedString) {
+      return u8aToString(hexToU8a(encodedString))
+    }
   } catch (err) {
     logger.error(`Sync - ${err}`)
   }

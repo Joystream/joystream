@@ -1,8 +1,7 @@
 # Paths are relative to root package directory
 overwrite: true
 
-# schema: '../../../../../query-node/generated/graphql-server/generated/schema.graphql'
-schema: '../../temp_runtime/joystream/query-node/generated/graphql-server/generated/schema.graphql'
+schema: '../query-node/generated/graphql-server/generated/schema.graphql'
 
 documents:
   - 'src/services/queryNode/queries/*.graphql'

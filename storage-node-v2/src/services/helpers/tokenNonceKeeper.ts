@@ -17,7 +17,7 @@ const nonceCache = new NodeCache({
  * Constructs and returns an expiration time for a token.
  */
 export function getTokenExpirationTime(): number {
-  return Date.now() + TokenExpirationPeriod
+  return Date.now() + 1000 * TokenExpirationPeriod
 }
 
 /**
