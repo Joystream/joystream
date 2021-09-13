@@ -69,5 +69,12 @@ decl_error! {
 
         /// Channel assets feasibility
         InvalidAssetsProvided,
+
+        /// Channel Contains Video
+        ChannelContainsVideos,
+
+        /// Channel Contains Assets
+        ChannelContainsAssets,
+
     }
 }

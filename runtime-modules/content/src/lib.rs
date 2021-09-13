@@ -784,14 +784,35 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
         }
 
-        // extrinsics for channel deletion
+            // extrinsics for channel deletion
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn delete_channel(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _channel_id: T::ChannelId,
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
         ) {
-            Self::not_implemented()?;
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // ensure permissions
+            ensure_actor_authorized_to_update_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            // check that channel videos are 0
+            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
+
+            // check that channel assets are 0
+            ensure!(channel.num_assets == 0, Error::<T>::ChannelContainsAssets);
+
+            // remove channel from on chain state
+            ChannelById::<T>::remove(channel_id);
+
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
+
         }
 
         /// Remove assets of a channel from storage
@@ -1303,12 +1324,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let mut video = video;
-
-            video.is_censored = is_censored;
-
-            // Update the video
-            VideoById::<T>::insert(video_id, video);
+            // update
+            VideoById::<T>::mutate(video_id, |video| {
+                video.is_censored = is_censored;
+            });
 
             Self::deposit_event(RawEvent::VideoCensorshipStatusUpdated(actor, video_id, is_censored, rationale));
         }
@@ -1588,5 +1607,6 @@ decl_event!(
             PersonUpdateParameters<NewAssets>,
         ),
         PersonDeleted(ContentActor, PersonId),
+        ChannelDeleted(ContentActor, ChannelId),
     }
 );
