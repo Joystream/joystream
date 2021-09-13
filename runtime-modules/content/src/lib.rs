@@ -1,6 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+// Internal Substrate warning (decl_event).
 #![allow(clippy::unused_unit)]
 
 #[cfg(test)]
@@ -1272,7 +1273,7 @@ decl_module! {
 
             // The content owner will be..
             let content_owner = if let Some(to) = to {
-                ContentOwner::Member(to)
+                ChannelOwner::Member(to)
             } else {
                 // if `to` set to None, actor issues to himself
                 Self::actor_to_content_owner(&actor)?
@@ -1431,7 +1432,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure participant_id is nft owner
-            video.ensure_nft_ownership::<T>(&ContentOwner::Member(participant_id))?;
+            video.ensure_nft_ownership::<T>(&ChannelOwner::Member(participant_id))?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1564,7 +1565,7 @@ impl<T: Trait> Module<T> {
 
     fn actor_to_content_owner(
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> ActorToContentOwnerResult<T> {
+    ) -> ActorToChannelOwnerResult<T> {
         match actor {
             // Lead should use their member or curator role to authorize
             ContentActor::Lead => Err(Error::<T>::ActorCannotBeLead),
@@ -1572,13 +1573,13 @@ impl<T: Trait> Module<T> {
                 curator_group_id,
                 _curator_id
             ) => {
-                Ok(ContentOwner::CuratorGroup(*curator_group_id))
+                Ok(ChannelOwner::CuratorGroup(*curator_group_id))
             }
             ContentActor::Member(member_id) => {
-                Ok(ContentOwner::Member(*member_id))
+                Ok(ChannelOwner::Member(*member_id))
             }
             // TODO:
-            // ContentActor::Dao(id) => Ok(ContentOwner::Dao(id)),
+            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
         }
     }
 
@@ -1588,7 +1589,7 @@ impl<T: Trait> Module<T> {
         owned_nft: &NFT<T>,
     ) -> Result<T::AccountId, Error<T>> {
         match owned_nft.owner {
-            ContentOwner::Member(member_id) => Self::ensure_member_controller_account_id(member_id),
+            ChannelOwner::Member(member_id) => Self::ensure_member_controller_account_id(member_id),
             _ => {
                 if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
                     Ok(reward_account)
@@ -1621,8 +1622,8 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             MemberId<T>,
         >,
-        ContentOwner =
-            ContentOwner<MemberId<T>, <T as ContentActorAuthenticator>::CuratorGroupId, DAOId<T>>,
+        ChannelOwner =
+            ChannelOwner<MemberId<T>, <T as ContentActorAuthenticator>::CuratorGroupId, DAOId<T>>,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
@@ -1776,7 +1777,7 @@ decl_event!(
             VideoId,
             Option<Royalty>,
             Metadata,
-            ContentOwner,
+            ChannelOwner,
         ),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),

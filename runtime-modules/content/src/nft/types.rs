@@ -42,7 +42,7 @@ pub struct OwnedNFT<
     DAOId: Default + Copy,
     Balance: Default,
 > {
-    pub owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
+    pub owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     pub transactional_status: TransactionalStatus<BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
@@ -56,13 +56,13 @@ impl<
     > OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
 {
     /// Whether provided owner is nft owner
-    pub fn is_owner(&self, owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>) -> bool {
+    pub fn is_owner(&self, owner: &ChannelOwner<MemberId, CuratorGroupId, DAOId>) -> bool {
         self.owner.eq(owner)
     }
 
     /// Create new NFT
     pub fn new(
-        owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
+        owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
         creator_royalty: Option<Royalty>,
     ) -> Self {
         Self {

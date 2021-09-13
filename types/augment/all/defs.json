@@ -481,66 +481,126 @@
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
     },
-    "ContentId": "[u8;32]",
-    "LiaisonJudgement": {
-        "_enum": [
-            "Pending",
-            "Accepted"
-        ]
+    "StorageBucketId": "u64",
+    "StorageBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
     },
-    "DataObject": {
-        "owner": "StorageObjectOwner",
-        "added_at": "BlockAndTime",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "liaison": "Option<StorageProviderId>",
-        "liaison_judgement": "LiaisonJudgement",
-        "ipfs_content_id": "Text"
-    },
-    "DataObjectStorageRelationshipId": "u64",
-    "DataObjectStorageRelationship": {
-        "content_id": "ContentId",
-        "storage_provider": "StorageProviderId",
-        "ready": "bool"
-    },
-    "DataObjectTypeId": "u64",
-    "DataObjectType": {
-        "description": "Text",
-        "active": "bool"
-    },
-    "DataObjectsMap": "BTreeMap<ContentId,DataObject>",
-    "ContentParameters": {
-        "content_id": "ContentId",
-        "type_id": "DataObjectTypeId",
-        "size": "u64",
-        "ipfs_content_id": "Bytes"
-    },
-    "StorageObjectOwner": {
+    "DataObjectId": "u64",
+    "DynamicBagId": {
         "_enum": {
             "Member": "MemberId",
-            "Channel": "ChannelId",
-            "DAO": "DAOId",
-            "Council": "Null",
-            "WorkingGroup": "WorkingGroup"
-        }
-    },
-    "ObjectOwner": {
-        "_enum": {
-            "Member": "MemberId",
-            "Channel": "ChannelId",
-            "DAO": "DAOId",
-            "Council": "Null",
-            "WorkingGroup": "WorkingGroup"
+            "Channel": "u64"
         }
     },
     "Voucher": {
-        "size_limit": "u64",
-        "objects_limit": "u64",
-        "size_used": "u64",
-        "objects_used": "u64"
+        "sizeLimit": "u64",
+        "objectsLimit": "u64",
+        "sizeUsed": "u64",
+        "objectsUsed": "u64"
     },
-    "VoucherLimit": "u64",
-    "UploadingStatus": "bool",
+    "DynamicBagType": {
+        "_enum": [
+            "Member",
+            "Channel"
+        ]
+    },
+    "DynamicBagCreationPolicy": {
+        "numberOfStorageBuckets": "u64",
+        "families": "BTreeMap<DistributionBucketFamilyId,u32>"
+    },
+    "DynamicBagDeletionPrize": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "DynamicBagDeletionPrizeRecord": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "Bag": {
+        "objects": "BTreeMap<DataObjectId,DataObject>",
+        "stored_by": "StorageBucketIdSet",
+        "distributed_by": "DistributionBucketIdSet",
+        "deletion_prize": "Option<u128>"
+    },
+    "StorageBucket": {
+        "operator_status": "StorageBucketOperatorStatus",
+        "accepting_new_bags": "bool",
+        "voucher": "Voucher",
+        "metadata": "Bytes"
+    },
+    "StaticBagId": {
+        "_enum": {
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Static": {
+        "_enum": {
+            "Council": "Null",
+            "WorkingGroup": "WorkingGroup"
+        }
+    },
+    "Dynamic": {
+        "_enum": {
+            "Member": "MemberId",
+            "Channel": "u64"
+        }
+    },
+    "BagId": {
+        "_enum": {
+            "Static": "Static",
+            "Dynamic": "Dynamic"
+        }
+    },
+    "DataObjectCreationParameters": {
+        "size": "u64",
+        "ipfsContentId": "Bytes"
+    },
+    "BagIdType": {
+        "_enum": {
+            "Static": "Static",
+            "Dynamic": "Dynamic"
+        }
+    },
+    "UploadParameters": {
+        "bagId": "BagId",
+        "objectCreationList": "Vec<DataObjectCreationParameters>",
+        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "expectedDataSizeFee": "u128"
+    },
+    "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
+    "DataObjectIdSet": "BTreeSet<DataObjectId>",
+    "ContentIdSet": "BTreeSet<Cid>",
+    "Cid": "Bytes",
+    "StorageBucketOperatorStatus": {
+        "_enum": {
+            "Missing": "Null",
+            "InvitedStorageWorker": "WorkerId",
+            "StorageWorker": "WorkerId"
+        }
+    },
+    "DataObject": {
+        "accepted": "bool",
+        "deletion_prize": "u128",
+        "size": "u64",
+        "ipfsContentId": "Bytes"
+    },
+    "DistributionBucketId": "u64",
+    "DistributionBucketFamilyId": "u64",
+    "DistributionBucket": {
+        "accepting_new_bags": "bool",
+        "distributing": "bool",
+        "pending_invitations": "Vec<WorkerId>",
+        "operators": "Vec<WorkerId>",
+        "assigned_bags": "u64"
+    },
+    "DistributionBucketFamily": {
+        "distribution_buckets": "BTreeMap<DistributionBucketId,DistributionBucket>"
+    },
+    "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
+    "DistributionBucketIdSet": "BTreeSet<DistributionBucketId>",
+    "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -703,19 +763,19 @@
     },
     "NewAsset": {
         "_enum": {
-            "Upload": "ContentParameters",
+            "Upload": "u64",
             "Urls": "Vec<Url>"
         }
     },
     "Channel": {
-        "owner": "ContentOwner",
+        "owner": "ChannelOwner",
         "videos": "Vec<VideoId>",
         "playlists": "Vec<PlaylistId>",
         "series": "Vec<SeriesId>",
         "is_censored": "bool",
         "reward_account": "Option<GenericAccountId>"
     },
-    "ContentOwner": {
+    "ChannelOwner": {
         "_enum": {
             "Member": "MemberId",
             "Curators": "CuratorGroupId",
@@ -743,7 +803,7 @@
     "ChannelOwnershipTransferRequestId": "u64",
     "ChannelOwnershipTransferRequest": {
         "channel_id": "ChannelId",
-        "new_owner": "ContentOwner",
+        "new_owner": "ChannelOwner",
         "payment": "u128",
         "new_reward_account": "Option<GenericAccountId>"
     },
@@ -828,5 +888,6 @@
         }
     },
     "MaxNumber": "u32",
-    "IsCensored": "bool"
+    "IsCensored": "bool",
+    "ContentId": "u64"
 }

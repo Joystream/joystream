@@ -26,6 +26,8 @@
 // disable it because of possible frontend API break
 // TODO: remove post-Constaninople
 
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
 // Clippy linter warning
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
 #![allow(clippy::match_like_matches_macro)]

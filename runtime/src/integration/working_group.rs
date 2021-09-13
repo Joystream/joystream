@@ -2,8 +2,8 @@ use frame_support::StorageMap;
 use sp_std::marker::PhantomData;
 
 use crate::{
-    ContentDirectoryWorkingGroupInstance, GatewayWorkingGroupInstance,
-    OperationsWorkingGroupInstance, StorageWorkingGroupInstance,
+    ContentWorkingGroupInstance, GatewayWorkingGroupInstance, OperationsWorkingGroupInstance,
+    StorageWorkingGroupInstance,
 };
 use stake::{BalanceOf, NegativeImbalance};
 
@@ -13,7 +13,7 @@ pub struct ContentDirectoryWgStakingEventsHandler<T> {
     pub marker: PhantomData<T>,
 }
 
-impl<T: stake::Trait + working_group::Trait<ContentDirectoryWorkingGroupInstance>>
+impl<T: stake::Trait + working_group::Trait<ContentWorkingGroupInstance>>
     stake::StakingEventsHandler<T> for ContentDirectoryWgStakingEventsHandler<T>
 {
     /// Unstake remaining sum back to the source_account_id
@@ -29,10 +29,10 @@ impl<T: stake::Trait + working_group::Trait<ContentDirectoryWorkingGroupInstance
 
         let hiring_application_id = hiring::ApplicationIdByStakingId::<T>::get(*stake_id);
 
-        if working_group::MemberIdByHiringApplicationId::<T, ContentDirectoryWorkingGroupInstance>::contains_key(
+        if working_group::MemberIdByHiringApplicationId::<T, ContentWorkingGroupInstance>::contains_key(
             hiring_application_id,
         ) {
-            return <working_group::Module<T, ContentDirectoryWorkingGroupInstance>>::refund_working_group_stake(
+            return <working_group::Module<T, ContentWorkingGroupInstance>>::refund_working_group_stake(
 				*stake_id,
 				remaining_imbalance,
 			);

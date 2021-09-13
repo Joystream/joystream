@@ -287,7 +287,7 @@ impl<T: Trait> Module<T> {
 
             T::Currency::deposit_creating(&owner_account_id, *price);
 
-            *owner = ContentOwner::Member(new_owner);
+            *owner = ChannelOwner::Member(new_owner);
         }
 
         video.set_idle_transactional_status()
@@ -311,7 +311,7 @@ impl<T: Trait> Module<T> {
                 T::Currency::deposit_creating(&owner_account_id, *price);
             }
 
-            *owner = ContentOwner::Member(*to);
+            *owner = ChannelOwner::Member(*to);
         }
 
         video.set_idle_transactional_status()
@@ -364,7 +364,7 @@ impl<T: Trait> Module<T> {
                 T::Currency::deposit_creating(&owner_account_id, last_bid_amount - auction_fee);
             }
 
-            *owner = ContentOwner::Member(last_bidder);
+            *owner = ChannelOwner::Member(last_bidder);
             *transactional_status = TransactionalStatus::Idle;
         }
     }

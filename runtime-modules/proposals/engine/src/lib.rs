@@ -107,6 +107,8 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Internal Substrate warning (decl_event).
+#![allow(clippy::unused_unit)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
@@ -768,7 +770,6 @@ impl<T: Trait> Module<T> {
             ProposalDecisionStatus::Canceled => T::CancellationFee::get(),
             ProposalDecisionStatus::Slashed => proposal_parameters
                 .required_stake
-                .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
     }

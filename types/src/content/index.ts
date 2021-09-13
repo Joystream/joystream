@@ -2,7 +2,6 @@ import { Vec, Option, Tuple } from '@polkadot/types'
 import { bool, u64, u32, u128, Null, Bytes } from '@polkadot/types/primitive'
 import { MemberId } from '../members'
 import { JoyStructDecorated, JoyEnum, ChannelId, JoyBTreeSet, DAOId, Url } from '../common'
-import { ContentParameters } from '../storage'
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 
 export class CuratorId extends u64 {}
@@ -16,6 +15,12 @@ export class SeriesId extends u64 {}
 export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
+
+// TODO: Remove after the storage-content integration.
+export class ContentId extends u64 {}
+
+// TODO: Remove after the storage-content integration.
+export class ContentParameters extends u64 {}
 
 export class NewAsset extends JoyEnum({
   Upload: ContentParameters,
@@ -33,14 +38,14 @@ export class ContentActor extends JoyEnum({
   Lead: Null,
 }) {}
 
-export class ContentOwner extends JoyEnum({
+export class ChannelOwner extends JoyEnum({
   Member: MemberId,
   Curators: CuratorGroupId,
   Dao: DAOId,
 }) {}
 
 export class Channel extends JoyStructDecorated({
-  owner: ContentOwner,
+  owner: ChannelOwner,
   videos: Vec.with(VideoId),
   playlists: Vec.with(PlaylistId),
   series: Vec.with(SeriesId),
@@ -62,7 +67,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
 
 export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
   channel_id: ChannelId,
-  new_owner: ContentOwner,
+  new_owner: ChannelOwner,
   payment: u128,
   new_reward_account: Option.with(AccountId),
 }) {}
@@ -176,7 +181,7 @@ export const contentTypes = {
   ContentActor,
   NewAsset,
   Channel,
-  ContentOwner,
+  ChannelOwner,
   ChannelCategoryId,
   ChannelCategory,
   ChannelCategoryCreationParameters,
@@ -211,6 +216,7 @@ export const contentTypes = {
   EpisodeParemters,
   MaxNumber,
   IsCensored,
+  ContentId, // TODO: Remove after the content integration
 }
 
 export default contentTypes

@@ -93,7 +93,7 @@ fn curator_owned_channels() {
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
                 channel_id,
                 ChannelRecord {
-                    owner: ContentOwner::CuratorGroup(FIRST_CURATOR_GROUP_ID),
+                    owner: ChannelOwner::CuratorGroup(FIRST_CURATOR_GROUP_ID),
                     videos: vec![],
                     playlists: vec![],
                     series: vec![],
@@ -173,7 +173,7 @@ fn member_owned_channels() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id_1,
                 ChannelRecord {
-                    owner: ContentOwner::Member(FIRST_MEMBER_ID),
+                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
                     videos: vec![],
                     playlists: vec![],
                     series: vec![],
@@ -207,7 +207,7 @@ fn member_owned_channels() {
                 ContentActor::Member(SECOND_MEMBER_ID),
                 channel_id_2,
                 ChannelRecord {
-                    owner: ContentOwner::Member(SECOND_MEMBER_ID),
+                    owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                     videos: vec![],
                     playlists: vec![],
                     series: vec![],
@@ -240,7 +240,7 @@ fn member_owned_channels() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id_1,
                 ChannelRecord {
-                    owner: ContentOwner::Member(FIRST_MEMBER_ID),
+                    owner: ChannelOwner::Member(FIRST_MEMBER_ID),
                     videos: vec![],
                     playlists: vec![],
                     series: vec![],

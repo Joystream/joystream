@@ -29,7 +29,7 @@ pub enum NewAsset<ContentParameters> {
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ContentOwner<MemberId, CuratorGroupId, DAOId> {
+pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
     /// A Member owns the channel
     Member(MemberId),
     /// A specific curation group owns the channel
@@ -39,16 +39,16 @@ pub enum ContentOwner<MemberId, CuratorGroupId, DAOId> {
 }
 
 // simplification type
-pub(crate) type ActorToContentOwnerResult<T> =
-    Result<ContentOwner<MemberId<T>, CuratorGroupId<T>, DAOId<T>>, Error<T>>;
+pub(crate) type ActorToChannelOwnerResult<T> =
+    Result<ChannelOwner<MemberId<T>, CuratorGroupId<T>, DAOId<T>>, Error<T>>;
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
 impl<MemberId: Default, CuratorGroupId, DAOId> Default
-    for ContentOwner<MemberId, CuratorGroupId, DAOId>
+    for ChannelOwner<MemberId, CuratorGroupId, DAOId>
 {
     fn default() -> Self {
-        ContentOwner::Member(MemberId::default())
+        ChannelOwner::Member(MemberId::default())
     }
 }
 
@@ -83,7 +83,7 @@ pub struct ChannelCategoryUpdateParameters {
 pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
 {
     /// The owner of a channel
-    pub owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
+    pub owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     /// The videos under this channel
     pub videos: Vec<VideoId>,
     /// The playlists under this channel
@@ -120,7 +120,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::SeriesId,
 >;
 
-/// A request to buy a channel by a new ContentOwner.
+/// A request to buy a channel by a new ChannelOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelOwnershipTransferRequestRecord<
@@ -132,7 +132,7 @@ pub struct ChannelOwnershipTransferRequestRecord<
     AccountId,
 > {
     pub channel_id: ChannelId,
-    pub new_owner: ContentOwner<MemberId, CuratorGroupId, DAOId>,
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     pub payment: Balance,
     pub new_reward_account: Option<AccountId>,
 }
@@ -265,7 +265,7 @@ impl<
     /// Ensure given NFTOwner is nft owner
     pub fn ensure_nft_ownership<T: Trait>(
         &self,
-        owner: &ContentOwner<MemberId, CuratorGroupId, DAOId>,
+        owner: &ChannelOwner<MemberId, CuratorGroupId, DAOId>,
     ) -> DispatchResult {
         if let Some(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnNFT);

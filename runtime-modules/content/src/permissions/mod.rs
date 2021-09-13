@@ -131,7 +131,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ContentOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     // Only owner of a channel can update and delete channel assets.
     // Lead can update and delete curator group owned channel assets.
@@ -139,7 +139,7 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
         ContentActor::Lead => {
             let sender = ensure_signed(origin)?;
             ensure_lead_auth_success::<T>(&sender)?;
-            if let ContentOwner::CuratorGroup(_) = owner {
+            if let ChannelOwner::CuratorGroup(_) = owner {
                 Ok(())
             } else {
                 Err(Error::<T>::ActorNotAuthorized.into())
@@ -157,7 +157,7 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
 
             // Ensure curator group is the channel owner.
             ensure!(
-                *owner == ContentOwner::CuratorGroup(*curator_group_id),
+                *owner == ChannelOwner::CuratorGroup(*curator_group_id),
                 Error::<T>::ActorNotAuthorized
             );
 
@@ -170,7 +170,7 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
 
             // Ensure the member is the channel owner.
             ensure!(
-                *owner == ContentOwner::Member(*member_id),
+                *owner == ChannelOwner::Member(*member_id),
                 Error::<T>::ActorNotAuthorized
             );
 
@@ -198,7 +198,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ContentOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
     // Only lead and curators can censor channels and videos
     // Only lead can censor curator group owned channels and videos
@@ -218,7 +218,7 @@ pub fn ensure_actor_authorized_to_censor<T: Trait>(
             )?;
 
             // Curators cannot censor curator group channels
-            if let ContentOwner::CuratorGroup(_) = owner {
+            if let ChannelOwner::CuratorGroup(_) = owner {
                 Err(Error::<T>::CannotCensoreCuratorGroupOwnedChannels.into())
             } else {
                 Ok(())

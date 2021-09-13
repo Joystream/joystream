@@ -4,6 +4,7 @@
 // Disable it because of the substrate lib design
 // Example:  pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {}
 #![allow(clippy::redundant_closure_call)]
+// Internal Substrate warning (decl_event).
 #![allow(clippy::unused_unit)]
 
 pub mod genesis;
