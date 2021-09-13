@@ -2,7 +2,14 @@ import { getLocalDataObjects } from '../../../services/sync/synchronizer'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import { getUploadsDir, getTempFileUploadingDir, getQueryNodeUrl, WebApiError } from './common'
+import {
+  getUploadsDir,
+  getTempFileUploadingDir,
+  getQueryNodeUrl,
+  WebApiError,
+  getCommandConfig,
+  sendResponseWithError,
+} from './common'
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
@@ -30,10 +37,7 @@ export async function getAllLocalDataObjects(req: express.Request, res: express.
 
     res.status(200).json(cids)
   } catch (err) {
-    res.status(500).json({
-      type: 'all_data_objects',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'all_data_objects')
   }
 }
 
@@ -78,10 +82,7 @@ export async function getLocalDataStats(req: express.Request, res: express.Respo
       tempDirSize,
     })
   } catch (err) {
-    res.status(500).json({
-      type: 'local_data_stats',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'local_data_stats')
   }
 }
 
@@ -104,10 +105,7 @@ export async function getLocalDataObjectsByBagId(req: express.Request, res: expr
 
     res.status(200).json(localDataForBag)
   } catch (err) {
-    res.status(500).json({
-      type: 'data_objects_by_bag',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'data_objects_by_bag')
   }
 }
 
@@ -124,31 +122,8 @@ export async function getVersion(req: express.Request, res: express.Response): P
       userAgent: config.userAgent,
     })
   } catch (err) {
-    res.status(500).json({
-      type: 'version',
-      message: err.toString(),
-    })
+    sendResponseWithError(res, err, 'version')
   }
-}
-
-/**
- * Returns a command config.
- *
- * @remarks
- * This is a helper function. It parses the response object for a variable and
- * throws an error on failure.
- */
-function getCommandConfig(
-  res: express.Response
-): {
-  version: string
-  userAgent: string
-} {
-  if (res.locals.config) {
-    return res.locals.config
-  }
-
-  throw new Error('No upload directory path loaded.')
 }
 
 /**

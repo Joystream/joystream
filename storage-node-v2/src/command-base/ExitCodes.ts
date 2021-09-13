@@ -9,6 +9,7 @@ enum ExitCodes {
   DevelopmentModeOnly,
   FileError,
   InvalidWorkerId,
+  InvalidIntegerArray,
   ApiError = 200,
   UnsuccessfulRuntimeCall,
 }
