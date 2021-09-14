@@ -2,6 +2,7 @@
 
 use super::curators;
 use super::mock::*;
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
@@ -42,12 +43,146 @@ fn create_channel_mock(
     }
 }
 
+fn update_channel_mock(
+    sender: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: ChannelUpdateParameters<Test>,
+    result: DispatchResult,
+) {
+    let channel_pre = ChannelById::<Test>::get(channel_id.clone());
+
+    assert_eq!(
+        Content::update_channel(
+            Origin::signed(sender),
+            actor.clone(),
+            channel_id.clone(),
+            params.clone()
+        ),
+        result.clone(),
+    );
+
+    if result.is_ok() {
+        let maybe_num_assets = params.assets.clone().map_or(None, |assets| match assets {
+            NewAssets::<Test>::Urls(v) => Some(v.len() as u64),
+            NewAssets::<Test>::Upload(c) => Some(c.object_creation_list.len() as u64),
+        });
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelUpdated(
+                actor.clone(),
+                channel_id,
+                ChannelRecord {
+                    owner: channel_pre.owner.clone(),
+                    is_censored: channel_pre.is_censored,
+                    reward_account: channel_pre.reward_account.clone(),
+                    deletion_prize_source_account_id: sender,
+                    num_assets: channel_pre.num_assets + maybe_num_assets.unwrap_or(0),
+                    num_videos: channel_pre.num_videos,
+                },
+                params.clone(),
+            ))
+        );
+    }
+}
+
 #[test]
-fn channel_creator_can_upload() {
+fn succesful_channel_update() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
+        // create an account with enought balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        // 2 + 1 assets to be uploaded
+        let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            authentication_key: b"test".to_vec(),
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        let new_assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            authentication_key: b"test".to_vec(),
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+            ],
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
+        });
+
+        let channel_id = NextChannelId::<Test>::get();
+        // create channel
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: assets,
+                meta: vec![],
+                reward_account: None,
+            },
+            Ok(()),
+        );
+
+        // update channel
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            ChannelUpdateParametersRecord {
+                assets: Some(new_assets),
+                new_meta: None,
+                reward_account: None,
+            },
+            Ok(()),
+        );
+
+        // update with 0 assets
+        update_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            channel_id,
+            ChannelUpdateParametersRecord {
+                assets: None,
+                new_meta: None,
+                reward_account: None,
+            },
+            Ok(()),
+        );
+    })
+}
+
+#[test]
+fn succesful_channel_creation() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        // create an account with enought balance
+        let _ = balances::Module::<Test>::deposit_creating(
+            &FIRST_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(100u32),
+        );
+
+        // 3 assets to be uploaded
         let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
             authentication_key: b"test".to_vec(),
             object_creation_list: vec![
@@ -64,8 +199,10 @@ fn channel_creator_can_upload() {
                     ipfs_content_id: b"third".to_vec(),
                 },
             ],
-            expected_data_size_fee: <Test as balances::Trait>::Balance::from(10u32),
+            expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
         });
+
+        // create channel
         create_channel_mock(
             FIRST_MEMBER_ORIGIN,
             ContentActor::Member(FIRST_MEMBER_ID),
