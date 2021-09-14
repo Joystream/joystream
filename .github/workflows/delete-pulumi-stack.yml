@@ -10,10 +10,10 @@ on:
         description: 'Pulumi Stack Name'
         required: false
         default: 'dev'
-
-defaults:
-  run:
-    working-directory: devops/infrastructure/node-network
+      componentName:
+        description: 'Joystream component that you deployed (node-network, query-node)'
+        required: true
+        default: 'node-network'
 
 jobs:
   destroy:
@@ -46,16 +46,29 @@ jobs:
             echo "PULUMI_ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
           fi
 
+      - id: compute_work_dir
+        name: Get working directory based on component deployed
+        run: |
+          if [[ "${{ github.event.inputs.componentName }}" = "query-node" ]]
+          then
+            echo "Component is Query Node"
+            echo "::set-output name=work_dir::devops/infrastructure/query-node"
+          else
+            echo "Component is Node Network"
+            echo "::set-output name=work_dir::devops/infrastructure/node-network"
+          fi
+
       - name: Login and select stack
         run: |
           npm install
           pulumi login
           pulumi stack select ${{ github.event.inputs.stackName }} --non-interactive
+        working-directory: ${{ steps.compute_work_dir.outputs.work_dir }}
 
       - uses: pulumi/actions@v3
         name: Run pulumi destory
         with:
-          work-dir: devops/infrastructure/node-network
+          work-dir: ${{ steps.compute_work_dir.outputs.work_dir }}
           command: destroy
           refresh: true
           stack-name: ${{ github.event.inputs.stackName }}
