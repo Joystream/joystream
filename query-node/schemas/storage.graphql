@@ -161,8 +161,8 @@ type StorageBagDistributionAssignment @entity {
   distributionBucket: DistributionBucket!
 
   # Relationship filtering workaround
-  storageBagId: Int
-  distributionBucketId: Int
+  storageBagId: ID
+  distributionBucketId: ID
 }
 
 type StorageDataObject @entity {
