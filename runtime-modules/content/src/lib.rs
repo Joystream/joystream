@@ -787,7 +787,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-        ) {
+        ) -> DispatchResult {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -798,11 +798,11 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // check that channel videos are 0
-            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
-
             // check that channel assets are 0
             ensure!(channel.num_assets == 0, Error::<T>::ChannelContainsAssets);
+
+            // check that channel videos are 0
+            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
@@ -810,6 +810,7 @@ decl_module! {
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
 
+            Ok(())
         }
 
         /// Remove assets of a channel from storage
@@ -852,11 +853,12 @@ decl_module! {
             //
 
             // update onchain channel status
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove)
-            });
+            let mut channel = channel;
+            channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove);
+            ChannelById::<T>::insert(channel_id, channel.clone());
 
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
+
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets, channel));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1525,7 +1527,7 @@ decl_event!(
         // Channels
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
-        ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>),
+        ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
 
         ChannelCensorshipStatusUpdated(
             ContentActor,
