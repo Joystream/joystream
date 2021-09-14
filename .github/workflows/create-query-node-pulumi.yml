@@ -1,0 +1,99 @@
+name: Create query-node using Pulumi
+
+on:
+  workflow_dispatch:
+    inputs:
+      pulumiToken:
+        description: 'Pulumi Access Token'
+        required: false
+      wsProviderEndpointURI:
+        description: 'Endpoint for joystream-node websocket (wss://joystream-node.example.com:9944/)'
+        required: true
+      stackName:
+        description: 'Pulumi Stack Name'
+        required: false
+        default: 'dev'
+
+defaults:
+  run:
+    working-directory: devops/infrastructure/query-node
+
+jobs:
+  up:
+    name: Create Pulumi stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Mask input key
+        id: add_mask
+        run: |
+          ACCESS_TOKEN=$(jq -r '.inputs.pulumiToken' $GITHUB_EVENT_PATH)
+          if [[ -z "${ACCESS_TOKEN}" ]] || [[ "$ACCESS_TOKEN" == "null" ]]
+          then
+            echo "No access token provided"
+            echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "Found token"
+            echo "::add-mask::$ACCESS_TOKEN"
+            echo "PULUMI_ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          fi
+
+      - name: Create local stack
+        run: |
+          npm install
+          pulumi login
+          pulumi stack select ${{ github.event.inputs.stackName }} --non-interactive --create
+          pulumi config set-all --plaintext isMinikube=false
+
+      - name: Set environment file
+        run: |
+          cp ../../../.env ./.env
+          echo "GRAPHQL_SERVER_PORT=4001" >> ./.env
+          echo "WS_PROVIDER_ENDPOINT_URI=${{ github.event.inputs.wsProviderEndpointURI }}" >> ./.env
+
+      - uses: pulumi/actions@v3
+        name: Run pulumi up without load balancer
+        with:
+          work-dir: devops/infrastructure/query-node
+          command: up
+          refresh: true
+          stack-name: ${{ github.event.inputs.stackName }}
+
+      - name: Mark load balancer as active
+        run: |
+          sleep 30
+          pulumi config set isLoadBalancerReady true
+
+      - uses: pulumi/actions@v3
+        id: pulumi
+        name: Run pulumi up with load balancer
+        with:
+          work-dir: devops/infrastructure/query-node
+          command: up
+          stack-name: ${{ github.event.inputs.stackName }}
+
+      - name: Set KUBECONFIG
+        run: |
+          pulumi stack output kubeconfig > kubeconfig.yml
+          echo "KUBECONFIG=$PWD/kubeconfig.yml" >> $GITHUB_ENV
+
+      - name: Set context
+        run: |
+          kubectl config set-context --current --namespace=${{ steps.pulumi.outputs.namespaceName }}
+
+      - name: Get kubectl events for debugging
+        if: always()
+        run: |
+          kubectl get events
