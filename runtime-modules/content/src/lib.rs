@@ -117,15 +117,14 @@ pub trait Trait:
 /// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum NewAssetsRecord<AccountId, Balance> {
+pub enum NewAssetsRecord<Balance> {
     /// Upload to the storage frame_system
-    Upload(CreationUploadParameters<AccountId, Balance>),
+    Upload(CreationUploadParameters<Balance>),
     /// Multiple url strings pointing at an asset
     Urls(Vec<Url>),
 }
 
-type NewAssets<T> =
-    NewAssetsRecord<<T as frame_system::Trait>::AccountId, <T as balances::Trait>::Balance>;
+type NewAssets<T> = NewAssetsRecord<<T as balances::Trait>::Balance>;
 
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
@@ -295,15 +294,12 @@ pub struct VideoCategoryUpdateParameters {
 /// Information regarding the content being uploaded
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct CreationUploadParameters<AccountId, Balance> {
+pub struct CreationUploadParameters<Balance> {
     /// Public key used authentication in upload to liason.
     pub authentication_key: Vec<u8>,
 
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
-
-    /// Account for the data object deletion prize.
-    pub deletion_prize_source_account_id: AccountId,
 
     /// Expected data size fee value for this extrinsic call.
     pub expected_data_size_fee: Balance,
@@ -686,7 +682,8 @@ decl_module! {
             // get uploading parameters if assets have to be saved on storage
             let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                 &params.assets,
-                &channel_id
+                &channel_id,
+                &sender,
             );
 
             // number of assets succesfully uploaded
@@ -734,6 +731,8 @@ decl_module! {
             channel_id: T::ChannelId,
             params: ChannelUpdateParameters<T>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -746,7 +745,8 @@ decl_module! {
             let maybe_upload_parameters = params.assets.clone()
                 .map_or( None, |assets| {Self::pick_upload_parameters_from_assets(
                    &assets,
-                   &channel_id
+                    &channel_id,
+            &sender,
             )});
 
             // number of assets succesfully uploaded
@@ -988,6 +988,9 @@ decl_module! {
             channel_id: T::ChannelId,
             params: VideoCreationParameters<T>,
         ) {
+
+            let sender = ensure_signed(origin.clone())?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -1003,7 +1006,8 @@ decl_module! {
             // adding the content to storage node if uploading is needed
             let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                 &params.assets,
-                &channel_id
+                &channel_id,
+        &sender,
             );
 
             // if storaged uploading is required save t he object id for the video
@@ -1058,6 +1062,8 @@ decl_module! {
             video_id: T::VideoId,
             params: VideoUpdateParameters<T>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
+
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
 
@@ -1072,7 +1078,8 @@ decl_module! {
                 // adding content to storage if needed
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
-                   &channel_id
+                   &channel_id,
+           &sender,
                );
 
               if let Some(upload_parameters) = maybe_upload_parameters{
@@ -1425,6 +1432,7 @@ impl<T: Trait> Module<T> {
     fn pick_upload_parameters_from_assets(
         assets: &NewAssets<T>,
         channel_id: &T::ChannelId,
+        sender: &T::AccountId,
     ) -> Option<UploadParameters<T>> {
         // dynamic bag for a media object
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
@@ -1435,9 +1443,7 @@ impl<T: Trait> Module<T> {
                 authentication_key: creation_upload_params.authentication_key.clone(),
                 bag_id: bag_id,
                 object_creation_list: creation_upload_params.object_creation_list.clone(),
-                deletion_prize_source_account_id: creation_upload_params
-                    .deletion_prize_source_account_id
-                    .clone(),
+                deletion_prize_source_account_id: sender.clone(),
                 expected_data_size_fee: creation_upload_params.expected_data_size_fee,
             })
         } else {

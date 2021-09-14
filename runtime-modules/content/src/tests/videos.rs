@@ -12,8 +12,8 @@ fn create_member_channel() -> ChannelId {
     assert_ok!(Content::create_channel(
         Origin::signed(FIRST_MEMBER_ORIGIN),
         ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParameters {
-            assets: vec![],
+        ChannelCreationParametersRecord {
+            assets: NewAssets::<Test>::Urls(vec![]),
             meta: vec![],
             reward_account: None,
         }
@@ -34,8 +34,8 @@ fn member_can_create_videos() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            VideoCreationParameters {
-                assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+            VideoCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![b"https://somewhere.com/".to_vec()]),
                 meta: b"metablob".to_vec(),
             }
         ));
@@ -46,8 +46,8 @@ fn member_can_create_videos() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id,
                 video_id,
-                VideoCreationParameters {
-                    assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+                VideoCreationParametersRecord {
+                    assets: NewAssets::<Test>::Urls(vec![b"https://somewhere.com/".to_vec()]),
                     meta: b"metablob".to_vec(),
                 }
             ))
@@ -62,10 +62,10 @@ fn member_can_create_videos() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
-            VideoUpdateParameters {
-                assets: Some(vec![NewAsset::Urls(vec![
+            VideoUpdateParametersRecord {
+                assets: Some(NewAssets::<Test>::Urls(vec![
                     b"https://somewhere-else.com/".to_vec()
-                ])]),
+                ])),
                 new_meta: Some(b"newmetablob".to_vec()),
             }
         ));
@@ -75,10 +75,10 @@ fn member_can_create_videos() {
             MetaEvent::content(RawEvent::VideoUpdated(
                 ContentActor::Member(FIRST_MEMBER_ID),
                 video_id,
-                VideoUpdateParameters {
-                    assets: Some(vec![NewAsset::Urls(vec![
+                VideoUpdateParametersRecord {
+                    assets: Some(NewAssets::<Test>::Urls(vec![
                         b"https://somewhere-else.com/".to_vec()
-                    ])]),
+                    ])),
                     new_meta: Some(b"newmetablob".to_vec()),
                 }
             ))
@@ -90,8 +90,8 @@ fn member_can_create_videos() {
                 Origin::signed(SECOND_MEMBER_ORIGIN),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 channel_id,
-                VideoCreationParameters {
-                    assets: vec![],
+                VideoCreationParametersRecord {
+                    assets: NewAssets::<Test>::Urls(vec![]),
                     meta: vec![],
                 }
             ),
@@ -104,7 +104,7 @@ fn member_can_create_videos() {
                 Origin::signed(SECOND_MEMBER_ORIGIN),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 video_id,
-                VideoUpdateParameters {
+                VideoUpdateParametersRecord {
                     assets: None,
                     new_meta: None,
                 }
@@ -151,8 +151,8 @@ fn curators_can_censor_videos() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
-            VideoCreationParameters {
-                assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+            VideoCreationParametersRecord {
+                assets: NewAssets::<Test>::Urls(vec![b"https://somewhere.com/".to_vec()]),
                 meta: b"metablob".to_vec(),
             }
         ));

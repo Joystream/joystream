@@ -443,7 +443,6 @@ impl content::Trait for Runtime {
     type SeriesId = SeriesId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type StorageSystem = (); // TODO: Add storage integration
 }
 
 // TODO: Remove after the integration with the Content pallet.
