@@ -5,6 +5,80 @@ use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
+fn create_channel_mock(
+    sender: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    params: ChannelCreationParameters<Test>,
+    result: DispatchResult,
+) {
+    let channel_id = Content::next_channel_id();
+    assert_eq!(
+        Content::create_channel(Origin::signed(sender), actor.clone(), params.clone()),
+        result.clone(),
+    );
+
+    if result.is_ok() {
+        let num_assets = match params.assets.clone() {
+            NewAssets::<Test>::Urls(v) => v.len() as u64,
+            NewAssets::<Test>::Upload(c) => c.object_creation_list.len() as u64,
+        };
+        let owner = Content::actor_to_channel_owner(&actor).unwrap();
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelCreated(
+                actor.clone(),
+                channel_id,
+                ChannelRecord {
+                    owner: owner,
+                    is_censored: false,
+                    reward_account: params.reward_account,
+                    deletion_prize_source_account_id: sender,
+                    num_assets: num_assets,
+                    num_videos: 0,
+                },
+                params.clone(),
+            ))
+        );
+    }
+}
+
+#[test]
+fn channel_creator_can_upload() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
+            authentication_key: b"test".to_vec(),
+            object_creation_list: vec![
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"first".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"second".to_vec(),
+                },
+                DataObjectCreationParameters {
+                    size: 3,
+                    ipfs_content_id: b"third".to_vec(),
+                },
+            ],
+            expected_data_size_fee: <Test as balances::Trait>::Balance::from(10u32),
+        });
+        create_channel_mock(
+            FIRST_MEMBER_ORIGIN,
+            ContentActor::Member(FIRST_MEMBER_ID),
+            ChannelCreationParametersRecord {
+                assets: assets,
+                meta: vec![],
+                reward_account: None,
+            },
+            Ok(()),
+        );
+    })
+}
+
 #[test]
 fn lead_cannot_create_channel() {
     with_default_mock_builder(|| {
