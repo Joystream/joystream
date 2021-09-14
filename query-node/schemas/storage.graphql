@@ -144,6 +144,10 @@ type StorageBagStorageAssignment @entity {
 
   "Storage bucket that should store the bag"
   storageBucket: StorageBucket!
+
+  # Relationship filtering workaround
+  storageBagId: ID
+  storageBucketId: ID
 }
 
 type StorageBagDistributionAssignment @entity {
@@ -155,6 +159,10 @@ type StorageBagDistributionAssignment @entity {
 
   "Distribution bucket that should distribute the bag"
   distributionBucket: DistributionBucket!
+
+  # Relationship filtering workaround
+  storageBagId: Int
+  distributionBucketId: Int
 }
 
 type StorageDataObject @entity {
