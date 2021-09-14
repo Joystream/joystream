@@ -1436,7 +1436,12 @@ impl<T: Trait> Module<T> {
     ) -> Option<UploadParameters<T>> {
         // dynamic bag for a media object
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
-        let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag);
+        let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag.clone());
+
+        if !storage::Bags::<T>::contains_key(bag_id.clone()) {
+            // temporary
+            Storage::<T>::create_dynamic_bag(dyn_bag, None).ok()?;
+        }
 
         if let NewAssets::<T>::Upload(creation_upload_params) = assets {
             Some(UploadParametersRecord {
