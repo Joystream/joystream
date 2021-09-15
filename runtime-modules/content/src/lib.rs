@@ -241,7 +241,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelCreationParametersRecord<NewAssets, AccountId> {
-    /// Assets referenced by metadata
+    /// Asset collection for the channel, referenced by metadata
     assets: NewAssets,
     /// Metadata about the channel.
     meta: Vec<u8>,
@@ -256,7 +256,7 @@ type ChannelCreationParameters<T> =
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelUpdateParametersRecord<NewAssets, AccountId> {
-    /// Assets referenced by metadata to add to the channel
+    /// Asset collection for the channel, referenced by metadata    
     assets: Option<NewAssets>,
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
@@ -309,7 +309,7 @@ pub struct CreationUploadParameters<Balance> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct VideoCreationParametersRecord<NewAssets> {
-    /// Content creation parameters
+    /// Asset collection for the video
     assets: NewAssets,
     /// Metadata for the video.
     meta: Vec<u8>,
