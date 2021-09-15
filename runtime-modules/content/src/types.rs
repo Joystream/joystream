@@ -222,8 +222,6 @@ pub struct VideoRecord<
     SeriesId,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
-    CuratorGroupId: Default + Copy,
-    DAOId: Default + Copy,
     Balance: Default,
 > {
     pub in_channel: ChannelId,
@@ -233,7 +231,7 @@ pub struct VideoRecord<
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// Whether nft for this video have been issued.
-    pub nft_status: Option<OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>>,
+    pub nft_status: Option<OwnedNFT<BlockNumber, MemberId, Balance>>,
 }
 
 impl<
@@ -241,10 +239,8 @@ impl<
         SeriesId: Clone,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq + Ord,
-        CuratorGroupId: Default + Copy + PartialEq,
-        DAOId: Default + Copy + PartialEq,
         Balance: Clone + Default,
-    > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
+    > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, Balance>
 {
     fn is_issued(&self) -> bool {
         self.nft_status.is_some()
@@ -263,10 +259,7 @@ impl<
     }
 
     /// Ensure given NFTOwner is nft owner
-    pub fn ensure_nft_ownership<T: Trait>(
-        &self,
-        owner: &ChannelOwner<MemberId, CuratorGroupId, DAOId>,
-    ) -> DispatchResult {
+    pub fn ensure_nft_ownership<T: Trait>(&self, owner: &NFTOwner<MemberId>) -> DispatchResult {
         if let Some(owned_nft) = &self.nft_status {
             ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnNFT);
         }
@@ -429,8 +422,6 @@ pub type Video<T> = VideoRecord<
     <T as Trait>::SeriesId,
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
-    CuratorGroupId<T>,
-    DAOId<T>,
     BalanceOf<T>,
 >;
 
