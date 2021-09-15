@@ -5,7 +5,6 @@ pub use curator_group::*;
 pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
-pub use common::MembershipTypes;
 use core::fmt::Debug;
 use frame_support::{ensure, Parameter};
 #[cfg(feature = "std")]
@@ -15,7 +14,7 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 // use frame_system::ensure_root;
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: frame_system::Trait + MembershipTypes {
+pub trait ContentActorAuthenticator: frame_system::Trait + membership::Trait {
     /// Curator identifier
     type CuratorId: Parameter
         + Member

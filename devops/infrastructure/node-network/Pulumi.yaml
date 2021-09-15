@@ -22,3 +22,6 @@ template:
     nodeImage:
       description: Docker image with tag to be used as validator and RPC nodes
       default: 'joystream/node:latest'
+    encryptionKey:
+      description: Key to encrypt the 7z containing secrets with
+      default: '1234'

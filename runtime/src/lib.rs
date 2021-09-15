@@ -447,7 +447,7 @@ impl content::Trait for Runtime {
 }
 
 // TODO: Remove after the integration with the Content pallet.
-impl common::storage::StorageSystem<Runtime> for () {
+impl common::storage::StorageSystem<Runtime, MemberId> for () {
     fn atomically_add_content(
         _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
         _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,

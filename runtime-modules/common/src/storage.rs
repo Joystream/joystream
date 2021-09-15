@@ -32,26 +32,26 @@ impl<MemberId, ChannelId, DAOId> Default for StorageObjectOwner<MemberId, Channe
 }
 // To be implemented by current storage data_directory runtime module.
 // Defined in 'common' package
-pub trait StorageSystem<T: crate::StorageOwnership + crate::MembershipTypes> {
+pub trait StorageSystem<T: crate::StorageOwnership, MemberId> {
     fn atomically_add_content(
-        owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        owner: StorageObjectOwner<MemberId, T::ChannelId, T::DAOId>,
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
     ) -> DispatchResult;
 
     // Checks if given owner can add provided content to the storage frame_system
     fn can_add_content(
-        owner: StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        owner: StorageObjectOwner<MemberId, T::ChannelId, T::DAOId>,
         content_parameters: Vec<ContentParameters<T::ContentId, T::DataObjectTypeId>>,
     ) -> DispatchResult;
 
     fn atomically_remove_content(
-        owner: &StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        owner: &StorageObjectOwner<MemberId, T::ChannelId, T::DAOId>,
         content_ids: &[T::ContentId],
     ) -> DispatchResult;
 
     // Checks if given owner can remove content under given content ids from the storage frame_system
     fn can_remove_content(
-        owner: &StorageObjectOwner<T::MemberId, T::ChannelId, T::DAOId>,
+        owner: &StorageObjectOwner<MemberId, T::ChannelId, T::DAOId>,
         content_ids: &[T::ContentId],
     ) -> DispatchResult;
 }

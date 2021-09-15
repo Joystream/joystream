@@ -257,6 +257,9 @@ type Video @entity {
   "Flag signaling whether a video is censored."
   isCensored: Boolean!
 
+  "Video nft details"
+  nft: OwnedNFT
+
   "Whether the Video contains explicit material."
   isExplicit: Boolean
 
@@ -285,6 +288,109 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
+}
+
+"Represents nft details"
+type OwnedNFT @entity {
+  "Member owning the nft (if any)"
+  ownerMember: Membership
+
+  "Curator group owning the nft (if any)"
+  ownerCuratorGroup: CuratorGroup
+
+  "NFT transactional status"
+  transactionalStatus: TransactionalStatus!
+
+  "Creator royalty"
+  creatorRoyalty: Float
+}
+
+"NFT transactional state"
+union TransactionalStatus = TransactionalStatusIdle 
+  | TransactionalStatusInitiatedOfferToMember
+  | TransactionalStatusAuction
+  | TransactionalStatusBuyNow
+
+"Represents TransactionalStatus Idle"
+variant TransactionalStatusIdle @variant {
+  "Variant needs to have at least one not null property. This value is not used."
+  dummy: Int!
+}
+
+"Represents TransactionalStatus InitiatedOfferToMember"
+variant TransactionalStatusInitiatedOfferToMember @variant {
+  "Member identifier"
+  member: Int!
+
+  "Whether member should pay to accept offer (optional)"
+  price: Int
+}
+
+"Represents TransactionalStatus Auction"
+variant TransactionalStatusAuction @variant {
+  "Member identifier"
+  auction: Auction!
+}
+
+"Represents TransactionalStatus BuyNow"
+variant TransactionalStatusBuyNow @variant {
+  price: Int!
+}
+
+"Represents auction data"
+type Auction @entity {
+  "Auction starting price"
+  starting_price: Int!
+
+  "Whether auction can be completed instantly"
+  buy_now_price: Int
+
+  "The type of auction"
+  auction_type: AuctionType!
+
+  "Minimal step between auction bids"
+  minimal_bid_step: Int!
+
+  "Auction last bid (if exists)"
+  last_bid: Bid
+
+  "Whether auction starts at some predefined time in future"
+  stats_at: Int
+
+  "Auction participants whitelist"
+  whitelist: [Int!]
+}
+
+"Represents bid data"
+type Bid @entity {
+  "Bidder id"
+  bidder: Int!
+
+  "Amount bidded"
+  amount: Int!
+
+  "Bid time"
+  time: Int!
+}
+
+"Represents various action types"
+union AuctionType = English
+  | Open
+
+
+"Represents English auction details"
+variant English @variant {
+  "English auction duration"
+  duration: Int!
+
+  "Auction extension time"
+  extensionTime: Int, 
+}
+
+"Represents Open auction details"
+variant Open @variant {
+  "Auction bid lock duration"
+  bidLockingTime: Int!
 }
 
 type VideoMediaMetadata @entity {

@@ -349,6 +349,18 @@ pub fn testnet_genesis(
                 next_series_id: 1,
                 next_person_id: 1,
                 next_channel_transfer_request_id: 1,
+                min_round_duration: 3,
+                max_round_duration: 20,
+                min_bid_lock_duration: 2,
+                max_bid_lock_duration: 10,
+                min_starting_price: 10,
+                max_starting_price: 1000,
+                min_creator_royalty: Perbill::from_percent(1),
+                max_creator_royalty: Perbill::from_percent(5),
+                min_bid_step: 10,
+                max_bid_step: 100,
+                auction_fee_percentage: Perbill::from_percent(1),
+                auction_starts_at_max_delta: 90_000,
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
