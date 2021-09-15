@@ -712,9 +712,9 @@ decl_module! {
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
                 // number of assets uploaded
-                num_assets: num_assets,
+                num_assets,
                 // setting the channel owner account as the prize funds account
-                deletion_prize_source_account_id: sender.clone(),
+                deletion_prize_source_account_id: sender,
             };
 
             // add channel to onchain state
@@ -743,7 +743,7 @@ decl_module! {
             )?;
 
             let maybe_upload_parameters = params.assets.clone()
-                .map_or( None, |assets| {Self::pick_upload_parameters_from_assets(
+                .and_then(|assets| {Self::pick_upload_parameters_from_assets(
                    &assets,
                     &channel_id,
             &sender,
@@ -805,7 +805,7 @@ decl_module! {
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
             // delete channel dynamic bag
-            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
             Storage::<T>::delete_dynamic_bag(
                 channel.deletion_prize_source_account_id,
                 dyn_bag
@@ -909,7 +909,7 @@ decl_module! {
             params: ChannelCategoryCreationParameters,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
-                origin.clone(),
+                origin,
                 &actor
             )?;
 
@@ -1135,7 +1135,7 @@ decl_module! {
             // If video is on storage, remove it
             if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
                 Storage::<T>::delete_data_objects(
-                    channel.deletion_prize_source_account_id.clone(),
+                    channel.deletion_prize_source_account_id,
                     Self::bag_id_for_channel(&channel_id),
                     data_objects_id_set,
                 )?;
@@ -1444,7 +1444,7 @@ impl<T: Trait> Module<T> {
         sender: &T::AccountId,
     ) -> Option<UploadParameters<T>> {
         // dynamic bag for a media object
-        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag.clone());
 
         if !storage::Bags::<T>::contains_key(bag_id.clone()) {
@@ -1455,7 +1455,7 @@ impl<T: Trait> Module<T> {
         if let NewAssets::<T>::Upload(creation_upload_params) = assets {
             Some(UploadParametersRecord {
                 authentication_key: creation_upload_params.authentication_key.clone(),
-                bag_id: bag_id,
+                bag_id,
                 object_creation_list: creation_upload_params.object_creation_list.clone(),
                 deletion_prize_source_account_id: sender.clone(),
                 expected_data_size_fee: creation_upload_params.expected_data_size_fee,
@@ -1487,7 +1487,7 @@ impl<T: Trait> Module<T> {
 
     fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
         // retrieve bag id from channel id
-        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
         BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag)
     }
 
