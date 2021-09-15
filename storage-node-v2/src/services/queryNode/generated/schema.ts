@@ -2853,9 +2853,9 @@ export type StorageBagDistributionAssignment = BaseGraphQlObject & {
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
   storageBag: StorageBag
-  storageBagId: Scalars['String']
+  storageBagId?: Maybe<Scalars['String']>
   distributionBucket: DistributionBucket
-  distributionBucketId: Scalars['String']
+  distributionBucketId?: Maybe<Scalars['String']>
 }
 
 export type StorageBagDistributionAssignmentConnection = {
@@ -2867,6 +2867,8 @@ export type StorageBagDistributionAssignmentConnection = {
 export type StorageBagDistributionAssignmentCreateInput = {
   storageBag: Scalars['ID']
   distributionBucket: Scalars['ID']
+  storageBagId?: Maybe<Scalars['String']>
+  distributionBucketId?: Maybe<Scalars['String']>
 }
 
 export type StorageBagDistributionAssignmentEdge = {
@@ -2885,11 +2887,17 @@ export enum StorageBagDistributionAssignmentOrderByInput {
   StorageBagDesc = 'storageBag_DESC',
   DistributionBucketAsc = 'distributionBucket_ASC',
   DistributionBucketDesc = 'distributionBucket_DESC',
+  StorageBagIdAsc = 'storageBagId_ASC',
+  StorageBagIdDesc = 'storageBagId_DESC',
+  DistributionBucketIdAsc = 'distributionBucketId_ASC',
+  DistributionBucketIdDesc = 'distributionBucketId_DESC',
 }
 
 export type StorageBagDistributionAssignmentUpdateInput = {
   storageBag?: Maybe<Scalars['ID']>
   distributionBucket?: Maybe<Scalars['ID']>
+  storageBagId?: Maybe<Scalars['String']>
+  distributionBucketId?: Maybe<Scalars['String']>
 }
 
 export type StorageBagDistributionAssignmentWhereInput = {
@@ -2921,6 +2929,16 @@ export type StorageBagDistributionAssignmentWhereInput = {
   storageBag_in?: Maybe<Array<Scalars['ID']>>
   distributionBucket_eq?: Maybe<Scalars['ID']>
   distributionBucket_in?: Maybe<Array<Scalars['ID']>>
+  storageBagId_eq?: Maybe<Scalars['String']>
+  storageBagId_contains?: Maybe<Scalars['String']>
+  storageBagId_startsWith?: Maybe<Scalars['String']>
+  storageBagId_endsWith?: Maybe<Scalars['String']>
+  storageBagId_in?: Maybe<Array<Scalars['String']>>
+  distributionBucketId_eq?: Maybe<Scalars['String']>
+  distributionBucketId_contains?: Maybe<Scalars['String']>
+  distributionBucketId_startsWith?: Maybe<Scalars['String']>
+  distributionBucketId_endsWith?: Maybe<Scalars['String']>
+  distributionBucketId_in?: Maybe<Array<Scalars['String']>>
   storageBag?: Maybe<StorageBagWhereInput>
   distributionBucket?: Maybe<DistributionBucketWhereInput>
   AND?: Maybe<Array<StorageBagDistributionAssignmentWhereInput>>
@@ -3216,9 +3234,9 @@ export type StorageBagStorageAssignment = BaseGraphQlObject & {
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
   storageBag: StorageBag
-  storageBagId: Scalars['String']
+  storageBagId?: Maybe<Scalars['String']>
   storageBucket: StorageBucket
-  storageBucketId: Scalars['String']
+  storageBucketId?: Maybe<Scalars['String']>
 }
 
 export type StorageBagStorageAssignmentConnection = {
@@ -3230,6 +3248,8 @@ export type StorageBagStorageAssignmentConnection = {
 export type StorageBagStorageAssignmentCreateInput = {
   storageBag: Scalars['ID']
   storageBucket: Scalars['ID']
+  storageBagId?: Maybe<Scalars['String']>
+  storageBucketId?: Maybe<Scalars['String']>
 }
 
 export type StorageBagStorageAssignmentEdge = {
@@ -3248,11 +3268,17 @@ export enum StorageBagStorageAssignmentOrderByInput {
   StorageBagDesc = 'storageBag_DESC',
   StorageBucketAsc = 'storageBucket_ASC',
   StorageBucketDesc = 'storageBucket_DESC',
+  StorageBagIdAsc = 'storageBagId_ASC',
+  StorageBagIdDesc = 'storageBagId_DESC',
+  StorageBucketIdAsc = 'storageBucketId_ASC',
+  StorageBucketIdDesc = 'storageBucketId_DESC',
 }
 
 export type StorageBagStorageAssignmentUpdateInput = {
   storageBag?: Maybe<Scalars['ID']>
   storageBucket?: Maybe<Scalars['ID']>
+  storageBagId?: Maybe<Scalars['String']>
+  storageBucketId?: Maybe<Scalars['String']>
 }
 
 export type StorageBagStorageAssignmentWhereInput = {
@@ -3284,6 +3310,16 @@ export type StorageBagStorageAssignmentWhereInput = {
   storageBag_in?: Maybe<Array<Scalars['ID']>>
   storageBucket_eq?: Maybe<Scalars['ID']>
   storageBucket_in?: Maybe<Array<Scalars['ID']>>
+  storageBagId_eq?: Maybe<Scalars['String']>
+  storageBagId_contains?: Maybe<Scalars['String']>
+  storageBagId_startsWith?: Maybe<Scalars['String']>
+  storageBagId_endsWith?: Maybe<Scalars['String']>
+  storageBagId_in?: Maybe<Array<Scalars['String']>>
+  storageBucketId_eq?: Maybe<Scalars['String']>
+  storageBucketId_contains?: Maybe<Scalars['String']>
+  storageBucketId_startsWith?: Maybe<Scalars['String']>
+  storageBucketId_endsWith?: Maybe<Scalars['String']>
+  storageBucketId_in?: Maybe<Array<Scalars['String']>>
   storageBag?: Maybe<StorageBagWhereInput>
   storageBucket?: Maybe<StorageBucketWhereInput>
   AND?: Maybe<Array<StorageBagStorageAssignmentWhereInput>>

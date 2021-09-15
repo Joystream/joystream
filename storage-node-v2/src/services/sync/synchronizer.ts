@@ -45,7 +45,7 @@ export async function performSync(
   const deletedTasks = deleted.map((fileName) => new DeleteLocalFileTask(uploadDirectory, fileName))
 
   let addedTasks: SyncTask[]
-  if (operatorUrl !== null) {
+  if (operatorUrl === undefined) {
     addedTasks = await getPrepareDownloadTasks(model, added, uploadDirectory, workingStack)
   } else {
     addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory)

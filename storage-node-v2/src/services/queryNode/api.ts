@@ -14,7 +14,7 @@ import {
   GetDataObjectDetailsQueryVariables,
   GetDataObjectDetails,
 } from './generated/queries'
-import { Maybe, StorageBucketWhereInput, StorageBagWhereInput } from './generated/schema'
+import { Maybe, StorageBagWhereInput } from './generated/schema'
 
 /**
  * Query node class helper. Incapsulates custom queries.
@@ -129,10 +129,9 @@ export class QueryNodeApi {
     offset: number,
     limit: number
   ): Promise<Array<StorageBagDetailsFragment>> {
-    const input: StorageBucketWhereInput = { id_in: bucketIds }
     const result = await this.multipleEntitiesQuery<GetStorageBagDetailsQuery, GetStorageBagDetailsQueryVariables>(
       GetStorageBagDetails,
-      { offset, limit, bucketIds: input },
+      { offset, limit, bucketIds },
       'storageBags'
     )
 

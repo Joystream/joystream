@@ -14,10 +14,10 @@ export type GetStorageBucketDetailsQueryVariables = Types.Exact<{
 
 export type GetStorageBucketDetailsQuery = { storageBuckets: Array<StorageBucketDetailsFragment> }
 
-export type StorageBagDetailsFragment = { id: string; storageAssignments: Array<{ id: string }> }
+export type StorageBagDetailsFragment = { id: string; storageAssignments: Array<{ storageBucket: { id: string } }> }
 
 export type GetStorageBagDetailsQueryVariables = Types.Exact<{
-  bucketIds?: Types.Maybe<Types.StorageBagStorageAssignmentWhereInput>
+  bucketIds?: Types.Maybe<Array<Types.Scalars['String']> | Types.Scalars['String']>
   offset?: Types.Maybe<Types.Scalars['Int']>
   limit?: Types.Maybe<Types.Scalars['Int']>
 }>
@@ -55,7 +55,9 @@ export const StorageBagDetails = gql`
   fragment StorageBagDetails on StorageBag {
     id
     storageAssignments {
-      id
+      storageBucket {
+        id
+      }
     }
   }
 `
@@ -76,8 +78,12 @@ export const GetStorageBucketDetails = gql`
   ${StorageBucketDetails}
 `
 export const GetStorageBagDetails = gql`
-  query getStorageBagDetails($bucketIds: StorageBagStorageAssignmentWhereInput, $offset: Int, $limit: Int) {
-    storageBags(offset: $offset, limit: $limit, where: { storageAssignments_some: $bucketIds }) {
+  query getStorageBagDetails($bucketIds: [String!], $offset: Int, $limit: Int) {
+    storageBags(
+      offset: $offset
+      limit: $limit
+      where: { storageAssignments_some: { storageBucketId_in: $bucketIds } }
+    ) {
       ...StorageBagDetails
     }
   }

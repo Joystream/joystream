@@ -92,7 +92,9 @@ export function getQueryNodeUrl(res: express.Response): string {
  * This is a helper function. It parses the response object for a variable and
  * throws an error on failure.
  */
-export function getCommandConfig(res: express.Response): {
+export function getCommandConfig(
+  res: express.Response
+): {
   version: string
   userAgent: string
 } {

@@ -109,7 +109,7 @@ export async function getStorageObligationsFromRuntime(
     })),
     bags: assignedBags.map((bag) => ({
       id: bag.id,
-      buckets: bag.storageAssignments.map((bucketInBag) => bucketInBag.id),
+      buckets: bag.storageAssignments.map((bucketInBag) => bucketInBag.storageBucket.id),
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
       cid: dataObject.ipfsHash,
