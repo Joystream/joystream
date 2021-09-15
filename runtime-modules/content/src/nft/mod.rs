@@ -13,8 +13,8 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         ensure_signed(origin)?;
 
-        // The content owner will be..
-        let content_owner = Self::actor_to_content_owner(&actor)?;
+        // The nft owner will be..
+        let content_owner = Self::actor_to_nft_owner(&actor)?;
 
         video.ensure_nft_ownership::<T>(&content_owner)
     }
@@ -288,7 +288,7 @@ impl<T: Trait> Module<T> {
 
             T::Currency::deposit_creating(&owner_account_id, *price);
 
-            *owner = ChannelOwner::Member(new_owner);
+            *owner = NFTOwner::Member(new_owner);
         }
 
         video.set_idle_transactional_status()
@@ -312,7 +312,7 @@ impl<T: Trait> Module<T> {
                 T::Currency::deposit_creating(&owner_account_id, *price);
             }
 
-            *owner = ChannelOwner::Member(*to);
+            *owner = NFTOwner::Member(*to);
         }
 
         video.set_idle_transactional_status()
@@ -365,7 +365,7 @@ impl<T: Trait> Module<T> {
                 T::Currency::deposit_creating(&owner_account_id, last_bid_amount - auction_fee);
             }
 
-            *owner = ChannelOwner::Member(last_bidder);
+            *owner = NFTOwner::Member(last_bidder);
             *transactional_status = TransactionalStatus::Idle;
         }
     }

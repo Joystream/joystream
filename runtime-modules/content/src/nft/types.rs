@@ -38,11 +38,9 @@ impl<BlockNumber: BaseArithmetic + Copy, MemberId: Default + Copy + Ord, Balance
 pub struct OwnedNFT<
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
-    CuratorGroupId: Default + Copy,
-    DAOId: Default + Copy,
     Balance: Default,
 > {
-    pub owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    pub owner: NFTOwner<MemberId>,
     pub transactional_status: TransactionalStatus<BlockNumber, MemberId, Balance>,
     pub creator_royalty: Option<Royalty>,
 }
@@ -50,26 +48,34 @@ pub struct OwnedNFT<
 impl<
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq + Ord,
-        CuratorGroupId: Default + Copy + PartialEq,
-        DAOId: Default + Copy + PartialEq,
         Balance: Default,
-    > OwnedNFT<BlockNumber, MemberId, CuratorGroupId, DAOId, Balance>
+    > OwnedNFT<BlockNumber, MemberId, Balance>
 {
     /// Whether provided owner is nft owner
-    pub fn is_owner(&self, owner: &ChannelOwner<MemberId, CuratorGroupId, DAOId>) -> bool {
+    pub fn is_owner(&self, owner: &NFTOwner<MemberId>) -> bool {
         self.owner.eq(owner)
     }
 
     /// Create new NFT
-    pub fn new(
-        owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
-        creator_royalty: Option<Royalty>,
-    ) -> Self {
+    pub fn new(owner: NFTOwner<MemberId>, creator_royalty: Option<Royalty>) -> Self {
         Self {
             owner,
             transactional_status: TransactionalStatus::Idle,
             creator_royalty,
         }
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum NFTOwner<MemberId> {
+    ChannelOwner,
+    Member(MemberId),
+}
+
+impl<MemberId> Default for NFTOwner<MemberId> {
+    fn default() -> Self {
+        Self::ChannelOwner
     }
 }
 
@@ -290,13 +296,7 @@ pub type Auction<T> =
     AuctionRecord<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>, MemberId<T>>;
 
 /// OwnedNFT alias type for simplification.
-pub type Nft<T> = OwnedNFT<
-    <T as frame_system::Trait>::BlockNumber,
-    MemberId<T>,
-    CuratorGroupId<T>,
-    DAOId<T>,
-    BalanceOf<T>,
->;
+pub type Nft<T> = OwnedNFT<<T as frame_system::Trait>::BlockNumber, MemberId<T>, BalanceOf<T>>;
 
 /// Parameters, needed for auction start
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

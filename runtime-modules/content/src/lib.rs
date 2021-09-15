@@ -329,7 +329,7 @@ decl_module! {
             )?;
 
             // The channel owner will be..
-            let channel_owner = Self::actor_to_content_owner(&actor)?;
+            let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
             // Pick out the assets to be uploaded to storage frame_system
             let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
@@ -1272,11 +1272,11 @@ decl_module! {
             ensure_actor_authorized_to_update_channel::<T>(origin, &actor, &channel_owner)?;
 
             // The content owner will be..
-            let content_owner = if let Some(to) = to {
-                ChannelOwner::Member(to)
+            let nft_owner = if let Some(to) = to {
+                NFTOwner::Member(to)
             } else {
                 // if `to` set to None, actor issues to himself
-                Self::actor_to_content_owner(&actor)?
+                Self::actor_to_nft_owner(&actor)?
             };
 
             // Enure royalty bounds satisfied, if provided
@@ -1293,7 +1293,7 @@ decl_module! {
             let mut video = video;
             video.nft_status = Some(OwnedNFT {
                 transactional_status: TransactionalStatus::Idle,
-                owner: content_owner.clone(),
+                owner: nft_owner.clone(),
                 creator_royalty: royalty,
             });
 
@@ -1305,7 +1305,7 @@ decl_module! {
                 video_id,
                 royalty,
                 metadata,
-                content_owner,
+                nft_owner,
             ));
         }
 
@@ -1432,7 +1432,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure participant_id is nft owner
-            video.ensure_nft_ownership::<T>(&ChannelOwner::Member(participant_id))?;
+            video.ensure_nft_ownership::<T>(&NFTOwner::Member(participant_id))?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1563,7 +1563,7 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    fn actor_to_content_owner(
+    fn actor_to_channel_owner(
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> ActorToChannelOwnerResult<T> {
         match actor {
@@ -1583,19 +1583,38 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn actor_to_nft_owner(
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    ) -> Result<NFTOwner<T::MemberId>, Error<T>> {
+        match actor {
+            // Lead should use their member or curator role to authorize
+            ContentActor::Lead => Err(Error::<T>::ActorCannotBeLead),
+            ContentActor::Curator(
+                _curator_group_id,
+                _curator_id
+            ) => {
+                Ok(NFTOwner::ChannelOwner)
+            }
+            ContentActor::Member(member_id) => {
+                Ok(NFTOwner::Member(*member_id))
+            }
+            // TODO:
+            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+        }
+    }
+
     /// Ensure owner account id exists, retreive corresponding one.
     pub fn ensure_owner_account_id(
         video: &Video<T>,
         owned_nft: &Nft<T>,
     ) -> Result<T::AccountId, Error<T>> {
-        match owned_nft.owner {
-            ChannelOwner::Member(member_id) => Self::ensure_member_controller_account_id(member_id),
-            _ => {
-                if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
-                    Ok(reward_account)
-                } else {
-                    Err(Error::<T>::RewardAccountIsNotSet)
-                }
+        if let NFTOwner::Member(member_id) = owned_nft.owner {
+            Self::ensure_member_controller_account_id(member_id)
+        } else {
+            if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
+                Ok(reward_account)
+            } else {
+                Err(Error::<T>::RewardAccountIsNotSet)
             }
         }
     }
@@ -1622,8 +1641,7 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             MemberId<T>,
         >,
-        ChannelOwner =
-            ChannelOwner<MemberId<T>, <T as ContentActorAuthenticator>::CuratorGroupId, DAOId<T>>,
+        NFTOwner = NFTOwner<MemberId<T>>,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
@@ -1772,13 +1790,7 @@ decl_event!(
 
         // NFT auction
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(
-            ContentActor,
-            VideoId,
-            Option<Royalty>,
-            Metadata,
-            ChannelOwner,
-        ),
+        NftIssued(ContentActor, VideoId, Option<Royalty>, Metadata, NFTOwner),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
