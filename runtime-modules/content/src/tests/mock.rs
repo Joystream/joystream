@@ -577,3 +577,71 @@ pub fn delete_channel_mock(
         )
     }
 }
+
+pub fn create_video_mock(
+    sender: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: VideoCreationParameters<Test>,
+    result: DispatchResult,
+) {
+    let video_id = Content::next_video_id();
+    let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
+
+    assert_eq!(
+        Content::create_video(
+            Origin::signed(sender),
+            actor.clone(),
+            channel_id.clone(),
+            params.clone()
+        ),
+        result.clone(),
+    );
+
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::VideoCreated(
+                actor.clone(),
+                channel_id,
+                video_id,
+                params.clone(),
+            ))
+        );
+        assert_eq!(
+            num_videos_pre + 1,
+            Content::channel_by_id(channel_id).num_videos,
+        );
+    }
+}
+pub fn update_video_mock(
+    sender: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: <Test as Trait>::VideoId,
+    params: VideoUpdateParameters<Test>,
+    result: DispatchResult,
+) {
+    // let channel_id = Content::video_by_id(video_id.clone()).in_channel;
+    // let num_videos_pre = Content::channel_by_id(channel_id).num_videos;
+
+    assert_eq!(
+        Content::update_video(
+            Origin::signed(sender),
+            actor.clone(),
+            video_id.clone(),
+            params.clone()
+        ),
+        result.clone(),
+    );
+
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::VideoUpdated(
+                actor.clone(),
+                video_id,
+                params.clone(),
+            ))
+        );
+    }
+}

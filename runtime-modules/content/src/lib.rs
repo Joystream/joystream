@@ -1075,13 +1075,13 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage frame_system
+            // Pick the assets to be uploaded to storage frame_system out
             if let Some(assets) = &params.assets {
                 // adding content to storage if needed
                let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
                    assets,
                    &channel_id,
-           &sender,
+                   &sender,
                );
 
               if let Some(upload_parameters) = maybe_upload_parameters{
