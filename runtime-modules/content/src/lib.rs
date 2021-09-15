@@ -1610,12 +1610,10 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::AccountId, Error<T>> {
         if let NFTOwner::Member(member_id) = owned_nft.owner {
             Self::ensure_member_controller_account_id(member_id)
+        } else if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
+            Ok(reward_account)
         } else {
-            if let Some(reward_account) = Self::channel_by_id(video.in_channel).reward_account {
-                Ok(reward_account)
-            } else {
-                Err(Error::<T>::RewardAccountIsNotSet)
-            }
+            Err(Error::<T>::RewardAccountIsNotSet)
         }
     }
 
