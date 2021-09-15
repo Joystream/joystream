@@ -56,8 +56,10 @@ impl<T: Trait> Module<T> {
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
         if let Some(last_bid) = &auction.last_bid {
-            let can_be_completed = if let AuctionType::English(round_duration) =
-                auction.auction_type
+            let can_be_completed = if let AuctionType::English(EnglishAuctionDetails {
+                auction_duration,
+                ..
+            }) = auction.auction_type
             {
                 // Check whether buy now have been triggered.
                 let is_buy_now_triggered =
@@ -114,7 +116,7 @@ impl<T: Trait> Module<T> {
                 auction_duration,
             }) => {
                 Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
-                Self::ensure_extension_period_bounds_satisfied(auction_duration)?;
+                Self::ensure_extension_period_bounds_satisfied(extension_period)?;
             }
             AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) => {
                 Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;
@@ -188,11 +190,11 @@ impl<T: Trait> Module<T> {
         duration: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            round_duration <= Self::max_auction_duration(),
+            duration <= Self::max_auction_duration(),
             Error::<T>::AuctionDurationUpperBoundExceeded
         );
         ensure!(
-            round_duration >= Self::min_auction_duration(),
+            duration >= Self::min_auction_duration(),
             Error::<T>::AuctionDurationLowerBoundExceeded
         );
 

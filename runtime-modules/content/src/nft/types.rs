@@ -179,10 +179,11 @@ impl<
             AuctionType::English(EnglishAuctionDetails {
                 extension_period,
                 auction_duration,
-            }) if current_block - auction.starts_at >= auction_duration - extension_period => {
+            }) if current_block - self.starts_at >= *auction_duration - *extension_period => {
                 // bump auction duration when bid is made during extension period.
-                *auction_duration = auction_duration + extension_period;
+                *auction_duration = *auction_duration + *extension_period;
             }
+            _ => (),
         }
 
         self.last_bid = Some(bid);
@@ -248,7 +249,7 @@ impl<
         current_block: BlockNumber,
         bid: &Bid<MemberId, BlockNumber, Balance>,
     ) -> DispatchResult {
-        if let AuctionType::Open(bid_lock_duration) = &self.auction_type {
+        if let AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) = &self.auction_type {
             ensure!(
                 current_block - bid.time >= *bid_lock_duration,
                 Error::<T>::BidLockDurationIsNotExpired
@@ -331,20 +332,20 @@ pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum AuctionType<BlockNumber> {
     // English auction details
-    English(EnglishAuctionDeatails<BlockNumber>),
+    English(EnglishAuctionDetails<BlockNumber>),
     // Open auction details
     Open(OpenAuctionDetails<BlockNumber>),
 }
 
 impl<BlockNumber: Default> Default for AuctionType<BlockNumber> {
     fn default() -> Self {
-        Self::English(BlockNumber::default())
+        Self::English(EnglishAuctionDetails::default())
     }
 }
 
 /// English auction details
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct EnglishAuctionDetails<BlockNumber> {
     // the remaining time on a lot will automatically reset to to the preset extension time
     // if a new bid is placed within that period

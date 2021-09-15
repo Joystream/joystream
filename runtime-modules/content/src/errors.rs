@@ -108,7 +108,7 @@ decl_error! {
         ExtensionPeriodUpperBoundExceeded,
 
         /// Auction extension period lower bound exceeded
-        ExtensionPeriodLowerBoundExceeded
+        ExtensionPeriodLowerBoundExceeded,
 
         /// Bid lock duration upper bound exceeded
         BidLockDurationUpperBoundExceeded,
