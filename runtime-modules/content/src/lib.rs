@@ -804,6 +804,13 @@ decl_module! {
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
 
+            // delete channel dynamic bag
+            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id.clone());
+            Storage::<T>::delete_dynamic_bag(
+                channel.deletion_prize_source_account_id,
+                dyn_bag
+            )?;
+
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
 
@@ -1441,8 +1448,8 @@ impl<T: Trait> Module<T> {
         let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag.clone());
 
         if !storage::Bags::<T>::contains_key(bag_id.clone()) {
-            // temporary
-            Storage::<T>::create_dynamic_bag(dyn_bag, None).ok()?;
+            // create_dynamic_bag checks automatically satifsfied with None as second parameter
+            Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
         }
 
         if let NewAssets::<T>::Upload(creation_upload_params) = assets {
