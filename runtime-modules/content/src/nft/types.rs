@@ -102,7 +102,7 @@ pub struct AuctionRecord<BlockNumber: BaseArithmetic + Copy, Balance, MemberId: 
     pub auction_type: AuctionType<BlockNumber>,
     pub minimal_bid_step: Balance,
     pub last_bid: Option<Bid<MemberId, BlockNumber, Balance>>,
-    pub starts_at: Option<BlockNumber>,
+    pub starts_at: BlockNumber,
     pub whitelist: Option<BTreeSet<MemberId>>,
 }
 
@@ -116,23 +116,26 @@ impl<
     pub fn new<VideoId>(
         auction_params: AuctionParams<VideoId, BlockNumber, Balance, MemberId>,
     ) -> Self {
-        let AuctionParams {
-            auction_type,
-            starting_price,
-            buy_now_price,
-            minimal_bid_step,
-            starts_at,
-            whitelist,
-            ..
-        } = auction_params;
-        Self {
-            starting_price,
-            buy_now_price,
-            auction_type,
-            minimal_bid_step,
-            last_bid: None,
-            starts_at,
-            whitelist,
+        if let Some(starts_at) = auction_params.starts_at {
+            Self {
+                starting_price: auction_params.starting_price,
+                buy_now_price: auction_params.buy_now_price,
+                auction_type: auction_params.auction_type,
+                minimal_bid_step: auction_params.minimal_bid_step,
+                last_bid: None,
+                starts_at: starts_at,
+                whitelist: auction_params.whitelist,
+            }
+        } else {
+            Self {
+                starting_price: auction_params.starting_price,
+                buy_now_price: auction_params.buy_now_price,
+                auction_type: auction_params.auction_type,
+                minimal_bid_step: auction_params.minimal_bid_step,
+                last_bid: None,
+                starts_at: BlockNumber::default(),
+                whitelist: auction_params.whitelist,
+            }
         }
     }
 
@@ -170,8 +173,18 @@ impl<
     }
 
     /// Make auction bid
-    pub fn make_bid(&mut self, who: MemberId, bid: Balance, last_bid_block: BlockNumber) {
-        let bid = Bid::new(who, bid, last_bid_block);
+    pub fn make_bid(&mut self, who: MemberId, bid: Balance, current_block: BlockNumber) {
+        let bid = Bid::new(who, bid, current_block);
+        match &mut self.auction_type {
+            AuctionType::English(EnglishAuctionDetails {
+                extension_period,
+                auction_duration,
+            }) if current_block - auction.starts_at >= auction_duration - extension_period => {
+                // bump auction duration when bid is made during extension period.
+                *auction_duration = auction_duration + extension_period;
+            }
+        }
+
         self.last_bid = Some(bid);
     }
 
@@ -202,9 +215,10 @@ impl<
 
     /// Ensure auction have been already started
     pub fn ensure_auction_started<T: Trait>(&self, current_block: BlockNumber) -> DispatchResult {
-        if let Some(starts_at) = self.starts_at {
-            ensure!(starts_at <= current_block, Error::<T>::AuctionDidNotStart);
-        }
+        ensure!(
+            self.starts_at <= current_block,
+            Error::<T>::AuctionDidNotStart
+        );
         Ok(())
     }
 
@@ -316,14 +330,32 @@ pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum AuctionType<BlockNumber> {
-    // Auction round duration
-    English(BlockNumber),
-    // Bid lock duration
-    Open(BlockNumber),
+    // English auction details
+    English(EnglishAuctionDeatails<BlockNumber>),
+    // Open auction details
+    Open(OpenAuctionDetails<BlockNumber>),
 }
 
 impl<BlockNumber: Default> Default for AuctionType<BlockNumber> {
     fn default() -> Self {
         Self::English(BlockNumber::default())
     }
+}
+
+/// English auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct EnglishAuctionDetails<BlockNumber> {
+    // the remaining time on a lot will automatically reset to to the preset extension time
+    // if a new bid is placed within that period
+    pub extension_period: BlockNumber,
+    // auction duration
+    pub auction_duration: BlockNumber,
+}
+
+/// Open auction details
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct OpenAuctionDetails<BlockNumber> {
+    pub bid_lock_duration: BlockNumber,
 }

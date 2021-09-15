@@ -21,23 +21,26 @@ impl<T: Trait> Module<T> {
 
     /// Check whether nft auction expired
     pub(crate) fn is_nft_auction_expired(auction: &Auction<T>) -> bool {
-        match &auction.last_bid {
-            Some(last_bid) => {
-                // Check whether buy now have been triggered.
-                let is_buy_now_triggered =
-                    matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
-                if let AuctionType::English(round_duration) = auction.auction_type {
-                    let now = <frame_system::Module<T>>::block_number();
+        if let Some(last_bid) = &auction.last_bid {
+            // Check whether buy now have been triggered.
+            let is_buy_now_triggered =
+                matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
 
-                    // Check whether auction round time expired.
-                    let is_auction_round_expired = (now - last_bid.time) >= round_duration;
-                    is_auction_round_expired || is_buy_now_triggered
-                } else {
-                    // Open auction expires only if buy now have been triggered
-                    is_buy_now_triggered
-                }
+            if let AuctionType::English(EnglishAuctionDetails {
+                auction_duration, ..
+            }) = auction.auction_type
+            {
+                let now = <frame_system::Module<T>>::block_number();
+
+                // Check whether auction time expired.
+                let is_auction_round_expired = (now - auction.starts_at) >= auction_duration;
+                is_auction_round_expired || is_buy_now_triggered
+            } else {
+                // Open auction expires only if buy now have been triggered
+                is_buy_now_triggered
             }
-            _ => false,
+        } else {
+            false
         }
     }
 
@@ -56,15 +59,14 @@ impl<T: Trait> Module<T> {
             let can_be_completed = if let AuctionType::English(round_duration) =
                 auction.auction_type
             {
-                let now = <frame_system::Module<T>>::block_number();
-
-                // Check whether auction round time expired.
-                let is_auction_round_expired = (now - last_bid.time) >= round_duration;
-
                 // Check whether buy now have been triggered.
                 let is_buy_now_triggered =
                     matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
 
+                let now = <frame_system::Module<T>>::block_number();
+
+                // Check whether auction time expired.
+                let is_auction_round_expired = (now - auction.starts_at) >= auction_duration;
                 is_auction_round_expired || is_buy_now_triggered
             } else {
                 // Open auction can be completed at any time
@@ -107,11 +109,15 @@ impl<T: Trait> Module<T> {
         auction_params: &AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, MemberId<T>>,
     ) -> DispatchResult {
         match auction_params.auction_type {
-            AuctionType::English(round_duration) => {
-                Self::ensure_round_duration_bounds_satisfied(round_duration)?;
+            AuctionType::English(EnglishAuctionDetails {
+                extension_period,
+                auction_duration,
+            }) => {
+                Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
+                Self::ensure_extension_period_bounds_satisfied(auction_duration)?;
             }
-            AuctionType::Open(lock_duration) => {
-                Self::ensure_bid_lock_duration_bounds_satisfied(lock_duration)?;
+            AuctionType::Open(OpenAuctionDetails { bid_lock_duration }) => {
+                Self::ensure_bid_lock_duration_bounds_satisfied(bid_lock_duration)?;
             }
         }
 
@@ -178,16 +184,32 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure auction duration bounds satisfied
-    pub(crate) fn ensure_round_duration_bounds_satisfied(
-        round_duration: T::BlockNumber,
+    pub(crate) fn ensure_auction_duration_bounds_satisfied(
+        duration: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            round_duration <= Self::max_round_duration(),
-            Error::<T>::RoundTimeUpperBoundExceeded
+            round_duration <= Self::max_auction_duration(),
+            Error::<T>::AuctionDurationUpperBoundExceeded
         );
         ensure!(
-            round_duration >= Self::min_round_duration(),
-            Error::<T>::RoundTimeLowerBoundExceeded
+            round_duration >= Self::min_auction_duration(),
+            Error::<T>::AuctionDurationLowerBoundExceeded
+        );
+
+        Ok(())
+    }
+
+    /// Ensure auction extension period bounds satisfied
+    pub(crate) fn ensure_extension_period_bounds_satisfied(
+        extension_period: T::BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            extension_period <= Self::max_auction_extension_period(),
+            Error::<T>::ExtensionPeriodUpperBoundExceeded
+        );
+        ensure!(
+            extension_period >= Self::min_auction_extension_period(),
+            Error::<T>::ExtensionPeriodLowerBoundExceeded
         );
 
         Ok(())

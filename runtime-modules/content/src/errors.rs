@@ -98,11 +98,17 @@ decl_error! {
         /// Royalty Lower Bound Exceeded
         RoyaltyLowerBoundExceeded,
 
-        /// Round time upper bound exceeded
-        RoundTimeUpperBoundExceeded,
+        /// Auction duration upper bound exceeded
+        AuctionDurationUpperBoundExceeded,
 
-        /// Round time lower bound exceeded
-        RoundTimeLowerBoundExceeded,
+        /// Auction duration lower bound exceeded
+        AuctionDurationLowerBoundExceeded,
+
+        /// Auction extension period upper bound exceeded
+        ExtensionPeriodUpperBoundExceeded,
+
+        /// Auction extension period lower bound exceeded
+        ExtensionPeriodLowerBoundExceeded
 
         /// Bid lock duration upper bound exceeded
         BidLockDurationUpperBoundExceeded,

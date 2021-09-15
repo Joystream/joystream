@@ -145,11 +145,17 @@ decl_storage! {
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        /// Min auction round time
-        pub MinRoundTime get(fn min_round_duration) config(): T::BlockNumber;
+        /// Min auction duration
+        pub MinAuctionDuration get(fn min_auction_duration) config(): T::BlockNumber;
 
-        /// Max auction round time
-        pub MaxRoundTime get(fn max_round_duration) config(): T::BlockNumber;
+        /// Max auction duration
+        pub MaxAuctionDuration get(fn max_auction_duration) config(): T::BlockNumber;
+
+        /// Min auction extension period
+        pub MinAuctionExtensionPeriod get(fn min_auction_extension_period) config(): T::BlockNumber;
+
+        /// Max auction extension period
+        pub MaxAuctionExtensionPeriod get(fn max_auction_extension_period) config(): T::BlockNumber;
 
         /// Min bid lock duration
         pub MinBidLockDuration get(fn min_bid_lock_duration) config(): T::BlockNumber;
@@ -979,7 +985,11 @@ decl_module! {
             //
 
             // Create new auction
-            let auction = AuctionRecord::new(auction_params.clone());
+            let mut auction = AuctionRecord::new(auction_params.clone());
+            if auction_params.starts_at.is_none() {
+                auction.starts_at = <frame_system::Module<T>>::block_number();
+            }
+
             let video = video.set_auction_transactional_status(auction);
 
             // Update the video
