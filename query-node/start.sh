@@ -8,6 +8,9 @@ set -a
 . ../.env
 set +a
 
+# Override DB_HOST
+export DB_HOST=localhost
+
 # Start the joystream-node first to allow fetching Olympia metadata during build (typegen)
 docker-compose up -d joystream-node
 
