@@ -320,7 +320,12 @@ export class NetworkingService {
     this.logger.debug(`Sending storage node response-time check request to: ${endpoint}`, { endpoint })
     try {
       // TODO: Use a status endpoint once available?
-      await axios.get(endpoint, { timeout: STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT })
+      await axios.get(endpoint, {
+        timeout: STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT,
+        headers: {
+          connection: 'close',
+        },
+      })
       throw new Error('Unexpected status 200')
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 404) {
