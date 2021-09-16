@@ -143,19 +143,19 @@ export class PublicApiController {
     const contentHash = this.stateCache.getObjectContentHash(objectId)
     const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
 
+    res.setHeader('timing-allow-origin', '*')
+    res.setHeader('accept-ranges', 'bytes')
+    res.setHeader('content-disposition', 'inline')
+
     if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
       res.status(200)
-      res.setHeader('accept-ranges', 'bytes')
       res.setHeader('x-cache', 'hit')
-      res.setHeader('content-disposition', 'inline')
       res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
       res.setHeader('content-type', this.stateCache.getContentMimeType(contentHash) || DEFAULT_CONTENT_TYPE)
       res.setHeader('content-length', this.content.fileSize(contentHash))
     } else if (contentHash && pendingDownload) {
       res.status(200)
-      res.setHeader('accept-ranges', 'bytes')
       res.setHeader('x-cache', 'pending')
-      res.setHeader('content-disposition', 'inline')
       res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
       res.setHeader('content-length', pendingDownload.objectSize)
     } else {
@@ -166,9 +166,7 @@ export class PublicApiController {
         res.status(421)
       } else {
         res.status(200)
-        res.setHeader('accept-ranges', 'bytes')
         res.setHeader('x-cache', 'miss')
-        res.setHeader('content-disposition', 'inline')
         res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
         res.setHeader('content-length', objectInfo.data?.size || 0)
       }
@@ -194,6 +192,8 @@ export class PublicApiController {
       contentHash,
       status: pendingDownload && pendingDownload.status,
     })
+
+    res.setHeader('timing-allow-origin', '*')
 
     if (contentHash && !pendingDownload && this.content.exists(contentHash)) {
       this.logger.verbose('Requested file found in filesystem', { path: this.content.path(contentHash) })
