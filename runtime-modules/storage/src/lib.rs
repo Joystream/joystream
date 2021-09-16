@@ -465,7 +465,7 @@ pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct DataObject<Balance> {
-    /// Defines whether the data object was accepted by a liaison.
+    /// Defines whether the data object was accepted by a liason.
     pub accepted: bool,
 
     /// A reward for the data object deletion.
