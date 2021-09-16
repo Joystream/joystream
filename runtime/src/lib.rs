@@ -483,10 +483,14 @@ impl stake::Trait for Runtime {
             (
                 (
                     (
-                        crate::integration::working_group::OperationsWgStakingEventsHandler1<Self>,
-                        crate::integration::working_group::OperationsWgStakingEventsHandler2<Self>,
+                        crate::integration::working_group::OperationsWgStakingEventsHandlerAlpha<
+                            Self,
+                        >,
+                        crate::integration::working_group::OperationsWgStakingEventsHandlerBeta<
+                            Self,
+                        >,
                     ),
-                    crate::integration::working_group::OperationsWgStakingEventsHandler3<Self>,
+                    crate::integration::working_group::OperationsWgStakingEventsHandlerGamma<Self>,
                 ),
                 crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
             ),
@@ -573,16 +577,16 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The builder working group instance alias.
-pub type OperationsWorkingGroupInstance1 = working_group::Instance4;
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
 // The builder working group instance alias.
-pub type OperationsWorkingGroupInstance2 = working_group::Instance6;
+pub type OperationsWorkingGroupInstanceBeta = working_group::Instance6;
 
 // The builder working group instance alias.
-pub type OperationsWorkingGroupInstance3 = working_group::Instance7;
+pub type OperationsWorkingGroupInstanceGamma = working_group::Instance7;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -598,7 +602,7 @@ impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance1> for Runtime {
+impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -608,12 +612,12 @@ impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance2> for Runtime {
+impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance3> for Runtime {
+impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -747,10 +751,10 @@ construct_runtime!(
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
-        OperationsWorkingGroup1: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
-        OperationsWorkingGroup2: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
-        OperationsWorkingGroup3: working_group::<Instance7>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroupBeta: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroupGamma: working_group::<Instance7>::{Module, Call, Storage, Config<T>, Event<T>},
 
     }
 );
