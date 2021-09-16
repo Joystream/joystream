@@ -363,9 +363,6 @@ impl Trait for Test {
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-
-    /// DAO Id
-    type DAOId = u64;
 }
 
 pub type System = frame_system::Module<Test>;

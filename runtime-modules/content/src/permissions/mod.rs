@@ -132,7 +132,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
 pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     // Only owner of a channel can update and delete channel assets.
     // Lead can update and delete curator group owned channel assets.
@@ -199,7 +199,7 @@ pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
 pub fn ensure_actor_authorized_to_censor<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     // Only lead and curators can censor channels and videos
     // Only lead can censor curator group owned channels and videos

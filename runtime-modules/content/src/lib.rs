@@ -30,7 +30,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -73,17 +73,6 @@ pub trait Trait:
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-
-    /// DAO id representation.
-    type DAOId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + PartialEq;
 
     /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
@@ -130,13 +119,11 @@ type NewAssets<T> = NewAssetsRecord<<T as balances::Trait>::Balance>;
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
+pub enum ChannelOwner<MemberId, CuratorGroupId> {
     /// A Member owns the channel
     Member(MemberId),
     /// A specific curation group owns the channel
     CuratorGroup(CuratorGroupId),
-    // Native DAO owns the channel
-    Dao(DAOId),
 }
 
 // simplification type
@@ -144,16 +131,13 @@ pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
         <T as membership::Trait>::MemberId,
         <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as Trait>::DAOId,
     >,
     Error<T>,
 >;
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
-impl<MemberId: Default, CuratorGroupId, DAOId> Default
-    for ChannelOwner<MemberId, CuratorGroupId, DAOId>
-{
+impl<MemberId: Default, CuratorGroupId> Default for ChannelOwner<MemberId, CuratorGroupId> {
     fn default() -> Self {
         ChannelOwner::Member(MemberId::default())
     }
@@ -187,9 +171,9 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId> {
+pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
     /// The owner of a channel
-    owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     num_videos: u64,
     /// If curators have censored this channel or not
@@ -206,7 +190,6 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId> {
 pub type Channel<T> = ChannelRecord<
     <T as membership::Trait>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as Trait>::DAOId,
     <T as frame_system::Trait>::AccountId,
 >;
 
@@ -217,12 +200,11 @@ pub struct ChannelOwnershipTransferRequestRecord<
     ChannelId,
     MemberId,
     CuratorGroupId,
-    DAOId,
     Balance,
     AccountId,
 > {
     channel_id: ChannelId,
-    new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     payment: Balance,
     new_reward_account: Option<AccountId>,
 }
@@ -232,7 +214,6 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as storage::Trait>::ChannelId,
     <T as membership::Trait>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as Trait>::DAOId,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
