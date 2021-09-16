@@ -49,7 +49,6 @@ fn video_creation_successful() {
 
         let params = VideoCreationParametersRecord {
             assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-                authentication_key: b"test".to_vec(),
                 object_creation_list: vec![
                     DataObjectCreationParameters {
                         size: 3,
@@ -104,7 +103,6 @@ fn video_update_successful() {
 
         let params = VideoCreationParametersRecord {
             assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-                authentication_key: b"test".to_vec(),
                 object_creation_list: vec![
                     DataObjectCreationParameters {
                         size: 3,
@@ -136,7 +134,6 @@ fn video_update_successful() {
 
         let update_params = VideoUpdateParametersRecord {
             assets: Some(NewAssets::<Test>::Upload(CreationUploadParameters {
-                authentication_key: b"test".to_vec(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: 3,
                     ipfs_content_id: b"first".to_vec(),

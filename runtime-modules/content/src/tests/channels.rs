@@ -20,7 +20,6 @@ fn successful_channel_deletion() {
 
         // 3 assets
         let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
-            authentication_key: b"test".to_vec(),
             object_creation_list: vec![
                 DataObjectCreationParameters {
                     size: 3,
@@ -99,7 +98,6 @@ fn successful_channel_assets_deletion() {
 
         // 3 assets
         let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
-            authentication_key: b"test".to_vec(),
             object_creation_list: vec![
                 DataObjectCreationParameters {
                     size: 3,
@@ -158,7 +156,6 @@ fn succesful_channel_update() {
 
         // 2 + 1 assets to be uploaded
         let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
-            authentication_key: b"test".to_vec(),
             object_creation_list: vec![
                 DataObjectCreationParameters {
                     size: 3,
@@ -173,7 +170,6 @@ fn succesful_channel_update() {
         });
 
         let new_assets = NewAssets::<Test>::Upload(CreationUploadParameters {
-            authentication_key: b"test".to_vec(),
             object_creation_list: vec![
                 DataObjectCreationParameters {
                     size: 3,
@@ -242,7 +238,6 @@ fn succesful_channel_creation() {
 
         // 3 assets to be uploaded
         let assets = NewAssets::<Test>::Upload(CreationUploadParameters {
-            authentication_key: b"test".to_vec(),
             object_creation_list: vec![
                 DataObjectCreationParameters {
                     size: 3,

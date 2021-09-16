@@ -295,9 +295,6 @@ pub struct VideoCategoryUpdateParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct CreationUploadParameters<Balance> {
-    /// Public key used authentication in upload to liason.
-    pub authentication_key: Vec<u8>,
-
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
 
@@ -1454,7 +1451,6 @@ impl<T: Trait> Module<T> {
 
         if let NewAssets::<T>::Upload(creation_upload_params) = assets {
             Some(UploadParametersRecord {
-                authentication_key: creation_upload_params.authentication_key.clone(),
                 bag_id,
                 object_creation_list: creation_upload_params.object_creation_list.clone(),
                 deletion_prize_source_account_id: sender.clone(),
