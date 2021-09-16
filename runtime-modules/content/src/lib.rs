@@ -168,7 +168,6 @@ pub struct ChannelCategoryUpdateParameters {
 }
 
 /// Type representing an owned channel which videos, playlists, and series can belong to.
-/// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
@@ -407,7 +406,7 @@ pub struct Series<ChannelId, VideoId> {
     seasons: Vec<Season<VideoId>>,
 }
 
-// The actor the caller/origin is trying to act as for Person creation and update and delete calls.
+/// The actor the caller/origin is trying to act as for Person creation and update and delete calls.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum PersonActor<MemberId, CuratorId> {
@@ -425,8 +424,8 @@ pub enum PersonController<MemberId> {
     Curators,
 }
 
-// Default trait implemented only because its used in Person which needs to implement a Default trait
-// since it is a StorageValue.
+/// Default trait implemented only because its used in Person which needs to implement a Default trait
+/// since it is a StorageValue.
 impl<MemberId: Default> Default for PersonController<MemberId> {
     fn default() -> Self {
         PersonController::Member(MemberId::default())
