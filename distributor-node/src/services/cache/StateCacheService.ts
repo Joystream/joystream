@@ -1,6 +1,7 @@
 import { Logger } from 'winston'
 import { ReadonlyConfig, StorageNodeDownloadResponse } from '../../types'
 import { LoggingService } from '../logging'
+import _ from 'lodash'
 import fs from 'fs'
 
 // LRU-SP cache parameters
@@ -195,10 +196,21 @@ export class StateCacheService {
       data.last10ResponseTimes.shift()
     }
     data.last10ResponseTimes.push(time)
+    if (!this.memoryState.storageNodeEndpointDataByEndpoint.has(endpoint)) {
+      this.memoryState.storageNodeEndpointDataByEndpoint.set(endpoint, data)
+    }
   }
 
-  public getStorageNodeEndpointData(endpoint: string): StorageNodeEndpointData | undefined {
-    return this.memoryState.storageNodeEndpointDataByEndpoint.get(endpoint)
+  public getStorageNodeEndpointMeanResponseTime(endpoint: string, max = 99999): number {
+    const data = this.memoryState.storageNodeEndpointDataByEndpoint.get(endpoint)
+    return _.mean(data?.last10ResponseTimes || [max])
+  }
+
+  public getStorageNodeEndpointsMeanResponseTimes(max = 99999): [string, number][] {
+    return Array.from(this.memoryState.storageNodeEndpointDataByEndpoint.keys()).map((endpoint) => [
+      endpoint,
+      this.getStorageNodeEndpointMeanResponseTime(endpoint, max),
+    ])
   }
 
   private serializeData() {

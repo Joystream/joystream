@@ -17,6 +17,8 @@ import {
 import queue from 'queue'
 import _ from 'lodash'
 import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
+import http from 'http'
+import https from 'https'
 
 // TODO: Adjust limits and intervals
 const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
@@ -36,11 +38,13 @@ export class NetworkingService {
   private logger: Logger
 
   private storageNodeEndpointsCheckInterval: NodeJS.Timeout
-  private testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true })
-  private downloadQueue = queue({ concurrency: MAX_CONCURRENT_DOWNLOADS, autostart: true })
+  private testLatencyQueue: queue
+  private downloadQueue: queue
 
   constructor(config: ReadonlyConfig, stateCache: StateCacheService, logging: LoggingService) {
     axios.defaults.timeout = GLOBAL_AXIOS_TIMEOUT
+    axios.defaults.httpAgent = new http.Agent({ keepAlive: true, timeout: GLOBAL_AXIOS_TIMEOUT })
+    axios.defaults.httpsAgent = new https.Agent({ keepAlive: true, timeout: GLOBAL_AXIOS_TIMEOUT })
     this.config = config
     this.logging = logging
     this.stateCache = stateCache
@@ -52,6 +56,16 @@ export class NetworkingService {
       this.checkActiveStorageNodeEndpoints.bind(this),
       STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS
     )
+    // Queues
+    this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
+      'end',
+      () => {
+        this.logger.verbose('Mean response times updated', {
+          responseTimes: this.stateCache.getStorageNodeEndpointsMeanResponseTimes(),
+        })
+      }
+    )
+    this.downloadQueue = queue({ concurrency: MAX_CONCURRENT_DOWNLOADS, autostart: true })
   }
 
   public clearIntervals(): void {
@@ -135,14 +149,11 @@ export class NetworkingService {
   }
 
   private sortEndpointsByMeanResponseTime(endpoints: string[]) {
-    return endpoints.sort((a, b) => {
-      const dataA = this.stateCache.getStorageNodeEndpointData(a)
-      const dataB = this.stateCache.getStorageNodeEndpointData(b)
-      return (
-        _.mean(dataA?.last10ResponseTimes || [STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT]) -
-        _.mean(dataB?.last10ResponseTimes || [STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT])
-      )
-    })
+    return endpoints.sort(
+      (a, b) =>
+        this.stateCache.getStorageNodeEndpointMeanResponseTime(a) -
+        this.stateCache.getStorageNodeEndpointMeanResponseTime(b)
+    )
   }
 
   private downloadJob(
@@ -165,7 +176,7 @@ export class NetworkingService {
         reject(new Error(message))
       }
       const success = (response: StorageNodeDownloadResponse) => {
-        this.logger.verbose('Download source found', { contentHash, source: response.config.url })
+        this.logger.info('Download source chosen', { contentHash, source: response.config.url })
         pendingDownload.status = 'Downloading'
         onSuccess(response)
         resolve(response)
@@ -175,7 +186,13 @@ export class NetworkingService {
         accessPoints?.storageNodes.map((n) => n.endpoint) || []
       )
 
-      this.logger.info('Downloading new data object', { contentHash, storageEndpoints })
+      this.logger.info('Downloading new data object', {
+        contentHash,
+        possibleSources: storageEndpoints.map((e) => ({
+          endpoint: e,
+          meanResponseTime: this.stateCache.getStorageNodeEndpointMeanResponseTime(e),
+        })),
+      })
       if (!storageEndpoints.length) {
         return fail('No storage endpoints available to download the data object from')
       }
@@ -214,6 +231,12 @@ export class NetworkingService {
         */
       })
 
+      availabilityQueue.on('end', () => {
+        if (!objectDownloadQueue.length) {
+          fail('Failed to download the object from any availablable storage provider')
+        }
+      })
+
       objectDownloadQueue.on('error', (err) => {
         this.logger.error('Download attempt from storage node failed after availability was confirmed:', { err })
       })
@@ -222,12 +245,6 @@ export class NetworkingService {
         if (availabilityQueue.length) {
           availabilityQueue.start()
         } else {
-          fail('Failed to download the object from any availablable storage provider')
-        }
-      })
-
-      availabilityQueue.on('end', () => {
-        if (!objectDownloadQueue.length) {
           fail('Failed to download the object from any availablable storage provider')
         }
       })
