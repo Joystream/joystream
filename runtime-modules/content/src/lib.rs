@@ -306,6 +306,7 @@ pub struct VideoCreationParametersRecord<NewAssets> {
 
 type VideoCreationParameters<T> = VideoCreationParametersRecord<NewAssets<T>>;
 
+/// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct VideoUpdateParametersRecord<NewAssets> {
