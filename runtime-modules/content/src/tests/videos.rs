@@ -49,6 +49,10 @@ fn video_creation_successful() {
 
         let params = VideoCreationParametersRecord {
             assets: NewAssets::<Test>::Upload(CreationUploadParameters {
+<<<<<<< HEAD
+=======
+                authentication_key: b"test".to_vec(),
+>>>>>>> 10023d9830fc2653005d5e6d320ee798353eab27
                 object_creation_list: vec![
                     DataObjectCreationParameters {
                         size: 3,

@@ -441,6 +441,7 @@ impl content::Trait for Runtime {
     type PlaylistId = PlaylistId;
     type PersonId = PersonId;
     type SeriesId = SeriesId;
+    type DAOId = DAOId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
 }
