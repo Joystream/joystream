@@ -51,10 +51,23 @@ services:
       - /cache
     ports:
       - 127.0.0.1:3334:3334
+    # Node configuration can be overriden via env, for exampe:
     # environment:
-      # Configuration overrides can be defined here, for example:
-      # JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: http://graphql-server-mnt:4002/graphql
-      # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: null
+    #   JOYSTREAM_DISTRIBUTOR__ID: node-id
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: qn-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__SUBSTRATE_NODE: sn-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__DATA: data-dir
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE: cache-dir
+    #   JOYSTREAM_DISTRIBUTOR__DIRECTORIES__LOGS: logs-dir
+    #   JOYSTREAM_DISTRIBUTOR__LOG__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOG__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOG__ELASTIC: "off"
+    #   JOYSTREAM_DISTRIBUTOR__STORAGE_LIMIT: 50G
+    #   JOYSTREAM_DISTRIBUTOR__PORT: 1234
+    #   JOYSTREAM_DISTRIBUTOR__KEYS: "[\"//Bob\"]"
+    #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
+    #   JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
     command: ["start"]
 
   db:
