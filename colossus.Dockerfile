@@ -8,7 +8,6 @@ RUN yarn
 RUN yarn workspace @joystream/types build
 RUN yarn workspace storage-node-v2 build
 
-
 # Use these volumes to persist uploading data and to pass the keyfile.
 VOLUME ["/data", "/keystore"]
 
@@ -20,15 +19,14 @@ ENV WORKER_ID=not-set
 # - set external key file using the `/keystore` volume
 ENV ACCOUNT_KEYFILE=
 ENV ACCOUNT_PWD=
-
-# Colossus node port
-EXPOSE ${COLOSSUS_PORT}
-
 # Optional variables
 ENV SYNC_INTERVAL=1
 ENV ELASTIC_SEARCH_HOST=
 # - overrides account key file
 ENV ACCOUNT_URI=
+
+# Colossus node port
+EXPOSE ${COLOSSUS_PORT}
 
 WORKDIR /joystream/storage-node-v2
 ENTRYPOINT yarn storage-node server --queryNodeHost ${QUERY_NODE_HOST} --port ${COLOSSUS_PORT} --uploads /data --worker ${WORKER_ID} --apiUrl ${WS_PROVIDER_ENDPOINT_URI} --sync --syncInterval=${SYNC_INTERVAL} --keyFile=${ACCOUNT_KEYFILE} --elasticSearchHost=${ELASTIC_SEARCH_HOST}
