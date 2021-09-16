@@ -35,8 +35,8 @@ use node_runtime::{
     ContentConfig, ContentDirectoryWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
     DataDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
     ElectionParameters, ForumConfig, GatewayWorkingGroupConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, OperationsWorkingGroup1Config, OperationsWorkingGroup2Config,
-    OperationsWorkingGroup3Config, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
+    MembersConfig, Moment, OperationsWorkingGroupAlphaConfig, OperationsWorkingGroupBetaConfig,
+    OperationsWorkingGroupGammaConfig, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
     StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig, DAYS,
 };
 
@@ -326,7 +326,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance4: Some(OperationsWorkingGroup1Config {
+        working_group_Instance4: Some(OperationsWorkingGroupAlphaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -342,7 +342,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance6: Some(OperationsWorkingGroup2Config {
+        working_group_Instance6: Some(OperationsWorkingGroupBetaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
@@ -350,7 +350,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
             worker_storage_size_constraint: default_storage_size_constraint,
         }),
-        working_group_Instance7: Some(OperationsWorkingGroup3Config {
+        working_group_Instance7: Some(OperationsWorkingGroupGammaConfig {
             phantom: Default::default(),
             working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
