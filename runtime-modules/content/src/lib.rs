@@ -30,7 +30,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -73,17 +73,6 @@ pub trait Trait:
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-
-    /// DAO id representation.
-    type DAOId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + PartialEq;
 
     /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
     type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;

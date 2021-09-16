@@ -127,7 +127,6 @@ impl common::MembershipTypes for Test {
 
 impl common::StorageOwnership for Test {
     type ChannelId = u64;
-    type DAOId = u64;
     type ContentId = u64;
     type DataObjectTypeId = u64;
 }
@@ -206,10 +205,7 @@ parameter_types! {
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
-<<<<<<< HEAD
     pub const MaxDataObjectSize: u64 = 400;
-=======
->>>>>>> 10023d9830fc2653005d5e6d320ee798353eab27
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
