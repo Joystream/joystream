@@ -166,7 +166,7 @@ fn member_can_create_videos() {
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
             VideoCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![b"https://somewhere.com/".to_vec()]),
+                assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
                 meta: b"metablob".to_vec(),
             }
         ));
@@ -178,7 +178,7 @@ fn member_can_create_videos() {
                 channel_id,
                 video_id,
                 VideoCreationParametersRecord {
-                    assets: NewAssets::<Test>::Urls(vec![b"https://somewhere.com/".to_vec()]),
+                    assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
                     meta: b"metablob".to_vec(),
                 }
             ))
@@ -194,9 +194,9 @@ fn member_can_create_videos() {
             ContentActor::Member(FIRST_MEMBER_ID),
             video_id,
             VideoUpdateParametersRecord {
-                assets: Some(NewAssets::<Test>::Urls(vec![
+                assets: Some(NewAssets::<Test>::Urls(vec![vec![
                     b"https://somewhere-else.com/".to_vec()
-                ])),
+                ]])),
                 new_meta: Some(b"newmetablob".to_vec()),
             }
         ));
@@ -207,9 +207,9 @@ fn member_can_create_videos() {
                 ContentActor::Member(FIRST_MEMBER_ID),
                 video_id,
                 VideoUpdateParametersRecord {
-                    assets: Some(NewAssets::<Test>::Urls(vec![
+                    assets: Some(NewAssets::<Test>::Urls(vec![vec![
                         b"https://somewhere-else.com/".to_vec()
-                    ])),
+                    ]])),
                     new_meta: Some(b"newmetablob".to_vec()),
                 }
             ))
@@ -283,7 +283,7 @@ fn curators_can_censor_videos() {
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id,
             VideoCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![b"https://somewhere.com/".to_vec()]),
+                assets: NewAssets::<Test>::Urls(vec![vec![b"https://somewhere.com/".to_vec()]]),
                 meta: b"metablob".to_vec(),
             }
         ));

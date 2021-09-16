@@ -39,7 +39,7 @@ pub use common::storage::{StorageObjectOwner as StorageObjectOwnerRecord, Storag
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
     working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
+    AssetUrls, MembershipTypes, StorageOwnership,
 };
 
 type Storage<T> = storage::Module<T>;
@@ -121,7 +121,7 @@ pub enum NewAssetsRecord<Balance> {
     /// Upload to the storage frame_system
     Upload(CreationUploadParameters<Balance>),
     /// Multiple url strings pointing at an asset
-    Urls(Vec<Url>),
+    Urls(Vec<AssetUrls>),
 }
 
 type NewAssets<T> = NewAssetsRecord<<T as balances::Trait>::Balance>;
