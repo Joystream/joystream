@@ -441,6 +441,7 @@ impl content::Trait for Runtime {
     type PlaylistId = PlaylistId;
     type PersonId = PersonId;
     type SeriesId = SeriesId;
+    type DAOId = DAOId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
 }
@@ -722,6 +723,7 @@ impl storage::Trait for Runtime {
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
+    type ContentId = ContentId;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
