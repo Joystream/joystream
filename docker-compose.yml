@@ -18,38 +18,25 @@ services:
       - "127.0.0.1:9944:9944"
       - "127.0.0.1:9933:9933"
 
-  ipfs:
-    image: ipfs/go-ipfs:latest
-    ports:
-      - '127.0.0.1:5001:5001'
-      - '127.0.0.1:8080:8080'
-    volumes:
-      - /data/ipfs
-    entrypoint: ''
-    command: |
-      /bin/sh -c "
-        set -e
-        /usr/local/bin/start_ipfs config profile apply lowpower
-        /usr/local/bin/start_ipfs config --json Gateway.PublicGateways '{\"localhost\": null }'
-        /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
-      "
-
   colossus:
-    image: joystream/apps
+    image: joystream/colossus
     restart: on-failure
-    depends_on:
-      - "ipfs"
     build:
       context: .
-      dockerfile: apps.Dockerfile
-    env_file:
-      # relative to working directory where docker-compose was run from
-      - .env
+      dockerfile: colossus.Dockerfile
+    depends_on:
+      - graphql-server-mnt
+    volumes:
+      - /data
+      - /keystore
     ports:
-      - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ${WS_PROVIDER_ENDPOINT_URI} --ipfs-host ipfs
+      - '127.0.0.1:3333:3333'
     environment:
-      - DEBUG=*
+      - WS_PROVIDER_ENDPOINT_URI=ws://host.docker.internal:9944
+      - COLOSSUS_PORT=3333
+      - QUERY_NODE_HOST=graphql-server-mnt:8081
+      - WORKER_ID=0
+      - ACCOUNT_URI=//Alice
 
   db:
     image: postgres:12
