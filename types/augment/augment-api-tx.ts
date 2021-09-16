@@ -54,14 +54,14 @@ declare module '@polkadot/api/types/submittable' {
       forceTransfer: AugmentedSubmittable<(source: LookupSource | string | Uint8Array, dest: LookupSource | string | Uint8Array, value: Compact<Balance> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, LookupSource, Compact<Balance>]>;
       /**
        * Set the balances of a given account.
-       * 
+       *
        * This will alter `FreeBalance` and `ReservedBalance` in storage. it will
        * also decrease the total issuance of the system (`TotalIssuance`).
        * If the new free or reserved balance is below the existential deposit,
        * it will reset the account nonce (`frame_system::AccountNonce`).
-       * 
+       *
        * The dispatch origin for this call is `root`.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments.
        * - Contains a limited number of reads and writes.
@@ -75,21 +75,21 @@ declare module '@polkadot/api/types/submittable' {
       setBalance: AugmentedSubmittable<(who: LookupSource | string | Uint8Array, newFree: Compact<Balance> | AnyNumber | Uint8Array, newReserved: Compact<Balance> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource, Compact<Balance>, Compact<Balance>]>;
       /**
        * Transfer some liquid free balance to another account.
-       * 
+       *
        * `transfer` will set the `FreeBalance` of the sender and receiver.
        * It will decrease the total issuance of the system by the `TransferFee`.
        * If the sender's account is below the existential deposit as a result
        * of the transfer, the account will be reaped.
-       * 
+       *
        * The dispatch origin for this call must be `Signed` by the transactor.
-       * 
+       *
        * # <weight>
        * - Dependent on arguments but not critical, given proper implementations for
        * input config types. See related functions below.
        * - It contains a limited number of reads and writes internally and no complex computation.
-       * 
+       *
        * Related functions:
-       * 
+       *
        * - `ensure_can_withdraw` is always called internally but has a bounded complexity.
        * - Transferring balances to accounts that did not exist before will cause
        * `T::OnNewAccount::on_new_account` to be called.
@@ -106,9 +106,9 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Same as the [`transfer`] call, but with a check that the transfer will not kill the
        * origin account.
-       * 
+       *
        * 99% of the time you want [`transfer`] instead.
-       * 
+       *
        * [`transfer`]: struct.Module.html#method.transfer
        * # <weight>
        * - Cheaper than transfer because account cannot be killed.
@@ -528,7 +528,7 @@ declare module '@polkadot/api/types/submittable' {
        * equivocation proof and validate the given key ownership proof
        * against the extracted offender. If both are valid, the offence
        * will be reported.
-       * 
+       *
        * This extrinsic must be called unsigned and it is expected that only
        * block authors will call it (validated in `ValidateUnsigned`), as such
        * if the block author is defined it will be defined as the equivocation
@@ -677,12 +677,12 @@ declare module '@polkadot/api/types/submittable' {
        * Create 'Begin review working group leader applications' proposal type.
        * This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
        **/
-      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Reserved' | 'Forum' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, OpeningId, WorkingGroup]>;
+      createBeginReviewWorkingGroupLeaderApplicationsProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, openingId: OpeningId | AnyNumber | Uint8Array, workingGroup: WorkingGroup | '_Reserved0' | '_Reserved1' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | 'Distribution' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, OpeningId, WorkingGroup]>;
       /**
        * Create 'decrease working group leader stake' proposal type.
        * This proposal uses `decrease_stake()` extrinsic from the `working-group`  module.
        **/
-      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Reserved' | 'Forum' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
+      createDecreaseWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, decreasingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | '_Reserved0' | '_Reserved1' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | 'Distribution' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
       /**
        * Create 'Fill working group leader opening' proposal type.
        * This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
@@ -707,17 +707,17 @@ declare module '@polkadot/api/types/submittable' {
        * Create 'set working group leader reward' proposal type.
        * This proposal uses `update_reward_amount()` extrinsic from the `working-group`  module.
        **/
-      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Reserved' | 'Forum' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOfMint, WorkingGroup]>;
+      createSetWorkingGroupLeaderRewardProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, rewardAmount: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | '_Reserved0' | '_Reserved1' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | 'Distribution' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOfMint, WorkingGroup]>;
       /**
        * Create 'Set working group mint capacity' proposal type.
        * This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
        **/
-      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Reserved' | 'Forum' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, BalanceOfMint, WorkingGroup]>;
+      createSetWorkingGroupMintCapacityProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, mintBalance: BalanceOfMint | AnyNumber | Uint8Array, workingGroup: WorkingGroup | '_Reserved0' | '_Reserved1' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | 'Distribution' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, BalanceOfMint, WorkingGroup]>;
       /**
        * Create 'slash working group leader stake' proposal type.
        * This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
        **/
-      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | 'Reserved' | 'Forum' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
+      createSlashWorkingGroupLeaderStakeProposal: AugmentedSubmittable<(memberId: MemberId | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array, stakeBalance: Option<BalanceOf> | null | object | string | Uint8Array, workerId: WorkerId | AnyNumber | Uint8Array, slashingStake: BalanceOf | AnyNumber | Uint8Array, workingGroup: WorkingGroup | '_Reserved0' | '_Reserved1' | 'Storage' | 'Content' | 'Operations' | 'Gateway' | 'Distribution' | number | Uint8Array) => SubmittableExtrinsic<ApiType>, [MemberId, Bytes, Bytes, Option<BalanceOf>, WorkerId, BalanceOf, WorkingGroup]>;
       /**
        * Create 'Spending' proposal type.
        * This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.
@@ -770,9 +770,9 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Removes any session key(s) of the function caller.
        * This doesn't take effect until the next session.
-       * 
+       *
        * The dispatch origin of this function must be signed.
-       * 
+       *
        * # <weight>
        * - Complexity: `O(1)` in number of key types.
        * Actual cost depends on the number of length of `T::Keys::key_ids()` which is fixed.
@@ -786,9 +786,9 @@ declare module '@polkadot/api/types/submittable' {
        * Sets the session key(s) of the function caller to `keys`.
        * Allows an account to set its session key prior to becoming a validator.
        * This doesn't take effect until the next session.
-       * 
+       *
        * The dispatch origin of this function must be signed.
-       * 
+       *
        * # <weight>
        * - Complexity: `O(1)`
        * Actual cost depends on the number of length of `T::Keys::key_ids()` which is fixed.
@@ -804,18 +804,18 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Take the origin account as a stash and lock up `value` of its balance. `controller` will
        * be the account that controls it.
-       * 
+       *
        * `value` must be more than the `minimum_balance` specified by `T::Currency`.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the stash account.
-       * 
+       *
        * Emits `Bonded`.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Moderate complexity.
        * - O(1).
        * - Three extra DB entries.
-       * 
+       *
        * NOTE: Two of the storage writes (`Self::bonded`, `Self::payee`) are _never_ cleaned
        * unless the `origin` falls below _existential deposit_ and gets removed as dust.
        * ------------------
@@ -829,16 +829,16 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Add some extra amount that have appeared in the stash `free_balance` into the balance up
        * for staking.
-       * 
+       *
        * Use this if there are additional funds in your stash account that you wish to bond.
        * Unlike [`bond`] or [`unbond`] this function does not impose any limitation on the amount
        * that can be added.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the stash, not the controller and
        * it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * Emits `Bonded`.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Insignificant complexity.
        * - O(1).
@@ -852,11 +852,11 @@ declare module '@polkadot/api/types/submittable' {
       bondExtra: AugmentedSubmittable<(maxAdditional: Compact<BalanceOf> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<BalanceOf>]>;
       /**
        * Cancel enactment of a deferred slash.
-       * 
+       *
        * Can be called by the `T::SlashCancelOrigin`.
-       * 
+       *
        * Parameters: era and indices of the slashes for that era to kill.
-       * 
+       *
        * # <weight>
        * Complexity: O(U + S)
        * with U unapplied slashes weighted with U=1000
@@ -868,12 +868,12 @@ declare module '@polkadot/api/types/submittable' {
       cancelDeferredSlash: AugmentedSubmittable<(era: EraIndex | AnyNumber | Uint8Array, slashIndices: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [EraIndex, Vec<u32>]>;
       /**
        * Declare no desire to either validate or nominate.
-       * 
+       *
        * Effects will be felt at the beginning of the next era.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
        * And, it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Insignificant complexity.
        * - Contains one read.
@@ -889,9 +889,9 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Force there to be a new era at the end of the next session. After this, it will be
        * reset to normal (non-forced) behaviour.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * - No arguments.
        * - Weight: O(1)
@@ -901,9 +901,9 @@ declare module '@polkadot/api/types/submittable' {
       forceNewEra: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
       /**
        * Force there to be a new era at the end of sessions indefinitely.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * - Weight: O(1)
        * - Write: ForceEra
@@ -912,9 +912,9 @@ declare module '@polkadot/api/types/submittable' {
       forceNewEraAlways: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
       /**
        * Force there to be no new eras indefinitely.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * - No arguments.
        * - Weight: O(1)
@@ -924,9 +924,9 @@ declare module '@polkadot/api/types/submittable' {
       forceNoEras: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
       /**
        * Force a current staker to become completely unstaked, immediately.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * O(S) where S is the number of slashing spans to be removed
        * Reads: Bonded, Slashing Spans, Account, Locks
@@ -937,9 +937,9 @@ declare module '@polkadot/api/types/submittable' {
       forceUnstake: AugmentedSubmittable<(stash: AccountId | string | Uint8Array, numSlashingSpans: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId, u32]>;
       /**
        * Increments the ideal number of validators.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * Same as [`set_validator_count`].
        * # </weight>
@@ -947,13 +947,13 @@ declare module '@polkadot/api/types/submittable' {
       increaseValidatorCount: AugmentedSubmittable<(additional: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<u32>]>;
       /**
        * Declare the desire to nominate `targets` for the origin controller.
-       * 
+       *
        * Effects will be felt at the beginning of the next era. This can only be called when
        * [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
        * And, it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * # <weight>
        * - The transaction's complexity is proportional to the size of `targets` (N)
        * which is capped at CompactAssignments::LIMIT (MAX_NOMINATIONS).
@@ -969,16 +969,16 @@ declare module '@polkadot/api/types/submittable' {
       nominate: AugmentedSubmittable<(targets: Vec<LookupSource> | (LookupSource | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<LookupSource>]>;
       /**
        * Pay out all the stakers behind a single validator for a single era.
-       * 
+       *
        * - `validator_stash` is the stash account of the validator. Their nominators, up to
        * `T::MaxNominatorRewardedPerValidator`, will also receive their rewards.
        * - `era` may be any era between `[current_era - history_depth; current_era]`.
-       * 
+       *
        * The origin of this call must be _Signed_. Any account can call this function, even if
        * it is not one of the stakers.
-       * 
+       *
        * This can only be called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * # <weight>
        * - Time complexity: at most O(MaxNominatorRewardedPerValidator).
        * - Contains a limited number of reads and writes.
@@ -992,7 +992,7 @@ declare module '@polkadot/api/types/submittable' {
        * ErasStakersClipped, ErasRewardPoints, ErasValidatorPrefs (8 items)
        * - Read Each: Bonded, Ledger, Payee, Locks, System Account (5 items)
        * - Write Each: System Account, Locks, Ledger (3 items)
-       * 
+       *
        * NOTE: weights are assuming that payouts are made to alive stash account (Staked).
        * Paying even a dead controller is cheaper weight-wise. We don't do any refunds here.
        * # </weight>
@@ -1002,11 +1002,11 @@ declare module '@polkadot/api/types/submittable' {
        * Remove all data structure concerning a staker/stash once its balance is zero.
        * This is essentially equivalent to `withdraw_unbonded` except it can be called by anyone
        * and the target `stash` must have no funds left.
-       * 
+       *
        * This can be called from any origin.
-       * 
+       *
        * - `stash`: The stash account to reap. Its balance must be zero.
-       * 
+       *
        * # <weight>
        * Complexity: O(S) where S is the number of slashing spans on the account.
        * DB Weight:
@@ -1018,10 +1018,10 @@ declare module '@polkadot/api/types/submittable' {
       reapStash: AugmentedSubmittable<(stash: AccountId | string | Uint8Array, numSlashingSpans: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId, u32]>;
       /**
        * Rebond a portion of the stash scheduled to be unlocked.
-       * 
+       *
        * The dispatch origin must be signed by the controller, and it can be only called when
        * [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * # <weight>
        * - Time complexity: O(L), where L is unlocking chunks
        * - Bounded by `MAX_UNLOCKING_CHUNKS`.
@@ -1035,9 +1035,9 @@ declare module '@polkadot/api/types/submittable' {
       rebond: AugmentedSubmittable<(value: Compact<BalanceOf> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<BalanceOf>]>;
       /**
        * Scale up the ideal number of validators by a factor.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * Same as [`set_validator_count`].
        * # </weight>
@@ -1045,11 +1045,11 @@ declare module '@polkadot/api/types/submittable' {
       scaleValidatorCount: AugmentedSubmittable<(factor: Percent | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Percent]>;
       /**
        * (Re-)set the controller of a stash.
-       * 
+       *
        * Effects will be felt at the beginning of the next era.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the stash, not the controller.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Insignificant complexity.
        * - Contains a limited number of reads.
@@ -1065,16 +1065,16 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Set `HistoryDepth` value. This function will delete any history information
        * when `HistoryDepth` is reduced.
-       * 
+       *
        * Parameters:
        * - `new_history_depth`: The new history depth you would like to set.
        * - `era_items_deleted`: The number of items that will be deleted by this dispatch.
        * This should report all the storage items that will be deleted by clearing old
        * era history. Needed to report an accurate weight for the dispatch. Trusted by
        * `Root` to report an accurate number.
-       * 
+       *
        * Origin must be root.
-       * 
+       *
        * # <weight>
        * - E: Number of history depths removed, i.e. 10 -> 7 = 3
        * - Weight: O(E)
@@ -1088,9 +1088,9 @@ declare module '@polkadot/api/types/submittable' {
       setHistoryDepth: AugmentedSubmittable<(newHistoryDepth: Compact<EraIndex> | AnyNumber | Uint8Array, eraItemsDeleted: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<EraIndex>, Compact<u32>]>;
       /**
        * Set the validators who cannot be slashed (if any).
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * - O(V)
        * - Write: Invulnerables
@@ -1099,11 +1099,11 @@ declare module '@polkadot/api/types/submittable' {
       setInvulnerables: AugmentedSubmittable<(invulnerables: Vec<AccountId> | (AccountId | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<AccountId>]>;
       /**
        * (Re-)set the payment target for a controller.
-       * 
+       *
        * Effects will be felt at the beginning of the next era.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Insignificant complexity.
        * - Contains a limited number of reads.
@@ -1118,9 +1118,9 @@ declare module '@polkadot/api/types/submittable' {
       setPayee: AugmentedSubmittable<(payee: RewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [RewardDestination]>;
       /**
        * Sets the ideal number of validators.
-       * 
+       *
        * The dispatch origin must be Root.
-       * 
+       *
        * # <weight>
        * Weight: O(1)
        * Write: Validator Count
@@ -1129,33 +1129,33 @@ declare module '@polkadot/api/types/submittable' {
       setValidatorCount: AugmentedSubmittable<(updated: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<u32>]>;
       /**
        * Submit an election result to the chain. If the solution:
-       * 
+       *
        * 1. is valid.
        * 2. has a better score than a potentially existing solution on chain.
-       * 
+       *
        * then, it will be _put_ on chain.
-       * 
+       *
        * A solution consists of two pieces of data:
-       * 
+       *
        * 1. `winners`: a flat vector of all the winners of the round.
        * 2. `assignments`: the compact version of an assignment vector that encodes the edge
        * weights.
-       * 
+       *
        * Both of which may be computed using _phragmen_, or any other algorithm.
-       * 
+       *
        * Additionally, the submitter must provide:
-       * 
+       *
        * - The `score` that they claim their solution has.
-       * 
+       *
        * Both validators and nominators will be represented by indices in the solution. The
        * indices should respect the corresponding types ([`ValidatorIndex`] and
        * [`NominatorIndex`]). Moreover, they should be valid when used to index into
        * [`SnapshotValidators`] and [`SnapshotNominators`]. Any invalid index will cause the
        * solution to be rejected. These two storage items are set during the election window and
        * may be used to determine the indices.
-       * 
+       *
        * A solution is valid if:
-       * 
+       *
        * 0. It is submitted when [`EraElectionStatus`] is `Open`.
        * 1. Its claimed score is equal to the score computed on-chain.
        * 2. Presents the correct number of winners.
@@ -1164,14 +1164,14 @@ declare module '@polkadot/api/types/submittable' {
        * or billion).
        * 4. For each edge, all targets are actually nominated by the voter.
        * 5. Has correct self-votes.
-       * 
+       *
        * A solutions score is consisted of 3 parameters:
-       * 
+       *
        * 1. `min { support.total }` for each support of a winner. This value should be maximized.
        * 2. `sum { support.total }` for each support of a winner. This value should be minimized.
        * 3. `sum { support.total^2 }` for each support of a winner. This value should be
        * minimized (to ensure less variance)
-       * 
+       *
        * # <weight>
        * The transaction is assumed to be the longest path, a better solution.
        * - Initial solution is almost the same.
@@ -1181,11 +1181,11 @@ declare module '@polkadot/api/types/submittable' {
       submitElectionSolution: AugmentedSubmittable<(winners: Vec<ValidatorIndex> | (ValidatorIndex | AnyNumber | Uint8Array)[], compact: CompactAssignments | { votes1?: any; votes2?: any; votes3?: any; votes4?: any; votes5?: any; votes6?: any; votes7?: any; votes8?: any; votes9?: any; votes10?: any; votes11?: any; votes12?: any; votes13?: any; votes14?: any; votes15?: any; votes16?: any } | string | Uint8Array, score: ElectionScore, era: EraIndex | AnyNumber | Uint8Array, size: ElectionSize | { validators?: any; nominators?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Vec<ValidatorIndex>, CompactAssignments, ElectionScore, EraIndex, ElectionSize]>;
       /**
        * Unsigned version of `submit_election_solution`.
-       * 
+       *
        * Note that this must pass the [`ValidateUnsigned`] check which only allows transactions
        * from the local node to be included. In other words, only the block author can include a
        * transaction in the block.
-       * 
+       *
        * # <weight>
        * See `crate::weight` module.
        * # </weight>
@@ -1195,21 +1195,21 @@ declare module '@polkadot/api/types/submittable' {
        * Schedule a portion of the stash to be unlocked ready for transfer out after the bond
        * period ends. If this leaves an amount actively bonded less than
        * T::Currency::minimum_balance(), then it is increased to the full amount.
-       * 
+       *
        * Once the unlock period is done, you can call `withdraw_unbonded` to actually move
        * the funds out of management ready for transfer.
-       * 
+       *
        * No more than a limited number of unlocking chunks (see `MAX_UNLOCKING_CHUNKS`)
        * can co-exists at the same time. In that case, [`Call::withdraw_unbonded`] need
        * to be called first to remove some of the chunks (if possible).
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
        * And, it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * Emits `Unbonded`.
-       * 
+       *
        * See also [`Call::withdraw_unbonded`].
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Limited but potentially exploitable complexity.
        * - Contains a limited number of reads.
@@ -1228,12 +1228,12 @@ declare module '@polkadot/api/types/submittable' {
       unbond: AugmentedSubmittable<(value: Compact<BalanceOf> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<BalanceOf>]>;
       /**
        * Declare the desire to validate for the origin controller.
-       * 
+       *
        * Effects will be felt at the beginning of the next era.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
        * And, it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * # <weight>
        * - Independent of the arguments. Insignificant complexity.
        * - Contains a limited number of reads.
@@ -1248,17 +1248,17 @@ declare module '@polkadot/api/types/submittable' {
       validate: AugmentedSubmittable<(prefs: ValidatorPrefs | { commission?: any; blocked?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [ValidatorPrefs]>;
       /**
        * Remove any unlocked chunks from the `unlocking` queue from our management.
-       * 
+       *
        * This essentially frees up that balance to be used by the stash account to do
        * whatever it wants.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
        * And, it can be only called when [`EraElectionStatus`] is `Closed`.
-       * 
+       *
        * Emits `Withdrawn`.
-       * 
+       *
        * See also [`Call::unbond`].
-       * 
+       *
        * # <weight>
        * - Could be dependent on the `origin` argument and how much `unlocking` chunks exist.
        * It implies `consolidate_unlocked` which loops over `Ledger.unlocking`, which is
@@ -1503,9 +1503,9 @@ declare module '@polkadot/api/types/submittable' {
     sudo: {
       /**
        * Authenticates the current sudo key and sets the given AccountId (`new`) as the new sudo key.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_.
-       * 
+       *
        * # <weight>
        * - O(1).
        * - Limited storage reads.
@@ -1515,9 +1515,9 @@ declare module '@polkadot/api/types/submittable' {
       setKey: AugmentedSubmittable<(updated: LookupSource | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [LookupSource]>;
       /**
        * Authenticates the sudo key and dispatches a function call with `Root` origin.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_.
-       * 
+       *
        * # <weight>
        * - O(1).
        * - Limited storage reads.
@@ -1529,9 +1529,9 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Authenticates the sudo key and dispatches a function call with `Signed` origin from
        * a given account.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_.
-       * 
+       *
        * # <weight>
        * - O(1).
        * - Limited storage reads.
@@ -1544,9 +1544,9 @@ declare module '@polkadot/api/types/submittable' {
        * Authenticates the sudo key and dispatches a function call with `Root` origin.
        * This function does not check the weight of the call, and instead allows the
        * Sudo user to specify the weight of the call.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_.
-       * 
+       *
        * # <weight>
        * - O(1).
        * - The weight of this call is defined by the caller.
@@ -1561,10 +1561,10 @@ declare module '@polkadot/api/types/submittable' {
       fillBlock: AugmentedSubmittable<(ratio: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Perbill]>;
       /**
        * Kill all storage items with a key that starts with the given prefix.
-       * 
+       *
        * **NOTE:** We rely on the Root origin to provide us the number of subkeys under
        * the prefix we are removing to accurately calculate the weight of this function.
-       * 
+       *
        * # <weight>
        * - `O(P)` where `P` amount of keys with prefix `prefix`
        * - `P` storage deletions.
@@ -1575,7 +1575,7 @@ declare module '@polkadot/api/types/submittable' {
       killPrefix: AugmentedSubmittable<(prefix: Key | string | Uint8Array, subkeys: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Key, u32]>;
       /**
        * Kill some items from storage.
-       * 
+       *
        * # <weight>
        * - `O(IK)` where `I` length of `keys` and `K` length of one key
        * - `I` storage deletions.
@@ -1586,7 +1586,7 @@ declare module '@polkadot/api/types/submittable' {
       killStorage: AugmentedSubmittable<(keys: Vec<Key> | (Key | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<Key>]>;
       /**
        * Make some on-chain remark.
-       * 
+       *
        * # <weight>
        * - `O(1)`
        * - Base Weight: 0.665 µs, independent of remark length.
@@ -1596,7 +1596,7 @@ declare module '@polkadot/api/types/submittable' {
       remark: AugmentedSubmittable<(remark: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes]>;
       /**
        * Set the new changes trie configuration.
-       * 
+       *
        * # <weight>
        * - `O(1)`
        * - 1 storage write or delete (codec `O(1)`).
@@ -1609,7 +1609,7 @@ declare module '@polkadot/api/types/submittable' {
       setChangesTrieConfig: AugmentedSubmittable<(changesTrieConfig: Option<ChangesTrieConfiguration> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<ChangesTrieConfiguration>]>;
       /**
        * Set the new runtime code.
-       * 
+       *
        * # <weight>
        * - `O(C + S)` where `C` length of `code` and `S` complexity of `can_set_code`
        * - 1 storage write (codec `O(C)`).
@@ -1622,7 +1622,7 @@ declare module '@polkadot/api/types/submittable' {
       setCode: AugmentedSubmittable<(code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes]>;
       /**
        * Set the new runtime code without doing any checks of the given `code`.
-       * 
+       *
        * # <weight>
        * - `O(C)` where `C` length of `code`
        * - 1 storage write (codec `O(C)`).
@@ -1633,7 +1633,7 @@ declare module '@polkadot/api/types/submittable' {
       setCodeWithoutChecks: AugmentedSubmittable<(code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes]>;
       /**
        * Set the number of pages in the WebAssembly environment's heap.
-       * 
+       *
        * # <weight>
        * - `O(1)`
        * - 1 storage write.
@@ -1644,7 +1644,7 @@ declare module '@polkadot/api/types/submittable' {
       setHeapPages: AugmentedSubmittable<(pages: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
       /**
        * Set some items of storage.
-       * 
+       *
        * # <weight>
        * - `O(I)` where `I` length of `items`
        * - `I` storage writes (`O(1)`).
@@ -1656,7 +1656,7 @@ declare module '@polkadot/api/types/submittable' {
       /**
        * Kill the sending account, assuming there are no references outstanding and the composite
        * data is equal to its default value.
-       * 
+       *
        * # <weight>
        * - `O(1)`
        * - 1 storage read and deletion.
@@ -1670,15 +1670,15 @@ declare module '@polkadot/api/types/submittable' {
     timestamp: {
       /**
        * Set the current time.
-       * 
+       *
        * This call should be invoked exactly once per block. It will panic at the finalization
        * phase, if this call hasn't been invoked by that time.
-       * 
+       *
        * The timestamp should be greater than the previous one by the amount specified by
        * `MinimumPeriod`.
-       * 
+       *
        * The dispatch origin for this call must be `Inherent`.
-       * 
+       *
        * # <weight>
        * - `O(T)` where `T` complexity of `on_timestamp_set`
        * - 1 storage read and 1 storage mutation (codec `O(1)`). (because of `DidUpdate::take` in `on_finalize`)
@@ -1690,36 +1690,36 @@ declare module '@polkadot/api/types/submittable' {
     utility: {
       /**
        * Send a call through an indexed pseudonym of the sender.
-       * 
+       *
        * Filter from origin are passed along. The call will be dispatched with an origin which
        * use the same filter as the origin of this call.
-       * 
+       *
        * NOTE: If you need to ensure that any account-based filtering is not honored (i.e.
        * because you expect `proxy` to have been used prior in the call stack and you do not want
        * the call restrictions to apply to any sub-accounts), then use `as_multi_threshold_1`
        * in the Multisig pallet instead.
-       * 
+       *
        * NOTE: Prior to version *12, this was called `as_limited_sub`.
-       * 
+       *
        * The dispatch origin for this call must be _Signed_.
        **/
       asDerivative: AugmentedSubmittable<(index: u16 | AnyNumber | Uint8Array, call: Call | { callIndex?: any; args?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Call]>;
       /**
        * Send a batch of dispatch calls.
-       * 
+       *
        * May be called from any origin.
-       * 
+       *
        * - `calls`: The calls to be dispatched from the same origin.
-       * 
+       *
        * If origin is root then call are dispatch without checking origin filter. (This includes
        * bypassing `frame_system::Trait::BaseCallFilter`).
-       * 
+       *
        * # <weight>
        * - Base weight: 14.39 + .987 * c µs
        * - Plus the sum of the weights of the `calls`.
        * - Plus one additional event. (repeat read/write)
        * # </weight>
-       * 
+       *
        * This will return `Ok` in all circumstances. To determine the success of the batch, an
        * event is deposited. If a call failed and the batch was interrupted, then the
        * `BatchInterrupted` event is deposited, along with the number of successful calls made
