@@ -899,7 +899,7 @@ decl_module! {
             params: ChannelCategoryCreationParameters,
         ) {
             ensure_actor_authorized_to_manage_categories::<T>(
-                origin.clone(),
+                origin,
                 &actor
             )?;
 
