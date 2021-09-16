@@ -441,7 +441,6 @@ impl content::Trait for Runtime {
     type PlaylistId = PlaylistId;
     type PersonId = PersonId;
     type SeriesId = SeriesId;
-    type DAOId = DAOId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
 }
@@ -449,28 +448,28 @@ impl content::Trait for Runtime {
 // TODO: Remove after the integration with the Content pallet.
 impl common::storage::StorageSystem<Runtime> for () {
     fn atomically_add_content(
-        _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: StorageObjectOwner<MemberId, ChannelId>,
         _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,
     ) -> sp_runtime::DispatchResult {
         todo!()
     }
 
     fn can_add_content(
-        _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: StorageObjectOwner<MemberId, ChannelId>,
         _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,
     ) -> sp_runtime::DispatchResult {
         todo!()
     }
 
     fn atomically_remove_content(
-        _: &StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: &StorageObjectOwner<MemberId, ChannelId>,
         _: &[ContentId],
     ) -> sp_runtime::DispatchResult {
         todo!()
     }
 
     fn can_remove_content(
-        _: &StorageObjectOwner<MemberId, ChannelId, DAOId>,
+        _: &StorageObjectOwner<MemberId, ChannelId>,
         _: &[ContentId],
     ) -> sp_runtime::DispatchResult {
         todo!()
@@ -531,7 +530,6 @@ impl common::MembershipTypes for Runtime {
 
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
-    type DAOId = DAOId;
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }
