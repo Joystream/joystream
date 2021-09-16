@@ -1445,7 +1445,7 @@ impl<T: Trait> Module<T> {
     ) -> Option<UploadParameters<T>> {
         // dynamic bag for a media object
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
-        let bag_id = BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag.clone());
+        let bag_id = BagIdType::from(dyn_bag.clone());
 
         if !storage::Bags::<T>::contains_key(bag_id.clone()) {
             // create_dynamic_bag checks automatically satifsfied with None as second parameter
@@ -1488,7 +1488,7 @@ impl<T: Trait> Module<T> {
     fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
         // retrieve bag id from channel id
         let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
-        BagIdType::<T::MemberId, T::ChannelId>::Dynamic(dyn_bag)
+        BagIdType::from(dyn_bag)
     }
 
     fn not_implemented() -> DispatchResult {
