@@ -15,11 +15,16 @@ use crate::ContentActorAuthenticator;
 use crate::Trait;
 use common::currency::GovernanceCurrency;
 use common::storage::StorageSystem;
+use frame_support::assert_ok;
 
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as membership::Trait>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
+pub type VideoId = <Test as Trait>::VideoId;
+pub type VideoCategoryId = <Test as Trait>::VideoCategoryId;
+pub type ChannelCategoryId = <Test as Trait>::ChannelCategoryId;
+type ChannelOwnershipTransferRequestId = <Test as Trait>::ChannelOwnershipTransferRequestId;
 // pub type DAOId = <Test as StorageOwnership>::DAOId;
 
 /// Origins
@@ -60,6 +65,7 @@ impl_outer_event! {
         content<T>,
         frame_system<T>,
         balances<T>,
+        membership<T>,
     }
 }
 
@@ -102,13 +108,6 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl pallet_timestamp::Trait for Test {
-    type BlockNumber = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
-}
-
 impl common::StorageOwnership for Test {
     type ChannelId = u64;
     type DAOId = u64;
@@ -128,6 +127,26 @@ impl balances::Trait for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
+}
+
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
+impl membership::Trait for Test {
+    type Event = MetaEvent;
+    type MemberId = u64;
+    type SubscriptionId = u32;
+    type PaidTermId = u32;
+    type ActorId = u32;
+    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
+}
+
+impl pallet_timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl GovernanceCurrency for Test {
@@ -164,7 +183,7 @@ impl ContentActorAuthenticator for Test {
 pub struct MockStorageSystem {}
 
 // Anyone can upload and delete without restriction
-impl StorageSystem<Test> for MockStorageSystem {
+impl StorageSystem<Test, MemberId> for MockStorageSystem {
     fn atomically_add_content(
         _owner: StorageObjectOwner<Test>,
         _content_parameters: Vec<ContentParameters<Test>>,
@@ -247,6 +266,20 @@ pub struct ExtBuilder {
     next_series_id: u64,
     next_channel_transfer_request_id: u64,
     next_curator_group_id: u64,
+    min_auction_duration: u64,
+    max_auction_duration: u64,
+    min_auction_extension_period: u64,
+    max_auction_extension_period: u64,
+    min_bid_lock_duration: u64,
+    max_bid_lock_duration: u64,
+    min_starting_price: u64,
+    max_starting_price: u64,
+    min_creator_royalty: Perbill,
+    max_creator_royalty: Perbill,
+    min_bid_step: u64,
+    max_bid_step: u64,
+    auction_fee_percentage: Perbill,
+    auction_starts_at_max_delta: u64,
 }
 
 impl Default for ExtBuilder {
@@ -261,6 +294,20 @@ impl Default for ExtBuilder {
             next_series_id: 1,
             next_channel_transfer_request_id: 1,
             next_curator_group_id: 1,
+            min_auction_duration: 3,
+            max_auction_duration: 20,
+            min_auction_extension_period: 5,
+            max_auction_extension_period: 30,
+            min_bid_lock_duration: 2,
+            max_bid_lock_duration: 10,
+            min_starting_price: 10,
+            max_starting_price: 1000,
+            min_creator_royalty: Perbill::from_percent(1),
+            max_creator_royalty: Perbill::from_percent(5),
+            min_bid_step: 10,
+            max_bid_step: 100,
+            auction_fee_percentage: Perbill::from_percent(1),
+            auction_starts_at_max_delta: 90_000,
         }
     }
 }
@@ -281,6 +328,20 @@ impl ExtBuilder {
             next_series_id: self.next_series_id,
             next_channel_transfer_request_id: self.next_channel_transfer_request_id,
             next_curator_group_id: self.next_curator_group_id,
+            min_auction_duration: self.min_auction_duration,
+            max_auction_duration: self.max_auction_duration,
+            min_auction_extension_period: self.min_auction_extension_period,
+            max_auction_extension_period: self.max_auction_extension_period,
+            min_bid_lock_duration: self.min_bid_lock_duration,
+            max_bid_lock_duration: self.max_bid_lock_duration,
+            min_starting_price: self.min_starting_price,
+            max_starting_price: self.max_starting_price,
+            min_creator_royalty: self.min_creator_royalty,
+            max_creator_royalty: self.max_creator_royalty,
+            min_bid_step: self.min_bid_step,
+            max_bid_step: self.max_bid_step,
+            auction_fee_percentage: self.auction_fee_percentage,
+            auction_starts_at_max_delta: self.auction_starts_at_max_delta,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -301,4 +362,77 @@ pub fn run_to_block(n: u64) {
         System::set_block_number(System::block_number() + 1);
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+// Events
+
+type RawEvent = crate::RawEvent<
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    MemberId,
+    CuratorGroupId,
+    CuratorId,
+    VideoId,
+    VideoCategoryId,
+    ChannelId,
+    NewAsset<ContentParameters<Test>>,
+    ChannelCategoryId,
+    ChannelOwnershipTransferRequestId,
+    u64,
+    u64,
+    u64,
+    ChannelOwnershipTransferRequest<Test>,
+    Series<<Test as StorageOwnership>::ChannelId, VideoId>,
+    Channel<Test>,
+    ContentParameters<Test>,
+    <Test as frame_system::Trait>::AccountId,
+    ContentId<Test>,
+    bool,
+    AuctionParams<VideoId, <Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId>,
+    BalanceOf<Test>,
+>;
+
+pub fn get_test_event(raw_event: RawEvent) -> MetaEvent {
+    MetaEvent::content(raw_event)
+}
+
+pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize) {
+    // Ensure  runtime events length is equal to expected number of events after call
+    assert_eq!(System::events().len(), number_of_events_after_call);
+
+    // Ensure  last emitted event is equal to expected one
+    assert_eq!(System::events().iter().last().unwrap().event, tested_event);
+}
+
+pub fn create_member_channel() -> ChannelId {
+    let channel_id = Content::next_channel_id();
+
+    // Member can create the channel
+    assert_ok!(Content::create_channel(
+        Origin::signed(FIRST_MEMBER_ORIGIN),
+        ContentActor::Member(FIRST_MEMBER_ID),
+        ChannelCreationParameters {
+            assets: vec![],
+            meta: vec![],
+            reward_account: None,
+        }
+    ));
+
+    channel_id
+}
+
+pub fn create_member_video() -> VideoId {
+    let channel_id = create_member_channel();
+
+    let video_id = Content::next_video_id();
+    assert_ok!(Content::create_video(
+        Origin::signed(FIRST_MEMBER_ORIGIN),
+        ContentActor::Member(FIRST_MEMBER_ID),
+        channel_id,
+        VideoCreationParameters {
+            assets: vec![NewAsset::Urls(vec![b"https://somewhere.com/".to_vec()])],
+            meta: b"metablob".to_vec(),
+        }
+    ));
+
+    video_id
 }

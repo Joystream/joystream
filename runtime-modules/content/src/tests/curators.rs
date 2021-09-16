@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::mock::*;
+use super::mock::{CuratorGroupId, CuratorId, *};
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 

@@ -129,7 +129,7 @@ impl<
                 auction_type: auction_params.auction_type,
                 minimal_bid_step: auction_params.minimal_bid_step,
                 last_bid: None,
-                starts_at: starts_at,
+                starts_at,
                 whitelist: auction_params.whitelist,
             }
         } else {
@@ -187,7 +187,7 @@ impl<
                 auction_duration,
             }) if current_block - self.starts_at >= *auction_duration - *extension_period => {
                 // bump auction duration when bid is made during extension period.
-                *auction_duration = *auction_duration + *extension_period;
+                *auction_duration += *extension_period;
             }
             _ => (),
         }

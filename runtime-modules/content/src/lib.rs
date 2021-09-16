@@ -1301,11 +1301,7 @@ decl_module! {
 
             // Issue NFT
             let mut video = video;
-            video.nft_status = Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Idle,
-                owner: nft_owner.clone(),
-                creator_royalty: royalty,
-            });
+            video.nft_status = Some(OwnedNFT::new(nft_owner, royalty));
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1315,7 +1311,7 @@ decl_module! {
                 video_id,
                 royalty,
                 metadata,
-                nft_owner,
+                to,
             ));
         }
 
@@ -1649,7 +1645,6 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             MemberId<T>,
         >,
-        NFTOwner = NFTOwner<MemberId<T>>,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
@@ -1798,7 +1793,13 @@ decl_event!(
 
         // NFT auction
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(ContentActor, VideoId, Option<Royalty>, Metadata, NFTOwner),
+        NftIssued(
+            ContentActor,
+            VideoId,
+            Option<Royalty>,
+            Metadata,
+            Option<MemberId>,
+        ),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),

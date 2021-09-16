@@ -5,23 +5,6 @@ use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-fn create_member_channel() -> ChannelId {
-    let channel_id = Content::next_channel_id();
-
-    // Member can create the channel
-    assert_ok!(Content::create_channel(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParameters {
-            assets: vec![],
-            meta: vec![],
-            reward_account: None,
-        }
-    ));
-
-    channel_id
-}
-
 #[test]
 fn member_can_create_videos() {
     with_default_mock_builder(|| {
