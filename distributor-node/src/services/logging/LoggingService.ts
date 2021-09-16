@@ -59,40 +59,44 @@ export class LoggingService {
   public static withAppConfig(config: ReadonlyConfig): LoggingService {
     const transports: winston.LoggerOptions['transports'] = []
 
-    const esTransport = config.endpoints.elasticSearch
-      ? new ElasticsearchTransport({
-          level: config.log?.elastic || 'warn',
-          format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
-          flushInterval: 5000,
-          source: config.id,
-          clientOpts: {
-            node: {
-              url: new URL(config.endpoints.elasticSearch),
-            },
+    let esTransport: ElasticsearchTransport | undefined
+    if (config.log?.elastic && config.log.elastic !== 'off') {
+      if (!config.endpoints.elasticSearch) {
+        throw new Error('config.endpoints.elasticSearch must be provided when elasticSeach logging is enabled!')
+      }
+      esTransport = new ElasticsearchTransport({
+        level: config.log.elastic,
+        format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
+        flushInterval: 5000,
+        source: config.id,
+        clientOpts: {
+          node: {
+            url: new URL(config.endpoints.elasticSearch),
           },
-        })
-      : undefined
-    if (esTransport) {
+        },
+      })
       transports.push(esTransport)
     }
 
     const fileTransport =
-      config.log?.file &&
-      new winston.transports.File({
-        filename: `${config.directories.logs}/logs.json`,
-        level: config.log.file,
-        format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
-      })
+      config.log?.file && config.log.file !== 'off'
+        ? new winston.transports.File({
+            filename: `${config.directories.logs}/logs.json`,
+            level: config.log.file,
+            format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
+          })
+        : undefined
     if (fileTransport) {
       transports.push(fileTransport)
     }
 
     const consoleTransport =
-      config.log?.console &&
-      new winston.transports.Console({
-        level: config.log.console,
-        format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
-      })
+      config.log?.console && config.log.console !== 'off'
+        ? new winston.transports.Console({
+            level: config.log.console,
+            format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
+          })
+        : undefined
     if (consoleTransport) {
       transports.push(consoleTransport)
     }

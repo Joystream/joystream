@@ -30,9 +30,9 @@ export const configSchema: JSONSchema4 = {
       type: 'object',
       additionalProperties: false,
       properties: {
-        file: { type: 'string', enum: Object.keys(winston.config.npm.levels) },
-        console: { type: 'string', enum: Object.keys(winston.config.npm.levels) },
-        elastic: { type: 'string', enum: Object.keys(winston.config.npm.levels) },
+        file: { type: 'string', enum: [...Object.keys(winston.config.npm.levels), 'off'] },
+        console: { type: 'string', enum: [...Object.keys(winston.config.npm.levels), 'off'] },
+        elastic: { type: 'string', enum: [...Object.keys(winston.config.npm.levels), 'off'] },
       },
     },
     storageLimit: { type: 'string', pattern: bytesizeRegex.source },

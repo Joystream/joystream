@@ -18,9 +18,9 @@ export interface ConfigJson {
     logs: string
   }
   log?: {
-    file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-    console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
-    elastic?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+    file?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
+    console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
+    elastic?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
   }
   storageLimit: string
   port: number

@@ -4,7 +4,8 @@ import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 import _ from 'lodash'
-import { bytesizeUnits } from '../validation/schemas/configSchema'
+import configSchema, { bytesizeUnits } from '../validation/schemas/configSchema'
+import { JSONSchema4 } from 'json-schema'
 
 const MIN_CACHE_SIZE = 20 * Math.pow(1024, 3)
 
@@ -26,22 +27,53 @@ export class ConfigParserService {
     return intValue * Math.pow(1024, bytesizeUnits.indexOf(unit))
   }
 
-  private mergeEnvConfigTo(config: any) {
+  private schemaTypeOf(schema: JSONSchema4, path: string[]): JSONSchema4['type'] {
+    if (path.length === 0) {
+      return undefined
+    }
+    if (schema.properties && schema.properties[path[0]]) {
+      const item = schema.properties[path[0]]
+      if (item.type === 'object') {
+        return this.schemaTypeOf(item, path.slice(1))
+      } else {
+        return item.type
+      }
+    }
+  }
+
+  private mergeEnvConfigWith(config: Record<string, unknown>) {
     Object.entries(process.env)
       .filter(([k]) => k.startsWith('JOYSTREAM_DISTRIBUTOR__'))
-      .map(([k, v]) => {
-        console.log(k, v)
+      .forEach(([k, v]) => {
         const path = k
           .replace('JOYSTREAM_DISTRIBUTOR__', '')
           .split('__')
           .map((k) => _.camelCase(k))
-          .join('.')
-        _.set(config, path, v)
+
+        const valueType = this.schemaTypeOf(configSchema, path)
+        if (valueType === undefined) {
+          // Invalid key - skip
+        } else if (valueType === 'integer') {
+          _.set(config, path, parseInt(v || ''))
+        } else if (valueType === 'number') {
+          _.set(config, path, parseFloat(v || ''))
+        } else if (valueType === 'boolean') {
+          _.set(config, path, !!v)
+        } else if (valueType === 'array') {
+          try {
+            const parsed = JSON.parse(v || 'undefined')
+            _.set(config, path, parsed)
+          } catch (e) {
+            throw new Error(`Env value ${k} is not a valid JSON array`)
+          }
+        } else {
+          _.set(config, path, v)
+        }
       })
   }
 
   public loadConfing(configPath: string): Config {
-    let inputConfig = {}
+    let inputConfig: Record<string, unknown> = {}
     // Try to load config from file if exists
     if (fs.existsSync(configPath)) {
       const fileContent = fs.readFileSync(configPath).toString()
@@ -55,7 +87,7 @@ export class ConfigParserService {
     }
 
     // Override config with env variables
-    this.mergeEnvConfigTo(inputConfig)
+    this.mergeEnvConfigWith(inputConfig)
 
     // Validate the config
     const configJson = this.validator.validate('Config', inputConfig)
