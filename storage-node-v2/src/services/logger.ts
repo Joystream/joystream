@@ -201,7 +201,7 @@ export function initElasticLogger(elasticSearchEndpoint: string): void {
  */
 function createElasticTransport(elasticSearchEndpoint: string): winston.transport {
   const esTransportOpts = {
-    level: 'debug', // TODO: consider changing to warn
+    level: 'warn',
     clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
     index: 'storage-node',
   }

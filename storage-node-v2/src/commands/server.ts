@@ -47,7 +47,7 @@ export default class Server extends ApiCommandBase {
     }),
     syncInterval: flags.integer({
       char: 'i',
-      description: 'Interval between syncronizations (in minutes)',
+      description: 'Interval between synchronizations (in minutes)',
       default: 1,
     }),
     queryNodeHost: flags.string({
@@ -157,9 +157,8 @@ function runSyncWithInterval(
   syncIntervalMinutes: number
 ) {
   setTimeout(async () => {
-    // TODO: restore
-    //   const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
-    const sleepIntevalInSeconds = 10000
+    const sleepIntevalInSeconds = syncIntervalMinutes * 60 * 1000
+
     logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
     await sleep(sleepIntevalInSeconds)
     logger.info(`Resume syncing....`)

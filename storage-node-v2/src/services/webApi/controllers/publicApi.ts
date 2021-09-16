@@ -98,8 +98,6 @@ export async function uploadFile(req: express.Request, res: express.Response): P
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
-    verifyFileSize(fileObj.size)
-
     const queryNodeUrl = getQueryNodeUrl(res)
     const workerId = getWorkerId(res)
 
@@ -360,19 +358,5 @@ async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: 
 
   if (!bucketIds.includes(bucketId.toString())) {
     throw new WebApiError('Incorrect storage bucket ID.', 400)
-  }
-}
-
-/**
- * Validates file size. It throws an error when file size exceeds the limit
- *
- * @param fileSize - runtime API promise
- * @returns void promise.
- */
-function verifyFileSize(fileSize: number) {
-  const MAX_FILE_SIZE = 1000000 // TODO: Get this const from the runtime
-
-  if (fileSize > MAX_FILE_SIZE) {
-    throw new WebApiError('Max file size exceeded.', 400)
   }
 }

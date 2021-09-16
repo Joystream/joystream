@@ -24,7 +24,7 @@ export default abstract class ApiCommandBase extends Command {
       description: 'Runtime API URL. Mandatory in non-dev environment.',
       default: 'ws://localhost:9944',
     }),
-    keyfile: flags.string({
+    keyFile: flags.string({
       char: 'k',
       description: 'Key file for the account. Mandatory in non-dev environment.',
     }),
@@ -32,10 +32,10 @@ export default abstract class ApiCommandBase extends Command {
       char: 'p',
       description: 'Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.',
     }),
-    accountURI: flags.string({
+    accountUri: flags.string({
       char: 'y',
       description:
-        'Account URI (optional). Has a priority over the keyfile and password flags. Could be overriden by ACCOUNT_URI environment variable.',
+        'Account URI (optional). Has a priority over the keyFile and password flags. Could be overriden by ACCOUNT_URI environment variable.',
     }),
   }
 
@@ -128,21 +128,21 @@ export default abstract class ApiCommandBase extends Command {
    * JSON-file or loads 'Alice' Keypair when in the development mode.
    *
    * @param dev - indicates the development mode (optional).
-   * @param keyfile - key file path (optional).
+   * @param keyFile - key file path (optional).
    * @param password - password for the key file (optional).
-   * @param accountURI - accountURI (optional). Overrides keyfile and password flags.
+   * @param accountURI - accountURI (optional). Overrides keyFile and password flags.
    * @returns KeyringPair instance.
    */
-  getAccount(flags: { dev: boolean; keyfile?: string; password?: string; accountURI?: string }): KeyringPair {
+  getAccount(flags: { dev: boolean; keyFile?: string; password?: string; accountUri?: string }): KeyringPair {
     // Select account URI variable from flags key and environment variable.
-    let accountURI = flags.accountURI ?? ''
+    let accountUri = flags.accountUri ?? ''
     if (!_.isEmpty(process.env.ACCOUNT_URI)) {
-      if (!_.isEmpty(flags.accountURI)) {
+      if (!_.isEmpty(flags.accountUri)) {
         logger.warn(
           `Both enviroment variable and command line argument were provided for the account URI. Environment variable has a priority.`
         )
       }
-      accountURI = process.env.ACCOUNT_URI ?? ''
+      accountUri = process.env.ACCOUNT_URI ?? ''
     }
 
     // Select password variable from flags key and environment variable.
@@ -156,18 +156,18 @@ export default abstract class ApiCommandBase extends Command {
       password = process.env.ACCOUNT_PWD ?? ''
     }
 
-    const keyfile = flags.keyfile ?? ''
+    const keyFile = flags.keyFile ?? ''
     // Create the Alice account for development mode.
     if (flags.dev) {
       return getAlicePair()
     }
     // Create an account using account URI
-    else if (!_.isEmpty(accountURI)) {
-      return getAccountFromUri(accountURI)
+    else if (!_.isEmpty(accountUri)) {
+      return getAccountFromUri(accountUri)
     }
-    // Create an account using the keyfile and password.
-    else if (!_.isEmpty(keyfile)) {
-      const account = getAccountFromJsonFile(keyfile)
+    // Create an account using the keyFile and password.
+    else if (!_.isEmpty(keyFile)) {
+      const account = getAccountFromJsonFile(keyFile)
       account.unlock(password)
 
       return account
