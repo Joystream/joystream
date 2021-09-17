@@ -511,7 +511,7 @@ impl common::MembershipTypes for Runtime {
 
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
-    type DAOId = DAOId;
+    type DaoId = DaoId;
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }

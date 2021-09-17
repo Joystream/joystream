@@ -25,13 +25,13 @@ pub(crate) type ContentId<T> = <T as common::StorageOwnership>::ContentId;
 pub(crate) type ChannelId<T> = <T as common::StorageOwnership>::ChannelId;
 
 // Alias for the dao id.
-pub(crate) type DAOId<T> = <T as common::StorageOwnership>::DAOId;
+pub(crate) type DaoId<T> = <T as common::StorageOwnership>::DaoId;
 
-/// DAO object type id.
+/// Dao object type id.
 pub(crate) type DataObjectTypeId<T> = <T as common::StorageOwnership>::DataObjectTypeId;
 
 /// Storage provider is a worker from the working group module.
 pub type StorageProviderId<T> = working_group::WorkerId<T>;
 
 /// Alias for StorageObjectOwner
-pub type ObjectOwner<T> = StorageObjectOwner<MemberId<T>, ChannelId<T>, DAOId<T>>;
+pub type ObjectOwner<T> = StorageObjectOwner<MemberId<T>, ChannelId<T>, DaoId<T>>;
