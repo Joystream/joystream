@@ -11,7 +11,6 @@ impl<T: Trait> Module<T> {
         actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
         video: &Video<T>,
     ) -> DispatchResult {
-        
         ensure_actor_authorized_to_create_channel::<T>(origin, actor)?;
 
         // The nft owner will be..

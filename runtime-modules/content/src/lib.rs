@@ -1420,19 +1420,19 @@ decl_module! {
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
-            participant_id: MemberId<T>,
+            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             price: BalanceOf<T>,
         ) {
-
-            // Authorize participant under given member id
-            let participant_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure participant_id is nft owner
-            video.ensure_nft_ownership::<T>(&NFTOwner::Member(participant_id))?;
+            // Authorize nft owner
+            Self::authorize_nft_owner(
+                origin,
+                &actor,
+                &video
+            )?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             video.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1447,7 +1447,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, participant_id, price));
+            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, actor, price));
         }
 
         /// Buy NFT
@@ -1797,7 +1797,7 @@ decl_event!(
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
         OfferCancelled(VideoId, ContentActor),
         OfferAccepted(VideoId, MemberId),
-        NFTSellOrderMade(VideoId, MemberId, Balance),
+        NFTSellOrderMade(VideoId, ContentActor, Balance),
         NFTBought(VideoId, MemberId, Metadata),
     }
 );
