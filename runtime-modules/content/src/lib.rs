@@ -1119,6 +1119,11 @@ decl_module! {
                 // Complete auction immediately
                 // Do not charge more then buy now
                 Some(buy_now_price) if bid >= buy_now_price => {
+
+                    if let Some(auction) = video.get_nft_auction_ref_mut() {
+                        auction.make_bid(participant_id, bid, current_block);
+                    }
+                    
                     if let (Some((last_bidder_account_id, _)), Some(owner_account_id)) = (last_bid_data, owner_account_id) {
                         let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
 
