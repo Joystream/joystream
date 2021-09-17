@@ -144,8 +144,7 @@ components:
         pattern: \d+
   headers:
     X-Cache:
-      description:
-        Describes cache status of an object.
+      description: Describes cache status of an object.
         Hit - object is already fully fetched in distributor node's cache.
         Pending - object is still beeing fetched from the storage node.
         Miss - object is neither in cache not currently beeing fetched. Fetching from storage node may be triggered.
@@ -153,8 +152,7 @@ components:
         type: string
         enum: ['hit', 'pending', 'miss']
     X-Data-Source:
-      description:
-        Describes the source of data stream.
+      description: Describes the source of data stream.
         External - the request was proxied to a storage node.
         Local - the data is streamed from local file.
       schema:
@@ -201,7 +199,7 @@ components:
       oneOf:
         - type: object
           required:
-            - "bucketIds"
+            - 'bucketIds'
           properties:
             bucketIds:
               type: array
@@ -211,9 +209,8 @@ components:
                 minimum: 0
         - type: object
           required:
-            - "allByWorkerId"
+            - 'allByWorkerId'
           properties:
             allByWorkerId:
               type: integer
               minimum: 0
-
