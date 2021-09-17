@@ -71,6 +71,9 @@ type Membership @entity {
   "Whether member is founding member."
   isFoundingMember: Boolean!
 
+  "Whether member is elected in the current council."
+  isCouncilMember: Boolean!
+
   "Member's working group roles (current and past)"
   roles: [Worker!] @derivedFrom(field: "membership")
 
@@ -83,10 +86,19 @@ type Membership @entity {
 
   # Council & Referendum relations
 
-  #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+  "Council reward payment made received by the member."
+  budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+
+  "Elected councils' memberships of the member."
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
+
+  "Referendum results for the member."
   referendumStageRevealingOptionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "optionId")
+
+  "Votes recieved in referendums by this member."
   votesRecieved: [CastVote!] @derivedFrom(field: "voteFor")
+
+  "Events announcing council being elected."
   electedCouncilEvents: [NewCouncilElectedEvent!] @derivedFrom(field: "electedMembers")
 }
 

@@ -197,10 +197,6 @@ type ElectionRound @entity {
   candidates: [Candidate!] @derivedFrom(field: "cycleId")
 }
 
-# TODO:
-# - is it useful as defined below?
-# - do we need to add records for BudgetRefill, BudgetIncrement, etc. or is it ok to read this info from councilEvents?
-
 type Budget @entity {
   "Block number at which the next rewards will be paid."
   nextRewardPaymentsAt: BigInt!

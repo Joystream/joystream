@@ -104,6 +104,7 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as InviteMembershipParameters).inviting_member_id.toString() })
         : undefined,
     isFoundingMember: false,
+    isCouncilMember: false,
   })
 
   await store.save<MemberMetadata>(member.metadata)
