@@ -1,0 +1,224 @@
+# TODO:
+# - do we need some fulltext search for council/election?
+
+# workaround for https://github.com/Joystream/hydra/issues/434
+type VariantNone @variant {
+  _phantom: Int
+}
+
+################### Council ####################################################
+
+type CouncilStageUpdate @entity {
+  "The new stage council got into."
+  stage: CouncilStage!
+
+  "Block number at which change happened."
+  changedAt: BigInt!
+
+  "Council elected in this stage update if any."
+  electedCouncil: ElectedCouncil
+}
+
+type CouncilStageAnnouncing @variant {
+  "Number of candidates aspiring to be elected as council members."
+  candidatesCount: BigInt!
+}
+
+type CouncilStageElection @variant {
+  "Number of candidates aspiring to be elected as council members."
+  candidatesCount: BigInt!
+}
+
+type CouncilStageIdle @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+union CouncilStage = CouncilStageAnnouncing | CouncilStageElection | CouncilStageIdle | VariantNone
+
+type Candidate @entity {
+  "Account used for staking currency needed for the candidacy."
+  stakingAccountId: String!
+
+  "Account that will receive rewards if candidate's elected to the council."
+  rewardAccountId: String!
+
+  "Election cycle"
+  cycleId: ElectionRound!
+  stake: BigInt!
+  votePower: BigInt!
+  note: String!
+}
+
+type CouncilMember @entity {
+  "Runtime council member id"
+  id: ID!
+
+  "Account used for staking currency for council membership."
+  stakingAccountId: String!
+
+  "Account that will receive used for reward currency for council membership."
+  rewardAccountId: String!
+
+  "Council member's membership."
+  member: Membership!
+
+  "Stake used for the council membership."
+  stake: BigInt!
+
+  "Block number in which council member recieved the last reward payment."
+  lastPaymentBlock: BigInt!
+
+  "Reward amount that should have been paid but couldn't be paid off due to insufficient budget."
+  unpaidReward: BigInt!
+
+  electedInCouncil: ElectedCouncil!
+}
+
+################### Referendum #################################################
+
+type ReferendumStageInactive @variant {
+  # no properties
+
+  # TODO: remove me - variant needs to have at least 1 property now
+  dummy: Int
+}
+
+type ReferendumStageVoting @variant {
+  "Block in which referendum started."
+  started: BigInt!
+
+  "Target number of winners."
+  winningTargetCount: BigInt!
+
+  "Index of current election"
+  cycleId: ElectionRound!
+}
+
+type ReferendumStageRevealing @variant {
+  "Block in which referendum started"
+  started: BigInt!
+
+  "Target number of winners"
+  winningTargetCount: BigInt!
+
+  "Intermediate winning options"
+  intermediateWinners: [ReferendumStageRevealingOptionResult!]
+
+  "Index of current election"
+  cycleId: ElectionRound!
+}
+
+type ReferendumStageRevealingOptionResult @entity {
+  "Member that received votes."
+  optionId: Membership!
+
+  "Sum of votes' power received."
+  votePower: BigInt!
+
+  # TODO: reference variant (how?)
+  #referendumRevealingStages: [ReferendumStageRevealing!] @derivedFrom(field: "intermediateWinners")
+
+  "Election round."
+  cycleId: ElectionRound!
+
+  "Event that concluded the referendum."
+  referendumFinishedEvent: ReferendumFinishedEvent!
+}
+
+# TODO: this maybe needs to be @entity - so it's saved in db
+union ReferendumStage = ReferendumStageInactive | ReferendumStageVoting | ReferendumStageRevealing | VariantNone
+
+type CastVote @entity {
+  "Hashed vote that was casted before being revealed."
+  commitment: String!
+
+  "Election round."
+  cycleId: ElectionRound!
+
+  "Stake used to back up the vote."
+  stake: BigInt!
+
+  "Account that cast the vote."
+  castBy: String!
+
+  "Member receiving the vote."
+  voteFor: Membership
+}
+
+################### Derived ####################################################
+
+type ElectedCouncil @entity {
+  "Members that were elected to the council."
+  councilMembers: [CouncilMember!] @derivedFrom(field: "electedInCouncil")
+
+  "Changes to council status that were made during it's reign."
+  updates: [CouncilStageUpdate!] @derivedFrom(field: "electedCouncil")
+
+  "Block number at which the council was elected."
+  electedAtBlock: Int!
+
+  "Block number at which the council reign ended and a new council was elected."
+  endedAtBlock: Int
+
+  "Elections held before the council was rightfully elected."
+  councilElections: [ElectionRound!] @derivedFrom(field: "electedCouncil")
+
+  "Elections held before the next council was or will be rightfully elected."
+  nextCouncilElections: [ElectionRound!] @derivedFrom(field: "nextElectedCouncil")
+
+  # TODO: make this nullable to represent that council is already resigned https://github.com/Joystream/hydra/issues/434
+  stage: ReferendumStage!
+}
+
+type ElectionRound @entity {
+  "Election cycle ID."
+  cycleId: Int!
+
+  "Sign if election has already finished."
+  isFinished: Boolean!
+
+  "Vote cast in the election round."
+  castVotes: [CastVote!] @derivedFrom(field: "cycleId")
+
+  # TODO: reference variant (how?)
+  #referendumStageVoting: ReferendumStage @derivedFrom(field: "cycleId")
+  #referendumStageRevealing: ReferendumStage @derivedFrom(field: "cycleId")
+
+  "Council that is ruling during the election."
+  electedCouncil: ElectedCouncil!
+
+  "Council that was elected in this election round."
+  nextElectedCouncil: ElectedCouncil
+
+  "Candidates in this election round."
+  candidates: [Candidate!] @derivedFrom(field: "cycleId")
+}
+
+# TODO:
+# - is it useful as defined below?
+# - do we need to add records for BudgetRefill, BudgetIncrement, etc. or is it ok to read this info from councilEvents?
+
+type Budget @entity {
+  "Block number at which the next rewards will be paid."
+  nextRewardPaymentsAt: BigInt!
+}
+
+type BudgetPayment @entity {
+  "Block number at which the payment was done."
+  paidAtBlock: Int!
+
+  "Member that was paid."
+  member: Membership!
+
+  "Account that received the payment"
+  account: String!
+
+  "Amount that was paid."
+  amount: BigInt!
+
+  "Amount that couldn't be paid due to insufficient council budget's balance."
+  unpaidAmount: BigInt!
+}

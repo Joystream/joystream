@@ -80,6 +80,14 @@ type Membership @entity {
 
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
+
+  # Council & Referendum relations
+
+  #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+  councilMembers: [CouncilMember!] @derivedFrom(field: "member")
+  referendumStageRevealingOptionResults: [ReferendumStageRevealingOptionResult!] @derivedFrom(field: "optionId")
+  votesRecieved: [CastVote!] @derivedFrom(field: "voteFor")
+  electedCouncilEvents: [NewCouncilElectedEvent!] @derivedFrom(field: "electedMembers")
 }
 
 type MembershipSystemSnapshot @entity {
