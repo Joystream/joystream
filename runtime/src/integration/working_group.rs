@@ -15,12 +15,12 @@ macro_rules! wg_staking_event_impl {
 	{
 	    /// Unstake remaining sum back to the source_account_id
 	    fn unstaked(
-		stake_id: &<T as stake::Trait>::StakeId,
-		_unstaked_amount: BalanceOf<T>,
-		remaining_imbalance: NegativeImbalance<T>,
-	    ) -> NegativeImbalance<T> {
-		// Stake not related to a staked role managed by the hiring module.
-		if !hiring::ApplicationIdByStakingId::<T>::contains_key(*stake_id) {
+                stake_id: &<T as stake::Trait>::StakeId,
+                _unstaked_amount: BalanceOf<T>,
+                remaining_imbalance: NegativeImbalance<T>,
+            ) -> NegativeImbalance<T> {
+        	// Stake not related to a staked role managed by the hiring module.
+    		if !hiring::ApplicationIdByStakingId::<T>::contains_key(*stake_id) {
 		    return remaining_imbalance;
 		}
 
