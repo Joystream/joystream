@@ -85,18 +85,24 @@ export class StateCacheService {
   }
 
   public getCachedContentLength(): number {
-    return Array.from(this.storedState.lruCacheGroups.values()).reduce((a, b) => a + b.size, 0)
+    return this.storedState.lruCacheGroups.reduce((a, b) => a + b.size, 0)
   }
 
   public newContent(contentHash: string, sizeInBytes: number): void {
+    const { groupNumberByContentHash } = this.memoryState
+    const { lruCacheGroups } = this.storedState
+    if (groupNumberByContentHash.get(contentHash)) {
+      this.logger.warn('newContent was called for content that already exists, ignoring the call', { contentHash })
+      return
+    }
     const cacheItemData: CacheItemData = {
       popularity: 1,
       lastAccessTime: Date.now(),
       sizeKB: Math.ceil(sizeInBytes / 1024),
     }
     const groupNumber = this.calcCacheGroup(cacheItemData)
-    this.memoryState.groupNumberByContentHash.set(contentHash, groupNumber)
-    this.storedState.lruCacheGroups[groupNumber].set(contentHash, cacheItemData)
+    groupNumberByContentHash.set(contentHash, groupNumber)
+    lruCacheGroups[groupNumber].set(contentHash, cacheItemData)
   }
 
   public peekContent(contentHash: string): CacheItemData | undefined {
@@ -107,30 +113,32 @@ export class StateCacheService {
   }
 
   public useContent(contentHash: string): void {
-    const groupNumber = this.memoryState.groupNumberByContentHash.get(contentHash)
+    const { groupNumberByContentHash } = this.memoryState
+    const { lruCacheGroups } = this.storedState
+    const groupNumber = groupNumberByContentHash.get(contentHash)
     if (groupNumber === undefined) {
       this.logger.warn('groupNumberByContentHash missing when trying to update LRU of content', { contentHash })
       return
     }
-    const group = this.storedState.lruCacheGroups[groupNumber]
+    const group = lruCacheGroups[groupNumber]
     const cacheItemData = group.get(contentHash)
     if (!cacheItemData) {
       this.logger.warn('Cache inconsistency: item missing in group retrieved from by groupNumberByContentHash map!', {
         contentHash,
         groupNumber,
       })
-      this.memoryState.groupNumberByContentHash.delete(contentHash)
+      groupNumberByContentHash.delete(contentHash)
       return
     }
     cacheItemData.lastAccessTime = Date.now()
     ++cacheItemData.popularity
     // Move object to the top of the current group / new group
     const targetGroupNumber = this.calcCacheGroup(cacheItemData)
-    const targetGroup = this.storedState.lruCacheGroups[targetGroupNumber]
+    const targetGroup = lruCacheGroups[targetGroupNumber]
     group.delete(contentHash)
     targetGroup.set(contentHash, cacheItemData)
     if (targetGroupNumber !== groupNumber) {
-      this.memoryState.groupNumberByContentHash.set(contentHash, targetGroupNumber)
+      groupNumberByContentHash.set(contentHash, targetGroupNumber)
     }
   }
 
@@ -248,11 +256,26 @@ export class StateCacheService {
   }
 
   private loadGroupNumberByContentHashMap() {
-    for (const [groupNumber, group] of this.storedState.lruCacheGroups.entries()) {
-      for (const contentHash of group.keys()) {
-        this.memoryState.groupNumberByContentHash.set(contentHash, groupNumber)
-      }
-    }
+    const contentHashes = _.uniq(this.getCachedContentHashes())
+    const { lruCacheGroups: groups } = this.storedState
+    const { groupNumberByContentHash } = this.memoryState
+
+    contentHashes.forEach((contentHash) => {
+      groups.forEach((group, groupNumber) => {
+        if (group.has(contentHash)) {
+          if (!groupNumberByContentHash.has(contentHash)) {
+            groupNumberByContentHash.set(contentHash, groupNumber)
+          } else {
+            // Content duplicated in multiple groups - remove!
+            this.logger.warn(
+              `Content hash ${contentHash} was found in in multiple lru cache groups. Removing from group ${groupNumber}...`,
+              { firstGroup: groupNumberByContentHash.get(contentHash), currentGroup: groupNumber }
+            )
+            group.delete(contentHash)
+          }
+        }
+      })
+    })
   }
 
   public load(): void {
