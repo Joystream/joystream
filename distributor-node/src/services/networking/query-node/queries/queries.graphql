@@ -68,9 +68,9 @@ fragment StorageBucketOperatorFields on StorageBucket {
 query getActiveStorageBucketOperatorsData {
   storageBuckets(
     where: {
-      operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" },
+      operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
       operatorMetadata: { nodeEndpoint_contains: "http" }
-    },
+    }
     limit: 9999
   ) {
     ...StorageBucketOperatorFields
