@@ -10,7 +10,6 @@ use stake::{BalanceOf, NegativeImbalance};
 
 macro_rules! wg_staking_event_impl {
     ($operation_wg_instance:ident, $operation_wg_staking_event_handler:ty) => {
-
 	impl<T: stake::Trait + working_group::Trait<$operation_wg_instance>>
 	    stake::StakingEventsHandler<T> for $operation_wg_staking_event_handler
 	{
