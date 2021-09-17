@@ -15,10 +15,10 @@ macro_rules! wg_staking_event_impl {
 	{
 	    /// Unstake remaining sum back to the source_account_id
 	    fn unstaked(
-                stake_id: &<T as stake::Trait>::StakeId,
-                _unstaked_amount: BalanceOf<T>,
-                remaining_imbalance: NegativeImbalance<T>,
-            ) -> NegativeImbalance<T> {
+            stake_id: &<T as stake::Trait>::StakeId,
+            _unstaked_amount: BalanceOf<T>,
+            remaining_imbalance: NegativeImbalance<T>,
+        ) -> NegativeImbalance<T> {
         	// Stake not related to a staked role managed by the hiring module.
     		if !hiring::ApplicationIdByStakingId::<T>::contains_key(*stake_id) {
 		    return remaining_imbalance;
@@ -35,18 +35,18 @@ macro_rules! wg_staking_event_impl {
 		    );
 		}
 
-		remaining_imbalance
+            remaining_imbalance
 	    }
 
 	    /// Empty handler for the slashing.
 	    fn slashed(
-		_: &<T as stake::Trait>::StakeId,
-		_: Option<<T as stake::Trait>::SlashId>,
-		_: BalanceOf<T>,
-		_: BalanceOf<T>,
-		remaining_imbalance: NegativeImbalance<T>,
+            _: &<T as stake::Trait>::StakeId,
+            _: Option<<T as stake::Trait>::SlashId>,
+            _: BalanceOf<T>,
+            _: BalanceOf<T>,
+            remaining_imbalance: NegativeImbalance<T>,
 	    ) -> NegativeImbalance<T> {
-		remaining_imbalance
+            remaining_imbalance
 	    }
 	}
     }
