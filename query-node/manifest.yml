@@ -110,6 +110,31 @@ typegen:
     - data_directory.ContentAccepted
     - data_directory.ContentRejected
     - data_directory.ContentUploadingStatusUpdated
+    # Council
+    - council.AnnouncingPeriodStarted
+    - council.NotEnoughCandidates
+    - council.VotingPeriodStarted
+    - council.NewCandidate
+    - council.NewCouncilElected
+    - council.NewCouncilNotElected
+    - council.CandidacyStakeRelease
+    - council.CandidacyWithdraw
+    - council.CandidacyNoteSet
+    - council.RewardPayment
+    - council.BudgetBalanceSet
+    - council.BudgetRefill
+    - council.BudgetRefillPlanned
+    - council.BudgetIncrementUpdated
+    - council.CouncilorRewardUpdated
+    - council.RequestFunded
+    # Referendum
+    - referendum.ReferendumStarted
+    - referendum.ReferendumStartedForcefully
+    - referendum.RevealingStageStarted
+    - referendum.ReferendumFinished
+    - referendum.VoteCast
+    - referendum.VoteRevealed
+    - referendum.StakeReleased
   calls:
     # Memberships
     - members.updateProfile
@@ -573,6 +598,55 @@ mappings:
     # not handled at the moment
     #- event: dataDirectory.ContentUploadingStatusUpdated
     #  handler: data_directory_ContentUploadingStatusUpdated
+
+    # Council
+    - event: council.AnnouncingPeriodStarted
+      handler: council_AnnouncingPeriodStarted
+    - event: council.NotEnoughCandidates
+      handler: council_NotEnoughCandidates
+    - event: council.VotingPeriodStarted
+      handler: council_VotingPeriodStarted
+    - event: council.NewCandidate
+      handler: council_NewCandidate
+    - event: council.NewCouncilElected
+      handler: council_NewCouncilElected
+    - event: council.NewCouncilNotElected
+      handler: council_NewCouncilNotElected
+    - event: council.CandidacyStakeRelease
+      handler: council_CandidacyStakeRelease
+    - event: council.CandidacyWithdraw
+      handler: council_CandidacyWithdraw
+    - event: council.CandidacyNoteSet
+      handler: council_CandidacyNoteSet
+    - event: council.RewardPayment
+      handler: council_RewardPayment
+    - event: council.BudgetBalanceSet
+      handler: council_BudgetBalanceSet
+    - event: council.BudgetRefill
+      handler: council_BudgetRefill
+    - event: council.BudgetRefillPlanned
+      handler: council_BudgetRefillPlanned
+    - event: council.BudgetIncrementUpdated
+      handler: council_BudgetIncrementUpdated
+    - event: council.CouncilorRewardUpdated
+      handler: council_CouncilorRewardUpdated
+    - event: council.RequestFunded
+      handler: council_RequestFunded
+    # Referendum
+    - event: referendum.ReferendumStarted
+      handler: referendum_ReferendumStarted
+    - event: referendum.ReferendumStartedForcefully
+      handler: referendum_ReferendumStartedForcefully
+    - event: referendum.RevealingStageStarted
+      handler: referendum_RevealingStageStarted
+    - event: referendum.ReferendumFinished
+      handler: referendum_ReferendumFinished
+    - event: referendum.VoteCast
+      handler: referendum_VoteCast
+    - event: referendum.VoteRevealed
+      handler: referendum_VoteRevealed
+    - event: referendum.StakeReleased
+      handler: referendum_StakeReleased
   extrinsicHandlers:
     # infer defaults here
     #- extrinsic: Balances.Transfer
