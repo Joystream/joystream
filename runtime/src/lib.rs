@@ -576,16 +576,16 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
-// The builder working group instance alias.
-pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
-
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
 
-// The builder working group instance alias.
+// The operation working group alpha instance alias.
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
+
+// The operation working group beta instance alias .
 pub type OperationsWorkingGroupInstanceBeta = working_group::Instance6;
 
-// The builder working group instance alias.
+// The operation working group gamma instance alias .
 pub type OperationsWorkingGroupInstanceGamma = working_group::Instance7;
 
 parameter_types! {
