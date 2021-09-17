@@ -21,23 +21,14 @@ impl<T: Trait> Module<T> {
 
     /// Check whether nft auction expired
     pub(crate) fn is_nft_auction_expired(auction: &Auction<T>) -> bool {
-        match &auction.last_bid {
-            Some(last_bid) => {
-                // Check whether buy now have been triggered.
-                let is_buy_now_triggered =
-                    matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
-                if let AuctionType::English(round_duration) = auction.auction_type {
-                    let now = <frame_system::Module<T>>::block_number();
+        if let AuctionType::English(round_duration) = auction.auction_type {
+            let now = <frame_system::Module<T>>::block_number();
 
-                    // Check whether auction round time expired.
-                    let is_auction_round_expired = (now - last_bid.time) >= round_duration;
-                    is_auction_round_expired || is_buy_now_triggered
-                } else {
-                    // Open auction expires only if buy now have been triggered
-                    is_buy_now_triggered
-                }
-            }
-            _ => false,
+            // Check whether auction round time expired.
+            (now - auction.starts_at) >= round_duration
+        } else {
+            // Open auction never expires
+            false
         }
     }
 
@@ -52,27 +43,17 @@ impl<T: Trait> Module<T> {
 
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
-        if let Some(last_bid) = &auction.last_bid {
-            let can_be_completed = if let AuctionType::English(round_duration) =
-                auction.auction_type
-            {
-                let now = <frame_system::Module<T>>::block_number();
+        let can_be_completed = if let AuctionType::English(round_duration) = auction.auction_type {
+            let now = <frame_system::Module<T>>::block_number();
 
-                // Check whether auction round time expired.
-                let is_auction_round_expired = (now - last_bid.time) >= round_duration;
+            // Check whether auction round time expired.
+            (now - auction.starts_at) >= round_duration
+        } else {
+            // Open auction can be completed at any time
+            true
+        };
 
-                // Check whether buy now have been triggered.
-                let is_buy_now_triggered =
-                    matches!(&auction.buy_now_price, Some(buy_now) if *buy_now == last_bid.amount);
-
-                is_auction_round_expired || is_buy_now_triggered
-            } else {
-                // Open auction can be completed at any time
-                true
-            };
-
-            ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
-        }
+        ensure!(can_be_completed, Error::<T>::AuctionCannotBeCompleted);
 
         Ok(())
     }

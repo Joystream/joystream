@@ -979,7 +979,12 @@ decl_module! {
             //
 
             // Create new auction
-            let auction = AuctionRecord::new(auction_params.clone());
+            let mut auction = AuctionRecord::new(auction_params.clone());
+
+            // If starts_at is not set, set it to now
+            if auction_params.starts_at.is_none() {
+                auction.starts_at = <frame_system::Module<T>>::block_number();
+            }
             let video = video.set_auction_transactional_status(auction);
 
             // Update the video
@@ -1048,6 +1053,7 @@ decl_module! {
             participant_id: T::MemberId,
             video_id: T::VideoId,
             bid: BalanceOf<T>,
+            metadata: Metadata,
         ) {
 
             // Authorize participant under given member id
@@ -1084,36 +1090,60 @@ decl_module! {
                 None
             };
 
+            // Used fo immediate auction completion
+            let owner_account_id = match auction.buy_now_price {
+                // Do not charge more then buy now
+                Some(buy_now_price) if bid >= buy_now_price => {
+                    if let Some(owned_nft) = &video.nft_status {
+                        Some(Self::ensure_owner_account_id(&video, &owned_nft)?)
+                    } else {
+                        None
+                    }
+                },
+                _ => None,
+            };
+
             //
             // == MUTATION SAFE ==
             //
 
             // Unreserve previous bidder balance
-            if let Some((last_bidder_account_id, last_bid_amount)) = last_bid_data {
-                T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
+            if let Some((last_bidder_account_id, last_bid_amount)) = &last_bid_data {
+                T::Currency::unreserve(last_bidder_account_id, *last_bid_amount);
             }
-
-            // Do not charge more then buy now
-            let bid = match auction.buy_now_price {
-                Some(buy_now_price) if bid >= buy_now_price => buy_now_price,
-                _ => bid,
-            };
-
-            // Reseve balance for current bid
-            // Can not fail, needed check made
-            T::Currency::reserve(&participant_account_id, bid)?;
 
             // Make auction bid & update auction data
             let mut video = video;
 
-            if let Some(auction) = video.get_nft_auction_ref_mut() {
-                auction.make_bid(participant_id, bid, current_block);
+            match auction.buy_now_price {
+                // Complete auction immediately
+                // Do not charge more then buy now
+                Some(buy_now_price) if bid >= buy_now_price => {
+                    if let (Some((last_bidder_account_id, _)), Some(owner_account_id)) = (last_bid_data, owner_account_id) {
+                        let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
 
-                VideoById::<T>::insert(video_id, video);
+                        // Update the video
+                        VideoById::<T>::insert(video_id, video);
 
-                // Trigger event
-                Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid));
-            }
+                        // Trigger event
+                        Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, metadata));
+                    }
+                },
+                _ => {
+                    // Reseve balance for current bid
+                    // Can not fail, needed check made
+                    T::Currency::reserve(&participant_account_id, bid)?;
+
+                    if let Some(auction) = video.get_nft_auction_ref_mut() {
+                        auction.make_bid(participant_id, bid, current_block);
+
+                        VideoById::<T>::insert(video_id, video);
+
+                        // Trigger event
+                        Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
+                    }
+                },
+            };
         }
 
         /// Cancel open auction bid
@@ -1789,7 +1819,7 @@ decl_event!(
         // NFT auction
         AuctionStarted(ContentActor, AuctionParams),
         NftIssued(ContentActor, VideoId, Option<Royalty>, Metadata, NFTOwner),
-        AuctionBidMade(MemberId, VideoId, Balance),
+        AuctionBidMade(MemberId, VideoId, Balance, Metadata),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
         AuctionCompleted(MemberId, VideoId, Metadata),
