@@ -1,6 +1,6 @@
 use codec::Decode;
 use node_runtime::{
-    common::storage::StorageObjectOwner, data_directory::*, ChannelId, ContentId, DAOId,
+    common::storage::StorageObjectOwner, data_directory::*, ChannelId, ContentId, DaoId,
     DataDirectoryConfig, MemberId, Runtime,
 };
 use serde::Deserialize;
@@ -14,7 +14,7 @@ use std::{fs, path::Path};
 struct Content {
     content_id: ContentId,
     data_object: DataObject<Runtime>,
-    storage_object_owner: StorageObjectOwner<MemberId, ChannelId, DAOId>,
+    storage_object_owner: StorageObjectOwner<MemberId, ChannelId, DaoId>,
     voucher: Voucher,
 }
 
