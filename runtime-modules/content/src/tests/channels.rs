@@ -18,7 +18,7 @@ fn lead_cannot_create_channel() {
                     reward_account: None,
                 }
             ),
-            Error::<Test>::ActorCannotOwnChannel
+            Error::<Test>::ActorNotAuthorized
         );
     })
 }

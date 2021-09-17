@@ -105,7 +105,7 @@ pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
     match actor {
         // Lead should use their member or curator role to create or update channel assets.
         ContentActor::Lead => {
-            Err(Error::<T>::ActorCannotOwnChannel.into())
+            Err(Error::<T>::ActorNotAuthorized.into())
         }
         ContentActor::Curator(curator_group_id, curator_id) => {
             let sender = ensure_signed(origin)?;
