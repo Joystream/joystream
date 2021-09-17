@@ -280,7 +280,7 @@ fn member_owned_channels() {
         // Valid collaborator should be able to update channel assets
         let assets = Some(vec![NewAsset::Urls(vec![b"test".to_vec()])]);
 
-        // Update channel
+        // Update channel fails because channel_id_1 has no collabs
         assert_err!(
             Content::update_channel(
                 Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
@@ -296,6 +296,7 @@ fn member_owned_channels() {
             Error::<Test>::ActorNotAuthorized
         );
 
+        // Update channel succeeds because channel_id_2 has collabs
         assert_ok!(Content::update_channel(
             Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
