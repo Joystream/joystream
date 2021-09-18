@@ -961,15 +961,15 @@ decl_module! {
             // Ensure nft is already issued
             video.ensure_nft_is_issued::<T>()?;
 
-            // Ensure there nft transactional status is set to idle.
-            video.ensure_nft_transactional_status_is_idle::<T>()?;
-
             // Authorize nft owner
             Self::authorize_nft_owner(
                 origin,
                 &owner_id,
                 &video
             )?;
+
+            // Ensure there nft transactional status is set to idle.
+            video.ensure_nft_transactional_status_is_idle::<T>()?;
 
             // Validate round_duration & starting_price
             Self::validate_auction_params(&auction_params)?;
