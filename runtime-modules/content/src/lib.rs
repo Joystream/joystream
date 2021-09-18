@@ -949,7 +949,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn start_nft_auction(
             origin,
-            auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
         ) {
 
@@ -967,7 +967,7 @@ decl_module! {
             // Authorize nft owner
             Self::authorize_nft_owner(
                 origin,
-                &auctioneer,
+                &owner_id,
                 &video
             )?;
 
@@ -991,14 +991,14 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::AuctionStarted(auctioneer, auction_params));
+            Self::deposit_event(RawEvent::AuctionStarted(owner_id, auction_params));
         }
 
-        /// Cancel video auction
+        /// Cancel video nft auction
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_video_auction(
+        pub fn cancel_nft_auction(
             origin,
-            auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
         ) {
 
@@ -1008,7 +1008,7 @@ decl_module! {
             // Authorize nft owner
             Self::authorize_nft_owner(
                 origin,
-                &auctioneer,
+                &owner_id,
                 &video
             )?;
 
@@ -1043,7 +1043,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, video_id));
+            Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
         }
 
         /// Make auction bid
@@ -1123,7 +1123,7 @@ decl_module! {
                     if let Some(auction) = video.get_nft_auction_ref_mut() {
                         auction.make_bid(participant_id, bid, current_block);
                     }
-                    
+
                     if let (Some((last_bidder_account_id, _)), Some(owner_account_id)) = (last_bid_data, owner_account_id) {
                         let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
 
@@ -1199,7 +1199,7 @@ decl_module! {
 
         /// Complete auction
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn complete_video_auction(
+        pub fn complete_nft_auction(
             origin,
             member_id: T::MemberId,
             video_id: T::VideoId,
@@ -1419,18 +1419,18 @@ decl_module! {
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
-            participant_id: MemberId<T>,
+            recipient_id: MemberId<T>,
         ) {
 
             // Authorize participant under given member id
             let receiver_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&participant_id, &receiver_account_id)?;
+            ensure_member_auth_success::<T>(&recipient_id, &receiver_account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure new pending offer is available to proceed
-            Self::ensure_new_pending_offer_available_to_proceed(&video, participant_id, &receiver_account_id)?;
+            Self::ensure_new_pending_offer_available_to_proceed(&video, recipient_id, &receiver_account_id)?;
 
             if let Some(owned_nft) = &video.nft_status {
 
@@ -1446,7 +1446,7 @@ decl_module! {
                 VideoById::<T>::insert(video_id, video);
 
                 // Trigger event
-                Self::deposit_event(RawEvent::OfferAccepted(video_id, participant_id));
+                Self::deposit_event(RawEvent::OfferAccepted(video_id, recipient_id));
             }
         }
 
@@ -1455,7 +1455,7 @@ decl_module! {
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             price: BalanceOf<T>,
         ) {
 
@@ -1465,7 +1465,7 @@ decl_module! {
             // Authorize nft owner
             Self::authorize_nft_owner(
                 origin,
-                &actor,
+                &owner_id,
                 &video
             )?;
 
@@ -1482,7 +1482,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, actor, price));
+            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, owner_id, price));
         }
 
         /// Buy NFT

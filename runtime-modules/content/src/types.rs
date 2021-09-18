@@ -266,17 +266,6 @@ impl<
         Ok(())
     }
 
-    /// Check whether nft transactional status is set to `Auction`
-    pub fn is_nft_auction_started(&self) -> bool {
-        matches!(
-            self.nft_status,
-            Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Auction(..),
-                ..
-            })
-        )
-    }
-
     /// Ensure nft is in auction state
     pub fn ensure_nft_auction_state<T: Trait>(
         &self,
