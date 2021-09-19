@@ -222,7 +222,7 @@ pub struct VideoRecord<
     SeriesId,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
-    Balance: Default,
+    Balance: Default + Clone,
 > {
     pub in_channel: ChannelId,
     // keep track of which season the video is in if it is an 'episode'
@@ -242,157 +242,26 @@ impl<
         Balance: Clone + Default,
     > VideoRecord<ChannelId, SeriesId, BlockNumber, MemberId, Balance>
 {
-    fn is_issued(&self) -> bool {
-        self.nft_status.is_some()
-    }
-
-    /// Ensure nft status is set to `NoneIssued`
+    /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(!self.is_issued(), Error::<T>::NFTAlreadyExists);
+        ensure!(self.nft_status.is_none(), Error::<T>::NFTDoesNotExist);
         Ok(())
     }
 
-    /// Ensure nft status is set to `Owned`
-    pub fn ensure_nft_is_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_issued(), Error::<T>::NFTDoesNotExist);
-        Ok(())
-    }
-
-    /// Ensure given NFTOwner is nft owner
-    pub fn ensure_nft_ownership<T: Trait>(&self, owner: &NFTOwner<MemberId>) -> DispatchResult {
-        if let Some(owned_nft) = &self.nft_status {
-            ensure!(owned_nft.is_owner(owner), Error::<T>::DoesNotOwnNFT);
-        }
-        Ok(())
-    }
-
-    /// Ensure nft is in auction state
-    pub fn ensure_nft_auction_state<T: Trait>(
+    /// Ensure nft is issued
+    pub fn ensure_nft_is_issued<T: Trait>(
         &self,
-    ) -> Result<AuctionRecord<BlockNumber, Balance, MemberId>, Error<T>> {
-        if let Some(OwnedNFT {
-            transactional_status: TransactionalStatus::Auction(auction),
-            ..
-        }) = &self.nft_status
-        {
-            Ok(auction.clone())
+    ) -> Result<OwnedNFT<BlockNumber, MemberId, Balance>, Error<T>> {
+        if let Some(owned_nft) = &self.nft_status {
+            Ok(owned_nft.to_owned())
         } else {
-            Err(Error::<T>::NotInAuctionState)
+            Err(Error::<T>::NFTAlreadyExists.into())
         }
     }
 
-    /// Get nft auction record
-    pub fn get_nft_auction(&self) -> Option<AuctionRecord<BlockNumber, Balance, MemberId>> {
-        if let Some(OwnedNFT {
-            transactional_status: TransactionalStatus::Auction(ref auction),
-            ..
-        }) = self.nft_status
-        {
-            Some(auction.clone())
-        } else {
-            None
-        }
-    }
-
-    /// Get nft auction record by reference
-    pub fn get_nft_auction_ref(&self) -> Option<&AuctionRecord<BlockNumber, Balance, MemberId>> {
-        if let Some(OwnedNFT {
-            transactional_status: TransactionalStatus::Auction(ref auction),
-            ..
-        }) = self.nft_status
-        {
-            Some(auction)
-        } else {
-            None
-        }
-    }
-
-    /// Get nft auction record by mutable reference
-    pub fn get_nft_auction_ref_mut(
-        &mut self,
-    ) -> Option<&mut AuctionRecord<BlockNumber, Balance, MemberId>> {
-        if let Some(OwnedNFT {
-            transactional_status: TransactionalStatus::Auction(ref mut auction),
-            ..
-        }) = self.nft_status
-        {
-            Some(auction)
-        } else {
-            None
-        }
-    }
-
-    ///  Ensure nft transactional status is set to `Idle`
-    pub fn ensure_nft_transactional_status_is_idle<T: Trait>(&self) -> DispatchResult {
-        let is_idle = matches!(
-            self.nft_status,
-            Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Idle,
-                ..
-            })
-        );
-        ensure!(is_idle, Error::<T>::NftIsNotIdle);
-        Ok(())
-    }
-
-    /// Sets nft transactional status to `BuyNow`
-    pub fn set_buy_now_transactionl_status(mut self, buy_now_price: Balance) -> Self {
-        if let Some(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status = TransactionalStatus::BuyNow(buy_now_price);
-        }
+    pub fn set_nft_status(mut self, nft: OwnedNFT<BlockNumber, MemberId, Balance>) -> Self {
+        self.nft_status = Some(nft);
         self
-    }
-
-    /// Sets nft transactional status to provided `Auction`
-    pub fn set_auction_transactional_status(
-        mut self,
-        auction: AuctionRecord<BlockNumber, Balance, MemberId>,
-    ) -> Self {
-        if let Some(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status = TransactionalStatus::Auction(auction);
-        }
-        self
-    }
-
-    /// Set nft transactional status to `Idle`
-    pub fn set_idle_transactional_status(mut self) -> Self {
-        if let Some(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status = TransactionalStatus::Idle;
-        }
-        self
-    }
-
-    /// Set nft transactional status to `InitiatedOfferToMember`
-    pub fn set_pending_offer_transactional_status(
-        mut self,
-        to: MemberId,
-        balance: Option<Balance>,
-    ) -> Self {
-        if let Some(owned_nft) = &mut self.nft_status {
-            owned_nft.transactional_status =
-                TransactionalStatus::InitiatedOfferToMember(to, balance);
-        }
-        self
-    }
-
-    /// Whether pending tansfer exist
-    pub fn is_pending_offer_transactional_status(&self) -> bool {
-        matches!(
-            self.nft_status,
-            Some(OwnedNFT {
-                transactional_status: TransactionalStatus::InitiatedOfferToMember(..),
-                ..
-            })
-        )
-    }
-
-    /// Ensure NFT has pending offer
-    pub fn ensure_pending_offer_exists<T: Trait>(&self) -> DispatchResult {
-        ensure!(
-            self.is_pending_offer_transactional_status(),
-            Error::<T>::PendingTransferDoesNotExist
-        );
-        Ok(())
     }
 
     /// Ensure censorship status have been changed
