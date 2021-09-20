@@ -1077,7 +1077,7 @@ decl_module! {
                 //
 
                 // Unreserve previous bidder balance
-                T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
+                T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
 
                 // Cancel auction
                 let nft = nft.set_idle_transactional_status();
