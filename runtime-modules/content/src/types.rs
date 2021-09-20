@@ -259,6 +259,7 @@ impl<
         }
     }
 
+    /// Set video nft status
     pub fn set_nft_status(mut self, nft: OwnedNFT<BlockNumber, MemberId, Balance>) -> Self {
         self.nft_status = Some(nft);
         self

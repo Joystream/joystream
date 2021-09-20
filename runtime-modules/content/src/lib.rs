@@ -971,8 +971,8 @@ decl_module! {
             let nft_owner = if let Some(to) = to {
                 NFTOwner::Member(to)
             } else {
-                // if `to` set to None, actor issues to himself
-                Self::actor_to_nft_owner(&actor)?
+                // if `to` set to None, actor issues to ChannelOwner
+                NFTOwner::ChannelOwner
             };
 
             // Enure royalty bounds satisfied, if provided
