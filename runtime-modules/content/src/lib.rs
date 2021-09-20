@@ -1230,9 +1230,6 @@ decl_module! {
 
             let current_block = <frame_system::Module<T>>::block_number();
 
-            // Ensure auction have been already started
-            auction.ensure_auction_started::<T>(current_block)?;
-
             // Ensure participant can cancel last bid
             auction.ensure_bid_can_be_canceled::<T>(participant_id, current_block)?;
 
