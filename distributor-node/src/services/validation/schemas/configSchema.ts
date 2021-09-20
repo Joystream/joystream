@@ -7,7 +7,7 @@ export const bytesizeRegex = new RegExp(`^[0-9]+(${bytesizeUnits.join('|')})$`)
 
 export const configSchema: JSONSchema4 = {
   type: 'object',
-  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'port', 'storageLimit', 'workerId'],
+  required: ['id', 'endpoints', 'directories', 'buckets', 'keys', 'port', 'workerId', 'limits'],
   additionalProperties: false,
   properties: {
     id: { type: 'string' },
@@ -35,7 +35,12 @@ export const configSchema: JSONSchema4 = {
         elastic: { type: 'string', enum: [...Object.keys(winston.config.npm.levels), 'off'] },
       },
     },
-    storageLimit: { type: 'string', pattern: bytesizeRegex.source },
+    limits: strictObject({
+      storage: { type: 'string', pattern: bytesizeRegex.source },
+      maxConcurrentStorageNodeDownloads: { type: 'integer', minimum: 1 },
+      maxConcurrentOutboundConnections: { type: 'integer', minimum: 1 },
+      outboundRequestsTimeout: { type: 'integer', minimum: 1 },
+    }),
     port: { type: 'integer', minimum: 0 },
     keys: { type: 'array', items: { type: 'string' }, minItems: 1 },
     buckets: {

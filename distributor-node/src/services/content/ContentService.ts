@@ -23,7 +23,7 @@ export class ContentService {
   }
 
   public get freeSpace(): number {
-    return this.config.storageLimit - this.contentSizeSum
+    return this.config.limits.storage - this.contentSizeSum
   }
 
   public constructor(config: ReadonlyConfig, logging: LoggingService, stateCache: StateCacheService) {

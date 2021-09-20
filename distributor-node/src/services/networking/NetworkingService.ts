@@ -15,19 +15,14 @@ import {
   DownloadData,
 } from '../../types'
 import queue from 'queue'
-import _ from 'lodash'
 import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
 import http from 'http'
 import https from 'https'
+import { parseAxiosError } from '../parsers/errors'
 
-// TODO: Adjust limits and intervals
+const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10
 const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
-const MAX_CONCURRENT_DOWNLOADS = 10
-const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_DOWNLOAD = 10 // 10 pending download * 10 availibility checks per download = 100 concurrent requests
-
 const STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS = 60000
-const STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT = 5000
-const GLOBAL_AXIOS_TIMEOUT = 10000
 
 export class NetworkingService {
   private config: ReadonlyConfig
@@ -42,9 +37,14 @@ export class NetworkingService {
   private downloadQueue: queue
 
   constructor(config: ReadonlyConfig, stateCache: StateCacheService, logging: LoggingService) {
-    axios.defaults.timeout = GLOBAL_AXIOS_TIMEOUT
-    axios.defaults.httpAgent = new http.Agent({ keepAlive: true, timeout: GLOBAL_AXIOS_TIMEOUT })
-    axios.defaults.httpsAgent = new https.Agent({ keepAlive: true, timeout: GLOBAL_AXIOS_TIMEOUT })
+    axios.defaults.timeout = config.limits.outboundRequestsTimeout
+    const httpConfig: http.AgentOptions | https.AgentOptions = {
+      keepAlive: true,
+      timeout: config.limits.outboundRequestsTimeout,
+      maxSockets: config.limits.maxConcurrentOutboundConnections,
+    }
+    axios.defaults.httpAgent = new http.Agent(httpConfig)
+    axios.defaults.httpsAgent = new https.Agent(httpConfig)
     this.config = config
     this.logging = logging
     this.stateCache = stateCache
@@ -65,7 +65,7 @@ export class NetworkingService {
         })
       }
     )
-    this.downloadQueue = queue({ concurrency: MAX_CONCURRENT_DOWNLOADS, autostart: true })
+    this.downloadQueue = queue({ concurrency: config.limits.maxConcurrentStorageNodeDownloads, autostart: true })
   }
 
   public clearIntervals(): void {
@@ -159,9 +159,10 @@ export class NetworkingService {
   private downloadJob(
     pendingDownload: PendingDownloadData,
     downloadData: DownloadData,
-    onSuccess: (response: StorageNodeDownloadResponse) => void,
-    onError: (error: Error) => void
-  ): Promise<StorageNodeDownloadResponse> {
+    onSourceFound: (response: StorageNodeDownloadResponse) => void,
+    onError: (error: Error) => void,
+    onFinished?: () => void
+  ): Promise<void> {
     const {
       objectData: { contentHash, accessPoints },
       startAt,
@@ -169,17 +170,23 @@ export class NetworkingService {
 
     pendingDownload.status = 'LookingForSource'
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
+      // Handlers:
       const fail = (message: string) => {
         this.stateCache.dropPendingDownload(contentHash)
         onError(new Error(message))
         reject(new Error(message))
       }
-      const success = (response: StorageNodeDownloadResponse) => {
+
+      const sourceFound = (response: StorageNodeDownloadResponse) => {
         this.logger.info('Download source chosen', { contentHash, source: response.config.url })
         pendingDownload.status = 'Downloading'
-        onSuccess(response)
-        resolve(response)
+        onSourceFound(response)
+      }
+
+      const finish = () => {
+        onFinished && onFinished()
+        resolve()
       }
 
       const storageEndpoints = this.sortEndpointsByMeanResponseTime(
@@ -252,7 +259,8 @@ export class NetworkingService {
       objectDownloadQueue.on('success', (response: StorageNodeDownloadResponse) => {
         availabilityQueue.removeAllListeners().end()
         objectDownloadQueue.removeAllListeners().end()
-        success(response)
+        response.data.on('close', finish).on('error', finish).on('end', finish)
+        sourceFound(response)
       })
     })
   }
@@ -321,7 +329,6 @@ export class NetworkingService {
     try {
       // TODO: Use a status endpoint once available?
       await axios.get(endpoint, {
-        timeout: STORAGE_NODE_ENDPOINT_CHECK_TIMEOUT,
         headers: {
           connection: 'close',
         },
@@ -334,7 +341,11 @@ export class NetworkingService {
         this.logger.debug(`${endpoint} check request response time: ${responseTime}`, { endpoint, responseTime })
         this.stateCache.setStorageNodeEndpointResponseTime(endpoint, responseTime)
       } else {
-        this.logger.warn(`${endpoint} check request unexpected response`, { endpoint, err, '@pauseFor': 900 })
+        this.logger.warn(`${endpoint} check request unexpected response`, {
+          endpoint,
+          err: axios.isAxiosError(err) ? parseAxiosError(err) : err,
+          '@pauseFor': 900,
+        })
       }
     }
   }
