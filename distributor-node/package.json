@@ -38,7 +38,10 @@
     "winston-elasticsearch": "^0.15.8",
     "node-cache": "^5.1.2",
     "cors": "^2.8.5",
-    "inquirer": "^8.1.2"
+    "inquirer": "^8.1.2",
+    "multihashes": "^4.0.3",
+    "blake3": "^2.1.4",
+    "js-image-generator": "^1.0.3"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
