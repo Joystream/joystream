@@ -207,7 +207,7 @@ pub struct AuctionRecord<BlockNumber: BaseArithmetic + Copy, Balance: Clone, Mem
     pub minimal_bid_step: Balance,
     pub last_bid: Option<Bid<MemberId, BlockNumber, Balance>>,
     pub starts_at: BlockNumber,
-    pub whitelist: Option<BTreeSet<MemberId>>,
+    pub whitelist: BTreeSet<MemberId>,
 }
 
 impl<
@@ -374,9 +374,9 @@ impl<
 
     /// If whitelist set, ensure provided member is authorized to make bids
     pub fn ensure_whitelisted_participant<T: Trait>(&self, who: MemberId) -> DispatchResult {
-        if let Some(whitelist) = &self.whitelist {
+        if !self.whitelist.is_empty() {
             ensure!(
-                whitelist.contains(&who),
+                self.whitelist.contains(&who),
                 Error::<T>::MemberIsNotAllowedToParticipate
             );
         }
@@ -413,7 +413,7 @@ pub struct AuctionParams<VideoId, BlockNumber, Balance, MemberId: Ord> {
     pub minimal_bid_step: Balance,
     pub buy_now_price: Option<Balance>,
     pub starts_at: Option<BlockNumber>,
-    pub whitelist: Option<BTreeSet<MemberId>>,
+    pub whitelist: BTreeSet<MemberId>,
 }
 
 /// Auction type
