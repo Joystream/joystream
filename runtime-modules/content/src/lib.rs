@@ -1069,30 +1069,25 @@ decl_module! {
             // Ensure given auction can be canceled
             auction.ensure_auction_can_be_canceled::<T>()?;
 
-            let last_bid_data = if let Some(last_bid) = auction.last_bid {
+            if let Some(last_bid) = auction.last_bid {
                 let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-                Some((last_bidder_account_id, last_bid.amount))
-            } else {
-                None
-            };
 
-            //
-            // == MUTATION SAFE ==
-            //
+                //
+                // == MUTATION SAFE ==
+                //
 
-            // Unreserve previous bidder balance
-            if let Some((last_bidder_account_id, last_bid_amount)) = last_bid_data {
+                // Unreserve previous bidder balance
                 T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
-            }
 
-            // Cancel auction
-            let nft = nft.set_idle_transactional_status();
-            let video = video.set_nft_status(nft);
+                // Cancel auction
+                let nft = nft.set_idle_transactional_status();
+                let video = video.set_nft_status(nft);
 
-            VideoById::<T>::insert(video_id, video);
+                VideoById::<T>::insert(video_id, video);
 
-            // Trigger event
-            Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
+                // Trigger event
+                Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
+            } 
         }
 
         /// Make auction bid
