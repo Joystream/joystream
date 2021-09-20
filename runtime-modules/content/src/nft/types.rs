@@ -216,7 +216,7 @@ impl<
                 auction_type: auction_params.auction_type,
                 minimal_bid_step: auction_params.minimal_bid_step,
                 last_bid: None,
-                starts_at: starts_at,
+                starts_at,
                 whitelist: auction_params.whitelist,
             }
         } else {

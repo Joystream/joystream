@@ -255,7 +255,7 @@ impl<
         if let Some(owned_nft) = &self.nft_status {
             Ok(owned_nft.to_owned())
         } else {
-            Err(Error::<T>::NFTAlreadyExists.into())
+            Err(Error::<T>::NFTAlreadyExists)
         }
     }
 
