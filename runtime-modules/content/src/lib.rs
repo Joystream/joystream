@@ -1121,10 +1121,10 @@ decl_module! {
             // Ensure auction for given video id exists
             let auction = nft.ensure_auction_state::<T>()?;
 
-            // Ensure nft auction not expired
-            Self::ensure_nft_auction_not_expired(&auction)?;
-
             let current_block = <frame_system::Module<T>>::block_number();
+
+            // Ensure nft auction not expired
+            auction.ensure_nft_auction_not_expired::<T>(current_block)?;
 
             // Ensure auction have been already started
             auction.ensure_auction_started::<T>(current_block)?;

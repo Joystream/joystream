@@ -302,6 +302,29 @@ impl<
         Ok(())
     }
 
+    /// Check whether nft auction expired
+    pub fn is_nft_auction_expired(&self, current_block: BlockNumber) -> bool {
+        if let AuctionType::English(round_duration) = self.auction_type {
+            // Check whether auction round time expired.
+            (current_block - self.starts_at) >= round_duration
+        } else {
+            // Open auction never expires
+            false
+        }
+    }
+
+    /// Ensure nft auction not expired
+    pub fn ensure_nft_auction_not_expired<T: Trait>(
+        &self,
+        current_block: BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            !self.is_nft_auction_expired(current_block),
+            Error::<T>::NFTAuctionIsAlreadyExpired
+        );
+        Ok(())
+    }
+
     /// Whether caller is last bidder
     pub fn is_last_bidder(&self, who: MemberId) -> bool {
         matches!(&self.last_bid, Some(last_bid) if last_bid.bidder == who)

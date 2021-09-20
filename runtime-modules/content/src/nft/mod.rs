@@ -5,28 +5,6 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Check whether nft auction expired
-    pub(crate) fn is_nft_auction_expired(auction: &Auction<T>) -> bool {
-        if let AuctionType::English(round_duration) = auction.auction_type {
-            let now = <frame_system::Module<T>>::block_number();
-
-            // Check whether auction round time expired.
-            (now - auction.starts_at) >= round_duration
-        } else {
-            // Open auction never expires
-            false
-        }
-    }
-
-    /// Ensure nft auction not expired
-    pub(crate) fn ensure_nft_auction_not_expired(auction: &Auction<T>) -> DispatchResult {
-        ensure!(
-            !Self::is_nft_auction_expired(auction),
-            Error::<T>::NFTAuctionIsAlreadyExpired
-        );
-        Ok(())
-    }
-
     /// Ensure nft auction can be completed
     pub(crate) fn ensure_auction_can_be_completed(auction: &Auction<T>) -> DispatchResult {
         let can_be_completed = if let AuctionType::English(round_duration) = auction.auction_type {
