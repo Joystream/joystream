@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 // Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit)]
+#![allow(clippy::unused_unit, clippy::all)]
 
 #[cfg(test)]
 mod tests;
@@ -33,8 +33,6 @@ use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
-
-pub use common::storage::{StorageObjectOwner as StorageObjectOwnerRecord, StorageSystem};
 
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},

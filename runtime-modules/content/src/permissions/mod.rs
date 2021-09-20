@@ -5,7 +5,6 @@ pub use curator_group::*;
 pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
-// pub use common::MembershipTypes;
 use core::fmt::Debug;
 use frame_support::{ensure, Parameter};
 #[cfg(feature = "std")]

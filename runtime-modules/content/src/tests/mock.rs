@@ -15,13 +15,11 @@ use sp_runtime::{
 use crate::ContentActorAuthenticator;
 use crate::Trait;
 use common::currency::GovernanceCurrency;
-// use common::storage::StorageSystem;
 
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as StorageOwnership>::ChannelId;
-// pub type DAOId = <Test as StorageOwnership>::DAOId;
 
 /// Origins
 
