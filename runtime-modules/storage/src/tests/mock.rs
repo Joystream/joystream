@@ -171,7 +171,7 @@ impl common::MembershipTypes for Test {
 
 impl common::StorageOwnership for Test {
     type ChannelId = u64;
-    type DAOId = u64;
+    type DaoId = u64;
     type ContentId = u64;
     type DataObjectTypeId = u64;
 }

@@ -48,7 +48,7 @@ pub(crate) type ContentParameters<T> = ContentParametersRecord<ContentId<T>, Dat
 pub(crate) type StorageObjectOwner<T> = StorageObjectOwnerRecord<
     <T as MembershipTypes>::MemberId,
     <T as StorageOwnership>::ChannelId,
-    <T as StorageOwnership>::DAOId,
+    <T as StorageOwnership>::DaoId,
 >;
 
 /// Type, used in diffrent numeric constraints representations
@@ -132,13 +132,13 @@ pub enum NewAsset<ContentParameters> {
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ChannelOwner<MemberId, CuratorGroupId, DAOId> {
+pub enum ChannelOwner<MemberId, CuratorGroupId, DaoId> {
     /// A Member owns the channel
     Member(MemberId),
     /// A specific curation group owns the channel
     CuratorGroup(CuratorGroupId),
-    // Native DAO owns the channel
-    Dao(DAOId),
+    // Native Dao owns the channel
+    Dao(DaoId),
 }
 
 // simplification type
@@ -146,15 +146,15 @@ pub(crate) type ActorToChannelOwnerResult<T> = Result<
     ChannelOwner<
         <T as MembershipTypes>::MemberId,
         <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as StorageOwnership>::DAOId,
+        <T as StorageOwnership>::DaoId,
     >,
     Error<T>,
 >;
 
 // Default trait implemented only because its used in a Channel which needs to implement a Default trait
 // since it is a StorageValue.
-impl<MemberId: Default, CuratorGroupId, DAOId> Default
-    for ChannelOwner<MemberId, CuratorGroupId, DAOId>
+impl<MemberId: Default, CuratorGroupId, DaoId> Default
+    for ChannelOwner<MemberId, CuratorGroupId, DaoId>
 {
     fn default() -> Self {
         ChannelOwner::Member(MemberId::default())
@@ -189,10 +189,10 @@ pub struct ChannelCategoryUpdateParameters {
 /// If a channel is deleted, all videos, playlists and series will also be deleted.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, PlaylistId, SeriesId>
+pub struct ChannelRecord<MemberId, CuratorGroupId, DaoId, AccountId, VideoId, PlaylistId, SeriesId>
 {
     /// The owner of a channel
-    owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    owner: ChannelOwner<MemberId, CuratorGroupId, DaoId>,
     /// The videos under this channel
     pub videos: Vec<VideoId>,
     /// The playlists under this channel
@@ -209,7 +209,7 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, DAOId, AccountId, VideoId, Pl
 pub type Channel<T> = ChannelRecord<
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
+    <T as StorageOwnership>::DaoId,
     <T as frame_system::Trait>::AccountId,
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
@@ -223,12 +223,12 @@ pub struct ChannelOwnershipTransferRequestRecord<
     ChannelId,
     MemberId,
     CuratorGroupId,
-    DAOId,
+    DaoId,
     Balance,
     AccountId,
 > {
     channel_id: ChannelId,
-    new_owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
+    new_owner: ChannelOwner<MemberId, CuratorGroupId, DaoId>,
     payment: Balance,
     new_reward_account: Option<AccountId>,
 }
@@ -238,7 +238,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as StorageOwnership>::ChannelId,
     <T as MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as StorageOwnership>::DAOId,
+    <T as StorageOwnership>::DaoId,
     BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;

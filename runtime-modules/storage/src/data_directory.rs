@@ -135,7 +135,7 @@ impl Default for LiaisonJudgement {
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
     ChannelId<T>,
-    DAOId<T>,
+    DaoId<T>,
     <T as frame_system::Trait>::BlockNumber,
     <T as pallet_timestamp::Trait>::Moment,
     DataObjectTypeId<T>,
@@ -148,14 +148,14 @@ pub type DataObject<T> = DataObjectInternal<
 pub struct DataObjectInternal<
     MemberId,
     ChannelId,
-    DAOId,
+    DaoId,
     BlockNumber,
     Moment,
     DataObjectTypeId,
     StorageProviderId,
 > {
     /// Content owner.
-    pub owner: StorageObjectOwner<MemberId, ChannelId, DAOId>,
+    pub owner: StorageObjectOwner<MemberId, ChannelId, DaoId>,
 
     /// Content added at.
     pub added_at: BlockAndTime<BlockNumber, Moment>,
