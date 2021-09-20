@@ -4,6 +4,7 @@ import { ElasticsearchTransport } from 'winston-elasticsearch'
 import { ReadonlyConfig } from '../../types'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Format } from 'logform'
+import stringify from 'fast-safe-stringify'
 import NodeCache from 'node-cache'
 
 const cliColors = {
@@ -43,7 +44,7 @@ const cliFormat = winston.format.combine(
   winston.format.printf(
     (info) =>
       `${info.timestamp} ${info.label} ${info.level}: ${info.message}` +
-      (Object.keys(info.metadata).length ? `\n${JSON.stringify(info.metadata, null, 4)}` : '')
+      (Object.keys(info.metadata).length ? `\n${stringify(info.metadata, undefined, 4)}` : '')
   )
 )
 

@@ -22,7 +22,12 @@ export interface ConfigJson {
     console?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
     elastic?: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'off'
   }
-  storageLimit: string
+  limits: {
+    storage: string
+    maxConcurrentStorageNodeDownloads: number
+    maxConcurrentOutboundConnections: number
+    outboundRequestsTimeout: number
+  }
   port: number
   keys: [string, ...string[]]
   buckets: [number, ...number[]] | 'all'

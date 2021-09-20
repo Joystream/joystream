@@ -10,7 +10,11 @@ directories:
 log:
   console: info
   # elastic: info
-storageLimit: 100G
+limits:
+  storage: 100G
+  maxConcurrentStorageNodeDownloads: 100
+  maxConcurrentOutboundConnections: 300
+  outboundRequestsTimeout: 5000
 port: 3334
 keys: [//Alice]
 buckets: 'all'

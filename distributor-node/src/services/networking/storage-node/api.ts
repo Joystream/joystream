@@ -4,6 +4,7 @@ import axios, { AxiosRequestConfig } from 'axios'
 import { LoggingService } from '../../logging'
 import { Logger } from 'winston'
 import { StorageNodeDownloadResponse } from '../../../types'
+import { parseAxiosError } from '../../parsers/errors'
 
 export class StorageNodeApi {
   private logger: Logger
@@ -27,7 +28,7 @@ export class StorageNodeApi {
       return true
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        this.logger.debug('Data object not available', { err })
+        this.logger.debug('Data object not available', { err: parseAxiosError(err) })
         return false
       }
       this.logger.error('Unexpected error while requesting data object', { err })

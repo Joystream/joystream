@@ -94,7 +94,7 @@ export class ConfigParserService {
 
     // Normalize values
     const directories = this.resolveConfigDirectoryPaths(configJson.directories, configPath)
-    const storageLimit = this.parseBytesize(configJson.storageLimit)
+    const storageLimit = this.parseBytesize(configJson.limits.storage)
 
     if (storageLimit < MIN_CACHE_SIZE) {
       throw new Error('Cache storage limit should be at least 20G!')
@@ -103,7 +103,10 @@ export class ConfigParserService {
     const parsedConfig: Config = {
       ...configJson,
       directories,
-      storageLimit,
+      limits: {
+        ...configJson.limits,
+        storage: storageLimit,
+      },
     }
 
     return parsedConfig

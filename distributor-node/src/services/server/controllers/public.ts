@@ -241,7 +241,7 @@ export class PublicApiController {
     const data: StatusResponse = {
       id: this.config.id,
       objectsInCache: this.stateCache.getCachedContentLength(),
-      storageLimit: this.config.storageLimit,
+      storageLimit: this.config.limits.storage,
       storageUsed: this.content.usedSpace,
       uptime: Math.floor(process.uptime()),
       downloadsInProgress: this.stateCache.getPendingDownloadsCount(),
