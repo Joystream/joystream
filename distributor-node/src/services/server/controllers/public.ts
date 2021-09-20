@@ -124,10 +124,6 @@ export class PublicApiController {
     const stream = this.content.createContinousReadStream(contentHash, {
       end: isRange ? rangeEnd || 0 : objectSize - 1,
     })
-    req.on('close', () => {
-      res.end()
-      stream.destroy()
-    })
     res.status(isRange ? 206 : 200)
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('x-data-source', 'local')
@@ -136,6 +132,10 @@ export class PublicApiController {
       res.setHeader('content-range', `bytes 0-${rangeEnd}/${objectSize}`)
     }
     stream.pipe(res)
+    req.on('close', () => {
+      stream.destroy()
+      res.destroy()
+    })
   }
 
   public async assetHead(req: express.Request<AssetRouteParams>, res: express.Response): Promise<void> {
@@ -180,9 +180,6 @@ export class PublicApiController {
     res: express.Response,
     next: express.NextFunction
   ): Promise<void> {
-    req.on('close', () => {
-      res.end()
-    })
     const objectId = req.params.objectId
     const contentHash = this.stateCache.getObjectContentHash(objectId)
     const pendingDownload = contentHash && this.stateCache.getPendingDownload(contentHash)
