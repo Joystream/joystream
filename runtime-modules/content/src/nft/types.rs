@@ -278,21 +278,16 @@ impl<
         self
     }
 
-    /// Check whether auction have any bids
-    fn is_active(&self) -> bool {
-        self.last_bid.is_some()
-    }
-
-    // Ensure auction is not active
-    fn ensure_is_not_active<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.is_active(), Error::<T>::ActionIsAlreadyActive);
+    // Ensure auction has no bids
+    fn ensure_has_no_bids<T: Trait>(&self) -> DispatchResult {
+        ensure!(self.last_bid.is_none(), Error::<T>::ActionHasBidsAlready);
         Ok(())
     }
 
     /// Ensure given auction can be canceled
     pub fn ensure_auction_can_be_canceled<T: Trait>(&self) -> DispatchResult {
         if let AuctionType::English(_) = self.auction_type {
-            self.ensure_is_not_active::<T>()
+            self.ensure_has_no_bids::<T>()
         } else {
             Ok(())
         }

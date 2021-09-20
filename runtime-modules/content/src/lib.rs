@@ -1066,9 +1066,6 @@ decl_module! {
             // Ensure auction for given video id exists
             let auction = nft.ensure_auction_state::<T>()?;
 
-            // Ensure nft auction not expired
-            Self::ensure_nft_auction_not_expired(&auction)?;
-
             // Ensure given auction can be canceled
             auction.ensure_auction_can_be_canceled::<T>()?;
 

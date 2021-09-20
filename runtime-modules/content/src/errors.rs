@@ -129,7 +129,7 @@ decl_error! {
         StartingPriceConstraintViolated,
 
         /// Already active auction cannot be cancelled
-        ActionIsAlreadyActive,
+        ActionHasBidsAlready,
 
         /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
