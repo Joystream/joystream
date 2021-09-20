@@ -171,15 +171,15 @@ impl<MemberId> Default for NFTOwner<MemberId> {
 pub struct Bid<MemberId, BlockNumber: BaseArithmetic + Copy, Balance> {
     pub bidder: MemberId,
     pub amount: Balance,
-    pub time: BlockNumber,
+    pub made_at_block: BlockNumber,
 }
 
 impl<MemberId, BlockNumber: BaseArithmetic + Copy, Balance> Bid<MemberId, BlockNumber, Balance> {
-    fn new(bidder: MemberId, amount: Balance, time: BlockNumber) -> Self {
+    fn new(bidder: MemberId, amount: Balance, made_at_block: BlockNumber) -> Self {
         Self {
             bidder,
             amount,
-            time,
+            made_at_block,
         }
     }
 }
@@ -349,7 +349,7 @@ impl<
     ) -> DispatchResult {
         if let AuctionType::Open(bid_lock_duration) = &self.auction_type {
             ensure!(
-                current_block - bid.time >= *bid_lock_duration,
+                current_block - bid.made_at_block >= *bid_lock_duration,
                 Error::<T>::BidLockDurationIsNotExpired
             );
         }

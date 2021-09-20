@@ -1087,7 +1087,7 @@ decl_module! {
 
                 // Trigger event
                 Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
-            } 
+            }
         }
 
         /// Make auction bid
