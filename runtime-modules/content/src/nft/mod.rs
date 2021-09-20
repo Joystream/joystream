@@ -124,14 +124,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure channel reward_account account is set
-    pub(crate) fn ensure_reward_account_is_set(channel_id: T::ChannelId) -> DispatchResult {
-        Self::channel_by_id(channel_id)
-            .reward_account
-            .ok_or(Error::<T>::RewardAccountIsNotSet)?;
-        Ok(())
-    }
-
     /// Ensure royalty bounds satisfied
     pub(crate) fn ensure_royalty_bounds_satisfied(royalty: Perbill) -> DispatchResult {
         ensure!(

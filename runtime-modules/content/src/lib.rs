@@ -977,7 +977,6 @@ decl_module! {
 
             // Enure royalty bounds satisfied, if provided
             if let Some(royalty) = royalty {
-                Self::ensure_reward_account_is_set(video.in_channel)?;
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
 
