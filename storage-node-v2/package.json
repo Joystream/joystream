@@ -10,6 +10,7 @@
   "dependencies": {
     "@apollo/client": "^3.3.21",
     "@joystream/types": "^0.17.0",
+    "@joystream/metadata-protobuf": "^1.0.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
@@ -28,6 +29,7 @@
     "@types/url-join": "^4.0.1",
     "@types/uuid": "^8.3.1",
     "@types/winston": "^2.4.4",
+    "ajv": "^7",
     "await-lock": "^2.1.0",
     "base64url": "^3.0.1",
     "blake3": "^2.1.4",
@@ -137,6 +139,7 @@
     "lint": "eslint ./src --ext .ts",
     "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/queryNode/codegen.yml",
+    "generate:types:json-schema": "yarn ts-node ./src/services/metadata/generateTypes.ts",
     "ensure": "yarn format && yarn lint --fix && yarn build"
   },
   "types": "lib/index.d.ts"
