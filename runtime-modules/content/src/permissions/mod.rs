@@ -133,11 +133,11 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId, T::DAOId>,
 ) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
     // Only owner of a channel can update and delete channel assets.
     // Lead can update and delete curator group owned channel assets.
     match actor {
         ContentActor::Lead => {
-            let sender = ensure_signed(origin)?;
             ensure_lead_auth_success::<T>(&sender)?;
             if let ChannelOwner::CuratorGroup(_) = owner {
                 Ok(())
@@ -146,8 +146,6 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
             }
         }
         ContentActor::Curator(curator_group_id, curator_id) => {
-            let sender = ensure_signed(origin)?;
-
             // Authorize curator, performing all checks to ensure curator can act
             CuratorGroup::<T>::perform_curator_in_group_auth(
                 curator_id,
@@ -164,8 +162,6 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
             Ok(())
         }
         ContentActor::Member(member_id) => {
-            let sender = ensure_signed(origin)?;
-
             ensure_member_auth_success::<T>(member_id, &sender)?;
 
             // Ensure the member is the channel owner.
@@ -179,6 +175,65 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
         // TODO:
         // ContentActor::Dao(_daoId) => ...,
     }
+}
+
+// Enure actor can manage nft
+pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    nft_owner: &NFTOwner<T::MemberId>,
+    in_channel: T::ChannelId,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+
+    // Only owner of a channel can update and delete channel assets.
+    // Lead can update and delete curator group owned channel assets.
+    if let NFTOwner::Member(member_id) = nft_owner {
+        ensure_member_auth_success::<T>(member_id, &sender)?;
+
+        ensure!(
+            *actor == ContentActor::Member(*member_id),
+            Error::<T>::ActorNotAuthorized
+        );
+    } else {
+        // Ensure curator group is the channel owner.
+        let channel_owner = Module::<T>::ensure_channel_exists(&in_channel)?.owner;
+
+        match actor {
+            ContentActor::Lead => {
+                ensure_lead_auth_success::<T>(&sender)?;
+                if let ChannelOwner::CuratorGroup(_) = channel_owner {
+                    return Ok(());
+                } else {
+                    return Err(Error::<T>::ActorNotAuthorized.into());
+                }
+            }
+            ContentActor::Curator(curator_group_id, curator_id) => {
+                // Authorize curator, performing all checks to ensure curator can act
+                CuratorGroup::<T>::perform_curator_in_group_auth(
+                    curator_id,
+                    curator_group_id,
+                    &sender,
+                )?;
+
+                // Ensure curator group is the channel owner.
+                ensure!(
+                    channel_owner == ChannelOwner::CuratorGroup(*curator_group_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+            }
+            ContentActor::Member(member_id) => {
+                ensure_member_auth_success::<T>(member_id, &sender)?;
+
+                // Ensure the member is the channel owner.
+                ensure!(
+                    channel_owner == ChannelOwner::Member(*member_id),
+                    Error::<T>::ActorNotAuthorized
+                );
+            }
+        }
+    }
+    Ok(())
 }
 
 // Enure actor can update or delete channels and videos

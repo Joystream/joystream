@@ -54,11 +54,6 @@ impl<
         Balance: Default + Clone,
     > OwnedNFT<BlockNumber, MemberId, Balance>
 {
-    /// Whether provided owner is nft owner
-    pub fn is_owner(&self, owner: &NFTOwner<MemberId>) -> bool {
-        self.owner.eq(owner)
-    }
-
     /// Create new NFT
     pub fn new(owner: NFTOwner<MemberId>, creator_royalty: Option<Royalty>) -> Self {
         Self {
@@ -66,12 +61,6 @@ impl<
             transactional_status: TransactionalStatus::Idle,
             creator_royalty,
         }
-    }
-
-    /// Ensure given NFTOwner is nft owner
-    pub fn ensure_nft_ownership<T: Trait>(&self, owner: &NFTOwner<MemberId>) -> DispatchResult {
-        ensure!(self.is_owner(owner), Error::<T>::DoesNotOwnNFT);
-        Ok(())
     }
 
     /// Get nft auction record

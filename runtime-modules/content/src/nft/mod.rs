@@ -5,20 +5,6 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Authorize nft owner
-    pub(crate) fn authorize_nft_owner(
-        origin: T::Origin,
-        actor: &ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
-        nft: &Nft<T>,
-    ) -> DispatchResult {
-        ensure_actor_authorized_to_create_channel::<T>(origin, actor)?;
-
-        // The nft owner will be..
-        let content_owner = Self::actor_to_nft_owner(&actor)?;
-
-        nft.ensure_nft_ownership::<T>(&content_owner)
-    }
-
     /// Check whether nft auction expired
     pub(crate) fn is_nft_auction_expired(auction: &Auction<T>) -> bool {
         if let AuctionType::English(round_duration) = auction.auction_type {

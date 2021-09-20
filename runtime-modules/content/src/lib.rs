@@ -1016,11 +1016,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &owner_id,
-                &nft
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there nft transactional status is set to idle.
             nft.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1065,11 +1061,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &owner_id,
-                &nft
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure auction for given video id exists
             let auction = nft.ensure_auction_state::<T>()?;
@@ -1296,7 +1288,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn settle_open_auction(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             metadata: Metadata,
         ) {
@@ -1308,7 +1300,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure actor is authorized to accept open auction bid
-            Self::authorize_nft_owner(origin, &actor, &nft)?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure auction for given video id exists, retrieve corresponding one
             let auction = nft.ensure_auction_state::<T>()?;
@@ -1334,7 +1326,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(actor, video_id, metadata));
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, metadata));
         }
 
         /// Offer NFT
@@ -1342,7 +1334,7 @@ decl_module! {
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             to: MemberId<T>,
             price: Option<BalanceOf<T>>,
         ) {
@@ -1354,11 +1346,8 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &actor,
-                &nft
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
 
             // Ensure there is no pending offer or existing auction for given nft.
             nft.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1374,14 +1363,14 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OfferStarted(video_id, actor, to, price));
+            Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
         }
 
         /// Cancel NFT offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_offer(
             origin,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             video_id: T::VideoId,
         ) {
             // Ensure given video exists
@@ -1391,11 +1380,8 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &actor,
-                &nft
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
 
             // Ensure given pending offer exists
             nft.ensure_pending_offer_exists::<T>()?;
@@ -1411,7 +1397,7 @@ decl_module! {
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OfferCancelled(video_id, actor));
+            Self::deposit_event(RawEvent::OfferCancelled(video_id, owner_id));
         }
 
         /// Accept incoming NFT offer
@@ -1467,11 +1453,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &owner_id,
-                &nft
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             nft.ensure_nft_transactional_status_is_idle::<T>()?;
@@ -1618,26 +1600,6 @@ impl<T: Trait> Module<T> {
             }
             ContentActor::Member(member_id) => {
                 Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
-        }
-    }
-
-    fn actor_to_nft_owner(
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> Result<NFTOwner<T::MemberId>, Error<T>> {
-        match actor {
-            // Lead should use their member or curator role to authorize
-            ContentActor::Lead => Err(Error::<T>::ActorCannotBeLead),
-            ContentActor::Curator(
-                _curator_group_id,
-                _curator_id
-            ) => {
-                Ok(NFTOwner::ChannelOwner)
-            }
-            ContentActor::Member(member_id) => {
-                Ok(NFTOwner::Member(*member_id))
             }
             // TODO:
             // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
