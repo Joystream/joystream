@@ -251,10 +251,6 @@ impl<
                     );
                 } else {
                     ensure!(
-                        self.minimal_bid_step <= new_bid,
-                        Error::<T>::BidStepConstraintViolated
-                    );
-                    ensure!(
                         self.starting_price <= new_bid,
                         Error::<T>::StartingPriceConstraintViolated
                     );
