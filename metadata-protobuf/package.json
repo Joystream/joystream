@@ -20,7 +20,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "yarn compile && tsc",
+    "build": "yarn compile && rm -rf lib && tsc",
     "compile": "yarn ts-node ./scripts/compile.ts",
     "generate-doc": "./generate-md-doc.sh",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --inline-diffs -r ts-node/register 'test/**/*.ts'",
