@@ -720,7 +720,7 @@ decl_module! {
             )?;
 
             // Pick out the assets to be uploaded to storage frame_system
-            let new_assets = if let Some(assets) = &params.assets {
+            let new_assets = &params.assets.as_ref().and_then(|assets| {
                 let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
 
                 let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
@@ -730,35 +730,37 @@ decl_module! {
                 T::StorageSystem::can_add_content(
                     object_owner.clone(),
                     upload_parameters.clone(),
-                )?;
+                ).map_or(None, |_| Some((upload_parameters.clone(), object_owner.clone())))
 
-                Some((upload_parameters, object_owner))
-            } else {
-                None
-            };
-
-            //
-            // == MUTATION SAFE ==
-            //
+            });
 
             let mut channel = channel;
 
             // Maybe update the reward account
-            if let Some(reward_account) = &params.reward_account {
-                match &actor {
-                    ContentActor::Collaborator(_) => {},
-                    _ => channel.reward_account = reward_account.clone(),
-                }
-            };
-
+            channel.reward_account = params.reward_account.as_ref().map_or(
+                Ok(channel.reward_account),
+                |reward_account| {
+                    match &actor {
+                        // channel collaborators cannot touch reward_account
+                        ContentActor::Collaborator(_) => Err(Error::<T>::ActorNotAuthorized),
+                        _ => Ok(reward_account.clone()),
+                    }
+            })?;
 
             // maybe update collaborators set
-            if let Some(collaborators) = &params.maybe_collaborators {
-                match &actor {
-                    ContentActor::Collaborator(_) => {},
-                    _ => channel.collaborators = collaborators.clone(),
-                }
-            };
+            channel.collaborators = params.maybe_collaborators.as_ref().map_or(
+                Ok(channel.collaborators),
+                |collaborators| {
+                    match &actor {
+                        // channel collaborators cannot touch the collaborators set
+                        ContentActor::Collaborator(_) => Err(Error::<T>::ActorNotAuthorized),
+                        _ => Ok(collaborators.clone()),
+                    }
+            })?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
@@ -767,8 +769,8 @@ decl_module! {
             // This should not fail because of prior can_add_content() check!
             if let Some((upload_parameters, object_owner)) = new_assets {
                 T::StorageSystem::atomically_add_content(
-                    object_owner,
-                    upload_parameters,
+                    object_owner.clone(),
+                    upload_parameters.clone(),
                 )?;
             }
 
