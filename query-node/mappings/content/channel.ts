@@ -2,19 +2,21 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
-import { AccountId } from '@polkadot/types/interfaces'
-import { Option } from '@polkadot/types/codec'
 import { Content } from '../generated/types'
 import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
-import { AssetNone, Channel, ChannelCategory } from 'query-node/dist/model'
+import { AssetNone, Channel, ChannelCategory, StorageDataObject } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { In } from 'typeorm'
+import { removeDataObject } from '../storage/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, channelId, , channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
+  const [contentActor, channelId, runtimeChannel, channelCreationParameters] = new Content.ChannelCreatedEvent(
+    event
+  ).params
 
   // create entity
   const channel = new Channel({
@@ -23,6 +25,8 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
+    rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
+    deletionPrizeDestAccount: runtimeChannel.deletion_prize_source_account_id.toString(),
     // assets
     coverPhoto: new AssetNone(),
     avatarPhoto: new AssetNone(),
@@ -63,7 +67,7 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   //  update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assets.unwrapOr([]))
+    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assets.unwrapOr(undefined))
   }
 
   // prepare changed reward account
@@ -72,7 +76,7 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   // reward account change happened?
   if (newRewardAccount) {
     // this will change the `channel`!
-    handleChannelRewardAccountChange(channel, newRewardAccount)
+    channel.rewardAccount = newRewardAccount.unwrapOr(undefined)?.toString()
   }
 
   // set last update time
@@ -86,18 +90,14 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 }
 
 export async function content_ChannelAssetsRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
-  // TODO: Storage v2 integration
-  // // read event data
-  // const [, , contentIds] = new Content.ChannelAssetsRemovedEvent(event).params
-  // const assets = await store.getMany(StorageDataObject, {
-  //   where: {
-  //     id: In(contentIds.toArray().map((item) => item.toString())),
-  //   },
-  // })
-  // // delete assets
-  // await Promise.all(assets.map((a) => store.remove<StorageDataObject>(a)))
-  // // emit log event
-  // logger.info('Channel assets have been removed', { ids: contentIds })
+  const [, , dataObjectIds] = new Content.ChannelAssetsRemovedEvent(event).params
+  const assets = await store.getMany(StorageDataObject, {
+    where: {
+      id: In(Array.from(dataObjectIds).map((item) => item.toString())),
+    },
+  })
+  await Promise.all(assets.map((a) => removeDataObject(store, a)))
+  logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 
 export async function content_ChannelCensorshipStatusUpdated({
@@ -208,23 +208,4 @@ export async function content_ChannelCategoryDeleted({ store, event }: EventCont
 
   // emit log event
   logger.info('Channel category has been deleted', { id: channelCategory.id })
-}
-
-/// //////////////// Helpers ////////////////////////////////////////////////////
-
-function handleChannelRewardAccountChange(
-  channel: Channel, // will be modified inside of the function!
-  reward_account: Option<AccountId>
-) {
-  const rewardAccount = reward_account.unwrapOr(null)
-
-  // new different reward account set?
-  if (rewardAccount) {
-    channel.rewardAccount = rewardAccount.toString()
-    return
-  }
-
-  // reward account removed
-
-  channel.rewardAccount = undefined // plan deletion (will have effect when saved to db)
 }

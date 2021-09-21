@@ -1,5 +1,5 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
+import { FindConditions, Raw } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
@@ -8,7 +8,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger } from '../common'
+import { invalidMetadata, inconsistentState, unexpectedData, logger } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -25,23 +25,25 @@ import {
   VideoMediaEncoding,
   ChannelCategory,
   AssetNone,
+  AssetExternal,
+  AssetJoystreamStorage,
+  StorageDataObject,
 } from 'query-node/dist/model'
 // Joystream types
-import { NewAsset, ContentActor } from '@joystream/types/augment'
+import { NewAssets, ContentActor } from '@joystream/types/augment'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
+import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import { DataObjectCreationParameters as ObjectCreationParams } from '@joystream/types/storage'
+import { registry } from '@joystream/types'
 
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  assets: NewAsset[]
+  assets?: NewAssets
 ): Promise<Channel> {
-  // TODO: Assets processing (Storage v2)
-  // const assetsOwner = new DataObjectOwnerChannel()
-  // assetsOwner.channelId = channel.id
-
-  // const processedAssets = await Promise.all(assets.map((asset) => processNewAsset(ctx, asset, assetsOwner)))
+  const processedAssets = assets ? await processNewAssets(ctx, assets) : []
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
 
@@ -52,21 +54,21 @@ export async function processChannelMetadata(
 
   channel.coverPhoto = new AssetNone()
   channel.avatarPhoto = new AssetNone()
-  // // prepare cover photo asset if needed
-  // if (isSet(meta.coverPhoto)) {
-  //   const asset = findAssetByIndex(processedAssets, meta.coverPhoto, 'channel cover photo')
-  //   if (asset) {
-  //     channel.coverPhoto = asset
-  //   }
-  // }
+  // prepare cover photo asset if needed
+  if (isSet(meta.coverPhoto)) {
+    const asset = findAssetByIndex(processedAssets, meta.coverPhoto, 'channel cover photo')
+    if (asset) {
+      channel.coverPhoto = asset
+    }
+  }
 
-  // // prepare avatar photo asset if needed
-  // if (isSet(meta.avatarPhoto)) {
-  //   const asset = findAssetByIndex(processedAssets, meta.avatarPhoto, 'channel avatar photo')
-  //   if (asset) {
-  //     channel.avatarPhoto = asset
-  //   }
-  // }
+  // prepare avatar photo asset if needed
+  if (isSet(meta.avatarPhoto)) {
+    const asset = findAssetByIndex(processedAssets, meta.avatarPhoto, 'channel avatar photo')
+    if (asset) {
+      channel.avatarPhoto = asset
+    }
+  }
 
   // prepare language if needed
   if (isSet(meta.language)) {
@@ -78,16 +80,11 @@ export async function processChannelMetadata(
 
 export async function processVideoMetadata(
   ctx: EventContext & StoreContext,
-  channel: Channel,
   video: Video,
   meta: DecodedMetadataObject<IVideoMetadata>,
-  assets: NewAsset[]
+  assets?: NewAssets
 ): Promise<Video> {
-  // TODO: Assets processing (Storage v2)
-  // const assetsOwner = new DataObjectOwnerChannel()
-  // assetsOwner.channelId = channel.id
-
-  // const processedAssets = await Promise.all(assets.map((asset) => processNewAsset(ctx, asset, assetsOwner)))
+  const processedAssets = assets ? await processNewAssets(ctx, assets) : []
 
   integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
 
@@ -99,7 +96,7 @@ export async function processVideoMetadata(
   // prepare media meta information if needed
   if (isSet(meta.mediaType) || isSet(meta.mediaPixelWidth) || isSet(meta.mediaPixelHeight)) {
     // prepare video file size if poosible
-    const videoSize = 0 // TODO: extractVideoSize(assets, meta.video)
+    const videoSize = extractVideoSize(assets, meta.video)
     video.mediaMetadata = await processVideoMediaMetadata(ctx, video.mediaMetadata, meta, videoSize)
   }
 
@@ -110,21 +107,21 @@ export async function processVideoMetadata(
 
   video.thumbnailPhoto = new AssetNone()
   video.media = new AssetNone()
-  // // prepare thumbnail photo asset if needed
-  // if (isSet(meta.thumbnailPhoto)) {
-  //   const asset = findAssetByIndex(processedAssets, meta.thumbnailPhoto, 'thumbnail photo')
-  //   if (asset) {
-  //     video.thumbnailPhoto = asset
-  //   }
-  // }
+  // prepare thumbnail photo asset if needed
+  if (isSet(meta.thumbnailPhoto)) {
+    const asset = findAssetByIndex(processedAssets, meta.thumbnailPhoto, 'thumbnail photo')
+    if (asset) {
+      video.thumbnailPhoto = asset
+    }
+  }
 
-  // // prepare video asset if needed
-  // if (isSet(meta.video)) {
-  //   const asset = findAssetByIndex(processedAssets, meta.video, 'video')
-  //   if (asset) {
-  //     video.media = asset
-  //   }
-  // }
+  // prepare video asset if needed
+  if (isSet(meta.video)) {
+    const asset = findAssetByIndex(processedAssets, meta.video, 'video')
+    if (asset) {
+      video.media = asset
+    }
+  }
 
   // prepare language if needed
   if (isSet(meta.language)) {
@@ -279,57 +276,64 @@ function processPublishedBeforeJoystream(
   return new Date(timestamp)
 }
 
-// TODO: Assets processing (Storage v2)
-// async function processNewAsset(
-//   ctx: EventContext & StoreContext,
-//   asset: NewAsset,
-//   owner: typeof DataObjectOwner
-// ): Promise<typeof Asset> {
-//   if (asset.isUrls) {
-//     const urls = asset.asUrls.toArray().map((url) => url.toString())
-//     const resultAsset = new AssetExternal()
-//     resultAsset.urls = JSON.stringify(urls)
-//     return resultAsset
-//   } else if (asset.isUpload) {
-//     const contentParameters: ContentParameters = asset.asUpload
-//     const dataObject = await createDataObject(ctx, contentParameters, owner)
+async function processNewAssets(ctx: EventContext & StoreContext, assets: NewAssets): Promise<Array<typeof Asset>> {
+  if (assets.isUrls) {
+    return assets.asUrls.map((assetUrls) => {
+      const resultAsset = new AssetExternal()
+      resultAsset.urls = JSON.stringify(assetUrls.map((u) => u.toString()))
+      return resultAsset
+    })
+  } else if (assets.isUpload) {
+    const assetsUploaded = assets.asUpload.object_creation_list.length
+    // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
+    const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
+    return objects.map((o) => {
+      const resultAsset = new AssetJoystreamStorage()
+      resultAsset.dataObjectId = o.id
+      return resultAsset
+    })
+  } else {
+    unexpectedData('Unrecognized assets type', assets.type)
+  }
+}
 
-//     const resultAsset = new AssetJoystreamStorage()
-//     resultAsset.dataObjectId = dataObject.id
-//     return resultAsset
-//   } else {
-//     unexpectedData('Unrecognized asset type', asset.type)
-//   }
-// }
+function extractVideoSize(assets: NewAssets | undefined, assetIndex: number | null | undefined): number | undefined {
+  // escape if no assetIndex is set
+  if (!isSet(assetIndex)) {
+    return undefined
+  }
 
-// function extractVideoSize(assets: NewAsset[], assetIndex: number | null | undefined): number | undefined {
-//   // escape if no asset is required
-//   if (!isSet(assetIndex)) {
-//     return undefined
-//   }
+  // index provided, but there are no assets
+  if (!assets) {
+    invalidMetadata(`Non-existing asset video size extraction requested - no assets were uploaded!`, {
+      assetIndex,
+    })
+    return undefined
+  }
 
-//   // ensure asset index is valid
-//   if (assetIndex > assets.length) {
-//     invalidMetadata(`Non-existing asset video size extraction requested`, { assetsProvided: assets.length, assetIndex })
-//     return undefined
-//   }
+  // cannot extract size from other asset types than "Upload"
+  if (!assets.isUpload) {
+    return undefined
+  }
 
-//   const rawAsset = assets[assetIndex]
+  const dataObjectsParams = assets.asUpload.object_creation_list
 
-//   // escape if asset is describing URLs (can't get size)
-//   if (rawAsset.isUrls) {
-//     return undefined
-//   }
+  // ensure asset index is valid
+  if (assetIndex >= dataObjectsParams.length) {
+    invalidMetadata(`Non-existing asset video size extraction requested`, {
+      assetsProvided: dataObjectsParams.length,
+      assetIndex,
+    })
+    return undefined
+  }
 
-//   // !rawAsset.isUrls && rawAsset.isUpload // asset is in storage
+  // extract video size from objectParams
+  const objectParams = assets.asUpload.object_creation_list[assetIndex]
+  const params = new ObjectCreationParams(registry, objectParams.toJSON() as any)
+  const videoSize = params.getField('size').toNumber()
 
-//   // convert generic content parameters coming from processor to custom Joystream data type
-//   const customContentParameters = new Custom_ContentParameters(registry, rawAsset.asUpload.toJSON() as any)
-//   // extract video size
-//   const videoSize = customContentParameters.size_in_bytes.toNumber()
-
-//   return videoSize
-// }
+  return videoSize
+}
 
 async function processLanguage(
   ctx: EventContext & StoreContext,
@@ -463,4 +467,55 @@ async function processChannelCategory(
   }
 
   return category
+}
+
+// Needs to be done every time before data object is removed!
+export async function unsetAssetRelations(store: DatabaseManager, dataObject: StorageDataObject): Promise<void> {
+  const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
+  const videoAssets = ['thumbnailPhoto', 'media'] as const
+
+  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
+  // is allowed to be associated only with one channel/video in runtime
+  const channel = await store.get(Channel, {
+    where: channelAssets.map((assetName) => ({
+      [assetName]: Raw((alias) => `${alias}::json->'dataObjectId' = :id`, {
+        id: dataObject.id,
+      }),
+    })),
+  })
+  const video = await store.get(Video, {
+    where: videoAssets.map((assetName) => ({
+      [assetName]: Raw((alias) => `${alias}::json->'dataObjectId' = :id`, {
+        id: dataObject.id,
+      }),
+    })),
+  })
+
+  if (channel) {
+    channelAssets.forEach((assetName) => {
+      if (channel[assetName] && (channel[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
+        channel[assetName] = new AssetNone()
+      }
+    })
+    await store.save<Channel>(channel)
+
+    // emit log event
+    logger.info('Content has been disconnected from Channel', {
+      channelId: channel.id.toString(),
+      dataObjectId: dataObject.id,
+    })
+  } else if (video) {
+    videoAssets.forEach((assetName) => {
+      if (video[assetName] && (video[assetName] as AssetJoystreamStorage).dataObjectId === dataObject.id) {
+        video[assetName] = new AssetNone()
+      }
+    })
+    await store.save<Video>(video)
+
+    // emit log event
+    logger.info('Content has been disconnected from Video', {
+      videoId: video.id.toString(),
+      dataObjectId: dataObject.id,
+    })
+  }
 }
