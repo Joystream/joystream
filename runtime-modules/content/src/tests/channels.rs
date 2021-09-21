@@ -296,7 +296,23 @@ fn member_owned_channels() {
             Error::<Test>::ActorNotAuthorized
         );
 
-        // Update channel succeeds because channel_id_2 has collabs
+        // Attempt from a collaborator to update reward account should fail
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelUpdateParameters {
+                    assets: None,
+                    new_meta: None,
+                    reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
+                    maybe_collaborators: None,
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized,
+        );
+
+        // Update channel assets succeeds because channel_id_2 has collabs
         assert_ok!(Content::update_channel(
             Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),

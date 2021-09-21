@@ -277,7 +277,7 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSe
     /// If set, metadata update for the channel.
     new_meta: Option<Vec<u8>>,
     /// If set, updates the reward account of the channel
-    reward_account: Option<Option<AccountId>>,
+    reward_account: Option<AccountId>,
     /// collaborator set
     maybe_collaborators: Option<CollaboratorsSetType>,
 }
@@ -743,7 +743,7 @@ decl_module! {
                     match &actor {
                         // channel collaborators cannot touch reward_account
                         ContentActor::Collaborator(_) => Err(Error::<T>::ActorNotAuthorized),
-                        _ => Ok(reward_account.clone()),
+                        _ => Ok(Some(reward_account.clone())),
                     }
             })?;
 
