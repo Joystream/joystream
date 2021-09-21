@@ -16,7 +16,7 @@ fn create_member_channel() -> ChannelId {
             assets: vec![],
             meta: vec![],
             reward_account: None,
-            maybe_collaborators: None,
+            collaborators: BTreeSet::<MemberId>::new(),
         }
     ));
 
