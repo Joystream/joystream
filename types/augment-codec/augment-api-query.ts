@@ -1137,7 +1137,7 @@ declare module '@polkadot/api/types/storage' {
        **/
       uploadingBlocked: AugmentedQuery<ApiType, () => Observable<bool>, []>;
       /**
-       * "Max objects number for a storage bucket voucher" number limit.
+       * "Max objects number for a storage  bucket voucher" number limit.
        **/
       voucherMaxObjectsNumberLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
