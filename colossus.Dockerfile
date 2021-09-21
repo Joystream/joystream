@@ -6,6 +6,7 @@ COPY . /joystream
 RUN yarn
 
 RUN yarn workspace @joystream/types build
+RUN yarn workspace @joystream/metadata-protobuf build
 RUN yarn workspace storage-node-v2 build
 
 # Use these volumes to persist uploading data and to pass the keyfile.
