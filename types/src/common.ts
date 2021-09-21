@@ -107,7 +107,8 @@ export class InputValidationLengthConstraint
 }
 
 export const WorkingGroupDef = {
-  // TODO: Forum: Null,
+  Reserved: Null,
+  Forum: Null,
   Storage: Null,
   Content: Null,
   Operations: Null,

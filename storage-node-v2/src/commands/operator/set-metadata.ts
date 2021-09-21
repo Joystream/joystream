@@ -2,7 +2,9 @@ import { flags } from '@oclif/command'
 import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
-
+import { ValidationService } from '../../services/metadata/validationService'
+import { StorageBucketOperatorMetadata, IStorageBucketOperatorMetadata } from '@joystream/metadata-protobuf'
+import fs from 'fs'
 /**
  * CLI command:
  * Sets metadata for the storage bucket.
@@ -26,19 +28,29 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       required: true,
       description: 'Storage bucket operator ID (storage group worker ID)',
     }),
-    metadata: flags.string({
-      char: 'm',
-      description: 'Storage bucket operator metadata',
+    endpoint: flags.string({
+      char: 'e',
+      description: 'Root distribution node endpoint',
+      exclusive: ['input'],
+    }),
+    jsonFile: flags.string({
+      char: 'j',
+      description: 'Path to JSON metadata file',
+      exclusive: ['endpoint'],
     }),
     ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorSetMetadata)
+    const { operatorId, bucketId, jsonFile, endpoint } = flags
 
-    const operator = flags.operatorId
-    const bucket = flags.bucketId
-    const metadata = flags.metadata ?? ''
+    const validation = new ValidationService()
+    const metadata: IStorageBucketOperatorMetadata = jsonFile
+      ? validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(jsonFile).toString()))
+      : { endpoint }
+
+    const encodedMetadata = '0x' + Buffer.from(StorageBucketOperatorMetadata.encode(metadata).finish()).toString('hex')
 
     logger.info('Setting the storage operator metadata...')
     if (flags.dev) {
@@ -48,7 +60,7 @@ export default class OperatorSetMetadata extends ApiCommandBase {
     const account = this.getAccount(flags)
 
     const api = await this.getApi()
-    const success = await setStorageOperatorMetadata(api, account, operator, bucket, metadata)
+    const success = await setStorageOperatorMetadata(api, account, operatorId, bucketId, encodedMetadata)
 
     this.exitAfterRuntimeCall(success)
   }
