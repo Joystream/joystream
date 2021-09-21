@@ -250,9 +250,9 @@ decl_event! {
       <T as Trait>::PaidTermId,
     {
         MemberRegistered(MemberId, AccountId, EntryMethod<PaidTermId, AccountId>),
-        MemberUpdatedAboutText(MemberId),
-        MemberUpdatedAvatar(MemberId),
-        MemberUpdatedHandle(MemberId),
+        MemberUpdatedAboutText(MemberId, Vec<u8>),
+        MemberUpdatedAvatar(MemberId, Vec<u8>),
+        MemberUpdatedHandle(MemberId, Vec<u8>),
         MemberSetRootAccount(MemberId, AccountId),
         MemberSetControllerAccount(MemberId, AccountId),
     }
@@ -665,8 +665,8 @@ impl<T: Trait> Module<T> {
     fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {
         let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
-        membership.about = text;
-        Self::deposit_event(RawEvent::MemberUpdatedAboutText(id));
+        membership.about = text.clone();
+        Self::deposit_event(RawEvent::MemberUpdatedAboutText(id, text.to_vec()));
         <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
@@ -675,7 +675,7 @@ impl<T: Trait> Module<T> {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_avatar(uri)?;
         membership.avatar_uri = uri.to_owned();
-        Self::deposit_event(RawEvent::MemberUpdatedAvatar(id));
+        Self::deposit_event(RawEvent::MemberUpdatedAvatar(id, uri.to_vec()));
         <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
@@ -686,8 +686,8 @@ impl<T: Trait> Module<T> {
         Self::ensure_unique_handle(&handle)?;
         <MemberIdByHandle<T>>::remove(&membership.handle);
         <MemberIdByHandle<T>>::insert(handle.clone(), id);
-        membership.handle = handle;
-        Self::deposit_event(RawEvent::MemberUpdatedHandle(id));
+        membership.handle = handle.clone();
+        Self::deposit_event(RawEvent::MemberUpdatedHandle(id, handle));
         <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
