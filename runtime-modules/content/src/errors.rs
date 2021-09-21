@@ -177,6 +177,19 @@ decl_error! {
         BidLockDurationIsNotExpired,
 
         // NFT auction is already expired
-        NFTAuctionIsAlreadyExpired
+        NFTAuctionIsAlreadyExpired,
+
+        /// No assets to be removed have been specified
+        NoAssetsSpecified,
+
+        /// Channel assets feasibility
+        InvalidAssetsProvided,
+
+        /// Channel Contains Video
+        ChannelContainsVideos,
+
+        /// Channel Contains Assets
+        ChannelContainsAssets,
+
     }
 }
