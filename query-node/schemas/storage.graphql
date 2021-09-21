@@ -20,6 +20,9 @@ type StorageSystemParameters @entity {
 
   "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
   storageBucketMaxObjectsSizeLimit: BigInt!
+
+  "ID of the next data object when created"
+  nextDataObjectId: BigInt!
 }
 
 type StorageBucketOperatorStatusMissing @variant {
@@ -144,6 +147,10 @@ type StorageBagStorageAssignment @entity {
 
   "Storage bucket that should store the bag"
   storageBucket: StorageBucket!
+
+  # Relationship filtering workaround
+  storageBagId: ID
+  storageBucketId: ID
 }
 
 type StorageBagDistributionAssignment @entity {
@@ -155,6 +162,10 @@ type StorageBagDistributionAssignment @entity {
 
   "Distribution bucket that should distribute the bag"
   distributionBucket: DistributionBucket!
+
+  # Relationship filtering workaround
+  storageBagId: ID
+  distributionBucketId: ID
 }
 
 type StorageDataObject @entity {
