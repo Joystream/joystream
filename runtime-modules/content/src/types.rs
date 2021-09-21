@@ -383,7 +383,7 @@ impl<
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
-        ensure!(self.nft_status.is_none(), Error::<T>::NFTDoesNotExist);
+        ensure!(self.nft_status.is_none(), Error::<T>::NFTAlreadyExists);
         Ok(())
     }
 
@@ -394,7 +394,7 @@ impl<
         if let Some(owned_nft) = &self.nft_status {
             Ok(owned_nft.to_owned())
         } else {
-            Err(Error::<T>::NFTAlreadyExists)
+            Err(Error::<T>::NFTDoesNotExist)
         }
     }
 

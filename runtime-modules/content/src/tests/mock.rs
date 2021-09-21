@@ -42,6 +42,8 @@ pub const MEMBERS_COUNT: MemberId = 10;
 
 /// Runtime Id's
 
+pub const UNKNOWN_ID: u64 = 545;
+
 pub const FIRST_CURATOR_ID: CuratorId = 1;
 pub const SECOND_CURATOR_ID: CuratorId = 2;
 
@@ -695,6 +697,38 @@ pub fn delete_channel_mock(
             MetaEvent::content(RawEvent::ChannelDeleted(actor.clone(), channel_id))
         )
     }
+}
+
+pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
+    // deposit initial balance
+    let _ = balances::Module::<Test>::deposit_creating(
+        &sender,
+        <Test as balances::Trait>::Balance::from(100u32),
+    );
+
+    let channel_id = NextChannelId::<Test>::get();
+
+    create_channel_mock(
+        sender,
+        ContentActor::Member(member_id),
+        ChannelCreationParametersRecord {
+            assets: NewAssets::<Test>::Urls(vec![]),
+            meta: vec![],
+            reward_account: None,
+        },
+        Ok(()),
+    );
+
+    let params = get_video_creation_parameters();
+
+    // Create simple video using member actor
+    create_video_mock(
+        sender,
+        ContentActor::Member(member_id),
+        channel_id,
+        params,
+        Ok(()),
+    );
 }
 
 pub fn create_video_mock(
