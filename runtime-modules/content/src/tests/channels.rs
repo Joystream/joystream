@@ -4,6 +4,7 @@ use super::curators;
 use super::mock::*;
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency;
 use crate::*;
+use core::array;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
@@ -584,6 +585,24 @@ fn member_owned_channels() {
                     new_meta: None,
                     reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
                     collaborators: None,
+                },
+            ),
+            Error::<Test>::ActorNotAuthorized,
+        );
+
+        // Attempt from a collaborator to update collaboratorSet should fail
+        assert_err!(
+            Content::update_channel(
+                Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
+                ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
+                channel_id_2,
+                ChannelUpdateParameters {
+                    assets: None,
+                    new_meta: None,
+                    reward_account: None,
+                    maybe_collaborators: Some(
+                        array::IntoIter::new([COLLABORATOR_MEMBER_ID]).collect()
+                    ),
                 },
             ),
             Error::<Test>::ActorNotAuthorized,
