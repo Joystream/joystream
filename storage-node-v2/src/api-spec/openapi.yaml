@@ -21,14 +21,14 @@ tags:
     description: Storage node State API
 
 paths:
-  /files/{cid}:
+  /files/{id}:
     get:
       operationId: publicApi.getFile
       description: Returns a media file.
       tags:
         - files
       parameters:
-        - name: cid
+        - name: id
           required: true
           in: path
           description: Content ID
@@ -80,7 +80,7 @@ paths:
       tags:
         - files
       parameters:
-        - name: cid
+        - name: id
           required: true
           in: path
           description: Content ID

@@ -67,9 +67,9 @@ type Bag = {
  */
 type DataObject = {
   /**
-   * Content ID (IPFS hash)
+   * Data object ID
    */
-  cid: string
+  id: string
 
   /**
    * Assigned bag ID
@@ -112,8 +112,8 @@ export async function getStorageObligationsFromRuntime(
       buckets: bag.storageAssignments.map((bucketInBag) => bucketInBag.storageBucket.id),
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
-      cid: dataObject.ipfsHash,
-      bagId: dataObject.storageBag.id,
+      id: dataObject.id,
+      bagId: dataObject.storageBagId,
     })),
   }
 
@@ -149,7 +149,7 @@ export async function getDataObjectIDsByBagId(queryNodeUrl: string, bagId: strin
   const api = new QueryNodeApi(queryNodeUrl)
   const dataObjects = await getAllAssignedDataObjects(api, [bagId])
 
-  return dataObjects.map((obj) => obj.ipfsHash)
+  return dataObjects.map((obj) => obj.id)
 }
 
 /**

@@ -34,9 +34,9 @@ export async function getAllLocalDataObjects(req: express.Request, res: express.
     const uploadsDir = getUploadsDir(res)
     const tempFileDir = getTempFileUploadingDir(res)
 
-    const cids = await getCachedLocalDataObjects(uploadsDir, tempFileDir)
+    const ids = await getCachedLocalDataObjects(uploadsDir, tempFileDir)
 
-    res.status(200).json(cids)
+    res.status(200).json(ids)
   } catch (err) {
     sendResponseWithError(res, err, 'all_data_objects')
   }
@@ -98,12 +98,12 @@ export async function getLocalDataObjectsByBagId(req: express.Request, res: expr
     const queryNodeUrl = getQueryNodeUrl(res)
     const bagId = getBagId(req)
 
-    const [cids, requiredCids] = await Promise.all([
+    const [ids, requiredIds] = await Promise.all([
       getCachedLocalDataObjects(uploadsDir, tempFileDir),
       getCachedDataObjectsObligations(queryNodeUrl, bagId),
     ])
 
-    const localDataForBag = _.intersection(cids, requiredCids)
+    const localDataForBag = _.intersection(ids, requiredIds)
 
     res.status(200).json(localDataForBag)
   } catch (err) {
@@ -157,7 +157,7 @@ async function getCachedLocalDataObjects(uploadsDir: string, tempDirName: string
 
     // Filter temporary directory name.
     const tempDirectoryName = path.parse(tempDirName).name
-    data = data.filter((cid) => cid !== tempDirectoryName)
+    data = data.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
 
     dataCache.set(entryName, data)
   }

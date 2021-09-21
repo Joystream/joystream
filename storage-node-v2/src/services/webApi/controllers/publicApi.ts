@@ -35,13 +35,13 @@ import { Membership } from '@joystream/types/members'
 const fsPromises = fs.promises
 
 /**
- * A public endpoint: serves files by CID.
+ * A public endpoint: serves files by data object ID.
  */
 export async function getFile(req: express.Request, res: express.Response): Promise<void> {
   try {
-    const cid = getCid(req)
+    const dataObjectId = getDataObjectId(req)
     const uploadsDir = getUploadsDir(res)
-    const fullPath = path.resolve(uploadsDir, cid)
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
 
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
@@ -66,13 +66,13 @@ export async function getFile(req: express.Request, res: express.Response): Prom
 }
 
 /**
- * A public endpoint: sends file headers by CID.
+ * A public endpoint: sends file headers by data object ID.
  */
 export async function getFileHeaders(req: express.Request, res: express.Response): Promise<void> {
   try {
-    const cid = getCid(req)
+    const dataObjectId = getDataObjectId(req)
     const uploadsDir = getUploadsDir(res)
-    const fullPath = path.resolve(uploadsDir, cid)
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 
@@ -112,7 +112,7 @@ export async function uploadFile(req: express.Request, res: express.Response): P
 
     // Prepare new file name
     const uploadsDir = getUploadsDir(res)
-    const newPath = path.join(uploadsDir, hash)
+    const newPath = path.join(uploadsDir, uploadRequest.dataObjectId.toString())
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)
@@ -214,19 +214,19 @@ function getApi(res: express.Response): ApiPromise {
 }
 
 /**
- * Returns Content ID from the request.
+ * Returns data object ID from the request.
  *
  * @remarks
  * This is a helper function. It parses the request object for a variable and
  * throws an error on failure.
  */
-function getCid(req: express.Request): string {
-  const cid = req.params.cid || ''
-  if (cid.length > 0) {
-    return cid
+function getDataObjectId(req: express.Request): string {
+  const id = req.params.id || ''
+  if (id.length > 0) {
+    return id
   }
 
-  throw new WebApiError('No CID provided.', 400)
+  throw new WebApiError('No data object ID provided.', 400)
 }
 
 /**
