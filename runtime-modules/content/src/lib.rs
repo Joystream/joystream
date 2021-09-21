@@ -212,7 +212,7 @@ pub struct ChannelRecord<
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// collaborator set
-    maybe_collaborators: Option<CollaboratorsSetType>,
+    collaborators: CollaboratorsSetType,
 }
 
 // Channel alias type for simplification.
@@ -265,7 +265,7 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId, Collaborators
     /// optional reward account
     reward_account: Option<AccountId>,
     /// initial collaborator set
-    maybe_collaborators: Option<CollaboratorsSetType>,
+    collaborators: CollaboratorsSetType,
 }
 
 /// Information about channel being updated.
@@ -692,7 +692,7 @@ decl_module! {
                 series: vec![],
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
-                maybe_collaborators: params.maybe_collaborators.clone(),
+                collaborators: params.collaborators.clone(),
             };
             ChannelById::<T>::insert(channel_id, channel.clone());
 
@@ -751,7 +751,7 @@ decl_module! {
 
             // maybe update collaborators set
             if let Some(collaborators) = &params.maybe_collaborators {
-                channel.maybe_collaborators = Some(collaborators.clone());
+                channel.collaborators = collaborators.clone();
             }
 
             // Update the channel
@@ -1417,12 +1417,10 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
         channel: &Channel<T>,
     ) -> DispatchResult {
-        let is_collab = if let Some(collaborators) = &channel.maybe_collaborators {
-            collaborators.contains(member_id)
-        } else {
-            false
-        };
-        ensure!(is_collab, Error::<T>::ActorNotAuthorized);
+        ensure!(
+            channel.collaborators.contains(member_id),
+            Error::<T>::ActorNotAuthorized
+        );
         Ok(())
     }
 
