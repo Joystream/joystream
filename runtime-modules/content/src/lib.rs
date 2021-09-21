@@ -745,14 +745,20 @@ decl_module! {
 
             // Maybe update the reward account
             if let Some(reward_account) = &params.reward_account {
-                channel.reward_account = reward_account.clone();
-            }
+                match &actor {
+                    ContentActor::Collaborator(_) => {},
+                    _ => channel.reward_account = reward_account.clone(),
+                }
+            };
 
 
             // maybe update collaborators set
             if let Some(collaborators) = &params.maybe_collaborators {
-                channel.collaborators = collaborators.clone();
-            }
+                match &actor {
+                    ContentActor::Collaborator(_) => {},
+                    _ => channel.collaborators = collaborators.clone(),
+                }
+            };
 
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
