@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 // Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit)]
+#![allow(clippy::unused_unit, clippy::all)]
 
 #[cfg(test)]
 mod tests;
@@ -22,6 +22,11 @@ use core::hash::Hash;
 use codec::Codec;
 use codec::{Decode, Encode};
 
+pub use storage::{
+    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, UploadParameters,
+    UploadParametersRecord,
+};
+
 use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
@@ -32,20 +37,19 @@ use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 pub use sp_runtime::Perbill;
 use sp_std::collections::btree_set::BTreeSet;
-use sp_std::vec;
 use sp_std::vec::Vec;
-
-pub use common::storage::{
-    ContentParameters as ContentParametersRecord, StorageObjectOwner as StorageObjectOwnerRecord,
-    StorageSystem,
-};
 
 pub use common::{
     currency::{BalanceOf, GovernanceCurrency},
     working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
+    AssetUrls, MembershipTypes, StorageOwnership,
 };
 use frame_support::traits::{Currency, ReservableCurrency};
+
+type Storage<T> = storage::Module<T>;
+
+/// Type, used in diffrent numeric constraints representations
+pub type MaxNumber = u32;
 
 /// A numeric identifier trait
 pub trait NumericIdentifier:
@@ -69,7 +73,7 @@ impl NumericIdentifier for u64 {}
 
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
-    membership::Trait + ContentActorAuthenticator + Clone + StorageOwnership + GovernanceCurrency
+    membership::Trait + ContentActorAuthenticator + Clone + GovernanceCurrency + storage::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -100,9 +104,6 @@ pub trait Trait:
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
-
-    // Type that handles asset uploads to storage frame_system
-    type StorageSystem: StorageSystem<Self, Self::MemberId>;
 }
 
 decl_storage! {
@@ -327,45 +328,62 @@ decl_module! {
         pub fn create_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCreationParameters<ContentParameters<T>, T::AccountId>,
+            params: ChannelCreationParameters<T>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
-                origin,
+                origin.clone(),
                 &actor,
             )?;
+
+            // channel creator account
+            let sender = ensure_signed(origin)?;
 
             // The channel owner will be..
             let channel_owner = Self::actor_to_channel_owner(&actor)?;
 
-            // Pick out the assets to be uploaded to storage frame_system
-            let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
 
+            // next channel id
             let channel_id = NextChannelId::<T>::get();
 
-            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+            // get uploading parameters if assets have to be saved on storage
+            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                &params.assets,
+                &channel_id,
+                &sender,
+            );
+
+            // number of assets succesfully uploaded
+            let num_assets = maybe_upload_parameters
+                .map_or(Ok(0u64), |upload_parameters| {
+                Storage::<T>::upload_data_objects(upload_parameters.clone())
+                    .map(|_| {
+                        upload_parameters
+                        .object_creation_list
+                        .len() as u64
+                })
+            })?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // This should be first mutation
-            // Try add assets to storage
-            T::StorageSystem::atomically_add_content(
-                object_owner,
-                content_parameters,
-            )?;
-
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
+            // channel creation
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
-                videos: vec![],
-                playlists: vec![],
-                series: vec![],
+                // a newly create channel has zero videos ??
+                num_videos: 0u64,
                 is_censored: false,
                 reward_account: params.reward_account.clone(),
+                // number of assets uploaded
+                num_assets,
+                // setting the channel owner account as the prize funds account
+                deletion_prize_source_account_id: sender,
             };
+
+            // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
 
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
@@ -377,8 +395,10 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: ChannelUpdateParameters<ContentParameters<T>, T::AccountId>,
+            params: ChannelUpdateParameters<T>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -388,24 +408,23 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage frame_system
-            let new_assets = if let Some(assets) = &params.assets {
-                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
+            let maybe_upload_parameters = params.assets.clone()
+                .and_then(|assets| {Self::pick_upload_parameters_from_assets(
+                   &assets,
+                    &channel_id,
+            &sender,
+            )});
 
-                let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-
-                // check assets can be uploaded to storage.
-                // update can_add_content() to only take &refrences
-                T::StorageSystem::can_add_content(
-                    object_owner.clone(),
-                    upload_parameters.clone(),
-                )?;
-
-                Some((upload_parameters, object_owner))
-            } else {
-                None
-            };
-
+            // number of assets succesfully uploaded
+            let maybe_num_assets = maybe_upload_parameters.as_ref()
+                    .map_or(
+                        Ok(Some(0u64)),
+                        |upload_parameters| {
+                        Storage::<T>::upload_data_objects(upload_parameters.clone())
+                     .map(|_| {
+                        Some(upload_parameters.object_creation_list.len() as u64)
+             })
+            })?;
             //
             // == MUTATION SAFE ==
             //
@@ -417,19 +436,54 @@ decl_module! {
                 channel.reward_account = reward_account.clone();
             }
 
+            // Maybe update asset num
+            if let Some(num_assets) = maybe_num_assets {
+                channel.num_assets = channel.num_assets.saturating_add(num_assets);
+            }
+
             // Update the channel
             ChannelById::<T>::insert(channel_id, channel.clone());
 
-            // add assets to storage
-            // This should not fail because of prior can_add_content() check!
-            if let Some((upload_parameters, object_owner)) = new_assets {
-                T::StorageSystem::atomically_add_content(
-                    object_owner,
-                    upload_parameters,
-                )?;
-            }
-
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, channel, params));
+        }
+
+            // extrinsics for channel deletion
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn delete_channel(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) -> DispatchResult {
+            // check that channel exists
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // ensure permissions
+            ensure_actor_authorized_to_update_channel::<T>(
+                origin,
+                &actor,
+                &channel.owner,
+            )?;
+
+            // check that channel assets are 0
+            ensure!(channel.num_assets == 0, Error::<T>::ChannelContainsAssets);
+
+            // check that channel videos are 0
+            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
+
+            // delete channel dynamic bag
+            let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id);
+            Storage::<T>::delete_dynamic_bag(
+                channel.deletion_prize_source_account_id,
+                dyn_bag
+            )?;
+
+            // remove channel from on chain state
+            ChannelById::<T>::remove(channel_id);
+
+            // deposit event
+            Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
+
+            Ok(())
         }
 
         /// Remove assets of a channel from storage
@@ -438,7 +492,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            assets: Vec<ContentId<T>>,
+            assets: BTreeSet<<T as storage::Trait>::DataObjectId>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -449,15 +503,35 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+            // ensure that the provided assets are not empty
+            ensure!(!assets.is_empty(), Error::<T>::NoAssetsSpecified);
+
+            let num_assets_to_remove = assets.len() as u64;
+
+            // cannot remove more asset than those already present
+            ensure!(
+                num_assets_to_remove <= channel.num_assets,
+                Error::<T>::InvalidAssetsProvided
+            );
+
+            // remove assets from storage
+            Storage::<T>::delete_data_objects(
+                channel.deletion_prize_source_account_id.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                assets.clone(),
+            )?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            T::StorageSystem::atomically_remove_content(&object_owner, &assets)?;
+            // update onchain channel status
+            let mut channel = channel;
+            channel.num_assets = channel.num_assets.saturating_sub(num_assets_to_remove);
+            ChannelById::<T>::insert(channel_id, channel.clone());
 
-            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets));
+
+            Self::deposit_event(RawEvent::ChannelAssetsRemoved(actor, channel_id, assets, channel));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -484,14 +558,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let mut channel = channel;
-
-            channel.is_censored = is_censored;
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.is_censored = is_censored
+            });
 
             // TODO: unset the reward account ? so no revenue can be earned for censored channels?
-
-            // Update the channel
-            ChannelById::<T>::insert(channel_id, channel);
 
             Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
         }
@@ -589,8 +660,11 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: VideoCreationParameters<ContentParameters<T>>,
+            params: VideoCreationParameters<T>,
         ) {
+
+            let sender = ensure_signed(origin.clone())?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -600,24 +674,35 @@ decl_module! {
                 &channel.owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage frame_system
-            let content_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(&params.assets);
-
+            // next video id
             let video_id = NextVideoId::<T>::get();
 
-            let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
+            // adding the content to storage node if uploading is needed
+            let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                &params.assets,
+                &channel_id,
+        &sender,
+            );
 
-            // This should be first mutation
-            // Try add assets to storage
-            T::StorageSystem::atomically_add_content(
-                object_owner,
-                content_parameters,
-            )?;
+            // if storaged uploading is required save t he object id for the video
+            let maybe_data_objects_ids = maybe_upload_parameters
+                .map_or(
+                    Ok(None),
+                    |upload_parameters| {
+                     // beginning object id
+                        let beg = Storage::<T>::next_data_object_id();
+
+                        // upload objects and return their indexes
+                        Storage::<T>::upload_data_objects(upload_parameters)
+                        .map(|_| Storage::<T>::next_data_object_id()) // ending index
+                        .map(|end| Some((beg..end).collect::<BTreeSet<_>>())) // create collection
+                })?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
                 // keep track of which season the video is in if it is an 'episode'
@@ -627,8 +712,11 @@ decl_module! {
                 is_censored: false,
                 /// Newly created video has no nft
                 nft_status: None,
+                /// storage parameters for later storage deletion
+                maybe_data_objects_id_set: maybe_data_objects_ids,
             };
 
+            // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
 
             // Only increment next video id if adding content was successful
@@ -636,7 +724,7 @@ decl_module! {
 
             // Add recently added video id to the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.videos.push(video_id);
+                channel.num_videos = channel.num_videos.saturating_add(1);
             });
 
             Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
@@ -648,8 +736,10 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            params: VideoUpdateParameters<ContentParameters<T>>,
+            params: VideoUpdateParameters<T>,
         ) {
+            let sender = ensure_signed(origin.clone())?;
+
             // check that video exists, retrieve corresponding channel id.
             let channel_id = Self::ensure_video_exists(&video_id)?.in_channel;
 
@@ -659,36 +749,28 @@ decl_module! {
                 &Self::channel_by_id(channel_id).owner,
             )?;
 
-            // Pick out the assets to be uploaded to storage frame_system
-            let new_assets = if let Some(assets) = &params.assets {
-                let upload_parameters: Vec<ContentParameters<T>> = Self::pick_content_parameters_from_assets(assets);
+            // Pick the assets to be uploaded to storage frame_system out
+            if let Some(assets) = &params.assets {
+                // adding content to storage if needed
+               let maybe_upload_parameters = Self::pick_upload_parameters_from_assets(
+                   assets,
+                   &channel_id,
+                   &sender,
+               );
 
-                let object_owner = StorageObjectOwner::<T>::Channel(channel_id);
-
-                // check assets can be uploaded to storage.
-                // update can_add_content() to only take &refrences
-                T::StorageSystem::can_add_content(
-                    object_owner.clone(),
-                    upload_parameters.clone(),
-                )?;
-
-                Some((upload_parameters, object_owner))
-            } else {
-                None
-            };
+              if let Some(upload_parameters) = maybe_upload_parameters{
+                 Storage::<T>::upload_data_objects(upload_parameters)?;
+              }
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            // add assets to storage
-            // This should not fail because of prior can_add_content() check!
-            if let Some((upload_parameters, object_owner)) = new_assets {
-                T::StorageSystem::atomically_add_content(
-                    object_owner,
-                    upload_parameters,
-                )?;
-            }
+            // increase the number of video the selected channel by 1
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                channel.num_videos = channel.num_videos.saturating_add(1);
+            });
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
         }
@@ -703,16 +785,28 @@ decl_module! {
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // get information regarding channel
             let channel_id = video.in_channel;
+            let channel = ChannelById::<T>::get(channel_id);
+
 
             ensure_actor_authorized_to_update_channel::<T>(
                 origin,
                 &actor,
                 // The channel owner will be..
-                &Self::channel_by_id(channel_id).owner,
+                &channel.owner,
             )?;
 
-            Self::ensure_video_can_be_removed(video)?;
+            Self::ensure_video_can_be_removed(&video)?;
+
+            // If video is on storage, remove it
+            if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
+                Storage::<T>::delete_data_objects(
+                    channel.deletion_prize_source_account_id,
+                    Self::bag_id_for_channel(&channel_id),
+                    data_objects_id_set,
+                )?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -721,12 +815,9 @@ decl_module! {
             // Remove video
             VideoById::<T>::remove(video_id);
 
-            // Update corresponding channel
-            // Remove recently deleted video from the channel
+            // Decrease video count for the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
-                if let Some(index) = channel.videos.iter().position(|x| *x == video_id) {
-                    channel.videos.remove(index);
-                }
+                channel.num_videos = channel.num_videos.saturating_sub(1)
             });
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
@@ -844,7 +935,7 @@ decl_module! {
         pub fn create_person(
             _origin,
             _actor: PersonActor<T::MemberId, T::CuratorId>,
-            _params: PersonCreationParameters<ContentParameters<T>>,
+            _params: PersonCreationParameters<NewAssets<T>>,
         ) {
             Self::not_implemented()?;
         }
@@ -854,7 +945,7 @@ decl_module! {
             _origin,
             _actor: PersonActor<T::MemberId, T::CuratorId>,
             _person: T::PersonId,
-            _params: PersonUpdateParameters<ContentParameters<T>>,
+            _params: PersonUpdateParameters<NewAssets<T>>,
         ) {
             Self::not_implemented()?;
         }
@@ -912,12 +1003,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let mut video = video;
-
-            video.is_censored = is_censored;
-
-            // Update the video
-            VideoById::<T>::insert(video_id, video);
+            // update
+            VideoById::<T>::mutate(video_id, |video| {
+                video.is_censored = is_censored;
+            });
 
             Self::deposit_event(RawEvent::VideoCensorshipStatusUpdated(actor, video_id, is_censored, rationale));
         }
@@ -927,7 +1016,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
+            _params: SeriesParameters<T::VideoId, NewAssets<T>>
         ) {
             Self::not_implemented()?;
         }
@@ -937,7 +1026,7 @@ decl_module! {
             _origin,
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _channel_id: T::ChannelId,
-            _params: SeriesParameters<T::VideoId, ContentParameters<T>>,
+            _params: SeriesParameters<T::VideoId, NewAssets<T>>
         ) {
             Self::not_implemented()?;
         }
@@ -949,345 +1038,6 @@ decl_module! {
             _series: T::SeriesId,
         ) {
             Self::not_implemented()?;
-        }
-
-        /// Start video nft auction
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn start_nft_auction(
-            origin,
-            auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
-        ) {
-
-            let video_id = auction_params.video_id;
-
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Ensure nft is already issued
-            video.ensure_nft_is_issued::<T>()?;
-
-            // Ensure there nft transactional status is set to idle.
-            video.ensure_nft_transactional_status_is_idle::<T>()?;
-
-            // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &auctioneer,
-                &video
-            )?;
-
-            // Validate round_duration & starting_price
-            Self::validate_auction_params(&auction_params)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Create new auction
-            let mut auction = AuctionRecord::new(auction_params.clone());
-
-            // If starts_at is not set, set it to now
-            if auction_params.starts_at.is_none() {
-                auction.starts_at = <frame_system::Module<T>>::block_number();
-            }
-            let video = video.set_auction_transactional_status(auction);
-
-            // Update the video
-            VideoById::<T>::insert(video_id, video);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::AuctionStarted(auctioneer, auction_params));
-        }
-
-        /// Cancel video auction
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_video_auction(
-            origin,
-            auctioneer: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-        ) {
-
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &auctioneer,
-                &video
-            )?;
-
-            // Ensure auction for given video id exists
-            let auction = video.ensure_nft_auction_state::<T>()?;
-
-            // Ensure nft auction not expired
-            Self::ensure_nft_auction_not_expired(&auction)?;
-
-            // Ensure given auction can be canceled
-            auction.ensure_auction_can_be_canceled::<T>()?;
-
-            let last_bid_data = if let Some(last_bid) = auction.last_bid {
-                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-                Some((last_bidder_account_id, last_bid.amount))
-            } else {
-                None
-            };
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Unreserve previous bidder balance
-            if let Some((last_bidder_account_id, last_bid_amount)) = last_bid_data {
-                T::Currency::unreserve(&last_bidder_account_id, last_bid_amount);
-            }
-
-            // Cancel auction
-            let video = video.set_idle_transactional_status();
-
-            VideoById::<T>::insert(video_id, video);
-
-            // Trigger event
-            Self::deposit_event(RawEvent::AuctionCancelled(auctioneer, video_id));
-        }
-
-        /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn make_bid(
-            origin,
-            participant_id: T::MemberId,
-            video_id: T::VideoId,
-            bid: BalanceOf<T>,
-            metadata: Metadata,
-        ) {
-
-            // Authorize participant under given member id
-            let participant_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
-
-            // Ensure bidder have sufficient balance amount to reserve for bid
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
-
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Ensure auction for given video id exists
-            let auction = video.ensure_nft_auction_state::<T>()?;
-
-            // Ensure nft auction not expired
-            Self::ensure_nft_auction_not_expired(&auction)?;
-
-            let current_block = <frame_system::Module<T>>::block_number();
-
-            // Ensure auction have been already started
-            auction.ensure_auction_started::<T>(current_block)?;
-
-            // Ensure participant have been already added to whitelist if set
-            auction.ensure_whitelisted_participant::<T>(participant_id)?;
-
-            // Ensure new bid is greater then last bid + minimal bid step
-            auction.ensure_is_valid_bid::<T>(bid)?;
-
-            let last_bid_data = if let Some(last_bid) = auction.last_bid {
-                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-                Some((last_bidder_account_id, last_bid.amount))
-            } else {
-                None
-            };
-
-            // Used fo immediate auction completion
-            let owner_account_id = match auction.buy_now_price {
-                // Do not charge more then buy now
-                Some(buy_now_price) if bid >= buy_now_price => {
-                    if let Some(owned_nft) = &video.nft_status {
-                        Some(Self::ensure_owner_account_id(&video, &owned_nft)?)
-                    } else {
-                        None
-                    }
-                },
-                _ => None,
-            };
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Unreserve previous bidder balance
-            if let Some((last_bidder_account_id, last_bid_amount)) = &last_bid_data {
-                T::Currency::unreserve(last_bidder_account_id, *last_bid_amount);
-            }
-
-            // Make auction bid & update auction data
-            let mut video = video;
-
-            match auction.buy_now_price {
-                // Complete auction immediately
-                // Do not charge more then buy now
-                Some(buy_now_price) if bid >= buy_now_price => {
-
-                    if let Some(auction) = video.get_nft_auction_ref_mut() {
-                        auction.make_bid(participant_id, bid, current_block);
-                    }
-
-                    if let (Some((last_bidder_account_id, _)), Some(owner_account_id)) = (last_bid_data, owner_account_id) {
-                        let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
-
-                        // Update the video
-                        VideoById::<T>::insert(video_id, video);
-
-                        // Trigger event
-                        Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, metadata));
-                    }
-                },
-                _ => {
-                    // Reseve balance for current bid
-                    // Can not fail, needed check made
-                    T::Currency::reserve(&participant_account_id, bid)?;
-
-                    if let Some(auction) = video.get_nft_auction_ref_mut() {
-                        auction.make_bid(participant_id, bid, current_block);
-
-                        VideoById::<T>::insert(video_id, video);
-
-                        // Trigger event
-                        Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
-                    }
-                },
-            };
-        }
-
-        /// Cancel open auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn cancel_open_auction_bid(
-            origin,
-            participant_id: T::MemberId,
-            video_id: T::VideoId,
-        ) {
-
-            // Authorize participant under given member id
-            let participant_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
-
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Ensure auction for given video id exists
-            let auction = video.ensure_nft_auction_state::<T>()?;
-
-            // Ensure nft auction not expired
-            Self::ensure_nft_auction_not_expired(&auction)?;
-
-            let current_block = <frame_system::Module<T>>::block_number();
-
-            // Ensure auction have been already started
-            auction.ensure_auction_started::<T>(current_block)?;
-
-            // Ensure participant can cancel last bid
-            auction.ensure_bid_can_be_canceled::<T>(participant_id, current_block)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Cancel last auction bid & update auction data
-            let mut video = video;
-
-            if let Some(auction) = video.get_nft_auction_ref_mut() {
-                auction.cancel_bid();
-
-                VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
-            }
-        }
-
-        /// Complete auction
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn complete_video_auction(
-            origin,
-            member_id: T::MemberId,
-            video_id: T::VideoId,
-            metadata: Metadata,
-        ) {
-
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Ensure auction for given video id exists, retrieve corresponding one
-            let auction = video.ensure_nft_auction_state::<T>()?;
-
-            let last_bid = auction.ensure_last_bid_exists::<T>()?;
-
-            // Ensure actor authorized to complete auction.
-            Self::ensure_actor_is_last_bidder(origin, member_id, &auction)?;
-
-            // Ensure auction can be completed
-            Self::ensure_auction_can_be_completed(&auction)?;
-
-            if let Some(owned_nft) = &video.nft_status {
-
-                let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
-
-                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-
-                //
-                // == MUTATION SAFE ==
-                //
-
-                let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
-
-                // Update the video
-                VideoById::<T>::insert(video_id, video);
-            }
-
-            // Trigger event
-            Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id, metadata));
-        }
-
-        /// Accept open auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn settle_open_auction(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            metadata: Metadata,
-        ) {
-
-            // Ensure given video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // Ensure auction for given video id exists, retrieve corresponding one
-            let auction = video.ensure_nft_auction_state::<T>()?;
-
-            // Ensure open type auction
-            auction.ensure_is_open_auction::<T>()?;
-
-            // Ensure there is a bid to accept
-            let last_bid = auction.ensure_last_bid_exists::<T>()?;
-
-            // Ensure actor is authorized to accept open auction bid
-            Self::authorize_nft_owner(origin, &actor, &video)?;
-
-            if let Some(owned_nft) = &video.nft_status {
-
-                let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
-
-                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-
-                //
-                // == MUTATION SAFE ==
-                //
-
-                let video = Self::complete_auction(video, last_bidder_account_id, owner_account_id);
-
-                // Update the video
-                VideoById::<T>::insert(video_id, video);
-            }
-
-            // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(actor, video_id, metadata));
         }
 
         /// Issue NFT
@@ -1316,13 +1066,12 @@ decl_module! {
             let nft_owner = if let Some(to) = to {
                 NFTOwner::Member(to)
             } else {
-                // if `to` set to None, actor issues to himself
-                Self::actor_to_nft_owner(&actor)?
+                // if `to` set to None, actor issues to ChannelOwner
+                NFTOwner::ChannelOwner
             };
 
             // Enure royalty bounds satisfied, if provided
             if let Some(royalty) = royalty {
-                Self::ensure_reward_account_is_set(video.in_channel)?;
                 Self::ensure_royalty_bounds_satisfied(royalty)?;
             }
 
@@ -1331,12 +1080,7 @@ decl_module! {
             //
 
             // Issue NFT
-            let mut video = video;
-            video.nft_status = Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Idle,
-                owner: nft_owner.clone(),
-                creator_royalty: royalty,
-            });
+            let video = video.set_nft_status(OwnedNFT::new(nft_owner, royalty));
 
             // Update the video
             VideoById::<T>::insert(video_id, video);
@@ -1346,8 +1090,330 @@ decl_module! {
                 video_id,
                 royalty,
                 metadata,
-                nft_owner,
+                to,
             ));
+        }
+
+        /// Start video nft auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn start_nft_auction(
+            origin,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            auction_params: AuctionParams<T::VideoId, T::BlockNumber, BalanceOf<T>, T::MemberId>,
+        ) {
+
+            let video_id = auction_params.video_id;
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft owner
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure there nft transactional status is set to idle.
+            nft.ensure_nft_transactional_status_is_idle::<T>()?;
+
+            // Validate round_duration & starting_price
+            Self::validate_auction_params(&auction_params)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Create new auction
+            let mut auction = AuctionRecord::new(auction_params.clone());
+
+            // If starts_at is not set, set it to now
+            if auction_params.starts_at.is_none() {
+                auction.starts_at = <frame_system::Module<T>>::block_number();
+            }
+
+            let nft = nft.set_auction_transactional_status(auction);
+            let video = video.set_nft_status(nft);
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionStarted(owner_id, auction_params));
+        }
+
+        /// Cancel video nft auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_nft_auction(
+            origin,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+        ) {
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft owner
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure auction for given video id exists
+            let auction = nft.ensure_auction_state::<T>()?;
+
+            // Ensure given auction can be canceled
+            auction.ensure_auction_can_be_canceled::<T>()?;
+
+            if let Some(last_bid) = auction.last_bid {
+                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                // Unreserve previous bidder balance
+                T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
+
+                // Cancel auction
+                let nft = nft.set_idle_transactional_status();
+                let video = video.set_nft_status(nft);
+
+                VideoById::<T>::insert(video_id, video);
+
+                // Trigger event
+                Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
+            }
+        }
+
+        /// Make auction bid
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn make_bid(
+            origin,
+            participant_id: T::MemberId,
+            video_id: T::VideoId,
+            bid: BalanceOf<T>,
+            metadata: Metadata,
+        ) {
+
+            // Authorize participant under given member id
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
+
+            // Ensure bidder have sufficient balance amount to reserve for bid
+            Self::ensure_has_sufficient_balance(&participant_account_id, bid)?;
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Ensure auction for given video id exists
+            let auction = nft.ensure_auction_state::<T>()?;
+
+            let current_block = <frame_system::Module<T>>::block_number();
+
+            // Ensure nft auction not expired
+            auction.ensure_nft_auction_not_expired::<T>(current_block)?;
+
+            // Ensure auction have been already started
+            auction.ensure_auction_started::<T>(current_block)?;
+
+            // Ensure participant have been already added to whitelist if set
+            auction.ensure_whitelisted_participant::<T>(participant_id)?;
+
+            // Ensure new bid is greater then last bid + minimal bid step
+            auction.ensure_is_valid_bid::<T>(bid)?;
+
+            let last_bid_data = if let Some(last_bid) = &auction.last_bid {
+                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+                Some((last_bidder_account_id, last_bid.amount))
+            } else {
+                None
+            };
+
+            // Used fo immediate auction completion
+            let owner_account_id = match auction.buy_now_price {
+                // Do not charge more then buy now
+                Some(buy_now_price) if bid >= buy_now_price => {
+                    Some(Self::ensure_owner_account_id(&video, &nft)?)
+                },
+                _ => None,
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Unreserve previous bidder balance
+            if let Some((last_bidder_account_id, last_bid_amount)) = &last_bid_data {
+                T::Currency::unreserve(last_bidder_account_id, *last_bid_amount);
+            }
+
+            // Make auction bid & update auction data
+            match auction.buy_now_price {
+                // Complete auction immediately
+                // Do not charge more then buy now
+                Some(buy_now_price) if bid >= buy_now_price => {
+
+                    let auction = auction.make_bid(participant_id, bid, current_block);
+
+                    if let (Some((last_bidder_account_id, _)), Some(owner_account_id)) = (last_bid_data, owner_account_id) {
+                        let nft = Self::complete_auction(video.in_channel, nft, auction, last_bidder_account_id, owner_account_id);
+                        let video = video.set_nft_status(nft);
+
+                        // Update the video
+                        VideoById::<T>::insert(video_id, video);
+
+                        // Trigger event
+                        Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, metadata));
+                    }
+                },
+                _ => {
+                    // Reseve balance for current bid
+                    // Can not fail, needed check made
+                    T::Currency::reserve(&participant_account_id, bid)?;
+
+                    let auction = auction.make_bid(participant_id, bid, current_block);
+                    let nft = nft.set_auction_transactional_status(auction);
+                    let video = video.set_nft_status(nft);
+
+                    VideoById::<T>::insert(video_id, video);
+
+                    // Trigger event
+                    Self::deposit_event(RawEvent::AuctionBidMade(participant_id, video_id, bid, metadata));
+                },
+            };
+        }
+
+        /// Cancel open auction bid
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_open_auction_bid(
+            origin,
+            participant_id: T::MemberId,
+            video_id: T::VideoId,
+        ) {
+
+            // Authorize participant under given member id
+            let participant_account_id = ensure_signed(origin)?;
+            ensure_member_auth_success::<T>(&participant_id, &participant_account_id)?;
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Ensure auction for given video id exists
+            let auction = nft.ensure_auction_state::<T>()?;
+
+            let current_block = <frame_system::Module<T>>::block_number();
+
+            // Ensure participant can cancel last bid
+            auction.ensure_bid_can_be_canceled::<T>(participant_id, current_block)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Cancel last auction bid & update auction data
+            let auction = auction.cancel_bid();
+            let nft = nft.set_auction_transactional_status(auction);
+            let video = video.set_nft_status(nft);
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
+        }
+
+        /// Complete auction
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn complete_nft_auction(
+            origin,
+            member_id: T::MemberId,
+            video_id: T::VideoId,
+            metadata: Metadata,
+        ) {
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Ensure auction for given video id exists, retrieve corresponding one
+            let auction = nft.ensure_auction_state::<T>()?;
+
+            let last_bid = auction.ensure_last_bid_exists::<T>()?;
+
+            // Ensure actor authorized to complete auction.
+            Self::ensure_member_is_last_bidder(origin, member_id, &auction)?;
+
+            // Ensure auction can be completed
+            Self::ensure_auction_can_be_completed(&auction)?;
+
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+
+            let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let nft = Self::complete_auction(video.in_channel, nft, auction, last_bidder_account_id, owner_account_id);
+            let video = video.set_nft_status(nft);
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionCompleted(member_id, video_id, metadata));
+        }
+
+        /// Accept open auction bid
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn settle_open_auction(
+            origin,
+            owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            metadata: Metadata,
+        ) {
+
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Ensure actor is authorized to accept open auction bid
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure auction for given video id exists, retrieve corresponding one
+            let auction = nft.ensure_auction_state::<T>()?;
+
+            // Ensure open type auction
+            auction.ensure_is_open_auction::<T>()?;
+
+            // Ensure there is a bid to accept
+            let last_bid = auction.ensure_last_bid_exists::<T>()?;
+
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
+
+            let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let nft = Self::complete_auction(video.in_channel, nft, auction, last_bidder_account_id, owner_account_id);
+            let video = video.set_nft_status(nft);
+
+            // Update the video
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, metadata));
         }
 
         /// Offer NFT
@@ -1355,7 +1421,7 @@ decl_module! {
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             to: MemberId<T>,
             price: Option<BalanceOf<T>>,
         ) {
@@ -1363,61 +1429,62 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure there is no pending offer or existing auction for given nft.
-            video.ensure_nft_transactional_status_is_idle::<T>()?;
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &actor,
-                &video
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+
+            // Ensure there is no pending offer or existing auction for given nft.
+            nft.ensure_nft_transactional_status_is_idle::<T>()?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Set nft transactional status to InitiatedOfferToMember
-            let video = video.set_pending_offer_transactional_status(to, price);
+            let nft = nft.set_pending_offer_transactional_status(to, price);
+            let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OfferStarted(video_id, actor, to, price));
+            Self::deposit_event(RawEvent::OfferStarted(video_id, owner_id, to, price));
         }
 
         /// Cancel NFT offer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_offer(
             origin,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             video_id: T::VideoId,
         ) {
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure given pending offer exists
-            video.ensure_pending_offer_exists::<T>()?;
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &actor,
-                &video
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+
+            // Ensure given pending offer exists
+            nft.ensure_pending_offer_exists::<T>()?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Cancel pending offer
-            let video = video.set_idle_transactional_status();
+            let nft = nft.set_idle_transactional_status();
+            let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::OfferCancelled(video_id, actor));
+            Self::deposit_event(RawEvent::OfferCancelled(video_id, owner_id));
         }
 
         /// Accept incoming NFT offer
@@ -1425,35 +1492,36 @@ decl_module! {
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
-            participant_id: MemberId<T>,
+            recipient_id: MemberId<T>,
         ) {
 
             // Authorize participant under given member id
             let receiver_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&participant_id, &receiver_account_id)?;
+            ensure_member_auth_success::<T>(&recipient_id, &receiver_account_id)?;
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
             // Ensure new pending offer is available to proceed
-            Self::ensure_new_pending_offer_available_to_proceed(&video, participant_id, &receiver_account_id)?;
+            Self::ensure_new_pending_offer_available_to_proceed(&nft, recipient_id, &receiver_account_id)?;
 
-            if let Some(owned_nft) = &video.nft_status {
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
 
-                let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
+            //
+            // == MUTATION SAFE ==
+            //
 
-                //
-                // == MUTATION SAFE ==
-                //
+            // Complete nft offer
+            let nft = Self::complete_nft_offer(nft, owner_account_id, receiver_account_id);
+            let video = video.set_nft_status(nft);
 
-                // Complete nft offer
-                let video = Self::complete_nft_offer(video, owner_account_id, receiver_account_id);
+            VideoById::<T>::insert(video_id, video);
 
-                VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::OfferAccepted(video_id, participant_id));
-            }
+            // Trigger event
+            Self::deposit_event(RawEvent::OfferAccepted(video_id, recipient_id));
         }
 
         /// Sell NFT
@@ -1461,34 +1529,34 @@ decl_module! {
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
-            actor: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
+            owner_id: ContentActor<CuratorGroupId<T>, CuratorId<T>, MemberId<T>>,
             price: BalanceOf<T>,
         ) {
 
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
             // Authorize nft owner
-            Self::authorize_nft_owner(
-                origin,
-                &actor,
-                &video
-            )?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
-            video.ensure_nft_transactional_status_is_idle::<T>()?;
+            nft.ensure_nft_transactional_status_is_idle::<T>()?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Place nft sell order
-            let video = video.set_buy_now_transactionl_status(price);
+            let nft = nft.set_buy_now_transactionl_status(price);
+            let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);
 
             // Trigger event
-            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, actor, price));
+            Self::deposit_event(RawEvent::NFTSellOrderMade(video_id, owner_id, price));
         }
 
         /// Buy NFT
@@ -1507,25 +1575,26 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
             // Ensure given participant can buy nft now
-            Self::ensure_can_buy_now(&video, &participant_account_id)?;
+            Self::ensure_can_buy_now(&nft, &participant_account_id)?;
 
-            if let Some(owned_nft) = &video.nft_status {
+            let owner_account_id = Self::ensure_owner_account_id(&video, &nft)?;
 
-                let owner_account_id = Self::ensure_owner_account_id(&video, &owned_nft)?;
+            //
+            // == MUTATION SAFE ==
+            //
 
-                //
-                // == MUTATION SAFE ==
-                //
+            // Buy nft
+            let nft = Self::buy_now(nft, owner_account_id, participant_account_id, participant_id);
+            let video = video.set_nft_status(nft);
 
-                // Buy nft
-                let video = Self::buy_now(video, owner_account_id, participant_account_id, participant_id);
+            VideoById::<T>::insert(video_id, video);
 
-                VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::NFTBought(video_id, participant_id, metadata));
-            }
+            // Trigger event
+            Self::deposit_event(RawEvent::NFTBought(video_id, participant_id, metadata));
         }
     }
 }
@@ -1567,7 +1636,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: Video<T>) -> DispatchResult {
+    fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
         ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
         Ok(())
     }
@@ -1592,16 +1661,30 @@ impl<T: Trait> Module<T> {
         Ok(VideoCategoryById::<T>::get(video_category_id))
     }
 
-    fn pick_content_parameters_from_assets(
-        assets: &[NewAsset<ContentParameters<T>>],
-    ) -> Vec<ContentParameters<T>> {
-        assets
-            .iter()
-            .filter_map(|asset| match asset {
-                NewAsset::Upload(content_parameters) => Some(content_parameters.clone()),
-                _ => None,
+    fn pick_upload_parameters_from_assets(
+        assets: &NewAssets<T>,
+        channel_id: &T::ChannelId,
+        sender: &T::AccountId,
+    ) -> Option<UploadParameters<T>> {
+        // dynamic bag for a media object
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
+        let bag_id = BagIdType::from(dyn_bag.clone());
+
+        if !storage::Bags::<T>::contains_key(bag_id.clone()) {
+            // create_dynamic_bag checks automatically satifsfied with None as second parameter
+            Storage::<T>::create_dynamic_bag(dyn_bag, None).unwrap();
+        }
+
+        if let NewAssets::<T>::Upload(creation_upload_params) = assets {
+            Some(UploadParametersRecord {
+                bag_id,
+                object_creation_list: creation_upload_params.object_creation_list.clone(),
+                deletion_prize_source_account_id: sender.clone(),
+                expected_data_size_fee: creation_upload_params.expected_data_size_fee,
             })
-            .collect()
+        } else {
+            None
+        }
     }
 
     fn actor_to_channel_owner(
@@ -1618,26 +1701,6 @@ impl<T: Trait> Module<T> {
             }
             ContentActor::Member(member_id) => {
                 Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
-        }
-    }
-
-    fn actor_to_nft_owner(
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> Result<NFTOwner<T::MemberId>, Error<T>> {
-        match actor {
-            // Lead should use their member or curator role to authorize
-            ContentActor::Lead => Err(Error::<T>::ActorCannotBeLead),
-            ContentActor::Curator(
-                _curator_group_id,
-                _curator_id
-            ) => {
-                Ok(NFTOwner::ChannelOwner)
-            }
-            ContentActor::Member(member_id) => {
-                Ok(NFTOwner::Member(*member_id))
             }
             // TODO:
             // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
@@ -1667,6 +1730,12 @@ impl<T: Trait> Module<T> {
         Ok(membership.controller_account)
     }
 
+    fn bag_id_for_channel(channel_id: &T::ChannelId) -> storage::BagId<T> {
+        // retrieve bag id from channel id
+        let dyn_bag = DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(*channel_id);
+        BagIdType::from(dyn_bag)
+    }
+
     fn not_implemented() -> DispatchResult {
         Err(Error::<T>::FeatureNotImplemented.into())
     }
@@ -1680,25 +1749,21 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorId,
             MemberId<T>,
         >,
-        NFTOwner = NFTOwner<MemberId<T>>,
         MemberId = MemberId<T>,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
         VideoCategoryId = <T as Trait>::VideoCategoryId,
-        ChannelId = <T as StorageOwnership>::ChannelId,
-        NewAsset = NewAsset<ContentParameters<T>>,
+        ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
         PlaylistId = <T as Trait>::PlaylistId,
         SeriesId = <T as Trait>::SeriesId,
         PersonId = <T as Trait>::PersonId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
-        Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
+        Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
-        ContentParameters = ContentParameters<T>,
-        AccountId = <T as frame_system::Trait>::AccountId,
-        ContentId = ContentId<T>,
+        DataObjectId = <T as storage::Trait>::DataObjectId,
         IsCensored = bool,
         AuctionParams = AuctionParams<
             <T as Trait>::VideoId,
@@ -1707,6 +1772,11 @@ decl_event!(
             MemberId<T>,
         >,
         Balance = BalanceOf<T>,
+        ChannelCreationParameters = ChannelCreationParameters<T>,
+        ChannelUpdateParameters = ChannelUpdateParameters<T>,
+        VideoCreationParameters = VideoCreationParameters<T>,
+        VideoUpdateParameters = VideoUpdateParameters<T>,
+        NewAssets = NewAssets<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1715,19 +1785,9 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelCreationParameters<ContentParameters, AccountId>,
-        ),
-        ChannelUpdated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelUpdateParameters<ContentParameters, AccountId>,
-        ),
-        ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
+        ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
+        ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
+        ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
 
         ChannelCensorshipStatusUpdated(
             ContentActor,
@@ -1767,17 +1827,8 @@ decl_event!(
         VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
         VideoCategoryDeleted(ContentActor, VideoCategoryId),
 
-        VideoCreated(
-            ContentActor,
-            ChannelId,
-            VideoId,
-            VideoCreationParameters<ContentParameters>,
-        ),
-        VideoUpdated(
-            ContentActor,
-            VideoId,
-            VideoUpdateParameters<ContentParameters>,
-        ),
+        VideoCreated(ContentActor, ChannelId, VideoId, VideoCreationParameters),
+        VideoUpdated(ContentActor, VideoId, VideoUpdateParameters),
         VideoDeleted(ContentActor, VideoId),
 
         VideoCensorshipStatusUpdated(
@@ -1799,15 +1850,15 @@ decl_event!(
         SeriesCreated(
             ContentActor,
             SeriesId,
-            Vec<NewAsset>,
-            SeriesParameters<VideoId, ContentParameters>,
+            NewAssets,
+            SeriesParameters<VideoId, NewAssets>,
             Series,
         ),
         SeriesUpdated(
             ContentActor,
             SeriesId,
-            Vec<NewAsset>,
-            SeriesParameters<VideoId, ContentParameters>,
+            NewAssets,
+            SeriesParameters<VideoId, NewAssets>,
             Series,
         ),
         SeriesDeleted(ContentActor, SeriesId),
@@ -1816,20 +1867,27 @@ decl_event!(
         PersonCreated(
             ContentActor,
             PersonId,
-            Vec<NewAsset>,
-            PersonCreationParameters<ContentParameters>,
+            NewAssets,
+            PersonCreationParameters<NewAssets>,
         ),
         PersonUpdated(
             ContentActor,
             PersonId,
-            Vec<NewAsset>,
-            PersonUpdateParameters<ContentParameters>,
+            NewAssets,
+            PersonUpdateParameters<NewAssets>,
         ),
         PersonDeleted(ContentActor, PersonId),
+        ChannelDeleted(ContentActor, ChannelId),
 
         // NFT auction
         AuctionStarted(ContentActor, AuctionParams),
-        NftIssued(ContentActor, VideoId, Option<Royalty>, Metadata, NFTOwner),
+        NftIssued(
+            ContentActor,
+            VideoId,
+            Option<Royalty>,
+            Metadata,
+            Option<MemberId>,
+        ),
         AuctionBidMade(MemberId, VideoId, Balance, Metadata),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
