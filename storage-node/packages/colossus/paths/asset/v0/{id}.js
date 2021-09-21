@@ -43,58 +43,36 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
   // Creat the IPFS HTTP Gateway proxy middleware
   const proxy = ipfsProxy.createProxy(ipfsHttpGatewayUrl)
 
-  // Cache of known content mappings and local availability info
-  const ipfsContentIdMap = new Map()
+  const recentlyUploaded = new Map()
 
   // Make sure id is valid and was 'Accepted', only then proxy if content is local
   const proxyAcceptedContentToIpfsGateway = async (req, res, next) => {
     const content_id = req.params.id
 
-    if (!ipfsContentIdMap.has(content_id)) {
-      const hash = runtime.assets.resolveContentIdToIpfsHash(req.params.id)
-
-      if (!hash) {
-        return res.status(404).send({ message: 'Unknown content' })
-      }
-
-      ipfsContentIdMap.set(content_id, {
-        local: false,
-        ipfs_content_id: hash,
-      })
-    }
-
-    const { ipfs_content_id, local } = ipfsContentIdMap.get(content_id)
-
-    // Pass on the ipfs hash to the middleware
-    req.params.ipfs_content_id = ipfs_content_id
-
-    // Serve it if we know we have it, or it was recently synced successfully
-    if (local || storage.syncStatus(ipfs_content_id).synced) {
+    // Serve known recently uploaded asset
+    if (recentlyUploaded.has(content_id)) {
+      // Pass on the ipfs hash to the ipfs proxy middleware
+      req.params.ipfs_content_id = recentlyUploaded.get(content_id)
+      // Serve asset
       return proxy(req, res, next)
     }
 
-    // Not yet processed by sync run, check if we have it locally
-    try {
-      const stat = await storage.ipfsStat(ipfs_content_id, 4000)
+    const hash = runtime.assets.resolveContentIdToIpfsHash(content_id)
 
-      if (stat.local) {
-        ipfsContentIdMap.set(content_id, {
-          local: true,
-          ipfs_content_id,
-        })
-
-        // We know we have the full content locally, serve it
-        return proxy(req, res, next)
-      }
-    } catch (_err) {
-      // timeout trying to stat which most likely means we do not have it
-      // debug('Failed to stat', ipfs_content_id)
+    if (!hash) {
+      return res.status(404).send({ message: 'Asset Unknown' })
     }
 
-    // Valid content but no certainty that the node has it locally yet.
-    // We a void serving it to prevent poor performance (ipfs node will have to retrieve it on demand
-    // which might be slow and wasteful if content is not cached locally)
-    res.status(404).send({ message: 'Content not available locally' })
+    if (!storage.syncStatus(hash).synced) {
+      // We a void serving content we do not have locally to prevent poor performance
+      return res.status(404).send({ message: 'Asset Not Available Locally' })
+    }
+
+    // Pass on the ipfs hash to the ipfs proxy middleware
+    req.params.ipfs_content_id = hash
+
+    // Serve asset
+    return proxy(req, res, next)
   }
 
   const doc = {
@@ -227,10 +205,8 @@ module.exports = function (storage, runtime, ipfsHttpGatewayUrl, anonymous) {
           // they cannot be different unless we did something stupid!
           assert(hash === dataObject.ipfs_content_id.toString())
 
-          ipfsContentIdMap.set(id, {
-            ipfs_content_id: hash,
-            local: true,
-          })
+          // Remember uploaded asset incase we need to serve it immediately (before data objects refreshed from chain)
+          recentlyUploaded.set(id, hash)
 
           // Send ok response early, no need for client to wait for relationships to be created.
           debug('Sending OK response.')

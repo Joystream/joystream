@@ -74,7 +74,7 @@ const FLAG_DEFINITIONS = {
   },
   maxSync: {
     type: 'number',
-    default: 200,
+    default: 100,
   },
 }
 
@@ -99,7 +99,7 @@ const cli = meow(
     --ipfs-host   hostname  ipfs host to use, default to 'localhost'. Default port 5001 is always used
     --anonymous             Runs server in anonymous mode. Replicates content without need to register
                             on-chain, and can serve content. Cannot be used to upload content.
-    --maxSync               The max number of items to sync concurrently. Defaults to 30.
+    --max-sync              The max number of items to sync concurrently. Defaults to 100.
   `,
   { flags: FLAG_DEFINITIONS }
 )
@@ -143,15 +143,9 @@ function getStorage(runtimeApi, { ipfsHost }) {
     resolve_content_id: async (contentId) => {
       // Resolve accepted content from cache
       const hash = runtimeApi.assets.resolveContentIdToIpfsHash(contentId)
-      if (hash) return hash
-
-      // Resolve via API
-      const obj = await runtimeApi.assets.getDataObject(contentId)
-      if (!obj) {
-        return
+      if (hash) {
+        return hash
       }
-      // if obj.liaison_judgement !== Accepted .. throw ?
-      return obj.ipfs_content_id.toString()
     },
     ipfsHost,
   }
@@ -275,6 +269,10 @@ const commands = {
       port = cli.flags.port
     }
 
+    const store = getStorage(api, cli.flags)
+
+    await store.scanRepo()
+
     // Get initlal data objects into cache
     while (true) {
       try {
@@ -295,10 +293,7 @@ const commands = {
       } catch (err) {
         debug('Failed updating data objects from chain', err)
       }
-    }, 60000)
-
-    // TODO: check valid url, and valid port number
-    const store = getStorage(api, cli.flags)
+    }, 120000)
 
     const ipfsHost = cli.flags.ipfsHost
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`

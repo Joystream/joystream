@@ -19,65 +19,61 @@
 'use strict'
 
 const debug = require('debug')('joystream:sync')
-const _ = require('lodash')
-const { ContentId } = require('@joystream/types/storage')
 const { nextTick } = require('@joystream/storage-utils/sleep')
 
 // Time to wait between sync runs. The lower the better chance to consume all
 // available sync sessions allowed.
-const INTERVAL_BETWEEN_SYNC_RUNS_MS = 3000
+const INTERVAL_BETWEEN_SYNC_RUNS_MS = 500
 
-async function syncRun({ api, storage, contentBeingSynced, contentCompletedSync, flags }) {
+async function syncRun({ api, storage, flags }) {
   // The number of concurrent items to attemp to fetch.
   const MAX_CONCURRENT_SYNC_ITEMS = Math.max(1, flags.maxSync)
+
+  // ids of content currently being synced
+  const contentBeingSynced = storage.pinning
+  // ids of content that completed sync
+  const contentCompletedSync = storage.pinned
 
   const contentIds = api.assets.getAcceptedIpfsHashes()
 
   // Select ids which may need to be synced
-  const idsNotSynced = contentIds
-    .filter((id) => !contentCompletedSync.has(id))
-    .filter((id) => !contentBeingSynced.has(id))
-
-  // We are limiting how many content ids can be synced concurrently, so to ensure
-  // better distribution of content across storage nodes during a potentially long
-  // sync process we don't want all nodes to replicate items in the same order, so
-  // we simply shuffle.
-  const idsToSync = _.shuffle(idsNotSynced)
+  const idsToSync = contentIds.filter((id) => !contentCompletedSync.has(id)).filter((id) => !contentBeingSynced.has(id))
 
   while (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS && idsToSync.length) {
-    const id = idsToSync.shift()
+    const id = idsToSync.pop()
 
     try {
-      contentBeingSynced.set(id)
-      await storage.pin(id, (err, status) => {
-        if (err) {
-          contentBeingSynced.delete(id)
-          debug(`Error Syncing ${err}`)
-        } else if (status.synced) {
-          contentBeingSynced.delete(id)
-          contentCompletedSync.set(id)
+      storage.pin(id, (err) => {
+        if (!err) {
+          debug(
+            'synced:',
+            id,
+            '| synced:',
+            contentCompletedSync.size,
+            '| syncing:',
+            contentBeingSynced.size,
+            '| queued:',
+            idsToSync.length
+          )
         }
       })
     } catch (err) {
       // Most likely failed to resolve the content id
       debug(`Failed calling synchronize ${err}`)
-      contentBeingSynced.delete(id)
     }
 
-    // Allow callbacks to call to storage.synchronize() to be invoked during this sync run
+    // Allow callbacks in call to storage.pin() to be invoked during this sync run
     // This will happen if content is found to be local and will speed overall sync process.
     await nextTick()
   }
 }
 
-async function syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync }) {
+async function syncRunner({ api, flags, storage }) {
   const retry = () => {
     setTimeout(syncRunner, INTERVAL_BETWEEN_SYNC_RUNS_MS, {
       api,
       flags,
       storage,
-      contentBeingSynced,
-      contentCompletedSync,
     })
   }
 
@@ -88,8 +84,6 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
       await syncRun({
         api,
         storage,
-        contentBeingSynced,
-        contentCompletedSync,
         flags,
       })
     }
@@ -102,16 +96,11 @@ async function syncRunner({ api, flags, storage, contentBeingSynced, contentComp
 }
 
 function startSyncing(api, flags, storage) {
-  // ids of content currently being synced
-  const contentBeingSynced = new Map()
-  // ids of content that completed sync
-  const contentCompletedSync = new Map()
-
-  syncRunner({ api, flags, storage, contentBeingSynced, contentCompletedSync })
+  syncRunner({ api, flags, storage })
 
   setInterval(() => {
-    debug(`objects syncing: ${contentBeingSynced.size}`)
-    debug(`objects local: ${contentCompletedSync.size}`)
+    debug(`objects syncing: ${storage.pinning.size}`)
+    debug(`objects local: ${storage.pinned.size}`)
   }, 60000)
 }
 

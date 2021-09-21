@@ -35,6 +35,7 @@ const fileType = require('file-type')
 const ipfsClient = require('ipfs-http-client')
 const temp = require('temp').track()
 const _ = require('lodash')
+const { nextTick, sleep } = require('../util/sleep')
 
 // Default request timeout; imposed on top of the IPFS client, because the
 // client doesn't seem to care.
@@ -183,8 +184,8 @@ class StorageWriteStream extends Transform {
       .then(async (result) => {
         const hash = result[0].hash
         debug('Stream committed as', hash)
+        await this.storage.pin(hash)
         this.emit('committed', hash)
-        await this.storage.ipfs.pin.add(hash)
         this.cleanup()
       })
       .catch((err) => {
@@ -250,8 +251,8 @@ class Storage {
 
     this.ipfs = ipfsClient(this.options.ipfsHost || 'localhost', '5001', { protocol: 'http' })
 
-    this.pinned = {}
-    this.pinning = {}
+    this.pinned = new Map()
+    this.pinning = new Map()
 
     this.ipfs.id((err, identity) => {
       if (err) {
@@ -401,21 +402,21 @@ class Storage {
   /*
    * Pin the given IPFS CID
    */
-  async pin(ipfsHash, callback) {
-    if (!this.pinning[ipfsHash] && !this.pinned[ipfsHash]) {
-      // debug(`Pinning hash: ${ipfsHash} content-id: ${contentId}`)
-      this.pinning[ipfsHash] = true
+  pin(ipfsHash, callback) {
+    if (!this.pinning.has(ipfsHash) && !this.pinned.has(ipfsHash)) {
+      // debug(`Pinning hash: ${ipfsHash}`)
+      this.pinning.set(ipfsHash)
 
       // Callback passed to add() will be called on error or when the entire file
       // is retrieved. So on success we consider the content synced.
       this.ipfs.pin.add(ipfsHash, { quiet: true, pin: true }, (err) => {
-        delete this.pinning[ipfsHash]
+        this.pinning.delete(ipfsHash)
         if (err) {
           debug(`Error Pinning: ${ipfsHash}`)
           callback && callback(err)
         } else {
           // debug(`Pinned ${ipfsHash}`)
-          this.pinned[ipfsHash] = true
+          this.pinned.set(ipfsHash)
           callback && callback(null, this.syncStatus(ipfsHash))
         }
       })
@@ -426,9 +427,35 @@ class Storage {
 
   syncStatus(ipfsHash) {
     return {
-      syncing: this.pinning[ipfsHash] === true,
-      synced: this.pinned[ipfsHash] === true,
+      syncing: this.pinning.has(ipfsHash),
+      synced: this.pinned.has(ipfsHash),
     }
+  }
+
+  /*
+   * Scan storage repo and determine sync state of all pins
+   */
+  async scanRepo() {
+    debug('scanning repo')
+    const pinset = await this.ipfs.pin.ls({ type: 'recursive' })
+    let checks = 0
+    while (pinset.length) {
+      if (checks % 50 === 0) {
+        debug('scanned', checks, 'objects')
+        await sleep(50)
+      }
+      checks++
+      const { hash } = pinset.pop()
+      try {
+        this.pin(hash)
+      } catch (err) {
+        debug(err)
+      }
+    }
+    await sleep(2000)
+    debug('scanned', checks, 'objects')
+    debug('objects syncing:', this.pinning.size)
+    debug('objects local:', this.pinned.size)
   }
 }
 
