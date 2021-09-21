@@ -582,7 +582,7 @@ fn member_owned_channels() {
                 assets: assets.clone(),
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: Some(collaborators.clone()),
+                maybe_collaborators: None,
             },
         ));
 
@@ -604,7 +604,7 @@ fn member_owned_channels() {
                     assets: assets,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: Some(collaborators.clone()),
+                    maybe_collaborators: None,
                 }
             ))
         );
