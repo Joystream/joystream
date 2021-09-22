@@ -39,14 +39,14 @@ After cloning this repo, from this working directory, run these commands:
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
     --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' \
-    --plaintext isAnonymous=true
+    --plaintext isMinikube=true --plaintext isAnonymous=true
    ```
 
    If running for production use the below mentioned config
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' --plaintext isAnonymous=false \
+    --plaintext wsProviderEndpointURI='wss://rome-rpc-endpoint.joystream.org:9944/' --plaintext isAnonymous=false --plaintext isMinikube=false \
     --plaintext providerId=<ID> --plaintext keyFile=<PATH> --plaintext publicURL=<DOMAIN> --secret passphrase=<PASSPHRASE>
    ```
 
