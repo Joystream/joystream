@@ -1,0 +1,74 @@
+name: Delete Pulumi stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      pulumiToken:
+        description: 'Pulumi Access Token'
+        required: false
+      stackName:
+        description: 'Pulumi Stack Name'
+        required: false
+        default: 'dev'
+      componentName:
+        description: 'Joystream component that you deployed (node-network, query-node)'
+        required: true
+        default: 'node-network'
+
+jobs:
+  destroy:
+    name: Delete Pulumi stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Mask input key
+        id: add_mask
+        run: |
+          if [[ -z "${ACCESS_TOKEN}" ]] || [[ "$ACCESS_TOKEN" == "null" ]]
+          then
+            echo "No access token provided"
+            echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "Found token"
+            echo "::add-mask::$ACCESS_TOKEN"
+            echo "PULUMI_ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          fi
+
+      - id: compute_work_dir
+        name: Get working directory based on component deployed
+        run: |
+          if [[ "${{ github.event.inputs.componentName }}" = "query-node" ]]
+          then
+            echo "Component is Query Node"
+            echo "::set-output name=work_dir::devops/infrastructure/query-node"
+          else
+            echo "Component is Node Network"
+            echo "::set-output name=work_dir::devops/infrastructure/node-network"
+          fi
+
+      - name: Login and select stack
+        run: |
+          npm install
+          pulumi login
+          pulumi stack select ${{ github.event.inputs.stackName }} --non-interactive
+        working-directory: ${{ steps.compute_work_dir.outputs.work_dir }}
+
+      - uses: pulumi/actions@v3
+        name: Run pulumi destory
+        with:
+          work-dir: ${{ steps.compute_work_dir.outputs.work_dir }}
+          command: destroy
+          refresh: true
+          stack-name: ${{ github.event.inputs.stackName }}
