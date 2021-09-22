@@ -37,7 +37,7 @@ export async function hireStorageWorkingGroupLead(api: ApiPromise): Promise<void
     return
   }
 
-  logger.info(`Making member id: ${memberId} the content lead.`)
+  logger.info(`Making member id: ${memberId} the storage lead.`)
 
   // Create curator lead opening
   logger.info('Preparing Create Storage Lead Opening extrinsic...')

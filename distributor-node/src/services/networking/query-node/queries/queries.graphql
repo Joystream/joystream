@@ -1,0 +1,78 @@
+fragment DataObjectDetails on StorageDataObject {
+  id
+  size
+  ipfsHash
+  isAccepted
+  storageBag {
+    storageAssignments {
+      storageBucket {
+        id
+        operatorMetadata {
+          nodeEndpoint
+        }
+        operatorStatus {
+          __typename
+        }
+      }
+    }
+    distirbutionAssignments {
+      distributionBucket {
+        id
+        operators {
+          workerId
+          status
+        }
+      }
+    }
+  }
+}
+
+query getDataObjectDetails($id: ID!) {
+  storageDataObjectByUniqueInput(where: { id: $id }) {
+    ...DataObjectDetails
+  }
+}
+
+fragment DistirubtionBucketWithObjects on DistributionBucket {
+  id
+  bagAssignments {
+    storageBag {
+      objects {
+        id
+        size
+        ipfsHash
+      }
+    }
+  }
+}
+
+query getDistributionBucketsWithObjectsByIds($ids: [ID!]) {
+  distributionBuckets(where: { id_in: $ids }) {
+    ...DistirubtionBucketWithObjects
+  }
+}
+
+query getDistributionBucketsWithObjectsByWorkerId($workerId: Int!) {
+  distributionBuckets(where: { operators_some: { workerId_eq: $workerId, status_eq: ACTIVE } }) {
+    ...DistirubtionBucketWithObjects
+  }
+}
+
+fragment StorageBucketOperatorFields on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+
+query getActiveStorageBucketOperatorsData {
+  storageBuckets(
+    where: {
+      operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
+      operatorMetadata: { nodeEndpoint_contains: "http" }
+    }
+    limit: 9999
+  ) {
+    ...StorageBucketOperatorFields
+  }
+}
