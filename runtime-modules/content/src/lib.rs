@@ -1348,11 +1348,7 @@ decl_event!(
         ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
-        PlaylistId = <T as Trait>::PlaylistId,
-        SeriesId = <T as Trait>::SeriesId,
-        PersonId = <T as Trait>::PersonId,
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
-        Series = Series<<T as storage::Trait>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
         DataObjectId = <T as storage::Trait>::DataObjectId,
         IsCensored = bool,
@@ -1360,7 +1356,6 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        NewAssets = NewAssets<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1371,6 +1366,7 @@ decl_event!(
         // Channels
         ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
+        ChannelDeleted(ContentActor, ChannelId),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
 
         ChannelCensorshipStatusUpdated(
@@ -1424,43 +1420,5 @@ decl_event!(
 
         // Featured Videos
         FeaturedVideosSet(ContentActor, Vec<VideoId>),
-
-        // Video Playlists
-        PlaylistCreated(ContentActor, PlaylistId, PlaylistCreationParameters),
-        PlaylistUpdated(ContentActor, PlaylistId, PlaylistUpdateParameters),
-        PlaylistDeleted(ContentActor, PlaylistId),
-
-        // Series
-        SeriesCreated(
-            ContentActor,
-            SeriesId,
-            NewAssets,
-            SeriesParameters<VideoId, NewAssets>,
-            Series,
-        ),
-        SeriesUpdated(
-            ContentActor,
-            SeriesId,
-            NewAssets,
-            SeriesParameters<VideoId, NewAssets>,
-            Series,
-        ),
-        SeriesDeleted(ContentActor, SeriesId),
-
-        // Persons
-        PersonCreated(
-            ContentActor,
-            PersonId,
-            NewAssets,
-            PersonCreationParameters<NewAssets>,
-        ),
-        PersonUpdated(
-            ContentActor,
-            PersonId,
-            NewAssets,
-            PersonUpdateParameters<NewAssets>,
-        ),
-        PersonDeleted(ContentActor, PersonId),
-        ChannelDeleted(ContentActor, ChannelId),
     }
 );
