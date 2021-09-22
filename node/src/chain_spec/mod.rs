@@ -362,10 +362,6 @@ pub fn testnet_genesis(
                 next_channel_id: 1,
                 next_video_category_id: 1,
                 next_video_id: 1,
-                next_playlist_id: 1,
-                next_series_id: 1,
-                next_person_id: 1,
-                next_channel_transfer_request_id: 1,
             }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
