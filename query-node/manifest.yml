@@ -52,15 +52,6 @@ typegen:
     # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     # - storage.FamiliesInDynamicBagCreationPolicyUpdated
 
-  # TODO: Sumer mappings
-  #   # membership
-  #   - members.MemberRegistered
-  #   - members.MemberUpdatedAboutText
-  #   - members.MemberUpdatedAvatar
-  #   - members.MemberUpdatedHandle
-  #   - members.MemberSetRootAccount
-  #   - members.MemberSetControllerAccount
-
     # membership
     - members.MemberRegistered
     - members.MemberUpdatedAboutText

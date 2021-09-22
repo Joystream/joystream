@@ -43,7 +43,7 @@
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
     "rxjs": "^6.6.2",
-    "typeorm": "^0.2.31",
+    "typeorm": "0.2.34",
     "pg": "^8.4.0"
   },
   "devDependencies": {

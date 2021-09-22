@@ -9,5 +9,12 @@ export type MemberJson = {
 }
 
 export type StorageSystemJson = {
+  id: string
   blacklist: string[]
+  storageBucketsPerBagLimit: number
+  distributionBucketsPerBagLimit: number
+  uploadingBlocked: boolean
+  dataObjectFeePerMb: number | string
+  storageBucketMaxObjectsCountLimit: number | string
+  storageBucketMaxObjectsSizeLimit: number | string
 }
