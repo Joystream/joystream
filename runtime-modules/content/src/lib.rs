@@ -1173,16 +1173,16 @@ decl_module! {
 
                 // Unreserve previous bidder balance
                 T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
-
-                // Cancel auction
-                let nft = nft.set_idle_transactional_status();
-                let video = video.set_nft_status(nft);
-
-                VideoById::<T>::insert(video_id, video);
-
-                // Trigger event
-                Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
             }
+
+            // Cancel auction
+            let nft = nft.set_idle_transactional_status();
+            let video = video.set_nft_status(nft);
+
+            VideoById::<T>::insert(video_id, video);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::AuctionCancelled(owner_id, video_id));
         }
 
         /// Make auction bid
