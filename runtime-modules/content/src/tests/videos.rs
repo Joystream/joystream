@@ -6,23 +6,6 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Currency
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-fn create_member_channel() -> ChannelId {
-    let channel_id = Content::next_channel_id();
-
-    // Member can create the channel
-    assert_ok!(Content::create_channel(
-        Origin::signed(FIRST_MEMBER_ORIGIN),
-        ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParametersRecord {
-            assets: NewAssets::<Test>::Urls(vec![]),
-            meta: vec![],
-            reward_account: None,
-        }
-    ));
-
-    channel_id
-}
-
 #[test]
 fn video_creation_successful() {
     with_default_mock_builder(|| {
@@ -47,26 +30,7 @@ fn video_creation_successful() {
             Ok(()),
         );
 
-        let params = VideoCreationParametersRecord {
-            assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-                object_creation_list: vec![
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"first".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"second".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"third".to_vec(),
-                    },
-                ],
-                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-            }),
-            meta: b"test".to_vec(),
-        };
+        let params = get_video_creation_parameters();
 
         create_video_mock(
             FIRST_MEMBER_ORIGIN,
@@ -101,26 +65,7 @@ fn video_update_successful() {
             Ok(()),
         );
 
-        let params = VideoCreationParametersRecord {
-            assets: NewAssets::<Test>::Upload(CreationUploadParameters {
-                object_creation_list: vec![
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"first".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"second".to_vec(),
-                    },
-                    DataObjectCreationParameters {
-                        size: 3,
-                        ipfs_content_id: b"third".to_vec(),
-                    },
-                ],
-                expected_data_size_fee: storage::DataObjectPerMegabyteFee::<Test>::get(),
-            }),
-            meta: b"test".to_vec(),
-        };
+        let params = get_video_creation_parameters();
 
         let video_id = Content::next_video_id();
 

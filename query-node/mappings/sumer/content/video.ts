@@ -133,7 +133,7 @@ export async function content_VideoCreated(db: DatabaseManager, event: Substrate
     db,
     event,
     assets: videoCreationParameters.assets,
-    contentOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
+    ChannelOwner: convertContentActorToDataObjectOwner(contentActor, channelId.toNumber()),
   })
 
   // load channel
@@ -212,7 +212,7 @@ export async function content_VideoUpdated(db: DatabaseManager, event: Substrate
       db,
       event,
       assets: videoUpdateParameters.assets.unwrapOr([]),
-      contentOwner: convertContentActorToDataObjectOwner(contentActor, new BN(video.channel.id).toNumber()),
+      ChannelOwner: convertContentActorToDataObjectOwner(contentActor, new BN(video.channel.id).toNumber()),
     })
 
     // prepare video media metadata (if any)
