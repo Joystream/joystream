@@ -5,7 +5,7 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
-fn accept_incoming_offer() {
+fn buy_nft() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -24,13 +24,20 @@ fn accept_incoming_offer() {
             None
         ));
 
-        // Offer nft
-        assert_ok!(Content::offer_nft(
+        let price = 1000u64;
+
+        // deposit balance to second member
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(price),
+        );
+
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            SECOND_MEMBER_ID,
-            None,
+            price,
         ));
 
         // Runtime tested state before call
@@ -38,58 +45,65 @@ fn accept_incoming_offer() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        // Accept nft offer
-        assert_ok!(Content::accept_incoming_offer(
+        // Buy nft
+        assert_ok!(Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
+            vec![],
         ));
 
         // Runtime tested state after call
 
-        // Ensure nft offer accepted succesfully
+        // Ensure nft succesfully bought
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
-                owner: NFTOwner::Member(member_id),
+                owner: NFTOwner::Member(SECOND_MEMBER_ID),
                 transactional_status: TransactionalStatus::Idle,
                 ..
-            }) if member_id == SECOND_MEMBER_ID
+            })
         ));
 
-        let offer_accepted_event =
-            get_test_event(RawEvent::OfferAccepted(video_id, SECOND_MEMBER_ID));
+        let nft_bought_event =
+            get_test_event(RawEvent::NFTBought(video_id, SECOND_MEMBER_ID, vec![]));
 
         // Last event checked
-        assert_event(offer_accepted_event, number_of_events_before_call + 1);
+        assert_event(nft_bought_event, number_of_events_before_call + 3);
     })
 }
 
 #[test]
-fn accept_incoming_offer_video_does_not_exist() {
+fn buy_nft_video_does_not_exist() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
 
-        // Make an attempt to accept incoming nft offer if corresponding video does not exist
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
+        let price = 1000u64;
+
+        // deposit balance to second member
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(price),
+        );
+
+        // Make an attempt to buy nft which corresponding video does not exist yet
+        let buy_nft_result = Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
+            vec![],
         );
 
         // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
-            Error::<Test>::VideoDoesNotExist
-        );
+        assert_err!(buy_nft_result, Error::<Test>::VideoDoesNotExist);
     })
 }
 
 #[test]
-fn accept_incoming_offer_nft_not_issued() {
+fn buy_nft_not_issued() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -98,20 +112,29 @@ fn accept_incoming_offer_nft_not_issued() {
 
         create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
 
-        // Make an attempt to accept incoming nft offer if corresponding nft is not issued yet
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
+        let price = 1000u64;
+
+        // deposit balance to second member
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(price),
+        );
+
+        // Make an attempt to buy nft which is not issued yet
+        let buy_nft_result = Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
+            vec![],
         );
 
         // Failure checked
-        assert_err!(accept_incoming_offer_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(buy_nft_result, Error::<Test>::NFTDoesNotExist);
     })
 }
 
 #[test]
-fn accept_incoming_offer_auth_failed() {
+fn buy_nft_auth_failed() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -119,6 +142,14 @@ fn accept_incoming_offer_auth_failed() {
         let video_id = NextVideoId::<Test>::get();
 
         create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+
+        let price = 1000u64;
+
+        // deposit balance to second member
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(price),
+        );
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -130,32 +161,70 @@ fn accept_incoming_offer_auth_failed() {
             None
         ));
 
-        // Offer nft
-        assert_ok!(Content::offer_nft(
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            SECOND_MEMBER_ID,
-            None,
+            price,
         ));
 
-        // Make an attempt to accept incoming nft offer providing wrong credentials
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
+        // Make an attempt to buy nft with wrong credentials
+        let buy_nft_result = Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             UNKNOWN_ID,
+            vec![],
         );
 
         // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
-            Error::<Test>::MemberAuthFailed
-        );
+        assert_err!(buy_nft_result, Error::<Test>::MemberAuthFailed);
     })
 }
 
 #[test]
-fn accept_incoming_offer_no_incoming_transfers() {
+fn buy_nft_not_in_buy_now_state() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+
+        let price = 1000u64;
+
+        // deposit balance to second member
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(price),
+        );
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(FIRST_MEMBER_ORIGIN),
+            ContentActor::Member(FIRST_MEMBER_ID),
+            video_id,
+            None,
+            b"metablob".to_vec(),
+            None
+        ));
+
+        // Make an attempt to buy nft which is not in BuyNow state
+        let buy_nft_result = Content::buy_nft(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
+            video_id,
+            SECOND_MEMBER_ID,
+            vec![],
+        );
+
+        // Failure checked
+        assert_err!(buy_nft_result, Error::<Test>::NFTNotInBuyNowState);
+    })
+}
+
+#[test]
+fn buy_nft_insufficient_balance() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -174,32 +243,31 @@ fn accept_incoming_offer_no_incoming_transfers() {
             None
         ));
 
-        // Offer nft
-        assert_ok!(Content::offer_nft(
+        let price = 1000u64;
+
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            SECOND_MEMBER_ID,
-            None,
+            price,
         ));
 
-        // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+        // Make an attempt to buy nft with wrong credentials
+        let buy_nft_result = Content::buy_nft(
+            Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
-            FIRST_MEMBER_ID,
+            SECOND_MEMBER_ID,
+            vec![],
         );
 
         // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
-            Error::<Test>::NoIncomingTransfers
-        );
+        assert_err!(buy_nft_result, Error::<Test>::InsufficientBalance);
     })
 }
 
 #[test]
-fn accept_incoming_offer_reward_account_is_not_set() {
+fn buy_nft_reward_account_is_not_set() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -245,72 +313,31 @@ fn accept_incoming_offer_reward_account_is_not_set() {
             None
         ));
 
-        // Offer nft
-        assert_ok!(Content::offer_nft(
+        let price = 1000u64;
+
+        // deposit balance to second member
+        let _ = balances::Module::<Test>::deposit_creating(
+            &SECOND_MEMBER_ORIGIN,
+            <Test as balances::Trait>::Balance::from(price),
+        );
+
+        // Sell nft
+        assert_ok!(Content::sell_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             video_id,
             ContentActor::Member(FIRST_MEMBER_ID),
-            SECOND_MEMBER_ID,
-            None,
+            price,
         ));
 
-        // Make an attempt to accept incoming nft offer if sender is owner and reward account is not set
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
+        // Make an attempt to buy nft when reward account is not set
+        let buy_nft_result = Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             video_id,
             SECOND_MEMBER_ID,
+            vec![],
         );
 
         // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
-            Error::<Test>::RewardAccountIsNotSet
-        );
-    })
-}
-
-#[test]
-fn accept_incoming_offer_insufficient_balance() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
-            video_id,
-            None,
-            b"metablob".to_vec(),
-            None
-        ));
-
-        let price = 10000;
-
-        // Offer nft
-        assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            SECOND_MEMBER_ID,
-            Some(price),
-        ));
-
-        // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
-            video_id,
-            SECOND_MEMBER_ID,
-        );
-
-        // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
-            Error::<Test>::InsufficientBalance
-        );
+        assert_err!(buy_nft_result, Error::<Test>::RewardAccountIsNotSet);
     })
 }
