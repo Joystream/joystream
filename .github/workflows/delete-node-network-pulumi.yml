@@ -1,0 +1,61 @@
+name: Delete Pulumi stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      pulumiToken:
+        description: 'Pulumi Access Token'
+        required: false
+      stackName:
+        description: 'Pulumi Stack Name'
+        required: false
+        default: 'dev'
+
+defaults:
+  run:
+    working-directory: devops/infrastructure/node-network
+
+jobs:
+  destroy:
+    name: Delete Pulumi stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Mask input key
+        id: add_mask
+        run: |
+          if [[ -z "${ACCESS_TOKEN}" ]] || [[ "$ACCESS_TOKEN" == "null" ]]
+          then
+            echo "No access token provided"
+            echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "Found token"
+            echo "::add-mask::$ACCESS_TOKEN"
+            echo "PULUMI_ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          fi
+
+      - name: Login and select stack
+        run: |
+          npm install
+          pulumi login
+          pulumi stack select ${{ github.event.inputs.stackName }} --non-interactive
+
+      - uses: pulumi/actions@v3
+        name: Run pulumi destory
+        with:
+          work-dir: devops/infrastructure/node-network
+          command: destroy
+          refresh: true
+          stack-name: ${{ github.event.inputs.stackName }}
