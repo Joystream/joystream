@@ -26,7 +26,8 @@
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --inline-diffs -r ts-node/register 'test/**/*.ts'",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
-    "format": "prettier ./ --write"
+    "format": "prettier ./ --write",
+    "prepublish": "yarn build"
   },
   "files": [
     "lib/**/*",
@@ -39,7 +40,8 @@
     "google-protobuf": "^3.14.0",
     "long": "^4.0.0",
     "@types/long": "^4.0.1",
-    "i18n-iso-countries": "^6.8.0"
+    "i18n-iso-countries": "^6.8.0",
+    "iso-639-1": "^2.1.9"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",

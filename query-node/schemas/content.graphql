@@ -1,3 +1,21 @@
+type AssetExternal @variant {
+  # FIXME: [String!] currnetly not supported in variants
+  "JSON array of the urls"
+  urls: String!
+}
+
+type AssetJoystreamStorage @variant {
+  "Related data object"
+  dataObject: StorageDataObject!
+}
+
+# FIXME: https://github.com/Joystream/hydra/issues/434
+type AssetNone @variant {
+  _phantom: Int
+}
+
+union Asset = AssetExternal | AssetJoystreamStorage | AssetNone
+
 "Category of media channel"
 type ChannelCategory @entity {
   id: ID!
@@ -9,106 +27,6 @@ type ChannelCategory @entity {
 
   createdInBlock: Int!
 }
-
-"Asset availability representation"
-enum AssetAvailability {
-  "Asset is available in storage"
-  ACCEPTED,
-
-  "Asset is being uploaded to storage"
-  PENDING,
-
-  "Invalid storage (meta)data used"
-  INVALID,
-}
-
-"The decision of the storage provider when it acts as liaison"
-enum LiaisonJudgement {
-  "Content awaits for a judgment"
-  PENDING,
-
-  "Content accepted"
-  ACCEPTED,
-}
-
-"Manages content ids, type and storage provider decision about it"
-type DataObject @entity {
-  "Content owner"
-  owner: DataObjectOwner!
-
-  "Content added at"
-  createdInBlock: Int!
-
-  "Content type id"
-  typeId: Int!
-
-  "Content size in bytes"
-  size: Int!
-
-  "Storage provider id of the liaison"
-  liaison: Worker # liaison is unset until storage provider accepts or rejects the content
-
-  "Storage provider as liaison judgment"
-  liaisonJudgement: LiaisonJudgement!
-
-  "IPFS content id"
-  ipfsContentId: String!
-
-  "Joystream runtime content"
-  joystreamContentId: String!
-}
-
-"Owner type for storage object"
-union DataObjectOwner = DataObjectOwnerMember
-  | DataObjectOwnerChannel
-  | DataObjectOwnerDao
-  | DataObjectOwnerCouncil
-  | DataObjectOwnerWorkingGroup
-
-"Asset owned by a member"
-type DataObjectOwnerMember @variant {
-  # use `Int` instead of `Membership` before variant relations are featured in Hydra
-  # TODO: setup proper relations
-  #"Member identifier"
-  #memberId: Membership!
-  "Member identifier"
-  member: Int!
-
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
-}
-
-"Asset owned by a channel"
-type DataObjectOwnerChannel @variant {
-  # use `Int` instead of `Channel` before variant relations are featured in Hydra
-  #"Channel identifier"
-  #channel: Channel!
-  "Channel identifier"
-  channel: Int!
-
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
-}
-
-"Asset owned by a DAO"
-type DataObjectOwnerDao @variant {
-  "DAO identifier"
-  dao: Int!
-}
-
-"Asset owned by the Council"
-type DataObjectOwnerCouncil @variant {
-  "Variant needs to have at least one property. This value is not used."
-  dummy: Int
-}
-
-"Asset owned by a WorkingGroup"
-type DataObjectOwnerWorkingGroup @variant {
-  "Working group identifier"
-  workingGroup: Int!
-}
-
-#### High Level Derivative Entities ####
 
 type Language @entity {
   "Runtime entity identifier (EntityId)"
@@ -141,31 +59,11 @@ type Channel @entity {
   "The description of a Channel"
   description: String
 
-  ### Cover photo asset ###
+  "Channel's cover (background) photo asset. Recommended ratio: 16:9."
+  coverPhoto: Asset
 
-  # Channel's cover (background) photo. Recommended ratio: 16:9.
-
-  "Asset's data object"
-  coverPhotoDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  coverPhotoUrls: [String!]
-
-  "Availability meta information"
-  coverPhotoAvailability: AssetAvailability!
-
-  ### Avatar photo asset ###
-
-  # Channel's avatar photo.
-
-  "Asset's data object"
-  avatarPhotoDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  avatarPhotoUrls: [String!]
-
-  "Availability meta information"
-  avatarPhotoAvailability: AssetAvailability!
+  "Channel's avatar photo asset."
+  avatarPhoto: Asset
 
   ##########################
 
@@ -213,7 +111,7 @@ type Video @entity {
   id: ID!
 
   "Reference to member's channel"
-  channel: Channel
+  channel: Channel!
 
   "Reference to a video category"
   category: VideoCategory
@@ -227,18 +125,8 @@ type Video @entity {
   "Video duration in seconds"
   duration: Int
 
-  ### Thumbnail asset ###
-
-  # Video thumbnail (recommended ratio: 16:9)
-
-  "Asset's data object"
-  thumbnailPhotoDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  thumbnailPhotoUrls: [String!]
-
-  "Availability meta information"
-  thumbnailPhotoAvailability: AssetAvailability!
+  "Video thumbnail asset (recommended ratio: 16:9)"
+  thumbnailPhoto: Asset
 
   ##########################
 
@@ -263,18 +151,8 @@ type Video @entity {
   "License under the video is published"
   license: License
 
-  ### Media asset ###
-
-  # Reference to video asset
-
-  "Asset's data object"
-  mediaDataObject: DataObject
-
-  "URLs where the asset content can be accessed (if any)"
-  mediaUrls: [String!]
-
-  "Availability meta information"
-  mediaAvailability: AssetAvailability!
+  "Video media asset"
+  media: Asset
 
   ##########################
 
@@ -301,7 +179,7 @@ type VideoMediaMetadata @entity {
   pixelHeight: Int
 
   "Video media size in bytes"
-  size: Int
+  size: BigInt
 
   video: Video @derivedFrom(field: "mediaMetadata")
 
@@ -331,36 +209,4 @@ type License @entity {
 
   "Custom license content"
   custom_text: String
-}
-
-enum WorkerType {
-  GATEWAY
-  STORAGE
-}
-
-type Worker @entity {
-  "Unique identifier"
-  id: ID!
-
-  "Sign of worker still being active"
-  isActive: Boolean!
-
-  "Runtime identifier"
-  workerId: String!
-
-  "Associated working group"
-  type: WorkerType!
-
-  "Custom metadata set by provider"
-  metadata: String
-
-  dataObjects: [DataObject!]! @derivedFrom(field: "liaison")
-}
-
-type NextEntityId @entity {
-  "Unique identifier"
-  id: ID!
-
-  "Next deterministic id for entities without custom id"
-  nextId: Int!
 }
