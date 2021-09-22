@@ -84,7 +84,7 @@ export interface IReadProtobufArguments {
 
 export interface IReadProtobufArgumentsWithAssets extends IReadProtobufArguments {
   assets: NewAsset[] // assets provided in event
-  contentOwner: typeof DataObjectOwner
+  ChannelOwner: typeof DataObjectOwner
 }
 
 /*
@@ -232,7 +232,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assets: parameters.assets,
         db: parameters.db,
         event: parameters.event,
-        contentOwner: parameters.contentOwner,
+        ChannelOwner: parameters.ChannelOwner,
       })
       integrateAsset('coverPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.coverPhoto
@@ -245,7 +245,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assets: parameters.assets,
         db: parameters.db,
         event: parameters.event,
-        contentOwner: parameters.contentOwner,
+        ChannelOwner: parameters.ChannelOwner,
       })
       integrateAsset('avatarPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.avatarPhoto
@@ -305,7 +305,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assets: parameters.assets,
         db: parameters.db,
         event: parameters.event,
-        contentOwner: parameters.contentOwner,
+        ChannelOwner: parameters.ChannelOwner,
       })
       integrateAsset('thumbnailPhoto', result, asset) // changes `result` inline!
       delete metaAsObject.thumbnailPhoto
@@ -318,7 +318,7 @@ export async function readProtobufWithAssets<T extends Channel | Video>(
         assets: parameters.assets,
         db: parameters.db,
         event: parameters.event,
-        contentOwner: parameters.contentOwner,
+        ChannelOwner: parameters.ChannelOwner,
       })
       integrateAsset('media', result, asset) // changes `result` inline!
       delete metaAsObject.video
@@ -447,7 +447,7 @@ interface IConvertAssetParameters {
   rawAsset: NewAsset
   db: DatabaseManager
   event: SubstrateEvent
-  contentOwner: typeof DataObjectOwner
+  ChannelOwner: typeof DataObjectOwner
 }
 
 /*
@@ -469,7 +469,7 @@ async function convertAsset(parameters: IConvertAssetParameters): Promise<AssetS
     parameters.db,
     contentParameters,
     parameters.event,
-    parameters.contentOwner
+    parameters.ChannelOwner
   )
 
   return dataObject
@@ -480,7 +480,7 @@ interface IExtractAssetParameters {
   assets: NewAsset[]
   db: DatabaseManager
   event: SubstrateEvent
-  contentOwner: typeof DataObjectOwner
+  ChannelOwner: typeof DataObjectOwner
 }
 
 /*
@@ -506,7 +506,7 @@ async function extractAsset(parameters: IExtractAssetParameters): Promise<Proper
     rawAsset: parameters.assets[parameters.assetIndex],
     db: parameters.db,
     event: parameters.event,
-    contentOwner: parameters.contentOwner,
+    ChannelOwner: parameters.ChannelOwner,
   })
 
   return PropertyChange.newChange(asset)
