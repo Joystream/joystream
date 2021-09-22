@@ -81,7 +81,7 @@ pub use crate::proposal_types::{
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
-const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
+const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 50_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
 // Max validator count for the 'set validator count' proposal
