@@ -81,9 +81,6 @@ pub trait Trait:
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
 
-    /// Type of identifier for Channels
-    type SeriesId: NumericIdentifier;
-
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 }
@@ -153,7 +150,7 @@ pub struct ChannelCategoryUpdateParameters {
     new_meta: Vec<u8>,
 }
 
-/// Type representing an owned channel which videos, playlists, and series can belong to.
+/// Type representing an owned channel which videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
@@ -175,31 +172,6 @@ pub struct ChannelRecord<MemberId, CuratorGroupId, AccountId> {
 pub type Channel<T> = ChannelRecord<
     <T as membership::Trait>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as frame_system::Trait>::AccountId,
->;
-
-/// A request to buy a channel by a new ChannelOwner.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelOwnershipTransferRequestRecord<
-    ChannelId,
-    MemberId,
-    CuratorGroupId,
-    Balance,
-    AccountId,
-> {
-    channel_id: ChannelId,
-    new_owner: ChannelOwner<MemberId, CuratorGroupId>,
-    payment: Balance,
-    new_reward_account: Option<AccountId>,
-}
-
-// ChannelOwnershipTransferRequest type alias for simplification.
-pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
-    <T as storage::Trait>::ChannelId,
-    <T as membership::Trait>::MemberId,
-    <T as ContentActorAuthenticator>::CuratorGroupId,
-    BalanceOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
 
@@ -292,80 +264,18 @@ pub struct VideoUpdateParametersRecord<NewAssets> {
 
 type VideoUpdateParameters<T> = VideoUpdateParametersRecord<NewAssets<T>>;
 
-/// A video which belongs to a channel. A video may be part of a series or playlist.
+/// A video which belongs to a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, SeriesId, DataObjectId: Ord> {
+pub struct VideoRecord<ChannelId, DataObjectId: Ord> {
     pub in_channel: ChannelId,
-    // keep track of which season the video is in if it is an 'episode'
-    // - prevent removing a video if it is in a season (because order is important)
-    pub in_series: Option<SeriesId>,
     /// Whether the curators have censored the video or not.
     pub is_censored: bool,
     /// storage parameters used during deletion
     pub maybe_data_objects_id_set: Option<BTreeSet<DataObjectId>>,
 }
 
-type Video<T> = VideoRecord<
-    <T as storage::Trait>::ChannelId,
-    <T as Trait>::SeriesId,
-    <T as storage::Trait>::DataObjectId,
->;
-
-/// Information about the episode being created or updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum EpisodeParameters<VideoId, NewAssets> {
-    /// A new video is being added as the episode.
-    NewVideo(VideoCreationParametersRecord<NewAssets>),
-    /// An existing video is being made into an episode.
-    ExistingVideo(VideoId),
-}
-
-/// Information about the season being created or updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeasonParameters<VideoId, NewAssets> {
-    /// Season assets referenced by metadata
-    assets: Option<NewAssets>,
-    // ?? It might just be more straighforward to always provide full list of episodes at cost of larger tx.
-    /// If set, updates the episodes of a season. Extends the number of episodes in a season
-    /// when length of new_episodes is greater than previously set. Last elements must all be
-    /// 'Some' in that case.
-    /// Will truncate existing season when length of new_episodes is less than previously set.
-    episodes: Option<Vec<Option<EpisodeParameters<VideoId, NewAssets>>>>,
-
-    meta: Option<Vec<u8>>,
-}
-
-/// Information about the series being created or updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct SeriesParameters<VideoId, NewAssets> {
-    /// Series assets referenced by metadata
-    assets: Option<NewAssets>,
-    // ?? It might just be more straighforward to always provide full list of seasons at cost of larger tx.
-    /// If set, updates the seasons of a series. Extend a series when length of seasons is
-    /// greater than previoulsy set. Last elements must all be 'Some' in that case.
-    /// Will truncate existing series when length of seasons is less than previously set.
-    seasons: Option<Vec<Option<SeasonParameters<VideoId, NewAssets>>>>,
-    meta: Option<Vec<u8>>,
-}
-
-/// A season is an ordered list of videos (episodes).
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Season<VideoId> {
-    episodes: Vec<VideoId>,
-}
-
-/// A series is an ordered list of seasons that belongs to a channel.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Series<ChannelId, VideoId> {
-    in_channel: ChannelId,
-    seasons: Vec<Season<VideoId>>,
-}
+type Video<T> = VideoRecord<<T as storage::Trait>::ChannelId, <T as storage::Trait>::DataObjectId>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
@@ -377,8 +287,6 @@ decl_storage! {
 
         pub VideoCategoryById get(fn video_category_by_id): map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
 
-        pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
@@ -386,8 +294,6 @@ decl_storage! {
         pub NextVideoCategoryId get(fn next_video_category_id) config(): T::VideoCategoryId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
-
-        pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -883,9 +789,6 @@ decl_module! {
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
-                // keep track of which season the video is in if it is an 'episode'
-                // - prevent removing a video if it is in a season (because order is important)
-                in_series: None,
                 /// Whether the curators have censored the video or not.
                 is_censored: false,
                 /// storage parameters for later storage deletion
@@ -972,8 +875,6 @@ decl_module! {
                 // The channel owner will be..
                 &channel.owner,
             )?;
-
-            Self::ensure_video_can_be_removed(&video)?;
 
             // If video is on storage, remove it
             if let Some(data_objects_id_set) = video.maybe_data_objects_id_set {
@@ -1148,12 +1049,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::VideoDoesNotExist
         );
         Ok(VideoById::<T>::get(video_id))
-    }
-
-    // Ensure given video is not in season
-    fn ensure_video_can_be_removed(video: &Video<T>) -> DispatchResult {
-        ensure!(video.in_series.is_none(), Error::<T>::VideoInSeason);
-        Ok(())
     }
 
     fn ensure_channel_category_exists(
