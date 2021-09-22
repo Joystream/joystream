@@ -18,7 +18,7 @@ import NodeCache from 'node-cache'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
-const ExpirationPeriod = 30 // minutes
+const ExpirationPeriod = 30
 
 // Local in-memory cache for data
 const dataCache = new NodeCache({

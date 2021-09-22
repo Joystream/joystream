@@ -59,7 +59,7 @@ export class DownloadFileTask implements SyncTask {
   constructor(baseUrl: string, id: string, uploadsDirectory: string) {
     this.id = id
     this.uploadsDirectory = uploadsDirectory
-    this.url = urljoin(baseUrl, 'api/v1/files', id)
+    this.url = urljoin('http://', baseUrl, 'api/v1/files', id)
   }
 
   description(): string {
