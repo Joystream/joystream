@@ -26,8 +26,9 @@ pub type VideoCategoryId = <Test as Trait>::VideoCategoryId;
 pub type ChannelCategoryId = <Test as Trait>::ChannelCategoryId;
 type ChannelOwnershipTransferRequestId = <Test as Trait>::ChannelOwnershipTransferRequestId;
 
-/// Origins
+pub const REWARD_ACCOUNT_ID: u64 = 25;
 
+/// Origins
 pub const LEAD_ORIGIN: u64 = 1;
 
 pub const FIRST_CURATOR_ORIGIN: u64 = 2;
@@ -714,7 +715,7 @@ pub fn create_simple_channel_and_video(sender: u64, member_id: u64) {
         ChannelCreationParametersRecord {
             assets: NewAssets::<Test>::Urls(vec![]),
             meta: vec![],
-            reward_account: None,
+            reward_account: Some(REWARD_ACCOUNT_ID),
         },
         Ok(()),
     );
