@@ -433,14 +433,9 @@ parameter_types! {
 
 impl content::Trait for Runtime {
     type Event = Event;
-    type ChannelOwnershipPaymentEscrowId = ChannelOwnershipPaymentEscrowId;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type VideoCategoryId = VideoCategoryId;
-    type PlaylistId = PlaylistId;
-    type PersonId = PersonId;
-    type SeriesId = SeriesId;
-    type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
 }
