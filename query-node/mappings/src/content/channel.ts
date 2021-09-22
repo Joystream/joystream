@@ -13,6 +13,7 @@ import {
   convertContentActorToChannelOwner,
   convertContentActorToDataObjectOwner,
 } from './utils'
+import { disconnectDataObjectRelations } from '../storage'
 
 import { Channel, ChannelCategory, DataObject, AssetAvailability } from 'query-node'
 import { inconsistentState, logger } from '../common'
@@ -127,6 +128,10 @@ export async function content_ChannelAssetsRemoved(db: DatabaseManager, event: S
 
   // delete assets
   for (const asset of assets) {
+    // ensure dataObject is nowhere used to prevent db constraint error
+    await disconnectDataObjectRelations(db, asset)
+
+    // remove data object
     await db.remove<DataObject>(asset)
   }
 
