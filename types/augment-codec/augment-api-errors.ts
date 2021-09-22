@@ -91,6 +91,14 @@ declare module '@polkadot/api/types/errors' {
        **/
       CategoryDoesNotExist: AugmentedError<ApiType>;
       /**
+       * Channel Contains Assets
+       **/
+      ChannelContainsAssets: AugmentedError<ApiType>;
+      /**
+       * Channel Contains Video
+       **/
+      ChannelContainsVideos: AugmentedError<ApiType>;
+      /**
        * Channel does not exist
        **/
       ChannelDoesNotExist: AugmentedError<ApiType>;
@@ -127,6 +135,10 @@ declare module '@polkadot/api/types/errors' {
        **/
       FeatureNotImplemented: AugmentedError<ApiType>;
       /**
+       * Channel assets feasibility
+       **/
+      InvalidAssetsProvided: AugmentedError<ApiType>;
+      /**
        * Lead authentication failed
        **/
       LeadAuthFailed: AugmentedError<ApiType>;
@@ -134,6 +146,10 @@ declare module '@polkadot/api/types/errors' {
        * Member authentication failed
        **/
       MemberAuthFailed: AugmentedError<ApiType>;
+      /**
+       * No assets to be removed have been specified
+       **/
+      NoAssetsSpecified: AugmentedError<ApiType>;
       /**
        * Video does not exist
        **/
