@@ -46,10 +46,10 @@ fn sell_nft() {
             Content::video_by_id(video_id).nft_status,
             Some(OwnedNFT {
                 transactional_status: TransactionalStatus::BuyNow(
-                    price,
+                    cost,
                 ),
                 ..
-            })
+            }) if price == cost
         ));
 
         let sell_order_made_event = get_test_event(RawEvent::NFTSellOrderMade(
@@ -70,6 +70,8 @@ fn sell_nft_video_does_not_exist() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
+
+        let price = 100;
 
         // Make an attempt to sell nft which corresponding video does not exist yet
         let sell_nft_result = Content::sell_nft(
@@ -94,6 +96,8 @@ fn sell_nft_not_issued() {
 
         create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
 
+        let price = 100;
+
         // Make an attempt to sell nft which is not issued yet
         let sell_nft_result = Content::sell_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -116,6 +120,8 @@ fn sell_nft_auth_failed() {
         let video_id = NextVideoId::<Test>::get();
 
         create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+
+        let price = 100;
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -160,6 +166,8 @@ fn sell_nft_not_authorized() {
             None
         ));
 
+        let price = 100;
+
         // Make an attempt to sell nft if actor is not authorized
         let sell_nft_result = Content::sell_nft(
             Origin::signed(FIRST_MEMBER_ORIGIN),
@@ -201,6 +209,8 @@ fn sell_nft_transactional_status_is_not_idle() {
             SECOND_MEMBER_ID,
             None,
         ));
+
+        let price = 100;
 
         // Make an attempt to sell nft when it is already offered
         let sell_nft_result = Content::sell_nft(
