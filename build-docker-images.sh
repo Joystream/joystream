@@ -28,8 +28,8 @@ else
   fi
 fi
 
-# Build joystream/apps docker image
-echo "Building 'joystream/apps' docker image..."
+# Build colossus docker image
+echo "Building colossus docker image..."
 docker-compose build colossus
 
 # Build the pioneer docker image
