@@ -120,7 +120,7 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/infrastructure/single-instance-docker.yml
+          template: devops/infrastructure/cloudformation/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=t4g.xlarge'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}

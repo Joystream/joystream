@@ -23,13 +23,13 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
-# # Deploy the CloudFormation template
+# Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying single node ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
   --stack-name $SINGLE_NODE_STACK_NAME \
-  --template-file single-instance.yml \
+  --template-file cloudformation/single-instance.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \

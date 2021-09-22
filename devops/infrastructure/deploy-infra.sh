@@ -29,7 +29,7 @@ aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
   --stack-name $NEW_STACK_NAME \
-  --template-file infrastructure.yml \
+  --template-file cloudformation/infrastructure.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
