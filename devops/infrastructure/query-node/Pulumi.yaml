@@ -17,3 +17,6 @@ template:
       description: Path to members.json file for processor initialization
     workersFilePath:
       description: Path to workers.json file for processor initialization
+    indexerURL:
+      description: URL for the indexer endpoint
+      default: 'http://query-node:4000/graphql'

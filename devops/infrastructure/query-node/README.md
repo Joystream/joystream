@@ -38,7 +38,8 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
-    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH> --plaintext isMinikube=true
+    --plaintext workersFilePath=<PATH> --plaintext membersFilePath=<PATH> --plaintext isMinikube=true \
+    --plaintext indexerURL=<URL>
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
