@@ -72,9 +72,6 @@ pub trait Trait:
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
-    /// Channel Transfer Payments Escrow Account seed for ModuleId to compute deterministic AccountId
-    type ChannelOwnershipPaymentEscrowId: Get<[u8; 8]>;
-
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
 
@@ -86,9 +83,6 @@ pub trait Trait:
 
     /// Type of identifier for Channels
     type SeriesId: NumericIdentifier;
-
-    /// Type of identifier for Channel transfer requests
-    type ChannelOwnershipTransferRequestId: NumericIdentifier;
 
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
@@ -376,9 +370,6 @@ decl_storage! {
 
         pub SeriesById get(fn series_by_id): map hasher(blake2_128_concat) T::SeriesId => Series<T::ChannelId, T::VideoId>;
 
-        pub ChannelOwnershipTransferRequestById get(fn channel_ownership_transfer_request_by_id):
-            map hasher(blake2_128_concat) T::ChannelOwnershipTransferRequestId => ChannelOwnershipTransferRequest<T>;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
@@ -388,8 +379,6 @@ decl_storage! {
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
 
         pub NextSeriesId get(fn next_series_id) config(): T::SeriesId;
-
-        pub NextChannelOwnershipTransferRequestId get(fn next_channel_transfer_request_id) config(): T::ChannelOwnershipTransferRequestId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -1202,8 +1191,6 @@ decl_event!(
         VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
-        ChannelOwnershipTransferRequestId = <T as Trait>::ChannelOwnershipTransferRequestId,
-        ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
         IsCensored = bool,
@@ -1231,15 +1218,6 @@ decl_event!(
             IsCensored,
             Vec<u8>, /* rationale */
         ),
-
-        // Channel Ownership Transfers
-        ChannelOwnershipTransferRequested(
-            ContentActor,
-            ChannelOwnershipTransferRequestId,
-            ChannelOwnershipTransferRequest,
-        ),
-        ChannelOwnershipTransferRequestWithdrawn(ContentActor, ChannelOwnershipTransferRequestId),
-        ChannelOwnershipTransferred(ContentActor, ChannelOwnershipTransferRequestId),
 
         // Channel Categories
         ChannelCategoryCreated(
