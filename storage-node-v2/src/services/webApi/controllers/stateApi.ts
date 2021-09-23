@@ -13,7 +13,6 @@ import {
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
-import path from 'path'
 import NodeCache from 'node-cache'
 const fsPromises = fs.promises
 
@@ -153,11 +152,7 @@ async function getCachedLocalDataObjects(uploadsDir: string, tempDirName: string
   const entryName = 'local_data_object'
 
   if (!dataCache.has(entryName)) {
-    let data = await getLocalDataObjects(uploadsDir)
-
-    // Filter temporary directory name.
-    const tempDirectoryName = path.parse(tempDirName).name
-    data = data.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
+    const data = await getLocalDataObjects(uploadsDir, tempDirName)
 
     dataCache.set(entryName, data)
   }

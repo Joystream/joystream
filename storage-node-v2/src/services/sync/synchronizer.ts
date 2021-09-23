@@ -4,7 +4,13 @@ import { SyncTask, DownloadFileTask, DeleteLocalFileTask, PrepareDownloadFileTas
 import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
 import _ from 'lodash'
 import fs from 'fs'
+import path from 'path'
 const fsPromises = fs.promises
+
+/**
+ * Temporary directory name for data uploading.
+ */
+export const TempDirName = 'temp'
 
 /**
  * Runs the data synchronization workflow. It compares the current node's
@@ -30,7 +36,7 @@ export async function performSync(
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
     getStorageObligationsFromRuntime(queryNodeUrl, workerId),
-    getLocalFileNames(uploadDirectory),
+    getLocalDataObjects(uploadDirectory, TempDirName),
   ])
 
   const requiredIds = model.dataObjects.map((obj) => obj.id)
@@ -60,15 +66,6 @@ export async function performSync(
 
   await processSpawner.process()
   logger.info('Sync ended.')
-}
-
-/**
- * Returns file names from the local directory.
- *
- * @param directory - local directory to get file names from
- */
-async function getLocalFileNames(directory: string): Promise<string[]> {
-  return fsPromises.readdir(directory)
 }
 
 /**
@@ -148,8 +145,21 @@ async function getDownloadTasks(
  *
  * @param uploadDirectory - local directory to get file names from
  */
-export async function getLocalDataObjects(uploadDirectory: string): Promise<string[]> {
+export async function getLocalDataObjects(uploadDirectory: string, tempDirName: string): Promise<string[]> {
   const localIds = await getLocalFileNames(uploadDirectory)
 
-  return localIds
+  // Filter temporary directory name.
+  const tempDirectoryName = path.parse(tempDirName).name
+  const data = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
+
+  return data
+}
+
+/**
+ * Returns file names from the local directory.
+ *
+ * @param directory - local directory to get file names from
+ */
+async function getLocalFileNames(directory: string): Promise<string[]> {
+  return fsPromises.readdir(directory)
 }

@@ -3,7 +3,7 @@ import { createApp } from '../services/webApi/app'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import logger, { initElasticLogger } from '../services/logger'
 import { ApiPromise } from '@polkadot/api'
-import { performSync } from '../services/sync/synchronizer'
+import { performSync, TempDirName } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
 import rimraf from 'rimraf'
 import _ from 'lodash'
@@ -77,8 +77,7 @@ export default class Server extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    const tempDirName = 'temp'
-    await removeTempDirectory(flags.uploads, tempDirName)
+    await removeTempDirectory(flags.uploads, TempDirName)
 
     let elasticUrl
     if (!_.isEmpty(flags.elasticSearchHost)) {
@@ -120,7 +119,7 @@ export default class Server extends ApiCommandBase {
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
-        tempDirName,
+        tempDirName: TempDirName,
         process: this.config,
         queryNodeUrl,
         enableUploadingAuth: !flags.disableUploadAuth,
