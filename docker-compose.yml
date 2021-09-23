@@ -36,7 +36,7 @@ services:
       - .env
     environment:
       - COLOSSUS_PORT=3333
-      - QUERY_NODE_HOST=graphql-server-mnt:8081
+      - QUERY_NODE_HOST=graphql-server-mnt:4002
       - WORKER_ID=0
       - ACCOUNT_URI=//Alice
 
