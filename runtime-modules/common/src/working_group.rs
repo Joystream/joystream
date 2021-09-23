@@ -12,6 +12,10 @@ use strum_macros::EnumIter;
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord)]
 pub enum WorkingGroup {
     /* Reserved
+        // working_group::Instance0.
+        Reserved,
+    */
+    /* Reserved
         /// Forum working group: working_group::Instance1.
         Forum,
     */
