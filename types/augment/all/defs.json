@@ -82,12 +82,13 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "Reserved",
-            "Forum",
+            "_Reserved0",
+            "_Reserved1",
             "Storage",
             "Content",
             "Operations",
-            "Gateway"
+            "Gateway",
+            "Distribution"
         ]
     },
     "SlashingTerms": {

@@ -18,6 +18,7 @@
     "types",
     "storage-node-v2",
     "storage-node",
+    "distributor-node",
     "storage-node/packages/*",
     "devops/eslint-config",
     "devops/prettier-config",
@@ -27,7 +28,6 @@
     "query-node",
     "query-node/mappings",
     "query-node/generated/*",
-    "content-metadata-protobuf",
     "metadata-protobuf"
   ],
   "resolutions": {
@@ -43,9 +43,8 @@
     "typescript": "^3.9.7",
     "bn.js": "^5.1.2",
     "rxjs": "^6.6.2",
-    "typeorm": "^0.2.31",
-    "pg": "^8.4.0",
-    "chalk": "^4.0.0"
+    "typeorm": "0.2.34",
+    "pg": "^8.4.0"
   },
   "devDependencies": {
     "eslint": "^7.25.0",

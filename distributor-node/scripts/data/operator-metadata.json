@@ -1,0 +1,12 @@
+{
+  "endpoint": "http://localhost:3334",
+  "location": {
+    "countryCode": "DE",
+    "city": "Berlin",
+    "coordinates": {
+      "latitude": 52.520008,
+      "longitude": 13.404954
+    }
+  },
+  "extra": "Some additional information"
+}

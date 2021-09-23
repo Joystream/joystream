@@ -107,16 +107,18 @@ export class InputValidationLengthConstraint
 }
 
 export const WorkingGroupDef = {
-  Reserved: Null,
-  Forum: Null,
   Storage: Null,
   Content: Null,
   Operations: Null,
   Gateway: Null,
-  // TODO: Distribution
+  Distribution: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
-export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
+export class WorkingGroup extends JoyEnum({
+  _Reserved0: Null,
+  _Reserved1: Null,
+  ...WorkingGroupDef,
+}) {}
 
 // Temporarly in "common", because used both by /working-group and /content-working-group:
 export type ISlashableTerms = {
