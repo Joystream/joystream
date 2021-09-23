@@ -39,7 +39,8 @@ services:
       - QUERY_NODE_HOST=graphql-server-mnt:${GRAPHQL_SERVER_PORT}
       - WORKER_ID=0
       - ACCOUNT_URI=//Alice
-
+      # enable ElasticSearch server
+      # - ELASTIC_SEARCH_HOST=host.docker.internal:9200
   db:
     image: postgres:12
     restart: always

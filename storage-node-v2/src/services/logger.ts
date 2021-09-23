@@ -4,21 +4,28 @@ import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 /**
+ * ElasticSearch server date format.
+ */
+const elasticDateFormat = 'YYYY-MM-DDTHH:mm:ss'
+
+/**
+ * Possible log levels.
+ */
+const levels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
+}
+
+/**
  * Creates basic Winston logger. Console output redirected to the stderr.
  *
  * @returns Winston logger options
  *
  */
 function createDefaultLoggerOptions(): winston.LoggerOptions {
-  // Levels
-  const levels = {
-    error: 0,
-    warn: 1,
-    info: 2,
-    http: 3,
-    debug: 4,
-  }
-
   const level = () => {
     const env = process.env.NODE_ENV || 'development'
     const isDevelopment = env === 'development'
@@ -97,10 +104,7 @@ export function httpLogger(elasticSearchEndpoint?: string): Handler {
 
   const opts: expressWinston.LoggerOptions = {
     transports,
-    format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-      winston.format.json()
-    ),
+    format: winston.format.combine(winston.format.timestamp({ format: elasticDateFormat }), winston.format.json()),
     meta: true,
     msg: 'HTTP {{req.method}} {{req.url}}',
     expressFormat: true,
@@ -158,7 +162,7 @@ function createElasticLogger(elasticSearchEndpoint: string): winston.Logger {
 
   // Formats
   loggerOptions.format = winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+    winston.format.timestamp({ format: elasticDateFormat }),
     winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
   )
 
@@ -200,8 +204,17 @@ export function initElasticLogger(elasticSearchEndpoint: string): void {
  * @returns elastic search winston transport
  */
 function createElasticTransport(elasticSearchEndpoint: string): winston.transport {
+  const possibleLevels = ['warn', 'error', 'debug', 'info']
+
+  let elasticLogLevel = process.env.ELASTIC_LOG_LEVEL ?? ''
+  elasticLogLevel = elasticLogLevel.toLowerCase().trim()
+
+  if (!possibleLevels.includes(elasticLogLevel)) {
+    elasticLogLevel = 'debug' // default
+  }
+
   const esTransportOpts = {
-    level: 'warn',
+    level: elasticLogLevel,
     clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
     index: 'storage-node',
   }

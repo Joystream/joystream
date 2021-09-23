@@ -64,7 +64,9 @@ export default class Server extends ApiCommandBase {
     elasticSearchHost: flags.string({
       char: 'e',
       required: false,
-      description: 'Elasticsearch host and port (e.g.: some.com:8081).',
+      description: `Elasticsearch host and port (e.g.: some.com:8081).
+Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
+Supported values: warn, error, debug, info. Default:debug`,
     }),
     disableUploadAuth: flags.boolean({
       char: 'a',
