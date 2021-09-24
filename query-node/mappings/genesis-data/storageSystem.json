@@ -6,5 +6,6 @@
   "uploadingBlocked": false,
   "dataObjectFeePerMb": 0,
   "storageBucketMaxObjectsCountLimit": 0,
-  "storageBucketMaxObjectsSizeLimit": 0
+  "storageBucketMaxObjectsSizeLimit": 0,
+  "nextDataObjectId": 0
 }

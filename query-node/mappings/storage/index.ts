@@ -27,10 +27,8 @@ import {
   StorageBagStorageAssignment,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, bytesToString } from '../common'
+import { getById } from '../common'
 import { BTreeSet } from '@polkadot/types'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
-import { registry } from '@joystream/types'
 import { In } from 'typeorm'
 import _ from 'lodash'
 import { DataObjectId, BagId, DynamicBagId, StaticBagId } from '@joystream/types/augment/all'
@@ -39,6 +37,7 @@ import {
   processDistributionOperatorMetadata,
   processStorageOperatorMetadata,
 } from './metadata'
+import { createDataObjects, getStorageSystem, removeDataObject } from './utils'
 
 async function getDataObjectsInBag(
   store: DatabaseManager,
@@ -178,15 +177,6 @@ async function getDistributionBucketFamilyWithMetadata(
     throw new Error(`DistributionBucketFamily not found by id: ${id}`)
   }
   return family
-}
-
-async function getStorageSystem(store: DatabaseManager) {
-  const storageSystem = await store.get(StorageSystemParameters, {})
-  if (!storageSystem) {
-    throw new Error('Storage system entity is missing!')
-  }
-
-  return storageSystem
 }
 
 // STORAGE BUCKETS
@@ -366,17 +356,7 @@ export async function storage_DataObjectsUploaded({ event, store }: EventContext
   const [dataObjectIds, uploadParams] = new Storage.DataObjectsUploadedEvent(event).params
   const { bagId, objectCreationList } = uploadParams
   const storageBag = await getBag(store, bagId)
-  const dataObjects = dataObjectIds.map((objectId, i) => {
-    const objectParams = new DataObjectCreationParameters(registry, objectCreationList[i].toJSON() as any)
-    return new StorageDataObject({
-      id: objectId.toString(),
-      isAccepted: false,
-      ipfsHash: bytesToString(objectParams.ipfsContentId),
-      size: new BN(objectParams.getField('size').toString()),
-      storageBag,
-    })
-  })
-  await Promise.all(dataObjects.map((o) => store.save<StorageDataObject>(o)))
+  await createDataObjects(store, objectCreationList, storageBag, dataObjectIds)
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -405,7 +385,7 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId, dataObjectIds] = new Storage.DataObjectsDeletedEvent(event).params
   const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds)
-  await Promise.all(dataObjects.map((o) => store.remove<StorageDataObject>(o)))
+  await Promise.all(dataObjects.map((o) => removeDataObject(store, o)))
 }
 
 // DISTRIBUTION FAMILY
