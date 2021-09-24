@@ -24,6 +24,7 @@ pub type ActorId<T> = <T as MembershipTypes>::ActorId;
 
 /// HTTP Url string
 pub type Url = Vec<u8>;
+pub type AssetUrls = Vec<Url>;
 
 /// Generic trait for membership dependent pallets.
 pub trait MembershipTypes: frame_system::Trait {
@@ -56,17 +57,6 @@ pub trait MembershipTypes: frame_system::Trait {
 pub trait StorageOwnership {
     /// Channel id representation.
     type ChannelId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + PartialEq;
-
-    /// DAO id representation.
-    type DAOId: Parameter
         + Member
         + BaseArithmetic
         + Codec

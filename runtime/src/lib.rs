@@ -75,7 +75,6 @@ pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
 pub use working_group;
 
-use common::storage::{ContentParameters, StorageObjectOwner};
 pub use content;
 pub use content::MaxNumber;
 
@@ -443,38 +442,6 @@ impl content::Trait for Runtime {
     type SeriesId = SeriesId;
     type ChannelOwnershipTransferRequestId = ChannelOwnershipTransferRequestId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-    type StorageSystem = (); // TODO: Add storage integration
-}
-
-// TODO: Remove after the integration with the Content pallet.
-impl common::storage::StorageSystem<Runtime> for () {
-    fn atomically_add_content(
-        _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
-        _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,
-    ) -> sp_runtime::DispatchResult {
-        todo!()
-    }
-
-    fn can_add_content(
-        _: StorageObjectOwner<MemberId, ChannelId, DAOId>,
-        _: Vec<ContentParameters<ContentId, DataObjectTypeId>>,
-    ) -> sp_runtime::DispatchResult {
-        todo!()
-    }
-
-    fn atomically_remove_content(
-        _: &StorageObjectOwner<MemberId, ChannelId, DAOId>,
-        _: &[ContentId],
-    ) -> sp_runtime::DispatchResult {
-        todo!()
-    }
-
-    fn can_remove_content(
-        _: &StorageObjectOwner<MemberId, ChannelId, DAOId>,
-        _: &[ContentId],
-    ) -> sp_runtime::DispatchResult {
-        todo!()
-    }
 }
 
 impl hiring::Trait for Runtime {
@@ -531,7 +498,6 @@ impl common::MembershipTypes for Runtime {
 
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
-    type DAOId = DAOId;
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }
@@ -723,6 +689,7 @@ impl storage::Trait for Runtime {
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
+    type ContentId = ContentId;
 
     fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
         StorageWorkingGroup::ensure_origin_is_active_leader(origin)
