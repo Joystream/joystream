@@ -334,12 +334,30 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId] = new Storage.DynamicBagCreatedEvent(event).params
+  const [bagId, , storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
   })
+  const storageAssignments = Array.from(storageBucketIdsSet).map(
+    (bucketId) =>
+      new StorageBagStorageAssignment({
+        id: `${storageBag.id}-${bucketId.toString()}`,
+        storageBag,
+        storageBucket: new StorageBucket({ id: bucketId.toString() }),
+      })
+  )
+  const distributionAssignments = Array.from(distributionBucketIdsSet).map(
+    (bucketId) =>
+      new StorageBagDistributionAssignment({
+        id: `${storageBag.id}-${bucketId.toString()}`,
+        storageBag,
+        distributionBucket: new DistributionBucket({ id: bucketId.toString() }),
+      })
+  )
   await store.save<StorageBag>(storageBag)
+  await Promise.all(storageAssignments.map((a) => store.save<StorageBagStorageAssignment>(a)))
+  await Promise.all(distributionAssignments.map((a) => store.save<StorageBagDistributionAssignment>(a)))
 }
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
