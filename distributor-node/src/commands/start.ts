@@ -10,7 +10,7 @@ export default class StartNode extends DefaultCommandBase {
 
   async run(): Promise<void> {
     const app = new App(this.appConfig)
-    app.start()
+    await app.start()
   }
 
   async finally(): Promise<void> {

@@ -49,13 +49,12 @@ export class NetworkingService {
     this.logging = logging
     this.stateCache = stateCache
     this.logger = logging.createLogger('NetworkingManager')
-    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode)
+    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     // this.runtimeApi = new RuntimeApi(config.endpoints.substrateNode)
-    this.checkActiveStorageNodeEndpoints()
-    this.storageNodeEndpointsCheckInterval = setInterval(
-      this.checkActiveStorageNodeEndpoints.bind(this),
-      STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS
-    )
+    void this.checkActiveStorageNodeEndpoints()
+    this.storageNodeEndpointsCheckInterval = setInterval(async () => {
+      await this.checkActiveStorageNodeEndpoints()
+    }, STORAGE_NODE_ENDPOINTS_CHECK_INTERVAL_MS)
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
       'end',
@@ -307,20 +306,24 @@ export class NetworkingService {
   }
 
   async checkActiveStorageNodeEndpoints(): Promise<void> {
-    const activeStorageOperators = await this.queryNodeApi.getActiveStorageBucketOperatorsData()
-    const endpoints = this.filterStorageNodeEndpoints(
-      activeStorageOperators.map(({ id, operatorMetadata }) => ({
-        bucketId: id,
-        endpoint: operatorMetadata!.nodeEndpoint!,
-      }))
-    )
-    this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })
+    try {
+      const activeStorageOperators = await this.queryNodeApi.getActiveStorageBucketOperatorsData()
+      const endpoints = this.filterStorageNodeEndpoints(
+        activeStorageOperators.map(({ id, operatorMetadata }) => ({
+          bucketId: id,
+          endpoint: operatorMetadata!.nodeEndpoint!,
+        }))
+      )
+      this.logger.verbose('Checking nearby storage nodes...', { validEndpointsCount: endpoints.length })
 
-    endpoints.forEach(({ endpoint }) =>
-      this.testLatencyQueue.push(async () => {
-        await this.checkResponseTime(endpoint)
-      })
-    )
+      endpoints.forEach(({ endpoint }) =>
+        this.testLatencyQueue.push(async () => {
+          await this.checkResponseTime(endpoint)
+        })
+      )
+    } catch (err) {
+      this.logger.error("Couldn't check active storage node endpooints", { err })
+    }
   }
 
   async checkResponseTime(endpoint: string): Promise<void> {

@@ -7,7 +7,7 @@ import { schemas } from './schemas'
 const prettierConfig = require('@joystream/prettier-config')
 
 Object.entries(schemas).forEach(([schemaKey, schema]) => {
-  compile(schema, `${schemaKey}Json`, { style: prettierConfig }).then((output) =>
-    fs.writeFileSync(path.resolve(__dirname, `../../types/generated/${schemaKey}Json.d.ts`), output)
-  )
+  compile(schema, `${schemaKey}Json`, { style: prettierConfig })
+    .then((output) => fs.writeFileSync(path.resolve(__dirname, `../../types/generated/${schemaKey}Json.d.ts`), output))
+    .catch(console.error)
 })

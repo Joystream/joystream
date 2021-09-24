@@ -52,11 +52,16 @@ export class App {
 
   public async start(): Promise<void> {
     this.logger.info('Starting the app')
-    this.checkConfigDirectories()
-    this.stateCache.load()
-    const dataObjects = await this.networking.fetchSupportedDataObjects()
-    await this.content.startupInit(dataObjects)
-    this.server.start()
+    try {
+      this.checkConfigDirectories()
+      this.stateCache.load()
+      const dataObjects = await this.networking.fetchSupportedDataObjects()
+      await this.content.startupInit(dataObjects)
+      this.server.start()
+    } catch (err) {
+      this.logger.error('Node initialization failed!', { err })
+      process.exit(-1)
+    }
     nodeCleanup(this.exitHandler.bind(this))
   }
 
@@ -64,11 +69,6 @@ export class App {
     // Async exit handler - ideally should not take more than 10 sec
     // We can try to wait until some pending downloads are finished here etc.
     this.logger.info('Graceful exit initialized')
-
-    // Stop accepting any new requests and save cache
-    this.server.stop()
-    this.stateCache.clearInterval()
-    this.stateCache.saveSync()
 
     // Try to process remaining downloads
     const MAX_RETRY_ATTEMPTS = 3
@@ -95,17 +95,19 @@ export class App {
   }
 
   private exitCritically(): void {
-    this.logger.info('Critical exit initialized')
-    // Handling exits due to an error - only some critical, synchronous work can be done here
-    this.server.stop()
-    this.stateCache.clearInterval()
-    this.stateCache.saveSync()
+    // Some additional synchronous work if required...
     this.logger.info('Critical exit finished')
   }
 
   private exitHandler(exitCode: number | null, signal: string | null): boolean | undefined {
-    this.logger.info('Exiting')
+    this.logger.info('Exiting...')
+    // Clear intervals
     this.stateCache.clearInterval()
+    this.networking.clearIntervals()
+    // Stop the server
+    this.server.stop()
+    // Save cache
+    this.stateCache.saveSync()
     if (signal) {
       // Async exit can be executed
       this.exitGracefully()
