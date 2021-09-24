@@ -46,13 +46,16 @@ docker-compose up -d graphql-server-mnt
 
 ## Storage Infrastructure
 docker-compose up -d colossus
+
+docker-compose up -d distributor-node
+
 # # Create a new content directory lead
 # yarn workspace api-scripts initialize-content-lead
 
 # # Set sudo as the membership screening authority
 # yarn workspace api-scripts set-sudo-as-screening-auth
 
-docker-compose up -d pioneer
+# docker-compose up -d pioneer
 
 echo "use Ctrl+C to shutdown the development network."
 

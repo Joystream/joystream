@@ -1,7 +1,7 @@
 # Compiles new joystream/node and joystream/apps images if local images not found
 # and runs a complete joystream development network
 # To prevent build of docker images run docker-compose with "--no-build" arg
-version: "3.4"
+version: '3.4'
 services:
   joystream-node:
     image: joystream/node:latest
@@ -15,8 +15,8 @@ services:
       - /data
     command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Unsafe --rpc-cors=all --log runtime --base-path /data
     ports:
-      - "127.0.0.1:9944:9944"
-      - "127.0.0.1:9933:9933"
+      - '127.0.0.1:9944:9944'
+      - '127.0.0.1:9933:9933'
 
   colossus:
     image: joystream/colossus:latest
@@ -46,6 +46,8 @@ services:
     build:
       context: .
       dockerfile: distributor-node.Dockerfile
+    depends_on:
+      - graphql-server-mnt
     volumes:
       - /data
       - /cache
@@ -68,13 +70,13 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__KEYS: "[\"//Bob\"]"
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[1,2]"
     #   JOYSTREAM_DISTRIBUTOR__WORKER_ID: 0
-    command: ["start"]
+    command: ['start']
 
   db:
     image: postgres:12
     restart: always
     ports:
-      - "127.0.0.1:${DB_PORT}:5432"
+      - '127.0.0.1:${DB_PORT}:5432'
     volumes:
       - /var/lib/postgresql/data
     env_file:
@@ -98,10 +100,10 @@ services:
       # relative to working directory where docker-compose was run from
       - .env
     ports:
-      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
+      - '127.0.0.1:8081:${GRAPHQL_SERVER_PORT}'
     depends_on:
       - db
-    command: ["workspace", "query-node-root", "query-node:start:prod"]
+    command: ['workspace', 'query-node-root', 'query-node:start:prod']
 
   graphql-server-mnt:
     image: node:14
@@ -110,7 +112,7 @@ services:
       # relative to working directory where docker-compose was run from
       - .env
     ports:
-      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
+      - '127.0.0.1:8081:${GRAPHQL_SERVER_PORT}'
     depends_on:
       - db
     volumes:
@@ -118,7 +120,7 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ["yarn", "workspace", "query-node-root", "query-node:start:prod"]
+    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
 
   processor:
     image: joystream/apps
@@ -141,7 +143,7 @@ services:
       - ./types/augment/all/defs.json:/joystream/query-node/mappings/lib/generated/types/typedefs.json
     depends_on:
       - hydra-indexer-gateway
-    command: ["workspace", "query-node-root", "processor:start"]
+    command: ['workspace', 'query-node-root', 'processor:start']
 
   processor-mnt:
     image: node:14
@@ -160,7 +162,7 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ["yarn", "workspace", "query-node-root", "processor:start"]
+    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
     image: joystream/hydra-indexer:3.0.0
@@ -198,7 +200,7 @@ services:
       - PORT=${WARTHOG_APP_PORT}
       - DEBUG=*
     ports:
-      - "127.0.0.1:4000:${WARTHOG_APP_PORT}"
+      - '127.0.0.1:4000:${WARTHOG_APP_PORT}'
     depends_on:
       - redis
       - db
@@ -208,7 +210,7 @@ services:
     image: redis:6.0-alpine
     restart: always
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
 
   pioneer:
     image: joystream/pioneer
@@ -216,4 +218,4 @@ services:
       context: .
       dockerfile: pioneer.Dockerfile
     ports:
-      - "127.0.0.1:3000:80"
+      - '127.0.0.1:3000:80'

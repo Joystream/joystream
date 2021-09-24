@@ -32,6 +32,10 @@ fi
 echo "Building colossus docker image..."
 docker-compose build colossus
 
+# Build distributor docker image
+echo "Building distributor docker image..."
+docker-compose build distributor-node
+
 # Build the pioneer docker image
-echo "Building pioneer docker image"
-docker-compose build pioneer
+# echo "Building pioneer docker image"
+# docker-compose build pioneer
