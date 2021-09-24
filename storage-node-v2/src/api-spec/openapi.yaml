@@ -31,7 +31,7 @@ paths:
         - name: id
           required: true
           in: path
-          description: Content ID
+          description: Data object ID
           schema:
             type: string
       responses:
@@ -83,7 +83,7 @@ paths:
         - name: id
           required: true
           in: path
-          description: Content ID
+          description: Data object ID
           schema:
             type: string
       responses:
