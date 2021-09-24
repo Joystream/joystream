@@ -279,7 +279,7 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSe
     /// If set, updates the reward account of the channel
     reward_account: Option<AccountId>,
     /// collaborator set
-    maybe_collaborators: Option<CollaboratorsSetType>,
+    new_collaborators: Option<CollaboratorsSetType>,
 }
 
 /// A category that videos can belong to.
@@ -748,7 +748,7 @@ decl_module! {
             })?;
 
             // maybe update collaborators set
-            channel.collaborators = params.maybe_collaborators.as_ref().map_or(
+            channel.collaborators = params.new_collaborators.as_ref().map_or(
                 Ok(channel.collaborators),
                 |collaborators| {
                     match &actor {

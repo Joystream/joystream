@@ -125,7 +125,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                new_collaborators: None,
             }
         ));
 
@@ -138,7 +138,7 @@ fn curator_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                new_collaborators: None,
             }
         ));
     })
@@ -251,7 +251,7 @@ fn member_owned_channels() {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                new_collaborators: None,
             },
         ));
 
@@ -273,7 +273,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    new_collaborators: None,
                 }
             ))
         );
@@ -291,7 +291,7 @@ fn member_owned_channels() {
                     assets: assets.clone(),
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    new_collaborators: None,
                 },
             ),
             Error::<Test>::ActorNotAuthorized
@@ -307,7 +307,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
-                    maybe_collaborators: None,
+                    new_collaborators: None,
                 },
             ),
             Error::<Test>::ActorNotAuthorized,
@@ -323,7 +323,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: Some(
+                    new_collaborators: Some(
                         array::IntoIter::new([COLLABORATOR_MEMBER_ID]).collect()
                     ),
                 },
@@ -340,7 +340,7 @@ fn member_owned_channels() {
                 assets: assets.clone(),
                 new_meta: None,
                 reward_account: None,
-                maybe_collaborators: None,
+                new_collaborators: None,
             },
         ));
 
@@ -362,7 +362,7 @@ fn member_owned_channels() {
                     assets: assets,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    new_collaborators: None,
                 }
             ))
         );
@@ -377,7 +377,7 @@ fn member_owned_channels() {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
-                    maybe_collaborators: None,
+                    new_collaborators: None,
                 }
             ),
             Error::<Test>::ActorNotAuthorized
