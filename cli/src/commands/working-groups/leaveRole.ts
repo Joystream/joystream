@@ -3,6 +3,7 @@ import { apiModuleByGroup } from '../../Api'
 import { minMaxStr } from '../../validators/common'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'
+import { Bytes } from '@polkadot/types'
 
 export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
   static description = 'Leave the worker or lead role associated with currently selected account.'
@@ -17,7 +18,10 @@ export default class WorkingGroupsLeaveRole extends WorkingGroupsCommandBase {
 
     const constraint = await this.getApi().workerExitRationaleConstraint(this.group)
     const rationaleValidator = minMaxStr(constraint.min.toNumber(), constraint.max.toNumber())
-    const rationale = await this.promptForParam('Bytes', createParamOptions('rationale', undefined, rationaleValidator))
+    const rationale = (await this.promptForParam(
+      'Bytes',
+      createParamOptions('rationale', undefined, rationaleValidator)
+    )) as Bytes
 
     await this.requestAccountDecoding(account)
 

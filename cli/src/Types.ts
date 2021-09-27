@@ -1,16 +1,16 @@
 import BN from 'bn.js'
 import { ElectionStage, Seat } from '@joystream/types/council'
-import { Option } from '@polkadot/types'
+import { Option, bool } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { WorkerId, OpeningType } from '@joystream/types/working-group'
 import { Membership, MemberId } from '@joystream/types/members'
-import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
+import { Opening, StakingPolicy, ApplicationStage } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
-import { ContentId, ContentParameters } from '@joystream/types/content'
-
+import { ApiPromise } from '@polkadot/api'
+import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
 import { JSONSchema7, JSONSchema7Definition } from 'json-schema'
 import {
   IChannelCategoryMetadata,
@@ -18,6 +18,7 @@ import {
   IVideoCategoryMetadata,
   IVideoMetadata,
 } from '@joystream/metadata-protobuf'
+import { DataObjectCreationParameters } from '@joystream/types/storage'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -33,43 +34,21 @@ export type AccountSummary = {
   balances: DeriveBalancesAll
 }
 
-// This function allows us to easily transform the tuple into the object
-// and simplifies the creation of consitent Object and Tuple types (seen below).
-export function createCouncilInfoObj(
-  activeCouncil: Seat[],
-  termEndsAt: BlockNumber,
-  autoStart: boolean,
-  newTermDuration: BN,
-  candidacyLimit: BN,
-  councilSize: BN,
-  minCouncilStake: Balance,
-  minVotingStake: Balance,
-  announcingPeriod: BlockNumber,
-  votingPeriod: BlockNumber,
-  revealingPeriod: BlockNumber,
-  round: BN,
+export type CouncilInfo = {
+  activeCouncil: Seat[]
+  termEndsAt: BlockNumber
+  autoStart: bool
+  newTermDuration: BN
+  candidacyLimit: BN
+  councilSize: BN
+  minCouncilStake: Balance
+  minVotingStake: Balance
+  announcingPeriod: BlockNumber
+  votingPeriod: BlockNumber
+  revealingPeriod: BlockNumber
+  round: BN
   stage: Option<ElectionStage>
-) {
-  return {
-    activeCouncil,
-    termEndsAt,
-    autoStart,
-    newTermDuration,
-    candidacyLimit,
-    councilSize,
-    minCouncilStake,
-    minVotingStake,
-    announcingPeriod,
-    votingPeriod,
-    revealingPeriod,
-    round,
-    stage,
-  }
 }
-// Object/Tuple containing council/councilElection information (council:info).
-// The tuple is useful, because that's how api.queryMulti returns the results.
-export type CouncilInfoTuple = Parameters<typeof createCouncilInfoObj>
-export type CouncilInfoObj = ReturnType<typeof createCouncilInfoObj>
 
 // Object with "name" and "value" properties, used for rendering simple CLI tables like:
 // Total balance:   100 JOY
@@ -122,7 +101,7 @@ export type GroupApplication = {
     role: number
   }
   humanReadableText: string
-  stage: ApplicationStageKeys
+  stage: keyof ApplicationStage['typeDefinitions']
 }
 
 export enum OpeningStatus {
@@ -209,18 +188,21 @@ export type ApiMethodNamedArg = {
 }
 export type ApiMethodNamedArgs = ApiMethodNamedArg[]
 
-// Content-related
-export enum AssetType {
-  AnyAsset = 1,
+// Api without TypeScript augmentations for "query", "tx" and "consts" (useful when more type flexibility is needed)
+export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> & {
+  query: { [key: string]: QueryableModuleStorage<'promise'> }
+  tx: { [key: string]: SubmittableModuleExtrinsics<'promise'> }
+  consts: { [key: string]: QueryableModuleConsts }
 }
 
-export type InputAsset = {
+export type AssetToUpload = {
+  dataObjectId: BN
   path: string
-  contentId: ContentId
 }
 
-export type InputAssetDetails = InputAsset & {
-  parameters: ContentParameters
+export type ResolvedAsset = {
+  path: string
+  parameters: DataObjectCreationParameters
 }
 
 export type VideoFFProbeMetadata = {
@@ -282,4 +264,24 @@ export type JsonSchemaProperties<T> = {
 export type JsonSchema<T> = JSONSchema7 & {
   type: 'object'
   properties: JsonSchemaProperties<T>
+}
+
+// Storage node related types
+
+export type StorageNodeInfo = {
+  bucketId: number
+  apiEndpoint: string
+}
+
+export type TokenRequest = {
+  data: TokenRequestData
+  signature: string
+}
+
+export type TokenRequestData = {
+  memberId: number
+  accountId: string
+  dataObjectId: number
+  storageBucketId: number
+  bagId: string
 }

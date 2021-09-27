@@ -1,17 +1,14 @@
 import BN from 'bn.js'
 import { types } from '@joystream/types/'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { QueryableStorageMultiArg, SubmittableExtrinsic, QueryableStorageEntry } from '@polkadot/api/types'
+import { AugmentedQuery, SubmittableExtrinsic } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import { Balance, Moment, BlockNumber } from '@polkadot/types/interfaces'
+import { Balance, BlockNumber } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Codec, CodecArg } from '@polkadot/types/types'
-import { Option, Vec, UInt, Bytes } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
+import { Option, UInt } from '@polkadot/types'
 import {
   AccountSummary,
-  CouncilInfoObj,
-  CouncilInfoTuple,
-  createCouncilInfoObj,
   WorkingGroups,
   Reward,
   GroupMember,
@@ -22,78 +19,83 @@ import {
   openingPolicyUnstakingPeriodsKeys,
   UnstakingPeriods,
   StakingPolicyUnstakingPeriodKey,
+  UnaugmentedApiPromise,
+  CouncilInfo,
+  StorageNodeInfo,
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
-import ExitCodes from './ExitCodes'
-import {
-  Worker,
-  WorkerId,
-  RoleStakeProfile,
-  Opening as WGOpening,
-  Application as WGApplication,
-  StorageProviderId,
-} from '@joystream/types/working-group'
-import {
-  Opening,
-  Application,
-  OpeningStage,
-  ApplicationStageKeys,
-  ApplicationId,
-  OpeningId,
-  StakingPolicy,
-} from '@joystream/types/hiring'
+import { Worker, WorkerId, RoleStakeProfile, Application as WGApplication } from '@joystream/types/working-group'
+import { Opening, Application, OpeningStage, ApplicationId, OpeningId, StakingPolicy } from '@joystream/types/hiring'
 import { MemberId, Membership } from '@joystream/types/members'
-import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
-import { Stake, StakeId } from '@joystream/types/stake'
+import { RewardRelationshipId } from '@joystream/types/recurring-rewards'
+import { StakeId } from '@joystream/types/stake'
 
-import { InputValidationLengthConstraint, ChannelId, Url } from '@joystream/types/common'
+import { InputValidationLengthConstraint, ChannelId } from '@joystream/types/common'
 import {
   CuratorGroup,
   CuratorGroupId,
   Channel,
   Video,
   VideoId,
-  ChannelCategory,
-  VideoCategory,
   ChannelCategoryId,
   VideoCategoryId,
 } from '@joystream/types/content'
-import _ from 'lodash'
+import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client/core'
+import { Maybe } from './graphql/generated/schema'
+import { Observable } from '@polkadot/x-rxjs'
+import {
+  GetStorageNodesInfoByBagId,
+  GetStorageNodesInfoByBagIdQuery,
+  GetStorageNodesInfoByBagIdQueryVariables,
+} from './graphql/generated/queries'
+import ExitCodes from './ExitCodes'
+import { URL } from 'url'
+import fetch from 'cross-fetch'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
 // Mapping of working group to api module
-export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
+export const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
   [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Operations]: 'operationsWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
   [WorkingGroups.Distribution]: 'distributionWorkingGroup',
-}
+} as const
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
+  private _queryNode?: ApolloClient<NormalizedCacheObject>
+  public isDevelopment = false
 
-  private constructor(originalApi: ApiPromise) {
+  private constructor(
+    originalApi: ApiPromise,
+    isDevelopment: boolean,
+    queryNodeClient?: ApolloClient<NormalizedCacheObject>
+  ) {
+    this.isDevelopment = isDevelopment
     this._api = originalApi
+    this._queryNode = queryNodeClient
   }
 
   public getOriginalApi(): ApiPromise {
     return this._api
   }
 
-  private static async initApi(
-    apiUri: string = DEFAULT_API_URI,
-    metadataCache: Record<string, any>
-  ): Promise<ApiPromise> {
+  // Get api for use-cases where no type augmentations are desirable
+  public getUnaugmentedApi(): UnaugmentedApiPromise {
+    return (this._api as unknown) as UnaugmentedApiPromise
+  }
+
+  private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
     const api = new ApiPromise({ provider: wsProvider, types, metadata: metadataCache })
     await api.isReadyOrError
 
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
-    const [properties] = await Promise.all([api.rpc.system.properties()])
+    const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
     const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
     const tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber()
@@ -104,29 +106,66 @@ export default class Api {
       unit: tokenSymbol,
     })
 
-    return api
+    return { api, properties, chainType }
   }
 
-  static async create(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
-    const originalApi: ApiPromise = await Api.initApi(apiUri, metadataCache)
-    return new Api(originalApi)
-  }
-
-  private queryMultiOnce(queries: Parameters<typeof ApiPromise.prototype.queryMulti>[0]): Promise<Codec[]> {
-    return new Promise((resolve, reject) => {
-      let unsub: () => void
-      this._api
-        .queryMulti(queries, (res) => {
-          // unsub should already be set at this point
-          if (!unsub) {
-            reject(new CLIError('API queryMulti issue - unsub method not set!', { exit: ExitCodes.ApiError }))
-          }
-          unsub()
-          resolve(res)
-        })
-        .then((unsubscribe) => (unsub = unsubscribe))
-        .catch((e) => reject(e))
+  private static async createQueryNodeClient(uri: string) {
+    return new ApolloClient({
+      link: new HttpLink({ uri, fetch }),
+      cache: new InMemoryCache(),
+      defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
+  }
+
+  static async create(
+    apiUri = DEFAULT_API_URI,
+    metadataCache: Record<string, any>,
+    queryNodeUri?: string
+  ): Promise<Api> {
+    const { api, chainType } = await Api.initApi(apiUri, metadataCache)
+    const queryNodeClient = queryNodeUri ? await this.createQueryNodeClient(queryNodeUri) : undefined
+    return new Api(api, chainType.isDevelopment || chainType.isLocal, queryNodeClient)
+  }
+
+  // Query-node: get entity by unique input
+  protected async uniqueEntityQuery<
+    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<Required<QueryT>[keyof QueryT] | null | undefined> {
+    if (!this._queryNode) {
+      return
+    }
+    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+  }
+
+  // Query-node: get entities by "non-unique" input and return first result
+  protected async firstEntityQuery<
+    QueryT extends { [k: string]: unknown[] },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof QueryT
+  ): Promise<QueryT[keyof QueryT][number] | null | undefined> {
+    if (!this._queryNode) {
+      return
+    }
+    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
+  }
+
+  // Query-node: get multiple entities
+  protected async multipleEntitiesQuery<
+    QueryT extends { [k: string]: unknown[] },
+    VariablesT extends Record<string, unknown>
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | undefined> {
+    if (!this._queryNode) {
+      return
+    }
+    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
   }
 
   async bestNumber(): Promise<number> {
@@ -150,25 +189,51 @@ export default class Api {
     return { balances }
   }
 
-  async getCouncilInfo(): Promise<CouncilInfoObj> {
-    const queries: { [P in keyof CouncilInfoObj]: QueryableStorageMultiArg<'promise'> } = {
-      activeCouncil: this._api.query.council.activeCouncil,
-      termEndsAt: this._api.query.council.termEndsAt,
-      autoStart: this._api.query.councilElection.autoStart,
-      newTermDuration: this._api.query.councilElection.newTermDuration,
-      candidacyLimit: this._api.query.councilElection.candidacyLimit,
-      councilSize: this._api.query.councilElection.councilSize,
-      minCouncilStake: this._api.query.councilElection.minCouncilStake,
-      minVotingStake: this._api.query.councilElection.minVotingStake,
-      announcingPeriod: this._api.query.councilElection.announcingPeriod,
-      votingPeriod: this._api.query.councilElection.votingPeriod,
-      revealingPeriod: this._api.query.councilElection.revealingPeriod,
-      round: this._api.query.councilElection.round,
-      stage: this._api.query.councilElection.stage,
+  async getCouncilInfo(): Promise<CouncilInfo> {
+    const [
+      activeCouncil,
+      termEndsAt,
+      autoStart,
+      newTermDuration,
+      candidacyLimit,
+      councilSize,
+      minCouncilStake,
+      minVotingStake,
+      announcingPeriod,
+      votingPeriod,
+    ] = await Promise.all([
+      this._api.query.council.activeCouncil(),
+      this._api.query.council.termEndsAt(),
+      this._api.query.councilElection.autoStart(),
+      this._api.query.councilElection.newTermDuration(),
+      this._api.query.councilElection.candidacyLimit(),
+      this._api.query.councilElection.councilSize(),
+      this._api.query.councilElection.minCouncilStake(),
+      this._api.query.councilElection.minVotingStake(),
+      this._api.query.councilElection.announcingPeriod(),
+      this._api.query.councilElection.votingPeriod(),
+    ])
+    // Promise.all only allows 10 types, so we need to split the queries
+    const [revealingPeriod, round, stage] = await Promise.all([
+      this._api.query.councilElection.revealingPeriod(),
+      this._api.query.councilElection.round(),
+      this._api.query.councilElection.stage(),
+    ])
+    return {
+      activeCouncil,
+      termEndsAt,
+      autoStart,
+      newTermDuration,
+      candidacyLimit,
+      councilSize,
+      minCouncilStake,
+      minVotingStake,
+      announcingPeriod,
+      votingPeriod,
+      revealingPeriod,
+      round,
+      stage,
     }
-    const results: CouncilInfoTuple = (await this.queryMultiOnce(Object.values(queries))) as CouncilInfoTuple
-
-    return createCouncilInfoObj(...results)
   }
 
   async estimateFee(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<Balance> {
@@ -184,12 +249,10 @@ export default class Api {
   // TODO: This is a lot of repeated logic from "/pioneer/joy-utils/transport"
   // It will be refactored to "joystream-js" soon
   async entriesByIds<IDType extends UInt, ValueType extends Codec>(
-    apiMethod: QueryableStorageEntry<'promise'>,
-    firstKey?: CodecArg // First key in case of double maps
+    apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>>
   ): Promise<[IDType, ValueType][]> {
-    const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>(firstKey)).map(([storageKey, value]) => [
-      // If double-map (first key is provided), we map entries by second key
-      storageKey.args[firstKey !== undefined ? 1 : 0] as IDType,
+    const entries: [IDType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+      storageKey.args[0] as IDType,
       value,
     ])
 
@@ -203,7 +266,7 @@ export default class Api {
   }
 
   protected async blockTimestamp(height: number): Promise<Date> {
-    const blockTime = (await this._api.query.timestamp.now.at(await this.blockHash(height))) as Moment
+    const blockTime = await this._api.query.timestamp.now.at(await this.blockHash(height))
 
     return new Date(blockTime.toNumber())
   }
@@ -214,14 +277,14 @@ export default class Api {
   }
 
   protected async membershipById(memberId: MemberId): Promise<Membership | null> {
-    const profile = (await this._api.query.members.membershipById(memberId)) as Membership
+    const profile = await this._api.query.members.membershipById(memberId)
 
     // Can't just use profile.isEmpty because profile.suspended is Bool (which isEmpty method always returns false)
     return profile.handle.isEmpty ? null : profile
   }
 
   async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
-    const optLeadId = (await this.workingGroupApiQuery(group).currentLead()) as Option<WorkerId>
+    const optLeadId = await this.workingGroupApiQuery(group).currentLead()
 
     if (!optLeadId.isSome) {
       return null
@@ -234,7 +297,7 @@ export default class Api {
   }
 
   protected async stakeValue(stakeId: StakeId): Promise<Balance> {
-    const stake = await this._api.query.stake.stakes<Stake>(stakeId)
+    const stake = await this._api.query.stake.stakes(stakeId)
     return stake.value
   }
 
@@ -243,9 +306,7 @@ export default class Api {
   }
 
   protected async workerReward(relationshipId: RewardRelationshipId): Promise<Reward> {
-    const rewardRelationship = await this._api.query.recurringRewards.rewardRelationships<RewardRelationship>(
-      relationshipId
-    )
+    const rewardRelationship = await this._api.query.recurringRewards.rewardRelationships(relationshipId)
 
     return {
       totalRecieved: rewardRelationship.total_reward_received,
@@ -286,14 +347,14 @@ export default class Api {
   }
 
   async workerByWorkerId(group: WorkingGroups, workerId: number): Promise<Worker> {
-    const nextId = await this.workingGroupApiQuery(group).nextWorkerId<WorkerId>()
+    const nextId = await this.workingGroupApiQuery(group).nextWorkerId()
 
     // This is chain specfic, but if next id is still 0, it means no workers have been added yet
     if (workerId < 0 || workerId >= nextId.toNumber()) {
       throw new CLIError('Invalid worker id!')
     }
 
-    const worker = await this.workingGroupApiQuery(group).workerById<Worker>(workerId)
+    const worker = await this.workingGroupApiQuery(group).workerById(workerId)
 
     if (worker.isEmpty) {
       throw new CLIError('This worker is not active anymore')
@@ -318,12 +379,12 @@ export default class Api {
   }
 
   groupWorkers(group: WorkingGroups): Promise<[WorkerId, Worker][]> {
-    return this.entriesByIds<WorkerId, Worker>(this.workingGroupApiQuery(group).workerById)
+    return this.entriesByIds(this.workingGroupApiQuery(group).workerById)
   }
 
   async openingsByGroup(group: WorkingGroups): Promise<GroupOpening[]> {
     let openings: GroupOpening[] = []
-    const nextId = await this.workingGroupApiQuery(group).nextOpeningId<OpeningId>()
+    const nextId = await this.workingGroupApiQuery(group).nextOpeningId()
 
     // This is chain specfic, but if next id is still 0, it means no openings have been added yet
     if (!nextId.eq(0)) {
@@ -335,23 +396,23 @@ export default class Api {
   }
 
   protected async hiringOpeningById(id: number | OpeningId): Promise<Opening> {
-    const result = await this._api.query.hiring.openingById<Opening>(id)
+    const result = await this._api.query.hiring.openingById(id)
     return result
   }
 
   protected async hiringApplicationById(id: number | ApplicationId): Promise<Application> {
-    const result = await this._api.query.hiring.applicationById<Application>(id)
+    const result = await this._api.query.hiring.applicationById(id)
     return result
   }
 
   async wgApplicationById(group: WorkingGroups, wgApplicationId: number): Promise<WGApplication> {
-    const nextAppId = await this.workingGroupApiQuery(group).nextApplicationId<ApplicationId>()
+    const nextAppId = await this.workingGroupApiQuery(group).nextApplicationId()
 
     if (wgApplicationId < 0 || wgApplicationId >= nextAppId.toNumber()) {
       throw new CLIError('Invalid working group application ID!')
     }
 
-    const result = await this.workingGroupApiQuery(group).applicationById<WGApplication>(wgApplicationId)
+    const result = await this.workingGroupApiQuery(group).applicationById(wgApplicationId)
     return result
   }
 
@@ -372,7 +433,7 @@ export default class Api {
         role: roleStakingId.isSome ? (await this.stakeValue(roleStakingId.unwrap())).toNumber() : 0,
       },
       humanReadableText: application.human_readable_text.toString(),
-      stage: application.stage.type as ApplicationStageKeys,
+      stage: application.stage.type,
     }
   }
 
@@ -382,9 +443,7 @@ export default class Api {
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, wgOpeningId: number): Promise<GroupApplication[]> {
-    const wgApplicationEntries = await this.entriesByIds<ApplicationId, WGApplication>(
-      this.workingGroupApiQuery(group).applicationById
-    )
+    const wgApplicationEntries = await this.entriesByIds(this.workingGroupApiQuery(group).applicationById)
 
     return Promise.all(
       wgApplicationEntries
@@ -394,13 +453,13 @@ export default class Api {
   }
 
   async groupOpening(group: WorkingGroups, wgOpeningId: number): Promise<GroupOpening> {
-    const nextId = ((await this.workingGroupApiQuery(group).nextOpeningId()) as OpeningId).toNumber()
+    const nextId = (await this.workingGroupApiQuery(group).nextOpeningId()).toNumber()
 
     if (wgOpeningId < 0 || wgOpeningId >= nextId) {
       throw new CLIError('Invalid working group opening ID!')
     }
 
-    const groupOpening = await this.workingGroupApiQuery(group).openingById<WGOpening>(wgOpeningId)
+    const groupOpening = await this.workingGroupApiQuery(group).openingById(wgOpeningId)
 
     const openingId = groupOpening.hiring_opening_id.toNumber()
     const opening = await this.hiringOpeningById(openingId)
@@ -458,7 +517,7 @@ export default class Api {
     if (stage.isOfType('WaitingToBegin')) {
       const stageData = stage.asType('WaitingToBegin')
       const currentBlockNumber = (await this._api.derive.chain.bestNumber()).toNumber()
-      const expectedBlockTime = (this._api.consts.babe.expectedBlockTime as Moment).toNumber()
+      const expectedBlockTime = this._api.consts.babe.expectedBlockTime.toNumber()
       status = OpeningStatus.WaitingToBegin
       stageBlock = stageData.begins_at_block.toNumber()
       stageDate = new Date(Date.now() + (stageBlock - currentBlockNumber) * expectedBlockTime)
@@ -494,34 +553,34 @@ export default class Api {
   }
 
   async getMemberIdsByControllerAccount(address: string): Promise<MemberId[]> {
-    const ids = await this._api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(address)
+    const ids = await this._api.query.members.memberIdsByControllerAccountId(address)
     return ids.toArray()
   }
 
   async workerExitRationaleConstraint(group: WorkingGroups): Promise<InputValidationLengthConstraint> {
-    return await this.workingGroupApiQuery(group).workerExitRationaleText<InputValidationLengthConstraint>()
+    return await this.workingGroupApiQuery(group).workerExitRationaleText()
   }
 
   // Content directory
   async availableChannels(): Promise<[ChannelId, Channel][]> {
-    return await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById)
+    return await this.entriesByIds(this._api.query.content.channelById)
   }
 
   async availableVideos(): Promise<[VideoId, Video][]> {
-    return await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
+    return await this.entriesByIds(this._api.query.content.videoById)
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
-    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.content.curatorGroupById)
+    return this.entriesByIds(this._api.query.content.curatorGroupById)
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
     const exists = !!(await this._api.query.content.curatorGroupById.size(id)).toNumber()
-    return exists ? await this._api.query.content.curatorGroupById<CuratorGroup>(id) : null
+    return exists ? await this._api.query.content.curatorGroupById(id) : null
   }
 
   async nextCuratorGroupId(): Promise<number> {
-    return (await this._api.query.content.nextCuratorGroupId<CuratorGroupId>()).toNumber()
+    return (await this._api.query.content.nextCuratorGroupId()).toNumber()
   }
 
   async channelById(channelId: ChannelId | number | string): Promise<Channel> {
@@ -530,26 +589,13 @@ export default class Api {
     if (!exists) {
       throw new CLIError(`Channel by id ${channelId.toString()} not found!`)
     }
-    const channel = await this._api.query.content.channelById<Channel>(channelId)
+    const channel = await this._api.query.content.channelById(channelId)
 
     return channel
   }
 
-  async videosByChannelId(channelId: ChannelId | number | string): Promise<[VideoId, Video][]> {
-    const channel = await this.channelById(channelId)
-    if (channel) {
-      return Promise.all(
-        channel.videos.map(
-          async (videoId) => [videoId, await this._api.query.content.videoById<Video>(videoId)] as [VideoId, Video]
-        )
-      )
-    } else {
-      return []
-    }
-  }
-
   async videoById(videoId: VideoId | number | string): Promise<Video> {
-    const video = await this._api.query.content.videoById<Video>(videoId)
+    const video = await this._api.query.content.videoById(videoId)
     if (video.isEmpty) {
       throw new CLIError(`Video by id ${videoId.toString()} not found!`)
     }
@@ -560,33 +606,41 @@ export default class Api {
   async channelCategoryIds(): Promise<ChannelCategoryId[]> {
     // There is currently no way to differentiate between unexisting and existing category
     // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (
-      await this.entriesByIds<ChannelCategoryId, ChannelCategory>(this._api.query.content.channelCategoryById)
-    ).map(([id]) => id)
+    return (await this.entriesByIds(this._api.query.content.channelCategoryById)).map(([id]) => id)
   }
 
   async videoCategoryIds(): Promise<VideoCategoryId[]> {
     // There is currently no way to differentiate between unexisting and existing category
     // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (await this.entriesByIds<VideoCategoryId, VideoCategory>(this._api.query.content.videoCategoryById)).map(
-      ([id]) => id
-    )
+    return (await this.entriesByIds(this._api.query.content.videoCategoryById)).map(([id]) => id)
   }
 
-  async getRandomBootstrapEndpoint(): Promise<string | null> {
-    const endpoints = await this._api.query.discovery.bootstrapEndpoints<Vec<Url>>()
-    const randomEndpoint = _.sample(endpoints.toArray())
-    return randomEndpoint ? randomEndpoint.toString() : null
-  }
+  async storageNodesInfoByBagId(bagId: string): Promise<StorageNodeInfo[]> {
+    const result = await this.multipleEntitiesQuery<
+      GetStorageNodesInfoByBagIdQuery,
+      GetStorageNodesInfoByBagIdQueryVariables
+    >(GetStorageNodesInfoByBagId, { bagId }, 'storageBuckets')
 
-  async storageProviderEndpoint(storageProviderId: StorageProviderId | number): Promise<string> {
-    const value = await this._api.query.storageWorkingGroup.workerStorage<Bytes>(storageProviderId)
-    return this._api.createType('Text', value).toString()
-  }
+    if (!result) {
+      throw new CLIError('Could not fetch storage buckets information from the query node!', {
+        exit: ExitCodes.QueryNodeError,
+      })
+    }
 
-  async allStorageProviderEndpoints(): Promise<string[]> {
-    const workerIds = (await this.groupWorkers(WorkingGroups.StorageProviders)).map(([id]) => id)
-    const workerStorages = await this._api.query.storageWorkingGroup.workerStorage.multi<Bytes>(workerIds)
-    return workerStorages.map((storage) => this._api.createType('Text', storage).toString())
+    const validNodesInfo: StorageNodeInfo[] = []
+    for (const { operatorMetadata, id } of result) {
+      if (operatorMetadata?.nodeEndpoint) {
+        try {
+          const validUrl = new URL(operatorMetadata.nodeEndpoint)
+          validNodesInfo.push({
+            apiEndpoint: validUrl.toString().endsWith('/') ? validUrl.toString() : validUrl.toString() + '/',
+            bucketId: parseInt(id),
+          })
+        } catch (e) {
+          continue
+        }
+      }
+    }
+    return validNodesInfo
   }
 }

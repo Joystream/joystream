@@ -1,0 +1,18 @@
+fragment StorageNodeInfo on StorageBucket {
+  id
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+
+query getStorageNodesInfoByBagId($bagId: String) {
+  storageBuckets(
+    where: {
+      operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
+      bagAssignments_some: { storageBagId_eq: $bagId }
+      operatorMetadata: { nodeEndpoint_contains: "http" }
+    }
+  ) {
+    ...StorageNodeInfo
+  }
+}

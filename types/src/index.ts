@@ -1,4 +1,4 @@
-import { Codec, RegistryTypes } from '@polkadot/types/types'
+import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
 import common from './common'
 import members from './members'
 import council from './council'
@@ -101,4 +101,9 @@ export function createType<TN extends AnyTypeName, T extends InterfaceTypes[TN] 
   value: CreateInterface<T>
 ): InterfaceTypes[TN] {
   return registry.createType(type, value)
+}
+
+// FIXME: Backward-compatibility. Use only one createType in the future!
+export function createTypeFromConstructor<T extends Codec>(type: Constructor<T>, value: CreateInterface<T>): T {
+  return registry.createType(type.name as AnyTypeName, value) as T
 }

@@ -4,7 +4,7 @@ import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
-import { createType } from '@joystream/types'
+import { createTypeFromConstructor } from '@joystream/types'
 import { flags } from '@oclif/command'
 
 // TODO: Rework the contexts
@@ -134,7 +134,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       }
     }
 
-    return createType('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] })
+    return createTypeFromConstructor(ContentActor, { Curator: [groupId, curator.workerId.toNumber()] })
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {

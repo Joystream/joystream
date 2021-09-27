@@ -5,7 +5,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { ChannelCategoryCreationParameters } from '@joystream/types/content'
-import { ChannelCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { ChannelCategoryInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import { ChannelCategoryMetadata } from '@joystream/metadata-protobuf'
 

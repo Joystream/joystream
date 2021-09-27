@@ -5,7 +5,7 @@ import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { CreateInterface } from '@joystream/types'
 import { ChannelUpdateParameters } from '@joystream/types/content'
-import { ChannelInputSchema } from '../../json-schemas/ContentDirectory'
+import { ChannelInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
@@ -46,43 +46,51 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     } = this.parse(UpdateChannelCommand)
 
     // Context
-    const currentAccount = await this.getRequiredSelectedAccount()
+    const account = await this.getRequiredSelectedAccount()
     const channel = await this.getApi().channelById(channelId)
     const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(currentAccount)
+    const memberId = await this.getRequiredMemberId(true)
+    await this.requestAccountDecoding(account)
 
     const channelInput = await getInputJson<ChannelInputParameters>(input, ChannelInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
 
     const { coverPhotoPath, avatarPhotoPath, rewardAccount } = channelInput
     const inputPaths = [coverPhotoPath, avatarPhotoPath].filter((p) => p !== undefined) as string[]
-    const inputAssets = await this.prepareInputAssets(inputPaths, input)
-    const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
+    const resolvedAssets = await this.resolveAndValidateAssets(inputPaths, input)
     // Set assets indexes in the metadata
     const [coverPhotoIndex, avatarPhotoIndex] = this.assetsIndexes([coverPhotoPath, avatarPhotoPath], inputPaths)
-    if (coverPhotoIndex !== undefined) {
-      meta.coverPhoto = coverPhotoIndex
-    }
-    if (avatarPhotoIndex !== undefined) {
-      meta.avatarPhoto = avatarPhotoIndex
-    }
+    // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
+    meta.coverPhoto = coverPhotoIndex
+    meta.avatarPhoto = avatarPhotoIndex
 
+    // Preare and send the extrinsic
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
       assets,
       new_meta: metadataToBytes(ChannelMetadata, meta),
       reward_account: this.parseRewardAccountInput(rewardAccount),
     }
 
-    this.jsonPrettyPrint(JSON.stringify({ assets, metadata: meta, rewardAccount }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, rewardAccount }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateChannel', [
+    const result = await this.sendAndFollowNamedTx(account, 'content', 'updateChannel', [
       actor,
       channelId,
       channelUpdateParameters,
     ])
-
-    await this.uploadAssets(inputAssets, input)
+    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
+    if (dataObjectsUploadedEvent) {
+      const [objectIds] = dataObjectsUploadedEvent.data
+      await this.uploadAssets(
+        account,
+        memberId,
+        `dynamic:channel:${channelId.toString()}`,
+        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        input
+      )
+    }
   }
 }

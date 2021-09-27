@@ -43,7 +43,12 @@
     "moment": "^2.24.0",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
-    "tslib": "^1.11.1"
+    "tslib": "^1.11.1",
+    "blake3": "^2.1.4",
+    "multihashes": "^4.0.3",
+    "@apollo/client": "^3.2.5",
+    "cross-fetch": "^3.0.6",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
@@ -61,7 +66,12 @@
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
     "ts-node": "^8.8.2",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@graphql-codegen/typescript-document-nodes": "^1.17.11"
   },
   "engines": {
     "node": ">=14.0.0",
@@ -126,7 +136,9 @@
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:schema-typings": "rm -rf ./src/json-schemas/typings && json2ts -i ./src/json-schemas/ -o ./src/json-schemas/typings/"
+    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./src/schemas/typings/ && prettier ./src/schemas/typings/ --write",
+    "generate:graphql-typings": "graphql-codegen",
+    "generate:all": "yarn generate:schema-typings && yarn generate:graphql-typings"
   },
   "types": "lib/index.d.ts",
   "volta": {

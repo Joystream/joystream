@@ -5,7 +5,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoCategoryUpdateParameters } from '@joystream/types/content'
-import { VideoCategoryInputSchema } from '../../json-schemas/ContentDirectory'
+import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
 import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
 export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandBase {

@@ -8,13 +8,23 @@
 /**
  * List of assets to upload/reupload
  */
-export type Assets = {
+export interface Assets {
   /**
-   * Already existing ContentID
+   * Target bag id
    */
-  contentId: string
+  bagId: string
   /**
-   * Path to the content file (relative to input json file)
+   * List of assets to upload
    */
-  path: string
-}[]
+  assets: {
+    /**
+     * Already existing data object ID
+     */
+    objectId: string
+    /**
+     * Path to the content file (relative to input json file)
+     */
+    path: string
+  }[]
+  [k: string]: unknown
+}

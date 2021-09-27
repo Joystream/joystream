@@ -1,8 +1,15 @@
 import ContentDirectoryCommandBase from './ContentDirectoryCommandBase'
-import { InputAsset, InputAssetDetails, VideoFFProbeMetadata, VideoFileMetadata } from '../Types'
+import {
+  AssetToUpload,
+  ResolvedAsset,
+  StorageNodeInfo,
+  TokenRequest,
+  TokenRequestData,
+  VideoFFProbeMetadata,
+  VideoFileMetadata,
+} from '../Types'
 import { MultiBar, Options, SingleBar } from 'cli-progress'
 import ExitCodes from '../ExitCodes'
-import ipfsHash from 'ipfs-only-hash'
 import fs from 'fs'
 import _ from 'lodash'
 import axios from 'axios'
@@ -10,9 +17,17 @@ import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path'
 import mimeTypes from 'mime-types'
-import { ContentId } from '../../../types/content'
-import { Assets } from '../json-schemas/typings/Assets.schema'
+import { Assets } from '../schemas/typings/Assets.schema'
 import chalk from 'chalk'
+import { DataObjectCreationParameters } from '@joystream/types/storage'
+import { createHash } from 'blake3'
+import * as multihash from 'multihashes'
+import { u8aToHex, formatBalance } from '@polkadot/util'
+import { KeyringPair } from '@polkadot/keyring/types'
+import FormData from 'form-data'
+import BN from 'bn.js'
+import { createTypeFromConstructor } from '@joystream/types'
+import { NewAssets } from '@joystream/types/content'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
@@ -21,17 +36,16 @@ ffmpeg.setFfprobePath(ffprobeInstaller.path)
  */
 export default abstract class UploadCommandBase extends ContentDirectoryCommandBase {
   private fileSizeCache: Map<string, number> = new Map<string, number>()
+  private maxFileSize: undefined | BN = undefined
   private progressBarOptions: Options = {
     format: `{barTitle} | {bar} | {value}/{total} KB processed`,
   }
 
+  protected requiresQueryNode = true
+
   getFileSize(path: string): number {
     const cachedSize = this.fileSizeCache.get(path)
     return cachedSize !== undefined ? cachedSize : fs.statSync(path).size
-  }
-
-  normalizeEndpoint(endpoint: string) {
-    return endpoint.endsWith('/') ? endpoint : endpoint + '/'
   }
 
   createReadStreamWithProgressBar(
@@ -103,7 +117,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     try {
       ffProbeMetadata = await this.getVideoFFProbeMetadata(filePath)
     } catch (e) {
-      const message = e.message || e
+      const message = e instanceof Error ? e.message : e
       this.warn(`Failed to get video metadata via ffprobe (${message})`)
     }
 
@@ -118,122 +132,179 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     }
   }
 
-  async calculateFileIpfsHash(filePath: string): Promise<string> {
+  async calculateFileHash(filePath: string): Promise<string> {
     const { fileStream } = this.createReadStreamWithProgressBar(filePath, 'Calculating file hash')
-    const hash: string = await ipfsHash.of(fileStream)
-
-    return hash
+    let blake3Hash: Uint8Array
+    return new Promise<string>((resolve, reject) => {
+      fileStream
+        .pipe(createHash())
+        .on('data', (data) => (blake3Hash = data))
+        .on('end', () => resolve(multihash.toB58String(multihash.encode(blake3Hash, 'blake3'))))
+        .on('error', (err) => reject(err))
+    })
   }
 
-  validateFile(filePath: string): void {
+  async validateFile(filePath: string): Promise<void> {
     // Basic file validation
     if (!fs.existsSync(filePath)) {
       this.error(`${filePath} - file does not exist under provided path!`, { exit: ExitCodes.FileNotFound })
     }
+    if (!this.maxFileSize) {
+      this.maxFileSize = await this.getOriginalApi().consts.storage.maxDataObjectSize
+    }
+    if (this.maxFileSize.ltn(this.getFileSize(filePath))) {
+      this.error(`${filePath} - file is too big. Max file size is ${this.maxFileSize.toString()} bytes`)
+    }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  assetUrl(endpointRoot: string, contentId: ContentId): string {
-    return ''
-    // TODO: Update for StorageV2
-    // // This will also make sure the resulting url is a valid url
-    // return new URL(`asset/v0/${contentId.encode()}`, this.normalizeEndpoint(endpointRoot)).toString()
-  }
-
-  async getRandomProviderEndpoint(): Promise<string | null> {
-    const endpoints = _.shuffle(await this.getApi().allStorageProviderEndpoints())
-    for (const endpoint of endpoints) {
-      try {
-        const url = new URL('swagger.json', this.normalizeEndpoint(endpoint)).toString()
-        await axios.head(url)
-        return endpoint
-      } catch (e) {
-        continue
+  async getRandomActiveStorageNodeInfo(bagId: string, retryTime = 6, retryCount = 5): Promise<StorageNodeInfo | null> {
+    for (let i = 0; i <= retryCount; ++i) {
+      const nodesInfo = _.shuffle(await this.getApi().storageNodesInfoByBagId(bagId))
+      for (const info of nodesInfo) {
+        try {
+          // TODO: Use a status endpoint once available?
+          await axios.get(info.apiEndpoint, {
+            validateStatus: (s) => s === 404, // we expect 404 on root endpoint
+            headers: {
+              connection: 'close',
+            },
+          })
+          return info
+        } catch (err) {
+          continue
+        }
+      }
+      if (i !== retryCount) {
+        this.log(`No storage provider can serve the request yet, retrying in ${retryTime}s (${i + 1}/${retryCount})...`)
+        await new Promise((resolve) => setTimeout(resolve, retryTime * 1000))
       }
     }
 
     return null
   }
 
-  // TODO: Update for StorageV2
-  // async generateContentParameters(filePath: string, type: AssetType): Promise<ContentParameters> {
-  //   return this.createType('ContentParameters', {
-  //     content_id: ContentId.generate(this.getTypesRegistry()),
-  //     type_id: type,
-  //     size: this.getFileSize(filePath),
-  //     ipfs_content_id: await this.calculateFileIpfsHash(filePath),
-  //   })
-  // }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async prepareInputAssets(paths: string[], basePath?: string): Promise<InputAssetDetails[]> {
-    return []
-    // TODO: Update for StorageV2
-    // // Resolve assets
-    // if (basePath) {
-    //   paths = paths.map((p) => basePath && path.resolve(path.dirname(basePath), p))
-    // }
-    // // Validate assets
-    // paths.forEach((p) => this.validateFile(p))
-
-    // // Return data
-    // return await Promise.all(
-    //   paths.map(async (path) => {
-    //     const parameters = await this.generateContentParameters(path, AssetType.AnyAsset)
-    //     return {
-    //       path,
-    //       contentId: parameters.content_id,
-    //       parameters,
-    //     }
-    //   })
-    // )
+  async generateDataObjectParameters(filePath: string): Promise<DataObjectCreationParameters> {
+    return createTypeFromConstructor(DataObjectCreationParameters, {
+      size: this.getFileSize(filePath),
+      ipfsContentId: await this.calculateFileHash(filePath),
+    })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async uploadAsset(contentId: ContentId, filePath: string, endpoint?: string, multiBar?: MultiBar): Promise<void> {
-    // TODO: Update for StorageV2
-    // const providerEndpoint = endpoint || (await this.getRandomProviderEndpoint())
-    // if (!providerEndpoint) {
-    //   this.error('No active provider found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
-    // }
-    // const uploadUrl = this.assetUrl(providerEndpoint, contentId)
-    // const fileSize = this.getFileSize(filePath)
-    // const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
-    //   filePath,
-    //   `Uploading ${contentId.encode()}`,
-    //   multiBar
-    // )
-    // fileStream.on('end', () => {
-    //   // Temporarly disable because with Promise.all it breaks the UI
-    //   // cli.action.start('Waiting for the file to be processed...')
-    // })
-    // try {
-    //   const config: AxiosRequestConfig = {
-    //     headers: {
-    //       'Content-Type': '', // https://github.com/Joystream/storage-node-joystream/issues/16
-    //       'Content-Length': fileSize.toString(),
-    //     },
-    //     maxBodyLength: fileSize,
-    //   }
-    //   await axios.put(uploadUrl, fileStream, config)
-    // } catch (e) {
-    //   progressBar.stop()
-    //   const msg = (e.response && e.response.data && e.response.data.message) || e.message || e
-    //   this.error(`Unexpected error when trying to upload a file: ${msg}`, {
-    //     exit: ExitCodes.ExternalInfrastructureError,
-    //   })
-    // }
+  async resolveAndValidateAssets(paths: string[], basePath: string): Promise<ResolvedAsset[]> {
+    // Resolve assets
+    if (basePath) {
+      paths = paths.map((p) => basePath && path.resolve(path.dirname(basePath), p))
+    }
+    // Validate assets
+    await Promise.all(paths.map((p) => this.validateFile(p)))
+
+    // Return data
+    return await Promise.all(
+      paths.map(async (path) => {
+        const parameters = await this.generateDataObjectParameters(path)
+        return {
+          path,
+          parameters,
+        }
+      })
+    )
+  }
+
+  async getStorageNodeUploadToken(
+    storageNodeInfo: StorageNodeInfo,
+    account: KeyringPair,
+    memberId: number,
+    objectId: BN,
+    bagId: string
+  ): Promise<string> {
+    const data: TokenRequestData = {
+      storageBucketId: storageNodeInfo.bucketId,
+      accountId: account.address,
+      bagId,
+      memberId,
+      dataObjectId: objectId.toNumber(),
+    }
+    const message = JSON.stringify(data)
+    const signature = u8aToHex(account.sign(message))
+    const postData: TokenRequest = { data, signature }
+    const {
+      data: { token },
+    } = await axios.post(`${storageNodeInfo.apiEndpoint}authToken`, postData)
+    if (!token) {
+      this.error('Recieved empty token from the storage node!', { exit: ExitCodes.StorageNodeError })
+    }
+
+    return token
+  }
+
+  async uploadAsset(
+    account: KeyringPair,
+    memberId: number,
+    objectId: BN,
+    bagId: string,
+    filePath: string,
+    storageNode?: StorageNodeInfo,
+    multiBar?: MultiBar
+  ): Promise<void> {
+    const storageNodeInfo = storageNode || (await this.getRandomActiveStorageNodeInfo(bagId))
+    if (!storageNodeInfo) {
+      this.error('No active storage node found!', { exit: ExitCodes.ActionCurrentlyUnavailable })
+    }
+    this.log(`Chosen storage node endpoint: ${storageNodeInfo.apiEndpoint}`)
+    const token = await this.getStorageNodeUploadToken(storageNodeInfo, account, memberId, objectId, bagId)
+    const { fileStream, progressBar } = this.createReadStreamWithProgressBar(
+      filePath,
+      `Uploading ${filePath}`,
+      multiBar
+    )
+    fileStream.on('end', () => {
+      // Temporarly disable because with Promise.all it breaks the UI
+      // cli.action.start('Waiting for the file to be processed...')
+    })
+    const formData = new FormData()
+    formData.append('dataObjectId', objectId.toString())
+    formData.append('storageBucketId', storageNodeInfo.bucketId)
+    formData.append('bagId', bagId)
+    formData.append('file', fileStream, {
+      filename: path.basename(filePath),
+      filepath: filePath,
+      knownLength: this.getFileSize(filePath),
+    })
+    this.log(`Uploading object ${objectId.toString()} (${filePath})`)
+    try {
+      await axios.post(`${storageNodeInfo.apiEndpoint}files`, formData, {
+        headers: {
+          'x-api-key': token,
+          'content-type': 'multipart/form-data',
+          ...formData.getHeaders(),
+        },
+      })
+    } catch (e) {
+      progressBar.stop()
+      if (axios.isAxiosError(e)) {
+        const msg = e.response && e.response.data ? JSON.stringify(e.response.data) : e.message
+        this.error(`Unexpected error when trying to upload a file: ${msg}`, {
+          exit: ExitCodes.StorageNodeError,
+        })
+      } else {
+        throw e
+      }
+    }
   }
 
   async uploadAssets(
-    assets: InputAsset[],
+    account: KeyringPair,
+    memberId: number,
+    bagId: string,
+    assets: AssetToUpload[],
     inputFilePath: string,
     outputFilePostfix = '__rejectedContent'
   ): Promise<void> {
-    const endpoint = await this.getRandomProviderEndpoint()
-    if (!endpoint) {
+    const storageNodeInfo = await this.getRandomActiveStorageNodeInfo(bagId)
+    if (!storageNodeInfo) {
       this.warn('No storage provider is currently available!')
       this.handleRejectedUploads(
+        bagId,
         assets,
         assets.map(() => false),
         inputFilePath,
@@ -246,14 +317,14 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     const results = await Promise.all(
       assets.map(async (a) => {
         try {
-          await this.uploadAsset(a.contentId, a.path, endpoint, multiBar)
+          await this.uploadAsset(account, memberId, a.dataObjectId, bagId, a.path, storageNodeInfo, multiBar)
           return true
         } catch (e) {
           return false
         }
       })
     )
-    this.handleRejectedUploads(assets, results, inputFilePath, outputFilePostfix)
+    this.handleRejectedUploads(bagId, assets, results, inputFilePath, outputFilePostfix)
     multiBar.stop()
   }
 
@@ -262,17 +333,43 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     return originalPaths.map((path) => (filteredPaths.includes(path as string) ? ++lastIndex : undefined))
   }
 
+  async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<NewAssets | undefined> {
+    const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
+    if (resolvedAssets.length) {
+      const totalBytes = resolvedAssets
+        .reduce((a, b) => {
+          return a.add(b.parameters.getField('size'))
+        }, new BN(0))
+        .toNumber()
+      const totalFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
+      await this.requireConfirmation(
+        `Total fee of ${chalk.cyan(formatBalance(totalFee))} ` +
+          `will have to be paid in order to store the provided assets. Are you sure you want to continue?`
+      )
+      return createTypeFromConstructor(NewAssets, {
+        Upload: {
+          expected_data_size_fee: feePerMB,
+          object_creation_list: resolvedAssets.map((a) => a.parameters),
+        },
+      })
+    }
+
+    return undefined
+  }
+
   private handleRejectedUploads(
-    assets: InputAsset[],
+    bagId: string,
+    assets: AssetToUpload[],
     results: boolean[],
     inputFilePath: string,
     outputFilePostfix: string
   ): void {
     // Try to save rejected contentIds and paths for reupload purposes
-    const rejectedAssetsOutput: Assets = []
+    const rejectedAssetsOutput: Assets = { bagId, assets: [] }
     results.forEach(
       (r, i) =>
-        r === false && rejectedAssetsOutput.push({ contentId: assets[i].contentId.toString(), path: assets[i].path })
+        r === false &&
+        rejectedAssetsOutput.assets.push({ objectId: assets[i].dataObjectId.toString(), path: assets[i].path })
     )
     if (rejectedAssetsOutput.length) {
       this.warn(

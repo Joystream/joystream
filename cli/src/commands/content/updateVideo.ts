@@ -5,7 +5,7 @@ import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { VideoUpdateParameters } from '@joystream/types/content'
-import { VideoInputSchema } from '../../json-schemas/ContentDirectory'
+import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 
 export default class UpdateVideoCommand extends UploadCommandBase {
@@ -33,39 +33,51 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     } = this.parse(UpdateVideoCommand)
 
     // Context
-    const currentAccount = await this.getRequiredSelectedAccount()
+    const account = await this.getRequiredSelectedAccount()
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.in_channel.toNumber())
     const actor = await this.getChannelOwnerActor(channel)
-    await this.requestAccountDecoding(currentAccount)
+    const memberId = await this.getRequiredMemberId(true)
+    await this.requestAccountDecoding(account)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     const meta = asValidatedMetadata(VideoMetadata, videoInput)
 
     const { videoPath, thumbnailPhotoPath } = videoInput
     const inputPaths = [videoPath, thumbnailPhotoPath].filter((p) => p !== undefined) as string[]
-    const inputAssets = await this.prepareInputAssets(inputPaths, input)
-    const assets = inputAssets.map(({ parameters }) => ({ Upload: parameters }))
+    const resolvedAssets = await this.resolveAndValidateAssets(inputPaths, input)
     // Set assets indexes in the metadata
     const [videoIndex, thumbnailPhotoIndex] = this.assetsIndexes([videoPath, thumbnailPhotoPath], inputPaths)
-    if (videoIndex !== undefined) {
-      meta.video = videoIndex
-    }
-    if (thumbnailPhotoIndex !== undefined) {
-      meta.thumbnailPhoto = thumbnailPhotoIndex
-    }
+    // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
+    meta.video = videoIndex
+    meta.thumbnailPhoto = thumbnailPhotoIndex
 
+    // Preare and send the extrinsic
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
       assets,
       new_meta: metadataToBytes(VideoMetadata, meta),
     }
 
-    this.jsonPrettyPrint(JSON.stringify({ assets, newMetadata: meta }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), newMetadata: meta }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
-    await this.sendAndFollowNamedTx(currentAccount, 'content', 'updateVideo', [actor, videoId, videoUpdateParameters])
-
-    await this.uploadAssets(inputAssets, input)
+    const result = await this.sendAndFollowNamedTx(account, 'content', 'updateVideo', [
+      actor,
+      videoId,
+      videoUpdateParameters,
+    ])
+    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
+    if (dataObjectsUploadedEvent) {
+      const [objectIds] = dataObjectsUploadedEvent.data
+      await this.uploadAssets(
+        account,
+        memberId,
+        `dynamic:channel:${video.in_channel.toString()}`,
+        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        input
+      )
+    }
   }
 }
