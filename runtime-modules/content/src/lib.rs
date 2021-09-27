@@ -182,8 +182,8 @@ decl_storage! {
         /// Max auction bid step
         pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
 
-        /// Auction platform fee percentage
-        pub AuctionFeePercentage get(fn platform_fee_percentage) config(): Perbill;
+        /// Platform fee percentage
+        pub PlatfromFeePercentage get(fn platform_fee_percentage) config(): Perbill;
 
         /// Max delta between current block and starts at
         pub AuctionStartsAtMaxDelta get(fn auction_starts_at_max_delta) config(): T::BlockNumber;
