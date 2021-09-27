@@ -13,7 +13,7 @@ fn lead_cannot_create_channel() {
             Content::create_channel(
                 Origin::signed(LEAD_ORIGIN),
                 ContentActor::Lead,
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -36,7 +36,7 @@ fn curator_owned_channels() {
             Content::create_channel(
                 Origin::signed(FIRST_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -54,7 +54,7 @@ fn curator_owned_channels() {
             Content::create_channel(
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_ID),
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -69,7 +69,7 @@ fn curator_owned_channels() {
             Content::create_channel(
                 Origin::signed(SECOND_CURATOR_ORIGIN),
                 ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -85,7 +85,7 @@ fn curator_owned_channels() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
-            ChannelCreationParameters {
+            ChannelCreationParametersRecord {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
@@ -107,7 +107,7 @@ fn curator_owned_channels() {
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
                 },
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -121,7 +121,7 @@ fn curator_owned_channels() {
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             channel_id,
-            ChannelUpdateParameters {
+            ChannelUpdateParametersRecord {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
@@ -134,7 +134,7 @@ fn curator_owned_channels() {
             Origin::signed(LEAD_ORIGIN),
             ContentActor::Lead,
             channel_id,
-            ChannelUpdateParameters {
+            ChannelUpdateParametersRecord {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
@@ -155,7 +155,7 @@ fn member_owned_channels() {
             Content::create_channel(
                 Origin::signed(UNKNOWN_ORIGIN),
                 ContentActor::Member(MEMBERS_COUNT + 1),
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -171,7 +171,7 @@ fn member_owned_channels() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParameters {
+            ChannelCreationParametersRecord {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
@@ -193,7 +193,7 @@ fn member_owned_channels() {
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
                 },
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -211,7 +211,7 @@ fn member_owned_channels() {
         assert_ok!(Content::create_channel(
             Origin::signed(SECOND_MEMBER_ORIGIN),
             ContentActor::Member(SECOND_MEMBER_ID),
-            ChannelCreationParameters {
+            ChannelCreationParametersRecord {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
@@ -233,7 +233,7 @@ fn member_owned_channels() {
                     reward_account: None,
                     collaborators: collaborators.clone(),
                 },
-                ChannelCreationParameters {
+                ChannelCreationParametersRecord {
                     assets: vec![],
                     meta: vec![],
                     reward_account: None,
@@ -247,7 +247,7 @@ fn member_owned_channels() {
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
             channel_id_1,
-            ChannelUpdateParameters {
+            ChannelUpdateParametersRecord {
                 assets: None,
                 new_meta: None,
                 reward_account: None,
@@ -269,7 +269,7 @@ fn member_owned_channels() {
                     reward_account: None,
                     collaborators: BTreeSet::<MemberId>::new(),
                 },
-                ChannelUpdateParameters {
+                ChannelUpdateParametersRecord {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
@@ -287,7 +287,7 @@ fn member_owned_channels() {
                 Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
                 ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
                 channel_id_1,
-                ChannelUpdateParameters {
+                ChannelUpdateParametersRecord {
                     assets: assets.clone(),
                     new_meta: None,
                     reward_account: None,
@@ -303,7 +303,7 @@ fn member_owned_channels() {
                 Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
                 ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
                 channel_id_2,
-                ChannelUpdateParameters {
+                ChannelUpdateParametersRecord {
                     assets: None,
                     new_meta: None,
                     reward_account: Some(COLLABORATOR_MEMBER_ORIGIN),
@@ -319,7 +319,7 @@ fn member_owned_channels() {
                 Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
                 ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
                 channel_id_2,
-                ChannelUpdateParameters {
+                ChannelUpdateParametersRecord {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
@@ -336,7 +336,7 @@ fn member_owned_channels() {
             Origin::signed(COLLABORATOR_MEMBER_ORIGIN),
             ContentActor::Collaborator(COLLABORATOR_MEMBER_ID),
             channel_id_2,
-            ChannelUpdateParameters {
+            ChannelUpdateParametersRecord {
                 assets: assets.clone(),
                 new_meta: None,
                 reward_account: None,
@@ -358,7 +358,7 @@ fn member_owned_channels() {
                     reward_account: None,
                     collaborators: collaborators.clone(),
                 },
-                ChannelUpdateParameters {
+                ChannelUpdateParametersRecord {
                     assets: assets,
                     new_meta: None,
                     reward_account: None,
@@ -373,7 +373,7 @@ fn member_owned_channels() {
                 Origin::signed(FIRST_MEMBER_ORIGIN),
                 ContentActor::Member(FIRST_MEMBER_ID),
                 channel_id_2,
-                ChannelUpdateParameters {
+                ChannelUpdateParametersRecord {
                     assets: None,
                     new_meta: None,
                     reward_account: None,
@@ -395,7 +395,7 @@ fn channel_censoring() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_MEMBER_ORIGIN),
             ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParameters {
+            ChannelCreationParametersRecord {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,
@@ -472,7 +472,7 @@ fn channel_censoring() {
         assert_ok!(Content::create_channel(
             Origin::signed(FIRST_CURATOR_ORIGIN),
             ContentActor::Curator(group_id, FIRST_CURATOR_ID),
-            ChannelCreationParameters {
+            ChannelCreationParametersRecord {
                 assets: vec![],
                 meta: vec![],
                 reward_account: None,

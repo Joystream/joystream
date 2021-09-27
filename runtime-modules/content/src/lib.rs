@@ -190,14 +190,13 @@ pub struct ChannelCategoryUpdateParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct ChannelRecord<
-    MemberId,
+    MemberId: Ord,
     CuratorGroupId,
     DAOId,
     AccountId,
     VideoId,
     PlaylistId,
     SeriesId,
-    CollaboratorsSetType,
 > {
     /// The owner of a channel
     owner: ChannelOwner<MemberId, CuratorGroupId, DAOId>,
@@ -212,7 +211,7 @@ pub struct ChannelRecord<
     /// Reward account where revenue is sent if set.
     reward_account: Option<AccountId>,
     /// collaborator set
-    collaborators: CollaboratorsSetType,
+    collaborators: BTreeSet<MemberId>,
 }
 
 // Channel alias type for simplification.
@@ -224,7 +223,6 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::VideoId,
     <T as Trait>::PlaylistId,
     <T as Trait>::SeriesId,
-    BTreeSet<<T as MembershipTypes>::MemberId>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -257,7 +255,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParameters<ContentParameters, AccountId, CollaboratorsSetType> {
+pub struct ChannelCreationParametersRecord<ContentParameters, AccountId, MemberId: Ord> {
     /// Assets referenced by metadata
     assets: Vec<NewAsset<ContentParameters>>,
     /// Metadata about the channel.
@@ -265,13 +263,19 @@ pub struct ChannelCreationParameters<ContentParameters, AccountId, Collaborators
     /// optional reward account
     reward_account: Option<AccountId>,
     /// initial collaborator set
-    collaborators: CollaboratorsSetType,
+    collaborators: BTreeSet<MemberId>,
 }
+
+type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
+    ContentParameters<T>,
+    <T as frame_system::Trait>::AccountId,
+    <T as MembershipTypes>::MemberId,
+>;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSetType> {
+pub struct ChannelUpdateParametersRecord<ContentParameters, AccountId, MemberId: Ord> {
     /// Assets referenced by metadata
     assets: Option<Vec<NewAsset<ContentParameters>>>,
     /// If set, metadata update for the channel.
@@ -279,8 +283,14 @@ pub struct ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSe
     /// If set, updates the reward account of the channel
     reward_account: Option<AccountId>,
     /// collaborator set
-    new_collaborators: Option<CollaboratorsSetType>,
+    new_collaborators: Option<BTreeSet<MemberId>>,
 }
+
+type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
+    ContentParameters<T>,
+    <T as frame_system::Trait>::AccountId,
+    <T as MembershipTypes>::MemberId,
+>;
 
 /// A category that videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -651,10 +661,7 @@ decl_module! {
         pub fn create_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCreationParameters<
-                        ContentParameters<T>,
-                        T::AccountId,
-                        BTreeSet<<T as MembershipTypes>::MemberId>>,
+            params: ChannelCreationParameters<T>,
         ) {
             ensure_actor_authorized_to_create_channel::<T>(
                 origin,
@@ -705,10 +712,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: ChannelUpdateParameters<
-                        ContentParameters<T>,
-                        T::AccountId,
-                        BTreeSet<<T as MembershipTypes>::MemberId>>,
+            params: ChannelUpdateParameters<T>,
         ) {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -1459,11 +1463,11 @@ decl_event!(
         ChannelOwnershipTransferRequest = ChannelOwnershipTransferRequest<T>,
         Series = Series<<T as StorageOwnership>::ChannelId, <T as Trait>::VideoId>,
         Channel = Channel<T>,
-        ContentParameters = ContentParameters<T>,
-        AccountId = <T as frame_system::Trait>::AccountId,
         ContentId = ContentId<T>,
         IsCensored = bool,
-        CollaboratorsSetType = BTreeSet<<T as MembershipTypes>::MemberId>,
+        ContentParameters = ContentParameters<T>,
+        ChannelCreationParameters = ChannelCreationParameters<T>,
+        ChannelUpdateParameters = ChannelUpdateParameters<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -1472,18 +1476,8 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelCreationParameters<ContentParameters, AccountId, CollaboratorsSetType>,
-        ),
-        ChannelUpdated(
-            ContentActor,
-            ChannelId,
-            Channel,
-            ChannelUpdateParameters<ContentParameters, AccountId, CollaboratorsSetType>,
-        ),
+        ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
+        ChannelUpdated(ContentActor, ChannelId, Channel, ChannelUpdateParameters),
         ChannelAssetsRemoved(ContentActor, ChannelId, Vec<ContentId>),
 
         ChannelCensorshipStatusUpdated(

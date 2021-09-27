@@ -12,7 +12,7 @@ fn create_member_channel() -> ChannelId {
     assert_ok!(Content::create_channel(
         Origin::signed(FIRST_MEMBER_ORIGIN),
         ContentActor::Member(FIRST_MEMBER_ID),
-        ChannelCreationParameters {
+        ChannelCreationParametersRecord {
             assets: vec![],
             meta: vec![],
             reward_account: None,
