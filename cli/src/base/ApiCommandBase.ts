@@ -71,7 +71,9 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       }
 
       const { metadataCache } = this.getPreservedState()
-      this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri)
+      this.api = await Api.create(apiUri, metadataCache, queryNodeUri === 'none' ? undefined : queryNodeUri, (err) => {
+        this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
+      })
 
       const { genesisHash, runtimeVersion } = this.getOriginalApi()
       const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`

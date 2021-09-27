@@ -41,7 +41,16 @@ import {
   ChannelCategoryId,
   VideoCategoryId,
 } from '@joystream/types/content'
-import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client/core'
+import {
+  ApolloClient,
+  InMemoryCache,
+  HttpLink,
+  NormalizedCacheObject,
+  DocumentNode,
+  from,
+  ApolloLink,
+} from '@apollo/client/core'
+import { ErrorLink, onError } from '@apollo/client/link/error'
 import { Maybe } from './graphql/generated/schema'
 import { Observable } from '@polkadot/x-rxjs'
 import {
@@ -109,9 +118,14 @@ export default class Api {
     return { api, properties, chainType }
   }
 
-  private static async createQueryNodeClient(uri: string) {
+  private static async createQueryNodeClient(uri: string, errorHandler?: ErrorLink.ErrorHandler) {
+    const links: ApolloLink[] = []
+    if (errorHandler) {
+      links.push(onError(errorHandler))
+    }
+    links.push(new HttpLink({ uri, fetch }))
     return new ApolloClient({
-      link: new HttpLink({ uri, fetch }),
+      link: from(links),
       cache: new InMemoryCache(),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
@@ -120,10 +134,13 @@ export default class Api {
   static async create(
     apiUri = DEFAULT_API_URI,
     metadataCache: Record<string, any>,
-    queryNodeUri?: string
+    queryNodeUri?: string,
+    queryNodeErrorHandler?: ErrorLink.ErrorHandler
   ): Promise<Api> {
     const { api, chainType } = await Api.initApi(apiUri, metadataCache)
-    const queryNodeClient = queryNodeUri ? await this.createQueryNodeClient(queryNodeUri) : undefined
+    const queryNodeClient = queryNodeUri
+      ? await this.createQueryNodeClient(queryNodeUri, queryNodeErrorHandler)
+      : undefined
     return new Api(api, chainType.isDevelopment || chainType.isLocal, queryNodeClient)
   }
 
@@ -137,9 +154,13 @@ export default class Api {
     resultKey: keyof QueryT
   ): Promise<Required<QueryT>[keyof QueryT] | null | undefined> {
     if (!this._queryNode) {
-      return
+      return undefined
     }
-    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+    try {
+      return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+    } catch (e) {
+      return undefined
+    }
   }
 
   // Query-node: get entities by "non-unique" input and return first result
@@ -152,9 +173,13 @@ export default class Api {
     resultKey: keyof QueryT
   ): Promise<QueryT[keyof QueryT][number] | null | undefined> {
     if (!this._queryNode) {
-      return
+      return undefined
     }
-    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
+    try {
+      return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
+    } catch (e) {
+      return undefined
+    }
   }
 
   // Query-node: get multiple entities
@@ -163,9 +188,13 @@ export default class Api {
     VariablesT extends Record<string, unknown>
   >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | undefined> {
     if (!this._queryNode) {
-      return
+      return undefined
     }
-    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+    try {
+      return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+    } catch (e) {
+      return undefined
+    }
   }
 
   async bestNumber(): Promise<number> {
@@ -363,7 +392,7 @@ export default class Api {
     return worker
   }
 
-  async groupMember(group: WorkingGroups, workerId: number) {
+  async groupMember(group: WorkingGroups, workerId: number): Promise<GroupMember> {
     const worker = await this.workerByWorkerId(group, workerId)
     return await this.parseGroupMember(this._api.createType('WorkerId', workerId), worker)
   }
