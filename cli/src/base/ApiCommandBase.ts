@@ -153,10 +153,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
           type: 'input',
           message: 'Provide a query node endpoint',
         })
-        if (!this.isApiUriValid(selectedUri)) {
+        if (!this.isQueryNodeUriValid(selectedUri)) {
           this.warn('Provided uri seems incorrect! Please try again...')
         }
-      } while (!this.isApiUriValid(selectedUri))
+      } while (!this.isQueryNodeUriValid(selectedUri))
     }
 
     await this.setPreservedState({ queryNodeUri: selectedUri })
@@ -164,7 +164,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return selectedUri
   }
 
-  isApiUriValid(uri: string) {
+  isApiUriValid(uri: string): boolean {
     try {
       // eslint-disable-next-line no-new
       new WsProvider(uri)
@@ -174,7 +174,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return true
   }
 
-  isQueryNodeUriValid(uri: string) {
+  isQueryNodeUriValid(uri: string): boolean {
     let url: URL
     try {
       url = new URL(uri)
