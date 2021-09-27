@@ -228,7 +228,9 @@ export default class TokenomicsTransport extends BaseTransport {
     const workingGroupsData = {
       storageProviders: await this.getWorkingGroupData('Storage'),
       curators: await this.getWorkingGroupData('Content'),
-      operations: await this.getWorkingGroupData('Operations')
+      operationsAlpha: await this.getWorkingGroupData('OperationsAlpha'),
+      operationsBeta: await this.getWorkingGroupData('OperationsBeta'),
+      operationsGamma: await this.getWorkingGroupData('OperationsGamma')
     };
     const { numberOfValidators, numberOfNominators, totalValidatorStake, validatorRewardsPerWeek, totalIssuance } =
       await this.getValidatorData();
@@ -293,7 +295,9 @@ export default class TokenomicsTransport extends BaseTransport {
       },
       storageProviders: resolveGroupData(workingGroupsData.storageProviders),
       contentCurators: resolveGroupData(workingGroupsData.curators),
-      operations: resolveGroupData(workingGroupsData.operations)
+      operationsAlpha: resolveGroupData(workingGroupsData.operationsAlpha),
+      operationsBeta: resolveGroupData(workingGroupsData.operationsBeta),
+      operationsGamma: resolveGroupData(workingGroupsData.operationsGamma)
     };
   }
 }

@@ -56,13 +56,29 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
             label: 'Content Curators Lead',
             value: data.contentCurators.lead.rewardsShare * 100
           }, {
-            colors: [COLORS.OPERATIONS],
-            label: 'Operations',
-            value: data.operations.rewardsShare * 100
+            colors: [COLORS.OPERATIONS_ALPHA],
+            label: 'Operations Alpha',
+            value: data.operationsAlpha.rewardsShare * 100
           }, {
-            colors: [COLORS.OPERATIONS_LEAD],
-            label: 'Operations Lead',
-            value: data.operations.lead.rewardsShare * 100
+            colors: [COLORS.OPERATIONS_ALPHA_LEAD],
+            label: 'Operations Alpha Lead',
+            value: data.operationsAlpha.lead.rewardsShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_BETA],
+            label: 'Operations Beta',
+            value: data.operationsBeta.rewardsShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_BETA_LEAD],
+            label: 'Operations Beta Lead',
+            value: data.operationsBeta.lead.rewardsShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_GAMMA],
+            label: 'Operations Gamma',
+            value: data.operationsGamma.rewardsShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_GAMMA_LEAD],
+            label: 'Operations Gamma Lead',
+            value: data.operationsGamma.lead.rewardsShare * 100
           }
           ]} />
         <Label as='div'>
@@ -97,13 +113,29 @@ const TokenomicsCharts: React.FC<{data?: TokenomicsData; className?: string}> = 
             label: 'Content Curators Lead',
             value: data.contentCurators.lead.stakeShare * 100
           }, {
-            colors: [COLORS.OPERATIONS],
-            label: 'Operations',
-            value: data.operations.stakeShare * 100
+            colors: [COLORS.OPERATIONS_ALPHA],
+            label: 'Operations Alpha',
+            value: data.operationsAlpha.stakeShare * 100
           }, {
-            colors: [COLORS.OPERATIONS_LEAD],
-            label: 'Operations Lead',
-            value: data.operations.lead.stakeShare * 100
+            colors: [COLORS.OPERATIONS_ALPHA_LEAD],
+            label: 'Operations Alpha Lead',
+            value: data.operationsAlpha.lead.stakeShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_BETA],
+            label: 'Operations Beta',
+            value: data.operationsBeta.stakeShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_BETA_LEAD],
+            label: 'Operations Beta Lead',
+            value: data.operationsBeta.lead.stakeShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_GAMMA],
+            label: 'Operations Gamma',
+            value: data.operationsGamma.stakeShare * 100
+          }, {
+            colors: [COLORS.OPERATIONS_GAMMA_LEAD],
+            label: 'Operations Gamma Lead',
+            value: data.operationsGamma.lead.stakeShare * 100
           }
           ]} />
         <Label as='div'>

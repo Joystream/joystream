@@ -45,7 +45,16 @@ export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValu
 
 const availableGroupsOptions = Object.keys(WorkingGroupDef)
   .filter((wgKey) => wgKey !== 'Gateway') // Gateway group not yet supported!
-  .map((wgKey) => ({ text: wgKey + ' Working Group', value: wgKey }));
+  .map((wgKey) => {
+    let text = wgKey + "Working Group";
+
+    if(wgKey.toLowerCase().includes("operations")) {
+      const workingGroupType = wgKey.slice("operations".length);
+      text = `Operations Working Group ${workingGroupType}`;
+    }
+
+    return { text, value: wgKey };
+  });
 
 export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const {

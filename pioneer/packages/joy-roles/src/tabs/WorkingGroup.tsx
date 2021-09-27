@@ -73,6 +73,11 @@ type GroupOverviewProps = GroupOverviewOuterProps & {
   customBecomeLeadDesc?: string;
 }
 
+
+interface OperationsGroupProps extends GroupOverviewOuterProps{
+  group: WorkingGroups;
+}
+
 const GroupOverview = Loadable<GroupOverviewProps>(
   ['workers', 'leadStatus'],
   ({
@@ -142,9 +147,8 @@ export const StorageProviders = (props: GroupOverviewOuterProps) => (
   />
 );
 
-export const OperationsGroup = (props: GroupOverviewOuterProps) => (
+export const OperationsGroup = (props: OperationsGroupProps) => (
   <GroupOverview
-    group={WorkingGroups.Operations}
     description={
       <span>
         {"Operations Working Group encompases all the activites that don't require privilages on chain, for example:"}
@@ -155,6 +159,27 @@ export const OperationsGroup = (props: GroupOverviewOuterProps) => (
         </ul>
       </span>
     }
+    {...props}
+  />
+);
+
+export const OperationsGroupAlpha = (props: GroupOverviewOuterProps) => (
+  <OperationsGroup
+    group={WorkingGroups.OperationsAlpha}
+    {...props}
+  />
+);
+
+export const OperationsGroupBeta = (props: GroupOverviewOuterProps) => (
+  <OperationsGroup
+    group={WorkingGroups.OperationsBeta}
+    {...props}
+  />
+);
+
+export const OperationsGroupGamma = (props: GroupOverviewOuterProps) => (
+  <OperationsGroup
+    group={WorkingGroups.OperationsGamma}
     {...props}
   />
 );

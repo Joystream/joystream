@@ -109,7 +109,9 @@ export class InputValidationLengthConstraint
 export const WorkingGroupDef = {
   Storage: Null,
   Content: Null,
-  Operations: Null,
+  OperationsAlpha: Null,
+  OperationsBeta: Null,
+  OperationsGamma: Null,
   Gateway: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef

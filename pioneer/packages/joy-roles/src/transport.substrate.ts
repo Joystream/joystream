@@ -52,7 +52,9 @@ type StakePair<T = Balance> = {
 const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
   [WorkingGroups.ContentCurators]: 'contentDirectoryWorkingGroup',
-  [WorkingGroups.Operations]: 'operationsWorkingGroup'
+  [WorkingGroups.OperationsAlpha]: 'operationsWorkingGroupAlpha',
+  [WorkingGroups.OperationsBeta]: 'operationsWorkingGroupBeta',
+  [WorkingGroups.OperationsGamma]: 'operationsWorkingGroupGamma'
 } as const;
 
 export class Transport extends BaseTransport implements ITransport {

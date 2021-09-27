@@ -2,6 +2,8 @@ import { WorkingGroupKey } from '@joystream/types/common';
 export const apiModuleByGroup: { [k in WorkingGroupKey]: string } = {
   Storage: 'storageWorkingGroup',
   Content: 'contentDirectoryWorkingGroup',
-  Operations: 'operationsWorkingGroup',
+  OperationsAlpha: 'operationsWorkingGroupAlpha',
+  OperationsBeta: 'operationsWorkingGroupBeta',
+  OperationsGamma: 'operationsWorkingGroupGamma',
   Gateway: 'gatewayWorkingGroup'
 };

@@ -121,7 +121,7 @@ const SpendingAndStakeTableRow: React.FC<{
   );
 };
 
-const WORKING_GROUPS = ['storageProviders', 'contentCurators', 'operations'] as const;
+const WORKING_GROUPS = ['storageProviders', 'contentCurators', 'operationsAlpha', 'operationsBeta', 'operationsGamma'] as const;
 
 type TokenomicsGroup =
   'validators' |
@@ -142,6 +142,14 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         : (data && statusData) && `${(data[group][dataType] * Number(statusData.price)).toFixed(2)}`;
     }
   };
+
+  const renderOperationsHelpText = (groupName: string, isLead?: boolean) => {
+    if(isLead) {
+      return `Current ${groupName} Lead, and their projected reward and stake.`
+    }
+
+    return `The current ${groupName} members, and the sum of their projected rewards and stakes.`
+  }
 
   return (
     <StyledTable divideColumnsAt={[3, 6, 9]} celled>
@@ -233,28 +241,76 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
           color={COLORS.CURATOR_LEAD}
         />
         <SpendingAndStakeTableRow
-          role='Operations'
-          helpContent='The current Operations members, and the sum of their projected rewards and stakes.'
-          numberOfActors={data && `${data.operations.number}`}
-          groupEarning={data && `${Math.round(data.operations.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('operations', 'rewardsPerWeek')}
-          earningShare={data && `${round(data.operations.rewardsShare * 100)}`}
-          groupStake={data && `${data.operations.totalStake}`}
-          groupStakeDollar={displayStatusData('operations', 'totalStake')}
-          stakeShare={data && `${round(data.operations.stakeShare * 100)}`}
-          color={COLORS.OPERATIONS}
+          role='Operations Alpha'
+          helpContent={renderOperationsHelpText("Operations Group Alpha")}
+          numberOfActors={data && `${data.operationsAlpha.number}`}
+          groupEarning={data && `${Math.round(data.operationsAlpha.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operationsAlpha', 'rewardsPerWeek')}
+          earningShare={data && `${round(data.operationsAlpha.rewardsShare * 100)}`}
+          groupStake={data && `${data.operationsAlpha.totalStake}`}
+          groupStakeDollar={displayStatusData('operationsAlpha', 'totalStake')}
+          stakeShare={data && `${round(data.operationsAlpha.stakeShare * 100)}`}
+          color={COLORS.OPERATIONS_ALPHA}
         />
         <SpendingAndStakeTableRow
-          role='Operations Lead'
-          helpContent='Current Operations Lead, and their projected reward and stake.'
-          numberOfActors={data && `${data.operations.lead.number}`}
-          groupEarning={data && `${Math.round(data.operations.lead.rewardsPerWeek)}`}
-          groupEarningDollar={displayStatusData('operations', 'rewardsPerWeek', true)}
-          earningShare={data && `${round(data.operations.lead.rewardsShare * 100)}`}
-          groupStake={data && `${data.operations.lead.totalStake}`}
-          groupStakeDollar={displayStatusData('operations', 'totalStake', true)}
-          stakeShare={data && `${round(data.operations.lead.stakeShare * 100)}`}
-          color={COLORS.OPERATIONS_LEAD}
+          role='Operations Alpha Lead'
+          helpContent={renderOperationsHelpText("Operations Group Alpha", true)}
+          numberOfActors={data && `${data.operationsAlpha.lead.number}`}
+          groupEarning={data && `${Math.round(data.operationsAlpha.lead.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operationsAlpha', 'rewardsPerWeek', true)}
+          earningShare={data && `${round(data.operationsAlpha.lead.rewardsShare * 100)}`}
+          groupStake={data && `${data.operationsAlpha.lead.totalStake}`}
+          groupStakeDollar={displayStatusData('operationsAlpha', 'totalStake', true)}
+          stakeShare={data && `${round(data.operationsAlpha.lead.stakeShare * 100)}`}
+          color={COLORS.OPERATIONS_ALPHA_LEAD}
+        />
+        <SpendingAndStakeTableRow
+          role='Operations Beta'
+          helpContent={renderOperationsHelpText("Operations Group Beta")}
+          numberOfActors={data && `${data.operationsBeta.number}`}
+          groupEarning={data && `${Math.round(data.operationsBeta.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operationsBeta', 'rewardsPerWeek')}
+          earningShare={data && `${round(data.operationsBeta.rewardsShare * 100)}`}
+          groupStake={data && `${data.operationsBeta.totalStake}`}
+          groupStakeDollar={displayStatusData('operationsBeta', 'totalStake')}
+          stakeShare={data && `${round(data.operationsBeta.stakeShare * 100)}`}
+          color={COLORS.OPERATIONS_BETA}
+        />
+        <SpendingAndStakeTableRow
+          role='Operations Beta Lead'
+          helpContent={renderOperationsHelpText("Operations Group Beta", true)}
+          numberOfActors={data && `${data.operationsBeta.lead.number}`}
+          groupEarning={data && `${Math.round(data.operationsBeta.lead.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operationsBeta', 'rewardsPerWeek', true)}
+          earningShare={data && `${round(data.operationsBeta.lead.rewardsShare * 100)}`}
+          groupStake={data && `${data.operationsBeta.lead.totalStake}`}
+          groupStakeDollar={displayStatusData('operationsBeta', 'totalStake', true)}
+          stakeShare={data && `${round(data.operationsBeta.lead.stakeShare * 100)}`}
+          color={COLORS.OPERATIONS_BETA_LEAD}
+        />
+        <SpendingAndStakeTableRow
+          role='Operations Gamma'
+          helpContent={renderOperationsHelpText("Operations Group Gamma")}
+          numberOfActors={data && `${data.operationsGamma.number}`}
+          groupEarning={data && `${Math.round(data.operationsGamma.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operationsGamma', 'rewardsPerWeek')}
+          earningShare={data && `${round(data.operationsGamma.rewardsShare * 100)}`}
+          groupStake={data && `${data.operationsGamma.totalStake}`}
+          groupStakeDollar={displayStatusData('operationsGamma', 'totalStake')}
+          stakeShare={data && `${round(data.operationsGamma.stakeShare * 100)}`}
+          color={COLORS.OPERATIONS_GAMMA}
+        />
+        <SpendingAndStakeTableRow
+          role='Operations Gamma Lead'
+          helpContent={renderOperationsHelpText("Operations Group Gamma", true)}
+          numberOfActors={data && `${data.operationsGamma.lead.number}`}
+          groupEarning={data && `${Math.round(data.operationsGamma.lead.rewardsPerWeek)}`}
+          groupEarningDollar={displayStatusData('operationsGamma', 'rewardsPerWeek', true)}
+          earningShare={data && `${round(data.operationsGamma.lead.rewardsShare * 100)}`}
+          groupStake={data && `${data.operationsGamma.lead.totalStake}`}
+          groupStakeDollar={displayStatusData('operationsGamma', 'totalStake', true)}
+          stakeShare={data && `${round(data.operationsGamma.lead.stakeShare * 100)}`}
+          color={COLORS.OPERATIONS_GAMMA_LEAD}
         />
         <SpendingAndStakeTableRow
           role='TOTAL'

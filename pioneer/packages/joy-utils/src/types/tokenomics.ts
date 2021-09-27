@@ -37,7 +37,9 @@ export type TokenomicsData = {
   };
   storageProviders: WorkingGroupTokenomicsData;
   contentCurators: WorkingGroupTokenomicsData;
-  operations: WorkingGroupTokenomicsData;
+  operationsAlpha: WorkingGroupTokenomicsData;
+  operationsBeta: WorkingGroupTokenomicsData;
+  operationsGamma: WorkingGroupTokenomicsData;
 }
 
 export type StatusServerData = {
