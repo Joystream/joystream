@@ -1158,15 +1158,13 @@ decl_module! {
             // Ensure given auction can be canceled
             auction.ensure_auction_can_be_canceled::<T>()?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             if let Some(last_bid) = auction.last_bid {
-                let last_bidder_account_id = Self::ensure_member_controller_account_id(last_bid.bidder)?;
-
-                //
-                // == MUTATION SAFE ==
-                //
-
                 // Unreserve previous bidder balance
-                T::Currency::unreserve(&last_bidder_account_id, last_bid.amount);
+                T::Currency::unreserve(&last_bid.bidder_account_id, last_bid.amount);
             }
 
             // Cancel auction
