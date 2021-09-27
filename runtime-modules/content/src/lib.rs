@@ -1446,17 +1446,10 @@ impl<T: Trait> Module<T> {
         match actor {
             // Lead should use their member or curator role to create channels
             ContentActor::Lead => Err(Error::<T>::ActorCannotOwnChannel),
-            ContentActor::Curator(
-                curator_group_id,
-                _curator_id
-            ) => {
+            ContentActor::Curator(curator_group_id, _curator_id) => {
                 Ok(ChannelOwner::CuratorGroup(*curator_group_id))
             }
-            ContentActor::Member(member_id) => {
-                Ok(ChannelOwner::Member(*member_id))
-            }
-            // TODO:
-            // ContentActor::Dao(id) => Ok(ChannelOwner::Dao(id)),
+            ContentActor::Member(member_id) => Ok(ChannelOwner::Member(*member_id)),
         }
     }
 

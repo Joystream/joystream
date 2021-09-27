@@ -471,25 +471,24 @@ impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
-        crate::integration::proposals::StakingEventsHandler<Self>,
         (
             (
+                crate::integration::proposals::StakingEventsHandler<Self>,
                 crate::integration::working_group::ContentDirectoryWgStakingEventsHandler<Self>,
-                crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
             ),
             (
-                (
-                    (
-                        crate::integration::working_group::OperationsWgStakingEventsHandlerAlpha<
-                            Self,
-                        >,
-                        crate::integration::working_group::OperationsWgStakingEventsHandlerBeta<
-                            Self,
-                        >,
-                    ),
-                    crate::integration::working_group::OperationsWgStakingEventsHandlerGamma<Self>,
-                ),
+                crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
+                crate::integration::working_group::OperationsWgStakingEventsHandlerAlpha<Self>,
+            ),
+        ),
+        (
+            (
+                crate::integration::working_group::OperationsWgStakingEventsHandlerBeta<Self>,
+                crate::integration::working_group::OperationsWgStakingEventsHandlerGamma<Self>,
+            ),
+            (
                 crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
+                crate::integration::working_group::DistributionWgStakingEventsHandler<Self>,
             ),
         ),
     );
@@ -508,7 +507,6 @@ impl common::MembershipTypes for Runtime {
 
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
-    type DaoId = DaoId;
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }

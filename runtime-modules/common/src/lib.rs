@@ -66,17 +66,6 @@ pub trait StorageOwnership {
         + Ord
         + PartialEq;
 
-    /// Dao id representation.
-    type DaoId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + Ord
-        + PartialEq;
-
     /// Content id representation.
     type ContentId: Parameter + Member + Codec + Default + Copy + MaybeSerialize + Ord + PartialEq;
 
