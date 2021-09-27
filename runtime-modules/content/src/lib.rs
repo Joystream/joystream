@@ -1236,23 +1236,20 @@ decl_module! {
             }
 
             // Make auction bid & update auction data
-            match auction.buy_now_price {
+            match (auction.buy_now_price, owner_account_id) {
                 // Complete auction immediately
-                Some(buy_now_price) if bid >= buy_now_price => {
-
+                (Some(buy_now_price), Some(owner_account_id)) => {
                     // Do not charge more then buy now
                     let auction = auction.make_bid(participant_id, participant_account_id, buy_now_price, current_block);
 
-                    if let Some(owner_account_id) = owner_account_id {
-                        let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
-                        let video = video.set_nft_status(nft);
+                    let nft = Self::complete_auction(video.in_channel, nft, auction, owner_account_id);
+                    let video = video.set_nft_status(nft);
 
-                        // Update the video
-                        VideoById::<T>::insert(video_id, video);
+                    // Update the video
+                    VideoById::<T>::insert(video_id, video);
 
-                        // Trigger event
-                        Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
-                    }
+                    // Trigger event
+                    Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
                 },
                 _ => {
                     // Reseve balance for current bid
