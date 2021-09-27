@@ -39,7 +39,7 @@ After cloning this repo, from this working directory, run these commands:
    ```bash
    $ pulumi config set-all --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user \
     --plaintext numberOfValidators=2 --plaintext isMinikube=true --plaintext networkSuffix=8122 \
-    --plaintext nodeImage=joystream/node:latest
+    --plaintext nodeImage=joystream/node:latest --plaintext encryptionKey=password
    ```
 
    If you want to build the stack on AWS set the `isMinikube` config to `false`
@@ -66,6 +66,11 @@ After cloning this repo, from this working directory, run these commands:
 1. You can now access the endpoints using `pulumi stack output endpoint1` or `pulumi stack output endpoint2`
 
    The ws-rpc endpoint is `https://<ENDPOINT>/ws-rpc` and http-rpc endpoint is `https://<ENDPOINT>/http-rpc`
+
+1. If you are using Minikube, run `minikube service node-network -n $(pulumi stack output namespaceName)`
+
+   This will setup a proxy for your `node-network` service, which can then be accessed at
+   the URL given in the output
 
 1. Access the Kubernetes Cluster using `kubectl`
 
@@ -104,6 +109,12 @@ After cloning this repo, from this working directory, run these commands:
 
    ```bash
    $ kubectl exec --stdin --tty <PODNAME> -c colossus -- /bin/bash
+   ```
+
+1. To get the chain-data and secrets, run the below command
+
+   ```bash
+   $ kubectl cp $(kubectl get pods | grep rpc-node | awk '{print $1}'):/chain-data/chain-data.7z ./chain-data.7z
    ```
 
 1. Once you've finished experimenting, tear down your stack's resources by destroying and removing it:

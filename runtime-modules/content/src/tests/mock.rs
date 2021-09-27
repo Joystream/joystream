@@ -125,6 +125,7 @@ impl common::MembershipTypes for Test {
 
 impl common::StorageOwnership for Test {
     type ChannelId = u64;
+    type DaoId = u64;
     type ContentId = u64;
     type DataObjectTypeId = u64;
 }
@@ -153,10 +154,8 @@ parameter_types! {
 
 impl membership::Trait for Test {
     type Event = MetaEvent;
-    type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
     type ScreenedMemberMaxInitialBalance = ();
 }
 

@@ -23,7 +23,15 @@ macro_rules! wrap_working_group_call {
             WorkingGroup::Distribution => {
                 Call::DistributionWorkingGroup($working_group_instance_call)
             }
-            WorkingGroup::Operations => Call::OperationsWorkingGroup($working_group_instance_call),
+            WorkingGroup::OperationsAlpha => {
+                Call::OperationsWorkingGroupAlpha($working_group_instance_call)
+            }
+            WorkingGroup::OperationsBeta => {
+                Call::OperationsWorkingGroupBeta($working_group_instance_call)
+            }
+            WorkingGroup::OperationsGamma => {
+                Call::OperationsWorkingGroupGamma($working_group_instance_call)
+            }
             WorkingGroup::Gateway => Call::GatewayWorkingGroup($working_group_instance_call),
         }
     }};

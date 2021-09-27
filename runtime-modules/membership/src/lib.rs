@@ -23,17 +23,10 @@ use sp_std::vec;
 use sp_std::vec::Vec;
 
 use common::currency::{BalanceOf, GovernanceCurrency};
-pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
+pub trait Trait:
+    frame_system::Trait + GovernanceCurrency + pallet_timestamp::Trait + common::MembershipTypes
+{
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-
-    type MemberId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 
     type PaidTermId: Parameter
         + Member
@@ -52,17 +45,6 @@ pub trait Trait: frame_system::Trait + GovernanceCurrency + pallet_timestamp::Tr
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    /// Describes the common type for the working group members (workers).
-    type ActorId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + Ord;
 
     /// The maximum amount of initial funds that may be endowed to new members added by
     /// screening authority. If set to zero, no initial balance can be given.
@@ -246,7 +228,7 @@ decl_storage! {
 decl_event! {
     pub enum Event<T> where
       <T as frame_system::Trait>::AccountId,
-      <T as Trait>::MemberId,
+      <T as common::MembershipTypes>::MemberId,
       <T as Trait>::PaidTermId,
     {
         MemberRegistered(MemberId, AccountId, EntryMethod<PaidTermId, AccountId>),

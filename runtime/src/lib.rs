@@ -478,7 +478,17 @@ impl stake::Trait for Runtime {
                 crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
             ),
             (
-                crate::integration::working_group::OperationsWgStakingEventsHandler<Self>,
+                (
+                    (
+                        crate::integration::working_group::OperationsWgStakingEventsHandlerAlpha<
+                            Self,
+                        >,
+                        crate::integration::working_group::OperationsWgStakingEventsHandlerBeta<
+                            Self,
+                        >,
+                    ),
+                    crate::integration::working_group::OperationsWgStakingEventsHandlerGamma<Self>,
+                ),
                 crate::integration::working_group::GatewayWgStakingEventsHandler<Self>,
             ),
         ),
@@ -498,6 +508,7 @@ impl common::MembershipTypes for Runtime {
 
 impl common::StorageOwnership for Runtime {
     type ChannelId = ChannelId;
+    type DaoId = DaoId;
     type ContentId = ContentId;
     type DataObjectTypeId = DataObjectTypeId;
 }
@@ -522,10 +533,8 @@ parameter_types! {
 
 impl membership::Trait for Runtime {
     type Event = Event;
-    type MemberId = MemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = ActorId;
     type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
 }
 
@@ -545,11 +554,17 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance6;
 
-// The builder working group instance alias.
-pub type OperationsWorkingGroupInstance = working_group::Instance4;
-
 // The gateway working group instance alias.
 pub type GatewayWorkingGroupInstance = working_group::Instance5;
+
+// The operation working group alpha instance alias.
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
+
+// The operation working group beta instance alias .
+pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
+
+// The operation working group gamma instance alias .
+pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -570,12 +585,22 @@ impl working_group::Trait<DistributionWorkingGroupInstance> for Runtime {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstance> for Runtime {
+impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl working_group::Trait<GatewayWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -779,14 +804,15 @@ construct_runtime!(
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
+        Storage: storage::{Module, Call, Storage, Event<T>},
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
-        OperationsWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Module, Call, Storage, Config<T>, Event<T>},
         GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Config<T>, Event<T>},
         DistributionWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Config<T>, Event<T>},
-        //
-        Storage: storage::{Module, Call, Storage, Event<T>},
+        OperationsWorkingGroupBeta: working_group::<Instance7>::{Module, Call, Storage, Config<T>, Event<T>},
+        OperationsWorkingGroupGamma: working_group::<Instance8>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );
