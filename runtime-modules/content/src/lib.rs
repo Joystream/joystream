@@ -177,7 +177,7 @@ decl_storage! {
         pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
 
         /// Auction platform fee percentage
-        pub AuctionFeePercentage get(fn auction_fee_percentage) config(): Perbill;
+        pub AuctionFeePercentage get(fn platform_fee_percentage) config(): Perbill;
 
         /// Max delta between current block and starts at
         pub AuctionStartsAtMaxDelta get(fn auction_starts_at_max_delta) config(): T::BlockNumber;
@@ -1496,7 +1496,7 @@ decl_module! {
             //
 
             // Complete nft offer
-            let nft = Self::complete_nft_offer(nft, owner_account_id, receiver_account_id);
+            let nft = Self::complete_nft_offer(video.in_channel, nft, owner_account_id, receiver_account_id);
             let video = video.set_nft_status(nft);
 
             VideoById::<T>::insert(video_id, video);

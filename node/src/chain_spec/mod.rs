@@ -359,7 +359,7 @@ pub fn testnet_genesis(
                 max_creator_royalty: Perbill::from_percent(5),
                 min_bid_step: 10,
                 max_bid_step: 100,
-                auction_fee_percentage: Perbill::from_percent(1),
+                platform_fee_percentage: Perbill::from_percent(1),
                 auction_starts_at_max_delta: 90_000,
             }
         }),
