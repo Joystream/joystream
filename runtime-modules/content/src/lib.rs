@@ -1253,7 +1253,7 @@ decl_module! {
                         VideoById::<T>::insert(video_id, video);
 
                         // Trigger event
-                        Self::deposit_event(RawEvent::AuctionCompleted(participant_id, video_id, metadata));
+                        Self::deposit_event(RawEvent::BidMadeCompletingAuction(participant_id, video_id, metadata));
                     }
                 },
                 _ => {
@@ -1875,6 +1875,7 @@ decl_event!(
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCancelled(ContentActor, VideoId),
         AuctionCompleted(MemberId, VideoId, Metadata),
+        BidMadeCompletingAuction(MemberId, VideoId, Metadata),
         OpenAuctionBidAccepted(ContentActor, VideoId, Metadata),
         OfferStarted(VideoId, ContentActor, MemberId, Option<Balance>),
         OfferCancelled(VideoId, ContentActor),
