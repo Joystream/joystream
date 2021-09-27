@@ -312,7 +312,7 @@ decl_module! {
 
             ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
-            Self::_change_member_about_text(member_id, &text)?;
+            Self::_change_member_about_text(member_id, text)?;
         }
 
         /// Change member's avatar
@@ -324,7 +324,7 @@ decl_module! {
 
             ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
-            Self::_change_member_avatar(member_id, &uri)?;
+            Self::_change_member_avatar(member_id, uri)?;
         }
 
         /// Change member's handle. Will ensure new handle is unique and old one will be available
@@ -356,10 +356,10 @@ decl_module! {
             ensure!(membership.controller_account == sender, Error::<T>::ControllerAccountRequired);
 
             if let Some(uri) = avatar_uri {
-                Self::_change_member_avatar(member_id, &uri)?;
+                Self::_change_member_avatar(member_id, uri)?;
             }
             if let Some(about) = about {
-                Self::_change_member_about_text(member_id, &about)?;
+                Self::_change_member_about_text(member_id, about)?;
             }
             if let Some(handle) = handle {
                 Self::_change_member_handle(member_id, handle)?;
@@ -588,8 +588,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn validate_text(text: &[u8]) -> Vec<u8> {
-        let mut text = text.to_owned();
+    fn validate_text(text: Vec<u8>) -> Vec<u8> {
+        let mut text = text;
         text.truncate(Self::max_about_text_length() as usize);
         text
     }
@@ -612,7 +612,7 @@ impl<T: Trait> Module<T> {
         let handle = handle.ok_or(Error::<T>::HandleMustBeProvidedDuringRegistration)?;
         Self::validate_handle(&handle)?;
 
-        let about = Self::validate_text(&about.unwrap_or_default());
+        let about = Self::validate_text(about.unwrap_or_default());
         let avatar_uri = avatar_uri.unwrap_or_default();
         Self::validate_avatar(&avatar_uri)?;
 
@@ -662,7 +662,7 @@ impl<T: Trait> Module<T> {
         Ok(new_member_id)
     }
 
-    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {
+    fn _change_member_about_text(id: T::MemberId, text: Vec<u8>) -> DispatchResult {
         let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
         membership.about = text.clone();
@@ -671,9 +671,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> DispatchResult {
+    fn _change_member_avatar(id: T::MemberId, uri: Vec<u8>) -> DispatchResult {
         let mut membership = Self::ensure_membership(id)?;
-        Self::validate_avatar(uri)?;
+        Self::validate_avatar(&uri)?;
         membership.avatar_uri = uri.to_owned();
         Self::deposit_event(RawEvent::MemberUpdatedAvatar(id, uri.to_vec()));
         <MembershipById<T>>::insert(id, membership);
