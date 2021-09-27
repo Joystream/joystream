@@ -313,6 +313,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       this.exit(ExitCodes.ActionCurrentlyUnavailable)
     }
     const multiBar = new MultiBar(this.progressBarOptions)
+    const errors: [string, string][] = []
     // Workaround replacement for Promise.allSettled (which is only available in ES2020)
     const results = await Promise.all(
       assets.map(async (a) => {
@@ -320,10 +321,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           await this.uploadAsset(account, memberId, a.dataObjectId, bagId, a.path, storageNodeInfo, multiBar)
           return true
         } catch (e) {
+          errors.push([a.dataObjectId.toString(), e instanceof Error ? e.message : 'Unknown error'])
           return false
         }
       })
     )
+    errors.forEach(([objectId, message]) => this.warn(`Upload of object ${objectId} failed: ${message}`))
     this.handleRejectedUploads(bagId, assets, results, inputFilePath, outputFilePostfix)
     multiBar.stop()
   }
@@ -371,7 +374,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         r === false &&
         rejectedAssetsOutput.assets.push({ objectId: assets[i].dataObjectId.toString(), path: assets[i].path })
     )
-    if (rejectedAssetsOutput.length) {
+    if (rejectedAssetsOutput.assets.length) {
       this.warn(
         `Some assets were not uploaded successfully. Try reuploading them with ${chalk.magentaBright(
           'content:reuploadAssets'
