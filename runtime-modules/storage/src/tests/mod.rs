@@ -3098,19 +3098,16 @@ fn create_dynamic_bag_succeeded() {
             .with_deletion_prize(deletion_prize.clone())
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
-            dynamic_bag_id.clone(),
-            Some(deletion_prize),
-        ));
-
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
+
         // Check that IDs are within possible range.
         assert!(bag
             .stored_by
             .iter()
             .all(|id| { *id < Storage::next_storage_bucket_id() }));
 
-        let creation_policy = Storage::get_dynamic_bag_creation_policy(dynamic_bag_id.into());
+        let creation_policy =
+            Storage::get_dynamic_bag_creation_policy(dynamic_bag_id.clone().into());
         assert_eq!(
             bag.stored_by.len(),
             creation_policy.number_of_storage_buckets as usize
@@ -3127,6 +3124,13 @@ fn create_dynamic_bag_succeeded() {
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
             deletion_prize_value
         );
+
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
+            dynamic_bag_id,
+            Some(deletion_prize),
+            BTreeSet::from_iter(bag.stored_by),
+            BTreeSet::from_iter(bag.distributed_by),
+        ));
     });
 }
 
