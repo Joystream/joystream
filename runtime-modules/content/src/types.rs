@@ -358,6 +358,7 @@ pub struct VideoRecord<
     DataObjectId: Ord,
     BlockNumber: BaseArithmetic + Copy,
     MemberId: Default + Copy + Ord,
+    AccountId: Default + Clone + Ord,
     Balance: Default + Clone,
 > {
     pub in_channel: ChannelId,
@@ -369,7 +370,7 @@ pub struct VideoRecord<
     /// storage parameters used during deletion
     pub maybe_data_objects_id_set: Option<BTreeSet<DataObjectId>>,
     /// Whether nft for this video have been issued.
-    pub nft_status: Option<OwnedNFT<BlockNumber, MemberId, Balance>>,
+    pub nft_status: Option<OwnedNFT<BlockNumber, MemberId, AccountId, Balance>>,
 }
 
 impl<
@@ -378,8 +379,9 @@ impl<
         DataObjectId: Ord,
         BlockNumber: BaseArithmetic + Copy,
         MemberId: Default + Copy + PartialEq + Ord,
+        AccountId: Default + Clone + PartialEq + Ord,
         Balance: Clone + Default,
-    > VideoRecord<ChannelId, SeriesId, DataObjectId, BlockNumber, MemberId, Balance>
+    > VideoRecord<ChannelId, SeriesId, DataObjectId, BlockNumber, MemberId, AccountId, Balance>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
@@ -390,7 +392,7 @@ impl<
     /// Ensure nft is issued
     pub fn ensure_nft_is_issued<T: Trait>(
         &self,
-    ) -> Result<OwnedNFT<BlockNumber, MemberId, Balance>, Error<T>> {
+    ) -> Result<OwnedNFT<BlockNumber, MemberId, AccountId, Balance>, Error<T>> {
         if let Some(owned_nft) = &self.nft_status {
             Ok(owned_nft.to_owned())
         } else {
@@ -399,7 +401,10 @@ impl<
     }
 
     /// Set video nft status
-    pub fn set_nft_status(mut self, nft: OwnedNFT<BlockNumber, MemberId, Balance>) -> Self {
+    pub fn set_nft_status(
+        mut self,
+        nft: OwnedNFT<BlockNumber, MemberId, AccountId, Balance>,
+    ) -> Self {
         self.nft_status = Some(nft);
         self
     }
@@ -421,5 +426,6 @@ pub type Video<T> = VideoRecord<
     <T as storage::Trait>::DataObjectId,
     <T as frame_system::Trait>::BlockNumber,
     MemberId<T>,
+    <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
 >;
