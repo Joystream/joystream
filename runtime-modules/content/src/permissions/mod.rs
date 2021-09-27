@@ -172,12 +172,10 @@ pub fn ensure_actor_authorized_to_update_channel<T: Trait>(
 
             Ok(())
         }
-        // TODO:
-        // ContentActor::Dao(_daoId) => ...,
     }
 }
 
-// Enure actor can manage nft
+/// Enure actor can manage nft
 pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -186,8 +184,6 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
 
-    // Only owner of a channel can update and delete channel assets.
-    // Lead can update and delete curator group owned channel assets.
     if let NFTOwner::Member(member_id) = nft_owner {
         ensure_member_auth_success::<T>(member_id, &sender)?;
 

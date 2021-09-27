@@ -185,7 +185,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure given participant have sufficient free balance
-    pub fn ensure_sufficient_free_balance(
+    pub(crate) fn ensure_sufficient_free_balance(
         participant_account_id: &T::AccountId,
         balance: BalanceOf<T>,
     ) -> DispatchResult {
@@ -197,7 +197,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure given participant can buy nft now
-    pub fn ensure_can_buy_now(
+    pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
     ) -> DispatchResult {
@@ -209,7 +209,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure new pending offer for given participant is available to proceed
-    pub fn ensure_new_pending_offer_available_to_proceed(
+    pub(crate) fn ensure_new_pending_offer_available_to_proceed(
         nft: &Nft<T>,
         participant: T::MemberId,
         participant_account_id: &T::AccountId,
@@ -226,7 +226,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Buy nft
-    pub fn buy_now(
+    pub(crate) fn buy_now(
         mut nft: Nft<T>,
         owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
@@ -244,16 +244,21 @@ impl<T: Trait> Module<T> {
     }
 
     /// Completes nft offer
-    pub fn complete_nft_offer(
+    pub(crate) fn complete_nft_offer(
+        in_channel: T::ChannelId,
         mut nft: Nft<T>,
         owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let TransactionalStatus::InitiatedOfferToMember(to, price) = &nft.transactional_status {
             if let Some(price) = price {
-                T::Currency::slash(&new_owner_account_id, *price);
-
-                T::Currency::deposit_creating(&owner_account_id, *price);
+                Self::complete_payment(
+                    in_channel,
+                    nft.creator_royalty,
+                    *price,
+                    new_owner_account_id,
+                    owner_account_id,
+                );
             }
 
             nft.owner = NFTOwner::Member(*to);
@@ -262,47 +267,62 @@ impl<T: Trait> Module<T> {
         nft.set_idle_transactional_status()
     }
 
+    /// Complete payment, either auction related or buy now
+    pub(crate) fn complete_payment(
+        in_channel: T::ChannelId,
+        creator_royalty: Option<Royalty>,
+        amount: BalanceOf<T>,
+        sender_account_id: T::AccountId,
+        receiver_account_id: T::AccountId,
+    ) {
+        let auction_fee = Self::platform_fee_percentage() * amount;
+
+        if let Some(creator_royalty) = creator_royalty {
+            let royalty = creator_royalty * amount;
+
+            // Slash amount from sender
+            T::Currency::slash_reserved(&sender_account_id, amount);
+
+            // Deposit amount, exluding royalty and platform fee into receiver account
+            if amount > royalty + auction_fee {
+                T::Currency::deposit_creating(&receiver_account_id, amount - royalty - auction_fee);
+            } else {
+                T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+            }
+
+            // Should always be Some(_) at this stage, because of previously made check.
+            if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
+                // Deposit royalty into creator account
+                T::Currency::deposit_creating(&creator_account_id, royalty);
+            }
+        } else {
+            // Slash amount from sender
+            T::Currency::slash_reserved(&sender_account_id, amount);
+
+            // Deposit amount, exluding auction fee into receiver account
+            T::Currency::deposit_creating(&receiver_account_id, amount - auction_fee);
+        }
+    }
+
     /// Complete auction
     pub(crate) fn complete_auction(
         in_channel: T::ChannelId,
         mut nft: Nft<T>,
         auction: Auction<T>,
-        last_bidder_account_id: T::AccountId,
         owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let Some(last_bid) = auction.last_bid {
             let last_bid_amount = last_bid.amount;
             let last_bidder = last_bid.bidder;
-            let auction_fee = Self::auction_fee_percentage() * last_bid_amount;
+            let bidder_account_id = last_bid.bidder_account_id;
 
-            if let Some(creator_royalty) = nft.creator_royalty {
-                let royalty = creator_royalty * last_bid_amount;
-
-                // Slash last bidder bid
-                T::Currency::slash_reserved(&last_bidder_account_id, last_bid_amount);
-
-                // Deposit bid, exluding royalty amount and auction fee into auctioneer account
-                if last_bid_amount > royalty + auction_fee {
-                    T::Currency::deposit_creating(
-                        &owner_account_id,
-                        last_bid_amount - royalty - auction_fee,
-                    );
-                } else {
-                    T::Currency::deposit_creating(&owner_account_id, last_bid_amount - auction_fee);
-                }
-
-                // Should always be Some(_) at this stage, because of previously made check.
-                if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
-                    // Deposit royalty into creator account
-                    T::Currency::deposit_creating(&creator_account_id, royalty);
-                }
-            } else {
-                // Slash last bidder bid and deposit it into auctioneer account
-                T::Currency::slash_reserved(&last_bidder_account_id, last_bid_amount);
-
-                // Deposit bid, exluding auction fee into auctioneer account
-                T::Currency::deposit_creating(&owner_account_id, last_bid_amount - auction_fee);
-            }
+            Self::complete_payment(
+                in_channel,
+                nft.creator_royalty,
+                last_bid_amount,
+                bidder_account_id,
+                owner_account_id,
+            );
 
             nft.owner = NFTOwner::Member(last_bidder);
             nft.transactional_status = TransactionalStatus::Idle;
