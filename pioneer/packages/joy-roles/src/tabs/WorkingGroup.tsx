@@ -73,7 +73,6 @@ type GroupOverviewProps = GroupOverviewOuterProps & {
   customBecomeLeadDesc?: string;
 }
 
-
 interface OperationsGroupProps extends GroupOverviewOuterProps{
   group: WorkingGroups;
 }

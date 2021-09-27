@@ -1315,7 +1315,9 @@ export interface WorkerOf extends Struct {
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
   readonly isContent: boolean;
-  readonly isOperations: boolean;
+  readonly isOperationsAlpha: boolean;
+  readonly isOperationsBeta: boolean;
+  readonly isOperationsGamma: boolean;
   readonly isGateway: boolean;
 }
 

@@ -84,7 +84,9 @@
         "_enum": [
             "Storage",
             "Content",
-            "Operations",
+            "OperationsAlpha",
+            "OperationsBeta",
+            "OperationsGamma",
             "Gateway"
         ]
     },

@@ -63,7 +63,19 @@ declare module '@polkadot/api/types/consts' {
     members: {
       screenedMemberMaxInitialBalance: BalanceOf & AugmentedConst<ApiType>;
     };
-    operationsWorkingGroup: {
+    operationsWorkingGroupAlpha: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+    };
+    operationsWorkingGroupBeta: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+    };
+    operationsWorkingGroupGamma: {
       /**
        * Exports const -  max simultaneous active worker number.
        **/

@@ -144,12 +144,12 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
   };
 
   const renderOperationsHelpText = (groupName: string, isLead?: boolean) => {
-    if(isLead) {
-      return `Current ${groupName} Lead, and their projected reward and stake.`
+    if (isLead) {
+      return `Current ${groupName} Lead, and their projected reward and stake.`;
     }
 
-    return `The current ${groupName} members, and the sum of their projected rewards and stakes.`
-  }
+    return `The current ${groupName} members, and the sum of their projected rewards and stakes.`;
+  };
 
   return (
     <StyledTable divideColumnsAt={[3, 6, 9]} celled>
@@ -242,7 +242,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         />
         <SpendingAndStakeTableRow
           role='Operations Alpha'
-          helpContent={renderOperationsHelpText("Operations Group Alpha")}
+          helpContent={renderOperationsHelpText('Operations Group Alpha')}
           numberOfActors={data && `${data.operationsAlpha.number}`}
           groupEarning={data && `${Math.round(data.operationsAlpha.rewardsPerWeek)}`}
           groupEarningDollar={displayStatusData('operationsAlpha', 'rewardsPerWeek')}
@@ -254,7 +254,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         />
         <SpendingAndStakeTableRow
           role='Operations Alpha Lead'
-          helpContent={renderOperationsHelpText("Operations Group Alpha", true)}
+          helpContent={renderOperationsHelpText('Operations Group Alpha', true)}
           numberOfActors={data && `${data.operationsAlpha.lead.number}`}
           groupEarning={data && `${Math.round(data.operationsAlpha.lead.rewardsPerWeek)}`}
           groupEarningDollar={displayStatusData('operationsAlpha', 'rewardsPerWeek', true)}
@@ -266,7 +266,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         />
         <SpendingAndStakeTableRow
           role='Operations Beta'
-          helpContent={renderOperationsHelpText("Operations Group Beta")}
+          helpContent={renderOperationsHelpText('Operations Group Beta')}
           numberOfActors={data && `${data.operationsBeta.number}`}
           groupEarning={data && `${Math.round(data.operationsBeta.rewardsPerWeek)}`}
           groupEarningDollar={displayStatusData('operationsBeta', 'rewardsPerWeek')}
@@ -278,7 +278,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         />
         <SpendingAndStakeTableRow
           role='Operations Beta Lead'
-          helpContent={renderOperationsHelpText("Operations Group Beta", true)}
+          helpContent={renderOperationsHelpText('Operations Group Beta', true)}
           numberOfActors={data && `${data.operationsBeta.lead.number}`}
           groupEarning={data && `${Math.round(data.operationsBeta.lead.rewardsPerWeek)}`}
           groupEarningDollar={displayStatusData('operationsBeta', 'rewardsPerWeek', true)}
@@ -290,7 +290,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         />
         <SpendingAndStakeTableRow
           role='Operations Gamma'
-          helpContent={renderOperationsHelpText("Operations Group Gamma")}
+          helpContent={renderOperationsHelpText('Operations Group Gamma')}
           numberOfActors={data && `${data.operationsGamma.number}`}
           groupEarning={data && `${Math.round(data.operationsGamma.rewardsPerWeek)}`}
           groupEarningDollar={displayStatusData('operationsGamma', 'rewardsPerWeek')}
@@ -302,7 +302,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
         />
         <SpendingAndStakeTableRow
           role='Operations Gamma Lead'
-          helpContent={renderOperationsHelpText("Operations Group Gamma", true)}
+          helpContent={renderOperationsHelpText('Operations Group Gamma', true)}
           numberOfActors={data && `${data.operationsGamma.lead.number}`}
           groupEarning={data && `${Math.round(data.operationsGamma.lead.rewardsPerWeek)}`}
           groupEarningDollar={displayStatusData('operationsGamma', 'rewardsPerWeek', true)}

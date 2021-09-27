@@ -46,10 +46,11 @@ export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValu
 const availableGroupsOptions = Object.keys(WorkingGroupDef)
   .filter((wgKey) => wgKey !== 'Gateway') // Gateway group not yet supported!
   .map((wgKey) => {
-    let text = wgKey + "Working Group";
+    let text = wgKey + 'Working Group';
 
-    if(wgKey.toLowerCase().includes("operations")) {
-      const workingGroupType = wgKey.slice("operations".length);
+    if (wgKey.toLowerCase().includes('operations')) {
+      const workingGroupType = wgKey.slice('operations'.length);
+
       text = `Operations Working Group ${workingGroupType}`;
     }
 
