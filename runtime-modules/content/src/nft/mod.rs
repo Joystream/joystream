@@ -243,19 +243,19 @@ impl<T: Trait> Module<T> {
         in_channel: T::ChannelId,
         mut nft: Nft<T>,
         auction: Auction<T>,
-        last_bidder_account_id: T::AccountId,
         owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let Some(last_bid) = auction.last_bid {
             let last_bid_amount = last_bid.amount;
             let last_bidder = last_bid.bidder;
+            let bidder_account_id = last_bid.bidder_account_id;
             let auction_fee = Self::auction_fee_percentage() * last_bid_amount;
 
             if let Some(creator_royalty) = nft.creator_royalty {
                 let royalty = creator_royalty * last_bid_amount;
 
                 // Slash last bidder bid
-                T::Currency::slash_reserved(&last_bidder_account_id, last_bid_amount);
+                T::Currency::slash_reserved(&bidder_account_id, last_bid_amount);
 
                 // Deposit bid, exluding royalty amount and auction fee into auctioneer account
                 if last_bid_amount > royalty + auction_fee {
@@ -274,7 +274,7 @@ impl<T: Trait> Module<T> {
                 }
             } else {
                 // Slash last bidder bid and deposit it into auctioneer account
-                T::Currency::slash_reserved(&last_bidder_account_id, last_bid_amount);
+                T::Currency::slash_reserved(&bidder_account_id, last_bid_amount);
 
                 // Deposit bid, exluding auction fee into auctioneer account
                 T::Currency::deposit_creating(&owner_account_id, last_bid_amount - auction_fee);
