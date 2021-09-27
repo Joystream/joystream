@@ -666,7 +666,7 @@ impl<T: Trait> Module<T> {
         let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
         membership.about = text.clone();
-        Self::deposit_event(RawEvent::MemberUpdatedAboutText(id, text.to_vec()));
+        Self::deposit_event(RawEvent::MemberUpdatedAboutText(id, text));
         <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
@@ -675,7 +675,7 @@ impl<T: Trait> Module<T> {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_avatar(&uri)?;
         membership.avatar_uri = uri.to_owned();
-        Self::deposit_event(RawEvent::MemberUpdatedAvatar(id, uri.to_vec()));
+        Self::deposit_event(RawEvent::MemberUpdatedAvatar(id, uri));
         <MembershipById<T>>::insert(id, membership);
         Ok(())
     }
