@@ -390,7 +390,7 @@ pub struct ExtBuilder {
     max_creator_royalty: Perbill,
     min_bid_step: u64,
     max_bid_step: u64,
-    auction_fee_percentage: Perbill,
+    platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
 }
 
@@ -418,7 +418,7 @@ impl Default for ExtBuilder {
             max_creator_royalty: Perbill::from_percent(5),
             min_bid_step: 10,
             max_bid_step: 100,
-            auction_fee_percentage: Perbill::from_percent(1),
+            platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
         }
     }
@@ -452,7 +452,7 @@ impl ExtBuilder {
             max_creator_royalty: self.max_creator_royalty,
             min_bid_step: self.min_bid_step,
             max_bid_step: self.max_bid_step,
-            auction_fee_percentage: self.auction_fee_percentage,
+            platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
         }
         .assimilate_storage(&mut t)
